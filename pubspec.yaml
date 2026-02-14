@@ -1,0 +1,48 @@
+name: aura
+description: "Aura — a writing platform built for continuity."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Navigation + state
+  go_router: ^14.2.0
+  flutter_riverpod: ^2.6.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Local persistence
+  shared_preferences: ^2.2.3
+
+  # External links (investor deck viewer)
+  url_launcher: ^6.3.0
+
+  # Image picker for avatar upload
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/brand/aura_mark.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/brand/aura_mark.png"
+  adaptive_icon_background: "#121214"
+  adaptive_icon_foreground: "assets/brand/aura_mark.png"
