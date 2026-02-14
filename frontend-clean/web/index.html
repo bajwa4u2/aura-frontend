@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aura — a writing platform built for continuity.">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="aura">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Material Icons (helps for some renderers / DOM-based icon usage) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+
+  <!-- Guard: if any CSS overrides fonts globally, keep icon glyphs intact -->
+  <style>
+    .material-icons,
+    .material-icons-outlined,
+    .material-symbols-outlined,
+    .material-symbols-rounded,
+    .material-symbols-sharp {
+      font-family: 'Material Icons' !important;
+      font-weight: normal !important;
+      font-style: normal !important;
+      letter-spacing: normal !important;
+      text-transform: none !important;
+      line-height: 1 !important;
+      white-space: nowrap !important;
+      direction: ltr !important;
+      -webkit-font-smoothing: antialiased !important;
+      -moz-osx-font-smoothing: grayscale !important;
+    }
+  </style>
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>aura</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!-- Flutter loader (newer Flutter) -->
+  <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Fallback loader (older Flutter builds) -->
+  <script>
+    (function () {
+      // If flutter_bootstrap.js isn't present in this build, try older loader.
+      // This does not break newer builds.
+      var tryOld = function () {
+        var s1 = document.createElement('script');
+        s1.src = 'flutter.js';
+        s1.defer = true;
+        s1.onload = function () {
+          if (!window._flutter || !window._flutter.loader) return;
+          window._flutter.loader.loadEntrypoint({
+            serviceWorker: { serviceWorkerVersion: null }
+          }).then(function (engineInitializer) {
+            return engineInitializer.initializeEngine();
+          }).then(function (appRunner) {
+            return appRunner.runApp();
+          });
+        };
+        document.body.appendChild(s1);
+      };
+
+      // If bootstrap file 404s, the browser won’t error here.
+      // This fallback just gives the app another way to start if needed.
+      window.addEventListener('error', function (e) {
+        if (String(e && e.filename || '').includes('flutter_bootstrap.js')) {
+          tryOld();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
