@@ -8,30 +8,52 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../feed/domain/post.dart';
 
+String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
+  final url = (raw ?? '').trim();
+  if (url.isEmpty) return null;
+
+  // Already absolute
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+  // Backend stores avatarUrl like: /uploads/<file>
+  // We must load it from API host, not from the frontend origin.
+  final dio = ref.read(dioProvider);
+  var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
+  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
+  while (base.endsWith('/')) {
+    base = base.substring(0, base.length - 1);
+  }
+
+  if (!url.startsWith('/')) return '$base/$url';
+  return '$base$url';
+}
+
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
 
-  // Backend (prod) does NOT expose GET /v1/reactions/:postId in current routing logs.
-  // So we attempt a best-effort check by calling the post endpoint with a safe method:
-  // - Prefer GET if backend supports it (some environments may).
-  // - If it 404s, treat as "not liked" and rely on optimistic UI + invalidation after action.
-  try {
-    final res = await dio.get('/v1/reactions/$postId');
-    if (res.data is Map) {
-      final m = Map<String, dynamic>.from(res.data as Map);
-      return (m['liked'] == true) || (m['isLiked'] == true);
-    }
-    return false;
-  } catch (_) {
-    // If GET isn't supported on reactions, default false.
-    return false;
+  // Backend route: GET /v1/reactions/:postId
+  final res = await dio.get('/reactions/$postId');
+
+  if (res.data is Map) {
+    final m = Map<String, dynamic>.from(res.data as Map);
+    return (m['liked'] == true) || (m['isLiked'] == true);
   }
+
+  return false;
 });
 
 final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/saves/$postId');
-  return (res.data is Map && (res.data['saved'] == true || res.data['isSaved'] == true));
+
+  // Backend route: GET /v1/saves/:postId
+  final res = await dio.get('/saves/$postId');
+
+  if (res.data is Map) {
+    final m = Map<String, dynamic>.from(res.data as Map);
+    return (m['saved'] == true) || (m['isSaved'] == true);
+  }
+
+  return false;
 });
 
 class PostCard extends ConsumerWidget {
@@ -46,6 +68,8 @@ class PostCard extends ConsumerWidget {
     final handle = a?.handle ?? '';
     final subtitle = a == null ? '' : '@$handle${displayName.isNotEmpty ? ' • $displayName' : ''}';
 
+    final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
+
     return AuraCard(
       padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s16),
       onTap: () => context.push('/post/${post.id}'),
@@ -59,9 +83,12 @@ class PostCard extends ConsumerWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: const Color(0x332E2A26),
-                  backgroundImage: (a.avatarUrl != null && a.avatarUrl!.isNotEmpty) ? NetworkImage(a.avatarUrl!) : null,
-                  child: (a.avatarUrl == null || a.avatarUrl!.isEmpty)
-                      ? Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A', style: AuraText.body)
+                  backgroundImage: (avatarResolved != null) ? NetworkImage(avatarResolved) : null,
+                  child: (avatarResolved == null)
+                      ? Text(
+                          displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
+                          style: AuraText.body,
+                        )
                       : null,
                 ),
                 SizedBox(width: AuraSpace.s10),
@@ -121,15 +148,8 @@ class _ActionRow extends ConsumerWidget {
     Future<void> toggleLike() async {
       final dio = ref.read(dioProvider);
 
-      final currentlyLiked = liked.maybeWhen(data: (v) => v, orElse: () => false);
-
-      if (currentlyLiked) {
-        // Backend route: DELETE /v1/reactions/:postId
-        await dio.delete('/v1/reactions/$postId');
-      } else {
-        // Backend route: POST /v1/reactions/:postId
-        await dio.post('/v1/reactions/$postId');
-      }
+      // Backend route: POST /v1/reactions/:postId/toggle
+      await dio.post('/reactions/$postId/toggle');
 
       ref.invalidate(isLikedProvider(postId));
     }
@@ -137,10 +157,8 @@ class _ActionRow extends ConsumerWidget {
     Future<void> toggleSave() async {
       final dio = ref.read(dioProvider);
 
-      // NOTE: We haven't confirmed saves routes from backend logs in this thread.
-      // Keep existing toggle endpoint for now. If backend is actually POST/DELETE like reactions,
-      // we will align this next.
-      await dio.post('/v1/saves/$postId/toggle');
+      // Backend route: POST /v1/saves/:postId/toggle
+      await dio.post('/saves/$postId/toggle');
 
       ref.invalidate(isSavedProvider(postId));
     }
@@ -176,7 +194,8 @@ class _ActionRow extends ConsumerWidget {
       final payload = <String, dynamic>{};
       if (text.isNotEmpty) payload['text'] = text;
 
-      await dio.post('/v1/posts/$postId/repost', data: payload);
+      // Backend route: POST /v1/posts/:id/repost
+      await dio.post('/posts/$postId/repost', data: payload);
 
       ref.invalidate(isLikedProvider(postId));
       ref.invalidate(isSavedProvider(postId));
