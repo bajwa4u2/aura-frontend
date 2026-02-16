@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,9 +53,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String _extractBackendError(dynamic body) {
-    if (body is Map && body['message'] is List) {
-      final msgs = (body['message'] as List).map((e) => e.toString()).toList();
-      return msgs.join(', ');
+    if (body is Map) {
+      final msg = body['message'];
+      if (msg is List) return msg.map((e) => e.toString()).join(', ');
+      if (msg is String) return msg;
+      if (body['error'] is String) return body['error'] as String;
     }
     if (body is String) return body;
     return '';
@@ -98,7 +101,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (displayName.isNotEmpty) 'displayName': displayName,
       };
 
-      final res = await dio.post('/auth/register', data: payload);
+      // Backend contract:
+      // - Web: refresh token is httpOnly cookie; body usually { user, accessToken }
+      // - Non-web: request body transport to also receive refreshToken in body
+      final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
+
+      final res = await dio.post('/auth/register', data: payload, options: options);
 
       final data = res.data;
       if (data is! Map) throw Exception('Unexpected response');
@@ -106,32 +114,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final map = Map<String, dynamic>.from(data as Map);
 
       final access = (map['accessToken'] as String?)?.trim();
-      final refresh = (map['refreshToken'] as String?)?.trim();
-      final user = map['user'];
+      final refresh = (map['refreshToken'] as String?)?.trim(); // may be null on web (cookie-based)
 
-      String? userId;
-      if (user is Map) {
-        userId = (Map<String, dynamic>.from(user)['id'] as String?)?.trim();
-      }
-      userId ??= (map['userId'] as String?)?.trim();
-
-      if (access == null || access.isEmpty || userId == null || userId.isEmpty) {
-        throw Exception('Missing accessToken/userId');
+      if (access == null || access.isEmpty) {
+        throw Exception('Missing accessToken');
       }
 
-      await ref.read(tokenStoreProvider).setSession(
-            userId: userId,
+      await ref.read(tokenStoreProvider).setTokens(
             accessToken: access,
             refreshToken: (refresh != null && refresh.isNotEmpty) ? refresh : null,
           );
+
+      // Optional: warm up session validity (won't block navigation if it fails)
+      // ignore: unawaited_futures
+      () async {
+        try {
+          await dio.get('/auth/me');
+        } catch (_) {}
+      }();
 
       if (!mounted) return;
       context.go(_safeRedirect(widget.redirectTo));
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      final extra = _extractBackendError(e.response?.data);
+      final extra = _extractBackendError(e.response?.data).trim();
       setState(() {
-        _error = 'Register failed (${status ?? 'no status'}). ${extra.trim()}'.trim();
+        _error = extra.isEmpty
+            ? 'Register failed (${status ?? 'no status'}).'
+            : 'Register failed (${status ?? 'no status'}). $extra';
       });
     } catch (e) {
       setState(() => _error = 'Register failed. $e');
@@ -232,7 +242,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               SizedBox(height: AuraSpace.s10),
               TextButton(
-                onPressed: _busy ? null : () => context.go('/login?redirect=${Uri.encodeComponent(_safeRedirect(widget.redirectTo))}'),
+                onPressed: _busy
+                    ? null
+                    : () => context.go(
+                          '/login?redirect=${Uri.encodeComponent(_safeRedirect(widget.redirectTo))}',
+                        ),
                 child: const Text('Already have an account? Login'),
               ),
             ],

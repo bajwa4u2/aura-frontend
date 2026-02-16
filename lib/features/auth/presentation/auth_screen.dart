@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,8 +42,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   String _extractBackendError(dynamic body) {
-    if (body is Map && body['message'] is List) {
-      return (body['message'] as List).map((e) => e.toString()).join(', ');
+    if (body is Map) {
+      final msg = body['message'];
+      if (msg is List) return msg.map((e) => e.toString()).join(', ');
+      if (msg is String) return msg;
+      if (body['error'] is String) return body['error'] as String;
     }
     if (body is String) return body;
     return '';
@@ -67,39 +71,49 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      final res = await dio.post('/auth/login', data: {'email': email, 'password': password});
-      final data = res.data;
+      // Backend contract:
+      // - Web: refresh token is httpOnly cookie; body usually { user, accessToken }
+      // - Non-web: request body transport to also receive refreshToken in body
+      final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
+      final res = await dio.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
+        options: options,
+      );
+
+      final data = res.data;
       if (data is! Map) throw Exception('Unexpected response');
+
       final map = Map<String, dynamic>.from(data as Map);
 
       final access = (map['accessToken'] as String?)?.trim();
-      final refresh = (map['refreshToken'] as String?)?.trim();
-      final user = map['user'];
+      final refresh = (map['refreshToken'] as String?)?.trim(); // may be null on web (cookie-based)
 
-      String? userId;
-      if (user is Map) {
-        userId = (Map<String, dynamic>.from(user)['id'] as String?)?.trim();
-      }
-      userId ??= (map['userId'] as String?)?.trim();
-
-      if (access == null || access.isEmpty || userId == null || userId.isEmpty) {
-        throw Exception('Missing accessToken/userId');
+      if (access == null || access.isEmpty) {
+        throw Exception('Missing accessToken');
       }
 
-      await ref.read(tokenStoreProvider).setSession(
-            userId: userId,
+      await ref.read(tokenStoreProvider).setTokens(
             accessToken: access,
             refreshToken: (refresh != null && refresh.isNotEmpty) ? refresh : null,
           );
+
+      // Optional: warm up session validity (won't block navigation if it fails)
+      // ignore: unawaited_futures
+      () async {
+        try {
+          await dio.get('/auth/me');
+        } catch (_) {}
+      }();
 
       if (!mounted) return;
       context.go(_safeRedirect(widget.redirectTo));
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      final extra = _extractBackendError(e.response?.data);
+      final extra = _extractBackendError(e.response?.data).trim();
       setState(() {
-        _error = 'Login failed (${status ?? 'no status'}). ${extra.trim()}'.trim();
+        _error = extra.isEmpty ? 'Login failed (${status ?? 'no status'}).' : 'Login failed (${status ?? 'no status'}). $extra';
       });
     } catch (e) {
       setState(() => _error = 'Login failed. $e');

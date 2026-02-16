@@ -10,60 +10,62 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map) return Map<String, dynamic>.from(v as Map);
+  throw Exception('Unexpected response');
+}
+
+List<Map<String, dynamic>> _asListOfMaps(dynamic v) {
+  if (v is List) return v.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  throw Exception('Unexpected response');
+}
+
+/// Some endpoints return { data: ... }. Some return raw data.
+/// This helper unwraps when needed.
+dynamic _unwrapData(dynamic v) {
+  if (v is Map && v['data'] != null) return v['data'];
+  return v;
+}
+
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
 
-  Response res;
-  try {
-    res = await dio.get('/users/me');
-  } catch (_) {
-    res = await dio.get('/auth/me');
-  }
-
-  final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data as Map);
-  throw Exception('Unexpected response');
+  // Canonical backend route is /auth/me. It returns { data: user }.
+  final res = await dio.get('/auth/me');
+  final body = _unwrapData(res.data);
+  return _asMap(body);
 });
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/draft');
-  final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data as Map);
-  throw Exception('Unexpected response');
+  final body = _unwrapData(res.data);
+  return _asMap(body);
 });
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/me');
-  final data = res.data;
-
-  if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-  }
-  throw Exception('Unexpected response');
+  final body = _unwrapData(res.data);
+  return _asListOfMaps(body);
 });
 
 final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/saves/me');
-  final data = res.data;
-
-  if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-  }
-  throw Exception('Unexpected response');
+  final body = _unwrapData(res.data);
+  return _asListOfMaps(body);
 });
 
 final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/comments/me');
-  final data = res.data;
 
-  if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-  }
-  throw Exception('Unexpected response');
+  // Locked by backend: GET /v1/replies/me
+  final res = await dio.get('/replies/me');
+
+  // Service returns { data: [...], nextCursor }. unwrapData() yields the list.
+  final body = _unwrapData(res.data);
+  return _asListOfMaps(body);
 });
 
 class MeScreen extends ConsumerStatefulWidget {
@@ -242,6 +244,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     ref.invalidate(_mePostsProvider);
   }
 
+  // LOCKED: Replies are posts. Edit/delete replies via /posts/:id.
   Future<void> _editReply({
     required BuildContext context,
     required String id,
@@ -271,12 +274,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-
-    try {
-      await dio.patch('/replies/$id', data: {'text': ctl.text.trim()});
-    } catch (_) {
-      await dio.patch('/comments/$id', data: {'text': ctl.text.trim()});
-    }
+    await dio.patch('/posts/$id', data: {'text': ctl.text.trim()});
 
     ref.invalidate(_meRepliesProvider);
 
@@ -286,13 +284,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Future<void> _deleteReply(String id) async {
     final dio = ref.read(dioProvider);
-
-    try {
-      await dio.delete('/replies/$id');
-    } catch (_) {
-      await dio.delete('/comments/$id');
-    }
-
+    await dio.delete('/posts/$id');
     ref.invalidate(_meRepliesProvider);
   }
 
@@ -413,15 +405,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     text: text.isEmpty ? '(empty)' : text,
                     onOpen: null,
                     actions: [
-                      _ItemAction(
-                        label: 'Edit',
-                        onTap: () => _editDraft(context, text),
-                      ),
-                      _ItemAction(
-                        label: 'Discard',
-                        destructive: true,
-                        onTap: () => _discardDraft(context),
-                      ),
+                      _ItemAction(label: 'Edit', onTap: () => _editDraft(context, text)),
+                      _ItemAction(label: 'Discard', destructive: true, onTap: () => _discardDraft(context)),
                     ],
                   );
                 },
@@ -434,9 +419,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
                 data: (items) {
-                  if (items.isEmpty) {
-                    return const AuraCard(child: Text('No posts yet.'));
-                  }
+                  if (items.isEmpty) return const AuraCard(child: Text('No posts yet.'));
 
                   return Column(
                     children: [
@@ -458,15 +441,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 initialText: (it['text'] ?? '').toString(),
                               ),
                             ),
-                            _ItemAction(
-                              label: 'Archive',
-                              onTap: () => _archivePost((it['id'] ?? '').toString()),
-                            ),
-                            _ItemAction(
-                              label: 'Delete',
-                              destructive: true,
-                              onTap: () => _deletePost((it['id'] ?? '').toString()),
-                            ),
+                            _ItemAction(label: 'Archive', onTap: () => _archivePost((it['id'] ?? '').toString())),
+                            _ItemAction(label: 'Delete', destructive: true, onTap: () => _deletePost((it['id'] ?? '').toString())),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s12),
@@ -476,7 +452,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 },
               ),
 
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s20),
           Text('Saves', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
           ref.watch(_meSavesProvider).when(
@@ -505,7 +481,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 },
               ),
 
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s20),
           Text('Replies', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
           ref.watch(_meRepliesProvider).when(
@@ -522,7 +498,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           subtitle: (it['id'] ?? '').toString(),
                           text: (it['text'] ?? '').toString(),
                           onOpen: () {
-                            final postId = (it['postId'] ?? '').toString();
+                            final postId = (it['postId'] ?? it['replyToPostId'] ?? '').toString();
                             if (postId.isNotEmpty) context.push('/post/$postId');
                           },
                           actions: [
@@ -534,11 +510,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 initialText: (it['text'] ?? '').toString(),
                               ),
                             ),
-                            _ItemAction(
-                              label: 'Delete',
-                              destructive: true,
-                              onTap: () => _deleteReply((it['id'] ?? '').toString()),
-                            ),
+                            _ItemAction(label: 'Delete', destructive: true, onTap: () => _deleteReply((it['id'] ?? '').toString())),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s12),
@@ -597,9 +569,7 @@ class _ItemCard extends StatelessWidget {
                 for (final a in actions)
                   OutlinedButton(
                     onPressed: a.onTap,
-                    style: a.destructive
-                        ? OutlinedButton.styleFrom(foregroundColor: Colors.red)
-                        : null,
+                    style: a.destructive ? OutlinedButton.styleFrom(foregroundColor: Colors.red) : null,
                     child: Text(a.label),
                   ),
               ],

@@ -1,16 +1,22 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthRepository {
   AuthRepository(this._dio);
 
   final Dio _dio;
 
+  /// Register
+  /// - Web: uses httpOnly refresh cookie; response typically { user, accessToken }
+  /// - Non-web: requests body transport so we also receive refreshToken in body
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
     String? handle,
     String? displayName,
   }) async {
+    final wantsBodyTransport = !kIsWeb;
+
     final res = await _dio.post(
       '/auth/register',
       data: {
@@ -19,6 +25,7 @@ class AuthRepository {
         if (handle != null && handle.trim().isNotEmpty) 'handle': handle.trim(),
         if (displayName != null && displayName.trim().isNotEmpty) 'displayName': displayName.trim(),
       },
+      options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
     );
 
     final data = res.data;
@@ -26,13 +33,19 @@ class AuthRepository {
     throw Exception('Unexpected response');
   }
 
+  /// Login
+  /// - Web: uses httpOnly refresh cookie; response typically { user, accessToken }
+  /// - Non-web: requests body transport so we also receive refreshToken in body
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
+    final wantsBodyTransport = !kIsWeb;
+
     final res = await _dio.post(
       '/auth/login',
       data: {'email': email, 'password': password},
+      options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
     );
 
     final data = res.data;
@@ -40,26 +53,26 @@ class AuthRepository {
     throw Exception('Unexpected response');
   }
 
-  Future<Map<String, dynamic>> refresh({
-    String? refreshToken,
-    bool bodyTransport = false,
-  }) async {
-    // If bodyTransport=true, send refreshToken in body and ask server for body transport.
+  /// Refresh access token
+  /// - Web: cookie-only refresh; returns { accessToken }
+  /// - Non-web: send refreshToken in body + request body transport, returns { accessToken, refreshToken, ... }
+  Future<Map<String, dynamic>> refresh({String? refreshToken}) async {
     final headers = <String, dynamic>{};
-    dynamic data = <String, dynamic>{};
+    dynamic body = <String, dynamic>{};
 
-    if (bodyTransport) {
-      if (refreshToken == null || refreshToken.trim().isEmpty) {
-        throw StateError('Missing refreshToken for body transport');
+    if (!kIsWeb) {
+      final rt = (refreshToken ?? '').trim();
+      if (rt.isEmpty) {
+        throw StateError('Missing refreshToken (non-web refresh requires body token)');
       }
       headers['x-token-transport'] = 'body';
-      data = {'refreshToken': refreshToken.trim()};
+      body = {'refreshToken': rt};
     }
 
     final res = await _dio.post(
       '/auth/refresh',
-      data: data,
-      options: Options(headers: headers),
+      data: body,
+      options: headers.isEmpty ? null : Options(headers: headers),
     );
 
     final out = res.data;
@@ -67,15 +80,44 @@ class AuthRepository {
     throw Exception('Unexpected response');
   }
 
-  Future<void> logout({String? refreshToken}) async {
-    dynamic data = <String, dynamic>{};
-    if (refreshToken != null && refreshToken.trim().isNotEmpty) {
-      data = {'refreshToken': refreshToken.trim()};
-    }
-    await _dio.post('/auth/logout', data: data);
+  /// Logout requires userId + refresh token (cookie or body)
+  Future<Map<String, dynamic>> logout({
+    required String userId,
+    String? refreshToken,
+  }) async {
+    final data = <String, dynamic>{
+      'userId': userId.trim(),
+      if (!kIsWeb && refreshToken != null && refreshToken.trim().isNotEmpty) 'refreshToken': refreshToken.trim(),
+    };
+
+    final res = await _dio.post('/auth/logout', data: data);
+
+    final out = res.data;
+    if (out is Map) return Map<String, dynamic>.from(out as Map);
+    return {'ok': true};
   }
 
-  Future<void> logoutAll() async {
-    await _dio.post('/auth/logout-all');
+  Future<Map<String, dynamic>> logoutAll({required String userId}) async {
+    final res = await _dio.post('/auth/logout-all', data: {'userId': userId.trim()});
+
+    final out = res.data;
+    if (out is Map) return Map<String, dynamic>.from(out as Map);
+    return {'ok': true};
+  }
+
+  /// GET /auth/me returns: { data: ... }
+  Future<Map<String, dynamic>> me() async {
+    final res = await _dio.get('/auth/me');
+
+    final raw = res.data;
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw as Map);
+      final inner = map['data'];
+      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+      // fallback if backend shape changes
+      return map;
+    }
+
+    throw Exception('Unexpected response');
   }
 }
