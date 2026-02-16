@@ -1,0 +1,25 @@
+# Flutter / Dart
+.dart_tool/
+.buildlog/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+
+# Backend
+backend/node_modules/
+backend/dist/
+backend/.env
+
+# Environment files
+.env
+**/.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Experimental folders
+frontend-clean/
