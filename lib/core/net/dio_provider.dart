@@ -1,3 +1,4 @@
+// lib/core/net/dio_provider.dart
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -5,7 +6,8 @@ import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/token_store.dart';
+import '../auth/session_providers.dart'; // ✅ tokenStoreProvider lives here
+import '../auth/token_store.dart'; // ✅ TokenStore type
 
 /// ✅ Canonical routing rule (LOCKED):
 /// - Dio baseUrl ALWAYS includes `/v1`.
