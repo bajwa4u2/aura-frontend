@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
@@ -25,6 +28,35 @@ List<Map<String, dynamic>> _asListOfMaps(dynamic v) {
 dynamic _unwrapData(dynamic v) {
   if (v is Map && v['data'] != null) return v['data'];
   return v;
+}
+
+String _stripTrailingSlash(String s) {
+  var out = s;
+  while (out.endsWith('/')) {
+    out = out.substring(0, out.length - 1);
+  }
+  return out;
+}
+
+/// Dio baseUrl is always ".../v1". Uploads live at root "/uploads".
+/// This converts:
+/*  baseUrl: https://host/v1
+    avatarUrl: /uploads/x.jpg
+    => https://host/uploads/x.jpg
+*/
+String _absoluteAvatarUrl({required String baseUrl, required String avatarUrl}) {
+  final raw = avatarUrl.trim();
+  if (raw.isEmpty) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+  // We only expect relative "/uploads/..." from backend.
+  final b = _stripTrailingSlash(baseUrl);
+
+  // If baseUrl ends with "/v1", remove it.
+  final root = b.endsWith('/v1') ? b.substring(0, b.length - 3) : b;
+
+  if (raw.startsWith('/')) return '$root$raw';
+  return '$root/$raw';
 }
 
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
@@ -76,6 +108,44 @@ class MeScreen extends ConsumerStatefulWidget {
 }
 
 class _MeScreenState extends ConsumerState<MeScreen> {
+  Future<void> _pickAndUploadAvatar(BuildContext context) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+
+    if (picked == null) return;
+
+    final Uint8List bytes = await picked.readAsBytes();
+    final String fileName = picked.name.isNotEmpty ? picked.name : 'avatar.jpg';
+
+    final dio = ref.read(dioProvider);
+
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+      ),
+    });
+
+    try {
+      await dio.post('/uploads/avatar', data: formData);
+
+      ref.invalidate(meProfileProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo updated.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
+    }
+  }
+
   Future<void> _editProfile({
     required BuildContext context,
     required String? displayName,
@@ -128,11 +198,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.put(
+
+    // CLEAR-TO-NULL behavior:
+    // - If user leaves a field empty, we send null to clear it in DB.
+    // - If user writes something, we send the trimmed string.
+    final dn = nameCtl.text.trim();
+    final bb = bioCtl.text.trim();
+
+    await dio.patch(
       '/users/me',
       data: {
-        'displayName': nameCtl.text.trim().isEmpty ? null : nameCtl.text.trim(),
-        'bio': bioCtl.text.trim().isEmpty ? null : bioCtl.text.trim(),
+        'displayName': dn.isEmpty ? null : dn,
+        'bio': bb.isEmpty ? null : bb,
       },
     );
 
@@ -349,13 +426,41 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               final bio = (me['bio'] ?? '').toString();
               final email = (me['email'] ?? '').toString();
 
+              final dio = ref.read(dioProvider);
+              final baseUrl = dio.options.baseUrl.toString();
+              final avatarRaw = (me['avatarUrl'] ?? '').toString();
+              final avatarUrl = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarRaw);
+
               return AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(displayName.isEmpty ? '@$handle' : displayName, style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s8),
-                    if (handle.isNotEmpty) Text('@$handle', style: AuraText.muted),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 34,
+                          backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                          child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 34) : null,
+                        ),
+                        const SizedBox(width: AuraSpace.s16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(displayName.isEmpty ? '@$handle' : displayName, style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s6),
+                              if (handle.isNotEmpty) Text('@$handle', style: AuraText.muted),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                    TextButton(
+                      onPressed: () => _pickAndUploadAvatar(context),
+                      child: const Text('Change photo'),
+                    ),
                     if (email.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s6),
                       Text(email, style: AuraText.muted),
