@@ -33,7 +33,15 @@ GoRouter buildRouter(WidgetRef ref) {
     initialLocation: '/public',
     refreshListenable: ref.watch(tokenStoreProvider),
     redirect: (context, state) {
-      final isAuthed = ref.read(isAuthedProvider);
+      final authStatus = ref.read(authStatusProvider);
+
+      // ✅ CRITICAL: during startup restore, do not redirect anywhere.
+      // This prevents "false logout" before SharedPreferences load completes.
+      if (authStatus == AuthStatus.loading) {
+        return null;
+      }
+
+      final isAuthed = (authStatus == AuthStatus.authed);
 
       final loc = state.uri.toString();
       final path = state.uri.path;
