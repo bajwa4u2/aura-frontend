@@ -122,15 +122,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
-  void _fillTestAccount() {
-    _email.text = 'test@aura.local';
-    _password.text = 'Passw0rd!';
-    setState(() => _error = null);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final redirect = widget.redirectTo ?? '/me';
     final isAuthed = ref.watch(isAuthedProvider);
     final store = ref.watch(tokenStoreProvider);
 
@@ -223,25 +216,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         border: InputBorder.none,
                       ),
                     ),
+                    SizedBox(height: AuraSpace.s14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _busy ? null : _login,
+                        child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                      ),
+                    ),
+                    SizedBox(height: AuraSpace.s10),
+                    TextButton(
+                      onPressed: _busy ? null : () => context.go('/register'),
+                      child: const Text('Create an account'),
+                    ),
                   ],
                 ),
-              ),
-              SizedBox(height: AuraSpace.s18),
-              FilledButton(
-                onPressed: _busy ? null : _login,
-                child: _busy
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Login'),
-              ),
-              SizedBox(height: AuraSpace.s10),
-              TextButton(
-                onPressed: _busy ? null : () => context.push('/register?redirect=${Uri.encodeComponent(redirect)}'),
-                child: const Text('Create account'),
-              ),
-              SizedBox(height: AuraSpace.s6),
-              TextButton(
-                onPressed: _busy ? null : _fillTestAccount,
-                child: const Text('Use test account'),
               ),
             ],
           ),

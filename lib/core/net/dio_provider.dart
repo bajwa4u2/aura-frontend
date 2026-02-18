@@ -15,7 +15,8 @@ import '../auth/token_store.dart'; // ✅ TokenStore type
 ///   Example: dio.get('/users/me')  ✅
 ///   NOT:     dio.get('/v1/users/me') ❌
 ///
-/// Why: eliminates random 404s from mixed conventions.
+/// This file also includes a safety guard: if any caller accidentally includes `/v1`,
+/// we strip it to prevent `/v1/v1/...` 404s.
 final dioProvider = Provider<Dio>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
 
@@ -77,12 +78,10 @@ String _normalizeApiV1BaseUrl(String raw) {
   var u = raw.trim();
   if (u.isEmpty) return u;
 
-  // Trim trailing slashes
   while (u.endsWith('/')) {
     u = u.substring(0, u.length - 1);
   }
 
-  // If user passed /v1 already, remove it (we’ll add back cleanly)
   if (u.endsWith('/v1')) {
     u = u.substring(0, u.length - 3);
     while (u.endsWith('/')) {
@@ -99,11 +98,9 @@ class _AuthInterceptor extends Interceptor {
   final Dio dio;
   final TokenStore tokenStore;
 
-  // Shared refresh for concurrent 401s: no skipping, no token clearing mid-refresh.
   Completer<void>? _refreshCompleter;
 
   bool _isAuthPath(String path) {
-    // requestOptions.path should be like '/auth/login'
     return path.contains('/auth/login') ||
         path.contains('/auth/register') ||
         path.contains('/auth/refresh') ||
@@ -115,6 +112,13 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // ✅ SAFETY: Prevent /v1/v1/... if a caller accidentally includes /v1 in the path.
+    if (options.path.startsWith('/v1/')) {
+      options.path = options.path.substring(3); // "/v1" is 3 chars
+    } else if (options.path == '/v1') {
+      options.path = '/';
+    }
+
     final token = tokenStore.accessToken;
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -128,18 +132,15 @@ class _AuthInterceptor extends Interceptor {
     final req = err.requestOptions;
     final path = req.path;
 
-    // Only handle auth failures here.
     if (status != 401 || _isAuthPath(path)) {
       return handler.next(err);
     }
 
-    // If we don't have a session, we can't refresh meaningfully.
     if (!tokenStore.isAuthed) {
       await tokenStore.clear();
       return handler.next(err);
     }
 
-    // Avoid infinite retry loops: only retry once per request.
     final alreadyRetried = (req.extra['aura_retried'] == true);
     if (alreadyRetried) {
       await tokenStore.clear();
@@ -147,7 +148,6 @@ class _AuthInterceptor extends Interceptor {
     }
 
     try {
-      // If a refresh is already running, WAIT for it (do not clear tokens).
       if (_refreshCompleter != null) {
         await _refreshCompleter!.future;
 
@@ -166,7 +166,6 @@ class _AuthInterceptor extends Interceptor {
         return handler.resolve(retryRes);
       }
 
-      // Start shared refresh.
       _refreshCompleter = Completer<void>();
 
       final newAccess = await _performRefresh();
@@ -177,7 +176,6 @@ class _AuthInterceptor extends Interceptor {
       final retryRes = await _retryWithAccessToken(req, newAccess);
       return handler.resolve(retryRes);
     } catch (_) {
-      // Release any waiters, then clear.
       if (_refreshCompleter != null && !_refreshCompleter!.isCompleted) {
         _refreshCompleter!.complete();
       }
@@ -192,7 +190,6 @@ class _AuthInterceptor extends Interceptor {
     final refreshHeaders = <String, dynamic>{};
     dynamic refreshBody = <String, dynamic>{};
 
-    // Non-web requires refresh token in body and asks for body transport.
     if (!kIsWeb) {
       final rt = (tokenStore.refreshToken ?? '').trim();
       if (rt.isEmpty) throw const UnauthorizedException('Missing refresh token (non-web)');
@@ -214,7 +211,6 @@ class _AuthInterceptor extends Interceptor {
     final newAccess = (map['accessToken'] ?? '').toString().trim();
     if (newAccess.isEmpty) throw Exception('Missing accessToken from refresh');
 
-    // If non-web and backend returned refreshToken, persist it too.
     final newRefreshRaw = map['refreshToken'];
     final newRefresh = newRefreshRaw == null ? null : newRefreshRaw.toString().trim();
 
@@ -252,7 +248,6 @@ class _AuthInterceptor extends Interceptor {
   }
 }
 
-/// Local exception type for clearer intent without importing Nest types.
 class UnauthorizedException implements Exception {
   const UnauthorizedException(this.message);
   final String message;

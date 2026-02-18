@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -22,28 +21,30 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
+  final _city = TextEditingController();
+  final _country = TextEditingController();
+
+  final _displayName = TextEditingController();
+  final _handle = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _handle = TextEditingController();
-  final _displayName = TextEditingController();
 
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
+    _city.dispose();
+    _country.dispose();
+    _displayName.dispose();
+    _handle.dispose();
     _email.dispose();
     _password.dispose();
-    _handle.dispose();
-    _displayName.dispose();
     super.dispose();
-  }
-
-  String _safeRedirect(String? r) {
-    final v = (r ?? '').trim();
-    if (v.isEmpty) return '/me';
-    if (!v.startsWith('/')) return '/me';
-    return v;
   }
 
   bool _validHandle(String h) {
@@ -63,13 +64,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return '';
   }
 
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   Future<void> _register() async {
     if (_busy) return;
 
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
+    final city = _city.text.trim();
+    final country = _country.text.trim();
+
+    final displayName = _displayName.text.trim();
+    final handle = _handle.text.trim();
     final email = _email.text.trim();
     final password = _password.text;
-    final handle = _handle.text.trim();
-    final displayName = _displayName.text.trim();
+
+    if (firstName.isEmpty || lastName.isEmpty) {
+      setState(() => _error = 'First name and last name are required.');
+      return;
+    }
 
     if (email.isEmpty || password.isEmpty || handle.isEmpty) {
       setState(() => _error = 'Email, password, and handle are required.');
@@ -95,46 +114,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final dio = ref.read(dioProvider);
 
       final payload = <String, dynamic>{
+        'firstName': firstName,
+        'lastName': lastName,
         'email': email,
         'password': password,
         'handle': handle,
         if (displayName.isNotEmpty) 'displayName': displayName,
+        if (city.isNotEmpty) 'city': city,
+        if (country.isNotEmpty) 'country': country,
       };
 
-      // Backend contract:
-      // - Web: refresh token is httpOnly cookie; body usually { user, accessToken }
-      // - Non-web: request body transport to also receive refreshToken in body
       final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
-      final res = await dio.post('/auth/register', data: payload, options: options);
-
-      final data = res.data;
-      if (data is! Map) throw Exception('Unexpected response');
-
-      final map = Map<String, dynamic>.from(data as Map);
-
-      final access = (map['accessToken'] as String?)?.trim();
-      final refresh = (map['refreshToken'] as String?)?.trim(); // may be null on web (cookie-based)
-
-      if (access == null || access.isEmpty) {
-        throw Exception('Missing accessToken');
-      }
-
-      await ref.read(tokenStoreProvider).setTokens(
-            accessToken: access,
-            refreshToken: (refresh != null && refresh.isNotEmpty) ? refresh : null,
-          );
-
-      // Optional: warm up session validity (won't block navigation if it fails)
-      // ignore: unawaited_futures
-      () async {
-        try {
-          await dio.get('/auth/me');
-        } catch (_) {}
-      }();
+      await dio.post('/auth/register', data: payload, options: options);
 
       if (!mounted) return;
-      context.go(_safeRedirect(widget.redirectTo));
+
+      _snack('Verification email has been sent. Please verify to continue.');
+      context.go('/login');
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       final extra = _extractBackendError(e.response?.data).trim();
@@ -173,10 +170,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   children: [
                     Text('Join Aura', style: AuraText.title),
                     SizedBox(height: AuraSpace.s10),
-                    Text(
-                      'A calm place to read and publish with responsibility.',
-                      style: AuraText.body,
-                    ),
+                    Text('Create your account. We’ll email you a verification link.', style: AuraText.body),
                   ],
                 ),
               ),
@@ -191,10 +185,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: Column(
                   children: [
                     TextField(
+                      controller: _firstName,
+                      inputFormatters: [LengthLimitingTextInputFormatter(40)],
+                      decoration: const InputDecoration(
+                        labelText: 'First name (private)',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    Divider(height: AuraSpace.s16),
+                    TextField(
+                      controller: _lastName,
+                      inputFormatters: [LengthLimitingTextInputFormatter(40)],
+                      decoration: const InputDecoration(
+                        labelText: 'Last name (private)',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    Divider(height: AuraSpace.s16),
+                    TextField(
                       controller: _displayName,
                       inputFormatters: [LengthLimitingTextInputFormatter(40)],
                       decoration: const InputDecoration(
-                        labelText: 'Display name (optional)',
+                        labelText: 'Display name (public, optional)',
                         border: InputBorder.none,
                       ),
                     ),
@@ -207,7 +219,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         LengthLimitingTextInputFormatter(24),
                       ],
                       decoration: const InputDecoration(
-                        labelText: 'Handle (lowercase, a-z 0-9 _)',
+                        labelText: 'Handle (public)',
                         hintText: 'e.g. bajwa4u2',
                         border: InputBorder.none,
                       ),
@@ -226,28 +238,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _password,
                       obscureText: true,
                       decoration: const InputDecoration(
-                        labelText: 'Password (8–72 chars)',
+                        labelText: 'Password',
                         border: InputBorder.none,
                       ),
                     ),
+                    Divider(height: AuraSpace.s16),
+                    TextField(
+                      controller: _city,
+                      inputFormatters: [LengthLimitingTextInputFormatter(60)],
+                      decoration: const InputDecoration(
+                        labelText: 'City (optional, private)',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    Divider(height: AuraSpace.s16),
+                    TextField(
+                      controller: _country,
+                      inputFormatters: [LengthLimitingTextInputFormatter(60)],
+                      decoration: const InputDecoration(
+                        labelText: 'Country (optional, private)',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    SizedBox(height: AuraSpace.s14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _busy ? null : _register,
+                        child: Text(_busy ? 'Creating…' : 'Create account'),
+                      ),
+                    ),
+                    SizedBox(height: AuraSpace.s10),
+                    TextButton(
+                      onPressed: _busy ? null : () => context.go('/login'),
+                      child: const Text('Already have an account? Login'),
+                    ),
                   ],
                 ),
-              ),
-              SizedBox(height: AuraSpace.s18),
-              FilledButton(
-                onPressed: _busy ? null : _register,
-                child: _busy
-                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Create account'),
-              ),
-              SizedBox(height: AuraSpace.s10),
-              TextButton(
-                onPressed: _busy
-                    ? null
-                    : () => context.go(
-                          '/login?redirect=${Uri.encodeComponent(_safeRedirect(widget.redirectTo))}',
-                        ),
-                child: const Text('Already have an account? Login'),
               ),
             ],
           ),
@@ -261,7 +288,6 @@ class _LowercaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final lower = newValue.text.toLowerCase();
-    if (lower == newValue.text) return newValue;
     return newValue.copyWith(
       text: lower,
       selection: newValue.selection,
