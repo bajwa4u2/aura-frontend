@@ -47,7 +47,11 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     try {
       final dio = ref.read(dioProvider);
+
+      // Backend standardized: { success: true, data: ... }
       await dio.post('/auth/resend-verification');
+
+      if (!mounted) return;
       _snack('Verification email resent. Check inbox/spam.');
     } on DioException catch (e) {
       final status = e.response?.statusCode;
@@ -102,7 +106,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       ref.invalidate(emailVerifiedProvider);
 
       if (!mounted) return;
-      context.go('/home');
+      context.go('/login');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

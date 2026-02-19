@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/session_providers.dart';
+import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -31,6 +31,19 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     );
   }
 
+  /// Backend now standardizes: { success: true, data: ... }.
+  /// Keep this defensive so UI survives older / raw responses too.
+  Map<String, dynamic>? _unwrapMap(dynamic v) {
+    if (v is Map<String, dynamic>) {
+      if (v['success'] == true && v['data'] is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(v['data'] as Map<String, dynamic>);
+      }
+      return v;
+    }
+    if (v is Map) return Map<String, dynamic>.from(v as Map);
+    return null;
+  }
+
   Future<void> _resend() async {
     if (_busy) return;
     setState(() {
@@ -43,7 +56,8 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
       final dio = ref.read(dioProvider);
 
       // Try to pass email if we can, but backend may not require it.
-      final me = await ref.read(meForGateProvider.future);
+      final meRaw = await ref.read(meForGateProvider.future);
+      final me = _unwrapMap(meRaw);
       final email = (me?['email'] ?? '').toString().trim();
 
       final data = <String, dynamic>{};
@@ -98,17 +112,21 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
-
               meAsync.when(
-                loading: () => const AuraCard(child: Padding(
-                  padding: EdgeInsets.all(AuraSpace.s16),
-                  child: Text('Loading account…'),
-                )),
-                error: (e, _) => AuraCard(child: Padding(
-                  padding: const EdgeInsets.all(AuraSpace.s16),
-                  child: Text('Could not load account: $e'),
-                )),
-                data: (me) {
+                loading: () => const AuraCard(
+                  child: Padding(
+                    padding: EdgeInsets.all(AuraSpace.s16),
+                    child: Text('Loading account…'),
+                  ),
+                ),
+                error: (e, _) => AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: Text('Could not load account: $e'),
+                  ),
+                ),
+                data: (meRaw) {
+                  final me = _unwrapMap(meRaw);
                   final email = (me?['email'] ?? '').toString().trim();
                   return AuraCard(
                     child: Padding(
@@ -130,9 +148,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: AuraSpace.s14),
-
               if (_error != null)
                 AuraCard(
                   child: Padding(
@@ -140,7 +156,6 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     child: Text(_error!, style: AuraText.body.copyWith(color: Colors.red)),
                   ),
                 ),
-
               if (_info != null) ...[
                 const SizedBox(height: AuraSpace.s12),
                 AuraCard(
@@ -150,9 +165,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                   ),
                 ),
               ],
-
               const SizedBox(height: AuraSpace.s14),
-
               AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
@@ -165,11 +178,13 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                         child: Text(_busy ? 'Sending…' : 'Resend verification email'),
                       ),
                       OutlinedButton(
-                        onPressed: _busy ? null : () {
-                          // If user already verified in another tab, a refresh will release gate.
-                          ref.invalidate(meForGateProvider);
-                          _snack('Refreshing…');
-                        },
+                        onPressed: _busy
+                            ? null
+                            : () {
+                                // If user already verified in another tab, a refresh will release gate.
+                                ref.invalidate(meForGateProvider);
+                                _snack('Refreshing…');
+                              },
                         child: const Text('I already verified'),
                       ),
                       OutlinedButton(

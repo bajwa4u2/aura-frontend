@@ -9,30 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/session_providers.dart'; // tokenStoreProvider lives here
 import '../auth/token_store.dart';
 
-/// ✅ Canonical routing rule (LOCKED):
-/// - Dio baseUrl ALWAYS includes `/v1`.
-/// - All request paths across the app MUST be written WITHOUT `/v1`.
-///   Example: dio.get('/users/me')  ✅
-///   NOT:     dio.get('/v1/users/me') ❌
-///
-/// This file also includes a safety guard: if any caller accidentally includes `/v1`,
-/// we strip it to prevent `/v1/v1/...` 404s.
 final dioProvider = Provider<Dio>((ref) {
-  // IMPORTANT:
-  // We still "watch" here so when the token store changes, this provider can rebuild
-  // if needed. But the interceptor itself must NOT capture a stale instance.
   ref.watch(tokenStoreProvider);
 
-  // Explicit override (dev/local) via:
-  // flutter run --dart-define=API_BASE_URL=http://localhost:3000
   final configured = const String.fromEnvironment('API_BASE_URL', defaultValue: '').trim();
-
-  // Default for every mode (debug/release/web) unless explicitly overridden.
   const prodDefault = 'https://api.aura.bajwadynesty.us';
-
   final baseRoot = configured.isNotEmpty ? configured : prodDefault;
 
-  // Base URL is ALWAYS .../v1
   final baseUrl = _normalizeApiV1BaseUrl(baseRoot);
 
   final dio = Dio(
@@ -45,7 +28,6 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  // Web: allow refresh cookie to be sent/received.
   if (kIsWeb) {
     final adapter = dio.httpClientAdapter;
     if (adapter is BrowserHttpClientAdapter) {
@@ -53,8 +35,6 @@ final dioProvider = Provider<Dio>((ref) {
     }
   }
 
-  // Debug logging:
-  // For the 401 issue, requestHeader=true is very useful to confirm Authorization is present.
   dio.interceptors.add(
     LogInterceptor(
       request: true,
@@ -67,20 +47,11 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  // ✅ Critical: interceptor reads from provider at request time
-  // AND waits for TokenStore.load() to finish.
   dio.interceptors.add(_AuthInterceptor(dio: dio, ref: ref));
 
   return dio;
 });
 
-/// Returns a clean API base that ALWAYS ends with `/v1`.
-/// Accepts:
-/// - https://host
-/// - https://host/
-/// - https://host/v1
-/// and normalizes all to:
-/// - https://host/v1
 String _normalizeApiV1BaseUrl(String raw) {
   var u = raw.trim();
   if (u.isEmpty) return u;
@@ -97,6 +68,24 @@ String _normalizeApiV1BaseUrl(String raw) {
   }
 
   return '$u/v1';
+}
+
+Map<String, dynamic> _unwrapSuccessEnvelope(dynamic payload) {
+  if (payload is! Map) throw Exception('Unexpected response');
+  final m = Map<String, dynamic>.from(payload as Map);
+
+  // Canonical: { success: true, data: ... }
+  if (m['success'] == true) {
+    final inner = m['data'];
+    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+    throw Exception('Unexpected success envelope: data is not a map');
+  }
+
+  // Legacy: { data: ... }
+  final inner = m['data'];
+  if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+
+  return m;
 }
 
 class _AuthInterceptor extends Interceptor {
@@ -121,14 +110,12 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // ✅ SAFETY: Prevent /v1/v1/... if a caller accidentally includes /v1 in the path.
     if (options.path.startsWith('/v1/')) {
-      options.path = options.path.substring(3); // "/v1" is 3 chars
+      options.path = options.path.substring(3);
     } else if (options.path == '/v1') {
       options.path = '/';
     }
 
-    // ✅ CRITICAL: wait for TokenStore.load() to finish before reading tokens.
     final store = _tokenStore;
     if (!store.isLoaded) {
       await store.waitUntilLoaded();
@@ -138,7 +125,6 @@ class _AuthInterceptor extends Interceptor {
     if (token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     } else {
-      // Avoid leaving a stale Authorization header around
       options.headers.remove('Authorization');
     }
 
@@ -157,13 +143,11 @@ class _AuthInterceptor extends Interceptor {
 
     final tokenStore = _tokenStore;
 
-    // If not authed, clear and continue.
     if (!tokenStore.isAuthed) {
       await tokenStore.clear();
       return handler.next(err);
     }
 
-    // Prevent infinite retry loops
     final alreadyRetried = (req.extra['aura_retried'] == true);
     if (alreadyRetried) {
       await tokenStore.clear();
@@ -171,7 +155,6 @@ class _AuthInterceptor extends Interceptor {
     }
 
     try {
-      // If refresh is already running, wait for it.
       if (_refreshCompleter != null) {
         await _refreshCompleter!.future;
 
@@ -217,7 +200,6 @@ class _AuthInterceptor extends Interceptor {
     final refreshHeaders = <String, dynamic>{};
     dynamic refreshBody = <String, dynamic>{};
 
-    // Web uses HttpOnly cookie refresh; mobile uses refreshToken in body.
     if (!kIsWeb) {
       final rt = (tokenStore.refreshToken ?? '').trim();
       if (rt.isEmpty) throw const UnauthorizedException('Missing refresh token (non-web)');
@@ -231,10 +213,7 @@ class _AuthInterceptor extends Interceptor {
       options: refreshHeaders.isEmpty ? null : Options(headers: refreshHeaders),
     );
 
-    final payload = refreshRes.data;
-    if (payload is! Map) throw Exception('Unexpected refresh response');
-
-    final map = Map<String, dynamic>.from(payload as Map);
+    final map = _unwrapSuccessEnvelope(refreshRes.data);
 
     final newAccess = (map['accessToken'] ?? '').toString().trim();
     if (newAccess.isEmpty) throw Exception('Missing accessToken from refresh');
