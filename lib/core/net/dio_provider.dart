@@ -6,8 +6,8 @@ import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/session_providers.dart'; // ✅ tokenStoreProvider lives here
-import '../auth/token_store.dart'; // ✅ TokenStore type
+import '../auth/session_providers.dart'; // tokenStoreProvider lives here
+import '../auth/token_store.dart';
 
 /// ✅ Canonical routing rule (LOCKED):
 /// - Dio baseUrl ALWAYS includes `/v1`.
@@ -18,7 +18,10 @@ import '../auth/token_store.dart'; // ✅ TokenStore type
 /// This file also includes a safety guard: if any caller accidentally includes `/v1`,
 /// we strip it to prevent `/v1/v1/...` 404s.
 final dioProvider = Provider<Dio>((ref) {
-  final tokenStore = ref.watch(tokenStoreProvider);
+  // IMPORTANT:
+  // We still "watch" here so when the token store changes, this provider can rebuild
+  // if needed. But the interceptor itself must NOT capture a stale instance.
+  ref.watch(tokenStoreProvider);
 
   // Explicit override (dev/local) via:
   // flutter run --dart-define=API_BASE_URL=http://localhost:3000
@@ -50,10 +53,12 @@ final dioProvider = Provider<Dio>((ref) {
     }
   }
 
+  // Debug logging:
+  // For the 401 issue, requestHeader=true is very useful to confirm Authorization is present.
   dio.interceptors.add(
     LogInterceptor(
       request: true,
-      requestHeader: false,
+      requestHeader: kDebugMode,
       requestBody: false,
       responseHeader: false,
       responseBody: false,
@@ -62,7 +67,8 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  dio.interceptors.add(_AuthInterceptor(dio: dio, tokenStore: tokenStore));
+  // ✅ Critical change: pass ref, NOT a captured TokenStore instance.
+  dio.interceptors.add(_AuthInterceptor(dio: dio, ref: ref));
 
   return dio;
 });
@@ -93,12 +99,14 @@ String _normalizeApiV1BaseUrl(String raw) {
 }
 
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor({required this.dio, required this.tokenStore});
+  _AuthInterceptor({required this.dio, required this.ref});
 
   final Dio dio;
-  final TokenStore tokenStore;
+  final Ref ref;
 
   Completer<void>? _refreshCompleter;
+
+  TokenStore get _tokenStore => ref.read(tokenStoreProvider);
 
   bool _isAuthPath(String path) {
     return path.contains('/auth/login') ||
@@ -119,10 +127,14 @@ class _AuthInterceptor extends Interceptor {
       options.path = '/';
     }
 
-    final token = tokenStore.accessToken;
-    if (token != null && token.isNotEmpty) {
+    final token = (_tokenStore.accessToken ?? '').trim();
+    if (token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      // Avoid leaving a stale Authorization header around
+      options.headers.remove('Authorization');
     }
+
     handler.next(options);
   }
 
@@ -136,11 +148,15 @@ class _AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    final tokenStore = _tokenStore;
+
+    // If not authed, clear and continue.
     if (!tokenStore.isAuthed) {
       await tokenStore.clear();
       return handler.next(err);
     }
 
+    // Prevent infinite retry loops
     final alreadyRetried = (req.extra['aura_retried'] == true);
     if (alreadyRetried) {
       await tokenStore.clear();
@@ -148,17 +164,19 @@ class _AuthInterceptor extends Interceptor {
     }
 
     try {
+      // If refresh is already running, wait for it.
       if (_refreshCompleter != null) {
         await _refreshCompleter!.future;
 
-        if (!tokenStore.isAuthed) {
-          await tokenStore.clear();
+        final afterWaitStore = _tokenStore;
+        if (!afterWaitStore.isAuthed) {
+          await afterWaitStore.clear();
           return handler.next(err);
         }
 
-        final access = (tokenStore.accessToken ?? '').trim();
+        final access = (afterWaitStore.accessToken ?? '').trim();
         if (access.isEmpty) {
-          await tokenStore.clear();
+          await afterWaitStore.clear();
           return handler.next(err);
         }
 
@@ -181,15 +199,18 @@ class _AuthInterceptor extends Interceptor {
       }
       _refreshCompleter = null;
 
-      await tokenStore.clear();
+      await _tokenStore.clear();
       return handler.next(err);
     }
   }
 
   Future<String> _performRefresh() async {
+    final tokenStore = _tokenStore;
+
     final refreshHeaders = <String, dynamic>{};
     dynamic refreshBody = <String, dynamic>{};
 
+    // Web uses HttpOnly cookie refresh; mobile uses refreshToken in body.
     if (!kIsWeb) {
       final rt = (tokenStore.refreshToken ?? '').trim();
       if (rt.isEmpty) throw const UnauthorizedException('Missing refresh token (non-web)');
