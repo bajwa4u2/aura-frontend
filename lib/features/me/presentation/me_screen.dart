@@ -1,103 +1,72 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
-Map<String, dynamic> _asMap(dynamic v) {
-  if (v is Map) return Map<String, dynamic>.from(v as Map);
-  throw Exception('Unexpected response');
-}
-
-List<Map<String, dynamic>> _asListOfMaps(dynamic v) {
-  if (v is List) return v.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-  throw Exception('Unexpected response');
-}
-
-/// Some endpoints return { data: ... }. Some return raw data.
-/// This helper unwraps when needed.
-dynamic _unwrapData(dynamic v) {
-  if (v is Map && v['data'] != null) return v['data'];
-  return v;
-}
-
-String _stripTrailingSlash(String s) {
-  var out = s;
-  while (out.endsWith('/')) {
-    out = out.substring(0, out.length - 1);
-  }
-  return out;
-}
-
-/// Dio baseUrl is always ".../v1". Uploads live at root "/uploads".
-/// This converts:
-/*  baseUrl: https://host/v1
-    avatarUrl: /uploads/x.jpg
-    => https://host/uploads/x.jpg
-*/
-String _absoluteAvatarUrl({required String baseUrl, required String avatarUrl}) {
-  final raw = avatarUrl.trim();
-  if (raw.isEmpty) return '';
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-
-  // We only expect relative "/uploads/..." from backend.
-  final b = _stripTrailingSlash(baseUrl);
-
-  // If baseUrl ends with "/v1", remove it.
-  final root = b.endsWith('/v1') ? b.substring(0, b.length - 3) : b;
-
-  if (raw.startsWith('/')) return '$root$raw';
-  return '$root/$raw';
-}
-
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
 
-  // Canonical backend route is /auth/me. It returns { data: user }.
-  final res = await dio.get('/auth/me');
-  final body = _unwrapData(res.data);
-  return _asMap(body);
+  Response res;
+  try {
+    res = await dio.get('/users/me');
+  } catch (_) {
+    // Fallback (older path) if needed
+    res = await dio.get('/auth/me');
+  }
+
+  final data = res.data;
+  if (data is Map) return Map<String, dynamic>.from(data as Map);
+  throw Exception('Unexpected response');
 });
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/draft');
-  final body = _unwrapData(res.data);
-  return _asMap(body);
+  final data = res.data;
+  if (data is Map) return Map<String, dynamic>.from(data as Map);
+  throw Exception('Unexpected response');
 });
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/posts/me');
-  final body = _unwrapData(res.data);
-  return _asListOfMaps(body);
+  final res = await dio.get('/posts/mine');
+  final data = res.data;
+  if (data is List) {
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+  throw Exception('Unexpected response');
 });
 
 final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/saves/me');
-  final body = _unwrapData(res.data);
-  return _asListOfMaps(body);
+  final res = await dio.get('/saves', queryParameters: {'limit': 12});
+  final data = res.data;
+  if (data is List) {
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+  throw Exception('Unexpected response');
 });
 
 final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-
-  // Locked by backend: GET /v1/replies/me
-  final res = await dio.get('/replies/me');
-
-  // Service returns { data: [...], nextCursor }. unwrapData() yields the list.
-  final body = _unwrapData(res.data);
-  return _asListOfMaps(body);
+  final res = await dio.get('/replies/mine');
+  final data = res.data;
+  if (data is List) {
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+  throw Exception('Unexpected response');
 });
 
 class MeScreen extends ConsumerStatefulWidget {
@@ -108,36 +77,62 @@ class MeScreen extends ConsumerStatefulWidget {
 }
 
 class _MeScreenState extends ConsumerState<MeScreen> {
+  bool _busyLogout = false;
+
+  String _absoluteAvatarUrl({required String baseUrl, required String avatarUrl}) {
+    final u = avatarUrl.trim();
+    if (u.isEmpty) return '';
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+
+    // Dio baseUrl includes /v1
+    final root = baseUrl.replaceAll(RegExp(r'/v1/?$'), '');
+    if (u.startsWith('/')) return '$root$u';
+    return '$root/$u';
+  }
+
   Future<void> _pickAndUploadAvatar(BuildContext context) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
-
-    if (picked == null) return;
-
-    final Uint8List bytes = await picked.readAsBytes();
-    final String fileName = picked.name.isNotEmpty ? picked.name : 'avatar.jpg';
-
-    final dio = ref.read(dioProvider);
-
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: fileName,
-      ),
-    });
-
     try {
-      await dio.post('/uploads/avatar', data: formData);
+      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+      if (picked == null) return;
+
+      Uint8List bytes = await picked.readAsBytes();
+
+      // Web: we keep bytes; mobile: same.
+      final dio = ref.read(dioProvider);
+
+      final form = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: picked.name.isNotEmpty ? picked.name : 'avatar.jpg',
+        ),
+      });
+
+      final res = await dio.post('/uploads/avatar', data: form);
+      final data = res.data;
+
+      String? url;
+      if (data is Map) {
+        final m = Map<String, dynamic>.from(data as Map);
+        url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
+      }
+
+      if (url == null || url.trim().isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
+        return;
+      }
+
+      // Store avatarUrl on user
+      await dio.patch(
+        '/users/me',
+        data: {'avatarUrl': url.trim()},
+      );
 
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo updated.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo updated.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,16 +221,25 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Edit draft'),
         content: SizedBox(
-          width: 640,
+          width: 560,
           child: TextField(
             controller: ctl,
-            maxLines: 12,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            maxLines: 10,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Write…',
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -244,8 +248,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final dio = ref.read(dioProvider);
     await dio.put('/posts/draft', data: {'text': ctl.text});
-    ref.invalidate(_meDraftProvider);
 
+    ref.invalidate(_meDraftProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saved.')));
   }
@@ -267,8 +271,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final dio = ref.read(dioProvider);
     await dio.delete('/posts/draft');
-    ref.invalidate(_meDraftProvider);
 
+    ref.invalidate(_meDraftProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft discarded.')));
   }
@@ -278,6 +282,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     required String id,
     required String initialText,
   }) async {
+    if (id.trim().isEmpty) return;
+
     final ctl = TextEditingController(text: initialText);
 
     final ok = await showDialog<bool>(
@@ -285,16 +291,24 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Edit post'),
         content: SizedBox(
-          width: 640,
+          width: 560,
           child: TextField(
             controller: ctl,
             maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -302,67 +316,70 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.patch('/posts/$id', data: {'text': ctl.text.trim()});
-    ref.invalidate(_mePostsProvider);
+    await dio.patch('/posts/$id', data: {'text': ctl.text});
 
+    ref.invalidate(_mePostsProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updated.')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post updated.')));
   }
 
   Future<void> _archivePost(String id) async {
+    if (id.trim().isEmpty) return;
     final dio = ref.read(dioProvider);
     await dio.post('/posts/$id/archive');
     ref.invalidate(_mePostsProvider);
   }
 
-  Future<void> _deletePost(String id) async {
-    final dio = ref.read(dioProvider);
-    await dio.delete('/posts/$id');
-    ref.invalidate(_mePostsProvider);
-  }
-
-  // LOCKED: Replies are posts. Edit/delete replies via /posts/:id.
-  Future<void> _editReply({
-    required BuildContext context,
-    required String id,
-    required String initialText,
-  }) async {
-    final ctl = TextEditingController(text: initialText);
+  Future<void> _logout(BuildContext context) async {
+    if (_busyLogout) return;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit reply'),
-        content: SizedBox(
-          width: 640,
-          child: TextField(
-            controller: ctl,
-            maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-          ),
-        ),
+        title: const Text('Log out?'),
+        content: const Text('You will need to log in again to access your account.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Log out')),
         ],
       ),
     );
 
     if (ok != true) return;
 
-    final dio = ref.read(dioProvider);
-    await dio.patch('/posts/$id', data: {'text': ctl.text.trim()});
+    setState(() => _busyLogout = true);
 
-    ref.invalidate(_meRepliesProvider);
+    try {
+      final dio = ref.read(dioProvider);
+      final tokenStore = ref.read(tokenStoreProvider);
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updated.')));
-  }
+      // Best effort: tell backend to revoke refresh token if we have it.
+      final rt = (tokenStore.refreshToken ?? '').trim();
+      try {
+        if (rt.isNotEmpty) {
+          await dio.post('/auth/logout', data: {'refreshToken': rt});
+        } else {
+          await dio.post('/auth/logout');
+        }
+      } catch (_) {
+        // Ignore server logout errors; local logout still happens.
+      }
 
-  Future<void> _deleteReply(String id) async {
-    final dio = ref.read(dioProvider);
-    await dio.delete('/posts/$id');
-    ref.invalidate(_meRepliesProvider);
+      await tokenStore.clear();
+
+      // Clear any cached “Me” views.
+      ref.invalidate(meProfileProvider);
+      ref.invalidate(_meDraftProvider);
+      ref.invalidate(_mePostsProvider);
+      ref.invalidate(_meSavesProvider);
+      ref.invalidate(_meRepliesProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out.')));
+      context.go('/login');
+    } finally {
+      if (mounted) setState(() => _busyLogout = false);
+    }
   }
 
   @override
@@ -483,8 +500,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           child: const Text('Edit profile'),
                         ),
                         OutlinedButton(
-                          onPressed: () => context.push('/settings'),
-                          child: const Text('Settings'),
+                          onPressed: _busyLogout ? null : () => _logout(context),
+                          child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
                         ),
                       ],
                     ),
@@ -546,8 +563,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 initialText: (it['text'] ?? '').toString(),
                               ),
                             ),
-                            _ItemAction(label: 'Archive', onTap: () => _archivePost((it['id'] ?? '').toString())),
-                            _ItemAction(label: 'Delete', destructive: true, onTap: () => _deletePost((it['id'] ?? '').toString())),
+                            _ItemAction(
+                              label: 'Archive',
+                              onTap: () => _archivePost((it['id'] ?? '').toString()),
+                            ),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s12),
@@ -574,8 +593,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           subtitle: (it['postId'] ?? it['id'] ?? '').toString(),
                           text: (it['text'] ?? '').toString(),
                           onOpen: () {
-                            final postId = (it['postId'] ?? '').toString();
-                            if (postId.isNotEmpty) context.push('/post/$postId');
+                            final id = (it['postId'] ?? it['id'] ?? '').toString();
+                            if (id.isNotEmpty) context.push('/post/$id');
                           },
                           actions: const [],
                         ),
@@ -602,21 +621,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           title: 'Reply',
                           subtitle: (it['id'] ?? '').toString(),
                           text: (it['text'] ?? '').toString(),
-                          onOpen: () {
-                            final postId = (it['postId'] ?? it['replyToPostId'] ?? '').toString();
-                            if (postId.isNotEmpty) context.push('/post/$postId');
-                          },
-                          actions: [
-                            _ItemAction(
-                              label: 'Edit',
-                              onTap: () => _editReply(
-                                context: context,
-                                id: (it['id'] ?? '').toString(),
-                                initialText: (it['text'] ?? '').toString(),
-                              ),
-                            ),
-                            _ItemAction(label: 'Delete', destructive: true, onTap: () => _deleteReply((it['id'] ?? '').toString())),
-                          ],
+                          onOpen: null,
+                          actions: const [],
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
@@ -624,6 +630,42 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   );
                 },
               ),
+
+          const SizedBox(height: AuraSpace.s20),
+          Text('Settings', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s10),
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Account', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  'Logout is available here. Password reset will be added once the backend endpoint is enabled.',
+                  style: AuraText.muted,
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Password reset is not wired yet.')),
+                        );
+                      },
+                      child: const Text('Reset password'),
+                    ),
+                    OutlinedButton(
+                      onPressed: _busyLogout ? null : () => _logout(context),
+                      child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -635,15 +677,15 @@ class _ItemCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.text,
+    required this.onOpen,
     required this.actions,
-    this.onOpen,
   });
 
   final String title;
   final String subtitle;
   final String text;
-  final List<_ItemAction> actions;
   final VoidCallback? onOpen;
+  final List<_ItemAction> actions;
 
   @override
   Widget build(BuildContext context) {

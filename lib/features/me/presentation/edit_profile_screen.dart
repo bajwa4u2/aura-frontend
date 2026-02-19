@@ -56,63 +56,52 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (u.isEmpty) return u;
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
 
-    // Backend returns "/uploads/.." relative to its origin.
-    // Dio baseUrl is like "http://localhost:3000" (no /v1).
-    final root = dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    // Dio baseUrl includes /v1
+    final root = dio.options.baseUrl.replaceAll(RegExp(r'/v1/?$'), '');
     if (u.startsWith('/')) return '$root$u';
     return '$root/$u';
   }
 
   Future<void> _uploadAvatar() async {
     if (_uploading) return;
+
     setState(() => _uploading = true);
 
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-        maxWidth: 1024,
-      );
+      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+      if (picked == null) return;
 
-      if (picked == null) {
-        setState(() => _uploading = false);
+      Uint8List bytes = await picked.readAsBytes();
+      final dio = ref.read(dioProvider);
+
+      final form = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: picked.name.isNotEmpty ? picked.name : 'avatar.jpg',
+        ),
+      });
+
+      final res = await dio.post('/uploads/avatar', data: form);
+      final data = res.data;
+
+      String? url;
+      if (data is Map) {
+        final m = Map<String, dynamic>.from(data as Map);
+        url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
+      }
+
+      if (url == null || url.trim().isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
         return;
       }
 
-      final dio = ref.read(dioProvider);
-
-      MultipartFile filePart;
-      if (kIsWeb) {
-        final Uint8List bytes = await picked.readAsBytes();
-        filePart = MultipartFile.fromBytes(bytes, filename: picked.name);
-      } else {
-        filePart = await MultipartFile.fromFile(picked.path, filename: picked.name);
-      }
-
-      final form = FormData.fromMap({'file': filePart});
-      final res = await dio.post('/uploads/avatar', data: form);
-
-      final body = res.data;
-      String avatarUrl = '';
-      if (body is Map) {
-        avatarUrl = (body['avatarUrl'] ?? '').toString().trim();
-        if (avatarUrl.isEmpty && body['user'] is Map) {
-          avatarUrl = ((body['user'] as Map)['avatarUrl'] ?? '').toString().trim();
-        }
-      }
-
-      if (avatarUrl.isEmpty) {
-        throw Exception('Upload succeeded but avatarUrl missing in response.');
-      }
-
-      final absolute = _absoluteFromMaybeRelative(avatarUrl, dio);
-      _avatarUrl.text = absolute;
+      // Put the URL in the field; actual saving happens with Save button.
+      _avatarUrl.text = url.trim();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar uploaded. Tap Save.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Avatar uploaded. Tap Save to apply.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,19 +117,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     setState(() => _saving = true);
 
     try {
-      final repo = ref.read(profileRepositoryProvider);
+      final dio = ref.read(dioProvider);
 
-      final updated = await repo.updateMe(
-        displayName: _displayName.text.trim(),
-        bio: _bio.text.trim(),
-        avatarUrl: _avatarUrl.text.trim().isEmpty ? null : _avatarUrl.text.trim(),
+      // CLEAR-TO-NULL behavior consistent with Me screen:
+      final dn = _displayName.text.trim();
+      final bb = _bio.text.trim();
+      final av = _avatarUrl.text.trim();
+
+      final res = await dio.patch(
+        '/users/me',
+        data: {
+          'displayName': dn.isEmpty ? null : dn,
+          'bio': bb.isEmpty ? null : bb,
+          'avatarUrl': av.isEmpty ? null : av,
+        },
       );
 
+      // Refresh local providers
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
-      Navigator.of(context).pop(updated);
+      Navigator.of(context).pop(res.data);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update: $e')));
@@ -151,133 +149,154 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final meAsync = ref.watch(meProfileProvider);
+    final asyncMe = ref.watch(meProfileProvider);
+    final dio = ref.read(dioProvider);
 
     return AuraScaffold(
       title: 'Edit profile',
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving…' : 'Save'),
-        ),
-      ],
-      body: meAsync.when(
-        data: (p) {
-          _seed(p);
+      showHomeAction: true,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+        children: [
+          asyncMe.when(
+            loading: () => const AuraCard(child: _LoadingBlock()),
+            error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
+            data: (p) {
+              _seed(p);
 
-          final avatar = _avatarUrl.text.trim().isNotEmpty ? _avatarUrl.text.trim() : ((p.avatarUrl ?? '').trim());
+              final avatar = _absoluteFromMaybeRelative(_avatarUrl.text, dio);
 
-          return ListView(
-            padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
-            children: [
-              AuraCard(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: const Color(0x332E2A26),
-                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                      child: avatar.isEmpty
-                          ? Text(
-                              p.displayName.isNotEmpty ? p.displayName[0].toUpperCase() : 'A',
-                              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                            )
-                          : null,
-                    ),
-                    SizedBox(width: AuraSpace.s12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('@${p.handle}', style: AuraText.title),
-                          SizedBox(height: AuraSpace.s6),
-                          Text('Keep it simple. Keep it true.', style: AuraText.muted),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(height: AuraSpace.s12),
-
-              FilledButton.icon(
-                onPressed: (_uploading || _saving) ? null : _uploadAvatar,
-                icon: _uploading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.image_outlined),
-                label: Text(_uploading ? 'Uploading…' : 'Upload avatar'),
-              ),
-
-              SizedBox(height: AuraSpace.s18),
-
-              AuraCard(
+              return AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Basics', style: AuraText.title),
-                    SizedBox(height: AuraSpace.s10),
-                    TextField(
-                      controller: _displayName,
-                      decoration: const InputDecoration(
-                        labelText: 'Display name',
-                        border: OutlineInputBorder(),
-                      ),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 34,
+                          backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                          child: avatar.isEmpty ? const Icon(Icons.person, size: 34) : null,
+                        ),
+                        const SizedBox(width: AuraSpace.s16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.displayName, style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s6),
+                              Text('@${p.handle}', style: AuraText.muted),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: AuraSpace.s12),
-                    TextField(
-                      controller: _bio,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        labelText: 'Bio',
-                        border: OutlineInputBorder(),
-                      ),
+                    const SizedBox(height: AuraSpace.s12),
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s10,
+                      children: [
+                        OutlinedButton(
+                          onPressed: _uploading ? null : _uploadAvatar,
+                          child: Text(_uploading ? 'Uploading…' : 'Upload avatar'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () {
+                            _avatarUrl.clear();
+                            setState(() {});
+                          },
+                          child: const Text('Clear avatar'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
+              );
+            },
+          ),
 
-              SizedBox(height: AuraSpace.s12),
-
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: AuraSpace.s16),
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Public profile', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s12),
+                TextField(
+                  controller: _displayName,
+                  decoration: const InputDecoration(
+                    labelText: 'Display name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                TextField(
+                  controller: _bio,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    labelText: 'Bio',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                TextField(
+                  controller: _avatarUrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Avatar URL (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
                   children: [
-                    Text('Avatar URL', style: AuraText.title),
-                    SizedBox(height: AuraSpace.s10),
-                    TextField(
-                      controller: _avatarUrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Auto-filled after upload',
-                        border: OutlineInputBorder(),
-                      ),
+                    FilledButton(
+                      onPressed: _saving ? null : _save,
+                      child: Text(_saving ? 'Saving…' : 'Save'),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      child: const Text('Cancel'),
                     ),
                   ],
                 ),
-              ),
-
-              SizedBox(height: AuraSpace.s16),
-
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: Text(_saving ? 'Saving…' : 'Save changes'),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: AuraCard(
-              child: Text('Could not load profile: $e', style: AuraText.body),
+              ],
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+}
+
+class _LoadingBlock extends StatelessWidget {
+  const _LoadingBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      child: Row(
+        children: [
+          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: AuraSpace.s12),
+          Text('Loading…', style: AuraText.muted),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBlock extends StatelessWidget {
+  const _ErrorBlock({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      child: Text(message, style: AuraText.body),
     );
   }
 }
