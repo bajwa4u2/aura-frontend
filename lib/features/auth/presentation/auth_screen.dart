@@ -42,14 +42,56 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   String _extractBackendError(dynamic body) {
+    if (body == null) return '';
+
+    // Most common shapes we need to support:
+    // 1) Nest default: { statusCode, message, error }
+    // 2) Your structured errors: { error: { code, message, ... } }
+    // 3) Other APIs: { message: [..] } or { message: "..." }
     if (body is Map) {
-      final msg = body['message'];
-      if (msg is List) return msg.map((e) => e.toString()).join(', ');
-      if (msg is String) return msg;
-      if (body['error'] is String) return body['error'] as String;
+      final map = Map<String, dynamic>.from(body);
+
+      // Nest: message could be String or List
+      final msg = map['message'];
+      if (msg is String && msg.trim().isNotEmpty) return msg.trim();
+      if (msg is List && msg.isNotEmpty) {
+        return msg.map((e) => e.toString()).join(', ').trim();
+      }
+
+      // Your structured error object: error: { message: "..." }
+      final err = map['error'];
+      if (err is String && err.trim().isNotEmpty) return err.trim();
+      if (err is Map) {
+        final errMap = Map<String, dynamic>.from(err);
+        final em = errMap['message'];
+        if (em is String && em.trim().isNotEmpty) return em.trim();
+        if (em is List && em.isNotEmpty) {
+          return em.map((e) => e.toString()).join(', ').trim();
+        }
+        final code = errMap['code'];
+        if (code is String && code.trim().isNotEmpty) return code.trim();
+      }
+
+      // Sometimes APIs use: { detail: "..." } or { errorMessage: "..." }
+      for (final key in ['detail', 'errorMessage', 'reason']) {
+        final v = map[key];
+        if (v is String && v.trim().isNotEmpty) return v.trim();
+      }
     }
-    if (body is String) return body;
-    return '';
+
+    if (body is String) return body.trim();
+    return body.toString().trim();
+  }
+
+  String _friendlyAuthMessage(int? status, String raw) {
+    final r = raw.toLowerCase();
+
+    if (status == 401 || status == 403) {
+      if (r.contains('invalid') || r.contains('credentials') || r.contains('unauthorized')) {
+        return 'Invalid email or password.';
+      }
+    }
+    return raw.isEmpty ? '' : raw;
   }
 
   Future<void> _login() async {
@@ -71,9 +113,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      // Backend contract:
-      // - Web: refresh token is httpOnly cookie; body usually { user, accessToken }
-      // - Non-web: request body transport to also receive refreshToken in body
+      // If later you move refresh token to cookies on web, keep this.
       final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
       final res = await dio.post(
@@ -88,7 +128,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final map = Map<String, dynamic>.from(data as Map);
 
       final access = (map['accessToken'] as String?)?.trim();
-      final refresh = (map['refreshToken'] as String?)?.trim(); // may be null on web (cookie-based)
+      final refresh = (map['refreshToken'] as String?)?.trim(); // may be null on web
 
       if (access == null || access.isEmpty) {
         throw Exception('Missing accessToken');
@@ -99,7 +139,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             refreshToken: (refresh != null && refresh.isNotEmpty) ? refresh : null,
           );
 
-      // Optional: warm up session validity (won't block navigation if it fails)
+      // Warm-up call (non-blocking)
       // ignore: unawaited_futures
       () async {
         try {
@@ -111,9 +151,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       context.go(_safeRedirect(widget.redirectTo));
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      final extra = _extractBackendError(e.response?.data).trim();
+      final raw = _extractBackendError(e.response?.data);
+      final friendly = _friendlyAuthMessage(status, raw);
+
       setState(() {
-        _error = extra.isEmpty ? 'Login failed (${status ?? 'no status'}).' : 'Login failed (${status ?? 'no status'}). $extra';
+        if (friendly.isEmpty) {
+          _error = 'Login failed (${status ?? 'no status'}).';
+        } else {
+          _error = 'Login failed (${status ?? 'no status'}). $friendly';
+        }
       });
     } catch (e) {
       setState(() => _error = 'Login failed. $e');
@@ -148,9 +194,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Already signed in', style: AuraText.title),
-                      SizedBox(height: AuraSpace.s6),
+                      const SizedBox(height: AuraSpace.s6),
                       Text('User ID: ${store.userId ?? '-'}', style: AuraText.body),
-                      SizedBox(height: AuraSpace.s12),
+                      const SizedBox(height: AuraSpace.s12),
                       Wrap(
                         spacing: AuraSpace.s10,
                         runSpacing: AuraSpace.s10,
@@ -174,62 +220,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: AuraSpace.s16),
+                const SizedBox(height: AuraSpace.s16),
               ],
+
               AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Welcome back', style: AuraText.title),
-                    SizedBox(height: AuraSpace.s10),
-                    Text(
-                      'Login keeps the work accountable and protects writers from anonymous extraction.',
-                      style: AuraText.body,
+                    Text('Sign in', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+
+                    TextField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+
+                    TextField(
+                      controller: _password,
+                      obscureText: true,
+                      decoration: const InputDecoration(labelText: 'Password'),
+                    ),
+
+                    if (_error != null) ...[
+                      const SizedBox(height: AuraSpace.s12),
+                      Text(_error!, style: AuraText.body.copyWith(color: Colors.red)),
+                    ],
+
+                    const SizedBox(height: AuraSpace.s16),
+                    FilledButton(
+                      onPressed: _busy ? null : _login,
+                      child: Text(_busy ? 'Signing in…' : 'Login'),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: AuraSpace.s14),
-              if (_error != null) ...[
-                AuraCard(
-                  child: Text(_error!, style: AuraText.body.copyWith(color: Colors.red)),
-                ),
-                SizedBox(height: AuraSpace.s12),
-              ],
+
+              const SizedBox(height: AuraSpace.s12),
+
               AuraCard(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: InputBorder.none,
-                      ),
-                    ),
-                    Divider(height: AuraSpace.s16),
-                    TextField(
-                      controller: _password,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: InputBorder.none,
-                      ),
-                    ),
-                    SizedBox(height: AuraSpace.s14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _busy ? null : _login,
-                        child: Text(_busy ? 'Signing in…' : 'Sign in'),
-                      ),
-                    ),
-                    SizedBox(height: AuraSpace.s10),
-                    TextButton(
-                      onPressed: _busy ? null : () => context.go('/register'),
-                      child: const Text('Create an account'),
-                    ),
-                  ],
+                child: Text(
+                  'If you just registered, you may need to verify your email. '
+                  'If login succeeds, Aura will guide you to verification.',
+                  style: AuraText.muted,
                 ),
               ),
             ],
