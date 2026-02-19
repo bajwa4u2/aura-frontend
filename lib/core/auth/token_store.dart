@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,9 @@ class TokenStore extends ChangeNotifier {
 
   bool _loaded = false;
 
+  // ✅ Allows other layers (Dio, routing) to wait until load() completes.
+  final Completer<void> _loadCompleter = Completer<void>();
+
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
 
@@ -20,9 +24,20 @@ class TokenStore extends ChangeNotifier {
 
   bool get isAuthed => (_accessToken != null && _accessToken!.trim().isNotEmpty);
 
+  /// Await this when you must not act until tokens are restored.
+  Future<void> waitUntilLoaded() {
+    if (_loaded && !_loadCompleter.isCompleted) {
+      _loadCompleter.complete();
+    }
+    return _loadCompleter.future;
+  }
+
   /// Load tokens from persistent storage.
   Future<void> load() async {
-    if (_loaded) return;
+    if (_loaded) {
+      if (!_loadCompleter.isCompleted) _loadCompleter.complete();
+      return;
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -40,6 +55,7 @@ class TokenStore extends ChangeNotifier {
       _refreshToken = null;
     } finally {
       _loaded = true;
+      if (!_loadCompleter.isCompleted) _loadCompleter.complete();
       notifyListeners();
     }
   }
@@ -104,6 +120,7 @@ class TokenStore extends ChangeNotifier {
     }
 
     _loaded = true;
+    if (!_loadCompleter.isCompleted) _loadCompleter.complete();
     notifyListeners();
   }
 
@@ -120,6 +137,7 @@ class TokenStore extends ChangeNotifier {
     } catch (_) {}
 
     _loaded = true;
+    if (!_loadCompleter.isCompleted) _loadCompleter.complete();
     notifyListeners();
   }
 
@@ -136,6 +154,7 @@ class TokenStore extends ChangeNotifier {
     } catch (_) {}
 
     _loaded = true;
+    if (!_loadCompleter.isCompleted) _loadCompleter.complete();
     notifyListeners();
   }
 

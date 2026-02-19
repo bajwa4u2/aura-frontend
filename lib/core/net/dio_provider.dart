@@ -67,7 +67,8 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  // ✅ Critical change: pass ref, NOT a captured TokenStore instance.
+  // ✅ Critical: interceptor reads from provider at request time
+  // AND waits for TokenStore.load() to finish.
   dio.interceptors.add(_AuthInterceptor(dio: dio, ref: ref));
 
   return dio;
@@ -119,7 +120,7 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // ✅ SAFETY: Prevent /v1/v1/... if a caller accidentally includes /v1 in the path.
     if (options.path.startsWith('/v1/')) {
       options.path = options.path.substring(3); // "/v1" is 3 chars
@@ -127,7 +128,13 @@ class _AuthInterceptor extends Interceptor {
       options.path = '/';
     }
 
-    final token = (_tokenStore.accessToken ?? '').trim();
+    // ✅ CRITICAL: wait for TokenStore.load() to finish before reading tokens.
+    final store = _tokenStore;
+    if (!store.isLoaded) {
+      await store.waitUntilLoaded();
+    }
+
+    final token = (store.accessToken ?? '').trim();
     if (token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     } else {
