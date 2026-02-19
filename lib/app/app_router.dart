@@ -28,29 +28,50 @@ import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/verify_pending_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
 
+Map<String, dynamic>? _unwrapUser(dynamic data) {
+  if (data == null) return null;
+  if (data is Map) {
+    final m = Map<String, dynamic>.from(data as Map);
+
+    // Support common envelope shapes:
+    // { data: {...} } or { user: {...} }
+    final inner = m['data'] ?? m['user'];
+    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+
+    // Or already user-like map
+    return m;
+  }
+  return null;
+}
+
 /// Fetch current user (authed). Used only for verification gating.
-/// Expected backend: GET /users/me -> { data: { ... emailVerified? email? } }
+/// Supports both:
+/// - GET /users/me -> { ...userFields... }
+/// - GET /users/me -> { data: { ...userFields... } }
+/// - GET /users/me -> { user: { ...userFields... } }
 final meForGateProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   final dio = ref.read(dioProvider);
   try {
     final res = await dio.get('/users/me');
-    final data = res.data;
-    if (data is Map) {
-      final map = Map<String, dynamic>.from(data);
-      final inner = map['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner);
-      return map;
-    }
+    return _unwrapUser(res.data);
   } on DioException catch (e) {
-    // If authed flag is wrong or token expired, treat as "no user" and let auth redirect handle it.
+    // If token expired or missing, treat as "no user" and let auth redirect handle it.
     if (e.response?.statusCode == 401) return null;
     rethrow;
   }
-  return null;
 });
 
 bool _isEmailVerified(Map<String, dynamic>? me) {
   if (me == null) return true; // don't hard-lock on missing data
+
+  // Forever-truth: emailVerifiedAt (timestamp or null)
+  final verifiedAt = me['emailVerifiedAt'];
+  if (verifiedAt != null) {
+    // could be ISO string or DateTime-ish; any non-null means verified
+    return true;
+  }
+
+  // Back/forward compatibility with boolean-style APIs
   final candidates = [
     me['emailVerified'],
     me['isEmailVerified'],
@@ -69,22 +90,21 @@ bool _isEmailVerified(Map<String, dynamic>? me) {
       if (v == 0) return false;
     }
   }
-  // If backend doesn't expose a flag yet, do not block.
+
+  // If the backend exposes neither field, do not block.
   return true;
 }
 
 GoRouter buildRouter(WidgetRef ref) {
   return GoRouter(
     initialLocation: '/home',
-
     redirect: (context, state) async {
       final isAuthed = ref.read(isAuthedProvider);
       final path = state.uri.path;
       final fullLoc = state.uri.toString();
 
-      // Routes that must remain reachable without auth.
-      final isPublicAuthRoute =
-          path == '/login' || path == '/verify-email';
+      // Public routes
+      final isPublicAuthRoute = path == '/login' || path == '/verify-email';
 
       // If already authed and hits /login, go to redirect target or home.
       if (path == '/login') {
@@ -103,9 +123,7 @@ GoRouter buildRouter(WidgetRef ref) {
       final isVerifyEmail = path == '/verify-email';
 
       // If route requires auth:
-      final requiresAuth = path == '/me' ||
-          path == '/compose' ||
-          path == '/verify-pending';
+      final requiresAuth = path == '/me' || path == '/compose' || path == '/verify-pending';
 
       if (requiresAuth && !isAuthed) {
         final redirectTo = Uri.encodeComponent(fullLoc);
@@ -142,7 +160,6 @@ GoRouter buildRouter(WidgetRef ref) {
 
       return null;
     },
-
     routes: [
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),

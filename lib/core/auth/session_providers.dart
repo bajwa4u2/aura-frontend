@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../net/dio_provider.dart';
 import 'token_store.dart';
 
 /// Auth lifecycle status:
@@ -13,7 +14,6 @@ final tokenStoreProvider = ChangeNotifierProvider<TokenStore>((ref) {
   final store = TokenStore();
 
   // Load persisted tokens ASAP (non-blocking).
-  // IMPORTANT: do NOT assume the result is available immediately.
   store.load();
 
   return store;
@@ -39,4 +39,27 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
   if (!store.isLoaded) return AuthStatus.loading;
   if (store.isAuthed) return AuthStatus.authed;
   return AuthStatus.unauthed;
+});
+
+Map<String, dynamic> _unwrapApiMap(dynamic data) {
+  if (data is Map) {
+    final m = Map<String, dynamic>.from(data as Map);
+    final inner = m['data'] ?? m['user'];
+    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+    return m;
+  }
+  throw Exception('Unexpected response');
+}
+
+/// True if the current user has verified their email.
+/// Uses GET /v1/auth/me (JWT protected).
+final emailVerifiedProvider = FutureProvider<bool>((ref) async {
+  final isAuthed = ref.watch(isAuthedProvider);
+  if (!isAuthed) return true; // no need to gate when not logged in
+
+  final dio = ref.read(dioProvider);
+  final res = await dio.get('/auth/me');
+
+  final user = _unwrapApiMap(res.data);
+  return user['emailVerifiedAt'] != null;
 });
