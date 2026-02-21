@@ -147,7 +147,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       return Padding(
                         padding: EdgeInsets.only(bottom: AuraSpace.s10),
                         child: AuraCard(
-                          onTap: handle.isEmpty ? null : () => context.push('/author/$handle'),
+                          onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
                           child: Row(
                             children: [
                               CircleAvatar(

@@ -10,7 +10,7 @@ class PostsRepository {
   /// Returns: { post: {...} } OR the post object itself
   Future<void> createPost({required String text}) async {
     await _dio.post(
-      '/posts',
+      '/v1/posts',
       data: {'text': text},
     );
   }

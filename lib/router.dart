@@ -33,6 +33,8 @@ import 'screens/investors_hub_screen.dart';
 import 'screens/institutions_hub_screen.dart';
 import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
+import 'screens/institution_sign_in_screen.dart';
+import 'screens/institution_request_verification_screen.dart';
 
 /// Canonical router provider for the app.
 /// This is the only router AuraApp should use.
@@ -54,6 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/privacy',
         '/investors',
         '/institutions',
+        '/institution/sign-in',
+        '/institution/request-verification',
         '/patrons',
         '/supporters',
       };
@@ -138,6 +142,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/institutions',
             builder: (context, state) => const InstitutionsHubScreen(),
+          ),
+          GoRoute(
+            path: '/institution/sign-in',
+            builder: (context, state) => const InstitutionSignInScreen(),
+          ),
+          GoRoute(
+            path: '/institution/request-verification',
+            builder: (context, state) => const InstitutionRequestVerificationScreen(),
           ),
           GoRoute(
             path: '/patrons',

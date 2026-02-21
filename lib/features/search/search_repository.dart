@@ -17,7 +17,7 @@ class SearchRepository {
     if (query.isEmpty) return const SearchResult(users: [], posts: []);
 
     final res = await _dio.get(
-      '/posts/search',
+      '/v1/posts/search',
       queryParameters: {'q': query, 'limit': limit},
     );
 

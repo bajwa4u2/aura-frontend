@@ -43,7 +43,7 @@ class FeedRepository {
   Future<FeedPage> fetchFeed({String? cursor, int limit = 20}) async {
     try {
       final res = await dio.get(
-        '/posts/feed',
+        '/v1/posts/feed',
         queryParameters: {
           'limit': limit,
           if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
@@ -64,7 +64,7 @@ class FeedRepository {
   }
 
   Future<Post> create(String text) async {
-    final res = await dio.post('/posts', data: {'text': text});
+    final res = await dio.post('/v1/posts', data: {'text': text});
 
     final body = res.data;
     if (body is Map && body['post'] is Map) {

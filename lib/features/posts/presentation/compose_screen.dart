@@ -92,7 +92,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         if (widget.replyToPostId != null) 'replyToPostId': widget.replyToPostId,
       };
 
-      await dio.post('/posts', data: payload);
+      await dio.post('/v1/posts', data: payload);
 
       _discardDraft();
 

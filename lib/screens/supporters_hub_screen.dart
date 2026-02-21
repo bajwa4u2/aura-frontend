@@ -14,23 +14,21 @@ class SupportersHubScreen extends StatelessWidget {
         children: [
           Doc.title('Supporters'),
           const SizedBox(height: 10),
-          Doc.meta('Hub placeholder. Lane will be activated later.'),
-          Doc.lede('A place for aligned people who carry the work forward.'),
-
-          Doc.p(
-            'This hub will hold supporter pathways that are practical and respectful: help with testing, '
-            'translation, partnerships, and stewardship.',
+          Doc.meta('Readers, builders, reviewers, moderators.'),
+          Doc.lede(
+            'Aura needs people who care about clarity more than victory.',
           ),
-
-          Doc.h('Planned scope'),
+          Doc.p(
+            'Support can be technical, editorial, or civic. The goal is not to agree. The goal is to keep the record honest and readable.',
+          ),
+          Doc.h('Ways to support (planned)'),
           Doc.bullets([
-            'Ways to help (testing, feedback, moderation support)',
-            'Translation and accessibility lanes',
-            'Institution introductions (only when appropriate)',
-            'Later: supporter directory (opt-in)',
+            'Moderation assistance and review (with training + constraints)',
+            'Documentation and policy feedback',
+            'Testing new flows carefully',
+            'Translation and accessibility improvements',
           ]),
-
-          Doc.callout('Presence first. Scale later.'),
+          Doc.callout('This hub will expand after the first stable public release.'),
         ],
       ),
     );

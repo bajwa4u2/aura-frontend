@@ -69,7 +69,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
   static const double _defaultMaxWidth = 980;
 
   // Brand hierarchy tuning (global)
-  static const double _logoHeight = 36; // was 30
+  static const double _logoHeight = 24;// tuned for wide wordmark
   static const double _leadingIconSize = 18; // smaller so it never dominates
   static const double _leadingTapSize = 36; // comfortable but not loud
 
@@ -112,7 +112,9 @@ class _AuraScaffoldState extends State<AuraScaffold>
   }
 
   Widget _brand(BuildContext context) {
-    // Brand identity: mark-only (logo is always the leftmost element).
+    // Brand identity (primary, always leftmost).
+    // We intentionally avoid asset-based wordmarks here so the frontend can run
+    // in any environment without missing-asset failures.
     return Semantics(
       button: true,
       label: 'Aura home',
@@ -126,16 +128,22 @@ class _AuraScaffoldState extends State<AuraScaffold>
           ),
           child: AnimatedBuilder(
             animation: _controller,
-            builder: (_, child) {
+            builder: (_, __) {
               final t = Curves.easeOutCubic.transform(_controller.value);
-              return Opacity(opacity: t.clamp(0.0, 1.0), child: child);
+              return Opacity(
+                opacity: t.clamp(0.0, 1.0),
+                child: Text(
+                  'Aura',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.title.copyWith(
+                    fontSize: _logoHeight,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              );
             },
-            child: Image.asset(
-              'assets/brand/aura_mark.png',
-              height: _logoHeight,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-            ),
           ),
         ),
       ),

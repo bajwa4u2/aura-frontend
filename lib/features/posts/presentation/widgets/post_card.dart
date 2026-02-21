@@ -72,7 +72,7 @@ class PostCard extends ConsumerWidget {
 
     return AuraCard(
       padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s16),
-      onTap: () => context.push('/post/${post.id}'),
+      onTap: () => context.push('/posts/${post.id}'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -94,7 +94,7 @@ class PostCard extends ConsumerWidget {
                 SizedBox(width: AuraSpace.s10),
                 Expanded(
                   child: InkWell(
-                    onTap: () => context.push('/author/$handle'),
+                    onTap: () => context.push('/u/$handle'),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -195,7 +195,7 @@ class _ActionRow extends ConsumerWidget {
       if (text.isNotEmpty) payload['text'] = text;
 
       // Backend route: POST /v1/posts/:id/repost
-      await dio.post('/posts/$postId/repost', data: payload);
+      await dio.post('/v1/posts/$postId/repost', data: payload);
 
       ref.invalidate(isLikedProvider(postId));
       ref.invalidate(isSavedProvider(postId));

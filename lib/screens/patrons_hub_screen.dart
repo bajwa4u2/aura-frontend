@@ -14,22 +14,21 @@ class PatronsHubScreen extends StatelessWidget {
         children: [
           Doc.title('Patrons'),
           const SizedBox(height: 10),
-          Doc.meta('Hub placeholder. Lane will be activated later.'),
-          Doc.lede('Quiet monthly support, without turning attention into a marketplace.'),
-
-          Doc.p(
-            'This hub will explain how patron support works inside Aura without distorting the writing space.',
+          Doc.meta('Support without steering.'),
+          Doc.lede(
+            'Patronage in Aura is meant to protect the space, not control it.',
           ),
-
-          Doc.h('Planned scope'),
+          Doc.p(
+            'This lane will open once the core experience is stable and moderation is mature. When it opens, it will be designed to avoid the usual pressure that money creates inside public speech.',
+          ),
+          Doc.h('Planned principles'),
           Doc.bullets([
-            'Support tiers (calm, non-promotional)',
-            'What support pays for (infrastructure, moderation, preservation)',
-            'Clear boundaries (no pay-for-reach)',
-            'Later: payments integration and receipts',
+            'No purchase of visibility',
+            'No public leaderboards',
+            'Support is acknowledged privately or in limited, non-performative ways',
+            'Funding should reduce distortion, not create new distortions',
           ]),
-
-          Doc.callout('Support is present, not noisy.'),
+          Doc.callout('This hub is intentionally minimal for now.'),
         ],
       ),
     );

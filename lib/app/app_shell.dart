@@ -41,6 +41,10 @@ class AppShell extends ConsumerWidget {
       '/institutions',
       '/patrons',
       '/supporters',
+      '/verify',
+      '/verify-pending',
+      '/forgot-password',
+      '/reset-password',
     ];
 
     for (final p in publicPrefixes) {
@@ -54,7 +58,7 @@ class AppShell extends ConsumerWidget {
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexForLocation(location);
 
-    // Bottom nav shows only in member area. No provider guessing.
+    // Bottom nav shows only in member area.
     final showBottomNav = !_isPublicRoute(location);
 
     return Scaffold(
@@ -72,29 +76,23 @@ class AppShell extends ConsumerWidget {
             ),
           ),
 
-          // FOOTER (global)
-          // Rule locked: no duplication of contextual hubs here.
+          // Minimal legal rail (always). Keep it app-like, not website-like.
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
               color: AuraSurface.page,
-              border: Border(
-                top: BorderSide(color: AuraSurface.divider),
-              ),
+              border: Border(top: BorderSide(color: AuraSurface.divider)),
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s16,
-              vertical: AuraSpace.s12,
+              vertical: AuraSpace.s10,
             ),
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: AuraSpace.s12,
+              spacing: AuraSpace.s10,
               runSpacing: AuraSpace.s8,
               children: const [
                 _LegalLink(label: 'Privacy', path: '/privacy'),
-                _LegalLink(label: 'Mission', path: '/mission'),
-                _LegalLink(label: 'Founder', path: '/founder'),
-                _LegalLink(label: 'Investors', path: '/investors'),
               ],
             ),
           ),

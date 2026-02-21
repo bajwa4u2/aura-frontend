@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/ui/aura_app_theme.dart';
 import '../router.dart';
 
 class AuraApp extends ConsumerWidget {
@@ -13,6 +14,7 @@ class AuraApp extends ConsumerWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Aura',
+      theme: AuraAppTheme.light(),
       routerConfig: router,
     );
   }

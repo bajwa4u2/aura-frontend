@@ -30,7 +30,7 @@ final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/posts/draft');
+  final res = await dio.get('/v1/posts/draft');
   final data = res.data;
   if (data is Map) return Map<String, dynamic>.from(data);
   throw Exception('Unexpected response');
@@ -38,7 +38,7 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/posts/mine');
+  final res = await dio.get('/v1/posts/mine');
   final data = res.data;
   if (data is List) {
     return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
@@ -247,7 +247,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.put('/posts/draft', data: {'text': ctl.text});
+    await dio.put('/v1/posts/draft', data: {'text': ctl.text});
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
@@ -271,7 +271,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.delete('/posts/draft');
+    await dio.delete('/v1/posts/draft');
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
@@ -318,7 +318,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.patch('/posts/$id', data: {'text': ctl.text});
+    await dio.patch('/v1/posts/$id', data: {'text': ctl.text});
 
     ref.invalidate(_mePostsProvider);
     if (!mounted) return;
@@ -328,7 +328,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Future<void> _archivePost(String id) async {
     if (id.trim().isEmpty) return;
     final dio = ref.read(dioProvider);
-    await dio.post('/posts/$id/archive');
+    await dio.post('/v1/posts/$id/archive');
     ref.invalidate(_mePostsProvider);
   }
 
@@ -558,7 +558,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           text: (it['text'] ?? '').toString(),
                           onOpen: () {
                             final id = (it['id'] ?? '').toString();
-                            if (id.isNotEmpty) context.push('/post/$id');
+                            if (id.isNotEmpty) context.push('/posts/$id');
                           },
                           actions: [
                             _ItemAction(
@@ -600,7 +600,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           text: (it['text'] ?? '').toString(),
                           onOpen: () {
                             final id = (it['postId'] ?? it['id'] ?? '').toString();
-                            if (id.isNotEmpty) context.push('/post/$id');
+                            if (id.isNotEmpty) context.push('/posts/$id');
                           },
                           actions: const [],
                         ),
