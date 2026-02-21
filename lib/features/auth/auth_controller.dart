@@ -1,94 +1,101 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../core/auth/session_providers.dart';
-import '../../core/net/dio_provider.dart';
-import 'auth_repository.dart';
-
-/// Repo provider (single place to construct AuthRepository).
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dio = ref.read(dioProvider);
-  return AuthRepository(dio);
-});
-
-/// Simple global loading flag for auth actions.
-/// (Screens that do `ref.read(authLoadingProvider.notifier)` will work.)
-final authLoadingProvider = StateProvider<bool>((ref) => false);
-
-/// Canonical controller provider used across screens.
-final authControllerProvider = Provider<AuthController>((ref) {
-  return AuthController(ref);
-});
+import '../../../core/auth/session_providers.dart';
+import '../../../core/auth/token_store.dart';
+import '../../../core/net/dio_provider.dart';
 
 class AuthController {
   AuthController(this.ref);
 
   final Ref ref;
 
-  Future<void> login({
+  Future<void> login(
+    BuildContext context, {
     required String email,
     required String password,
+    String? redirectTo,
   }) async {
-    ref.read(authLoadingProvider.notifier).state = true;
+    final dio = ref.read(dioProvider);
 
     try {
-      final repo = ref.read(authRepositoryProvider);
-      final res = await repo.login(email: email, password: password);
-
-      final accessToken = res['accessToken']?.toString();
-      final refreshToken = res['refreshToken']?.toString();
-
-      if (accessToken == null || accessToken.isEmpty || refreshToken == null || refreshToken.isEmpty) {
-        throw Exception('Login response missing tokens');
-      }
-
-      final store = ref.read(tokenStoreProvider);
-      await store.setTokens(accessToken: accessToken, refreshToken: refreshToken);
-    } finally {
-      ref.read(authLoadingProvider.notifier).state = false;
-    }
-  }
-
-  Future<void> register({
-    required String email,
-    required String password,
-    String? handle,
-    String? displayName,
-  }) async {
-    ref.read(authLoadingProvider.notifier).state = true;
-
-    try {
-      final repo = ref.read(authRepositoryProvider);
-      final res = await repo.register(
-        email: email,
-        password: password,
-        handle: handle,
-        displayName: displayName,
+      final res = await dio.post(
+        '/v1/auth/login',
+        data: {
+          'email': email.trim(),
+          'password': password,
+        },
       );
 
-      final accessToken = res['accessToken']?.toString();
-      final refreshToken = res['refreshToken']?.toString();
+      final data = res.data;
 
-      // Some backends return tokens immediately on register, some don't.
-      // If tokens exist, persist them; otherwise, just return.
-      if (accessToken != null &&
-          accessToken.isNotEmpty &&
-          refreshToken != null &&
-          refreshToken.isNotEmpty) {
-        final store = ref.read(tokenStoreProvider);
-        await store.setTokens(accessToken: accessToken, refreshToken: refreshToken);
+      if (data is! Map || data['success'] != true) {
+        throw Exception('Unexpected login response');
       }
-    } finally {
-      ref.read(authLoadingProvider.notifier).state = false;
+
+      final payload = data['data'] as Map<String, dynamic>;
+      final accessToken = payload['accessToken'] as String?;
+      final refreshToken = payload['refreshToken'] as String?;
+
+      if (accessToken == null || refreshToken == null) {
+        throw Exception('Missing tokens');
+      }
+
+      await ref.read(tokenStoreProvider).saveTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          );
+
+      ref.invalidate(isAuthedProvider);
+      ref.invalidate(emailVerifiedProvider);
+
+      final dest = (redirectTo != null && redirectTo.startsWith('/'))
+          ? redirectTo
+          : '/home';
+
+      context.go(dest);
+    } on DioException catch (e) {
+      final responseData = e.response?.data;
+      String? code;
+
+      if (responseData is Map) {
+        code = responseData['error']?['code'] as String?;
+      }
+
+      if (code == 'EMAIL_NOT_VERIFIED') {
+        final dest = (redirectTo != null && redirectTo.startsWith('/'))
+            ? redirectTo
+            : '/home';
+
+        context.go(
+          '/verify-email?redirect=${Uri.encodeComponent(dest)}',
+        );
+        return;
+      }
+
+      final message =
+          responseData is Map ? responseData['error']?['message'] : null;
+
+      throw Exception(message ?? 'Login failed');
+    } catch (e) {
+      rethrow;
     }
   }
 
-  Future<void> logout() async {
-    ref.read(authLoadingProvider.notifier).state = true;
+  Future<void> logout(BuildContext context) async {
+    final dio = ref.read(dioProvider);
+
     try {
-      final store = ref.read(tokenStoreProvider);
-      await store.clear();
-    } finally {
-      ref.read(authLoadingProvider.notifier).state = false;
-    }
+      await dio.post('/v1/auth/logout');
+    } catch (_) {}
+
+    await ref.read(tokenStoreProvider).clear();
+
+    ref.invalidate(isAuthedProvider);
+    ref.invalidate(emailVerifiedProvider);
+
+    context.go('/login');
   }
 }
