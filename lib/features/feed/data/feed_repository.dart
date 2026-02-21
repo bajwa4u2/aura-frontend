@@ -13,19 +13,19 @@ class FeedPage {
   factory FeedPage.fromResponse(dynamic body) {
     if (body is List) {
       return FeedPage(
-        items: body.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
+        items: body.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
         nextCursor: null,
       );
     }
 
     if (body is Map) {
-      final map = Map<String, dynamic>.from(body as Map);
+      final map = Map<String, dynamic>.from(body);
 
       final list = (map['data'] as List?) ?? (map['items'] as List?) ?? const <dynamic>[];
       final next = (map['nextCursor'] ?? map['cursor'] ?? map['next'] ?? '')?.toString();
 
       return FeedPage(
-        items: list.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
+        items: list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
         nextCursor: (next != null && next.isNotEmpty) ? next : null,
       );
     }
@@ -68,8 +68,8 @@ class FeedRepository {
 
     final body = res.data;
     if (body is Map && body['post'] is Map) {
-      return Post.fromJson(Map<String, dynamic>.from(body['post'] as Map));
+      return Post.fromJson(Map<String, dynamic>.from(body['post']));
     }
-    return Post.fromJson(Map<String, dynamic>.from(body as Map));
+    return Post.fromJson(Map<String, dynamic>.from(body));
   }
 }

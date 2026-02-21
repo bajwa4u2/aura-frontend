@@ -87,7 +87,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       String? url;
       if (data is Map) {
-        final m = Map<String, dynamic>.from(data as Map);
+        final m = Map<String, dynamic>.from(data);
         url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
       }
 
@@ -125,7 +125,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final av = _avatarUrl.text.trim();
 
       final res = await dio.patch(
-        '/users/me',
+        '/v1/users/me',
         data: {
           'displayName': dn.isEmpty ? null : dn,
           'bio': bb.isEmpty ? null : bb,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../core/ui/aura_radius.dart';
-import '../core/ui/aura_scaffold.dart';
-import '../core/ui/aura_space.dart';
-import '../core/ui/aura_surface.dart';
-import '../core/ui/aura_text.dart';
+import 'aura_radius.dart';
+import 'aura_scaffold.dart';
+import 'aura_space.dart';
+import 'aura_surface.dart';
+import 'aura_text.dart';
 
 /// Standard frame for document-like pages (Mission, Privacy, Founder, Hubs).
 ///

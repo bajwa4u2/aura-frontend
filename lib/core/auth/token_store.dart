@@ -13,7 +13,7 @@ class TokenStore extends ChangeNotifier {
 
   bool _loaded = false;
 
-  // ✅ Allows other layers (Dio, routing) to wait until load() completes.
+  // Allows other layers (Dio, routing) to wait until load() completes.
   final Completer<void> _loadCompleter = Completer<void>();
 
   String? get accessToken => _accessToken;
@@ -44,7 +44,7 @@ class TokenStore extends ChangeNotifier {
       _accessToken = prefs.getString(_kAccess);
 
       // Web: refresh token is assumed to be httpOnly cookie by backend.
-      // But we still keep a slot for non-web where refresh may be returned.
+      // But we keep a slot for non-web where refresh may be returned.
       if (kIsWeb) {
         _refreshToken = null;
       } else {
@@ -60,6 +60,7 @@ class TokenStore extends ChangeNotifier {
     }
   }
 
+  /// Derive userId from the JWT if present.
   String? get userId {
     final token = _accessToken;
     if (token == null || token.trim().isEmpty) return null;
@@ -98,7 +99,6 @@ class TokenStore extends ChangeNotifier {
       }
     }
 
-    // Persist
     try {
       final prefs = await SharedPreferences.getInstance();
 

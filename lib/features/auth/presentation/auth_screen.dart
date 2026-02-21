@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -40,18 +39,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Map<String, dynamic> _unwrap(dynamic raw) {
     if (raw is! Map) throw Exception('Unexpected response');
 
-    final m = Map<String, dynamic>.from(raw as Map);
+    final m = Map<String, dynamic>.from(raw);
 
     // Canonical envelope
     if (m['success'] == true) {
       final inner = m['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+      if (inner is Map) return Map<String, dynamic>.from(inner);
       throw Exception('Unexpected response: success=true but data is not a map');
     }
 
     // Legacy fallback
     final inner = m['data'];
-    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+    if (inner is Map) return Map<String, dynamic>.from(inner);
 
     return m;
   }
@@ -77,7 +76,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
       final res = await dio.post(
-        '/auth/login',
+        '/v1/auth/login',
         data: {'email': email, 'password': password},
         options: options,
       );

@@ -126,7 +126,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
-      await dio.post('/auth/register', data: payload, options: options);
+      await dio.post('/v1/auth/register', data: payload, options: options);
 
       if (!mounted) return;
 

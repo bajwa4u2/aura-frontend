@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'document_scaffold.dart';
+import '../core/ui/document_scaffold.dart';
 
 class InvestorsHubScreen extends StatelessWidget {
   const InvestorsHubScreen({super.key});

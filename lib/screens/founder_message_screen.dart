@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'document_scaffold.dart';
+import '../core/ui/document_scaffold.dart';
 
 class FounderMessageScreen extends StatelessWidget {
   const FounderMessageScreen({super.key});

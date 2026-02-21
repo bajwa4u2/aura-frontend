@@ -19,7 +19,7 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
   try {
     if (kIsWeb) {
-      final res = await dio.post('/auth/refresh', data: {});
+      final res = await dio.post('/v1/auth/refresh', data: {});
       final map = (res.data as Map).cast<String, dynamic>();
       final at = (map['accessToken'] as String?) ?? '';
       if (at.isNotEmpty) {
@@ -32,7 +32,7 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     if (rt == null || rt.isEmpty) return;
 
     final res = await dio.post(
-      '/auth/refresh',
+      '/v1/auth/refresh',
       data: {'refreshToken': rt},
       options: Options(headers: {'x-token-transport': 'body'}),
     );

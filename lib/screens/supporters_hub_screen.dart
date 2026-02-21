@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'document_scaffold.dart';
+import '../core/ui/document_scaffold.dart';
 
 class SupportersHubScreen extends StatelessWidget {
   const SupportersHubScreen({super.key});

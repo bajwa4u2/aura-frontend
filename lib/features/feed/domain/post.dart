@@ -47,7 +47,7 @@ class Post {
 
   factory Post.fromJson(Map<String, dynamic> j) {
     final authorJson = j['author'];
-    final a = (authorJson is Map) ? PostAuthor.fromJson(Map<String, dynamic>.from(authorJson as Map)) : null;
+    final a = (authorJson is Map) ? PostAuthor.fromJson(Map<String, dynamic>.from(authorJson)) : null;
 
     final authorId = (j['authorId'] ?? a?.id ?? '') as String;
 

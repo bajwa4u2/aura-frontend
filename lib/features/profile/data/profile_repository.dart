@@ -9,15 +9,15 @@ class ProfileRepository {
 
   /// GET /users/:handle
   Future<Profile> fetchProfile(String handle) async {
-    final res = await _dio.get('/users/$handle');
+    final res = await _dio.get('/v1/users/$handle');
 
     // Accept either {data:{...}} or raw {...}
     final body = res.data;
     if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data'] as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
     }
     if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body));
     }
     throw StateError('Unexpected profile response');
   }
@@ -27,13 +27,13 @@ class ProfileRepository {
 
   /// GET /users/me
   Future<Profile> fetchMe() async {
-    final res = await _dio.get('/users/me');
+    final res = await _dio.get('/v1/users/me');
     final body = res.data;
     if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data'] as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
     }
     if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body));
     }
     throw StateError('Unexpected me response');
   }
@@ -47,16 +47,16 @@ class ProfileRepository {
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
     };
 
-    final res = await _dio.patch('/users/me', data: payload);
+    final res = await _dio.patch('/v1/users/me', data: payload);
     final body = res.data;
     if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data'] as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
     }
     if (body is Map && body['user'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['user'] as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body['user']));
     }
     if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body as Map));
+      return Profile.fromJson(Map<String, dynamic>.from(body));
     }
     throw StateError('Unexpected update response');
   }
@@ -66,7 +66,7 @@ class ProfileRepository {
   Future<List<Post>> getUserPosts(String handle, {int limit = 20, String? cursor}) async {
     try {
       final res = await _dio.get(
-        '/users/$handle/posts',
+        '/v1/users/$handle/posts',
         queryParameters: {
           'limit': limit,
           if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
@@ -75,7 +75,7 @@ class ProfileRepository {
 
       final body = res.data;
       final list = (body is Map ? (body['data'] as List?) : null) ?? const <dynamic>[];
-      return list.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      return list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList();
     } catch (_) {
       return const <Post>[];
     }
@@ -84,7 +84,7 @@ class ProfileRepository {
   /// If your backend exposes follow state, use it. Otherwise return false.
   Future<bool> isFollowing(String handle) async {
     try {
-      final res = await _dio.get('/users/$handle/following');
+      final res = await _dio.get('/v1/users/$handle/following');
       final body = res.data;
       if (body is Map) return body['isFollowing'] == true || body['following'] == true;
       return false;
@@ -95,11 +95,11 @@ class ProfileRepository {
 
   /// POST /users/:handle/follow
   Future<void> follow(String handle) async {
-    await _dio.post('/users/$handle/follow');
+    await _dio.post('/v1/users/$handle/follow');
   }
 
   /// DELETE /users/:handle/follow
   Future<void> unfollow(String handle) async {
-    await _dio.delete('/users/$handle/follow');
+    await _dio.delete('/v1/users/$handle/follow');
   }
 }

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -20,14 +17,14 @@ final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
   Response res;
   try {
-    res = await dio.get('/users/me');
+    res = await dio.get('/v1/users/me');
   } catch (_) {
     // Fallback (older path) if needed
-    res = await dio.get('/auth/me');
+    res = await dio.get('/v1/auth/me');
   }
 
   final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data as Map);
+  if (data is Map) return Map<String, dynamic>.from(data);
   throw Exception('Unexpected response');
 });
 
@@ -35,7 +32,7 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/draft');
   final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data as Map);
+  if (data is Map) return Map<String, dynamic>.from(data);
   throw Exception('Unexpected response');
 });
 
@@ -44,7 +41,7 @@ final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
   final res = await dio.get('/posts/mine');
   final data = res.data;
   if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
   throw Exception('Unexpected response');
 });
@@ -54,7 +51,7 @@ final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
   final res = await dio.get('/saves', queryParameters: {'limit': 12});
   final data = res.data;
   if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
   throw Exception('Unexpected response');
 });
@@ -64,7 +61,7 @@ final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
   final res = await dio.get('/replies/mine');
   final data = res.data;
   if (data is List) {
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
   throw Exception('Unexpected response');
 });
@@ -92,6 +89,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Future<void> _pickAndUploadAvatar(BuildContext context) async {
     final picker = ImagePicker();
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
       if (picked == null) return;
@@ -113,29 +111,29 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
       String? url;
       if (data is Map) {
-        final m = Map<String, dynamic>.from(data as Map);
+        final m = Map<String, dynamic>.from(data);
         url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
       }
 
       if (url == null || url.trim().isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
+        messenger.showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
         return;
       }
 
       // Store avatarUrl on user
       await dio.patch(
-        '/users/me',
+        '/v1/users/me',
         data: {'avatarUrl': url.trim()},
       );
 
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo updated.')));
+      messenger.showSnackBar(const SnackBar(content: Text('Photo updated.')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Upload failed: $e')),
       );
     }
@@ -146,6 +144,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     required String? displayName,
     required String? bio,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
     final nameCtl = TextEditingController(text: displayName ?? '');
     final bioCtl = TextEditingController(text: bio ?? '');
 
@@ -201,7 +200,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final bb = bioCtl.text.trim();
 
     await dio.patch(
-      '/users/me',
+      '/v1/users/me',
       data: {
         'displayName': dn.isEmpty ? null : dn,
         'bio': bb.isEmpty ? null : bb,
@@ -210,10 +209,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     ref.invalidate(meProfileProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved.')));
+    messenger.showSnackBar(const SnackBar(content: Text('Saved.')));
   }
 
   Future<void> _editDraft(BuildContext context, String initial) async {
+    final messenger = ScaffoldMessenger.of(context);
     final ctl = TextEditingController(text: initial);
 
     final ok = await showDialog<bool>(
@@ -251,10 +251,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saved.')));
+    messenger.showSnackBar(const SnackBar(content: Text('Draft saved.')));
   }
 
   Future<void> _discardDraft(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -274,7 +275,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft discarded.')));
+    messenger.showSnackBar(const SnackBar(content: Text('Draft discarded.')));
   }
 
   Future<void> _editPost({
@@ -283,6 +284,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     required String initialText,
   }) async {
     if (id.trim().isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
 
     final ctl = TextEditingController(text: initialText);
 
@@ -320,7 +322,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     ref.invalidate(_mePostsProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post updated.')));
+    messenger.showSnackBar(const SnackBar(content: Text('Post updated.')));
   }
 
   Future<void> _archivePost(String id) async {
@@ -332,6 +334,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Future<void> _logout(BuildContext context) async {
     if (_busyLogout) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
 
     final ok = await showDialog<bool>(
       context: context,
@@ -357,9 +362,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final rt = (tokenStore.refreshToken ?? '').trim();
       try {
         if (rt.isNotEmpty) {
-          await dio.post('/auth/logout', data: {'refreshToken': rt});
+          await dio.post('/v1/auth/logout', data: {'refreshToken': rt});
         } else {
-          await dio.post('/auth/logout');
+          await dio.post('/v1/auth/logout');
         }
       } catch (_) {
         // Ignore server logout errors; local logout still happens.
@@ -375,8 +380,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ref.invalidate(_meRepliesProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out.')));
-      context.go('/login');
+      messenger.showSnackBar(const SnackBar(content: Text('Logged out.')));
+      router.go('/login');
     } finally {
       if (mounted) setState(() => _busyLogout = false);
     }
@@ -385,6 +390,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   @override
   Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
+    final messenger = ScaffoldMessenger.of(context);
 
     if (!isAuthed) {
       return AuraScaffold(
@@ -651,7 +657,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   children: [
                     OutlinedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           const SnackBar(content: Text('Password reset is not wired yet.')),
                         );
                       },

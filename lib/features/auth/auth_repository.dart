@@ -9,12 +9,12 @@ class AuthRepository {
   Map<String, dynamic> _unwrap(dynamic raw) {
     if (raw is! Map) throw Exception('Unexpected response');
 
-    final m = Map<String, dynamic>.from(raw as Map);
+    final m = Map<String, dynamic>.from(raw);
 
     // New canonical envelope: { success: true, data: ... }
     if (m['success'] == true) {
       final inner = m['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+      if (inner is Map) return Map<String, dynamic>.from(inner);
       if (inner is List) return {'items': inner};
       // If success=true but data is primitive, still return something stable
       return {'value': inner};
@@ -24,7 +24,7 @@ class AuthRepository {
     // - { data: {...} }
     // - { user: {...} }
     final inner = m['data'] ?? m['user'];
-    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+    if (inner is Map) return Map<String, dynamic>.from(inner);
 
     return m;
   }
@@ -41,7 +41,7 @@ class AuthRepository {
     final wantsBodyTransport = !kIsWeb;
 
     final res = await _dio.post(
-      '/auth/register',
+      '/v1/auth/register',
       data: {
         'email': email,
         'password': password,
@@ -62,7 +62,7 @@ class AuthRepository {
     final wantsBodyTransport = !kIsWeb;
 
     final res = await _dio.post(
-      '/auth/login',
+      '/v1/auth/login',
       data: {'email': email, 'password': password},
       options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
     );
@@ -85,7 +85,7 @@ class AuthRepository {
     }
 
     final res = await _dio.post(
-      '/auth/refresh',
+      '/v1/auth/refresh',
       data: body,
       options: headers.isEmpty ? null : Options(headers: headers),
     );
@@ -102,17 +102,17 @@ class AuthRepository {
       if (!kIsWeb && refreshToken != null && refreshToken.trim().isNotEmpty) 'refreshToken': refreshToken.trim(),
     };
 
-    final res = await _dio.post('/auth/logout', data: data);
+    final res = await _dio.post('/v1/auth/logout', data: data);
     return _unwrap(res.data);
   }
 
   Future<Map<String, dynamic>> logoutAll({required String userId}) async {
-    final res = await _dio.post('/auth/logout-all', data: {'userId': userId.trim()});
+    final res = await _dio.post('/v1/auth/logout-all', data: {'userId': userId.trim()});
     return _unwrap(res.data);
   }
 
   Future<Map<String, dynamic>> me() async {
-    final res = await _dio.get('/auth/me');
+    final res = await _dio.get('/v1/auth/me');
     return _unwrap(res.data);
   }
 }

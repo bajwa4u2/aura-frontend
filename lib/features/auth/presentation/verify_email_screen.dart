@@ -49,7 +49,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       final dio = ref.read(dioProvider);
 
       // Backend standardized: { success: true, data: ... }
-      await dio.post('/auth/resend-verification');
+      await dio.post('/v1/auth/resend-verification');
 
       if (!mounted) return;
       _snack('Verification email resent. Check inbox/spam.');
@@ -99,7 +99,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     try {
       final dio = ref.read(dioProvider);
       try {
-        await dio.post('/auth/logout');
+        await dio.post('/v1/auth/logout');
       } catch (_) {}
 
       await ref.read(tokenStoreProvider).clear();

@@ -4,52 +4,91 @@ import '../../core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
 import 'auth_repository.dart';
 
+/// Repo provider (single place to construct AuthRepository).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(ref.watch(dioProvider));
+  final dio = ref.read(dioProvider);
+  return AuthRepository(dio);
 });
 
-/// Whether we consider the current session authenticated.
-/// This is derived from TokenStore (source of truth) in session_providers.dart.
-final authStateProvider = Provider<bool>((ref) {
-  return ref.watch(isAuthedProvider);
-});
+/// Simple global loading flag for auth actions.
+/// (Screens that do `ref.read(authLoadingProvider.notifier)` will work.)
+final authLoadingProvider = StateProvider<bool>((ref) => false);
 
+/// Canonical controller provider used across screens.
 final authControllerProvider = Provider<AuthController>((ref) {
   return AuthController(ref);
 });
 
 class AuthController {
-  final Ref ref;
   AuthController(this.ref);
 
-  Future<void> register({required String handle, String? displayName}) async {
-    final repo = ref.read(authRepositoryProvider);
-    final tokens = await repo.register(handle: handle, displayName: displayName);
+  final Ref ref;
 
-    await ref.read(tokenStoreProvider).setSession(
-          userId: tokens.userId,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        );
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
+    ref.read(authLoadingProvider.notifier).state = true;
 
-    ref.read(isAuthedProvider.notifier).state = true;
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final res = await repo.login(email: email, password: password);
+
+      final accessToken = res['accessToken']?.toString();
+      final refreshToken = res['refreshToken']?.toString();
+
+      if (accessToken == null || accessToken.isEmpty || refreshToken == null || refreshToken.isEmpty) {
+        throw Exception('Login response missing tokens');
+      }
+
+      final store = ref.read(tokenStoreProvider);
+      await store.setTokens(accessToken: accessToken, refreshToken: refreshToken);
+    } finally {
+      ref.read(authLoadingProvider.notifier).state = false;
+    }
   }
 
-  Future<void> login({required String handle, String? deviceId}) async {
-    final repo = ref.read(authRepositoryProvider);
-    final tokens = await repo.login(handle: handle, deviceId: deviceId);
+  Future<void> register({
+    required String email,
+    required String password,
+    String? handle,
+    String? displayName,
+  }) async {
+    ref.read(authLoadingProvider.notifier).state = true;
 
-    await ref.read(tokenStoreProvider).setSession(
-          userId: tokens.userId,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        );
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final res = await repo.register(
+        email: email,
+        password: password,
+        handle: handle,
+        displayName: displayName,
+      );
 
-    ref.read(isAuthedProvider.notifier).state = true;
+      final accessToken = res['accessToken']?.toString();
+      final refreshToken = res['refreshToken']?.toString();
+
+      // Some backends return tokens immediately on register, some don't.
+      // If tokens exist, persist them; otherwise, just return.
+      if (accessToken != null &&
+          accessToken.isNotEmpty &&
+          refreshToken != null &&
+          refreshToken.isNotEmpty) {
+        final store = ref.read(tokenStoreProvider);
+        await store.setTokens(accessToken: accessToken, refreshToken: refreshToken);
+      }
+    } finally {
+      ref.read(authLoadingProvider.notifier).state = false;
+    }
   }
 
   Future<void> logout() async {
-    await ref.read(tokenStoreProvider).clear();
-    ref.read(isAuthedProvider.notifier).state = false;
+    ref.read(authLoadingProvider.notifier).state = true;
+    try {
+      final store = ref.read(tokenStoreProvider);
+      await store.clear();
+    } finally {
+      ref.read(authLoadingProvider.notifier).state = false;
+    }
   }
 }

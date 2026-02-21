@@ -1,263 +1,160 @@
-// lib/core/net/dio_provider.dart
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:dio/browser.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/session_providers.dart'; // tokenStoreProvider lives here
-import '../auth/token_store.dart';
+import '../auth/session_providers.dart';
+
+class EmailNotVerifiedException implements Exception {
+  EmailNotVerifiedException([this.message = 'Email not verified']);
+  final String message;
+  @override
+  String toString() => 'EmailNotVerifiedException: $message';
+}
 
 final dioProvider = Provider<Dio>((ref) {
-  ref.watch(tokenStoreProvider);
-
-  final configured = const String.fromEnvironment('API_BASE_URL', defaultValue: '').trim();
-  const prodDefault = 'https://api.aura.bajwadynesty.us';
-  final baseRoot = configured.isNotEmpty ? configured : prodDefault;
-
-  final baseUrl = _normalizeApiV1BaseUrl(baseRoot);
+  final session = ref.watch(sessionStateProvider);
 
   final dio = Dio(
     BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: session.baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
-      sendTimeout: const Duration(seconds: 20),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        if (session.accessToken != null) 'Authorization': 'Bearer ${session.accessToken}',
+      },
     ),
   );
 
-  if (kIsWeb) {
-    final adapter = dio.httpClientAdapter;
-    if (adapter is BrowserHttpClientAdapter) {
-      adapter.withCredentials = true;
-    }
-  }
-
-  dio.interceptors.add(
-    LogInterceptor(
-      request: true,
-      requestHeader: kDebugMode,
-      requestBody: false,
-      responseHeader: false,
-      responseBody: false,
-      error: true,
-      logPrint: (o) => debugPrint(o.toString()),
-    ),
-  );
-
-  dio.interceptors.add(_AuthInterceptor(dio: dio, ref: ref));
-
+  dio.interceptors.add(_AuthInterceptor(ref, dio));
   return dio;
 });
 
-String _normalizeApiV1BaseUrl(String raw) {
-  var u = raw.trim();
-  if (u.isEmpty) return u;
-
-  while (u.endsWith('/')) {
-    u = u.substring(0, u.length - 1);
-  }
-
-  if (u.endsWith('/v1')) {
-    u = u.substring(0, u.length - 3);
-    while (u.endsWith('/')) {
-      u = u.substring(0, u.length - 1);
-    }
-  }
-
-  return '$u/v1';
-}
-
-Map<String, dynamic> _unwrapSuccessEnvelope(dynamic payload) {
-  if (payload is! Map) throw Exception('Unexpected response');
-  final m = Map<String, dynamic>.from(payload as Map);
-
-  // Canonical: { success: true, data: ... }
-  if (m['success'] == true) {
-    final inner = m['data'];
-    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
-    throw Exception('Unexpected success envelope: data is not a map');
-  }
-
-  // Legacy: { data: ... }
-  final inner = m['data'];
-  if (inner is Map) return Map<String, dynamic>.from(inner as Map);
-
-  return m;
-}
-
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor({required this.dio, required this.ref});
+  _AuthInterceptor(this.ref, this.dio);
 
-  final Dio dio;
   final Ref ref;
+  final Dio dio;
 
-  Completer<void>? _refreshCompleter;
-
-  TokenStore get _tokenStore => ref.read(tokenStoreProvider);
-
-  bool _isAuthPath(String path) {
-    return path.contains('/auth/login') ||
-        path.contains('/auth/register') ||
-        path.contains('/auth/refresh') ||
-        path.contains('/auth/forgot-password') ||
-        path.contains('/auth/reset-password') ||
-        path.contains('/auth/verify-email') ||
-        path.contains('/auth/resend-verification');
-  }
+  Future<void>? _refreshing;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    if (options.path.startsWith('/v1/')) {
-      options.path = options.path.substring(3);
-    } else if (options.path == '/v1') {
-      options.path = '/';
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final session = ref.read(sessionStateProvider);
+    if (session.accessToken != null) {
+      options.headers['Authorization'] = 'Bearer ${session.accessToken}';
     }
-
-    final store = _tokenStore;
-    if (!store.isLoaded) {
-      await store.waitUntilLoaded();
-    }
-
-    final token = (store.accessToken ?? '').trim();
-    if (token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
-    } else {
-      options.headers.remove('Authorization');
-    }
-
     handler.next(options);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    final status = err.response?.statusCode;
     final req = err.requestOptions;
+    final status = err.response?.statusCode;
     final path = req.path;
 
-    if (status != 401 || _isAuthPath(path)) {
-      return handler.next(err);
+    // If backend blocks unverified users, bubble a distinct error so the UI can redirect.
+    if (status == 403) {
+      final data = err.response?.data;
+      if (data is Map && data['code'] == 'EMAIL_NOT_VERIFIED') {
+        handler.reject(
+          DioException(
+            requestOptions: req,
+            response: err.response,
+            type: err.type,
+            error: EmailNotVerifiedException(data['message']?.toString() ?? 'Email not verified'),
+          ),
+        );
+        return;
+      }
     }
 
-    final tokenStore = _tokenStore;
-
-    if (!tokenStore.isAuthed) {
-      await tokenStore.clear();
-      return handler.next(err);
+    // Only handle 401 refresh here
+    if (status != 401) {
+      handler.next(err);
+      return;
     }
 
-    final alreadyRetried = (req.extra['aura_retried'] == true);
-    if (alreadyRetried) {
-      await tokenStore.clear();
-      return handler.next(err);
+    // Don't attempt refresh for auth endpoints
+    if (path.startsWith('/v1/auth/login') ||
+        path.startsWith('/v1/auth/register') ||
+        path.startsWith('/v1/auth/refresh') ||
+        path.startsWith('/v1/auth/logout') ||
+        path.startsWith('/v1/auth/verify-email') ||
+        path.startsWith('/v1/auth/resend-verification')) {
+      handler.next(err);
+      return;
     }
+
+    final session = ref.read(sessionStateProvider);
+    final refreshToken = session.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      handler.next(err);
+      return;
+    }
+
+    _refreshing ??= _doRefresh(refreshToken);
 
     try {
-      if (_refreshCompleter != null) {
-        await _refreshCompleter!.future;
-
-        final afterWaitStore = _tokenStore;
-        if (!afterWaitStore.isAuthed) {
-          await afterWaitStore.clear();
-          return handler.next(err);
-        }
-
-        final access = (afterWaitStore.accessToken ?? '').trim();
-        if (access.isEmpty) {
-          await afterWaitStore.clear();
-          return handler.next(err);
-        }
-
-        final retryRes = await _retryWithAccessToken(req, access);
-        return handler.resolve(retryRes);
-      }
-
-      _refreshCompleter = Completer<void>();
-
-      final newAccess = await _performRefresh();
-
-      _refreshCompleter?.complete();
-      _refreshCompleter = null;
-
-      final retryRes = await _retryWithAccessToken(req, newAccess);
-      return handler.resolve(retryRes);
+      await _refreshing;
     } catch (_) {
-      if (_refreshCompleter != null && !_refreshCompleter!.isCompleted) {
-        _refreshCompleter!.complete();
-      }
-      _refreshCompleter = null;
-
-      await _tokenStore.clear();
-      return handler.next(err);
-    }
-  }
-
-  Future<String> _performRefresh() async {
-    final tokenStore = _tokenStore;
-
-    final refreshHeaders = <String, dynamic>{};
-    dynamic refreshBody = <String, dynamic>{};
-
-    if (!kIsWeb) {
-      final rt = (tokenStore.refreshToken ?? '').trim();
-      if (rt.isEmpty) throw const UnauthorizedException('Missing refresh token (non-web)');
-      refreshHeaders['x-token-transport'] = 'body';
-      refreshBody = {'refreshToken': rt};
+      _refreshing = null;
+      handler.next(err);
+      return;
     }
 
-    final refreshRes = await dio.post(
-      '/auth/refresh',
-      data: refreshBody,
-      options: refreshHeaders.isEmpty ? null : Options(headers: refreshHeaders),
-    );
+    _refreshing = null;
 
-    final map = _unwrapSuccessEnvelope(refreshRes.data);
-
-    final newAccess = (map['accessToken'] ?? '').toString().trim();
-    if (newAccess.isEmpty) throw Exception('Missing accessToken from refresh');
-
-    final newRefreshRaw = map['refreshToken'];
-    final newRefresh = newRefreshRaw == null ? null : newRefreshRaw.toString().trim();
-
-    await tokenStore.setTokens(
-      accessToken: newAccess,
-      refreshToken: (!kIsWeb && (newRefresh ?? '').isNotEmpty) ? newRefresh : null,
-    );
-
-    return newAccess;
+    // retry original request with new token
+    final updated = ref.read(sessionStateProvider);
+    final newRes = await _retry(req, updated.accessToken);
+    handler.resolve(newRes);
   }
 
-  Future<Response<dynamic>> _retryWithAccessToken(RequestOptions req, String accessToken) async {
-    final retryOptions = Options(
-      method: req.method,
-      headers: Map<String, dynamic>.from(req.headers),
-      responseType: req.responseType,
-      contentType: req.contentType,
-      followRedirects: req.followRedirects,
-      validateStatus: req.validateStatus,
-      receiveDataWhenStatusError: req.receiveDataWhenStatusError,
-      extra: Map<String, dynamic>.from(req.extra)..['aura_retried'] = true,
+  Future<void> _doRefresh(String refreshToken) async {
+    final res = await dio.post('/v1/auth/refresh', data: {'refreshToken': refreshToken});
+    final data = res.data;
+
+    if (data is! Map) throw Exception('Unexpected refresh response');
+
+    final accessToken = data['accessToken']?.toString();
+    final newRefreshToken = data['refreshToken']?.toString();
+
+    if (accessToken == null || accessToken.isEmpty || newRefreshToken == null || newRefreshToken.isEmpty) {
+      throw Exception('Invalid refresh response');
+    }
+
+    // TokenStore is the source of truth.
+    final store = ref.read(tokenStoreProvider);
+    await store.setTokens(accessToken: accessToken, refreshToken: newRefreshToken);
+  }
+
+  Future<Response<dynamic>> _retry(RequestOptions requestOptions, String? accessToken) {
+    final opts = Options(
+      method: requestOptions.method,
+      headers: Map<String, dynamic>.from(requestOptions.headers),
+      responseType: requestOptions.responseType,
+      contentType: requestOptions.contentType,
+      followRedirects: requestOptions.followRedirects,
+      validateStatus: requestOptions.validateStatus,
+      receiveDataWhenStatusError: requestOptions.receiveDataWhenStatusError,
+      sendTimeout: requestOptions.sendTimeout,
+      receiveTimeout: requestOptions.receiveTimeout,
     );
 
-    retryOptions.headers?['Authorization'] = 'Bearer $accessToken';
+    if (accessToken != null && accessToken.isNotEmpty) {
+      opts.headers ??= {};
+      opts.headers!['Authorization'] = 'Bearer $accessToken';
+    }
 
     return dio.request<dynamic>(
-      req.path,
-      data: req.data,
-      queryParameters: req.queryParameters,
-      options: retryOptions,
-      cancelToken: req.cancelToken,
-      onReceiveProgress: req.onReceiveProgress,
-      onSendProgress: req.onSendProgress,
+      requestOptions.path,
+      data: requestOptions.data,
+      queryParameters: requestOptions.queryParameters,
+      options: opts,
+      cancelToken: requestOptions.cancelToken,
+      onSendProgress: requestOptions.onSendProgress,
+      onReceiveProgress: requestOptions.onReceiveProgress,
     );
   }
-}
-
-class UnauthorizedException implements Exception {
-  const UnauthorizedException(this.message);
-  final String message;
-  @override
-  String toString() => message;
 }

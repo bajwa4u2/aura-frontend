@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'document_scaffold.dart';
+import '../core/ui/document_scaffold.dart';
 
 class PatronsHubScreen extends StatelessWidget {
   const PatronsHubScreen({super.key});
