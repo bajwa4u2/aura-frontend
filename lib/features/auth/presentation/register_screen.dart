@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../auth_repository.dart';
+import '../../auth/auth_repository.dart';
 import '../../../core/auth/session_providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -49,6 +49,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
+  Map<String, dynamic> _asMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return <String, dynamic>{};
+  }
+
+  /// Extract access/refresh tokens from varying backend response shapes.
+  /// Supports:
+  /// - { accessToken, refreshToken }
+  /// - { data: { accessToken, refreshToken } }
+  /// - { tokens: { accessToken, refreshToken } }
+  /// - snake_case variants
+  ({String? accessToken, String? refreshToken}) _extractTokens(Map<String, dynamic> root) {
+    String? pick(Map<String, dynamic> m, List<String> keys) {
+      for (final k in keys) {
+        final v = m[k];
+        if (v is String && v.trim().isNotEmpty) return v.trim();
+      }
+      return null;
+    }
+
+    final directAccess = pick(root, ['accessToken', 'access_token', 'token']);
+    final directRefresh = pick(root, ['refreshToken', 'refresh_token']);
+
+    if (directAccess != null) {
+      return (accessToken: directAccess, refreshToken: directRefresh);
+    }
+
+    final data = _asMap(root['data']);
+    final tokens = _asMap(root['tokens']);
+
+    final nestedAccess = pick(data, ['accessToken', 'access_token', 'token']) ?? pick(tokens, ['accessToken', 'access_token', 'token']);
+    final nestedRefresh = pick(data, ['refreshToken', 'refresh_token']) ?? pick(tokens, ['refreshToken', 'refresh_token']);
+
+    return (accessToken: nestedAccess, refreshToken: nestedRefresh);
+  }
+
   Future<void> _submit() async {
     setState(() {
       _error = null;
@@ -56,10 +93,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final pw = _password.text;
-    final cpw = _confirmPassword.text;
-
-    if (pw != cpw) {
+    if (_password.text != _confirmPassword.text) {
       setState(() => _error = 'Passwords do not match.');
       return;
     }
@@ -71,22 +105,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       final out = await repo.register(
         email: _email.text.trim(),
-        password: pw,
+        password: _password.text,
         firstName: _firstName.text.trim(),
         lastName: _lastName.text.trim(),
-        handle: _handle.text.trim(),
-        displayName: _displayName.text.trim(),
+        handle: _handle.text.trim().isEmpty ? null : _handle.text.trim(),
+        displayName: _displayName.text.trim().isEmpty ? null : _displayName.text.trim(),
       );
 
-      await ref.read(sessionControllerProvider.notifier).onAuthSuccess(out);
+      final tokens = _extractTokens(out);
+
+      // Persist tokens using your real TokenStore API.
+      // On web, refresh may be cookie-based; that's fine if refreshToken is null.
+      if (tokens.accessToken != null) {
+        await ref.read(tokenStoreProvider).setSession(
+              accessToken: tokens.accessToken!,
+              refreshToken: tokens.refreshToken,
+            );
+      }
 
       if (!mounted) return;
 
-      // If user came here from a protected route, go back there.
-      if (widget.redirectTo != null && widget.redirectTo!.isNotEmpty) {
-        context.go(widget.redirectTo!);
+      final rt = widget.redirectTo;
+      if (rt != null && rt.trim().isNotEmpty) {
+        context.go(rt);
       } else {
-        // Otherwise go to verify pending (your router enforces verification anyway)
         context.go('/verify-pending');
       }
     } catch (e) {
@@ -115,24 +157,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Create your account. We’ll email you a verification link.',
-                  ),
+                  const Text('Create your account. We’ll email you a verification link.'),
                   const SizedBox(height: 16),
 
                   if (_error != null) ...[
-                    Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 12),
                   ],
 
                   TextFormField(
                     controller: _firstName,
-                    decoration: const InputDecoration(
-                      labelText: 'First name (private)',
-                    ),
+                    decoration: const InputDecoration(labelText: 'First name (private)'),
                     validator: (v) => _req(v, 'First name'),
                     textInputAction: TextInputAction.next,
                   ),
@@ -140,9 +175,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _lastName,
-                    decoration: const InputDecoration(
-                      labelText: 'Last name (private)',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Last name (private)'),
                     validator: (v) => _req(v, 'Last name'),
                     textInputAction: TextInputAction.next,
                   ),
@@ -150,27 +183,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _displayName,
-                    decoration: const InputDecoration(
-                      labelText: 'Display name (public, optional)',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Display name (public, optional)'),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
 
                   TextFormField(
                     controller: _handle,
-                    decoration: const InputDecoration(
-                      labelText: 'Handle (optional)',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Handle (optional)'),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
 
                   TextFormField(
                     controller: _email,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Email'),
                     validator: (v) => _req(v, 'Email'),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -179,9 +206,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _password,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Password'),
                     validator: (v) => _req(v, 'Password'),
                     obscureText: true,
                     textInputAction: TextInputAction.next,
@@ -190,9 +215,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _confirmPassword,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm password',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Confirm password'),
                     validator: (v) => _req(v, 'Confirm password'),
                     obscureText: true,
                     textInputAction: TextInputAction.done,
@@ -202,9 +225,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child: Text(
-                      _loading ? 'Creating…' : 'Create account',
-                    ),
+                    child: Text(_loading ? 'Creating…' : 'Create account'),
                   ),
                   const SizedBox(height: 12),
                 ],

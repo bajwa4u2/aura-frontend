@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/net/dio_provider.dart';
 
 class AuthRepository {
   AuthRepository(this._dio);
@@ -103,3 +106,9 @@ class AuthRepository {
     return _unwrap(res.data);
   }
 }
+
+/// Riverpod provider for AuthRepository (was missing).
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  final dio = ref.read(dioProvider);
+  return AuthRepository(dio);
+});
