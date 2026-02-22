@@ -1,214 +1,158 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_text.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
-  const VerifyEmailScreen({super.key, this.redirectTo});
-
-  final String? redirectTo;
+  const VerifyEmailScreen({super.key});
 
   @override
   ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  bool _busy = false;
-  String? _msg;
+  bool _loading = true;
+  bool _verified = false;
+  String? _email;
+  String? _error;
 
-  String _safeRedirect(String? r) {
-    final v = (r ?? '').trim();
-    if (v.isEmpty) return '/home';
-    if (!v.startsWith('/')) return '/home';
-    return v;
+  @override
+  void initState() {
+    super.initState();
+    _refreshStatus();
   }
 
-  void _snack(String text) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
-    );
-  }
+  Future<void> _refreshStatus() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
-  Map<String, dynamic> _unwrapApiMap(dynamic data) {
-    if (data is Map) {
-      final m = Map<String, dynamic>.from(data as Map);
-      final inner = m['data'] ?? m['user'];
-      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
-      return m;
+    try {
+      final dio = ref.read(dioProvider);
+      // Prefer auth/me now that backend supports it.
+      final res = await dio.get('/v1/auth/me');
+
+      final data = res.data;
+      DateTime? emailVerifiedAt;
+
+      if (data is Map && data['user'] is Map) {
+        _email = (data['user']['email'] ?? '').toString();
+        final raw = data['user']['emailVerifiedAt'];
+        if (raw != null) emailVerifiedAt = DateTime.tryParse(raw.toString());
+      } else if (data is Map) {
+        // fallback if backend returns user directly
+        _email = (data['email'] ?? '').toString();
+        final raw = data['emailVerifiedAt'];
+        if (raw != null) emailVerifiedAt = DateTime.tryParse(raw.toString());
+      }
+
+      _verified = emailVerifiedAt != null;
+
+      setState(() {
+        _loading = false;
+      });
+
+      // If verified, you can route to home here if you want.
+      // If your router has a named home route, switch to it.
+      // For now, we just update UI state.
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = 'Could not check status. $e';
+      });
     }
-    throw Exception('Unexpected response');
-  }
-
-  Future<String?> _fetchMyEmail(Dio dio) async {
-    final res = await dio.get('/v1/auth/me');
-    final body = _unwrapApiMap(res.data);
-    final email = body['email'];
-    if (email is String && email.trim().isNotEmpty) return email.trim();
-    return null;
   }
 
   Future<void> _resend() async {
-    if (_busy) return;
     setState(() {
-      _busy = true;
-      _msg = null;
+      _error = null;
     });
 
     try {
-      final dio = ref.read(dioProvider);
-
-      final email = await _fetchMyEmail(dio);
-      if (email == null) {
-        setState(() => _msg = 'Could not determine your email. Please log out and log in again.');
+      final email = _email;
+      if (email == null || email.trim().isEmpty) {
+        setState(() {
+          _error = 'Missing email in session. Please log in again.';
+        });
         return;
       }
 
-      await dio.post(
-        '/v1/auth/resend-email-verification',
-        data: {'email': email},
-      );
-
-      if (!mounted) return;
-      _snack('Verification email resent. Check inbox/spam.');
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final serverMsg = (e.response?.data is Map) ? (e.response?.data['message'] ?? e.response?.data['error']) : null;
+      final dio = ref.read(dioProvider);
+      await dio.post('/v1/auth/resend-verification', data: {'email': email.trim()});
 
       setState(() {
-        _msg = 'Resend failed (${status ?? 'no status'}).'
-            '${serverMsg != null ? ' $serverMsg' : ''}';
+        _error = 'Verification email sent.';
       });
     } catch (e) {
-      setState(() => _msg = 'Resend failed. $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _checkAndContinue() async {
-    if (_busy) return;
-    setState(() {
-      _busy = true;
-      _msg = null;
-    });
-
-    try {
-      ref.invalidate(emailVerifiedProvider);
-      final ok = await ref.read(emailVerifiedProvider.future);
-
-      if (!ok) {
-        setState(() => _msg = 'Still not verified. Please verify, then try again.');
-        return;
-      }
-
-      if (!mounted) return;
-      context.go(_safeRedirect(widget.redirectTo));
-    } catch (e) {
-      setState(() => _msg = 'Could not check status. $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _logout() async {
-    if (_busy) return;
-    setState(() {
-      _busy = true;
-      _msg = null;
-    });
-
-    try {
-      final dio = ref.read(dioProvider);
-      try {
-        await dio.post('/v1/auth/logout');
-      } catch (_) {}
-
-      await ref.read(tokenStoreProvider).clear();
-      ref.invalidate(emailVerifiedProvider);
-
-      if (!mounted) return;
-      context.go('/login');
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      setState(() {
+        _error = 'Resend failed. $e';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAuthed = ref.watch(isAuthedProvider);
-
-    if (!isAuthed) {
-      return AuraScaffold(
-        title: 'Verify email',
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: AuraCard(
+    return AuraScaffold(
+      title: 'Verify email',
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('You are not signed in.', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s16),
-                  FilledButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text('Login'),
+                  const Text(
+                    'One more step',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _verified
+                        ? 'Your email is verified.'
+                        : 'Your account is created, but email is not verified yet. Please verify to continue.',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  if (_email != null && _email!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _email!,
+                      style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  if (_loading) const LinearProgressIndicator(),
+                  if (_error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      _error!,
+                      style: TextStyle(
+                        color: _error == 'Verification email sent.' ? Colors.green : Colors.red,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _loading ? null : _resend,
+                        child: const Text('Resend verification email'),
+                      ),
+                      OutlinedButton(
+                        onPressed: _loading ? null : _refreshStatus,
+                        child: const Text("I've verified, continue"),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return AuraScaffold(
-      title: 'Verify email',
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('One more step', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Your account is created, but email is not verified yet. Please verify to continue.',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                if (_msg != null) ...[
-                  Text(_msg!, style: AuraText.body.copyWith(color: Colors.red)),
-                  const SizedBox(height: AuraSpace.s10),
-                ],
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    FilledButton(
-                      onPressed: _busy ? null : _resend,
-                      child: Text(_busy ? 'Working…' : 'Resend verification email'),
-                    ),
-                    OutlinedButton(
-                      onPressed: _busy ? null : _checkAndContinue,
-                      child: const Text("I've verified, continue"),
-                    ),
-                    TextButton(
-                      onPressed: _busy ? null : _logout,
-                      child: const Text('Logout'),
-                    ),
-                  ],
-                ),
-              ],
             ),
           ),
         ),
