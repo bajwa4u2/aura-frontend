@@ -1,33 +1,35 @@
-# ---------- Build stage ----------
+# ---- Build stage ----
 FROM ghcr.io/cirruslabs/flutter:stable AS build
+
+# Default to your live API domain.
+# Railway can override this at build time with a build arg if you ever want.
+ARG API_BASE_URL=https://api.aura.bajwadynesty.us
+ENV API_BASE_URL=${API_BASE_URL}
+
+# Create a non-root user so Flutter doesn't complain.
+RUN adduser -D -u 10001 flutteruser
+
 WORKDIR /app
 
-# Cache bust: change this value to force rebuild when needed
-ARG CACHEBUST=1
-RUN echo "[build] CACHEBUST=$CACHEBUST" && date
-
-# API base URL injected at build time (must be host only, no /v1)
-# Example: https://your-backend.up.railway.app
-ARG API_BASE_URL=http://localhost:3000
-RUN echo "[build] API_BASE_URL=$API_BASE_URL"
-
+# Copy pubspec files first for better caching
 COPY pubspec.yaml pubspec.lock ./
+
+# Ensure workspace ownership for non-root user
+RUN chown -R flutteruser:flutteruser /app
+
+USER flutteruser
+
 RUN flutter pub get
 
+# Copy the rest of the app
 COPY . .
 
-# Another cache bust right before compilation (makes it obvious in logs)
-RUN echo "[build] compiling..." && date
+RUN echo "[build] API_BASE_URL=$API_BASE_URL" && \
+    flutter build web --release --dart-define=API_BASE_URL=$API_BASE_URL
 
-# Build with dart-define so AppConfig.apiBaseUrl picks it up
-RUN flutter build web --release --dart-define=API_BASE_URL=$API_BASE_URL
 
-# ---------- Runtime stage ----------
+# ---- Runtime stage (Nginx) ----
 FROM nginx:alpine
 
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/build/web /usr/share/nginx/html
-
-EXPOSE 8080
-
-CMD ["/bin/sh", "-c", "export PORT=${PORT:-8080}; echo \"[boot] PORT=$PORT\"; envsubst '$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf; echo \"[boot] Rendered nginx conf:\"; cat /etc/nginx/conf.d/default.conf; nginx -g 'daemon off;'"]
