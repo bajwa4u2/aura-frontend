@@ -43,13 +43,11 @@ class TokenStore extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _accessToken = prefs.getString(_kAccess);
 
-      // Web: refresh token is assumed to be httpOnly cookie by backend.
-      // But we keep a slot for non-web where refresh may be returned.
-      if (kIsWeb) {
-        _refreshToken = null;
-      } else {
-        _refreshToken = prefs.getString(_kRefresh);
-      }
+      // IMPORTANT:
+      // We currently persist refreshToken on web as well because our backend
+      // returns refreshToken in JSON (not as httpOnly cookie).
+      // This enables session refresh and prevents 401 loops after token expiry.
+      _refreshToken = prefs.getString(_kRefresh);
     } catch (_) {
       _accessToken = null;
       _refreshToken = null;
@@ -90,13 +88,10 @@ class TokenStore extends ChangeNotifier {
   Future<void> setTokens({required String accessToken, String? refreshToken}) async {
     _accessToken = accessToken.trim().isEmpty ? null : accessToken.trim();
 
-    // Web: refresh token is stored in httpOnly cookie by backend.
-    if (kIsWeb) {
-      _refreshToken = null;
-    } else {
-      if (refreshToken != null && refreshToken.trim().isNotEmpty) {
-        _refreshToken = refreshToken.trim();
-      }
+    // Store refresh token on ALL platforms for now.
+    // (If we later move to httpOnly cookie on web, we can revisit this.)
+    if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+      _refreshToken = refreshToken.trim();
     }
 
     try {
@@ -108,12 +103,10 @@ class TokenStore extends ChangeNotifier {
         await prefs.setString(_kAccess, _accessToken!);
       }
 
-      if (!kIsWeb) {
-        if (_refreshToken == null) {
-          await prefs.remove(_kRefresh);
-        } else {
-          await prefs.setString(_kRefresh, _refreshToken!);
-        }
+      if (_refreshToken == null) {
+        await prefs.remove(_kRefresh);
+      } else {
+        await prefs.setString(_kRefresh, _refreshToken!);
       }
     } catch (_) {
       // Ignore persistence failures; in-memory still works.
@@ -148,9 +141,7 @@ class TokenStore extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_kAccess);
-      if (!kIsWeb) {
-        await prefs.remove(_kRefresh);
-      }
+      await prefs.remove(_kRefresh);
     } catch (_) {}
 
     _loaded = true;
