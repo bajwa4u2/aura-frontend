@@ -6,35 +6,17 @@ class AuthRepository {
 
   final Dio _dio;
 
-  Map<String, dynamic> _unwrap(dynamic raw) {
-    if (raw is! Map) throw Exception('Unexpected response');
-
-    final m = Map<String, dynamic>.from(raw);
-
-    // New canonical envelope: { success: true, data: ... }
-    if (m['success'] == true) {
-      final inner = m['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner);
-      if (inner is List) return {'items': inner};
-      // If success=true but data is primitive, still return something stable
-      return {'value': inner};
-    }
-
-    // Legacy shapes we still tolerate:
-    // - { data: {...} }
-    // - { user: {...} }
-    final inner = m['data'] ?? m['user'];
-    if (inner is Map) return Map<String, dynamic>.from(inner);
-
-    return m;
+  Map<String, dynamic> _unwrap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw Exception('Unexpected response');
   }
 
-  /// Register
-  /// - Web: uses httpOnly refresh cookie; response typically { user, accessToken } under data envelope
-  /// - Non-web: requests body transport so we also receive refreshToken in body
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
+    required String firstName,
+    required String lastName,
     String? handle,
     String? displayName,
   }) async {
@@ -43,8 +25,10 @@ class AuthRepository {
     final res = await _dio.post(
       '/v1/auth/register',
       data: {
-        'email': email,
+        'email': email.trim(),
         'password': password,
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
         if (handle != null && handle.trim().isNotEmpty) 'handle': handle.trim(),
         if (displayName != null && displayName.trim().isNotEmpty) 'displayName': displayName.trim(),
       },
@@ -54,7 +38,6 @@ class AuthRepository {
     return _unwrap(res.data);
   }
 
-  /// Login
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -63,56 +46,60 @@ class AuthRepository {
 
     final res = await _dio.post(
       '/v1/auth/login',
-      data: {'email': email, 'password': password},
+      data: {'email': email.trim(), 'password': password},
       options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
     );
 
     return _unwrap(res.data);
   }
 
-  /// Refresh access token
-  Future<Map<String, dynamic>> refresh({String? refreshToken}) async {
-    final headers = <String, dynamic>{};
-    dynamic body = <String, dynamic>{};
-
-    if (!kIsWeb) {
-      final rt = (refreshToken ?? '').trim();
-      if (rt.isEmpty) {
-        throw StateError('Missing refreshToken (non-web refresh requires body token)');
-      }
-      headers['x-token-transport'] = 'body';
-      body = {'refreshToken': rt};
-    }
+  Future<Map<String, dynamic>> refresh({
+    required String refreshToken,
+  }) async {
+    final wantsBodyTransport = !kIsWeb;
 
     final res = await _dio.post(
       '/v1/auth/refresh',
-      data: body,
-      options: headers.isEmpty ? null : Options(headers: headers),
+      data: {'refreshToken': refreshToken},
+      options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
     );
 
     return _unwrap(res.data);
   }
 
   Future<Map<String, dynamic>> logout({
-    required String userId,
-    String? refreshToken,
+    required String refreshToken,
   }) async {
-    final data = <String, dynamic>{
-      'userId': userId.trim(),
-      if (!kIsWeb && refreshToken != null && refreshToken.trim().isNotEmpty) 'refreshToken': refreshToken.trim(),
-    };
+    final wantsBodyTransport = !kIsWeb;
 
-    final res = await _dio.post('/v1/auth/logout', data: data);
+    final res = await _dio.post(
+      '/v1/auth/logout',
+      data: {'refreshToken': refreshToken},
+      options: wantsBodyTransport ? Options(headers: {'x-token-transport': 'body'}) : null,
+    );
+
     return _unwrap(res.data);
   }
 
-  Future<Map<String, dynamic>> logoutAll({required String userId}) async {
-    final res = await _dio.post('/v1/auth/logout-all', data: {'userId': userId.trim()});
+  Future<Map<String, dynamic>> resendVerification({
+    required String email,
+  }) async {
+    final res = await _dio.post(
+      '/v1/auth/resend-verification',
+      data: {'email': email.trim()},
+    );
+
     return _unwrap(res.data);
   }
 
-  Future<Map<String, dynamic>> me() async {
-    final res = await _dio.get('/v1/auth/me');
+  Future<Map<String, dynamic>> verifyEmail({
+    required String token,
+  }) async {
+    final res = await _dio.post(
+      '/v1/auth/verify-email',
+      data: {'token': token.trim()},
+    );
+
     return _unwrap(res.data);
   }
 }
