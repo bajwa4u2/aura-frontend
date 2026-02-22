@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth_repository.dart';
 import '../../../core/auth/session_providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({
+    super.key,
+    this.redirectTo,
+  });
+
+  final String? redirectTo;
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -62,21 +68,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final repo = ref.read(authRepositoryProvider);
+
       final out = await repo.register(
-        email: _email.text,
+        email: _email.text.trim(),
         password: pw,
-        firstName: _firstName.text,
-        lastName: _lastName.text,
-        handle: _handle.text,
-        displayName: _displayName.text,
+        firstName: _firstName.text.trim(),
+        lastName: _lastName.text.trim(),
+        handle: _handle.text.trim(),
+        displayName: _displayName.text.trim(),
       );
 
-      // If your flow stores tokens / session here, keep it:
-      // This assumes your session controller/provider already knows how to handle response.
       await ref.read(sessionControllerProvider.notifier).onAuthSuccess(out);
 
-      if (mounted) {
-        // Navigate handled by your router/guards after session update
+      if (!mounted) return;
+
+      // If user came here from a protected route, go back there.
+      if (widget.redirectTo != null && widget.redirectTo!.isNotEmpty) {
+        context.go(widget.redirectTo!);
+      } else {
+        // Otherwise go to verify pending (your router enforces verification anyway)
+        context.go('/verify-pending');
       }
     } catch (e) {
       setState(() => _error = e.toString());
@@ -104,17 +115,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Create your account. We’ll email you a verification link.'),
+                  const Text(
+                    'Create your account. We’ll email you a verification link.',
+                  ),
                   const SizedBox(height: 16),
 
                   if (_error != null) ...[
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                     const SizedBox(height: 12),
                   ],
 
                   TextFormField(
                     controller: _firstName,
-                    decoration: const InputDecoration(labelText: 'First name (private)'),
+                    decoration: const InputDecoration(
+                      labelText: 'First name (private)',
+                    ),
                     validator: (v) => _req(v, 'First name'),
                     textInputAction: TextInputAction.next,
                   ),
@@ -122,7 +140,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _lastName,
-                    decoration: const InputDecoration(labelText: 'Last name (private)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Last name (private)',
+                    ),
                     validator: (v) => _req(v, 'Last name'),
                     textInputAction: TextInputAction.next,
                   ),
@@ -130,21 +150,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _displayName,
-                    decoration: const InputDecoration(labelText: 'Display name (public, optional)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Display name (public, optional)',
+                    ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
 
                   TextFormField(
                     controller: _handle,
-                    decoration: const InputDecoration(labelText: 'Handle (optional)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Handle (optional)',
+                    ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
 
                   TextFormField(
                     controller: _email,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                    ),
                     validator: (v) => _req(v, 'Email'),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -153,7 +179,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _password,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                    ),
                     validator: (v) => _req(v, 'Password'),
                     obscureText: true,
                     textInputAction: TextInputAction.next,
@@ -162,7 +190,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   TextFormField(
                     controller: _confirmPassword,
-                    decoration: const InputDecoration(labelText: 'Confirm password'),
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm password',
+                    ),
                     validator: (v) => _req(v, 'Confirm password'),
                     obscureText: true,
                     textInputAction: TextInputAction.done,
@@ -172,7 +202,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child: Text(_loading ? 'Creating…' : 'Create account'),
+                    child: Text(
+                      _loading ? 'Creating…' : 'Create account',
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
