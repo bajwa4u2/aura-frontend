@@ -21,7 +21,7 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
       headers: {
-        if (session.accessToken != null) 'Authorization': 'Bearer ${session.accessToken}',
+        'Content-Type': 'application/json',
       },
     ),
   );
@@ -38,12 +38,29 @@ class _AuthInterceptor extends Interceptor {
 
   Future<void>? _refreshing;
 
+  bool _isAuthPath(String path) {
+    return path.startsWith('/v1/auth/login') ||
+        path.startsWith('/v1/auth/register') ||
+        path.startsWith('/v1/auth/refresh') ||
+        path.startsWith('/v1/auth/logout') ||
+        path.startsWith('/v1/auth/verify-email') ||
+        path.startsWith('/v1/auth/resend-verification') ||
+        path.startsWith('/v1/auth/resend-email-verification');
+  }
+
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final session = ref.read(sessionStateProvider);
-    if (session.accessToken != null) {
-      options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    // TokenStore is source of truth. Always wait until it is loaded on web.
+    final store = ref.read(tokenStoreProvider);
+    await store.waitUntilLoaded();
+
+    final accessToken = store.accessToken;
+    if (accessToken != null && accessToken.trim().isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer ${accessToken.trim()}';
+    } else {
+      options.headers.remove('Authorization');
     }
+
     handler.next(options);
   }
 
@@ -53,7 +70,7 @@ class _AuthInterceptor extends Interceptor {
     final status = err.response?.statusCode;
     final path = req.path;
 
-    // If backend blocks unverified users, bubble a distinct error so the UI can redirect.
+    // Bubble a distinct error so the UI can redirect if backend blocks unverified.
     if (status == 403) {
       final data = err.response?.data;
       if (data is Map && data['code'] == 'EMAIL_NOT_VERIFIED') {
@@ -69,25 +86,23 @@ class _AuthInterceptor extends Interceptor {
       }
     }
 
-    // Only handle 401 refresh here
+    // Only handle 401 refresh here.
     if (status != 401) {
       handler.next(err);
       return;
     }
 
-    // Don't attempt refresh for auth endpoints
-    if (path.startsWith('/v1/auth/login') ||
-        path.startsWith('/v1/auth/register') ||
-        path.startsWith('/v1/auth/refresh') ||
-        path.startsWith('/v1/auth/logout') ||
-        path.startsWith('/v1/auth/verify-email') ||
-        path.startsWith('/v1/auth/resend-verification')) {
+    // Don't attempt refresh for auth endpoints.
+    if (_isAuthPath(path)) {
       handler.next(err);
       return;
     }
 
-    final session = ref.read(sessionStateProvider);
-    final refreshToken = session.refreshToken;
+    // TokenStore is the source of truth.
+    final store = ref.read(tokenStoreProvider);
+    await store.waitUntilLoaded();
+
+    final refreshToken = store.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) {
       handler.next(err);
       return;
@@ -105,9 +120,11 @@ class _AuthInterceptor extends Interceptor {
 
     _refreshing = null;
 
-    // retry original request with new token
-    final updated = ref.read(sessionStateProvider);
-    final newRes = await _retry(req, updated.accessToken);
+    // Retry original request with the new token.
+    final updatedStore = ref.read(tokenStoreProvider);
+    await updatedStore.waitUntilLoaded();
+
+    final newRes = await _retry(req, updatedStore.accessToken);
     handler.resolve(newRes);
   }
 
@@ -124,15 +141,22 @@ class _AuthInterceptor extends Interceptor {
       throw Exception('Invalid refresh response');
     }
 
-    // TokenStore is the source of truth.
     final store = ref.read(tokenStoreProvider);
     await store.setTokens(accessToken: accessToken, refreshToken: newRefreshToken);
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions, String? accessToken) {
+    final headers = Map<String, dynamic>.from(requestOptions.headers);
+
+    if (accessToken != null && accessToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $accessToken';
+    } else {
+      headers.remove('Authorization');
+    }
+
     final opts = Options(
       method: requestOptions.method,
-      headers: Map<String, dynamic>.from(requestOptions.headers),
+      headers: headers,
       responseType: requestOptions.responseType,
       contentType: requestOptions.contentType,
       followRedirects: requestOptions.followRedirects,
@@ -141,11 +165,6 @@ class _AuthInterceptor extends Interceptor {
       sendTimeout: requestOptions.sendTimeout,
       receiveTimeout: requestOptions.receiveTimeout,
     );
-
-    if (accessToken != null && accessToken.isNotEmpty) {
-      opts.headers ??= {};
-      opts.headers!['Authorization'] = 'Bearer $accessToken';
-    }
 
     return dio.request<dynamic>(
       requestOptions.path,
