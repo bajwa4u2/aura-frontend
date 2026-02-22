@@ -23,17 +23,19 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+
     // Auto-verify if token present in URL.
     if (widget.token != null && widget.token!.trim().isNotEmpty) {
       _runVerify();
     } else {
-      // No token: we can still show a helpful message.
+      // No token: show a helpful message.
       _error = 'Missing verification token.';
     }
   }
 
   Future<void> _runVerify() async {
     if (_loading) return;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -79,7 +81,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Widget build(BuildContext context) {
     return AuraScaffold(
       title: 'Verify Email',
-      child: Center(
+      body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: Card(
@@ -94,7 +96,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
-
                   if (_loading) ...[
                     const Text('Verifying your email…'),
                     const SizedBox(height: 12),
