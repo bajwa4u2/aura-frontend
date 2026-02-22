@@ -22,7 +22,7 @@ class AuthController {
 
     try {
       final res = await dio.post(
-        '/v1/auth/login',
+        '/auth/login',
         data: {
           'email': email.trim(),
           'password': password,
@@ -31,11 +31,11 @@ class AuthController {
 
       final data = res.data;
 
-      if (data is! Map || data['success'] != true) {
+      if (data is! Map || data['ok'] != true) {
         throw Exception('Unexpected login response');
       }
 
-      final payload = data['data'] as Map<String, dynamic>;
+      final payload = Map<String, dynamic>.from(data['data'] as Map);
       final accessToken = payload['accessToken'] as String?;
       final refreshToken = payload['refreshToken'] as String?;
 
@@ -88,7 +88,7 @@ class AuthController {
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/v1/auth/logout');
+      await dio.post('/auth/logout');
     } catch (_) {}
 
     await ref.read(tokenStoreProvider).clear();

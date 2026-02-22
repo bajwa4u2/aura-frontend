@@ -24,13 +24,13 @@ Post _postFromAny(dynamic body) {
 
 final postProvider = FutureProvider.family<Post, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/posts/$id');
+  final res = await dio.get('/posts/$id');
   return _postFromAny(res.data);
 });
 
 final repliesProvider = FutureProvider.family<List<Post>, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/posts/$id/replies');
+  final res = await dio.get('/posts/$id/replies');
   final raw = res.data;
 
   final List items;

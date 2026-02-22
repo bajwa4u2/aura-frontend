@@ -29,7 +29,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/v1/auth/reset-password', data: {
+      await dio.post('/auth/reset-password', data: {
         'token': _token.text.trim(),
         'newPassword': _password.text,
       });

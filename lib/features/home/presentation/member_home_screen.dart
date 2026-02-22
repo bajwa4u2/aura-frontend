@@ -18,7 +18,7 @@ import '../../saves/providers.dart';
 final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
 
-  final res = await dio.get('/v1/posts/draft'); // interceptor will attach auth + refresh if needed
+  final res = await dio.get('/posts/draft'); // interceptor will attach auth + refresh if needed
   final data = res.data;
 
   if (data is Map) {

@@ -41,11 +41,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     final m = Map<String, dynamic>.from(raw);
 
-    // Canonical envelope
-    if (m['success'] == true) {
+    // Canonical envelope (Aura Contract v1)
+    if (m['ok'] == true) {
       final inner = m['data'];
       if (inner is Map) return Map<String, dynamic>.from(inner);
-      throw Exception('Unexpected response: success=true but data is not a map');
+      throw Exception('Unexpected response: ok=true but data is not a map');
     }
 
     // Legacy fallback
@@ -76,7 +76,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final options = !kIsWeb ? Options(headers: {'x-token-transport': 'body'}) : null;
 
       final res = await dio.post(
-        '/v1/auth/login',
+        '/auth/login',
         data: {'email': email, 'password': password},
         options: options,
       );

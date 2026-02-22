@@ -19,7 +19,7 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   // We must load it from API host, not from the frontend origin.
   final dio = ref.read(dioProvider);
   var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
-  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
+  if (base.endsWith('')) base = base.substring(0, base.length - 3);
   while (base.endsWith('/')) {
     base = base.substring(0, base.length - 1);
   }
@@ -195,7 +195,7 @@ class _ActionRow extends ConsumerWidget {
       if (text.isNotEmpty) payload['text'] = text;
 
       // Backend route: POST /v1/posts/:id/repost
-      await dio.post('/v1/posts/$postId/repost', data: payload);
+      await dio.post('/posts/$postId/repost', data: payload);
 
       ref.invalidate(isLikedProvider(postId));
       ref.invalidate(isSavedProvider(postId));

@@ -25,7 +25,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/v1/auth/forgot-password', data: {'email': _email.text.trim()});
+      await dio.post('/auth/forgot-password', data: {'email': _email.text.trim()});
       setState(() => _msg = 'If the email exists, we sent a reset link/code. Check inbox/spam.');
     } on DioException catch (e) {
       setState(() => _msg = e.response?.data?.toString() ?? 'Failed to request reset.');

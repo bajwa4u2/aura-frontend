@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config.dart';
+import '../../config.dart';
 import '../net/dio_provider.dart';
 import 'token_store.dart';
 
@@ -90,14 +90,30 @@ final authEventsProvider = StreamProvider<void>((ref) {
   return controller.stream;
 });
 
-Map<String, dynamic> _unwrapApiMap(dynamic data) {
-  if (data is Map) {
-    final m = Map<String, dynamic>.from(data as Map);
-    final inner = m['data'] ?? m['user'];
-    if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+Map<String, dynamic> _unwrapApiMap(dynamic raw) {
+  if (raw is! Map) throw Exception('Unexpected response');
+
+  final m = Map<String, dynamic>.from(raw as Map);
+
+  // Locked envelope (Aura Contract v1)
+  if (m['ok'] == true && m.containsKey('data')) {
+    final inner = m['data'];
+    if (inner is Map) {
+      final innerMap = Map<String, dynamic>.from(inner as Map);
+      // Common shape: { user: {...}, accessToken, ... }
+      final user = innerMap['user'];
+      if (user is Map) return Map<String, dynamic>.from(user as Map);
+      return innerMap;
+    }
+    // If data isn't a map, return envelope as-is (rare)
     return m;
   }
-  throw Exception('Unexpected response');
+
+  // Legacy fallback: sometimes backend returned { data: {...} } without ok
+  final legacyInner = m['data'] ?? m['user'];
+  if (legacyInner is Map) return Map<String, dynamic>.from(legacyInner as Map);
+
+  return m;
 }
 
 /// True if the current user has verified their email.
@@ -107,7 +123,7 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   if (!authed) return true; // public routes should not be gated by verification
 
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/v1/auth/me');
+  final res = await dio.get('/auth/me');
 
   final user = _unwrapApiMap(res.data);
   return user['emailVerifiedAt'] != null || user['emailVerified'] == true;

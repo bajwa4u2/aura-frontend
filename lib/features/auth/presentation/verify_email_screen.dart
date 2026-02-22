@@ -1,156 +1,134 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
-  const VerifyEmailScreen({super.key});
+  final String? token;
+  final String? redirectTo;
+
+  const VerifyEmailScreen({super.key, this.token, this.redirectTo});
 
   @override
   ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  bool _loading = true;
-  bool _verified = false;
-  String? _email;
+  bool _loading = false;
   String? _error;
+  bool _verified = false;
 
   @override
   void initState() {
     super.initState();
-    _refreshStatus();
+    // Auto-verify if token present in URL.
+    if (widget.token != null && widget.token!.trim().isNotEmpty) {
+      _runVerify();
+    } else {
+      // No token: we can still show a helpful message.
+      _error = 'Missing verification token.';
+    }
   }
 
-  Future<void> _refreshStatus() async {
+  Future<void> _runVerify() async {
+    if (_loading) return;
     setState(() {
       _loading = true;
       _error = null;
+      _verified = false;
     });
 
     try {
       final dio = ref.read(dioProvider);
-      // Prefer auth/me now that backend supports it.
-      final res = await dio.get('/v1/auth/me');
 
-      final data = res.data;
-      DateTime? emailVerifiedAt;
+      // 1) Verify email using token
+      await dio.post('/auth/verify-email', data: {'token': widget.token});
 
-      if (data is Map && data['user'] is Map) {
-        _email = (data['user']['email'] ?? '').toString();
-        final raw = data['user']['emailVerifiedAt'];
-        if (raw != null) emailVerifiedAt = DateTime.tryParse(raw.toString());
-      } else if (data is Map) {
-        // fallback if backend returns user directly
-        _email = (data['email'] ?? '').toString();
-        final raw = data['emailVerifiedAt'];
-        if (raw != null) emailVerifiedAt = DateTime.tryParse(raw.toString());
-      }
+      // 2) Confirm status (best-effort)
+      try {
+        await dio.get('/auth/me');
+      } catch (_) {}
 
-      _verified = emailVerifiedAt != null;
-
+      if (!mounted) return;
       setState(() {
-        _loading = false;
+        _verified = true;
       });
-
-      // If verified, you can route to home here if you want.
-      // If your router has a named home route, switch to it.
-      // For now, we just update UI state.
     } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Verification failed. The link may be expired or already used.';
+      });
+    } finally {
+      if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Could not check status. $e';
       });
     }
   }
 
-  Future<void> _resend() async {
-    setState(() {
-      _error = null;
-    });
-
-    try {
-      final email = _email;
-      if (email == null || email.trim().isEmpty) {
-        setState(() {
-          _error = 'Missing email in session. Please log in again.';
-        });
-        return;
-      }
-
-      final dio = ref.read(dioProvider);
-      await dio.post('/v1/auth/resend-verification', data: {'email': email.trim()});
-
-      setState(() {
-        _error = 'Verification email sent.';
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Resend failed. $e';
-      });
-    }
+  void _continue() {
+    final target = (widget.redirectTo != null && widget.redirectTo!.trim().isNotEmpty)
+        ? widget.redirectTo!
+        : '/home';
+    context.go(target);
   }
 
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      title: 'Verify email',
+      title: 'Verify Email',
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: 520),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'One more step',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                    'Email verification',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _verified
-                        ? 'Your email is verified.'
-                        : 'Your account is created, but email is not verified yet. Please verify to continue.',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  if (_email != null && _email!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _email!,
-                      style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  const SizedBox(height: 12),
+
+                  if (_loading) ...[
+                    const Text('Verifying your email…'),
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(),
+                  ] else if (_verified) ...[
+                    const Text('Verified. You are good to go.'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _continue,
+                      child: const Text('Continue'),
+                    ),
+                  ] else ...[
+                    Text(_error ?? 'Unable to verify.'),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: (widget.token != null && widget.token!.trim().isNotEmpty)
+                                ? _runVerify
+                                : null,
+                            child: const Text('Try again'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => context.go('/login'),
+                            child: const Text('Go to login'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  const SizedBox(height: 14),
-                  if (_loading) const LinearProgressIndicator(),
-                  if (_error != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      _error!,
-                      style: TextStyle(
-                        color: _error == 'Verification email sent.' ? Colors.green : Colors.red,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _loading ? null : _resend,
-                        child: const Text('Resend verification email'),
-                      ),
-                      OutlinedButton(
-                        onPressed: _loading ? null : _refreshStatus,
-                        child: const Text("I've verified, continue"),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

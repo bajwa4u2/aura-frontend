@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  /// API base host (NO /v1 here).
+  /// API base URL (includes /v1).
   /// Example:
-  /// - local:    http://localhost:3000
-  /// - prod:     https://your-backend.up.railway.app
+  /// - local:    http://localhost:3000/v1
+  /// - prod:     https://api.aura.bajwadynesty.us/v1
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://api.aura.bajwadynesty.us/v1',
   );
 
   static String describe() {

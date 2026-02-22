@@ -35,9 +35,9 @@ final myHandleProvider = FutureProvider<String>((ref) async {
 
   Response res;
   try {
-    res = await dio.get('/v1/users/me');
+    res = await dio.get('/users/me');
   } catch (_) {
-    res = await dio.get('/v1/auth/me');
+    res = await dio.get('/auth/me');
   }
 
   final data = res.data;

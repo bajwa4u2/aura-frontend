@@ -5,13 +5,12 @@ import '../auth/session_providers.dart';
 import '../auth/token_store.dart';
 
 final dioProvider = Provider<Dio>((ref) {
-  final baseUrl = ref.watch(apiBaseUrlProvider);
   final tokenStore = ref.watch(tokenStoreProvider);
   final session = ref.watch(sessionStateProvider);
 
   final dio = Dio(
     BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: session.baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
@@ -20,13 +19,13 @@ final dioProvider = Provider<Dio>((ref) {
 
   bool isPublicPath(String p) {
     // Public endpoints that must NOT require auth header
-    return p.startsWith('/v1/auth/login') ||
-        p.startsWith('/v1/auth/register') ||
-        p.startsWith('/v1/auth/refresh') ||
-        p.startsWith('/v1/auth/verify-email') ||
-        p.startsWith('/v1/auth/resend-verification') ||
-        p.startsWith('/v1/auth/resend-email-verification') ||
-        p.startsWith('/v1/auth/health');
+    return p.startsWith('/auth/login') ||
+        p.startsWith('/auth/register') ||
+        p.startsWith('/auth/refresh') ||
+        p.startsWith('/auth/verify-email') ||
+        p.startsWith('/auth/resend-verification') ||
+        p.startsWith('/auth/resend-email-verification') ||
+        p.startsWith('/auth/health');
   }
 
   dio.interceptors.add(
@@ -56,7 +55,7 @@ final dioProvider = Provider<Dio>((ref) {
           if (refreshToken != null && refreshToken.trim().isNotEmpty) {
             try {
               final res = await dio.post(
-                '/v1/auth/refresh',
+                '/auth/refresh',
                 data: {'refreshToken': refreshToken},
               );
 

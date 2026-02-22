@@ -183,7 +183,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/verify-email',
             builder: (context, state) {
               final redirectTo = state.uri.queryParameters['redirect'];
-              return VerifyEmailScreen(redirectTo: redirectTo);
+              final token = state.uri.queryParameters['token'];
+              return VerifyEmailScreen(token: token, redirectTo: redirectTo);
             },
           ),
           GoRoute(

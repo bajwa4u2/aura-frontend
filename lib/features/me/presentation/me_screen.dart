@@ -17,10 +17,10 @@ final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
   Response res;
   try {
-    res = await dio.get('/v1/users/me');
+    res = await dio.get('/users/me');
   } catch (_) {
     // Fallback (older path) if needed
-    res = await dio.get('/v1/auth/me');
+    res = await dio.get('/auth/me');
   }
 
   final data = res.data;
@@ -30,7 +30,7 @@ final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/v1/posts/draft');
+  final res = await dio.get('/posts/draft');
   final data = res.data;
   if (data is Map) return Map<String, dynamic>.from(data);
   throw Exception('Unexpected response');
@@ -38,7 +38,7 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/v1/posts/mine');
+  final res = await dio.get('/posts/mine');
   final data = res.data;
   if (data is List) {
     return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
@@ -82,7 +82,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
 
     // Dio baseUrl includes /v1
-    final root = baseUrl.replaceAll(RegExp(r'/v1/?$'), '');
+    final root = baseUrl.replaceAll(RegExp(r'/?$'), '');
     if (u.startsWith('/')) return '$root$u';
     return '$root/$u';
   }
@@ -123,7 +123,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
       // Store avatarUrl on user
       await dio.patch(
-        '/v1/users/me',
+        '/users/me',
         data: {'avatarUrl': url.trim()},
       );
 
@@ -200,7 +200,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final bb = bioCtl.text.trim();
 
     await dio.patch(
-      '/v1/users/me',
+      '/users/me',
       data: {
         'displayName': dn.isEmpty ? null : dn,
         'bio': bb.isEmpty ? null : bb,
@@ -247,7 +247,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.put('/v1/posts/draft', data: {'text': ctl.text});
+    await dio.put('/posts/draft', data: {'text': ctl.text});
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
@@ -271,7 +271,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.delete('/v1/posts/draft');
+    await dio.delete('/posts/draft');
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
@@ -318,7 +318,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.patch('/v1/posts/$id', data: {'text': ctl.text});
+    await dio.patch('/posts/$id', data: {'text': ctl.text});
 
     ref.invalidate(_mePostsProvider);
     if (!mounted) return;
@@ -328,7 +328,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Future<void> _archivePost(String id) async {
     if (id.trim().isEmpty) return;
     final dio = ref.read(dioProvider);
-    await dio.post('/v1/posts/$id/archive');
+    await dio.post('/posts/$id/archive');
     ref.invalidate(_mePostsProvider);
   }
 
@@ -362,9 +362,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final rt = (tokenStore.refreshToken ?? '').trim();
       try {
         if (rt.isNotEmpty) {
-          await dio.post('/v1/auth/logout', data: {'refreshToken': rt});
+          await dio.post('/auth/logout', data: {'refreshToken': rt});
         } else {
-          await dio.post('/v1/auth/logout');
+          await dio.post('/auth/logout');
         }
       } catch (_) {
         // Ignore server logout errors; local logout still happens.

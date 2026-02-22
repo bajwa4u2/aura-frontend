@@ -57,7 +57,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
 
     // Dio baseUrl includes /v1
-    final root = dio.options.baseUrl.replaceAll(RegExp(r'/v1/?$'), '');
+    final root = dio.options.baseUrl.replaceAll(RegExp(r'/?$'), '');
     if (u.startsWith('/')) return '$root$u';
     return '$root/$u';
   }
@@ -125,7 +125,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final av = _avatarUrl.text.trim();
 
       final res = await dio.patch(
-        '/v1/users/me',
+        '/users/me',
         data: {
           'displayName': dn.isEmpty ? null : dn,
           'bio': bb.isEmpty ? null : bb,
