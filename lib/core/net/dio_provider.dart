@@ -3,14 +3,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_providers.dart';
 import '../auth/token_store.dart';
+import '../config.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   final session = ref.watch(sessionStateProvider);
 
+  String normalizeBaseUrl(String raw) {
+    var u = raw.trim();
+    if (u.isEmpty) u = AppConfig.apiBaseUrl;
+
+    // strip trailing slashes
+    while (u.endsWith('/')) {
+      u = u.substring(0, u.length - 1);
+    }
+
+    // ensure /v1 exactly once at the end
+    if (!u.endsWith('/v1')) {
+      u = '$u/v1';
+    }
+
+    return u;
+  }
+
+  final baseUrl = normalizeBaseUrl(session.baseUrl);
+
   final dio = Dio(
     BaseOptions(
-      baseUrl: session.baseUrl,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
@@ -25,13 +45,14 @@ final dioProvider = Provider<Dio>((ref) {
         p.startsWith('/auth/verify-email') ||
         p.startsWith('/auth/resend-verification') ||
         p.startsWith('/auth/resend-email-verification') ||
-        p.startsWith('/auth/health');
+        p.startsWith('/auth/health') ||
+        p.startsWith('/health');
   }
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // CRITICAL: do not send any protected calls until tokens are loaded.
+        // do not send protected calls until tokens are loaded
         await tokenStore.waitUntilLoaded();
 
         final path = options.path;
@@ -49,7 +70,7 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final path = err.requestOptions.path;
 
-        // If 401 and we have a refresh token (non-web), attempt refresh once.
+        // If 401 and we have a refresh token, attempt refresh once.
         if (status == 401 && !isPublicPath(path)) {
           final refreshToken = session.refreshToken;
           if (refreshToken != null && refreshToken.trim().isNotEmpty) {
