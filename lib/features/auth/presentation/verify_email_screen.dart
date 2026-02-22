@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -38,6 +37,24 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     );
   }
 
+  Map<String, dynamic> _unwrapApiMap(dynamic data) {
+    if (data is Map) {
+      final m = Map<String, dynamic>.from(data as Map);
+      final inner = m['data'] ?? m['user'];
+      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
+      return m;
+    }
+    throw Exception('Unexpected response');
+  }
+
+  Future<String?> _fetchMyEmail(Dio dio) async {
+    final res = await dio.get('/v1/auth/me');
+    final body = _unwrapApiMap(res.data);
+    final email = body['email'];
+    if (email is String && email.trim().isNotEmpty) return email.trim();
+    return null;
+  }
+
   Future<void> _resend() async {
     if (_busy) return;
     setState(() {
@@ -48,14 +65,27 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      // Backend standardized: { success: true, data: ... }
-      await dio.post('/v1/auth/resend-email-verification');
+      final email = await _fetchMyEmail(dio);
+      if (email == null) {
+        setState(() => _msg = 'Could not determine your email. Please log out and log in again.');
+        return;
+      }
+
+      await dio.post(
+        '/v1/auth/resend-email-verification',
+        data: {'email': email},
+      );
 
       if (!mounted) return;
       _snack('Verification email resent. Check inbox/spam.');
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      setState(() => _msg = 'Resend failed (${status ?? 'no status'}).');
+      final serverMsg = (e.response?.data is Map) ? (e.response?.data['message'] ?? e.response?.data['error']) : null;
+
+      setState(() {
+        _msg = 'Resend failed (${status ?? 'no status'}).'
+            '${serverMsg != null ? ' $serverMsg' : ''}';
+      });
     } catch (e) {
       setState(() => _msg = 'Resend failed. $e');
     } finally {
@@ -71,7 +101,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     });
 
     try {
-      // Force refresh of verification status
       ref.invalidate(emailVerifiedProvider);
       final ok = await ref.read(emailVerifiedProvider.future);
 
