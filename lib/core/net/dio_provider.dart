@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
 import '../auth/auth_providers.dart';
+import 'platform_http_adapter.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
@@ -16,9 +18,13 @@ final dioProvider = Provider<Dio>((ref) {
       headers: {
         'Content-Type': 'application/json',
       },
+      // We want to handle auth failures ourselves; don't auto-throw on 401.
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
+
+  // Web needs cookies (HttpOnly refresh cookie) to be included on requests.
+  configureDioForPlatform(dio);
 
   final refreshLock = Lock();
 
@@ -26,18 +32,21 @@ final dioProvider = Provider<Dio>((ref) {
     final p = o.path;
     return p.contains('/auth/login') ||
         p.contains('/auth/register') ||
+        p.contains('/auth/verify-email') ||
+        p.contains('/auth/resend-verification') ||
+        p.contains('/auth/forgot-password') ||
+        p.contains('/auth/reset-password') ||
         p.contains('/auth/refresh') ||
-        p.contains('/auth/forgot') ||
-        p.contains('/auth/reset') ||
-        p.contains('/auth/resend');
+        p.contains('/auth/logout');
   }
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
         final store = ref.read(tokenStoreProvider);
-        final token = store.accessToken;
 
+        // Attach access token if present.
+        final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         } else {
@@ -55,17 +64,9 @@ final dioProvider = Provider<Dio>((ref) {
           return;
         }
 
-        final store = ref.read(tokenStoreProvider);
-        final refreshToken = store.refreshToken;
-
-        if (refreshToken == null || refreshToken.trim().isEmpty) {
-          await store.clearTokens();
-          handler.next(err);
-          return;
-        }
-
         if (req.extra['__retried_after_refresh'] == true) {
-          await store.clearTokens();
+          // Avoid loops.
+          await ref.read(tokenStoreProvider).clearTokens();
           handler.next(err);
           return;
         }
@@ -80,32 +81,61 @@ final dioProvider = Provider<Dio>((ref) {
               ),
             );
 
-            final res = await refreshDio.post(
-              '/auth/refresh',
-              data: {'refreshToken': refreshToken},
-            );
+            // Make sure refresh call uses cookies on web.
+            configureDioForPlatform(refreshDio);
 
-            final raw = res.data;
-            if (raw is! Map) throw Exception('Invalid refresh response');
+            if (kIsWeb) {
+              // Web: refresh token is in HttpOnly cookie.
+              final res = await refreshDio.post('/auth/refresh');
+              final raw = res.data;
 
-            final access = raw['accessToken']?.toString();
-            final newRefresh = raw['refreshToken']?.toString();
+              if (raw is! Map) throw Exception('Invalid refresh response');
 
-            if (access == null || access.isEmpty) {
-              throw Exception('No access token returned');
+              final access = raw['accessToken']?.toString();
+              if (access == null || access.isEmpty) {
+                throw Exception('No access token returned');
+              }
+
+              // Do NOT store refresh token on web.
+              await ref.read(tokenStoreProvider).setSession(
+                    accessToken: access,
+                    refreshToken: null,
+                  );
+            } else {
+              // Non-web: refresh token may be stored and sent in body.
+              final store = ref.read(tokenStoreProvider);
+              final refreshToken = store.refreshToken;
+
+              if (refreshToken == null || refreshToken.trim().isEmpty) {
+                throw Exception('Missing refresh token');
+              }
+
+              final res = await refreshDio.post(
+                '/auth/refresh',
+                data: {'refreshToken': refreshToken},
+              );
+
+              final raw = res.data;
+              if (raw is! Map) throw Exception('Invalid refresh response');
+
+              final access = raw['accessToken']?.toString();
+              final newRefresh = raw['refreshToken']?.toString();
+
+              if (access == null || access.isEmpty) {
+                throw Exception('No access token returned');
+              }
+
+              await store.setSession(
+                accessToken: access,
+                refreshToken:
+                    (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+              );
             }
-
-            await store.setSession(
-              accessToken: access,
-              refreshToken:
-                  (newRefresh != null && newRefresh.isNotEmpty)
-                      ? newRefresh
-                      : refreshToken,
-            );
           });
 
           final newToken = ref.read(tokenStoreProvider).accessToken;
 
+          // Retry original request with new token.
           final cloned = await dio.request<dynamic>(
             req.path,
             data: req.data,
@@ -113,18 +143,19 @@ final dioProvider = Provider<Dio>((ref) {
             options: Options(
               method: req.method,
               headers: Map<String, dynamic>.from(req.headers)
-                ..['Authorization'] = 'Bearer $newToken',
+                ..['Authorization'] = (newToken != null && newToken.trim().isNotEmpty)
+                    ? 'Bearer $newToken'
+                    : null,
               extra: Map<String, dynamic>.from(req.extra)
                 ..['__retried_after_refresh'] = true,
             ),
           );
 
           handler.resolve(cloned);
-          return;
         } catch (_) {
-          await store.clearTokens();
+          // Refresh failed: clear and bubble up the original error.
+          await ref.read(tokenStoreProvider).clearTokens();
           handler.next(err);
-          return;
         }
       },
     ),
@@ -132,19 +163,3 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
-
-class Lock {
-  Future<void> _tail = Future.value();
-
-  Future<T> synchronized<T>(Future<T> Function() fn) {
-    final completer = Completer<T>();
-    _tail = _tail.then((_) async {
-      try {
-        completer.complete(await fn());
-      } catch (e, st) {
-        completer.completeError(e, st);
-      }
-    });
-    return completer.future;
-  }
-}

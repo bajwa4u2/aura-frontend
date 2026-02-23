@@ -87,7 +87,7 @@ class AuthRepository {
       '/auth/reset-password',
       data: {
         'token': token,
-        'newPassword': newPassword,
+        'password': newPassword,
       },
     );
 
