@@ -29,25 +29,27 @@ class AuthController {
         },
       );
 
-      final data = res.data;
+      final body = res.data;
 
-      if (data is! Map || data['ok'] != true) {
+      if (body is! Map || body['ok'] != true) {
         throw Exception('Unexpected login response');
       }
 
-      final payload = Map<String, dynamic>.from(data['data'] as Map);
-      final accessToken = payload['accessToken'] as String?;
-      final refreshToken = payload['refreshToken'] as String?;
+      final payload = Map<String, dynamic>.from((body['data'] as Map?) ?? {});
+      final accessToken = (payload['accessToken'] as String?)?.trim();
 
-      if (accessToken == null || refreshToken == null) {
-        throw Exception('Missing tokens');
+      // Mode B: refresh token is HttpOnly cookie, so it may not be present in JSON.
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception('Missing access token');
       }
 
+      // Save access token only (refresh token is cookie-based on web)
       await ref.read(tokenStoreProvider).saveTokens(
             accessToken: accessToken,
-            refreshToken: refreshToken,
+            refreshToken: null,
           );
 
+      // Invalidate derived auth state
       ref.invalidate(isAuthedProvider);
       ref.invalidate(emailVerifiedProvider);
 
@@ -69,9 +71,7 @@ class AuthController {
             ? redirectTo
             : '/home';
 
-        context.go(
-          '/verify-email?redirect=${Uri.encodeComponent(dest)}',
-        );
+        context.go('/verify-email?redirect=${Uri.encodeComponent(dest)}');
         return;
       }
 
@@ -79,8 +79,6 @@ class AuthController {
           responseData is Map ? responseData['error']?['message'] : null;
 
       throw Exception(message ?? 'Login failed');
-    } catch (e) {
-      rethrow;
     }
   }
 
