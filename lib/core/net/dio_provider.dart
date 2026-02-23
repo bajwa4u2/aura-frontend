@@ -2,159 +2,140 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../config.dart';
-import '../auth/auth_providers.dart';
+import '../config.dart';
+import '../state/token_store.dart';
 import 'platform_http_adapter.dart';
 
+/// Simple no-dependency "single flight" gate:
+/// If multiple requests hit 401 together, only one refresh runs.
+/// Others await the same refresh Future.
+class _SingleFlight {
+  Future<void>? _inFlight;
+
+  Future<void> run(Future<void> Function() fn) {
+    final existing = _inFlight;
+    if (existing != null) return existing;
+
+    final completer = Completer<void>();
+    _inFlight = completer.future;
+
+    () async {
+      try {
+        await fn();
+        completer.complete();
+      } catch (e, st) {
+        completer.completeError(e, st);
+      } finally {
+        _inFlight = null;
+      }
+    }();
+
+    return completer.future;
+  }
+}
+
 final dioProvider = Provider<Dio>((ref) {
+  final tokens = ref.watch(tokenStoreProvider);
+
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
+      // Important for web cookie refresh:
+      extra: <String, dynamic>{
+        if (kIsWeb) 'withCredentials': true,
       },
-      // We want to handle auth failures ourselves; don't auto-throw on 401.
-      validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
 
-  // Web needs cookies (HttpOnly refresh cookie) to be included on requests.
-  configureDioForPlatform(dio);
-
-  final refreshLock = Lock();
-
-  bool _isAuthEndpoint(RequestOptions o) {
-    final p = o.path;
-    return p.contains('/auth/login') ||
-        p.contains('/auth/register') ||
-        p.contains('/auth/verify-email') ||
-        p.contains('/auth/resend-verification') ||
-        p.contains('/auth/forgot-password') ||
-        p.contains('/auth/reset-password') ||
-        p.contains('/auth/refresh') ||
-        p.contains('/auth/logout');
-  }
+  // Ensure BrowserHttpClientAdapter uses withCredentials on web.
+  configurePlatformHttpAdapter(dio);
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final store = ref.read(tokenStoreProvider);
-
         // Attach access token if present.
-        final token = store.accessToken;
-        if (token != null && token.trim().isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
-        } else {
-          options.headers.remove('Authorization');
+        final access = tokens.accessToken;
+        if (access != null && access.trim().isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $access';
         }
-
         handler.next(options);
       },
+    ),
+  );
+
+  final singleFlight = _SingleFlight();
+
+  dio.interceptors.add(
+    InterceptorsWrapper(
       onError: (err, handler) async {
         final status = err.response?.statusCode;
-        final req = err.requestOptions;
 
-        if (status != 401 || _isAuthEndpoint(req)) {
+        // Only attempt refresh on 401.
+        if (status != 401) {
           handler.next(err);
           return;
         }
 
-        if (req.extra['__retried_after_refresh'] == true) {
-          // Avoid loops.
-          await ref.read(tokenStoreProvider).clearTokens();
+        // Avoid infinite loops: never refresh if the failing call is auth endpoints.
+        final path = err.requestOptions.path;
+        final isAuthCall = path.contains('/v1/auth/');
+        if (isAuthCall) {
           handler.next(err);
           return;
         }
 
         try {
-          await refreshLock.synchronized(() async {
-            final refreshDio = Dio(
-              BaseOptions(
-                baseUrl: AppConfig.apiBaseUrl,
-                headers: {'Content-Type': 'application/json'},
-                validateStatus: (c) => c != null && c >= 200 && c < 300,
-              ),
-            );
+          await singleFlight.run(() async {
+            // If another request already refreshed and we now have a token, skip refresh.
+            final accessNow = tokens.accessToken;
+            if (accessNow != null && accessNow.trim().isNotEmpty) return;
 
-            // Make sure refresh call uses cookies on web.
-            configureDioForPlatform(refreshDio);
-
-            if (kIsWeb) {
-              // Web: refresh token is in HttpOnly cookie.
-              final res = await refreshDio.post('/auth/refresh');
-              final raw = res.data;
-
-              if (raw is! Map) throw Exception('Invalid refresh response');
-
-              final access = raw['accessToken']?.toString();
-              if (access == null || access.isEmpty) {
-                throw Exception('No access token returned');
-              }
-
-              // Do NOT store refresh token on web.
-              await ref.read(tokenStoreProvider).setSession(
-                    accessToken: access,
-                    refreshToken: null,
-                  );
-            } else {
-              // Non-web: refresh token may be stored and sent in body.
-              final store = ref.read(tokenStoreProvider);
-              final refreshToken = store.refreshToken;
-
-              if (refreshToken == null || refreshToken.trim().isEmpty) {
-                throw Exception('Missing refresh token');
-              }
-
-              final res = await refreshDio.post(
-                '/auth/refresh',
-                data: {'refreshToken': refreshToken},
-              );
-
-              final raw = res.data;
-              if (raw is! Map) throw Exception('Invalid refresh response');
-
-              final access = raw['accessToken']?.toString();
-              final newRefresh = raw['refreshToken']?.toString();
-
-              if (access == null || access.isEmpty) {
-                throw Exception('No access token returned');
-              }
-
-              await store.setSession(
-                accessToken: access,
-                refreshToken:
-                    (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
-              );
-            }
+            await _refreshSession(ref);
           });
 
-          final newToken = ref.read(tokenStoreProvider).accessToken;
+          // Retry original request with new token (or after cookie refresh).
+          final opts = err.requestOptions;
 
-          // Retry original request with new token.
-          final cloned = await dio.request<dynamic>(
-            req.path,
-            data: req.data,
-            queryParameters: req.queryParameters,
-            options: Options(
-              method: req.method,
-              headers: Map<String, dynamic>.from(req.headers)
-                ..['Authorization'] = (newToken != null && newToken.trim().isNotEmpty)
-                    ? 'Bearer $newToken'
-                    : null,
-              extra: Map<String, dynamic>.from(req.extra)
-                ..['__retried_after_refresh'] = true,
+          final retryDio = Dio(
+            BaseOptions(
+              baseUrl: AppConfig.apiBaseUrl,
+              headers: Map<String, dynamic>.from(opts.headers),
+              extra: Map<String, dynamic>.from(opts.extra),
+              connectTimeout: const Duration(seconds: 20),
+              receiveTimeout: const Duration(seconds: 30),
             ),
           );
 
-          handler.resolve(cloned);
+          configurePlatformHttpAdapter(retryDio);
+
+          // Re-attach new access token if present
+          final newAccess = ref.read(tokenStoreProvider).accessToken;
+          if (newAccess != null && newAccess.trim().isNotEmpty) {
+            retryDio.options.headers['Authorization'] = 'Bearer $newAccess';
+          }
+
+          final response = await retryDio.request<dynamic>(
+            opts.path,
+            data: opts.data,
+            queryParameters: opts.queryParameters,
+            options: Options(
+              method: opts.method,
+              headers: retryDio.options.headers,
+              responseType: opts.responseType,
+              contentType: opts.contentType,
+              followRedirects: opts.followRedirects,
+              receiveDataWhenStatusError: opts.receiveDataWhenStatusError,
+              validateStatus: opts.validateStatus,
+            ),
+          );
+
+          handler.resolve(response);
         } catch (_) {
-          // Refresh failed: clear and bubble up the original error.
-          await ref.read(tokenStoreProvider).clearTokens();
+          // Refresh failed: clear session and bubble the original 401.
+          await ref.read(tokenStoreProvider.notifier).clear();
           handler.next(err);
         }
       },
@@ -163,3 +144,48 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
+
+Future<void> _refreshSession(ProviderRef ref) async {
+  final tokens = ref.read(tokenStoreProvider);
+
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 30),
+      extra: <String, dynamic>{
+        if (kIsWeb) 'withCredentials': true,
+      },
+    ),
+  );
+
+  configurePlatformHttpAdapter(dio);
+
+  // Web: refresh token lives in HttpOnly cookie. Just call refresh with credentials.
+  // Non-web: if refreshToken exists, send it as body fallback (backend now supports both).
+  final body = <String, dynamic>{};
+  if (!kIsWeb) {
+    final refresh = tokens.refreshToken;
+    if (refresh != null && refresh.trim().isNotEmpty) {
+      body['refreshToken'] = refresh;
+    }
+  }
+
+  final res = await dio.post('/v1/auth/refresh', data: body);
+
+  // Expect at least accessToken. refreshToken may or may not be present depending on mode.
+  final data = (res.data is Map) ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+
+  final access = data['accessToken'] as String?;
+  final refresh = data['refreshToken'] as String?;
+
+  if (access == null || access.trim().isEmpty) {
+    throw StateError('Refresh did not return accessToken');
+  }
+
+  // Save access always. Save refresh only if returned (mobile mode).
+  await ref.read(tokenStoreProvider.notifier).setTokens(
+        accessToken: access,
+        refreshToken: refresh ?? tokens.refreshToken,
+      );
+}
