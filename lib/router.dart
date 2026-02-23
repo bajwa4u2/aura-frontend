@@ -46,6 +46,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: store,
     redirect: (context, state) async {
       final loc = state.matchedLocation;
+
+      // 1) Anti-bounce lock: never redirect until tokens are restored.
+      if (!store.isLoaded) return null;
+      // If you prefer to hard-wait (rarely needed), use:
+      // await store.waitUntilLoaded();
+
       final authStatus = ref.read(authStatusProvider);
 
       // Routes that should always be reachable without auth.
@@ -78,15 +84,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // During startup token restore, never bounce.
       if (authStatus == AuthStatus.loading) return null;
 
-      // Not authed: allow public + auth, otherwise send to login with redirect.
+      // 2) Unauthed: allow public + auth; anything else -> login with redirect.
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
+
         final dest = state.uri.toString();
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // Authed: allow finishing auth flows only when it makes sense.
-      // (Still allow reset/verify routes for deep links.)
+      // 3) Authed: now decide verification.
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
       // While loading verification state, don't bounce.
@@ -94,21 +100,27 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final verified = verifiedAsync.valueOrNull ?? false;
 
-      // Unverified: force to verify-pending, but allow verify-email deep link
-      // and forgot/reset to avoid lockout loops.
+      // 4) Unverified: force verify-pending, but allow verify-email deep link and reset flows.
       if (!verified) {
         if (loc == '/verify-pending' ||
             loc == '/verify-email' ||
             loc == '/forgot-password' ||
-            loc == '/reset-password') {
+            loc == '/reset-password' ||
+            isPublic) {
           return null;
         }
         return '/verify-pending';
       }
 
-      // Verified: don't let them sit on auth routes.
-      if (verified && (isAuth && loc != '/forgot-password' && loc != '/reset-password')) {
-        return '/home';
+      // 5) Verified: never let verified users sit on auth screens again.
+      // Your rule: after login, land on /me.
+      if (isAuth) {
+        // If they came with a redirect query, honor it (only if it is an internal path).
+        final redirectTo = state.uri.queryParameters['redirect'];
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return redirectTo;
+        }
+        return '/me';
       }
 
       return null;
@@ -194,10 +206,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/reset-password',
             builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return ResetPasswordScreen(initialToken: token);
-          },
-         ),
+              final token = state.uri.queryParameters['token'] ?? '';
+              return ResetPasswordScreen(initialToken: token);
+            },
+          ),
+
           // Member area
           GoRoute(
             path: '/home',
@@ -225,15 +238,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) => PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
+            builder: (context, state) =>
+                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
+            builder: (context, state) =>
+                AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
           GoRoute(
             path: '/support/:handle',
-            builder: (context, state) => SupportScreen(handle: state.pathParameters['handle'] ?? ''),
+            builder: (context, state) =>
+                SupportScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
         ],
       ),
