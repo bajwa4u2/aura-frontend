@@ -11,6 +11,7 @@ class TokenStore extends ChangeNotifier {
   String? _refreshToken;
 
   bool _loaded = false;
+  bool _loading = false;
 
   // Allows other layers (Dio, routing) to wait until load() completes.
   final Completer<void> _loadCompleter = Completer<void>();
@@ -18,27 +19,36 @@ class TokenStore extends ChangeNotifier {
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
 
-  /// Helps UI avoid firing protected calls before tokens are loaded.
   bool get isLoaded => _loaded;
 
   bool get isAuthed => (_accessToken != null && _accessToken!.trim().isNotEmpty);
 
-  /// Await this when you must not act until tokens are restored.
   Future<void> waitUntilLoaded() => _loadCompleter.future;
 
-  /// Call once at startup (or first provider read). Safe to call multiple times.
+  /// Safe to call multiple times.
+  /// Critical rule: load() must NEVER overwrite an already-set in-memory token.
   Future<void> load() async {
     if (_loaded) return;
+    if (_loading) return waitUntilLoaded();
+
+    _loading = true;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _accessToken = prefs.getString(_kAccess);
-      _refreshToken = prefs.getString(_kRefresh);
+      // If we already have a token in memory (e.g., login just happened),
+      // do NOT overwrite it from prefs. Just mark loaded.
+      final alreadyHaveToken =
+          _accessToken != null && _accessToken!.trim().isNotEmpty;
+
+      if (!alreadyHaveToken) {
+        final prefs = await SharedPreferences.getInstance();
+        _accessToken = prefs.getString(_kAccess);
+        _refreshToken = prefs.getString(_kRefresh);
+      }
     } catch (_) {
-      _accessToken = null;
-      _refreshToken = null;
+      // Storage failed. Keep whatever is in memory.
     } finally {
       _loaded = true;
+      _loading = false;
       if (!_loadCompleter.isCompleted) _loadCompleter.complete();
       notifyListeners();
     }
@@ -52,6 +62,12 @@ class TokenStore extends ChangeNotifier {
   }) async {
     _accessToken = accessToken.trim();
     _refreshToken = refreshToken?.trim();
+
+    // Once tokens are set, we consider the store loaded.
+    if (!_loaded) {
+      _loaded = true;
+      if (!_loadCompleter.isCompleted) _loadCompleter.complete();
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -75,7 +91,7 @@ class TokenStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Backward-compatible alias (older code).
+  // Backward-compatible aliases
   Future<void> saveTokens({
     required String accessToken,
     String? refreshToken,
@@ -83,7 +99,6 @@ class TokenStore extends ChangeNotifier {
     return setTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
 
-  /// Backward-compatible alias (older code).
   Future<void> persistTokens({
     required String accessToken,
     String? refreshToken,
@@ -91,7 +106,6 @@ class TokenStore extends ChangeNotifier {
     return setTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
 
-  /// Backward-compatible alias used by register screen.
   Future<void> setSession({
     required String accessToken,
     String? refreshToken,
