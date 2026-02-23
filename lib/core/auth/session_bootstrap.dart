@@ -23,7 +23,9 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       final map = (res.data as Map).cast<String, dynamic>();
       final at = (map['accessToken'] as String?) ?? '';
       if (at.isNotEmpty) {
-        await store.setTokens(accessToken: at);
+        await store.setTokens(
+     accessToken: at,
+     refreshToken: store.refreshToken,);
       }
       return;
     }
