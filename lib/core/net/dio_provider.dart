@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
@@ -37,6 +40,17 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  // IMPORTANT (Mode B - HttpOnly refresh cookie):
+  // Web must send cookies cross-site (api.aura.* <-> aura.*)
+  if (kIsWeb) {
+    try {
+      final adapter = dio.httpClientAdapter;
+      (adapter as dynamic).withCredentials = true;
+    } catch (_) {
+      // If adapter doesn't support withCredentials on this platform, ignore safely.
+    }
+  }
+
   bool isPublicPath(String p) {
     // Public endpoints that must NOT require auth header
     return p.startsWith('/auth/login') ||
@@ -49,6 +63,44 @@ final dioProvider = Provider<Dio>((ref) {
         p.startsWith('/health');
   }
 
+  // Single-flight refresh (prevents refresh storms + redirect loops)
+  Future<String?>? refreshInFlight;
+
+  Future<String?> refreshAccessToken() async {
+    // If a refresh is already running, await it.
+    if (refreshInFlight != null) return refreshInFlight;
+
+    final completer = Completer<String?>();
+    refreshInFlight = completer.future;
+
+    try {
+      // Mode B: refresh token is HttpOnly cookie, so request body is empty.
+      final res = await dio.post('/auth/refresh');
+
+      final data = res.data;
+      if (data is Map) {
+        final accessToken = (data['accessToken'] ?? '').toString().trim();
+
+        if (accessToken.isNotEmpty) {
+          // Persist only access token. Refresh token (if present) is ignored in cookie mode.
+          await tokenStore.setTokens(accessToken: accessToken);
+          completer.complete(accessToken);
+        } else {
+          completer.complete(null);
+        }
+      } else {
+        completer.complete(null);
+      }
+    } catch (_) {
+      completer.complete(null);
+    } finally {
+      // allow future refresh attempts
+      refreshInFlight = null;
+    }
+
+    return completer.future;
+  }
+
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -57,6 +109,7 @@ final dioProvider = Provider<Dio>((ref) {
 
         final path = options.path;
 
+        // Attach Authorization on protected routes only
         if (!isPublicPath(path)) {
           final token = tokenStore.accessToken;
           if (token != null && token.trim().isNotEmpty) {
@@ -70,46 +123,33 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final path = err.requestOptions.path;
 
-        // If 401 and we have a refresh token, attempt refresh once.
+        // Never attempt refresh if the failing request is itself refresh
+        if (path.startsWith('/auth/refresh')) {
+          return handler.next(err);
+        }
+
+        // If 401 on protected path, try cookie refresh once, then retry original request.
         if (status == 401 && !isPublicPath(path)) {
-          final refreshToken = session.refreshToken;
-          if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+          final newAccessToken = await refreshAccessToken();
+
+          if (newAccessToken != null && newAccessToken.trim().isNotEmpty) {
             try {
-              final res = await dio.post(
-                '/auth/refresh',
-                data: {'refreshToken': refreshToken},
+              final retry = await dio.request(
+                err.requestOptions.path,
+                data: err.requestOptions.data,
+                queryParameters: err.requestOptions.queryParameters,
+                options: Options(
+                  method: err.requestOptions.method,
+                  headers: {
+                    ...err.requestOptions.headers,
+                    'Authorization': 'Bearer $newAccessToken',
+                  },
+                ),
               );
 
-              final data = res.data;
-              if (data is Map) {
-                final accessToken = (data['accessToken'] ?? '').toString();
-                final newRefresh = data['refreshToken']?.toString();
-
-                if (accessToken.trim().isNotEmpty) {
-                  await tokenStore.setTokens(
-                    accessToken: accessToken,
-                    refreshToken: newRefresh,
-                  );
-
-                  // retry original request
-                  final retry = await dio.request(
-                    err.requestOptions.path,
-                    data: err.requestOptions.data,
-                    queryParameters: err.requestOptions.queryParameters,
-                    options: Options(
-                      method: err.requestOptions.method,
-                      headers: {
-                        ...err.requestOptions.headers,
-                        'Authorization': 'Bearer $accessToken',
-                      },
-                    ),
-                  );
-
-                  return handler.resolve(retry);
-                }
-              }
+              return handler.resolve(retry);
             } catch (_) {
-              // fall through
+              // fall through to original error
             }
           }
         }
