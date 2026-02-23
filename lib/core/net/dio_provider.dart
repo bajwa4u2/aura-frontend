@@ -1,35 +1,28 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../auth/session_providers.dart';
 import '../auth/token_store.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
-  final session = ref.watch(sessionStateProvider);
 
   String normalizeBaseUrl(String raw) {
     var u = raw.trim();
     if (u.isEmpty) u = AppConfig.apiBaseUrl;
 
-    // strip trailing slashes
     while (u.endsWith('/')) {
       u = u.substring(0, u.length - 1);
     }
-
-    // ensure /v1 exactly once at the end
     if (!u.endsWith('/v1')) {
       u = '$u/v1';
     }
-
     return u;
   }
 
-  final baseUrl = normalizeBaseUrl(session.baseUrl);
+  final baseUrl = normalizeBaseUrl(AppConfig.apiBaseUrl);
 
   final dio = Dio(
     BaseOptions(
@@ -37,22 +30,12 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
+      // Important for web cookie-based refresh sessions.
+      extra: const {'withCredentials': true},
     ),
   );
 
-  // IMPORTANT (Mode B - HttpOnly refresh cookie):
-  // Web must send cookies cross-site (api.aura.* <-> aura.*)
-  if (kIsWeb) {
-    try {
-      final adapter = dio.httpClientAdapter;
-      (adapter as dynamic).withCredentials = true;
-    } catch (_) {
-      // If adapter doesn't support withCredentials on this platform, ignore safely.
-    }
-  }
-
   bool isPublicPath(String p) {
-    // Public endpoints that must NOT require auth header
     return p.startsWith('/auth/login') ||
         p.startsWith('/auth/register') ||
         p.startsWith('/auth/refresh') ||
@@ -63,53 +46,55 @@ final dioProvider = Provider<Dio>((ref) {
         p.startsWith('/health');
   }
 
-  // Single-flight refresh (prevents refresh storms + redirect loops)
+  // Single-flight refresh so we don't storm the API.
   Future<String?>? refreshInFlight;
 
-  Future<String?> refreshAccessToken() async {
-    // If a refresh is already running, await it.
-    if (refreshInFlight != null) return refreshInFlight;
+  Future<String?> tryRefresh() async {
+    // If we have a stored refresh token, backend MAY accept it.
+    // If we do not, backend MAY use httpOnly cookie refresh.
+    // We try both paths safely by calling refresh with:
+    // - refreshToken if present
+    // - otherwise empty body (cookie mode)
+    final rt = tokenStore.refreshToken;
 
-    final completer = Completer<String?>();
-    refreshInFlight = completer.future;
+    final res = await dio.post(
+      '/auth/refresh',
+      data: (rt != null && rt.trim().isNotEmpty) ? {'refreshToken': rt} : {},
+      options: Options(
+        // Ensure cookies are sent (web).
+        extra: const {'withCredentials': true},
+      ),
+    );
 
-    try {
-      // Mode B: refresh token is HttpOnly cookie, so request body is empty.
-      final res = await dio.post('/auth/refresh');
+    final data = res.data;
+    if (data is Map) {
+      final accessToken = (data['accessToken'] ?? '').toString();
+      final newRefresh = data['refreshToken']?.toString();
 
-      final data = res.data;
-      if (data is Map) {
-        final accessToken = (data['accessToken'] ?? '').toString().trim();
-
-        if (accessToken.isNotEmpty) {
-          // Persist only access token. Refresh token (if present) is ignored in cookie mode.
-          await tokenStore.setTokens(accessToken: accessToken);
-          completer.complete(accessToken);
-        } else {
-          completer.complete(null);
-        }
-      } else {
-        completer.complete(null);
+      if (accessToken.trim().isNotEmpty) {
+        await tokenStore.setTokens(
+          accessToken: accessToken,
+          refreshToken: newRefresh,
+        );
+        return accessToken;
       }
-    } catch (_) {
-      completer.complete(null);
-    } finally {
-      // allow future refresh attempts
-      refreshInFlight = null;
     }
-
-    return completer.future;
+    return null;
   }
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // do not send protected calls until tokens are loaded
         await tokenStore.waitUntilLoaded();
 
         final path = options.path;
 
-        // Attach Authorization on protected routes only
+        // Always send cookies on web where possible.
+        options.extra = {
+          ...options.extra,
+          'withCredentials': true,
+        };
+
         if (!isPublicPath(path)) {
           final token = tokenStore.accessToken;
           if (token != null && token.trim().isNotEmpty) {
@@ -123,17 +108,15 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final path = err.requestOptions.path;
 
-        // Never attempt refresh if the failing request is itself refresh
-        if (path.startsWith('/auth/refresh')) {
-          return handler.next(err);
-        }
-
-        // If 401 on protected path, try cookie refresh once, then retry original request.
+        // If we got 401 on a protected endpoint, try refresh ONE TIME.
         if (status == 401 && !isPublicPath(path)) {
-          final newAccessToken = await refreshAccessToken();
+          try {
+            refreshInFlight ??= tryRefresh();
+            final newAccess = await refreshInFlight;
+            refreshInFlight = null;
 
-          if (newAccessToken != null && newAccessToken.trim().isNotEmpty) {
-            try {
+            if (newAccess != null && newAccess.trim().isNotEmpty) {
+              // retry original request with new token
               final retry = await dio.request(
                 err.requestOptions.path,
                 data: err.requestOptions.data,
@@ -142,16 +125,23 @@ final dioProvider = Provider<Dio>((ref) {
                   method: err.requestOptions.method,
                   headers: {
                     ...err.requestOptions.headers,
-                    'Authorization': 'Bearer $newAccessToken',
+                    'Authorization': 'Bearer $newAccess',
+                  },
+                  extra: {
+                    ...err.requestOptions.extra,
+                    'withCredentials': true,
                   },
                 ),
               );
-
               return handler.resolve(retry);
-            } catch (_) {
-              // fall through to original error
             }
+          } catch (_) {
+            refreshInFlight = null;
           }
+
+          // Hard rule: refresh failed or no new access token obtained.
+          // That means we are NOT logged in. End the fake state.
+          await tokenStore.clear();
         }
 
         handler.next(err);
