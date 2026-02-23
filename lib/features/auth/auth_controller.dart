@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/auth/token_store.dart';
 import '../../../core/net/dio_provider.dart';
 
 class AuthController {
@@ -38,21 +37,22 @@ class AuthController {
       final payload = Map<String, dynamic>.from((body['data'] as Map?) ?? {});
       final accessToken = (payload['accessToken'] as String?)?.trim();
 
-      // Mode B: refresh token is HttpOnly cookie, so it may not be present in JSON.
+      // Cookie mode: refresh token will NOT be present in JSON.
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception('Missing access token');
       }
 
-      // Save access token only (refresh token is cookie-based on web)
-      await ref.read(tokenStoreProvider).saveTokens(
+      // Save access token (refresh handled via HttpOnly cookie on web)
+      await ref.read(tokenStoreProvider).setSession(
             accessToken: accessToken,
             refreshToken: null,
           );
 
-      // Invalidate derived auth state
       ref.invalidate(isAuthedProvider);
       ref.invalidate(emailVerifiedProvider);
 
+      // You asked: verified users should land in Me.
+      // We'll do that in Step 2 (router rule), after auth actually works.
       final dest = (redirectTo != null && redirectTo.startsWith('/'))
           ? redirectTo
           : '/home';
