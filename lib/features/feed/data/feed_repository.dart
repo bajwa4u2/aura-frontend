@@ -10,23 +10,64 @@ class FeedPage {
   final List<Post> items;
   final String? nextCursor;
 
+  static String? _pickCursorFromMap(Map<String, dynamic> m) {
+    final v = (m['nextCursor'] ?? m['cursor'] ?? m['next']);
+    if (v == null) return null;
+    final s = v.toString();
+    return s.isEmpty ? null : s;
+  }
+
+  static List<dynamic> _pickListFromMap(Map<String, dynamic> m) {
+    final v = (m['data'] ?? m['items']);
+    if (v is List) return v;
+    return const <dynamic>[];
+  }
+
   factory FeedPage.fromResponse(dynamic body) {
+    // Case 1: raw list
     if (body is List) {
       return FeedPage(
-        items: body.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
+        items: body
+            .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
         nextCursor: null,
       );
     }
 
+    // Case 2: map (maybe envelope)
     if (body is Map) {
-      final map = Map<String, dynamic>.from(body);
+      final root = Map<String, dynamic>.from(body);
 
-      final list = (map['data'] as List?) ?? (map['items'] as List?) ?? const <dynamic>[];
-      final next = (map['nextCursor'] ?? map['cursor'] ?? map['next'] ?? '')?.toString();
+      // Envelope shape: { ok: true, data: <payload> }
+      if (root.containsKey('ok') && root.containsKey('data')) {
+        final inner = root['data'];
+        // recurse into payload which can be List or Map
+        return FeedPage.fromResponse(inner);
+      }
 
+      // Paged shape can be either:
+      // A) { data: [..], nextCursor: "..." }
+      // B) { data: { data: [..], nextCursor: "..." } }
+      if (root['data'] is Map) {
+        final inner = Map<String, dynamic>.from(root['data'] as Map);
+        final list = _pickListFromMap(inner);
+        final next = _pickCursorFromMap(inner);
+        return FeedPage(
+          items: list
+              .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+              .toList(),
+          nextCursor: next,
+        );
+      }
+
+      // Flat map containing list directly
+      final list = _pickListFromMap(root);
+      final next = _pickCursorFromMap(root);
       return FeedPage(
-        items: list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
-        nextCursor: (next != null && next.isNotEmpty) ? next : null,
+        items: list
+            .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+        nextCursor: next,
       );
     }
 
