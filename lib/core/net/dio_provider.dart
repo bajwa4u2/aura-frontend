@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../auth/token_store.dart';
+import '../auth/session_providers.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
@@ -30,10 +31,18 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
-      // Important for web cookie-based refresh sessions.
-      extra: const {'withCredentials': true},
     ),
   );
+
+  // Web: ensure cookies are included (needed for HttpOnly refresh cookie).
+  if (kIsWeb) {
+    try {
+      final adapter = dio.httpClientAdapter;
+      (adapter as dynamic).withCredentials = true;
+    } catch (_) {
+      // ignore if adapter doesn't expose withCredentials
+    }
+  }
 
   bool isPublicPath(String p) {
     return p.startsWith('/auth/login') ||
@@ -42,6 +51,9 @@ final dioProvider = Provider<Dio>((ref) {
         p.startsWith('/auth/verify-email') ||
         p.startsWith('/auth/resend-verification') ||
         p.startsWith('/auth/resend-email-verification') ||
+        p.startsWith('/auth/forgot-password') ||
+        p.startsWith('/auth/reset-password') ||
+        p.startsWith('/auth/logout') ||
         p.startsWith('/auth/health') ||
         p.startsWith('/health');
   }
@@ -49,36 +61,43 @@ final dioProvider = Provider<Dio>((ref) {
   // Single-flight refresh so we don't storm the API.
   Future<String?>? refreshInFlight;
 
+  String? _extractAccessToken(dynamic data) {
+    if (data is! Map) return null;
+    final m = Map<String, dynamic>.from(data);
+
+    // Common refresh response: { accessToken: '...' }
+    final direct = (m['accessToken'] ?? '').toString().trim();
+    if (direct.isNotEmpty) return direct;
+
+    // Some backends may wrap: { ok:true, data:{ accessToken:'...' } }
+    if (m['ok'] == true && m['data'] is Map) {
+      final inner = Map<String, dynamic>.from(m['data'] as Map);
+      final innerToken = (inner['accessToken'] ?? '').toString().trim();
+      if (innerToken.isNotEmpty) return innerToken;
+    }
+
+    return null;
+  }
+
   Future<String?> tryRefresh() async {
-    // If we have a stored refresh token, backend MAY accept it.
-    // If we do not, backend MAY use httpOnly cookie refresh.
-    // We try both paths safely by calling refresh with:
-    // - refreshToken if present
-    // - otherwise empty body (cookie mode)
+    // Mode B: refresh token is HttpOnly cookie (web).
+    // Still allow body refreshToken if it exists (mobile/legacy).
     final rt = tokenStore.refreshToken;
 
     final res = await dio.post(
       '/auth/refresh',
       data: (rt != null && rt.trim().isNotEmpty) ? {'refreshToken': rt} : {},
       options: Options(
-        // Ensure cookies are sent (web).
         extra: const {'withCredentials': true},
       ),
     );
 
-    final data = res.data;
-    if (data is Map) {
-      final accessToken = (data['accessToken'] ?? '').toString();
-      final newRefresh = data['refreshToken']?.toString();
-
-      if (accessToken.trim().isNotEmpty) {
-        await tokenStore.setTokens(
-          accessToken: accessToken,
-          refreshToken: newRefresh,
-        );
-        return accessToken;
-      }
+    final newAccess = _extractAccessToken(res.data);
+    if (newAccess != null && newAccess.isNotEmpty) {
+      await tokenStore.setTokens(accessToken: newAccess, refreshToken: null);
+      return newAccess;
     }
+
     return null;
   }
 
@@ -89,7 +108,7 @@ final dioProvider = Provider<Dio>((ref) {
 
         final path = options.path;
 
-        // Always send cookies on web where possible.
+        // Ensure web cookies are sent.
         options.extra = {
           ...options.extra,
           'withCredentials': true,
@@ -108,7 +127,11 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final path = err.requestOptions.path;
 
-        // If we got 401 on a protected endpoint, try refresh ONE TIME.
+        // Never try to refresh when refresh itself failed.
+        if (path.startsWith('/auth/refresh')) {
+          return handler.next(err);
+        }
+
         if (status == 401 && !isPublicPath(path)) {
           try {
             refreshInFlight ??= tryRefresh();
@@ -116,7 +139,6 @@ final dioProvider = Provider<Dio>((ref) {
             refreshInFlight = null;
 
             if (newAccess != null && newAccess.trim().isNotEmpty) {
-              // retry original request with new token
               final retry = await dio.request(
                 err.requestOptions.path,
                 data: err.requestOptions.data,
@@ -139,8 +161,8 @@ final dioProvider = Provider<Dio>((ref) {
             refreshInFlight = null;
           }
 
-          // Hard rule: refresh failed or no new access token obtained.
-          // That means we are NOT logged in. End the fake state.
+          // Hard rule: refresh failed => we are NOT logged in.
+          // End the “pretend signed in” state.
           await tokenStore.clear();
         }
 

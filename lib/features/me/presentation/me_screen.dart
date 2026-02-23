@@ -15,16 +15,17 @@ import '../../../core/ui/aura_text.dart';
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
 
-  Response res;
-  try {
-    res = await dio.get('/users/me');
-  } catch (_) {
-    // Fallback (older path) if needed
-    res = await dio.get('/auth/me');
-  }
+  Response res = await dio.get('/users/me');
 
+  // Aura Contract v1: { ok: true, data: {...} }
   final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data);
+  if (data is Map) {
+  final m = Map<String, dynamic>.from(data);
+  if (m['ok'] == true && m['data'] is Map) {
+    return Map<String, dynamic>.from(m['data'] as Map);
+  }
+  return m;
+}
   throw Exception('Unexpected response');
 });
 

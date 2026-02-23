@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../net/dio_provider.dart';
 import 'token_store.dart';
 
 /// Auth lifecycle status:
@@ -90,60 +89,14 @@ final authEventsProvider = StreamProvider<void>((ref) {
   return controller.stream;
 });
 
-Map<String, dynamic> _unwrapApiMap(dynamic raw) {
-  if (raw is! Map) throw Exception('Unexpected response');
-
-  final m = Map<String, dynamic>.from(raw as Map);
-
-  // Locked envelope (Aura Contract v1): { ok: true, data: {...} }
-  if (m['ok'] == true && m.containsKey('data')) {
-    final inner = m['data'];
-    if (inner is Map) {
-      final innerMap = Map<String, dynamic>.from(inner as Map);
-      // Common shape: { user: {...}, accessToken, ... }
-      final user = innerMap['user'];
-      if (user is Map) return Map<String, dynamic>.from(user as Map);
-      return innerMap;
-    }
-    return m;
-  }
-
-  // Legacy fallback: sometimes backend returned { data: {...} } without ok
-  final legacyInner = m['data'] ?? m['user'];
-  if (legacyInner is Map) return Map<String, dynamic>.from(legacyInner as Map);
-
-  return m;
-}
-
-bool _isVerifiedUserMap(Map<String, dynamic> user) {
-  // Accept multiple server field variants to prevent lockout drift.
-  final emailVerifiedAt = user['emailVerifiedAt'];
-  final verifiedAt = user['verifiedAt'];
-  final emailVerified = user['emailVerified'];
-
-  if (emailVerifiedAt != null) return true;
-  if (verifiedAt != null) return true;
-  if (emailVerified == true) return true;
-
-  return false;
-}
-
 /// True if the current user has verified their email.
-/// Uses GET /v1/users/me (JWT protected).
+///
+/// During Auth Stabilization (Mode B cookie refresh), we intentionally avoid
+/// network-based verification checks here to prevent circular dependencies and
+/// redirect loops. Server-side still enforces verification where required.
+///
+/// Once auth is stable, we can re-introduce a verified check via /v1/users/me
+/// in a separate layer.
 final emailVerifiedProvider = FutureProvider<bool>((ref) async {
-  final authed = ref.watch(isAuthedProvider);
-  if (!authed) return true; // public routes should not be gated by verification
-
-  final dio = ref.read(dioProvider);
-
-  try {
-    // Canonical endpoint in this codebase.
-    final res = await dio.get('/users/me');
-    final user = _unwrapApiMap(res.data);
-    return _isVerifiedUserMap(user);
-  } catch (_) {
-    // Important: do not lock out verified users due to a client-side check failing.
-    // Server-side VerifiedEmailGuard still protects verified-only actions.
-    return true;
-  }
+  return true;
 });
