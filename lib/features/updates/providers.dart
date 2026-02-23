@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/net/dio_provider.dart';
-import '../../core/auth/session_providers.dart';
+import '../../core/auth/auth_providers.dart';
 import 'notifications_repository.dart';
 
 final notificationsRepoProvider = Provider<NotificationsRepository>((ref) {

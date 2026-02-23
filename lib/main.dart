@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/aura_app.dart';
-import 'core/auth/session_providers.dart';
-import 'core/auth/token_store.dart';
+import 'core/auth/auth_providers.dart';
+import 'core/auth/auth_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

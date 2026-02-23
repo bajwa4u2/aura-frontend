@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_repository.dart';
-import '../../../core/auth/session_providers.dart';
+import '../../../core/auth/auth_providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({

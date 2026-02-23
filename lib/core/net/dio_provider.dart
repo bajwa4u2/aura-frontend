@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../auth/session_providers.dart';
+import '../auth/auth_providers.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final session = ref.watch(sessionStateProvider);

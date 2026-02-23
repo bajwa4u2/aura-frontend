@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../core/auth/session_providers.dart';
+import '../core/auth/auth_providers.dart';
 import '../core/config/aura_links.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';

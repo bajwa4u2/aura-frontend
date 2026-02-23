@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 
-import 'core/auth/session_providers.dart';
+import 'core/auth/auth_providers.dart';
 
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
