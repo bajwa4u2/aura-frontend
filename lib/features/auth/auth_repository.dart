@@ -4,55 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/net/dio_provider.dart';
 
 class AuthRepository {
-  AuthRepository(this._dio);
-
   final Dio _dio;
 
-  Map<String, dynamic> _asMap(dynamic v) {
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return Map<String, dynamic>.from(v);
-    return <String, dynamic>{};
-  }
-
-  Map<String, dynamic> _unwrap(dynamic raw) {
-    final m = _asMap(raw);
-    if (m.isEmpty) throw Exception('Unexpected response');
-
-    // Locked envelope (Aura Contract v1): { ok: true, data: ... }
-    if (m['ok'] == true && m.containsKey('data')) {
-      final inner = m['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner as Map);
-      return <String, dynamic>{'value': inner};
-    }
-
-    // Legacy fallback: { data: {...} }
-    final data = m['data'];
-    if (data is Map) return Map<String, dynamic>.from(data as Map);
-
-    return m;
-  }
+  AuthRepository(this._dio);
 
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
+    required String handle,
+    required String displayName,
     required String firstName,
     required String lastName,
-    String? handle,
-    String? displayName,
   }) async {
     final res = await _dio.post(
       '/auth/register',
-      data: <String, dynamic>{
-        'email': email,
+      data: {
+        'email': email.trim(),
         'password': password,
-        'firstName': firstName,
-        'lastName': lastName,
-        if (handle != null && handle.trim().isNotEmpty) 'handle': handle.trim(),
-        if (displayName != null && displayName.trim().isNotEmpty) 'displayName': displayName.trim(),
+        'handle': handle.trim(),
+        'displayName': displayName.trim(),
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
       },
     );
 
-    return _unwrap(res.data);
+    return _unwrap(res);
   }
 
   Future<Map<String, dynamic>> login({
@@ -61,58 +37,79 @@ class AuthRepository {
   }) async {
     final res = await _dio.post(
       '/auth/login',
-      data: <String, dynamic>{
-        'email': email,
+      data: {
+        'email': email.trim(),
         'password': password,
       },
     );
-    return _unwrap(res.data);
+
+    return _unwrap(res);
   }
 
-  Future<Map<String, dynamic>> me() async {
-    final res = await _dio.get('/auth/me');
-    return _unwrap(res.data);
-  }
-
-  Future<void> verifyEmail({required String token}) async {
-    await _dio.post(
-      '/auth/verify-email',
-      data: <String, dynamic>{'token': token},
-    );
-  }
-
-  /// Silent security behavior should be enforced on backend.
-  /// Frontend treats success as "email sent if it exists".
-  Future<void> resendVerification({required String email}) async {
-    await _dio.post(
+  Future<Map<String, dynamic>> resendVerificationEmail({
+    required String email,
+  }) async {
+    final res = await _dio.post(
       '/auth/resend-verification',
-      data: <String, dynamic>{'email': email},
+      data: {'email': email.trim()},
     );
+
+    return _unwrap(res);
   }
 
-  Future<void> forgotPassword({required String email}) async {
-    await _dio.post(
+  Future<Map<String, dynamic>> verifyEmail({
+    required String token,
+  }) async {
+    final res = await _dio.post(
+      '/auth/verify-email',
+      data: {'token': token},
+    );
+
+    return _unwrap(res);
+  }
+
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    final res = await _dio.post(
       '/auth/forgot-password',
-      data: <String, dynamic>{'email': email},
+      data: {'email': email.trim()},
     );
+
+    return _unwrap(res);
   }
 
-  Future<void> resetPassword({
+  Future<Map<String, dynamic>> resetPassword({
     required String token,
     required String newPassword,
   }) async {
-    await _dio.post(
+    final res = await _dio.post(
       '/auth/reset-password',
-      data: <String, dynamic>{
+      data: {
         'token': token,
         'newPassword': newPassword,
       },
     );
+
+    return _unwrap(res);
+  }
+
+  Map<String, dynamic> _unwrap(Response res) {
+    final body = res.data;
+
+    if (body is Map && body.containsKey('data')) {
+      return Map<String, dynamic>.from(body['data'] ?? {});
+    }
+
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+
+    return {};
   }
 }
 
-/// Riverpod provider for AuthRepository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
   return AuthRepository(dio);
 });
