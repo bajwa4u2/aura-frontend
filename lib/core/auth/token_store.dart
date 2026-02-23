@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// TokenStore
 /// - Restores tokens from SharedPreferences on app start
 /// - Persists tokens on update
-/// - Allows clearing tokens (logout / auth invalid)
+/// - Provides compatibility methods used across the app:
+///   - setSession(accessToken, refreshToken)
+///   - clearTokens()
+///   - clear()
 class TokenStore extends ChangeNotifier {
   static const _kAccess = 'aura_access_token';
   static const _kRefresh = 'aura_refresh_token';
@@ -73,11 +75,15 @@ class TokenStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Compatibility alias expected by existing code.
+  Future<void> setSession({
+    required String? accessToken,
+    required String? refreshToken,
+  }) async {
+    await setTokens(accessToken: accessToken, refreshToken: refreshToken);
+  }
+
   /// Clear tokens from memory + storage.
-  /// Used when:
-  /// - refresh fails
-  /// - API says token invalid
-  /// - user logs out
   Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
@@ -88,15 +94,9 @@ class TokenStore extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Compatibility alias expected by existing code.
+  Future<void> clear() async {
+    await clearTokens();
+  }
 }
-
-/// Riverpod provider used across the app (Dio, routing, auth screens).
-final tokenStoreProvider = ChangeNotifierProvider<TokenStore>((ref) {
-  final store = TokenStore();
-
-  // Make sure tokens are loaded as soon as provider is first read.
-  // We don't await here; callers can use waitUntilLoaded().
-  store.load();
-
-  return store;
-});
