@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// TokenStore
+/// - Restores tokens from SharedPreferences on app start
+/// - Persists tokens on update
+/// - Allows clearing tokens (logout / auth invalid)
 class TokenStore extends ChangeNotifier {
   static const _kAccess = 'aura_access_token';
   static const _kRefresh = 'aura_refresh_token';
@@ -11,7 +16,6 @@ class TokenStore extends ChangeNotifier {
   String? _refreshToken;
 
   bool _loaded = false;
-  bool _loading = false;
 
   // Allows other layers (Dio, routing) to wait until load() completes.
   final Completer<void> _loadCompleter = Completer<void>();
@@ -19,110 +23,80 @@ class TokenStore extends ChangeNotifier {
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
 
+  /// Helps UI avoid firing protected calls before tokens are loaded.
   bool get isLoaded => _loaded;
 
   bool get isAuthed => (_accessToken != null && _accessToken!.trim().isNotEmpty);
 
+  /// Await this when you must not act until tokens are restored.
   Future<void> waitUntilLoaded() => _loadCompleter.future;
 
-  /// Safe to call multiple times.
-  /// Critical rule: load() must NEVER overwrite an already-set in-memory token.
+  /// Load tokens from SharedPreferences once.
   Future<void> load() async {
-    if (_loaded) return;
-    if (_loading) return waitUntilLoaded();
-
-    _loading = true;
-
-    try {
-      // If we already have a token in memory (e.g., login just happened),
-      // do NOT overwrite it from prefs. Just mark loaded.
-      final alreadyHaveToken =
-          _accessToken != null && _accessToken!.trim().isNotEmpty;
-
-      if (!alreadyHaveToken) {
-        final prefs = await SharedPreferences.getInstance();
-        _accessToken = prefs.getString(_kAccess);
-        _refreshToken = prefs.getString(_kRefresh);
-      }
-    } catch (_) {
-      // Storage failed. Keep whatever is in memory.
-    } finally {
-      _loaded = true;
-      _loading = false;
+    if (_loaded) {
       if (!_loadCompleter.isCompleted) _loadCompleter.complete();
-      notifyListeners();
+      return;
     }
+
+    final prefs = await SharedPreferences.getInstance();
+    _accessToken = prefs.getString(_kAccess);
+    _refreshToken = prefs.getString(_kRefresh);
+
+    _loaded = true;
+
+    if (!_loadCompleter.isCompleted) _loadCompleter.complete();
+    notifyListeners();
   }
 
-  /// Canonical method: set tokens and persist.
-  /// For cookie-refresh mode, refreshToken can be null.
+  /// Set tokens in memory + persist to SharedPreferences.
   Future<void> setTokens({
-    required String accessToken,
-    String? refreshToken,
+    required String? accessToken,
+    required String? refreshToken,
   }) async {
-    _accessToken = accessToken.trim();
-    _refreshToken = refreshToken?.trim();
+    _accessToken = (accessToken?.trim().isEmpty ?? true) ? null : accessToken;
+    _refreshToken = (refreshToken?.trim().isEmpty ?? true) ? null : refreshToken;
 
-    // Once tokens are set, we consider the store loaded.
-    if (!_loaded) {
-      _loaded = true;
-      if (!_loadCompleter.isCompleted) _loadCompleter.complete();
+    final prefs = await SharedPreferences.getInstance();
+
+    if (_accessToken == null) {
+      await prefs.remove(_kAccess);
+    } else {
+      await prefs.setString(_kAccess, _accessToken!);
     }
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      if (_accessToken != null && _accessToken!.isNotEmpty) {
-        await prefs.setString(_kAccess, _accessToken!);
-      } else {
-        await prefs.remove(_kAccess);
-      }
-
-      // If refreshToken is null/empty (cookie mode), remove stale stored refresh.
-      if (_refreshToken != null && _refreshToken!.isNotEmpty) {
-        await prefs.setString(_kRefresh, _refreshToken!);
-      } else {
-        await prefs.remove(_kRefresh);
-      }
-    } catch (_) {
-      // Ignore storage write failures; runtime tokens still exist in memory.
+    if (_refreshToken == null) {
+      await prefs.remove(_kRefresh);
+    } else {
+      await prefs.setString(_kRefresh, _refreshToken!);
     }
 
     notifyListeners();
   }
 
-  // Backward-compatible aliases
-  Future<void> saveTokens({
-    required String accessToken,
-    String? refreshToken,
-  }) {
-    return setTokens(accessToken: accessToken, refreshToken: refreshToken);
-  }
-
-  Future<void> persistTokens({
-    required String accessToken,
-    String? refreshToken,
-  }) {
-    return setTokens(accessToken: accessToken, refreshToken: refreshToken);
-  }
-
-  Future<void> setSession({
-    required String accessToken,
-    String? refreshToken,
-  }) {
-    return setTokens(accessToken: accessToken, refreshToken: refreshToken);
-  }
-
-  Future<void> clear() async {
+  /// Clear tokens from memory + storage.
+  /// Used when:
+  /// - refresh fails
+  /// - API says token invalid
+  /// - user logs out
+  Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_kAccess);
-      await prefs.remove(_kRefresh);
-    } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kAccess);
+    await prefs.remove(_kRefresh);
 
     notifyListeners();
   }
 }
+
+/// Riverpod provider used across the app (Dio, routing, auth screens).
+final tokenStoreProvider = ChangeNotifierProvider<TokenStore>((ref) {
+  final store = TokenStore();
+
+  // Make sure tokens are loaded as soon as provider is first read.
+  // We don't await here; callers can use waitUntilLoaded().
+  store.load();
+
+  return store;
+});
