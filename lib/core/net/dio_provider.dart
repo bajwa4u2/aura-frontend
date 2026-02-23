@@ -7,29 +7,23 @@ import '../../config.dart';
 import '../auth/auth_providers.dart';
 
 final dioProvider = Provider<Dio>((ref) {
-  final session = ref.watch(sessionStateProvider);
-
   final dio = Dio(
     BaseOptions(
-      baseUrl: session.baseUrl,
+      baseUrl: AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
       },
-      // Keep Dio throwing on 401 so our interceptor can handle it.
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
 
-  // Prevent multiple refresh calls racing.
   final refreshLock = Lock();
 
   bool _isAuthEndpoint(RequestOptions o) {
     final p = o.path;
-    // Adjust if your backend has slightly different routes,
-    // but keep refresh here.
     return p.contains('/auth/login') ||
         p.contains('/auth/register') ||
         p.contains('/auth/refresh') ||
@@ -41,9 +35,8 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Always pull latest token from provider (no stale instance).
-        final latest = ref.read(sessionStateProvider);
-        final token = latest.accessToken;
+        final store = ref.read(tokenStoreProvider);
+        final token = store.accessToken;
 
         if (token != null && token.trim().isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -57,98 +50,61 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
-        // Only treat 401 for non-auth endpoints.
         if (status != 401 || _isAuthEndpoint(req)) {
           handler.next(err);
           return;
         }
 
-        final latestSession = ref.read(sessionStateProvider);
-        final refreshToken = latestSession.refreshToken;
+        final store = ref.read(tokenStoreProvider);
+        final refreshToken = store.refreshToken;
 
-        // 🔥 Critical fix:
-        // If we have NO refresh token, we must clear stale access token,
-        // otherwise router thinks we're authed forever and we loop in 401.
         if (refreshToken == null || refreshToken.trim().isEmpty) {
-          await ref.read(tokenStoreProvider).clearTokens();
+          await store.clearTokens();
           handler.next(err);
           return;
         }
 
-        // Prevent infinite refresh retry loops on the same request.
         if (req.extra['__retried_after_refresh'] == true) {
-          await ref.read(tokenStoreProvider).clearTokens();
+          await store.clearTokens();
           handler.next(err);
           return;
         }
 
         try {
           await refreshLock.synchronized(() async {
-            // Another request may have refreshed while we waited.
-            final now = ref.read(sessionStateProvider);
-            final still401Token = now.accessToken;
-
-            // If token changed since request was sent, retry without refreshing again.
-            if (still401Token != null &&
-                still401Token.trim().isNotEmpty &&
-                still401Token != (req.headers['Authorization']?.toString().replaceFirst('Bearer ', ''))) {
-              return;
-            }
-
             final refreshDio = Dio(
               BaseOptions(
                 baseUrl: AppConfig.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 30),
-                sendTimeout: const Duration(seconds: 30),
                 headers: {'Content-Type': 'application/json'},
-                validateStatus: (code) => code != null && code >= 200 && code < 300,
+                validateStatus: (c) => c != null && c >= 200 && c < 300,
               ),
             );
 
-            // IMPORTANT: keep refresh request simple and skip auth refresh on itself
             final res = await refreshDio.post(
               '/auth/refresh',
               data: {'refreshToken': refreshToken},
-              options: Options(extra: {'skipAuthRefresh': true}),
             );
 
-            // Envelope tolerant:
-            // either { ok:true, data:{ accessToken, refreshToken? } }
-            // or { accessToken, refreshToken? }
-            dynamic raw = res.data;
-            Map<String, dynamic>? m;
-            if (raw is Map) m = Map<String, dynamic>.from(raw);
+            final raw = res.data;
+            if (raw is! Map) throw Exception('Invalid refresh response');
 
-            if (m == null) throw Exception('Unexpected refresh response');
+            final access = raw['accessToken']?.toString();
+            final newRefresh = raw['refreshToken']?.toString();
 
-            Map<String, dynamic> payload = m;
-            if (payload['ok'] == true && payload['data'] is Map) {
-              payload = Map<String, dynamic>.from(payload['data'] as Map);
+            if (access == null || access.isEmpty) {
+              throw Exception('No access token returned');
             }
 
-            final newAccess = payload['accessToken']?.toString();
-            final newRefresh = payload['refreshToken']?.toString();
-
-            if (newAccess == null || newAccess.trim().isEmpty) {
-              throw Exception('Refresh did not return accessToken');
-            }
-
-            // If backend does not rotate refresh token, keep the old one.
-            final effectiveRefresh =
-                (newRefresh != null && newRefresh.trim().isNotEmpty)
-                    ? newRefresh
-                    : refreshToken;
-
-            await ref.read(tokenStoreProvider).setSession(
-                  accessToken: newAccess,
-                  refreshToken: effectiveRefresh,
-                );
+            await store.setSession(
+              accessToken: access,
+              refreshToken:
+                  (newRefresh != null && newRefresh.isNotEmpty)
+                      ? newRefresh
+                      : refreshToken,
+            );
           });
 
-          // Retry the original request once with the new token.
-          final updated = ref.read(sessionStateProvider);
-          final newToken = updated.accessToken;
+          final newToken = ref.read(tokenStoreProvider).accessToken;
 
           final cloned = await dio.request<dynamic>(
             req.path,
@@ -166,8 +122,7 @@ final dioProvider = Provider<Dio>((ref) {
           handler.resolve(cloned);
           return;
         } catch (_) {
-          // If refresh fails, we must fall back to clean logged-out state.
-          await ref.read(tokenStoreProvider).clearTokens();
+          await store.clearTokens();
           handler.next(err);
           return;
         }
@@ -178,7 +133,6 @@ final dioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-/// Simple async lock (no extra package).
 class Lock {
   Future<void> _tail = Future.value();
 
