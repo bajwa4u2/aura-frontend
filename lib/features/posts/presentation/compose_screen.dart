@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -21,12 +24,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _posting = false;
   static const int _limit = 2000;
 
+  // Attachment (in-memory preview; web-safe)
+  Uint8List? _imageBytes;
+  String? _imageName;
+
   // In-session draft cache.
   // Survives navigation while the app is running, but not a full reload.
   static final Map<String, String> _sessionDrafts = <String, String>{};
 
-  String get _draftKey => widget.replyToPostId != null ? 'reply:${widget.replyToPostId}' : 'compose:new';
+  String get _draftKey =>
+      widget.replyToPostId != null ? 'reply:${widget.replyToPostId}' : 'compose:new';
   bool get _hasText => _controller.text.trim().isNotEmpty;
+  bool get _hasAttachment => _imageBytes != null;
 
   @override
   void initState() {
@@ -70,6 +79,40 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _sessionDrafts.remove(_draftKey);
   }
 
+  Future<void> _pickImage() async {
+    if (_posting) return;
+
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+      );
+
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        _imageBytes = bytes;
+        _imageName = file.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not pick image: $e')),
+      );
+    }
+  }
+
+  void _removeAttachment() {
+    setState(() {
+      _imageBytes = null;
+      _imageName = null;
+    });
+  }
+
   Future<void> _publish() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _posting) return;
@@ -80,6 +123,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         const SnackBar(content: Text('Too long. Keep it under 2000 characters.')),
       );
       return;
+    }
+
+    // NOTE (this step): We show attachment preview, but we are not wiring upload
+    // until we confirm the backend media upload route/contract.
+    // We won't invent endpoints here.
+    if (_hasAttachment) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Attachment preview is working. Next step: wire media upload.'),
+        ),
+      );
+      // Continue publishing text anyway (so user can still post).
     }
 
     setState(() => _posting = true);
@@ -95,6 +151,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       await dio.post('/posts', data: payload);
 
       _discardDraft();
+      _removeAttachment();
 
       if (!mounted) return;
       context.pop(true);
@@ -149,6 +206,60 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ),
           SizedBox(height: AuraSpace.s14),
+
+          // Attachment controls
+          AuraCard(
+            child: Padding(
+              padding: EdgeInsets.all(AuraSpace.s14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Attachment', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                  SizedBox(height: AuraSpace.s10),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _posting ? null : _pickImage,
+                        icon: const Icon(Icons.image_outlined),
+                        label: const Text('Attach image'),
+                      ),
+                      SizedBox(width: AuraSpace.s10),
+                      if (_hasAttachment)
+                        TextButton(
+                          onPressed: _posting ? null : _removeAttachment,
+                          child: const Text('Remove'),
+                        ),
+                    ],
+                  ),
+                  if (_hasAttachment) ...[
+                    SizedBox(height: AuraSpace.s12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        _imageBytes!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    if ((_imageName ?? '').trim().isNotEmpty) ...[
+                      SizedBox(height: AuraSpace.s8),
+                      Text(
+                        _imageName!,
+                        style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
+                      ),
+                    ],
+                  ] else ...[
+                    SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Nothing attached yet.',
+                      style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: AuraSpace.s14),
           AuraCard(
             child: TextField(
               controller: _controller,
@@ -201,6 +312,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ? null
                 : () {
                     _discardDraft();
+                    _removeAttachment();
                     _controller.clear();
                     setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
