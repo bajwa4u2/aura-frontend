@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
+enum _AttachKind { none, image, video }
+
 class ComposeScreen extends ConsumerStatefulWidget {
   const ComposeScreen({super.key, this.replyToPostId});
   final String? replyToPostId;
@@ -22,61 +25,128 @@ class ComposeScreen extends ConsumerStatefulWidget {
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final _controller = TextEditingController();
   bool _posting = false;
+  bool _loadingDraft = false;
+  bool _savingDraft = false;
+
+  Timer? _debounce;
   static const int _limit = 2000;
 
-  // Attachment (in-memory preview; web-safe)
+  // Attachment (preview only for now; upload wiring comes next step)
+  _AttachKind _attachKind = _AttachKind.none;
   Uint8List? _imageBytes;
-  String? _imageName;
+  String? _fileName;
+  int? _fileBytes;
 
-  // In-session draft cache.
-  // Survives navigation while the app is running, but not a full reload.
-  static final Map<String, String> _sessionDrafts = <String, String>{};
-
-  String get _draftKey =>
-      widget.replyToPostId != null ? 'reply:${widget.replyToPostId}' : 'compose:new';
+  bool get _isReply => widget.replyToPostId != null;
   bool get _hasText => _controller.text.trim().isNotEmpty;
-  bool get _hasAttachment => _imageBytes != null;
+  bool get _hasAttachment => _attachKind != _AttachKind.none;
 
   @override
   void initState() {
     super.initState();
-    final existing = _sessionDrafts[_draftKey];
-    if (existing != null && existing.isNotEmpty) {
-      _controller.text = existing;
-      _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+
+    // Only main compose uses draft autosave across devices.
+    // Replies should not share the same single global draft row.
+    if (!_isReply) {
+      _loadDraft();
+      _controller.addListener(_onChanged);
     }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    if (!_isReply) _controller.removeListener(_onChanged);
     _controller.dispose();
     super.dispose();
   }
 
-  void _saveDraft({bool quiet = false}) {
-    final text = _controller.text;
+  void _onChanged() {
+    // Debounced autosave to backend
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 800), () {
+      _saveDraft();
+    });
+    // Update counters / preview
+    if (mounted) setState(() {});
+  }
 
-    if (text.trim().isEmpty) {
-      _sessionDrafts.remove(_draftKey);
-      if (!quiet && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nothing to save.')),
-        );
+  Future<void> _loadDraft() async {
+    setState(() => _loadingDraft = true);
+    try {
+      final dio = ref.read(dioProvider);
+
+      final res = await dio.get('/posts/draft');
+      final data = res.data;
+
+      // API may return null when no draft exists.
+      if (data == null) return;
+
+      // Accept either {ok:true,data:{...}} or direct post object.
+      Map<String, dynamic>? post;
+      if (data is Map && data['data'] is Map) {
+        post = Map<String, dynamic>.from(data['data'] as Map);
+      } else if (data is Map) {
+        post = Map<String, dynamic>.from(data);
       }
-      return;
-    }
 
-    _sessionDrafts[_draftKey] = text;
+      final text = (post?['text'] ?? '').toString();
+      if (text.isNotEmpty) {
+        _controller.text = text;
+        _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+      }
 
-    if (!quiet && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved.')),
-      );
+      // Media draft restore can be added later once upload wiring is done.
+    } catch (_) {
+      // Silent: drafts should never block compose.
+    } finally {
+      if (mounted) setState(() => _loadingDraft = false);
     }
   }
 
-  void _discardDraft() {
-    _sessionDrafts.remove(_draftKey);
+  Future<void> _saveDraft({bool silent = true}) async {
+    if (_isReply) return;
+    if (_savingDraft) return;
+
+    setState(() => _savingDraft = true);
+    try {
+      final dio = ref.read(dioProvider);
+
+      await dio.put('/posts/draft', data: {'text': _controller.text});
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saved.')));
+      }
+    } catch (_) {
+      // Silent by default: draft failures shouldn’t spam the user.
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not save draft.')));
+      }
+    } finally {
+      if (mounted) setState(() => _savingDraft = false);
+    }
+  }
+
+  Future<void> _discardDraft() async {
+    if (_isReply) {
+      _controller.clear();
+      _removeAttachment();
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cleared.')));
+      return;
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.delete('/posts/draft');
+      _controller.clear();
+      _removeAttachment();
+      setState(() {});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft discarded.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not discard draft: $e')));
+    }
   }
 
   Future<void> _pickImage() async {
@@ -84,104 +154,139 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     try {
       final picker = ImagePicker();
-      final file = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 92,
-      );
-
+      final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
       if (file == null) return;
 
       final bytes = await file.readAsBytes();
       if (!mounted) return;
 
       setState(() {
+        _attachKind = _AttachKind.image;
         _imageBytes = bytes;
-        _imageName = file.name;
+        _fileName = file.name;
+        _fileBytes = bytes.length;
+      });
+
+      // Draft save will include media later (next step). For now we just keep preview.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not pick image: $e')));
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    if (_posting) return;
+
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickVideo(source: ImageSource.gallery);
+      if (file == null) return;
+
+      // Don’t load full video into memory for preview (can be huge).
+      final length = await file.length();
+      if (!mounted) return;
+
+      setState(() {
+        _attachKind = _AttachKind.video;
+        _imageBytes = null;
+        _fileName = file.name;
+        _fileBytes = length;
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not pick image: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not pick video: $e')));
     }
   }
 
   void _removeAttachment() {
     setState(() {
+      _attachKind = _AttachKind.none;
       _imageBytes = null;
-      _imageName = null;
+      _fileName = null;
+      _fileBytes = null;
     });
   }
 
   Future<void> _publish() async {
+    if (_posting) return;
+
     final text = _controller.text.trim();
-    if (text.isEmpty || _posting) return;
+    if (text.isEmpty) return;
 
     if (text.length > _limit) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Too long. Keep it under 2000 characters.')),
       );
       return;
     }
 
-    // NOTE (this step): We show attachment preview, but we are not wiring upload
-    // until we confirm the backend media upload route/contract.
-    // We won't invent endpoints here.
-    if (_hasAttachment) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Attachment preview is working. Next step: wire media upload.'),
-        ),
-      );
-      // Continue publishing text anyway (so user can still post).
-    }
-
     setState(() => _posting = true);
     try {
       final dio = ref.read(dioProvider);
 
-      // Replies are created as posts with replyToPostId.
-      final payload = <String, dynamic>{
-        'text': text,
-        if (widget.replyToPostId != null) 'replyToPostId': widget.replyToPostId,
-      };
+      if (_isReply) {
+        // Replies publish directly (do not use global draft)
+        await dio.post('/posts/${widget.replyToPostId}/reply', data: {'text': text});
+        _controller.clear();
+        _removeAttachment();
+        if (!mounted) return;
+        context.pop(true);
+        return;
+      }
 
-      await dio.post('/posts', data: payload);
+      // Main compose publishes the saved draft row.
+      // To keep behavior deterministic across devices:
+      // - force one last save
+      await dio.put('/posts/draft', data: {'text': _controller.text});
 
-      _discardDraft();
+      // Media upload wiring comes next step:
+      // - upload to backend media endpoint -> get url/type/width/height/duration
+      // - saveDraft including media fields
+      // For now we publish text-only draft.
+      if (_hasAttachment && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Attachment picked. Next step: wire media upload to the post.')),
+        );
+      }
+
+      await dio.post('/posts/draft/publish');
+
+      _controller.clear();
       _removeAttachment();
-
       if (!mounted) return;
       context.pop(true);
     } catch (e) {
-      _saveDraft(quiet: true);
-
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not publish: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not publish: $e')));
     } finally {
       if (mounted) setState(() => _posting = false);
     }
   }
 
+  String _humanBytes(int? n) {
+    if (n == null) return '';
+    if (n < 1024) return '${n}B';
+    final kb = n / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(0)}KB';
+    final mb = kb / 1024;
+    if (mb < 1024) return '${mb.toStringAsFixed(1)}MB';
+    final gb = mb / 1024;
+    return '${gb.toStringAsFixed(1)}GB';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isReply = widget.replyToPostId != null;
-    final text = _controller.text.trim();
-    final remaining = _limit - text.length;
+    final remaining = _limit - _controller.text.trim().length;
 
     return AuraScaffold(
-      title: isReply ? 'Reply' : 'Compose',
+      title: _isReply ? 'Reply' : 'Compose',
       actions: [
         TextButton(
-          onPressed: _posting ? null : () => _saveDraft(),
-          child: const Text('Save'),
+          onPressed: _posting ? null : _discardDraft,
+          child: const Text('Discard'),
         ),
         TextButton(
-          onPressed: _posting ? null : _publish,
+          onPressed: (_posting || !_hasText) ? null : _publish,
           child: Text(_posting ? 'Publishing…' : 'Publish'),
         ),
       ],
@@ -189,41 +294,45 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
         children: [
           AuraCard(
-            padding: EdgeInsets.all(AuraSpace.s18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isReply ? 'Reply with care.' : 'Write something worth carrying.',
-                  style: AuraText.title,
-                ),
-                SizedBox(height: AuraSpace.s8),
-                Text(
-                  'No performance, no bait. Just clarity.',
-                  style: AuraText.muted.copyWith(height: 1.35),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AuraSpace.s14),
-
-          // Attachment controls
-          AuraCard(
             child: Padding(
-              padding: EdgeInsets.all(AuraSpace.s14),
+              padding: const EdgeInsets.all(AuraSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Attachment', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                  SizedBox(height: AuraSpace.s10),
                   Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _isReply ? 'Reply with care.' : 'Write something worth carrying.',
+                          style: AuraText.title,
+                        ),
+                      ),
+                      if (!_isReply) ...[
+                        if (_loadingDraft)
+                          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        const SizedBox(width: AuraSpace.s10),
+                        if (_savingDraft)
+                          Text('Saving…', style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F))),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+
+                  // Attach controls (same card)
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
                     children: [
                       OutlinedButton.icon(
                         onPressed: _posting ? null : _pickImage,
                         icon: const Icon(Icons.image_outlined),
-                        label: const Text('Attach image'),
+                        label: const Text('Image'),
                       ),
-                      SizedBox(width: AuraSpace.s10),
+                      OutlinedButton.icon(
+                        onPressed: _posting ? null : _pickVideo,
+                        icon: const Icon(Icons.videocam_outlined),
+                        label: const Text('Video'),
+                      ),
                       if (_hasAttachment)
                         TextButton(
                           onPressed: _posting ? null : _removeAttachment,
@@ -231,52 +340,76 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                     ],
                   ),
+
+                  const SizedBox(height: AuraSpace.s12),
+
+                  // Attachment preview area (within same card)
                   if (_hasAttachment) ...[
-                    SizedBox(height: AuraSpace.s12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(
-                        _imageBytes!,
-                        fit: BoxFit.cover,
+                    if (_attachKind == _AttachKind.image && _imageBytes != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(_imageBytes!, fit: BoxFit.cover),
                       ),
-                    ),
-                    if ((_imageName ?? '').trim().isNotEmpty) ...[
-                      SizedBox(height: AuraSpace.s8),
+                      if ((_fileName ?? '').trim().isNotEmpty || _fileBytes != null) ...[
+                        const SizedBox(height: AuraSpace.s8),
+                        Text(
+                          [
+                            if ((_fileName ?? '').trim().isNotEmpty) _fileName!.trim(),
+                            if (_fileBytes != null) _humanBytes(_fileBytes),
+                          ].join(' • '),
+                          style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
+                        ),
+                      ],
+                      const SizedBox(height: AuraSpace.s12),
+                    ] else if (_attachKind == _AttachKind.video) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AuraSpace.s14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE0E0E0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.videocam_outlined),
+                            const SizedBox(width: AuraSpace.s10),
+                            Expanded(
+                              child: Text(
+                                [
+                                  _fileName?.trim().isNotEmpty == true ? _fileName!.trim() : 'Video selected',
+                                  if (_fileBytes != null) _humanBytes(_fileBytes),
+                                ].where((s) => s.trim().isNotEmpty).join(' • '),
+                                style: AuraText.body,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
                       Text(
-                        _imageName!,
+                        'Video preview playback comes next (upload wiring + player).',
                         style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
                       ),
+                      const SizedBox(height: AuraSpace.s12),
                     ],
-                  ] else ...[
-                    SizedBox(height: AuraSpace.s8),
-                    Text(
-                      'Nothing attached yet.',
-                      style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
-                    ),
                   ],
+
+                  TextField(
+                    controller: _controller,
+                    maxLength: _limit,
+                    maxLines: 10,
+                    decoration: const InputDecoration(
+                      hintText: 'Draft here…',
+                      border: InputBorder.none,
+                      counterText: '',
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
-          SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: TextField(
-              controller: _controller,
-              maxLength: _limit,
-              maxLines: 12,
-              decoration: const InputDecoration(
-                hintText: 'Draft here…',
-                border: InputBorder.none,
-                counterText: '',
-              ),
-              onChanged: (_) {
-                _saveDraft(quiet: true);
-                setState(() {});
-              },
-            ),
-          ),
-          SizedBox(height: AuraSpace.s8),
+          const SizedBox(height: AuraSpace.s8),
           Text(
             remaining >= 0 ? '$remaining characters remaining' : '${remaining.abs()} over limit',
             style: AuraText.small.copyWith(
@@ -284,42 +417,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Preview', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                SizedBox(height: AuraSpace.s8),
-                Text(
-                  text.isEmpty ? 'Nothing yet.' : text,
-                  style: AuraText.body.copyWith(height: 1.45),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AuraSpace.s18),
+
+          const SizedBox(height: AuraSpace.s16),
           FilledButton.icon(
             onPressed: (_posting || !_hasText) ? null : _publish,
             icon: _posting
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.send),
             label: Text(_posting ? 'Publishing…' : 'Publish'),
-          ),
-          SizedBox(height: AuraSpace.s10),
-          TextButton(
-            onPressed: _posting
-                ? null
-                : () {
-                    _discardDraft();
-                    _removeAttachment();
-                    _controller.clear();
-                    setState(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Draft discarded.')),
-                    );
-                  },
-            child: const Text('Discard draft'),
           ),
         ],
       ),
