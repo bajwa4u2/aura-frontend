@@ -35,7 +35,6 @@ class TokenStore extends ChangeNotifier {
       _accessToken = prefs.getString(_kAccess);
       _refreshToken = prefs.getString(_kRefresh);
     } catch (_) {
-      // If storage fails, treat as logged out.
       _accessToken = null;
       _refreshToken = null;
     } finally {
@@ -46,7 +45,7 @@ class TokenStore extends ChangeNotifier {
   }
 
   /// Canonical method: set tokens and persist.
-  /// For Mode B (HttpOnly refresh cookie), refreshToken can be null.
+  /// For cookie-refresh mode, refreshToken can be null.
   Future<void> setTokens({
     required String accessToken,
     String? refreshToken,
@@ -63,7 +62,7 @@ class TokenStore extends ChangeNotifier {
         await prefs.remove(_kAccess);
       }
 
-      // If refreshToken is null/empty (cookie mode), remove any stale stored refresh.
+      // If refreshToken is null/empty (cookie mode), remove stale stored refresh.
       if (_refreshToken != null && _refreshToken!.isNotEmpty) {
         await prefs.setString(_kRefresh, _refreshToken!);
       } else {
@@ -76,7 +75,7 @@ class TokenStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Backward-compatible alias (some files may call this name).
+  /// Backward-compatible alias (older code).
   Future<void> saveTokens({
     required String accessToken,
     String? refreshToken,
@@ -84,8 +83,16 @@ class TokenStore extends ChangeNotifier {
     return setTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
 
-  /// Backward-compatible alias (some files may call this name).
+  /// Backward-compatible alias (older code).
   Future<void> persistTokens({
+    required String accessToken,
+    String? refreshToken,
+  }) {
+    return setTokens(accessToken: accessToken, refreshToken: refreshToken);
+  }
+
+  /// Backward-compatible alias used by register screen.
+  Future<void> setSession({
     required String accessToken,
     String? refreshToken,
   }) {
