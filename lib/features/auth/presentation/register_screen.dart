@@ -80,10 +80,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final data = _asMap(root['data']);
     final tokens = _asMap(root['tokens']);
 
-    final nestedAccess = pick(data, ['accessToken', 'access_token', 'token']) ?? pick(tokens, ['accessToken', 'access_token', 'token']);
-    final nestedRefresh = pick(data, ['refreshToken', 'refresh_token']) ?? pick(tokens, ['refreshToken', 'refresh_token']);
+    final nestedAccess =
+        pick(data, ['accessToken', 'access_token', 'token']) ??
+        pick(tokens, ['accessToken', 'access_token', 'token']);
+    final nestedRefresh =
+        pick(data, ['refreshToken', 'refresh_token']) ??
+        pick(tokens, ['refreshToken', 'refresh_token']);
 
     return (accessToken: nestedAccess, refreshToken: nestedRefresh);
+  }
+
+  String _defaultHandleFromEmail(String email) {
+    final e = email.trim();
+    final at = e.indexOf('@');
+    if (at > 0) return e.substring(0, at);
+    return e.isEmpty ? 'member' : e;
+  }
+
+  String _defaultDisplayName(String firstName, String lastName, String handle) {
+    final fn = firstName.trim();
+    final ln = lastName.trim();
+    final full = ('$fn $ln').trim();
+    if (full.isNotEmpty) return full;
+    return handle.trim().isEmpty ? 'Member' : handle.trim();
   }
 
   Future<void> _submit() async {
@@ -103,13 +122,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     try {
       final repo = ref.read(authRepositoryProvider);
 
+      final email = _email.text.trim();
+      final firstName = _firstName.text.trim();
+      final lastName = _lastName.text.trim();
+
+      // Keep fields optional in UI, but satisfy non-null backend contract.
+      final handle = _handle.text.trim().isEmpty
+          ? _defaultHandleFromEmail(email)
+          : _handle.text.trim();
+
+      final displayName = _displayName.text.trim().isEmpty
+          ? _defaultDisplayName(firstName, lastName, handle)
+          : _displayName.text.trim();
+
       final out = await repo.register(
-        email: _email.text.trim(),
+        email: email,
         password: _password.text,
-        firstName: _firstName.text.trim(),
-        lastName: _lastName.text.trim(),
-        handle: _handle.text.trim().isEmpty ? null : _handle.text.trim(),
-        displayName: _displayName.text.trim().isEmpty ? null : _displayName.text.trim(),
+        firstName: firstName,
+        lastName: lastName,
+        handle: handle,
+        displayName: displayName,
       );
 
       final tokens = _extractTokens(out);
@@ -159,12 +191,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const SizedBox(height: 8),
                   const Text('Create your account. We’ll email you a verification link.'),
                   const SizedBox(height: 16),
-
                   if (_error != null) ...[
                     Text(_error!, style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 12),
                   ],
-
                   TextFormField(
                     controller: _firstName,
                     decoration: const InputDecoration(labelText: 'First name (private)'),
@@ -172,7 +202,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _lastName,
                     decoration: const InputDecoration(labelText: 'Last name (private)'),
@@ -180,21 +209,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _displayName,
                     decoration: const InputDecoration(labelText: 'Display name (public, optional)'),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _handle,
                     decoration: const InputDecoration(labelText: 'Handle (optional)'),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _email,
                     decoration: const InputDecoration(labelText: 'Email'),
@@ -203,7 +229,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _password,
                     decoration: const InputDecoration(labelText: 'Password'),
@@ -212,7 +237,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _confirmPassword,
                     decoration: const InputDecoration(labelText: 'Confirm password'),
@@ -222,7 +246,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   const SizedBox(height: 18),
-
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     child: Text(_loading ? 'Creating…' : 'Create account'),
