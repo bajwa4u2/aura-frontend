@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
-import '../domain/post.dart';
+
+import '../post_model.dart';
 
 class FeedPage {
   const FeedPage({
@@ -40,14 +41,10 @@ class FeedPage {
 
       // Envelope shape: { ok: true, data: <payload> }
       if (root.containsKey('ok') && root.containsKey('data')) {
-        final inner = root['data'];
-        // recurse into payload which can be List or Map
-        return FeedPage.fromResponse(inner);
+        return FeedPage.fromResponse(root['data']);
       }
 
-      // Paged shape can be either:
-      // A) { data: [..], nextCursor: "..." }
-      // B) { data: { data: [..], nextCursor: "..." } }
+      // Nested data: { data: { data: [..], nextCursor: "..." } }
       if (root['data'] is Map) {
         final inner = Map<String, dynamic>.from(root['data'] as Map);
         final list = _pickListFromMap(inner);
@@ -60,7 +57,7 @@ class FeedPage {
         );
       }
 
-      // Flat map containing list directly
+      // Flat map containing list directly: { data: [..], nextCursor: "..." }
       final list = _pickListFromMap(root);
       final next = _pickCursorFromMap(root);
       return FeedPage(
@@ -79,8 +76,6 @@ class FeedRepository {
   final Dio dio;
   FeedRepository(this.dio);
 
-  /// Feed shown on Home.
-  /// If server requires auth and user is not logged in, return empty quietly.
   Future<FeedPage> fetchFeed({String? cursor, int limit = 20}) async {
     try {
       final res = await dio.get(
@@ -106,7 +101,6 @@ class FeedRepository {
 
   Future<Post> create(String text) async {
     final res = await dio.post('/posts', data: {'text': text});
-
     final body = res.data;
     if (body is Map && body['post'] is Map) {
       return Post.fromJson(Map<String, dynamic>.from(body['post']));

@@ -35,43 +35,58 @@ class Post {
     this.linkImageUrl,
   });
 
+  static Map<String, dynamic>? _asMap(dynamic v) {
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return null;
+  }
+
+  static String? _asString(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString();
+    return s.trim().isEmpty ? null : s;
+  }
+
+  static int? _asInt(dynamic v) {
+    if (v is num) return v.toInt();
+    return null;
+  }
+
   factory Post.fromJson(Map<String, dynamic> json) {
-    final author = (json['author'] as Map<String, dynamic>?);
+    final author = _asMap(json['author']);
+
+    // Support both flat fields and nested media object (future-proof)
+    final media = _asMap(json['media']);
+    final mediaType = _asString(json['mediaType']) ??
+        _asString(media?['type']) ??
+        'NONE';
+
+    final mediaUrl = _asString(json['mediaUrl']) ??
+        _asString(media?['url']) ??
+        _asString(media?['publicUrl']);
+
+    final mediaThumbUrl = _asString(json['mediaThumbUrl']) ??
+        _asString(media?['thumbUrl']) ??
+        _asString(media?['thumbnailUrl']);
+
+    final mediaWidth = _asInt(json['mediaWidth']) ?? _asInt(media?['width']);
+    final mediaHeight = _asInt(json['mediaHeight']) ?? _asInt(media?['height']);
+    final mediaDuration = _asInt(json['mediaDuration']) ?? _asInt(media?['duration']);
 
     return Post(
       id: (json['id'] ?? '').toString(),
       text: (json['text'] ?? '').toString(),
       createdAt: DateTime.parse((json['createdAt'] ?? '').toString()),
       authorHandle: (author?['handle'] as String?) ?? '',
-      mediaType: (json['mediaType'] ?? 'NONE').toString(),
-      mediaUrl: (json['mediaUrl'] as String?),
-      mediaThumbUrl: (json['mediaThumbUrl'] as String?),
-      mediaWidth: (json['mediaWidth'] as num?)?.toInt(),
-      mediaHeight: (json['mediaHeight'] as num?)?.toInt(),
-      mediaDuration: (json['mediaDuration'] as num?)?.toInt(),
+      mediaType: mediaType,
+      mediaUrl: mediaUrl,
+      mediaThumbUrl: mediaThumbUrl,
+      mediaWidth: mediaWidth,
+      mediaHeight: mediaHeight,
+      mediaDuration: mediaDuration,
       caption: (json['caption'] as String?),
       linkTitle: (json['linkTitle'] as String?),
       linkDescription: (json['linkDescription'] as String?),
       linkImageUrl: (json['linkImageUrl'] as String?),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'id': id,
-      'text': text,
-      'createdAt': createdAt.toIso8601String(),
-      'author': <String, dynamic>{'handle': authorHandle},
-      'mediaType': mediaType,
-      'mediaUrl': mediaUrl,
-      'mediaThumbUrl': mediaThumbUrl,
-      'mediaWidth': mediaWidth,
-      'mediaHeight': mediaHeight,
-      'mediaDuration': mediaDuration,
-      'caption': caption,
-      'linkTitle': linkTitle,
-      'linkDescription': linkDescription,
-      'linkImageUrl': linkImageUrl,
-    };
   }
 }
