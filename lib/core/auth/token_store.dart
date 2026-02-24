@@ -28,7 +28,10 @@ class TokenStore extends ChangeNotifier {
   /// Helps UI avoid firing protected calls before tokens are loaded.
   bool get isLoaded => _loaded;
 
-  bool get isAuthed => (_accessToken != null && _accessToken!.trim().isNotEmpty);
+  /// IMPORTANT:
+  /// Only treat user as authed after tokens are loaded.
+  bool get isAuthed =>
+      _loaded && (_accessToken != null && _accessToken!.trim().isNotEmpty);
 
   /// Await this when you must not act until tokens are restored.
   Future<void> waitUntilLoaded() => _loadCompleter.future;

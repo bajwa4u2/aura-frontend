@@ -112,6 +112,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending';
       }
 
+      // ✅ Key Fix:
+      // Authed + verified users should not sit on /public (it looks like "not logged in").
+      if (loc == '/public') {
+        return '/home';
+      }
+
       // 5) Verified: never let verified users sit on auth screens again.
       // Your rule: after login, land on /me.
       if (isAuth) {
@@ -161,7 +167,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/request-verification',
-            builder: (context, state) => const InstitutionRequestVerificationScreen(),
+            builder: (context, state) =>
+                const InstitutionRequestVerificationScreen(),
           ),
           GoRoute(
             path: '/patrons',
@@ -172,32 +179,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SupportersHubScreen(),
           ),
 
-          // Auth (public)
+          // Auth flow
           GoRoute(
             path: '/login',
-            builder: (context, state) {
-              final redirectTo = state.uri.queryParameters['redirect'];
-              return AuthScreen(redirectTo: redirectTo);
-            },
+            builder: (context, state) => const AuthScreen(),
           ),
           GoRoute(
             path: '/register',
-            builder: (context, state) {
-              final redirectTo = state.uri.queryParameters['redirect'];
-              return RegisterScreen(redirectTo: redirectTo);
-            },
-          ),
-          GoRoute(
-            path: '/verify-pending',
-            builder: (context, state) => const VerifyPendingScreen(),
-          ),
-          GoRoute(
-            path: '/verify-email',
-            builder: (context, state) {
-              final redirectTo = state.uri.queryParameters['redirect'];
-              final token = state.uri.queryParameters['token'];
-              return VerifyEmailScreen(token: token, redirectTo: redirectTo);
-            },
+            builder: (context, state) => const RegisterScreen(),
           ),
           GoRoute(
             path: '/forgot-password',
@@ -205,10 +194,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/reset-password',
-            builder: (context, state) {
-              final token = state.uri.queryParameters['token'] ?? '';
-              return ResetPasswordScreen(initialToken: token);
-            },
+            builder: (context, state) => const ResetPasswordScreen(),
+          ),
+          GoRoute(
+            path: '/verify-email',
+            builder: (context, state) => const VerifyEmailScreen(),
+          ),
+          GoRoute(
+            path: '/verify-pending',
+            builder: (context, state) => const VerifyPendingScreen(),
           ),
 
           // Member area
@@ -237,36 +231,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ComposeScreen(),
           ),
           GoRoute(
-            path: '/posts/:id',
+            path: '/post/:id',
             builder: (context, state) =>
-                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
+                PostDetailScreen(id: state.pathParameters['id']!),
           ),
           GoRoute(
             path: '/u/:handle',
             builder: (context, state) =>
-                AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
+                AuthorProfileScreen(handle: state.pathParameters['handle']!),
           ),
           GoRoute(
-            path: '/support/:handle',
-            builder: (context, state) =>
-                SupportScreen(handle: state.pathParameters['handle'] ?? ''),
+            path: '/support',
+            builder: (context, state) => const SupportScreen(),
           ),
         ],
       ),
     ],
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    _sub = stream.listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _sub;
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
-  }
-}
