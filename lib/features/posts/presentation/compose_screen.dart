@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,14 +13,8 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../post_repository.dart';
 
 enum _AttachKind { none, image, video, link }
-
-final _postsRepoProvider = Provider<PostsRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return PostsRepository(dio);
-});
 
 class ComposeScreen extends ConsumerStatefulWidget {
   const ComposeScreen({super.key, this.replyToPostId});
@@ -42,7 +37,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   _AttachKind _attachKind = _AttachKind.none;
 
-  // File attachment
   XFile? _pickedFile;
   Uint8List? _previewImageBytes;
   String? _fileName;
@@ -50,7 +44,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   int? _imgW;
   int? _imgH;
 
-  // Link preview
   bool _linkLoading = false;
   String? _linkError;
   Map<String, dynamic>? _linkPreview; // {url,title,description,image}
@@ -89,10 +82,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() => _loadingDraft = true);
     try {
       final dio = ref.read(dioProvider);
-
       final res = await dio.get('/posts/draft');
       final data = res.data;
-
       if (data == null) return;
 
       Map<String, dynamic>? post;
@@ -120,21 +111,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     setState(() => _savingDraft = true);
     try {
-      final repo = ref.read(_postsRepoProvider);
+      final dio = ref.read(dioProvider);
 
-      // Draft save includes any attachment metadata we already have
-      await repo.saveDraft(
-        text: _controller.text,
-        mediaType: _draftMediaType(),
-        mediaUrl: _draftMediaUrl(),
-        mediaThumbUrl: _draftMediaThumbUrl(),
-        mediaWidth: _imgW,
-        mediaHeight: _imgH,
-        caption: _draftCaption(),
-        linkTitle: _linkPreview?['title']?.toString(),
-        linkDescription: _linkPreview?['description']?.toString(),
-        linkImageUrl: _linkPreview?['image']?.toString(),
-      );
+      await dio.put('/posts/draft', data: {
+        'text': _controller.text,
+        'mediaType': _draftMediaType(),
+        if (_attachKind == _AttachKind.link) 'mediaUrl': _linkUrl(),
+        if (_attachKind == _AttachKind.link) 'mediaThumbUrl': _linkImage(),
+        if (_attachKind == _AttachKind.image) 'mediaWidth': _imgW,
+        if (_attachKind == _AttachKind.image) 'mediaHeight': _imgH,
+        if (_attachKind == _AttachKind.link) 'caption': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkTitle': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkDescription': _linkDescription(),
+        if (_attachKind == _AttachKind.link) 'linkImageUrl': _linkImage(),
+      });
 
       if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saved.')));
@@ -146,38 +136,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     } finally {
       if (mounted) setState(() => _savingDraft = false);
     }
-  }
-
-  String _draftMediaType() {
-    switch (_attachKind) {
-      case _AttachKind.image:
-        return 'IMAGE';
-      case _AttachKind.video:
-        return 'VIDEO';
-      case _AttachKind.link:
-        return 'LINK';
-      case _AttachKind.none:
-        return 'NONE';
-    }
-  }
-
-  String? _draftMediaUrl() {
-    if (_attachKind == _AttachKind.link) return _linkPreview?['url']?.toString();
-    // For image/video we only set mediaUrl after upload.
-    return null;
-  }
-
-  String? _draftMediaThumbUrl() {
-    if (_attachKind == _AttachKind.link) return _linkPreview?['image']?.toString();
-    return null;
-  }
-
-  String? _draftCaption() {
-    if (_attachKind == _AttachKind.link) {
-      final t = _linkPreview?['title']?.toString();
-      if (t != null && t.trim().isNotEmpty) return t.trim();
-    }
-    return null;
   }
 
   Future<void> _discardDraft() async {
@@ -203,6 +161,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  String _draftMediaType() {
+    switch (_attachKind) {
+      case _AttachKind.image:
+        return 'IMAGE';
+      case _AttachKind.video:
+        return 'VIDEO';
+      case _AttachKind.link:
+        return 'LINK';
+      case _AttachKind.none:
+        return 'NONE';
+    }
+  }
+
+  String? _linkUrl() => _linkPreview == null ? null : (_linkPreview!['url']?.toString());
+  String? _linkTitle() => _linkPreview == null ? null : (_linkPreview!['title']?.toString());
+  String? _linkDescription() => _linkPreview == null ? null : (_linkPreview!['description']?.toString());
+  String? _linkImage() => _linkPreview == null ? null : (_linkPreview!['image']?.toString());
+
   Future<void> _pickImage() async {
     if (_posting) return;
     if (_isReply) return;
@@ -213,8 +189,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (file == null) return;
 
       final bytes = await file.readAsBytes();
-
-      final decoded = await _decodeImage(bytes);
+      final dims = await _decodeImage(bytes);
 
       if (!mounted) return;
 
@@ -224,10 +199,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _previewImageBytes = bytes;
         _fileName = file.name;
         _fileBytes = bytes.length;
-        _imgW = decoded.$1;
-        _imgH = decoded.$2;
+        _imgW = dims.$1;
+        _imgH = dims.$2;
         _linkPreview = null;
         _linkError = null;
+        _linkController.clear();
       });
 
       await _saveDraft();
@@ -248,13 +224,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       final length = await file.length();
 
-      // Hard client-side guard to match backend (50MB)
       const max = 50 * 1024 * 1024;
       if (length > max) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video too large (max 50MB).')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Video too large (max 50MB).')));
         return;
       }
 
@@ -270,6 +243,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _imgH = null;
         _linkPreview = null;
         _linkError = null;
+        _linkController.clear();
       });
 
       await _saveDraft();
@@ -319,8 +293,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
 
     try {
-      final repo = ref.read(_postsRepoProvider);
-      final preview = await repo.fetchLinkPreview(url: url);
+      final dio = ref.read(dioProvider);
+      final res = await dio.post('/media/link-preview', data: {'url': url});
+      final preview = Map<String, dynamic>.from(res.data as Map);
 
       if (!mounted) return;
 
@@ -332,7 +307,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       });
 
       await _saveDraft();
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _linkError = 'Could not preview link.';
@@ -374,11 +349,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() => _posting = true);
 
     try {
-      final repo = ref.read(_postsRepoProvider);
+      final dio = ref.read(dioProvider);
 
       if (_isReply) {
-        // Replies: text only (avoid breaking backend DTO unexpectedly)
-        final dio = ref.read(dioProvider);
         await dio.post('/posts/${widget.replyToPostId}/reply', data: {'text': text});
         _controller.clear();
         _removeAttachment();
@@ -387,73 +360,69 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         return;
       }
 
-      // 1) If attachment is IMAGE or VIDEO: presign + upload + markReady
+      // IMAGE / VIDEO: presign + PUT upload + update draft with mediaUrl
       String? uploadedPublicUrl;
-      String? uploadedMediaId;
 
       if (_attachKind == _AttachKind.image || _attachKind == _AttachKind.video) {
         if (_pickedFile == null) {
-          throw Exception('No file selected')
+          throw Exception('No file selected');
         }
 
-        final mime = await _inferMimeType(_pickedFile!);
+        final mime = _inferMimeType(_pickedFile!.name);
         final bytes = await _pickedFile!.readAsBytes();
 
-        // match backend limits (image 10MB, video 50MB)
         if (_attachKind == _AttachKind.image && bytes.length > 10 * 1024 * 1024) {
-          throw Exception('Image too large (max 10MB)')
+          throw Exception('Image too large (max 10MB)');
         }
         if (_attachKind == _AttachKind.video && bytes.length > 50 * 1024 * 1024) {
-          throw Exception('Video too large (max 50MB)')
+          throw Exception('Video too large (max 50MB)');
         }
 
-        final presigned = await repo.presignMedia(
-          fileName: _pickedFile!.name,
-          mimeType: mime,
-          bytes: bytes.length,
-          kind: _attachKind == _AttachKind.image ? 'IMAGE' : 'VIDEO',
-          width: _attachKind == _AttachKind.image ? _imgW : null,
-          height: _attachKind == _AttachKind.image ? _imgH : null,
-        );
+        final pres = await dio.post('/media/presign', data: {
+          'fileName': _pickedFile!.name,
+          'mimeType': mime,
+          'bytes': bytes.length,
+          'kind': _attachKind == _AttachKind.image ? 'IMAGE' : 'VIDEO',
+          if (_attachKind == _AttachKind.image) 'width': _imgW,
+          if (_attachKind == _AttachKind.image) 'height': _imgH,
+        });
 
-        uploadedMediaId = presigned['mediaId']?.toString();
+        final presigned = Map<String, dynamic>.from(pres.data as Map);
         uploadedPublicUrl = presigned['publicUrl']?.toString();
-        final upload = Map<String, dynamic>.from(presigned['upload'] as Map);
 
+        final upload = Map<String, dynamic>.from(presigned['upload'] as Map);
         final uploadUrl = upload['url']?.toString() ?? '';
         final headers = Map<String, dynamic>.from(upload['headers'] as Map);
 
-        await repo.uploadToPresignedUrl(
-          url: uploadUrl,
-          headers: headers,
-          mimeType: mime,
-          bytes: bytes,
+        // PUT to presigned URL (absolute)
+        await dio.put(
+          uploadUrl,
+          data: bytes,
+          options: Options(
+            headers: headers.map((k, v) => MapEntry(k.toString(), v.toString())),
+            contentType: mime,
+            responseType: ResponseType.plain,
+            validateStatus: (code) => code != null && code >= 200 && code < 300,
+          ),
         );
-
-        if (uploadedMediaId != null) {
-          // best effort
-          unawaited(repo.markMediaReady(uploadedMediaId));
-        }
       }
 
-      // 2) Save draft with final media fields
-      await repo.saveDraft(
-        text: _controller.text,
-        mediaType: _draftMediaType(),
-        mediaUrl: _attachKind == _AttachKind.link ? _linkPreview?['url']?.toString() : uploadedPublicUrl,
-        mediaThumbUrl: _attachKind == _AttachKind.link ? _linkPreview?['image']?.toString() : null,
-        mediaWidth: _attachKind == _AttachKind.image ? _imgW : null,
-        mediaHeight: _attachKind == _AttachKind.image ? _imgH : null,
-        // video duration unknown in phase 1
-        mediaDuration: null,
-        caption: _attachKind == _AttachKind.link ? _linkPreview?['title']?.toString() : null,
-        linkTitle: _linkPreview?['title']?.toString(),
-        linkDescription: _linkPreview?['description']?.toString(),
-        linkImageUrl: _linkPreview?['image']?.toString(),
-      );
+      // Save final draft payload
+      await dio.put('/posts/draft', data: {
+        'text': _controller.text,
+        'mediaType': _draftMediaType(),
+        if (_attachKind == _AttachKind.link) 'mediaUrl': _linkUrl(),
+        if (_attachKind == _AttachKind.link) 'mediaThumbUrl': _linkImage(),
+        if (_attachKind == _AttachKind.link) 'caption': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkTitle': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkDescription': _linkDescription(),
+        if (_attachKind == _AttachKind.link) 'linkImageUrl': _linkImage(),
+        if (_attachKind == _AttachKind.image) 'mediaWidth': _imgW,
+        if (_attachKind == _AttachKind.image) 'mediaHeight': _imgH,
+        if (_attachKind == _AttachKind.image || _attachKind == _AttachKind.video) 'mediaUrl': uploadedPublicUrl,
+      });
 
-      // 3) Publish draft
-      await repo.publishDraft();
+      await dio.post('/posts/draft/publish');
 
       _controller.clear();
       _removeAttachment();
@@ -471,15 +440,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final s = raw.trim();
     if (s.isEmpty) return null;
 
-    // If user writes "example.com", treat as https://example.com
     if (!s.startsWith('http://') && !s.startsWith('https://')) {
       final candidate = 'https://$s';
-      return Uri.tryParse(candidate)?.hasAbsolutePath == true ? candidate : null;
+      final u = Uri.tryParse(candidate);
+      if (u == null) return null;
+      if (u.scheme != 'https') return null;
+      if (u.host.trim().isEmpty) return null;
+      return candidate;
     }
 
     final u = Uri.tryParse(s);
     if (u == null) return null;
     if (u.scheme != 'http' && u.scheme != 'https') return null;
+    if (u.host.trim().isEmpty) return null;
     return s;
   }
 
@@ -490,20 +463,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return (img.width, img.height);
   }
 
-  Future<String> _inferMimeType(XFile file) async {
-    // image_picker may not always provide mimeType across platforms.
-    // We infer from extension as a safe default.
-    final name = file.name.toLowerCase();
+  String _inferMimeType(String name) {
+    final n = name.toLowerCase();
+    if (n.endsWith('.png')) return 'image/png';
+    if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+    if (n.endsWith('.webp')) return 'image/webp';
 
-    if (name.endsWith('.png')) return 'image/png';
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
-    if (name.endsWith('.webp')) return 'image/webp';
+    if (n.endsWith('.mp4')) return 'video/mp4';
+    if (n.endsWith('.mov')) return 'video/quicktime';
+    if (n.endsWith('.webm')) return 'video/webm';
 
-    if (name.endsWith('.mp4')) return 'video/mp4';
-    if (name.endsWith('.mov')) return 'video/quicktime';
-    if (name.endsWith('.webm')) return 'video/webm';
-
-    // fallback
     return _attachKind == _AttachKind.video ? 'video/mp4' : 'image/jpeg';
   }
 
@@ -555,14 +524,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         if (_loadingDraft)
                           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                         const SizedBox(width: AuraSpace.s10),
-                        if (_savingDraft)
-                          Text('Saving…', style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F))),
+                        if (_savingDraft) Text('Saving…', style: AuraText.small),
                       ],
                     ],
                   ),
                   const SizedBox(height: AuraSpace.s10),
 
-                  // Attach controls (main compose only)
                   if (!_isReply) ...[
                     Wrap(
                       spacing: AuraSpace.s10,
@@ -593,24 +560,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     const SizedBox(height: AuraSpace.s12),
                   ],
 
-                  // Attachment preview area
                   if (_hasAttachment) ...[
                     if (_attachKind == _AttachKind.image && _previewImageBytes != null) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.memory(_previewImageBytes!, fit: BoxFit.cover),
                       ),
-                      if ((_fileName ?? '').trim().isNotEmpty || _fileBytes != null) ...[
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          [
-                            if ((_fileName ?? '').trim().isNotEmpty) _fileName!.trim(),
-                            if (_fileBytes != null) _humanBytes(_fileBytes),
-                            if (_imgW != null && _imgH != null) '${_imgW}×${_imgH}',
-                          ].join(' • '),
-                          style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
-                        ),
-                      ],
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(
+                        [
+                          if ((_fileName ?? '').trim().isNotEmpty) _fileName!.trim(),
+                          if (_fileBytes != null) _humanBytes(_fileBytes),
+                          if (_imgW != null && _imgH != null) '${_imgW}×${_imgH}',
+                        ].join(' • '),
+                        style: AuraText.small,
+                      ),
                       const SizedBox(height: AuraSpace.s12),
                     ] else if (_attachKind == _AttachKind.video) ...[
                       Container(
@@ -637,11 +601,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s12),
-                      Text(
-                        'Phase 1: upload + playback on post. No transcoding yet.',
-                        style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F)),
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
                     ] else if (_attachKind == _AttachKind.link) ...[
                       TextField(
                         controller: _linkController,
@@ -659,10 +618,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             child: Text(_linkLoading ? 'Previewing…' : 'Preview'),
                           ),
                           const SizedBox(width: AuraSpace.s10),
-                          if (_linkError != null)
-                            Expanded(
-                              child: Text(_linkError!, style: AuraText.small.copyWith(color: Colors.red)),
-                            ),
+                          if (_linkError != null) Expanded(child: Text(_linkError!, style: AuraText.small)),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s12),
@@ -685,16 +641,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: AuraSpace.s8),
           Text(
             remaining >= 0 ? '$remaining characters remaining' : '${remaining.abs()} over limit',
-            style: AuraText.small.copyWith(
-              color: remaining >= 0 ? const Color(0xFF6F6F6F) : Colors.red,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AuraText.small,
           ),
-
           const SizedBox(height: AuraSpace.s16),
           FilledButton.icon(
             onPressed: (_posting || !_hasText) ? null : _publish,
@@ -733,12 +684,11 @@ class _LinkPreviewCard extends StatelessWidget {
                 child: Image.network(image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()),
               ),
             if (image.isNotEmpty) const SizedBox(height: AuraSpace.s10),
-            if (title.isNotEmpty)
-              Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
+            if (title.isNotEmpty) Text(title, style: AuraText.body),
             if (title.isNotEmpty) const SizedBox(height: AuraSpace.s6),
             if (desc.isNotEmpty) Text(desc, style: AuraText.body),
             if (desc.isNotEmpty) const SizedBox(height: AuraSpace.s8),
-            Text(url, style: AuraText.small.copyWith(color: const Color(0xFF6F6F6F))),
+            Text(url, style: AuraText.small),
           ],
         ),
       ),
