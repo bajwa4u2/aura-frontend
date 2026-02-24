@@ -26,7 +26,8 @@ import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 import 'features/monetization/presentation/support_screen.dart';
 
-import 'features/saved/presentation/saved_screen.dart';
+// ✅ FIX: folder is `saves`, not `saved`
+import 'features/saves/presentation/saved_screen.dart';
 
 import 'screens/mission_screen.dart';
 import 'screens/founder_message_screen.dart';
