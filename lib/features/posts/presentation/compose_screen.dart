@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../feed/data/post_repository.dart';
@@ -31,63 +34,52 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   _AttachKind _attachKind = _AttachKind.none;
 
   XFile? _pickedFile;
-  Uint8List? _pickedBytes; // preview
+  Uint8List? _pickedBytes; // for web preview
   int? _imgW;
   int? _imgH;
 
   String? _linkText;
   Map<String, dynamic>? _linkPreview;
-  bool _fetchingLink = false;
+  bool _fetchingPreview = false;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  bool get _isReply => widget.replyToPostId != null;
+  bool get _hasText => _controller.text.trim().isNotEmpty;
+  bool get _hasMediaFile =>
+      (_attachKind == _AttachKind.image || _attachKind == _AttachKind.video) && _pickedFile != null;
+  bool get _hasLink => _attachKind == _AttachKind.link && (_linkUrl() ?? '').trim().isNotEmpty;
+
+  bool get _canPublish {
+    // allow text-only OR media-only OR link
+    return _hasText || _hasMediaFile || _hasLink;
   }
 
-  void _removeAttachment() {
-    setState(() {
-      _attachKind = _AttachKind.none;
-      _pickedFile = null;
-      _pickedBytes = null;
-      _imgW = null;
-      _imgH = null;
-      _linkText = null;
-      _linkPreview = null;
-      _fetchingLink = false;
-    });
-  }
-
-  Map<String, dynamic>? _postToMap(dynamic v) {
-    if (v is Post) return v.toJson();
+  Map<String, dynamic> _asMap(dynamic v) {
+    if (v == null) return <String, dynamic>{};
     if (v is Map) return Map<String, dynamic>.from(v as Map);
-    return null;
-  }
-
-  Map<String, dynamic>? _mapOrNull(dynamic v) {
-    if (v == null) return null;
-    if (v is Map) return Map<String, dynamic>.from(v as Map);
-    return null;
-  }
-
-  Map<String, dynamic> _ensureMap(dynamic v) {
-    if (v is Map) return Map<String, dynamic>.from(v as Map);
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return <String, dynamic>{};
+      try {
+        final decoded = jsonDecode(s);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded as Map);
+      } catch (_) {
+        // ignore
+      }
+    }
     return <String, dynamic>{};
   }
 
-  // Unwraps nested envelopes like:
-  // { ok:true, data:{ ok:true, data:{...} } }
-  // until the payload is no longer in that shape.
-  Map<String, dynamic> _unwrapEnvelopeDeep(Map<String, dynamic> m) {
-    Map<String, dynamic> cur = m;
+  Map<String, dynamic> _unwrapDataMap(dynamic v) {
+    // Unwrap nested { ok:true, data:{ ok:true, data:{...} } } style envelopes
+    Map<String, dynamic> cur = _asMap(v);
     while (cur.containsKey('ok') && cur.containsKey('data') && cur['data'] is Map) {
       cur = Map<String, dynamic>.from(cur['data'] as Map);
     }
     return cur;
   }
 
-  String _inferMimeType(String name) {
-    final lower = name.toLowerCase();
+  String _inferMime(String fileName) {
+    final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
     if (lower.endsWith('.webp')) return 'image/webp';
@@ -98,15 +90,36 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 'application/octet-stream';
   }
 
-  Future<Uint8List> _readXFileBytes(XFile f) async => await f.readAsBytes();
+  Dio _cleanUploadDio() {
+    // Critical: presigned PUT must NOT include your API auth interceptors.
+    return Dio(
+      BaseOptions(
+        responseType: ResponseType.plain,
+        followRedirects: true,
+      ),
+    );
+  }
 
   Future<void> _decodeImageSize(Uint8List bytes) async {
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
-    final image = frame.image;
+    final img = frame.image;
     setState(() {
-      _imgW = image.width;
-      _imgH = image.height;
+      _imgW = img.width;
+      _imgH = img.height;
+    });
+  }
+
+  void _clearAttachment() {
+    setState(() {
+      _attachKind = _AttachKind.none;
+      _pickedFile = null;
+      _pickedBytes = null;
+      _imgW = null;
+      _imgH = null;
+      _linkText = null;
+      _linkPreview = null;
+      _fetchingPreview = false;
     });
   }
 
@@ -115,7 +128,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
 
-    final bytes = await _readXFileBytes(file);
+    final bytes = await file.readAsBytes();
     setState(() {
       _attachKind = _AttachKind.image;
       _pickedFile = file;
@@ -145,14 +158,50 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
-  Future<void> _fetchLinkPreview() async {
-    final text = _controller.text.trim();
-    final urlMatch = RegExp(r'(https?:\/\/[^\s]+)').firstMatch(text);
-    final url = urlMatch?.group(0);
+  String? _firstUrlInText() {
+    final text = _controller.text;
+    final m = RegExp(r'(https?:\/\/[^\s]+)').firstMatch(text);
+    return m?.group(0);
+  }
 
-    if (url == null || url.isEmpty) {
+  String? _linkUrl() => _linkText ?? _firstUrlInText();
+
+  String? _linkTitle() {
+    final m = _linkPreview ?? const <String, dynamic>{};
+    final t = (m['title'] ?? m['ogTitle'] ?? m['siteName'])?.toString();
+    return (t == null || t.trim().isEmpty) ? null : t.trim();
+  }
+
+  String? _linkDescription() {
+    final m = _linkPreview ?? const <String, dynamic>{};
+    final d = (m['description'] ?? m['ogDescription'])?.toString();
+    return (d == null || d.trim().isEmpty) ? null : d.trim();
+  }
+
+  String? _linkImage() {
+    final m = _linkPreview ?? const <String, dynamic>{};
+    final u = (m['imageUrl'] ?? m['ogImage'])?.toString();
+    return (u == null || u.trim().isEmpty) ? null : u.trim();
+  }
+
+  String? _draftMediaType() {
+    switch (_attachKind) {
+      case _AttachKind.image:
+        return 'IMAGE';
+      case _AttachKind.video:
+        return 'VIDEO';
+      case _AttachKind.link:
+        return 'LINK';
+      case _AttachKind.none:
+        return 'NONE';
+    }
+  }
+
+  Future<void> _attachLink() async {
+    final url = _firstUrlInText();
+    if (url == null || url.trim().isEmpty) {
       setState(() {
-        _attachKind = _AttachKind.none;
+        _attachKind = _AttachKind.link;
         _linkText = null;
         _linkPreview = null;
       });
@@ -160,7 +209,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
 
     setState(() {
-      _fetchingLink = true;
       _attachKind = _AttachKind.link;
       _linkText = url;
       _pickedFile = null;
@@ -168,113 +216,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _imgW = null;
       _imgH = null;
       _linkPreview = null;
+      _fetchingPreview = true;
     });
 
     try {
-      final repo = ref.read(postRepositoryProvider);
-      final raw = await repo.fetchLinkPreview(url: url);
-      final payload = _unwrapEnvelopeDeep(raw);
-      final preview = _mapOrNull(payload) ?? _postToMap(payload) ?? _ensureMap(payload);
-
+      final dio = ref.read(dioProvider);
+      final res = await dio.post('/media/link-preview', data: {'url': url});
+      final preview = _unwrapDataMap(res.data);
       if (!mounted) return;
-      setState(() => _linkPreview = preview.isEmpty ? null : preview);
+      setState(() => _linkPreview = preview);
     } catch (_) {
       if (!mounted) return;
       setState(() => _linkPreview = null);
     } finally {
-      if (mounted) setState(() => _fetchingLink = false);
+      if (mounted) setState(() => _fetchingPreview = false);
     }
-  }
-
-  bool get _canPublish {
-    if (_posting) return false;
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) return true;
-    if (_attachKind == _AttachKind.image && _pickedFile != null) return true;
-    if (_attachKind == _AttachKind.video && _pickedFile != null) return true;
-    if (_attachKind == _AttachKind.link && (_linkText ?? '').trim().isNotEmpty) return true;
-    return false;
-  }
-
-  Future<Map<String, dynamic>?> _presignAndUploadIfNeeded() async {
-    if (_attachKind == _AttachKind.none) return null;
-
-    if (_attachKind == _AttachKind.link) {
-      if ((_linkText ?? '').trim().isEmpty) return null;
-      return <String, dynamic>{
-        'kind': 'LINK',
-        'url': _linkText,
-        'preview': _linkPreview,
-      };
-    }
-
-    final file = _pickedFile;
-    if (file == null) return null;
-
-    final bytes = await _readXFileBytes(file);
-    final mimeType = _inferMimeType(file.name);
-    final kind = _attachKind == _AttachKind.video ? 'VIDEO' : 'IMAGE';
-
-    final repo = ref.read(postRepositoryProvider);
-
-    final presignRaw = await repo.presignMedia(
-      fileName: file.name,
-      mimeType: mimeType,
-      bytes: bytes.length,
-      kind: kind,
-      width: _imgW,
-      height: _imgH,
-    );
-
-    // ✅ Your server returns { ok:true, data:{ ok:true, media:{...}, publicUrl, upload:{url,headers,method} } }
-    final presign = _unwrapEnvelopeDeep(presignRaw);
-
-    final publicUrl = (presign['publicUrl'] ?? '').toString();
-    final mediaMap = _mapOrNull(presign['media']) ?? const <String, dynamic>{};
-    final mediaId = (mediaMap['id'] ?? '').toString();
-
-    final upload = _mapOrNull(presign['upload']) ?? const <String, dynamic>{};
-    final uploadUrl = (upload['url'] ?? '').toString();
-    final uploadMethod = (upload['method'] ?? 'PUT').toString().toUpperCase();
-    final headersAny = upload['headers'];
-    final headers = (headersAny is Map) ? Map<String, dynamic>.from(headersAny) : <String, dynamic>{};
-
-    if (uploadUrl.isEmpty || publicUrl.isEmpty) {
-      throw Exception('Presign response missing upload.url/publicUrl');
-    }
-    if (uploadMethod != 'PUT') {
-      throw Exception('Unsupported presign method: $uploadMethod');
-    }
-
-    await repo.uploadToPresignedUrl(
-      url: uploadUrl,
-      headers: headers,
-      mimeType: mimeType,
-      bytes: bytes,
-    );
-
-    // Best-effort finalize
-    if (mediaId.isNotEmpty) {
-      try {
-        await repo.markMediaReady(mediaId);
-      } catch (_) {}
-    }
-
-    return <String, dynamic>{
-      'kind': kind,
-      'mediaUrl': publicUrl,
-      'thumbUrl': null,
-      'width': _imgW,
-      'height': _imgH,
-      'mediaId': mediaId,
-    };
   }
 
   Future<void> _publish() async {
     if (_posting) return;
 
-    final text = _controller.text.trim();
-    if (text.length > _limit) {
+    final trimmed = _controller.text.trim();
+    if (trimmed.length > _limit) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Too long. Please shorten your post.')),
       );
@@ -284,55 +247,94 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() => _posting = true);
 
     try {
-      final repo = ref.read(postRepositoryProvider);
-      final uploaded = await _presignAndUploadIfNeeded();
+      final dio = ref.read(dioProvider);
 
-      String? mediaType;
-      String? mediaUrl;
-      int? mediaWidth;
-      int? mediaHeight;
+      String? uploadedPublicUrl;
 
-      String? linkTitle;
-      String? linkDescription;
-      String? linkImageUrl;
+      // 1) If IMAGE/VIDEO selected, presign + upload to R2
+      if (_pickedFile != null && (_attachKind == _AttachKind.image || _attachKind == _AttachKind.video)) {
+        final mime = _inferMime(_pickedFile!.name);
+        final bytes = await _pickedFile!.readAsBytes();
 
-      if (uploaded != null) {
-        final kind = (uploaded['kind'] ?? '').toString();
-
-        if (kind == 'IMAGE' || kind == 'VIDEO') {
-          mediaType = kind;
-          mediaUrl = (uploaded['mediaUrl'] ?? '').toString();
-          mediaWidth = uploaded['width'] as int?;
-          mediaHeight = uploaded['height'] as int?;
+        if (_attachKind == _AttachKind.image && bytes.length > 10 * 1024 * 1024) {
+          throw Exception('Image too large (max 10MB)');
+        }
+        if (_attachKind == _AttachKind.video && bytes.length > 50 * 1024 * 1024) {
+          throw Exception('Video too large (max 50MB)');
         }
 
-        if (kind == 'LINK') {
-          final preview = uploaded['preview'];
-          final m = _mapOrNull(preview) ?? _ensureMap(preview);
-          linkTitle = (m['title'] as String?)?.toString();
-          linkDescription = (m['description'] as String?)?.toString();
-          linkImageUrl = (m['imageUrl'] as String?)?.toString();
-          if (text.isEmpty && (uploaded['url'] as String?)?.isNotEmpty == true) {
-            _controller.text = (uploaded['url'] as String).toString();
-          }
+        final pres = await dio.post('/media/presign', data: {
+          'fileName': _pickedFile!.name,
+          'mimeType': mime,
+          'bytes': bytes.length,
+          'kind': _attachKind == _AttachKind.image ? 'IMAGE' : 'VIDEO',
+          if (_attachKind == _AttachKind.image) 'width': _imgW,
+          if (_attachKind == _AttachKind.image) 'height': _imgH,
+        });
+
+        final presigned = _unwrapDataMap(pres.data);
+
+        uploadedPublicUrl = (presigned['publicUrl'] ??
+                presigned['url'] ??
+                ((presigned['media'] is Map) ? _asMap(presigned['media'])['url'] : null))
+            ?.toString();
+
+        final upload = _asMap(presigned['upload']);
+        final uploadUrl = (upload['url'] ?? '').toString();
+        final headers = _asMap(upload['headers']);
+
+        if (uploadUrl.isEmpty) {
+          throw Exception('Upload URL missing from presign response.');
         }
+        if (uploadedPublicUrl == null || uploadedPublicUrl!.trim().isEmpty) {
+          throw Exception('publicUrl missing from presign response.');
+        }
+
+        // ✅ use clean Dio for presigned URL (no auth interceptors)
+        final uploadDio = _cleanUploadDio();
+
+        final uploadHeaders = <String, String>{};
+        headers.forEach((k, v) {
+          if (v == null) return;
+          uploadHeaders[k.toString()] = v.toString();
+        });
+
+        // ensure Content-Type matches what backend signed
+        if (!uploadHeaders.containsKey('Content-Type')) {
+          uploadHeaders['Content-Type'] = mime;
+        }
+
+        await uploadDio.put(
+          uploadUrl,
+          data: bytes,
+          options: Options(
+            headers: uploadHeaders,
+            contentType: uploadHeaders['Content-Type'],
+            responseType: ResponseType.plain,
+            followRedirects: true,
+            validateStatus: (code) => code != null && code >= 200 && code < 300,
+          ),
+        );
       }
 
-      await repo.saveDraft(
-        text: _controller.text.trim(),
-        mediaType: mediaType,
-        mediaUrl: mediaUrl,
-        mediaThumbUrl: null,
-        mediaWidth: mediaWidth,
-        mediaHeight: mediaHeight,
-        mediaDuration: null,
-        caption: null,
-        linkTitle: linkTitle,
-        linkDescription: linkDescription,
-        linkImageUrl: linkImageUrl,
-      );
+      // 2) Save draft
+      await dio.put('/posts/draft', data: {
+        'text': _controller.text,
+        'mediaType': _draftMediaType(),
+        if (_attachKind == _AttachKind.link) 'mediaUrl': _linkUrl(),
+        if (_attachKind == _AttachKind.link) 'mediaThumbUrl': _linkImage(),
+        if (_attachKind == _AttachKind.link) 'caption': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkTitle': _linkTitle(),
+        if (_attachKind == _AttachKind.link) 'linkDescription': _linkDescription(),
+        if (_attachKind == _AttachKind.link) 'linkImageUrl': _linkImage(),
+        if (_attachKind == _AttachKind.image) 'mediaWidth': _imgW,
+        if (_attachKind == _AttachKind.image) 'mediaHeight': _imgH,
+        if (_attachKind == _AttachKind.image || _attachKind == _AttachKind.video)
+          'mediaUrl': uploadedPublicUrl,
+      });
 
-      await repo.publishDraft();
+      // 3) Publish
+      await dio.post('/posts/draft/publish');
 
       if (!mounted) return;
       context.pop(true);
@@ -347,26 +349,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AuraScaffold(
       title: 'Compose',
-      leading: SizedBox(
-        width: 36,
-        height: 36,
-        child: IconButton(
-          tooltip: 'Back',
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            final canPop = Navigator.of(context).canPop() || GoRouter.of(context).canPop();
-            if (canPop) {
-              context.pop();
-            } else {
-              context.go('/member');
-            }
-          },
-        ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => context.pop(),
       ),
       actions: [
         TextButton(
@@ -374,8 +368,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ? null
               : () {
                   _controller.clear();
-                  _removeAttachment();
-                  if (!mounted) return;
+                  _clearAttachment();
                   context.pop(false);
                 },
           child: const Text('Discard'),
@@ -391,17 +384,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Write', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text('Write', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
               TextField(
                 controller: _controller,
                 maxLines: null,
                 minLines: 6,
-                decoration: const InputDecoration(
-                  hintText: 'What do you want to say?',
-                  border: OutlineInputBorder(),
-                ),
                 onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: _isReply ? 'Write a reply…' : 'What do you want to say?',
+                  border: const OutlineInputBorder(),
+                  helperText: '${_controller.text.trim().length}/$_limit',
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -419,68 +413,48 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: _posting ? null : _fetchLinkPreview,
+                    onPressed: _posting ? null : _attachLink,
                     icon: const Icon(Icons.link),
-                    label: Text(_fetchingLink ? 'Checking…' : 'Link'),
+                    label: Text(_fetchingPreview ? 'Checking…' : 'Link'),
                   ),
                   const Spacer(),
-                  Text(
-                    '${_controller.text.trim().length}/$_limit',
-                    style: TextStyle(
-                      color: _controller.text.trim().length > _limit ? Colors.red : Colors.black54,
+                  if (_attachKind != _AttachKind.none)
+                    TextButton(
+                      onPressed: _posting ? null : _clearAttachment,
+                      child: const Text('Remove'),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              if (_attachKind != _AttachKind.none) ...[
-                Row(
-                  children: [
-                    const Text('Attachment', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: _posting ? null : _removeAttachment,
-                      child: const Text('Remove'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (_attachKind == _AttachKind.image && _pickedBytes != null) ...[
+              if (_attachKind == _AttachKind.image && _pickedBytes != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.memory(_pickedBytes!, fit: BoxFit.cover),
                 ),
-                const SizedBox(height: 8),
-                if (_imgW != null && _imgH != null)
-                  Text('$_imgW × $_imgH', style: const TextStyle(color: Colors.black54)),
-              ],
-              if (_attachKind == _AttachKind.video && _pickedFile != null) ...[
-                const Icon(Icons.videocam, size: 40),
-                const SizedBox(height: 8),
-                Text(_pickedFile!.name, style: const TextStyle(color: Colors.black54)),
-              ],
-              if (_attachKind == _AttachKind.link) ...[
-                Text(_linkText ?? '', style: const TextStyle(color: Colors.black54)),
-                const SizedBox(height: 8),
-                if (_fetchingLink) const LinearProgressIndicator(),
-                if (!_fetchingLink && _linkPreview != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      const JsonEncoder.withIndent('  ').convert(_linkPreview),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              if (_attachKind == _AttachKind.video && _pickedFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(_pickedFile!.name, style: const TextStyle(fontSize: 14)),
+                ),
+              if (_attachKind == _AttachKind.link && _linkPreview != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _linkTitle() ?? _linkUrl() ?? 'Link',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        if ((_linkDescription() ?? '').trim().isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(_linkDescription()!),
+                        ],
+                      ],
                     ),
                   ),
-                ],
-                if (!_fetchingLink && _linkPreview == null)
-                  const Text('No preview available.', style: TextStyle(color: Colors.black54)),
-              ],
+                ),
             ],
           ),
         ),
