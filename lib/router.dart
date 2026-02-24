@@ -26,6 +26,8 @@ import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 import 'features/monetization/presentation/support_screen.dart';
 
+import 'features/saved/presentation/saved_screen.dart';
+
 import 'screens/mission_screen.dart';
 import 'screens/founder_message_screen.dart';
 import 'screens/privacy_policy_screen.dart';
@@ -209,6 +211,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/search',
             builder: (context, state) => const SearchScreen(),
+          ),
+          GoRoute(
+            path: '/saved',
+            builder: (context, state) => const SavedScreen(),
           ),
           GoRoute(
             path: '/updates',

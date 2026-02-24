@@ -144,21 +144,51 @@ class MemberHomeScreen extends ConsumerWidget {
           // Continue (Saved)
           savedAsync.when(
             data: (posts) {
+              final count = posts.length;
+
+              // Header card: always clickable so "Saved" never feels dead.
+              final header = AuraCard(
+                onTap: () => context.push('/saved'),
+                child: Row(
+                  children: [
+                    Text('Saved', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    Text('$count saved', style: AuraText.muted),
+                    SizedBox(width: AuraSpace.s8),
+                    const Icon(Icons.chevron_right, size: 18),
+                  ],
+                ),
+              );
+
               if (posts.isEmpty) {
-                return AuraCard(
-                  child: Text('Save something you want to return to. It will live here.', style: AuraText.body),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    header,
+                    SizedBox(height: AuraSpace.s10),
+                    AuraCard(
+                      onTap: () => context.push('/saved'),
+                      child: Text(
+                        'Save something you want to return to. It will live here.',
+                        style: AuraText.body,
+                      ),
+                    ),
+                  ],
                 );
               }
+
               return Column(
-                children: posts
-                    .take(2)
-                    .map(
-                      (p) => Padding(
-                        padding: EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: PostCard(post: p, compact: true),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  header,
+                  SizedBox(height: AuraSpace.s10),
+                  ...posts.take(2).map(
+                        (p) => Padding(
+                          padding: EdgeInsets.only(bottom: AuraSpace.s10),
+                          child: PostCard(post: p, compact: true),
+                        ),
                       ),
-                    )
-                    .toList(),
+                ],
               );
             },
             loading: () => const _LoadingCard(),
@@ -198,52 +228,42 @@ class MemberHomeScreen extends ConsumerWidget {
   }
 }
 
-String _time(DateTime dt) {
-  final hh = dt.hour.toString().padLeft(2, '0');
-  final mm = dt.minute.toString().padLeft(2, '0');
-  return 'at $hh:$mm';
-}
-
-String _friendlyDraftError(Object e) {
-  if (e is DioException) {
-    final status = e.response?.statusCode;
-    if (status == 401) return 'Session expired. Tap to login and restore your draft.';
-    return 'Could not restore draft (${status ?? 'no status'}). Tap to try again.';
-  }
-  return 'Could not restore draft. Tap to try again.';
-}
-
 class _HeroCard extends StatelessWidget {
   const _HeroCard({required this.onCompose, required this.onDiscover});
+
   final VoidCallback onCompose;
   final VoidCallback onDiscover;
 
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      padding: EdgeInsets.all(AuraSpace.s18),
-      child: SizedBox(
-        height: 180,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('A place that holds what you write.', style: AuraText.title),
-            SizedBox(height: AuraSpace.s8),
-            Text(
-              'Not a race. Not a feed. A correspondence table.',
-              style: AuraText.muted.copyWith(height: 1.35),
-            ),
-            const Spacer(),
-            Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: [
-                FilledButton(onPressed: onCompose, child: const Text('Compose')),
-                OutlinedButton(onPressed: onDiscover, child: const Text('Discover')),
-              ],
-            ),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('A place where weight matters.', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          SizedBox(height: AuraSpace.s8),
+          Text(
+            'Write quietly. Read responsibly. Return to what you saved.',
+            style: AuraText.body,
+          ),
+          SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onCompose,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Compose'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onDiscover,
+                icon: const Icon(Icons.search),
+                label: const Text('Discover'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -255,18 +275,8 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: AuraText.title);
+    return Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800));
   }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.all(AuraSpace.s12),
-        child: const Center(child: CircularProgressIndicator()),
-      );
 }
 
 class _ToolsRow extends StatelessWidget {
@@ -279,26 +289,24 @@ class _ToolsRow extends StatelessWidget {
         Expanded(
           child: AuraCard(
             onTap: () => context.go('/updates'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text('Updates', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                SizedBox(height: AuraSpace.s6),
-                Text('Batched, calm notifications.', style: AuraText.body),
+                const Icon(Icons.article_outlined, size: 18),
+                SizedBox(width: AuraSpace.s8),
+                Text('Updates', style: AuraText.body),
               ],
             ),
           ),
         ),
-        SizedBox(width: AuraSpace.s12),
+        SizedBox(width: AuraSpace.s10),
         Expanded(
           child: AuraCard(
-            onTap: () => context.go('/search'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            onTap: () => context.go('/me'),
+            child: Row(
               children: [
-                Text('Search', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                SizedBox(height: AuraSpace.s6),
-                Text('Find authors and work by meaning.', style: AuraText.body),
+                const Icon(Icons.person_outline, size: 18),
+                SizedBox(width: AuraSpace.s8),
+                Text('Me', style: AuraText.body),
               ],
             ),
           ),
@@ -306,4 +314,38 @@ class _ToolsRow extends StatelessWidget {
       ],
     );
   }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Row(
+        children: [
+          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: AuraSpace.s10),
+          Text('Loading…', style: AuraText.body),
+        ],
+      ),
+    );
+  }
+}
+
+String _time(DateTime dt) {
+  final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  final mm = dt.minute.toString().padLeft(2, '0');
+  final ap = dt.hour >= 12 ? 'pm' : 'am';
+  return '$h:$mm $ap';
+}
+
+String _friendlyDraftError(Object e) {
+  if (e is DioException) {
+    final code = e.response?.statusCode;
+    if (code == 401) return 'Session expired. Tap to continue.';
+    if (code == 403) return 'Please verify your email to continue.';
+    return 'Could not load your draft. Tap to continue.';
+  }
+  return 'Could not load your draft. Tap to continue.';
 }
