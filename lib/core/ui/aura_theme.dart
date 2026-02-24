@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Aura Design System v1 (Locked)
+/// Aura Design System v2 (Dark Cinematic)
 /// Single source of truth for spacing, radius, surfaces, and typography.
 /// Screens should NOT hardcode padding/radius/borders/text styles.
 /// Use AuraSpace / AuraRadius / AuraSurface / AuraText.
@@ -22,38 +22,50 @@ class AuraSpace {
 }
 
 class AuraRadius {
-  static const double sm = 12;
-  static const double md = 16;
-  static const double lg = 20;
-  static const double xl = 24;
+  // Slightly tighter radii for architectural feel
+  static const double sm = 10;
+  static const double md = 14;
+  static const double lg = 18;
+  static const double xl = 22;
 
   static BorderRadius r(double v) => BorderRadius.circular(v);
-  static BorderRadius get card => BorderRadius.circular(xl);
+
+  /// Cards feel structured, not playful
+  static BorderRadius get card => BorderRadius.circular(lg);
 }
 
 class AuraSurface {
-  /// Page background (already aligned with your app theme)
-  static const Color page = Color(0xFFF7F5F2);
+  /// Deep graphite base (not pure black)
+  static const Color page = Color(0xFF121418);
 
-  /// Subtle “ink wash” panel background
-  static const Color panel = Color(0xFFF2EFEA);
+  /// Primary content surface (lifted from background)
+  static const Color panel = Color(0xFF1A1E24);
 
-  /// Soft frame border (barely there)
-  static const Color frame = Color(0x1A000000);
+  /// Elevated surface (dialogs / overlays / emphasis panels)
+  static const Color elevated = Color(0xFF222833);
 
-  /// Default foreground (ink)
-  static const Color ink = Color(0xFF1B1B1B);
+  /// Subtle separation frame (barely visible edge light)
+  static const Color frame = Color(0x1FFFFFFF);
 
-  /// Muted text
-  static const Color muted = Color(0xFF6B6B6B);
+  /// Primary readable foreground
+  static const Color ink = Color(0xFFE8EAED);
+
+  /// Muted text (still readable on dark)
+  static const Color muted = Color(0xFF9AA3AF);
+
+  /// Signature accent (restrained indigo energy)
+  static const Color accent = Color(0xFF5B6CFF);
+
+  /// Soft accent glow (hover / active states)
+  static const Color accentSoft = Color(0x335B6CFF);
 }
 
 class AuraText {
   /// AppBar titles and major screen headings
   static const TextStyle title = TextStyle(
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: FontWeight.w800,
-    height: 1.2,
+    height: 1.25,
     letterSpacing: 0,
     color: AuraSurface.ink,
   );
@@ -62,23 +74,23 @@ class AuraText {
   static const TextStyle section = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w700,
-    height: 1.25,
+    height: 1.3,
     letterSpacing: 0,
     color: AuraSurface.ink,
   );
 
-  /// Default body text
+  /// Default body text (comfortable reading rhythm)
   static const TextStyle body = TextStyle(
     fontSize: 14,
-    height: 1.5,
+    height: 1.6,
     letterSpacing: 0,
     color: AuraSurface.ink,
   );
 
-  /// Muted helper text
+  /// Muted helper / metadata text
   static const TextStyle muted = TextStyle(
-    fontSize: 14,
-    height: 1.45,
+    fontSize: 13,
+    height: 1.5,
     letterSpacing: 0,
     color: AuraSurface.muted,
   );

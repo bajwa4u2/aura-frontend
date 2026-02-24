@@ -4,8 +4,8 @@ import 'aura_radius.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 
-/// A calm, paper-like container used across Aura.
-/// Keeps borders subtle and spacing consistent.
+/// A cinematic panel container used across Aura.
+/// Structured. Subtle. Layered.
 class AuraCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -26,18 +26,26 @@ class AuraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double radius = AuraRadius.card;
+
     final card = Container(
       margin: margin,
-      padding: padding ?? const EdgeInsets.all(AuraSpace.s16),
-      decoration: ShapeDecoration(
+      padding: padding ?? const EdgeInsets.all(AuraSpace.md),
+      decoration: BoxDecoration(
         color: color ?? AuraSurface.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          side: BorderSide(
-            color: borderColor ?? AuraSurface.divider,
-            width: 1,
-          ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: borderColor ?? AuraSurface.divider,
+          width: 1,
         ),
+        boxShadow: const [
+          // Soft cinematic lift (not harsh Material shadow)
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: child,
     );
@@ -47,7 +55,9 @@ class AuraCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AuraRadius.card),
+        borderRadius: BorderRadius.circular(radius),
+        splashColor: AuraSurface.accentSoft,
+        highlightColor: Colors.transparent,
         onTap: onTap,
         child: card,
       ),

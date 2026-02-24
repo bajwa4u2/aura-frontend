@@ -5,18 +5,6 @@ import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
 
-/// Aura's base scaffold.
-///
-/// Structural rules:
-/// - Aura identity is owned here (global header).
-/// - Identity comes first: logo/mark is always the leftmost element.
-/// - Header + body share the same centered grid.
-/// - Screens control content only; scaffold controls placement + posture.
-///
-/// Brand hierarchy rule (locked):
-/// - Logo must feel primary.
-/// - Back arrow + page title must never visually overpower the logo.
-/// - Right-side actions stay in the header rail (outside reading block).
 class AuraScaffold extends StatefulWidget {
   const AuraScaffold({
     super.key,
@@ -34,28 +22,13 @@ class AuraScaffold extends StatefulWidget {
 
   final String title;
   final Widget body;
-
-  /// Right-side header actions (in addition to optional Home).
   final List<Widget>? actions;
-
-  /// Leading widget. If null, scaffold shows Back when possible.
   final Widget? leading;
-
   final bool centerTitle;
-
-  /// Constrains header + body to this width and centers it.
   final double? maxWidth;
-
-  /// Optional padding wrapper for the body.
   final EdgeInsetsGeometry? padding;
-
-  /// If true, show a single Home action.
   final bool showHomeAction;
-
-  /// Home target. `/public` is safe for authed users (router redirects to /home).
   final String homePath;
-
-  /// Rare escape hatch, but sometimes useful.
   final bool showHeader;
 
   @override
@@ -66,12 +39,10 @@ class _AuraScaffoldState extends State<AuraScaffold>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  static const double _defaultMaxWidth = 980;
-
-  // Brand hierarchy tuning (global)
-  static const double _logoHeight = 24;// tuned for wide wordmark
-  static const double _leadingIconSize = 18; // smaller so it never dominates
-  static const double _leadingTapSize = 36; // comfortable but not loud
+  static const double _defaultMaxWidth = 1040;
+  static const double _logoHeight = 22;
+  static const double _leadingIconSize = 18;
+  static const double _leadingTapSize = 36;
 
   bool _canGoBack(BuildContext context) {
     return Navigator.of(context).canPop() || GoRouter.of(context).canPop();
@@ -101,7 +72,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
     )..forward();
   }
 
@@ -112,19 +83,18 @@ class _AuraScaffoldState extends State<AuraScaffold>
   }
 
   Widget _brand(BuildContext context) {
-    // Brand identity (primary, always leftmost).
-    // We intentionally avoid asset-based wordmarks here so the frontend can run
-    // in any environment without missing-asset failures.
     return Semantics(
       button: true,
       label: 'Aura home',
       child: InkWell(
         onTap: () => context.go(widget.homePath),
         borderRadius: BorderRadius.circular(999),
+        splashColor: AuraSurface.accentSoft,
+        highlightColor: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s8,
-            vertical: AuraSpace.s8,
+            horizontal: AuraSpace.sm,
+            vertical: AuraSpace.sm,
           ),
           child: AnimatedBuilder(
             animation: _controller,
@@ -139,7 +109,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
                   style: AuraText.title.copyWith(
                     fontSize: _logoHeight,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.4,
                   ),
                 ),
               );
@@ -153,7 +123,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
   Widget _actionsStrip(List<Widget> actions) {
     if (actions.isEmpty) return const SizedBox.shrink();
 
-    // No Wrap. If it doesn't fit, it scrolls horizontally.
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 40),
       child: SingleChildScrollView(
@@ -163,7 +132,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var i = 0; i < actions.length; i++) ...[
-              if (i != 0) const SizedBox(width: AuraSpace.s8),
+              if (i != 0) const SizedBox(width: AuraSpace.sm),
               actions[i],
             ],
           ],
@@ -173,12 +142,9 @@ class _AuraScaffoldState extends State<AuraScaffold>
   }
 
   Widget? _buildLeading(BuildContext context) {
-    // If screen provided a leading, keep it — but we will visually quiet it via IconTheme.
     if (widget.leading != null) return widget.leading;
-
     if (!_canGoBack(context)) return null;
 
-    // Default leading (quiet + smaller than brand)
     return SizedBox(
       width: _leadingTapSize,
       height: _leadingTapSize,
@@ -211,10 +177,10 @@ class _AuraScaffoldState extends State<AuraScaffold>
           onPressed: () => context.go(widget.homePath),
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s12,
-              vertical: AuraSpace.s8,
+              horizontal: AuraSpace.sm,
+              vertical: AuraSpace.xs,
             ),
-            foregroundColor: AuraText.muted.color,
+            foregroundColor: AuraSurface.muted,
             textStyle: AuraText.small,
           ),
           child: const Text('Home'),
@@ -231,54 +197,52 @@ class _AuraScaffoldState extends State<AuraScaffold>
 
     if (widget.showHeader) {
       header = Container(
-        color: AuraSurface.page,
-        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+        decoration: const BoxDecoration(
+          color: AuraSurface.page,
+          border: Border(
+            bottom: BorderSide(color: AuraSurface.divider),
           ),
-          child: _wrapCentered(
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // ✅ Identity first, always leftmost.
-                  _brand(context),
+        ),
+        child: _wrapCentered(
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.md,
+              vertical: AuraSpace.sm,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _brand(context),
 
-                  // Back / leading comes AFTER identity, and stays visually secondary.
-                  if (resolvedLeading != null) ...[
-                    const SizedBox(width: AuraSpace.s6),
-                    IconTheme(
-                      data: IconThemeData(
-                        color: AuraText.muted.color,
-                        size: _leadingIconSize,
-                      ),
-                      child: resolvedLeading,
+                if (resolvedLeading != null) ...[
+                  const SizedBox(width: AuraSpace.sm),
+                  IconTheme(
+                    data: IconThemeData(
+                      color: AuraSurface.muted,
+                      size: _leadingIconSize,
                     ),
-                    const SizedBox(width: AuraSpace.s10),
-                  ] else ...[
-                    const SizedBox(width: AuraSpace.s12),
-                  ],
-
-                  // Page title must never dominate the brand.
-                  if (showPageTitle) ...[
-                    Expanded(
-                      child: widget.centerTitle
-                          ? Center(child: _PageTitle(text: normalizedTitle))
-                          : _PageTitle(text: normalizedTitle),
-                    ),
-                  ] else ...[
-                    const Spacer(),
-                  ],
-
-                  // Right rail (outside reading block)
-                  if (headerActions.isNotEmpty) ...[
-                    const SizedBox(width: AuraSpace.s10),
-                    Flexible(child: _actionsStrip(headerActions)),
-                  ],
+                    child: resolvedLeading,
+                  ),
+                  const SizedBox(width: AuraSpace.md),
+                ] else ...[
+                  const SizedBox(width: AuraSpace.lg),
                 ],
-              ),
+
+                if (showPageTitle) ...[
+                  Expanded(
+                    child: widget.centerTitle
+                        ? Center(child: _PageTitle(text: normalizedTitle))
+                        : _PageTitle(text: normalizedTitle),
+                  ),
+                ] else ...[
+                  const Spacer(),
+                ],
+
+                if (headerActions.isNotEmpty) ...[
+                  const SizedBox(width: AuraSpace.md),
+                  Flexible(child: _actionsStrip(headerActions)),
+                ],
+              ],
             ),
           ),
         ),
@@ -305,14 +269,13 @@ class _PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Smaller + lighter than before so it never competes with the logo.
     return Text(
       text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: AuraText.small.copyWith(
         fontWeight: FontWeight.w500,
-        color: AuraText.body.color,
+        color: AuraSurface.ink,
       ),
     );
   }

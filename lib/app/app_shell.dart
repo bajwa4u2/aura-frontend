@@ -10,7 +10,7 @@ class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
   final Widget child;
 
-  static const double _maxContentWidth = 980;
+  static const double _maxContentWidth = 1080;
 
   static const _tabs = [
     _TabItem(label: 'Home', icon: Icons.home_outlined, path: '/home'),
@@ -21,7 +21,8 @@ class AppShell extends ConsumerWidget {
 
   int _indexForLocation(String location) {
     for (var i = 0; i < _tabs.length; i++) {
-      if (location == _tabs[i].path || location.startsWith('${_tabs[i].path}/')) {
+      if (location == _tabs[i].path ||
+          location.startsWith('${_tabs[i].path}/')) {
         return i;
       }
     }
@@ -29,7 +30,6 @@ class AppShell extends ConsumerWidget {
   }
 
   bool _isPublicRoute(String location) {
-    // Keep this list conservative: anything not clearly "member" is treated as public.
     const publicPrefixes = <String>[
       '/public',
       '/login',
@@ -57,60 +57,107 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexForLocation(location);
-
-    // Bottom nav shows only in member area.
     final showBottomNav = !_isPublicRoute(location);
 
     return Scaffold(
       backgroundColor: AuraSurface.page,
       body: Column(
         children: [
-          // Content region (centers everything)
+          // Main content region (cinematic centered stage)
           Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                child: child,
+            child: Container(
+              color: AuraSurface.page,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: _maxContentWidth),
+                  child: child,
+                ),
               ),
             ),
           ),
 
-          // Minimal legal rail (always). Keep it app-like, not website-like.
+          // Minimal legal rail (quiet, integrated)
           Container(
             width: double.infinity,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AuraSurface.page,
-              border: Border(top: BorderSide(color: AuraSurface.divider)),
+              border: Border(
+                top: BorderSide(color: AuraSurface.divider),
+              ),
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s16,
-              vertical: AuraSpace.s10,
+              horizontal: AuraSpace.md,
+              vertical: AuraSpace.sm,
             ),
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s8,
+              spacing: AuraSpace.sm,
+              runSpacing: AuraSpace.xs,
               children: const [
                 _LegalLink(label: 'Privacy', path: '/privacy'),
               ],
             ),
           ),
 
-          // Bottom nav (member area only)
+          // Bottom navigation (member area only)
           if (showBottomNav)
-            NavigationBar(
-              selectedIndex: currentIndex.clamp(0, _tabs.length - 1),
-              destinations: const [
-                NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.search), label: 'Search'),
-                NavigationDestination(icon: Icon(Icons.notifications_none), label: 'Updates'),
-                NavigationDestination(icon: Icon(Icons.person_outline), label: 'Me'),
-              ],
-              onDestinationSelected: (i) {
-                final tab = _tabs[i];
-                context.go(tab.path);
-              },
+            Container(
+              decoration: const BoxDecoration(
+                color: AuraSurface.card,
+                border: Border(
+                  top: BorderSide(color: AuraSurface.divider),
+                ),
+              ),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  backgroundColor: AuraSurface.card,
+                  indicatorColor: AuraSurface.accentSoft,
+                  labelTextStyle: MaterialStatePropertyAll(
+                    AuraText.small.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+                  iconTheme: MaterialStatePropertyAll(
+                    IconThemeData(
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+                ),
+                child: NavigationBar(
+                  height: 64,
+                  selectedIndex:
+                      currentIndex.clamp(0, _tabs.length - 1),
+                  onDestinationSelected: (i) {
+                    final tab = _tabs[i];
+                    context.go(tab.path);
+                  },
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      selectedIcon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.search),
+                      selectedIcon: Icon(Icons.search),
+                      label: 'Search',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.notifications_none),
+                      selectedIcon: Icon(Icons.notifications),
+                      label: 'Updates',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.person_outline),
+                      selectedIcon: Icon(Icons.person),
+                      label: 'Me',
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),
@@ -119,7 +166,12 @@ class AppShell extends ConsumerWidget {
 }
 
 class _TabItem {
-  const _TabItem({required this.label, required this.icon, required this.path});
+  const _TabItem({
+    required this.label,
+    required this.icon,
+    required this.path,
+  });
+
   final String label;
   final IconData icon;
   final String path;
@@ -137,10 +189,10 @@ class _LegalLink extends StatelessWidget {
       onPressed: () => context.go(path),
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s8,
+          horizontal: AuraSpace.sm,
+          vertical: AuraSpace.xs,
         ),
-        foregroundColor: AuraText.muted.color,
+        foregroundColor: AuraSurface.muted,
         textStyle: AuraText.small,
       ),
       child: Text(label),

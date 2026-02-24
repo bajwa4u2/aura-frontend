@@ -10,14 +10,15 @@ import 'aura_text.dart';
 ///
 /// Rules:
 /// - Always centered and constrained
-/// - Always uses AuraScaffold (so Back + Home are consistent)
-/// - Always scrolls (ListView)
+/// - Always uses AuraScaffold
+/// - Always scrolls
+/// - Reading-first atmosphere
 class DocumentScaffold extends StatelessWidget {
   const DocumentScaffold({
     super.key,
     required this.title,
     required this.child,
-    this.maxWidth = 760,
+    this.maxWidth = 780,
     this.actions,
     this.footer,
     this.homePath = '/public',
@@ -25,18 +26,9 @@ class DocumentScaffold extends StatelessWidget {
 
   final String title;
   final Widget child;
-
-  /// Document width. 760 is intentional: reading-first.
   final double maxWidth;
-
-  /// Optional app bar actions. Home action is already handled by AuraScaffold.
   final List<Widget>? actions;
-
-  /// Optional section placed after the document body.
-  /// Useful for calm “related links” or a small callout.
   final Widget? footer;
-
-  /// Where "Home" should go. '/public' is safe for both authed + unauthed.
   final String homePath;
 
   @override
@@ -46,18 +38,17 @@ class DocumentScaffold extends StatelessWidget {
       actions: actions,
       homePath: homePath,
       maxWidth: maxWidth,
-      // Document pages control their own scroll + rhythm.
       body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s16,
-          AuraSpace.s16,
-          AuraSpace.s24,
+        padding: const EdgeInsets.fromLTRB(
+          AuraSpace.md,
+          AuraSpace.lg,
+          AuraSpace.md,
+          AuraSpace.xl,
         ),
         children: [
           _DocumentSurface(child: child),
           if (footer != null) ...[
-            SizedBox(height: AuraSpace.s12),
+            const SizedBox(height: AuraSpace.lg),
             _DocumentSurface(child: footer!),
           ],
         ],
@@ -73,72 +64,113 @@ class _DocumentSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(AuraSpace.s16),
+      padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
         color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.r18),
-        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(
+          color: AuraSurface.divider,
+          width: 1,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 32,
+            offset: Offset(0, 16),
+          ),
+        ],
       ),
       child: child,
     );
   }
 }
 
-/// Small helpers for document pages (consistent rhythm).
+/// Small helpers for document pages (consistent editorial rhythm).
 class Doc {
   Doc._();
 
-  static Widget title(String text) => Text(text, style: AuraText.title);
-
-  static Widget lede(String text) => Padding(
-        padding: EdgeInsets.only(top: AuraSpace.s10),
-        child: Text(text, style: AuraText.body),
+  static Widget title(String text) => Text(
+        text,
+        style: AuraText.title,
       );
 
-  static Widget meta(String text) => Text(text, style: AuraText.muted);
+  static Widget lede(String text) => Padding(
+        padding: const EdgeInsets.only(top: AuraSpace.sm),
+        child: Text(
+          text,
+          style: AuraText.body.copyWith(
+            fontSize: 16,
+            height: 1.7,
+          ),
+        ),
+      );
+
+  static Widget meta(String text) => Text(
+        text,
+        style: AuraText.muted,
+      );
 
   static Widget h(String text) => Padding(
-        padding: EdgeInsets.only(top: AuraSpace.s18, bottom: AuraSpace.s10),
-        child: Text(text, style: AuraText.emphasis),
+        padding: const EdgeInsets.only(
+          top: AuraSpace.xl,
+          bottom: AuraSpace.sm,
+        ),
+        child: Text(
+          text,
+          style: AuraText.emphasis.copyWith(
+            fontSize: 16,
+          ),
+        ),
       );
 
   static Widget p(String text) => Padding(
-        padding: EdgeInsets.only(bottom: AuraSpace.s10),
-        child: Text(text, style: AuraText.body),
+        padding: const EdgeInsets.only(bottom: AuraSpace.sm),
+        child: Text(
+          text,
+          style: AuraText.body,
+        ),
       );
 
   static Widget callout(String text) => Container(
-        margin: EdgeInsets.only(top: AuraSpace.s10, bottom: AuraSpace.s10),
-        padding: EdgeInsets.all(AuraSpace.s12),
+        margin: const EdgeInsets.symmetric(vertical: AuraSpace.sm),
+        padding: const EdgeInsets.all(AuraSpace.md),
         decoration: BoxDecoration(
-          color: AuraSurface.page,
-          borderRadius: BorderRadius.circular(AuraRadius.r14),
+          color: AuraSurface.elevated,
+          borderRadius: BorderRadius.circular(AuraRadius.md),
           border: Border.all(color: AuraSurface.divider),
         ),
-        child: Text(text, style: AuraText.body),
+        child: Text(
+          text,
+          style: AuraText.body,
+        ),
       );
 
   static Widget bullets(List<String> items) => Padding(
-        padding: EdgeInsets.only(bottom: AuraSpace.s10),
+        padding: const EdgeInsets.only(bottom: AuraSpace.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: items
               .map(
                 (x) => Padding(
-                  padding: EdgeInsets.only(bottom: AuraSpace.s8),
+                  padding: const EdgeInsets.only(bottom: AuraSpace.xs),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(top: AuraSpace.s6),
+                        padding: const EdgeInsets.only(top: 8),
                         child: Icon(
                           Icons.circle,
                           size: 6,
-                          color: AuraSurface.divider,
+                          color: AuraSurface.muted,
                         ),
                       ),
-                      SizedBox(width: AuraSpace.s10),
-                      Expanded(child: Text(x, style: AuraText.body)),
+                      const SizedBox(width: AuraSpace.sm),
+                      Expanded(
+                        child: Text(
+                          x,
+                          style: AuraText.body,
+                        ),
+                      ),
                     ],
                   ),
                 ),
