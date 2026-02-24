@@ -55,4 +55,24 @@ class Post {
       linkImageUrl: (json['linkImageUrl'] as String?),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'text': text,
+      'createdAt': createdAt.toIso8601String(),
+      // Keep parity with backend shape where possible.
+      'author': <String, dynamic>{'handle': authorHandle},
+      'mediaType': mediaType,
+      'mediaUrl': mediaUrl,
+      'mediaThumbUrl': mediaThumbUrl,
+      'mediaWidth': mediaWidth,
+      'mediaHeight': mediaHeight,
+      'mediaDuration': mediaDuration,
+      'caption': caption,
+      'linkTitle': linkTitle,
+      'linkDescription': linkDescription,
+      'linkImageUrl': linkImageUrl,
+    };
+  }
 }
