@@ -36,23 +36,35 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return v;
   }
 
+  /// Tolerant envelope unwrapping:
+  /// Accepts:
+  /// - { ok:true, data:{...} }
+  /// - { data:{...} }
+  /// - { ok:true, data:{ data:{...} } }
+  /// - already-flat maps
+  ///
+  /// Never throws on “shape”; only throws when token truly missing later.
   Map<String, dynamic> _unwrap(dynamic raw) {
-    if (raw is! Map) throw Exception('Unexpected response');
-
-    final m = Map<String, dynamic>.from(raw);
-
-    // Canonical envelope (Aura Contract v1)
-    if (m['ok'] == true) {
-      final inner = m['data'];
-      if (inner is Map) return Map<String, dynamic>.from(inner);
-      throw Exception('Unexpected response: ok=true but data is not a map');
+    if (raw is! Map) {
+      return <String, dynamic>{};
     }
 
-    // Legacy fallback
-    final inner = m['data'];
-    if (inner is Map) return Map<String, dynamic>.from(inner);
+    final root = Map<String, dynamic>.from(raw);
 
-    return m;
+    // If there's a 'data' key, unwrap it (common pattern)
+    dynamic inner = root['data'];
+
+    // Some endpoints might return { ok:true, data:{ data:{...} } }
+    if (inner is Map && inner['data'] is Map) {
+      inner = inner['data'];
+    }
+
+    if (inner is Map) {
+      return Map<String, dynamic>.from(inner);
+    }
+
+    // Fallback to root map
+    return root;
   }
 
   Future<void> _login() async {

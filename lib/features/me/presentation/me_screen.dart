@@ -12,59 +12,85 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
+Map<String, dynamic> _unwrapMap(dynamic raw) {
+  if (raw is! Map) return <String, dynamic>{};
+  final root = Map<String, dynamic>.from(raw);
+
+  dynamic inner = root['data'];
+
+  // { ok:true, data:{ data:{...} } } case
+  if (inner is Map && inner['data'] is Map) {
+    inner = inner['data'];
+  }
+
+  if (inner is Map) return Map<String, dynamic>.from(inner);
+  return root;
+}
+
+List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
+  // Accept direct list
+  if (raw is List) {
+    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  // Accept envelope map
+  final m = _unwrapMap(raw);
+
+  // Most common: { items: [], nextCursor: ... }
+  final a = m['items'];
+  if (a is List) {
+    return a.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  // Some endpoints: { data: [], nextCursor: ... } inside data envelope
+  final b = m['data'];
+  if (b is List) {
+    return b.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  // Sometimes: { data: { items:[...] } } already handled by _unwrapMap but keep fallback
+  if (b is Map && b['items'] is List) {
+    final list = b['items'] as List;
+    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  return <Map<String, dynamic>>[];
+}
+
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
-
-  Response res = await dio.get('/users/me');
-
-  // Aura Contract v1: { ok: true, data: {...} }
-  final data = res.data;
-  if (data is Map) {
-  final m = Map<String, dynamic>.from(data);
-  if (m['ok'] == true && m['data'] is Map) {
-    return Map<String, dynamic>.from(m['data'] as Map);
-  }
+  final res = await dio.get('/users/me');
+  final m = _unwrapMap(res.data);
+  // If backend returned { ok:true, data:{...} } then m is the user map.
+  // If backend returned something else, still return map to avoid crashing.
   return m;
-}
-  throw Exception('Unexpected response');
 });
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/draft');
-  final data = res.data;
-  if (data is Map) return Map<String, dynamic>.from(data);
-  throw Exception('Unexpected response');
+  final m = _unwrapMap(res.data);
+
+  // Draft route might return null or {} depending on backend; normalize.
+  return m;
 });
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/mine');
-  final data = res.data;
-  if (data is List) {
-    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-  throw Exception('Unexpected response');
+  return _unwrapItems(res.data);
 });
 
 final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/saves', queryParameters: {'limit': 12});
-  final data = res.data;
-  if (data is List) {
-    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-  throw Exception('Unexpected response');
+  return _unwrapItems(res.data);
 });
 
 final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/replies/mine');
-  final data = res.data;
-  if (data is List) {
-    return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-  throw Exception('Unexpected response');
+  return _unwrapItems(res.data);
 });
 
 class MeScreen extends ConsumerStatefulWidget {
@@ -95,9 +121,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
       if (picked == null) return;
 
-      Uint8List bytes = await picked.readAsBytes();
-
-      // Web: we keep bytes; mobile: same.
+      final bytes = await picked.readAsBytes();
       final dio = ref.read(dioProvider);
 
       final form = FormData.fromMap({
@@ -195,8 +219,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final dio = ref.read(dioProvider);
 
     // CLEAR-TO-NULL behavior:
-    // - If user leaves a field empty, we send null to clear it in DB.
-    // - If user writes something, we send the trimmed string.
     final dn = nameCtl.text.trim();
     final bb = bioCtl.text.trim();
 
@@ -367,9 +389,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         } else {
           await dio.post('/auth/logout');
         }
-      } catch (_) {
-        // Ignore server logout errors; local logout still happens.
-      }
+      } catch (_) {}
 
       await tokenStore.clear();
 
@@ -391,7 +411,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   @override
   Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
-    final messenger = ScaffoldMessenger.of(context);
 
     if (!isAuthed) {
       return AuraScaffold(
@@ -518,228 +537,153 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             },
           ),
 
-          const SizedBox(height: AuraSpace.s16),
-          Text('Draft', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          ref.watch(_meDraftProvider).when(
+          const SizedBox(height: AuraSpace.s14),
+
+          // Draft card
+          Consumer(
+            builder: (context, ref, _) {
+              final draftAsync = ref.watch(_meDraftProvider);
+              return draftAsync.when(
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (draft) {
-                  final id = (draft['id'] ?? '').toString();
-                  final text = (draft['text'] ?? '').toString();
+                data: (raw) {
+                  final m = _unwrapMap(raw);
+                  final inner = (m['data'] is Map) ? Map<String, dynamic>.from(m['data'] as Map) : m;
+                  final text = (inner['text'] ?? m['text'] ?? '').toString();
 
-                  return _ItemCard(
-                    title: 'Current draft',
-                    subtitle: id.isEmpty ? '—' : id,
-                    text: text.isEmpty ? '(empty)' : text,
-                    onOpen: null,
-                    actions: [
-                      _ItemAction(label: 'Edit', onTap: () => _editDraft(context, text)),
-                      _ItemAction(label: 'Discard', destructive: true, onTap: () => _discardDraft(context)),
-                    ],
-                  );
-                },
-              ),
-
-          const SizedBox(height: AuraSpace.s20),
-          Text('Posts', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          ref.watch(_mePostsProvider).when(
-                loading: () => const AuraCard(child: _LoadingBlock()),
-                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (items) {
-                  if (items.isEmpty) return const AuraCard(child: Text('No posts yet.'));
-
-                  return Column(
-                    children: [
-                      for (final it in items) ...[
-                        _ItemCard(
-                          title: (it['status'] ?? 'Post').toString(),
-                          subtitle: (it['id'] ?? '').toString(),
-                          text: (it['text'] ?? '').toString(),
-                          onOpen: () {
-                            final id = (it['id'] ?? '').toString();
-                            if (id.isNotEmpty) context.push('/posts/$id');
-                          },
-                          actions: [
-                            _ItemAction(
-                              label: 'Edit',
-                              onTap: () => _editPost(
-                                context: context,
-                                id: (it['id'] ?? '').toString(),
-                                initialText: (it['text'] ?? '').toString(),
-                              ),
+                  return AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Draft', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(text.isEmpty ? 'No draft yet.' : text, style: AuraText.body),
+                        const SizedBox(height: AuraSpace.s12),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            FilledButton(
+                              onPressed: () => _editDraft(context, text),
+                              child: const Text('Edit draft'),
                             ),
-                            _ItemAction(
-                              label: 'Archive',
-                              onTap: () => _archivePost((it['id'] ?? '').toString()),
+                            OutlinedButton(
+                              onPressed: () => _discardDraft(context),
+                              child: const Text('Discard'),
                             ),
                           ],
                         ),
-                        const SizedBox(height: AuraSpace.s12),
                       ],
-                    ],
+                    ),
                   );
                 },
-              ),
+              );
+            },
+          ),
 
-          const SizedBox(height: AuraSpace.s20),
-          Text('Saves', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          ref.watch(_meSavesProvider).when(
+          const SizedBox(height: AuraSpace.s14),
+
+          // Posts card
+          Consumer(
+            builder: (context, ref, _) {
+              final postsAsync = ref.watch(_mePostsProvider);
+              return postsAsync.when(
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
                 data: (items) {
-                  if (items.isEmpty) return const AuraCard(child: Text('No saves yet.'));
-
-                  return Column(
-                    children: [
-                      for (final it in items) ...[
-                        _ItemCard(
-                          title: 'Saved',
-                          subtitle: (it['postId'] ?? it['id'] ?? '').toString(),
-                          text: (it['text'] ?? '').toString(),
-                          onOpen: () {
-                            final id = (it['postId'] ?? it['id'] ?? '').toString();
-                            if (id.isNotEmpty) context.push('/posts/$id');
-                          },
-                          actions: const [],
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
+                  return AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Posts', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s10),
+                        if (items.isEmpty)
+                          Text('No posts yet.', style: AuraText.body)
+                        else
+                          ...items.take(5).map((p) {
+                            final id = (p['id'] ?? '').toString();
+                            final text = (p['text'] ?? '').toString();
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: Text(text.isEmpty ? '(no text)' : text, style: AuraText.body)),
+                                  const SizedBox(width: AuraSpace.s10),
+                                  PopupMenuButton<String>(
+                                    onSelected: (v) async {
+                                      if (v == 'edit') {
+                                        await _editPost(context: context, id: id, initialText: text);
+                                      } else if (v == 'archive') {
+                                        await _archivePost(id);
+                                      }
+                                    },
+                                    itemBuilder: (_) => const [
+                                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                      PopupMenuItem(value: 'archive', child: Text('Archive')),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                       ],
-                    ],
+                    ),
                   );
                 },
-              ),
+              );
+            },
+          ),
 
-          const SizedBox(height: AuraSpace.s20),
-          Text('Replies', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          ref.watch(_meRepliesProvider).when(
+          const SizedBox(height: AuraSpace.s14),
+
+          // Saves card
+          Consumer(
+            builder: (context, ref, _) {
+              final savesAsync = ref.watch(_meSavesProvider);
+              return savesAsync.when(
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (items) {
-                  if (items.isEmpty) return const AuraCard(child: Text('No replies yet.'));
-
-                  return Column(
+                data: (items) => AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (final it in items) ...[
-                        _ItemCard(
-                          title: 'Reply',
-                          subtitle: (it['id'] ?? '').toString(),
-                          text: (it['text'] ?? '').toString(),
-                          onOpen: null,
-                          actions: const [],
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
+                      Text('Saves', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(items.isEmpty ? 'No saves yet.' : 'Saved items: ${items.length}', style: AuraText.body),
                     ],
-                  );
-                },
-              ),
-
-          const SizedBox(height: AuraSpace.s20),
-          Text('Settings', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Account', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                Text(
-                  'Logout is available here. Password reset will be added once the backend endpoint is enabled.',
-                  style: AuraText.muted,
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () {
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('Password reset is not wired yet.')),
-                        );
-                      },
-                      child: const Text('Reset password'),
-                    ),
-                    OutlinedButton(
-                      onPressed: _busyLogout ? null : () => _logout(context),
-                      child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ItemCard extends StatelessWidget {
-  const _ItemCard({
-    required this.title,
-    required this.subtitle,
-    required this.text,
-    required this.onOpen,
-    required this.actions,
-  });
-
-  final String title;
-  final String subtitle;
-  final String text;
-  final VoidCallback? onOpen;
-  final List<_ItemAction> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text(title, style: AuraText.title)),
-              if (onOpen != null)
-                TextButton(
-                  onPressed: onOpen,
-                  child: const Text('Open'),
-                ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s6),
-          Text(subtitle, style: AuraText.muted),
-          const SizedBox(height: AuraSpace.s12),
-          Text(text, style: AuraText.body),
-          if (actions.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s14),
-            Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: [
-                for (final a in actions)
-                  OutlinedButton(
-                    onPressed: a.onTap,
-                    style: a.destructive ? OutlinedButton.styleFrom(foregroundColor: Colors.red) : null,
-                    child: Text(a.label),
                   ),
-              ],
-            ),
-          ],
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: AuraSpace.s14),
+
+          // Replies card
+          Consumer(
+            builder: (context, ref, _) {
+              final repliesAsync = ref.watch(_meRepliesProvider);
+              return repliesAsync.when(
+                loading: () => const AuraCard(child: _LoadingBlock()),
+                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
+                data: (items) => AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Replies', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(items.isEmpty ? 'No replies yet.' : 'Replies: ${items.length}', style: AuraText.body),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
-}
-
-class _ItemAction {
-  const _ItemAction({required this.label, required this.onTap, this.destructive = false});
-  final String label;
-  final VoidCallback onTap;
-  final bool destructive;
 }
 
 class _LoadingBlock extends StatelessWidget {
@@ -747,15 +691,9 @@ class _LoadingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Row(
-        children: [
-          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-          const SizedBox(width: AuraSpace.s12),
-          Text('Loading…', style: AuraText.muted),
-        ],
-      ),
+    return const Padding(
+      padding: EdgeInsets.all(AuraSpace.s16),
+      child: Center(child: CircularProgressIndicator()),
     );
   }
 }
@@ -768,7 +706,7 @@ class _ErrorBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Text(message, style: AuraText.body),
+      child: Text(message, style: AuraText.body.copyWith(color: Colors.red)),
     );
   }
 }
