@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/net/dio_provider.dart';
 
 class PostsRepository {
   PostsRepository(this._dio);
@@ -80,7 +83,6 @@ class PostsRepository {
         contentType: mimeType,
         responseType: ResponseType.plain,
         followRedirects: true,
-        // presigned urls often return empty or minimal body
         validateStatus: (code) => code != null && code >= 200 && code < 300,
       ),
     );
@@ -98,3 +100,12 @@ class PostsRepository {
     await _dio.post('/media/$mediaId/ready');
   }
 }
+
+/// Canonical provider name (plural matches class name).
+final postsRepositoryProvider = Provider<PostsRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return PostsRepository(dio);
+});
+
+/// Backward-compatible alias (your compose screen expects this name).
+final postRepositoryProvider = postsRepositoryProvider;

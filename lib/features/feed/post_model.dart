@@ -13,7 +13,7 @@ class Post {
   final int? mediaDuration;
   final String? caption;
 
-  // Link preview (if backend includes it now or later)
+  // Link preview (optional)
   final String? linkTitle;
   final String? linkDescription;
   final String? linkImageUrl;
@@ -61,7 +61,6 @@ class Post {
       'id': id,
       'text': text,
       'createdAt': createdAt.toIso8601String(),
-      // Keep parity with backend shape where possible.
       'author': <String, dynamic>{'handle': authorHandle},
       'mediaType': mediaType,
       'mediaUrl': mediaUrl,
