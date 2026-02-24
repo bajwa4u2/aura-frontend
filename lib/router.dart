@@ -49,8 +49,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 1) Anti-bounce lock: never redirect until tokens are restored.
       if (!store.isLoaded) return null;
-      // If you prefer to hard-wait (rarely needed), use:
-      // await store.waitUntilLoaded();
 
       final authStatus = ref.read(authStatusProvider);
 
@@ -112,16 +110,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending';
       }
 
-      // ✅ Key Fix:
+      // ✅ Key fix:
       // Authed + verified users should not sit on /public (it looks like "not logged in").
       if (loc == '/public') {
         return '/home';
       }
 
       // 5) Verified: never let verified users sit on auth screens again.
-      // Your rule: after login, land on /me.
+      // Your rule: after login, land on /me unless redirect is provided.
       if (isAuth) {
-        // If they came with a redirect query, honor it (only if it is an internal path).
         final redirectTo = state.uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) {
           return redirectTo;
@@ -132,11 +129,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Keep AppShell global frame (footer, nav rules) across public + member routes.
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
-          // Public entry
+          // Public
           GoRoute(
             path: '/public',
             builder: (context, state) => const PublicHomeScreen(),
@@ -231,21 +227,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ComposeScreen(),
           ),
           GoRoute(
-            path: '/post/:id',
+            path: '/posts/:id',
             builder: (context, state) =>
-                PostDetailScreen(id: state.pathParameters['id']!),
+                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) =>
-                AuthorProfileScreen(handle: state.pathParameters['handle']!),
+            builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
           ),
           GoRoute(
-            path: '/support',
-            builder: (context, state) => const SupportScreen(),
+            path: '/support/:handle',
+            builder: (context, state) =>
+                SupportScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
         ],
       ),
     ],
   );
 });
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _sub = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
