@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -76,13 +75,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return <String, dynamic>{};
   }
 
-  Map<String, dynamic> _unwrapEnvelope(Map<String, dynamic> m) {
-    // Handles { ok: true, data: {...} } and returns inner if it is a map.
-    final hasOk = m.containsKey('ok') && m.containsKey('data');
-    if (!hasOk) return m;
-    final inner = m['data'];
-    if (inner is Map) return Map<String, dynamic>.from(inner);
-    return m;
+  // Unwraps nested envelopes like:
+  // { ok:true, data:{ ok:true, data:{...} } }
+  // until the payload is no longer in that shape.
+  Map<String, dynamic> _unwrapEnvelopeDeep(Map<String, dynamic> m) {
+    Map<String, dynamic> cur = m;
+    while (cur.containsKey('ok') && cur.containsKey('data') && cur['data'] is Map) {
+      cur = Map<String, dynamic>.from(cur['data'] as Map);
+    }
+    return cur;
   }
 
   String _inferMimeType(String name) {
@@ -97,9 +98,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 'application/octet-stream';
   }
 
-  Future<Uint8List> _readXFileBytes(XFile f) async {
-    return await f.readAsBytes();
-  }
+  Future<Uint8List> _readXFileBytes(XFile f) async => await f.readAsBytes();
 
   Future<void> _decodeImageSize(Uint8List bytes) async {
     final codec = await ui.instantiateImageCodec(bytes);
@@ -174,18 +173,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     try {
       final repo = ref.read(postRepositoryProvider);
       final raw = await repo.fetchLinkPreview(url: url);
-      final unwrapped = _unwrapEnvelope(raw);
-      final preview = _mapOrNull(unwrapped) ?? _postToMap(unwrapped) ?? _ensureMap(unwrapped);
+      final payload = _unwrapEnvelopeDeep(raw);
+      final preview = _mapOrNull(payload) ?? _postToMap(payload) ?? _ensureMap(payload);
 
       if (!mounted) return;
-      setState(() {
-        _linkPreview = preview.isEmpty ? null : preview;
-      });
+      setState(() => _linkPreview = preview.isEmpty ? null : preview);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _linkPreview = null;
-      });
+      setState(() => _linkPreview = null);
     } finally {
       if (mounted) setState(() => _fetchingLink = false);
     }
@@ -206,8 +201,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     if (_attachKind == _AttachKind.link) {
       if ((_linkText ?? '').trim().isEmpty) return null;
-
-      // We store link preview fields into the draft, not as "media".
       return <String, dynamic>{
         'kind': 'LINK',
         'url': _linkText,
@@ -224,7 +217,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     final repo = ref.read(postRepositoryProvider);
 
-    // presign response can be {ok,data:{...}} or flat map; handle both.
     final presignRaw = await repo.presignMedia(
       fileName: file.name,
       mimeType: mimeType,
@@ -234,18 +226,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       height: _imgH,
     );
 
-    final presign = _unwrapEnvelope(presignRaw);
+    // ✅ Your server returns { ok:true, data:{ ok:true, media:{...}, publicUrl, upload:{url,headers,method} } }
+    final presign = _unwrapEnvelopeDeep(presignRaw);
 
-    final uploadUrl = (presign['uploadUrl'] ?? presign['url'] ?? '').toString();
-    final publicUrl = (presign['publicUrl'] ?? presign['public'] ?? presign['mediaUrl'] ?? '').toString();
-    final thumbUrl = (presign['thumbUrl'] ?? presign['publicThumbUrl'] ?? presign['thumb'] ?? '').toString();
-    final mediaId = (presign['mediaId'] ?? presign['id'] ?? '').toString();
+    final publicUrl = (presign['publicUrl'] ?? '').toString();
+    final mediaMap = _mapOrNull(presign['media']) ?? const <String, dynamic>{};
+    final mediaId = (mediaMap['id'] ?? '').toString();
 
-    final headersAny = presign['headers'];
+    final upload = _mapOrNull(presign['upload']) ?? const <String, dynamic>{};
+    final uploadUrl = (upload['url'] ?? '').toString();
+    final uploadMethod = (upload['method'] ?? 'PUT').toString().toUpperCase();
+    final headersAny = upload['headers'];
     final headers = (headersAny is Map) ? Map<String, dynamic>.from(headersAny) : <String, dynamic>{};
 
     if (uploadUrl.isEmpty || publicUrl.isEmpty) {
-      throw Exception('Presign response missing uploadUrl/publicUrl');
+      throw Exception('Presign response missing upload.url/publicUrl');
+    }
+    if (uploadMethod != 'PUT') {
+      throw Exception('Unsupported presign method: $uploadMethod');
     }
 
     await repo.uploadToPresignedUrl(
@@ -255,21 +253,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       bytes: bytes,
     );
 
-    // Optional finalize
+    // Best-effort finalize
     if (mediaId.isNotEmpty) {
       try {
         await repo.markMediaReady(mediaId);
-      } catch (_) {
-        // best-effort; not fatal for publish
-      }
+      } catch (_) {}
     }
 
     return <String, dynamic>{
       'kind': kind,
       'mediaUrl': publicUrl,
-      'thumbUrl': thumbUrl.isEmpty ? null : thumbUrl,
+      'thumbUrl': null,
       'width': _imgW,
       'height': _imgH,
+      'mediaId': mediaId,
     };
   }
 
@@ -290,10 +287,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final repo = ref.read(postRepositoryProvider);
       final uploaded = await _presignAndUploadIfNeeded();
 
-      // Default draft fields
       String? mediaType;
       String? mediaUrl;
-      String? mediaThumbUrl;
       int? mediaWidth;
       int? mediaHeight;
 
@@ -301,26 +296,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       String? linkDescription;
       String? linkImageUrl;
 
-      // Apply attachment to draft fields
       if (uploaded != null) {
         final kind = (uploaded['kind'] ?? '').toString();
 
         if (kind == 'IMAGE' || kind == 'VIDEO') {
           mediaType = kind;
           mediaUrl = (uploaded['mediaUrl'] ?? '').toString();
-          mediaThumbUrl = (uploaded['thumbUrl'] as String?)?.toString();
-          mediaWidth = (uploaded['width'] as int?);
-          mediaHeight = (uploaded['height'] as int?);
+          mediaWidth = uploaded['width'] as int?;
+          mediaHeight = uploaded['height'] as int?;
         }
 
         if (kind == 'LINK') {
-          // Pull preview into the draft link fields if present
           final preview = uploaded['preview'];
           final m = _mapOrNull(preview) ?? _ensureMap(preview);
           linkTitle = (m['title'] as String?)?.toString();
           linkDescription = (m['description'] as String?)?.toString();
           linkImageUrl = (m['imageUrl'] as String?)?.toString();
-          // also store the raw URL in text if text is empty
           if (text.isEmpty && (uploaded['url'] as String?)?.isNotEmpty == true) {
             _controller.text = (uploaded['url'] as String).toString();
           }
@@ -331,7 +322,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         text: _controller.text.trim(),
         mediaType: mediaType,
         mediaUrl: mediaUrl,
-        mediaThumbUrl: mediaThumbUrl,
+        mediaThumbUrl: null,
         mediaWidth: mediaWidth,
         mediaHeight: mediaHeight,
         mediaDuration: null,
@@ -400,10 +391,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Write',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
+              const Text('Write', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               TextField(
                 controller: _controller,
