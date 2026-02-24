@@ -21,9 +21,28 @@ class SearchRepository {
       queryParameters: {'q': query, 'limit': limit},
     );
 
-    final data = res.data;
-    final usersRaw = (data is Map && data['users'] is List) ? (data['users'] as List) : const [];
-    final postsRaw = (data is Map && data['posts'] is List) ? (data['posts'] as List) : const [];
+    final root = res.data;
+
+    // Your backend currently returns:
+    // { ok: true, data: { data: [posts...] } }
+    //
+    // But we keep compatibility with a future combined search response:
+    // { users: [...], posts: [...] }
+
+    List usersRaw = const [];
+    List postsRaw = const [];
+
+    if (root is Map) {
+      // Future/alt shape: { users: [], posts: [] }
+      if (root['users'] is List) usersRaw = root['users'] as List;
+      if (root['posts'] is List) postsRaw = root['posts'] as List;
+
+      // Current shape: { ok: true, data: { data: [] } }
+      final outerData = root['data'];
+      if (postsRaw.isEmpty && outerData is Map && outerData['data'] is List) {
+        postsRaw = outerData['data'] as List;
+      }
+    }
 
     final users = usersRaw
         .whereType<Map>()
