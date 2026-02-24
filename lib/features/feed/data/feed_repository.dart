@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../post_model.dart';
+import '../domain/post.dart';
 
 class FeedPage {
   const FeedPage({
@@ -28,9 +28,7 @@ class FeedPage {
     // Case 1: raw list
     if (body is List) {
       return FeedPage(
-        items: body
-            .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
+        items: body.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
         nextCursor: null,
       );
     }
@@ -50,9 +48,7 @@ class FeedPage {
         final list = _pickListFromMap(inner);
         final next = _pickCursorFromMap(inner);
         return FeedPage(
-          items: list
-              .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
-              .toList(),
+          items: list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
           nextCursor: next,
         );
       }
@@ -61,9 +57,7 @@ class FeedPage {
       final list = _pickListFromMap(root);
       final next = _pickCursorFromMap(root);
       return FeedPage(
-        items: list
-            .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
+        items: list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList(),
         nextCursor: next,
       );
     }
@@ -93,18 +87,5 @@ class FeedRepository {
       }
       rethrow;
     }
-  }
-
-  Future<FeedPage> fetchAuthedFeed({String? cursor, int limit = 20}) async {
-    return fetchFeed(cursor: cursor, limit: limit);
-  }
-
-  Future<Post> create(String text) async {
-    final res = await dio.post('/posts', data: {'text': text});
-    final body = res.data;
-    if (body is Map && body['post'] is Map) {
-      return Post.fromJson(Map<String, dynamic>.from(body['post']));
-    }
-    return Post.fromJson(Map<String, dynamic>.from(body));
   }
 }
