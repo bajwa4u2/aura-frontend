@@ -1,14 +1,22 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../core/net/dio_provider.dart';
 
 class PostsRepository {
   PostsRepository(this._dio);
 
   final Dio _dio;
+
+  // A clean client for presigned uploads (no auth interceptors).
+  Dio _uploadDio() {
+    return Dio(
+      BaseOptions(
+        // don't inherit baseUrl / interceptors from API client
+        responseType: ResponseType.plain,
+        followRedirects: true,
+      ),
+    );
+  }
 
   Future<void> saveDraft({
     required String text,
@@ -74,13 +82,26 @@ class PostsRepository {
     required String mimeType,
     required Uint8List bytes,
   }) async {
-    // Use the same Dio instance; absolute URL is fine.
-    await _dio.put(
+    final dio = _uploadDio();
+
+    // Presigned PUT: send only what backend told us to send.
+    final uploadHeaders = <String, String>{};
+    headers.forEach((k, v) {
+      if (v == null) return;
+      uploadHeaders[k.toString()] = v.toString();
+    });
+
+    // Ensure Content-Type matches what was signed.
+    if (!uploadHeaders.containsKey('Content-Type')) {
+      uploadHeaders['Content-Type'] = mimeType;
+    }
+
+    await dio.put(
       url,
       data: bytes,
       options: Options(
-        headers: headers.map((k, v) => MapEntry(k.toString(), v.toString())),
-        contentType: mimeType,
+        headers: uploadHeaders,
+        contentType: uploadHeaders['Content-Type'],
         responseType: ResponseType.plain,
         followRedirects: true,
         validateStatus: (code) => code != null && code >= 200 && code < 300,
@@ -100,12 +121,3 @@ class PostsRepository {
     await _dio.post('/media/$mediaId/ready');
   }
 }
-
-/// Canonical provider name (plural matches class name).
-final postsRepositoryProvider = Provider<PostsRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return PostsRepository(dio);
-});
-
-/// Backward-compatible alias (your compose screen expects this name).
-final postRepositoryProvider = postsRepositoryProvider;
