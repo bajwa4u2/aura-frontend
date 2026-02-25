@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../feed/domain/post.dart';
 
@@ -16,10 +18,14 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
   // Backend stores avatarUrl like: /uploads/<file>
-  // We must load it from API host, not from the frontend origin.
+  // Must load it from API host, not from the frontend origin.
   final dio = ref.read(dioProvider);
   var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
-  if (base.endsWith('')) base = base.substring(0, base.length - 3);
+
+  // Strip trailing /v1 (or /v1/) reliably
+  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
+  if (base.endsWith('/v1/')) base = base.substring(0, base.length - 4);
+
   while (base.endsWith('/')) {
     base = base.substring(0, base.length - 1);
   }
@@ -64,81 +70,344 @@ class PostCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final a = post.author;
-    final displayName = a?.displayName ?? '';
-    final handle = a?.handle ?? '';
-    final subtitle = a == null ? '' : '@$handle${displayName.isNotEmpty ? ' • $displayName' : ''}';
+    final displayName = (a?.displayName ?? '').trim();
+    final handle = (a?.handle ?? '').trim();
+    final subtitle =
+        a == null ? '' : '@$handle${displayName.isNotEmpty ? ' • $displayName' : ''}';
 
     final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
 
+    // Optional fields (do NOT assume they exist in the model).
+    final dyn = post as dynamic;
+
+    String? status;
+    try {
+      status = (dyn.status as Object?)?.toString();
+    } catch (_) {}
+
+    String? visibility;
+    try {
+      visibility = (dyn.visibility as Object?)?.toString();
+    } catch (_) {}
+
+    String? mediaUrl;
+    try {
+      mediaUrl = (dyn.mediaUrl as String?)?.trim();
+      if (mediaUrl != null && mediaUrl!.isEmpty) mediaUrl = null;
+    } catch (_) {}
+
+    String? mediaThumbUrl;
+    try {
+      mediaThumbUrl = (dyn.mediaThumbUrl as String?)?.trim();
+      if (mediaThumbUrl != null && mediaThumbUrl!.isEmpty) mediaThumbUrl = null;
+    } catch (_) {}
+
+    String? mediaType;
+    try {
+      mediaType = (dyn.mediaType as Object?)?.toString();
+    } catch (_) {}
+
+    int? likeCount;
+    int? replyCount;
+    int? repostCount;
+    int? saveCount;
+
+    int? _asInt(Object? v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      final s = v.toString().trim();
+      return int.tryParse(s);
+    }
+
+    try {
+      likeCount = _asInt(dyn.likeCount);
+    } catch (_) {}
+    try {
+      replyCount = _asInt(dyn.replyCount);
+    } catch (_) {}
+    try {
+      repostCount = _asInt(dyn.repostCount);
+    } catch (_) {}
+    try {
+      saveCount = _asInt(dyn.saveCount);
+    } catch (_) {}
+
+    bool isOwner = false;
+    try {
+      isOwner = dyn.viewerIsOwner == true || dyn.isOwner == true;
+    } catch (_) {}
+
+    final showRepostTag =
+        post.repostOfPostId != null && post.repostOfPostId!.trim().isNotEmpty;
+
+    final text = (post.text).trim();
+
     return AuraCard(
-      padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s16),
+      padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s18),
       onTap: () => context.push('/posts/${post.id}'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (a != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+          // ---------- HEADER ----------
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (a != null)
                 CircleAvatar(
-                  radius: 16,
+                  radius: compact ? 15 : 16,
                   backgroundColor: const Color(0x332E2A26),
                   backgroundImage: (avatarResolved != null) ? NetworkImage(avatarResolved) : null,
                   child: (avatarResolved == null)
                       ? Text(
-                          displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
+                          displayName.isNotEmpty
+                              ? displayName[0].toUpperCase()
+                              : (handle.isNotEmpty ? handle[0].toUpperCase() : 'A'),
                           style: AuraText.body,
                         )
                       : null,
-                ),
-                SizedBox(width: AuraSpace.s10),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => context.push('/u/$handle'),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName.isEmpty ? '@$handle' : displayName,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        if (subtitle.isNotEmpty)
-                          Text(
-                            subtitle,
-                            style: AuraText.small,
-                          ),
-                      ],
-                    ),
+                )
+              else
+                Container(
+                  width: compact ? 30 : 32,
+                  height: compact ? 30 : 32,
+                  decoration: BoxDecoration(
+                    color: AuraSurface.elevated,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AuraSurface.divider),
                   ),
                 ),
+              SizedBox(width: AuraSpace.s10),
+
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (handle.isNotEmpty) context.push('/u/$handle');
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (displayName.isEmpty && handle.isNotEmpty) ? '@$handle' : (displayName.isEmpty ? 'Member' : displayName),
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          style: AuraText.small.copyWith(color: AuraSurface.muted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Badges (status + visibility) + owner menu
+              if ((status ?? '').isNotEmpty || (visibility ?? '').isNotEmpty) ...[
+                const SizedBox(width: AuraSpace.s8),
+                Wrap(
+                  spacing: AuraSpace.s6,
+                  children: [
+                    if ((status ?? '').isNotEmpty)
+                      _Badge(
+                        text: _prettyEnum(status!),
+                        tone: status!.toUpperCase().contains('DRAFT') ? _BadgeTone.warn : _BadgeTone.neutral,
+                      ),
+                    if ((visibility ?? '').isNotEmpty)
+                      _Badge(
+                        text: _prettyEnum(visibility!),
+                        tone: (visibility ?? '').toLowerCase().contains('public') ? _BadgeTone.good : _BadgeTone.neutral,
+                      ),
+                  ],
+                ),
               ],
-            ),
-          if (a != null) SizedBox(height: AuraSpace.s12),
-          if (post.repostOfPostId != null && post.repostOfPostId!.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(bottom: AuraSpace.s8),
-              child: Text(
-                'Repost',
-                style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+
+              if (isOwner) ...[
+                const SizedBox(width: AuraSpace.s6),
+                PopupMenuButton<String>(
+                  tooltip: 'Post options',
+                  onSelected: (v) async {
+                    if (v == 'edit') {
+                      context.push('/compose?edit=${post.id}');
+                      return;
+                    }
+                    if (v == 'delete') {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete post?'),
+                          content: const Text('This will remove the post.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+                            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Delete')),
+                          ],
+                        ),
+                      );
+                      if (ok == true) {
+                        final dio = ref.read(dioProvider);
+                        await dio.delete('/posts/${post.id}');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleted')));
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                  icon: const Icon(Icons.more_horiz, color: AuraSurface.muted),
+                ),
+              ],
+            ],
+          ),
+
+          if (showRepostTag) ...[
+            SizedBox(height: AuraSpace.s12),
+            Text(
+              'Repost',
+              style: AuraText.small.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AuraSurface.muted,
               ),
             ),
-          Text(
-            post.text,
-            maxLines: compact ? 4 : null,
-            overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
-            style: AuraText.body.copyWith(height: 1.45),
-          ),
+          ],
+
+          // ---------- BODY ----------
+          if (text.isNotEmpty) ...[
+            SizedBox(height: AuraSpace.s12),
+            Text(
+              text,
+              maxLines: compact ? 4 : null,
+              overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
+              style: AuraText.body.copyWith(height: 1.5),
+            ),
+          ],
+
+          // ---------- MEDIA ----------
+          finalMediaBlock(context, mediaUrl, mediaThumbUrl, mediaType),
+
           SizedBox(height: AuraSpace.s12),
-          _ActionRow(postId: post.id),
+
+          // ---------- ACTIONS ----------
+          _ActionRow(
+            postId: post.id,
+            likeCount: likeCount,
+            repostCount: repostCount,
+            saveCount: saveCount,
+            replyCount: replyCount,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget finalMediaBlock(
+    BuildContext context,
+    String? mediaUrl,
+    String? mediaThumbUrl,
+    String? mediaType,
+  ) {
+    final u = (mediaUrl ?? '').trim();
+    if (u.isEmpty) return const SizedBox.shrink();
+
+    final lower = u.toLowerCase();
+    final mt = (mediaType ?? '').toLowerCase();
+
+    final isSvg = lower.endsWith('.svg') || mt.contains('svg');
+    final isVideo = mt.contains('video') || lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
+
+    final border = Border.all(color: AuraSurface.divider);
+    final r = BorderRadius.circular(16);
+
+    Widget child;
+
+    if (isSvg) {
+      child = SvgPicture.network(
+        u,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => const _MediaLoading(),
+      );
+    } else if (isVideo) {
+      final thumb = (mediaThumbUrl ?? '').trim();
+      child = Stack(
+        alignment: Alignment.center,
+        children: [
+          if (thumb.isNotEmpty)
+            Image.network(
+              thumb,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 240,
+            )
+          else
+            Container(
+              height: 200,
+              color: AuraSurface.elevated,
+              alignment: Alignment.center,
+              child: Text(
+                'Video',
+                style: AuraText.muted,
+              ),
+            ),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0x66000000),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
+          ),
+        ],
+      );
+    } else {
+      child = Image.network(
+        u,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 260,
+        loadingBuilder: (context, w, prog) {
+          if (prog == null) return w;
+          return const _MediaLoading();
+        },
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s14),
+      child: ClipRRect(
+        borderRadius: r,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: r,
+            border: border,
+            color: AuraSurface.elevated,
+          ),
+          child: child,
+        ),
       ),
     );
   }
 }
 
 class _ActionRow extends ConsumerWidget {
-  const _ActionRow({required this.postId});
+  const _ActionRow({
+    required this.postId,
+    this.likeCount,
+    this.repostCount,
+    this.saveCount,
+    this.replyCount,
+  });
+
   final String postId;
+  final int? likeCount;
+  final int? repostCount;
+  final int? saveCount;
+  final int? replyCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -147,19 +416,13 @@ class _ActionRow extends ConsumerWidget {
 
     Future<void> toggleLike() async {
       final dio = ref.read(dioProvider);
-
-      // Backend route: POST /v1/reactions/:postId/toggle
       await dio.post('/reactions/$postId/toggle');
-
       ref.invalidate(isLikedProvider(postId));
     }
 
     Future<void> toggleSave() async {
       final dio = ref.read(dioProvider);
-
-      // Backend route: POST /v1/saves/:postId/toggle
       await dio.post('/saves/$postId/toggle');
-
       ref.invalidate(isSavedProvider(postId));
     }
 
@@ -194,7 +457,6 @@ class _ActionRow extends ConsumerWidget {
       final payload = <String, dynamic>{};
       if (text.isNotEmpty) payload['text'] = text;
 
-      // Backend route: POST /v1/posts/:id/repost
       await dio.post('/posts/$postId/repost', data: payload);
 
       ref.invalidate(isLikedProvider(postId));
@@ -205,38 +467,173 @@ class _ActionRow extends ConsumerWidget {
       }
     }
 
-    return Row(
+    Widget pill({
+      required IconData icon,
+      required String label,
+      int? count,
+      required VoidCallback onTap,
+      bool active = false,
+    }) {
+      final showCount = count != null;
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s8,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.elevated,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: active ? AuraSurface.ink : AuraSurface.muted),
+              const SizedBox(width: AuraSpace.s6),
+              Text(
+                showCount ? '$label ${count!}' : label,
+                style: AuraText.small.copyWith(
+                  fontWeight: showCount ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
       children: [
-        IconButton(
-          tooltip: 'Repost',
-          onPressed: repost,
-          icon: const Icon(Icons.repeat),
+        pill(
+          icon: Icons.repeat,
+          label: 'Repost',
+          count: repostCount,
+          onTap: repost,
         ),
-        IconButton(
-          tooltip: 'Appreciate',
-          onPressed: toggleLike,
-          icon: liked.when(
-            data: (v) => Icon(v ? Icons.favorite : Icons.favorite_border),
-            loading: () => const Icon(Icons.favorite_border),
-            error: (_, __) => const Icon(Icons.favorite_border),
+        liked.when(
+          data: (v) => pill(
+            icon: v ? Icons.favorite : Icons.favorite_border,
+            label: 'Like',
+            count: likeCount,
+            onTap: toggleLike,
+            active: v,
+          ),
+          loading: () => pill(
+            icon: Icons.favorite_border,
+            label: 'Like',
+            count: likeCount,
+            onTap: toggleLike,
+          ),
+          error: (_, __) => pill(
+            icon: Icons.favorite_border,
+            label: 'Like',
+            count: likeCount,
+            onTap: toggleLike,
           ),
         ),
-        IconButton(
-          tooltip: 'Save',
-          onPressed: toggleSave,
-          icon: saved.when(
-            data: (v) => Icon(v ? Icons.bookmark : Icons.bookmark_border),
-            loading: () => const Icon(Icons.bookmark_border),
-            error: (_, __) => const Icon(Icons.bookmark_border),
+        saved.when(
+          data: (v) => pill(
+            icon: v ? Icons.bookmark : Icons.bookmark_border,
+            label: 'Save',
+            count: saveCount,
+            onTap: toggleSave,
+            active: v,
+          ),
+          loading: () => pill(
+            icon: Icons.bookmark_border,
+            label: 'Save',
+            count: saveCount,
+            onTap: toggleSave,
+          ),
+          error: (_, __) => pill(
+            icon: Icons.bookmark_border,
+            label: 'Save',
+            count: saveCount,
+            onTap: toggleSave,
           ),
         ),
-        const Spacer(),
-        IconButton(
-          tooltip: 'Reply',
-          onPressed: () => context.push('/compose?replyTo=$postId'),
-          icon: const Icon(Icons.reply_outlined),
+        pill(
+          icon: Icons.reply_outlined,
+          label: 'Reply',
+          count: replyCount,
+          onTap: () => context.push('/compose?replyTo=$postId'),
         ),
       ],
     );
   }
+}
+
+enum _BadgeTone { neutral, good, warn }
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.text, required this.tone});
+  final String text;
+  final _BadgeTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+
+    switch (tone) {
+      case _BadgeTone.good:
+        bg = const Color(0x1F5B6CFF);
+        fg = AuraSurface.ink;
+        break;
+      case _BadgeTone.warn:
+        bg = const Color(0x22FFB020);
+        fg = AuraSurface.ink;
+        break;
+      case _BadgeTone.neutral:
+      default:
+        bg = AuraSurface.elevated;
+        fg = AuraSurface.muted;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        text,
+        style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _MediaLoading extends StatelessWidget {
+  const _MediaLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 220,
+      alignment: Alignment.center,
+      color: AuraSurface.elevated,
+      child: const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+String _prettyEnum(String raw) {
+  final s = raw.replaceAll('PostStatus.', '').replaceAll('Visibility.', '').replaceAll('_', ' ').trim();
+  if (s.isEmpty) return raw;
+  return s.split(' ').map((w) {
+    if (w.isEmpty) return w;
+    return w[0].toUpperCase() + w.substring(1).toLowerCase();
+  }).join(' ');
 }
