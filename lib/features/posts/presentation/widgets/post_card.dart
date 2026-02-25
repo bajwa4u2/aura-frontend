@@ -62,6 +62,33 @@ final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async 
   return false;
 });
 
+DateTime? _tryParseDate(Object? v) {
+  if (v == null) return null;
+  if (v is DateTime) return v.toLocal();
+  final s = v.toString().trim();
+  if (s.isEmpty) return null;
+  return DateTime.tryParse(s)?.toLocal();
+}
+
+String _formatDateAbsolute(DateTime dt) {
+  const months = <String>[
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  final m = months[(dt.month - 1).clamp(0, 11)];
+  return '$m ${dt.day}, ${dt.year}';
+}
+
 class PostCard extends ConsumerWidget {
   const PostCard({super.key, required this.post, this.compact = false});
   final Post post;
@@ -72,8 +99,6 @@ class PostCard extends ConsumerWidget {
     final a = post.author;
     final displayName = (a?.displayName ?? '').trim();
     final handle = (a?.handle ?? '').trim();
-    final subtitle =
-        a == null ? '' : '@$handle${displayName.isNotEmpty ? ' • $displayName' : ''}';
 
     final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
 
@@ -107,17 +132,19 @@ class PostCard extends ConsumerWidget {
       mediaType = (dyn.mediaType as Object?)?.toString();
     } catch (_) {}
 
-    int? likeCount;
-    int? replyCount;
-    int? repostCount;
-    int? saveCount;
-
+    // Intentionally not used for UI: Aura rule is no public counts.
+    // We keep the reads to avoid breaking any upstream logic, but we never display them.
     int? _asInt(Object? v) {
       if (v == null) return null;
       if (v is int) return v;
       final s = v.toString().trim();
       return int.tryParse(s);
     }
+
+    int? likeCount;
+    int? replyCount;
+    int? repostCount;
+    int? saveCount;
 
     try {
       likeCount = _asInt(dyn.likeCount);
@@ -142,6 +169,22 @@ class PostCard extends ConsumerWidget {
 
     final text = (post.text).trim();
 
+    DateTime? createdAt;
+    try {
+      createdAt = _tryParseDate(dyn.createdAt);
+    } catch (_) {
+      createdAt = null;
+    }
+
+    final titleText = displayName.isNotEmpty
+        ? displayName
+        : (handle.isNotEmpty ? '@$handle' : 'Member');
+
+    final metaParts = <String>[];
+    if (handle.isNotEmpty) metaParts.add('@$handle');
+    if (createdAt != null) metaParts.add(_formatDateAbsolute(createdAt!));
+    final metaLine = metaParts.join(' • ');
+
     return AuraCard(
       padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s18),
       onTap: () => context.push('/posts/${post.id}'),
@@ -156,12 +199,11 @@ class PostCard extends ConsumerWidget {
                 CircleAvatar(
                   radius: compact ? 15 : 16,
                   backgroundColor: const Color(0x332E2A26),
-                  backgroundImage: (avatarResolved != null) ? NetworkImage(avatarResolved) : null,
+                  backgroundImage:
+                      (avatarResolved != null) ? NetworkImage(avatarResolved) : null,
                   child: (avatarResolved == null)
                       ? Text(
-                          displayName.isNotEmpty
-                              ? displayName[0].toUpperCase()
-                              : (handle.isNotEmpty ? handle[0].toUpperCase() : 'A'),
+                          titleText.isNotEmpty ? titleText[0].toUpperCase() : 'A',
                           style: AuraText.body,
                         )
                       : null,
@@ -187,14 +229,14 @@ class PostCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        (displayName.isEmpty && handle.isNotEmpty) ? '@$handle' : (displayName.isEmpty ? 'Member' : displayName),
+                        titleText,
                         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (subtitle.isNotEmpty)
+                      if (metaLine.isNotEmpty)
                         Text(
-                          subtitle,
+                          metaLine,
                           style: AuraText.small.copyWith(color: AuraSurface.muted),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -213,12 +255,16 @@ class PostCard extends ConsumerWidget {
                     if ((status ?? '').isNotEmpty)
                       _Badge(
                         text: _prettyEnum(status!),
-                        tone: status!.toUpperCase().contains('DRAFT') ? _BadgeTone.warn : _BadgeTone.neutral,
+                        tone: status!.toUpperCase().contains('DRAFT')
+                            ? _BadgeTone.warn
+                            : _BadgeTone.neutral,
                       ),
                     if ((visibility ?? '').isNotEmpty)
                       _Badge(
                         text: _prettyEnum(visibility!),
-                        tone: (visibility ?? '').toLowerCase().contains('public') ? _BadgeTone.good : _BadgeTone.neutral,
+                        tone: (visibility ?? '').toLowerCase().contains('public')
+                            ? _BadgeTone.good
+                            : _BadgeTone.neutral,
                       ),
                   ],
                 ),
@@ -240,8 +286,14 @@ class PostCard extends ConsumerWidget {
                           title: const Text('Delete post?'),
                           content: const Text('This will remove the post.'),
                           actions: [
-                            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-                            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Delete')),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Delete'),
+                            ),
                           ],
                         ),
                       );
@@ -249,7 +301,9 @@ class PostCard extends ConsumerWidget {
                         final dio = ref.read(dioProvider);
                         await dio.delete('/posts/${post.id}');
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleted')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Deleted')),
+                          );
                         }
                       }
                     }
@@ -282,12 +336,12 @@ class PostCard extends ConsumerWidget {
               text,
               maxLines: compact ? 4 : null,
               overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
-              style: AuraText.body.copyWith(height: 1.5),
+              style: AuraText.body.copyWith(height: 1.55),
             ),
           ],
 
           // ---------- MEDIA ----------
-          finalMediaBlock(context, mediaUrl, mediaThumbUrl, mediaType),
+          _finalMediaBlock(context, mediaUrl, mediaThumbUrl, mediaType),
 
           SizedBox(height: AuraSpace.s12),
 
@@ -304,7 +358,7 @@ class PostCard extends ConsumerWidget {
     );
   }
 
-  Widget finalMediaBlock(
+  Widget _finalMediaBlock(
     BuildContext context,
     String? mediaUrl,
     String? mediaThumbUrl,
@@ -317,13 +371,20 @@ class PostCard extends ConsumerWidget {
     final mt = (mediaType ?? '').toLowerCase();
 
     final isSvg = lower.endsWith('.svg') || mt.contains('svg');
-    final isVideo = mt.contains('video') || lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
+    final isVideo = mt.contains('video') ||
+        lower.endsWith('.mp4') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.mov');
 
     final border = Border.all(color: AuraSurface.divider);
     final r = BorderRadius.circular(16);
 
     Widget child;
 
+    // Containment rule:
+    // - No edge-to-edge dominance.
+    // - Keep a dignified frame.
+    // - Centered, calm.
     if (isSvg) {
       child = SvgPicture.network(
         u,
@@ -341,20 +402,18 @@ class PostCard extends ConsumerWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: 240,
+              errorBuilder: (_, __, ___) => const _MediaLoading(),
             )
           else
             Container(
-              height: 200,
+              height: 220,
               color: AuraSurface.elevated,
               alignment: Alignment.center,
-              child: Text(
-                'Video',
-                style: AuraText.muted,
-              ),
+              child: Text('Video', style: AuraText.muted),
             ),
           Container(
-            width: 52,
-            height: 52,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
               color: const Color(0x66000000),
               borderRadius: BorderRadius.circular(999),
@@ -374,6 +433,7 @@ class PostCard extends ConsumerWidget {
           if (prog == null) return w;
           return const _MediaLoading();
         },
+        errorBuilder: (_, __, ___) => const _MediaLoading(),
       );
     }
 
@@ -404,6 +464,8 @@ class _ActionRow extends ConsumerWidget {
   });
 
   final String postId;
+
+  // Kept for compatibility, but never displayed (Aura rule: no public counts)
   final int? likeCount;
   final int? repostCount;
   final int? saveCount;
@@ -442,8 +504,14 @@ class _ActionRow extends ConsumerWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-              FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Repost')),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Repost'),
+              ),
             ],
           );
         },
@@ -463,18 +531,17 @@ class _ActionRow extends ConsumerWidget {
       ref.invalidate(isSavedProvider(postId));
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reposted')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Reposted')));
       }
     }
 
     Widget pill({
       required IconData icon,
       required String label,
-      int? count,
       required VoidCallback onTap,
       bool active = false,
     }) {
-      final showCount = count != null;
       return InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
@@ -494,10 +561,8 @@ class _ActionRow extends ConsumerWidget {
               Icon(icon, size: 16, color: active ? AuraSurface.ink : AuraSurface.muted),
               const SizedBox(width: AuraSpace.s6),
               Text(
-                showCount ? '$label ${count!}' : label,
-                style: AuraText.small.copyWith(
-                  fontWeight: showCount ? FontWeight.w700 : FontWeight.w500,
-                ),
+                label,
+                style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -512,27 +577,23 @@ class _ActionRow extends ConsumerWidget {
         pill(
           icon: Icons.repeat,
           label: 'Repost',
-          count: repostCount,
           onTap: repost,
         ),
         liked.when(
           data: (v) => pill(
             icon: v ? Icons.favorite : Icons.favorite_border,
             label: 'Like',
-            count: likeCount,
             onTap: toggleLike,
             active: v,
           ),
           loading: () => pill(
             icon: Icons.favorite_border,
             label: 'Like',
-            count: likeCount,
             onTap: toggleLike,
           ),
           error: (_, __) => pill(
             icon: Icons.favorite_border,
             label: 'Like',
-            count: likeCount,
             onTap: toggleLike,
           ),
         ),
@@ -540,27 +601,23 @@ class _ActionRow extends ConsumerWidget {
           data: (v) => pill(
             icon: v ? Icons.bookmark : Icons.bookmark_border,
             label: 'Save',
-            count: saveCount,
             onTap: toggleSave,
             active: v,
           ),
           loading: () => pill(
             icon: Icons.bookmark_border,
             label: 'Save',
-            count: saveCount,
             onTap: toggleSave,
           ),
           error: (_, __) => pill(
             icon: Icons.bookmark_border,
             label: 'Save',
-            count: saveCount,
             onTap: toggleSave,
           ),
         ),
         pill(
           icon: Icons.reply_outlined,
           label: 'Reply',
-          count: replyCount,
           onTap: () => context.push('/compose?replyTo=$postId'),
         ),
       ],
@@ -597,7 +654,10 @@ class _Badge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -630,7 +690,11 @@ class _MediaLoading extends StatelessWidget {
 }
 
 String _prettyEnum(String raw) {
-  final s = raw.replaceAll('PostStatus.', '').replaceAll('Visibility.', '').replaceAll('_', ' ').trim();
+  final s = raw
+      .replaceAll('PostStatus.', '')
+      .replaceAll('Visibility.', '')
+      .replaceAll('_', ' ')
+      .trim();
   if (s.isEmpty) return raw;
   return s.split(' ').map((w) {
     if (w.isEmpty) return w;
