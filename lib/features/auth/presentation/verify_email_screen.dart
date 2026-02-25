@@ -24,7 +24,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   late final _tokenCtrl = TextEditingController(text: (widget.token ?? '').trim());
   late final _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
 
-  bool _loading = false;
+  bool _busy = false;
   String? _msg;
   bool _verified = false;
 
@@ -38,89 +38,87 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Auto-verify if token present in URL.
     if ((widget.token ?? '').trim().isNotEmpty) {
-      _runVerify();
+      _verify();
     }
   }
 
-  Future<void> _runVerify() async {
-    if (_loading) return;
+  Future<void> _verify() async {
+    if (_busy) return;
+
+    final token = _tokenCtrl.text.trim();
+    if (token.isEmpty) {
+      setState(() => _msg = 'Paste the verification token from your email.');
+      return;
+    }
 
     setState(() {
-      _loading = true;
+      _busy = true;
       _msg = null;
       _verified = false;
     });
 
     try {
       final dio = ref.read(dioProvider);
-      final token = _tokenCtrl.text.trim();
-
-      if (token.isEmpty) {
-        setState(() {
-          _msg = 'Paste the verification token from your email.';
-        });
-        return;
-      }
-
       await dio.post('/auth/verify-email', data: {'token': token});
 
-      // Best-effort confirm
-      try {
-        await dio.get('/auth/me');
-      } catch (_) {}
-
-      if (!mounted) return;
       setState(() {
         _verified = true;
-        _msg = 'Verified. You are good to go.';
+        _msg = 'Verified. You can continue.';
       });
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      setState(() {
-        _msg = 'Verification failed (${status ?? 'no status'}). The link may be expired or already used.';
-      });
-    } catch (_) {
-      setState(() {
-        _msg = 'Verification failed. The link may be expired or already used.';
-      });
+      final s = e.response?.statusCode;
+      setState(() => _msg = 'Verification failed (${s ?? 'no status'}). The token may be expired.');
     } finally {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _resend() async {
-    if (_loading) return;
+    if (_busy) return;
+
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _msg = 'Enter your email to resend verification.');
+      return;
+    }
 
     setState(() {
-      _loading = true;
+      _busy = true;
       _msg = null;
     });
 
     final dio = ref.read(dioProvider);
 
-    try {
-      final email = _emailCtrl.text.trim();
-      await dio.post('/auth/resend-verification', data: {'email': email});
-      setState(() {
-        _msg = 'We sent a verification email. Check inbox and spam.';
-      });
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      setState(() {
-        _msg = 'Could not resend (${status ?? 'no status'}).';
-      });
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+    // Endpoint names differ across builds; try a short fallback list.
+    final candidates = <String>[
+      '/auth/resend-verification',
+      '/auth/resend-verify-email',
+      '/auth/resend-verification-email',
+    ];
 
-  void _continue() {
-    final target = _safeRedirect(widget.redirectTo);
-    context.go(target);
+    try {
+      DioException? last;
+      for (final path in candidates) {
+        try {
+          await dio.post(path, data: {'email': email});
+          setState(() => _msg = 'Verification email sent. Check inbox and spam.');
+          return;
+        } on DioException catch (e) {
+          last = e;
+          if (e.response?.statusCode == 404) {
+            continue; // try next candidate
+          }
+          rethrow;
+        }
+      }
+      final s = last?.response?.statusCode;
+      setState(() => _msg = 'Resend failed (${s ?? 'no status'}).');
+    } catch (e) {
+      setState(() => _msg = 'Resend failed.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -146,8 +144,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 Text('Email verification', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'If you opened a link from email, verification should complete automatically. '
-                  'If not, paste the token below.',
+                  'Verify to unlock the app. If your link did not open correctly, paste the token.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
@@ -166,7 +163,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                if (_loading) ...[
+                if (_busy) ...[
                   const LinearProgressIndicator(),
                   const SizedBox(height: AuraSpace.s12),
                 ],
@@ -176,20 +173,20 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   runSpacing: AuraSpace.s10,
                   children: [
                     FilledButton(
-                      onPressed: _loading ? null : _runVerify,
+                      onPressed: _busy ? null : _verify,
                       child: const Text('Verify'),
                     ),
                     OutlinedButton(
-                      onPressed: _loading ? null : _resend,
+                      onPressed: _busy ? null : _resend,
                       child: const Text('Resend email'),
                     ),
                     TextButton(
-                      onPressed: _loading ? null : () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                      onPressed: _busy ? null : () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                       child: const Text('Back to login'),
                     ),
                     if (_verified)
                       FilledButton(
-                        onPressed: _continue,
+                        onPressed: () => context.go(redirect),
                         child: const Text('Continue'),
                       ),
                   ],

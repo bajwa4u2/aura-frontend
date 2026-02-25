@@ -9,6 +9,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../auth/auth_controller.dart';
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../../saves/providers.dart';
@@ -39,6 +40,10 @@ class MemberHomeScreen extends ConsumerWidget {
     ref.invalidate(draftProvider);
   }
 
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    await AuthController(ref).logout(context);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
@@ -57,6 +62,19 @@ class MemberHomeScreen extends ConsumerWidget {
           onPressed: () => _openCompose(context, ref),
           icon: const Icon(Icons.edit_outlined),
         ),
+        if (isAuthed)
+          PopupMenuButton<String>(
+            tooltip: 'Account',
+            onSelected: (v) async {
+              if (v == 'logout') {
+                await _logout(context, ref);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'logout', child: Text('Logout')),
+            ],
+            icon: const Icon(Icons.more_horiz),
+          ),
       ],
       body: ListView(
         padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
@@ -98,7 +116,6 @@ class MemberHomeScreen extends ConsumerWidget {
                   final mediaType = (draft['mediaType'] ?? 'NONE').toString().toUpperCase();
                   final hasMedia = mediaType == 'IMAGE' || mediaType == 'VIDEO';
 
-                  // IMPORTANT: allow media-only drafts too
                   if (text.isEmpty && !hasMedia) return const SizedBox.shrink();
 
                   final updatedAtRaw = (draft['updatedAt'] ?? '').toString();
@@ -132,23 +149,7 @@ class MemberHomeScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (e, _) {
-                  final msg = _friendlyDraftError(e);
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: AuraSpace.s10),
-                    child: AuraCard(
-                      onTap: () => _openCompose(context, ref),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                          SizedBox(height: AuraSpace.s6),
-                          Text(msg, style: AuraText.body),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                error: (_, __) => const SizedBox.shrink(),
               );
             },
           ),
@@ -158,7 +159,6 @@ class MemberHomeScreen extends ConsumerWidget {
             data: (posts) {
               final count = posts.length;
 
-              // Header card: always clickable so "Saved" never feels dead.
               final header = AuraCard(
                 onTap: () => context.push('/saved'),
                 child: Row(
@@ -212,9 +212,6 @@ class MemberHomeScreen extends ConsumerWidget {
           _SectionTitle(title: 'Latest'),
           SizedBox(height: AuraSpace.s10),
 
-          // Latest feed rhythm pass:
-          // - remove compact
-          // - increase vertical breathing room
           feedAsync.when(
             data: (posts) {
               final top = posts.take(6).toList();
@@ -354,14 +351,4 @@ String _time(DateTime dt) {
   final mm = dt.minute.toString().padLeft(2, '0');
   final ap = dt.hour >= 12 ? 'pm' : 'am';
   return '$h:$mm $ap';
-}
-
-String _friendlyDraftError(Object e) {
-  if (e is DioException) {
-    final code = e.response?.statusCode;
-    if (code == 401) return 'Session expired. Tap to continue.';
-    if (code == 403) return 'Please verify your email to continue.';
-    return 'Could not load your draft. Tap to continue.';
-  }
-  return 'Could not load your draft. Tap to continue.';
 }
