@@ -9,15 +9,12 @@ import '../../core/net/dio_provider.dart';
 class AuthController {
   AuthController(this.ref);
 
-  final Ref ref;
+  final WidgetRef ref;
 
   Map<String, dynamic> _unwrap(dynamic raw) {
     if (raw is! Map) return <String, dynamic>{};
     final m = Map<String, dynamic>.from(raw);
 
-    // Common shapes:
-    // { ok: true, data: {...} }
-    // { ok: true, data: { data: {...} } }
     dynamic data = m['data'];
     if (data is Map && data['data'] is Map) {
       data = data['data'];
@@ -48,7 +45,6 @@ class AuthController {
       final meRes = await dio.get('/auth/me');
       final data = _unwrap(meRes.data);
 
-      // Try common fields
       final v1 = data['emailVerifiedAt'];
       if (v1 != null && v1.toString().trim().isNotEmpty) return true;
 
@@ -58,10 +54,8 @@ class AuthController {
         if (v2 != null && v2.toString().trim().isNotEmpty) return true;
       }
 
-      // If response didn't include it, assume not verified.
       return false;
     } on DioException catch (e) {
-      // Many backends return 403 for unverified access to /auth/me
       if (e.response?.statusCode == 403) return false;
       final code = _errCode(e.response?.data);
       if (code == 'EMAIL_NOT_VERIFIED') return false;
@@ -100,13 +94,13 @@ class AuthController {
         throw Exception('Missing access token');
       }
 
-      // Cookie mode on web: refresh token will NOT be present in JSON.
+      // Web cookie mode: refreshToken not expected here. Keep null.
       await ref.read(tokenStoreProvider).setSession(
             accessToken: accessToken,
             refreshToken: null,
           );
 
-      // Hard gate: you are not "logged in" until verified.
+      // Hard gate: do NOT enter app until verified.
       final verified = await _isVerifiedByAuthMe(dio);
       if (!verified) {
         await ref.read(tokenStoreProvider).clear();
@@ -137,7 +131,16 @@ class AuthController {
         return;
       }
 
-      final message = responseData is Map ? responseData['error']?['message'] : null;
+      String? message;
+      if (responseData is Map) {
+        final err = responseData['error'];
+        if (err is Map && err['message'] != null) {
+          message = err['message'].toString();
+        } else if (responseData['message'] != null) {
+          message = responseData['message'].toString();
+        }
+      }
+
       throw Exception(message ?? 'Login failed');
     }
   }

@@ -41,7 +41,12 @@ class _AuraScaffoldState extends State<AuraScaffold>
   late final AnimationController _controller;
 
   static const double _defaultMaxWidth = 1040;
-  static const double _brandHeight = 22;
+
+  // Brand sizing (fix: make logo visually prominent, not a dot)
+  static const double _brandHeight = 34; // was 22
+  static const double _brandMinWidth = 140;
+  static const double _brandMaxWidth = 220;
+
   static const double _leadingIconSize = 18;
   static const double _leadingTapSize = 36;
 
@@ -97,7 +102,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s10,
+            vertical: AuraSpace.s8, // slightly tighter than before
           ),
           child: AnimatedBuilder(
             animation: _controller,
@@ -105,14 +110,19 @@ class _AuraScaffoldState extends State<AuraScaffold>
               final t = Curves.easeOutCubic.transform(_controller.value);
               return Opacity(
                 opacity: t.clamp(0.0, 1.0),
-                child: SizedBox(
-                  height: _brandHeight,
-                  child: SvgPicture.asset(
-                    _brandAsset,
-                    fit: BoxFit.contain,
-                    alignment: Alignment.centerLeft,
-                    // If SVG fails, fallback to text so header never breaks.
-                    placeholderBuilder: (_) => _brandFallback(),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: _brandMinWidth,
+                    maxWidth: _brandMaxWidth,
+                  ),
+                  child: SizedBox(
+                    height: _brandHeight,
+                    child: SvgPicture.asset(
+                      _brandAsset,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.centerLeft,
+                      placeholderBuilder: (_) => _brandFallback(),
+                    ),
                   ),
                 ),
               );
@@ -239,8 +249,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
                       const SizedBox(width: AuraSpace.s12),
                     ],
 
-                    // Title region always stable: it takes the remaining space
-                    // and never pushes actions into the center.
                     Expanded(
                       child: showPageTitle
                           ? (widget.centerTitle
@@ -249,7 +257,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
                           : const SizedBox.shrink(),
                     ),
 
-                    // Actions always right-aligned in a tight region.
                     if (headerActions.isNotEmpty) ...[
                       const SizedBox(width: AuraSpace.s16),
                       Align(

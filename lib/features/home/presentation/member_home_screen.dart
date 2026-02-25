@@ -14,12 +14,10 @@ import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../../saves/providers.dart';
 
-/// Latest draft for the current user.
-/// Backend: GET /posts/draft -> { draft: Post | null }
 final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
 
-  final res = await dio.get('/posts/draft'); // interceptor will attach auth + refresh if needed
+  final res = await dio.get('/posts/draft');
   final data = res.data;
 
   if (data is Map) {
@@ -50,7 +48,6 @@ class MemberHomeScreen extends ConsumerWidget {
     final feedAsync = ref.watch(feedProvider);
     final savedAsync = ref.watch(savedPostsProvider);
 
-    // Only watch draftProvider when authed, otherwise avoid 401 churn.
     final draftAsync =
         isAuthed ? ref.watch(draftProvider) : const AsyncValue<Map<String, dynamic>?>.data(null);
 
@@ -88,7 +85,6 @@ class MemberHomeScreen extends ConsumerWidget {
           _SectionTitle(title: 'Continue'),
           SizedBox(height: AuraSpace.s10),
 
-          // Draft "Continue writing"
           Builder(
             builder: (_) {
               if (!isAuthed) {
@@ -154,7 +150,6 @@ class MemberHomeScreen extends ConsumerWidget {
             },
           ),
 
-          // Continue (Saved)
           savedAsync.when(
             data: (posts) {
               final count = posts.length;
