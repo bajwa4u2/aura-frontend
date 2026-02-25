@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
@@ -131,6 +132,60 @@ class PostCard extends ConsumerWidget {
     try {
       mediaType = (dyn.mediaType as Object?)?.toString();
     } catch (_) {}
+
+    int? mediaWidth;
+    int? mediaHeight;
+    try {
+      mediaWidth = dyn.mediaWidth as int?;
+    } catch (_) {
+      try {
+        mediaWidth = int.tryParse((dyn.mediaWidth ?? '').toString());
+      } catch (_) {}
+    }
+    try {
+      mediaHeight = dyn.mediaHeight as int?;
+    } catch (_) {
+      try {
+        mediaHeight = int.tryParse((dyn.mediaHeight ?? '').toString());
+      } catch (_) {}
+    }
+
+    // Optional link attachment (treated as its own primary medium when present)
+    String? linkUrl;
+    String? linkTitle;
+    String? linkSubtitle;
+    String? linkThumbUrl;
+    try {
+      linkUrl = (dyn.linkUrl as String?)?.trim();
+      if (linkUrl != null && linkUrl!.isEmpty) linkUrl = null;
+    } catch (_) {
+      try {
+        linkUrl = (dyn.url as String?)?.trim();
+        if (linkUrl != null && linkUrl!.isEmpty) linkUrl = null;
+      } catch (_) {}
+    }
+    try {
+      linkTitle = (dyn.linkTitle as String?)?.trim();
+      if (linkTitle != null && linkTitle!.isEmpty) linkTitle = null;
+    } catch (_) {}
+    try {
+      linkSubtitle = (dyn.linkSubtitle as String?)?.trim();
+      if (linkSubtitle != null && linkSubtitle!.isEmpty) linkSubtitle = null;
+    } catch (_) {
+      try {
+        linkSubtitle = (dyn.linkDescription as String?)?.trim();
+        if (linkSubtitle != null && linkSubtitle!.isEmpty) linkSubtitle = null;
+      } catch (_) {}
+    }
+    try {
+      linkThumbUrl = (dyn.linkThumbUrl as String?)?.trim();
+      if (linkThumbUrl != null && linkThumbUrl!.isEmpty) linkThumbUrl = null;
+    } catch (_) {
+      try {
+        linkThumbUrl = (dyn.linkImageUrl as String?)?.trim();
+        if (linkThumbUrl != null && linkThumbUrl!.isEmpty) linkThumbUrl = null;
+      } catch (_) {}
+    }
 
     // Intentionally not used for UI: Aura rule is no public counts.
     // We keep the reads to avoid breaking any upstream logic, but we never display them.
@@ -340,8 +395,20 @@ class PostCard extends ConsumerWidget {
             ),
           ],
 
-          // ---------- MEDIA ----------
-          _finalMediaBlock(context, mediaUrl, mediaThumbUrl, mediaType),
+          // ---------- ATTACHMENT (MEDIA or LINK) ----------
+          _finalAttachmentBlock(
+            context,
+            postId: post.id,
+            mediaUrl: mediaUrl,
+            mediaThumbUrl: mediaThumbUrl,
+            mediaType: mediaType,
+            mediaWidth: mediaWidth,
+            mediaHeight: mediaHeight,
+            linkUrl: linkUrl,
+            linkTitle: linkTitle,
+            linkSubtitle: linkSubtitle,
+            linkThumbUrl: linkThumbUrl,
+          ),
 
           SizedBox(height: AuraSpace.s12),
 
@@ -358,88 +425,112 @@ class PostCard extends ConsumerWidget {
     );
   }
 
-  Widget _finalMediaBlock(
-    BuildContext context,
-    String? mediaUrl,
-    String? mediaThumbUrl,
-    String? mediaType,
-  ) {
-    final u = (mediaUrl ?? '').trim();
-    if (u.isEmpty) return const SizedBox.shrink();
+  Widget _finalAttachmentBlock(
+    BuildContext context, {
+    required String postId,
+    required String? mediaUrl,
+    required String? mediaThumbUrl,
+    required String? mediaType,
+    required int? mediaWidth,
+    required int? mediaHeight,
+    required String? linkUrl,
+    required String? linkTitle,
+    required String? linkSubtitle,
+    required String? linkThumbUrl,
+  }) {
+    // Primary medium priority: MEDIA first, then LINK.
+    final mUrl = (mediaUrl ?? '').trim();
+    final lUrl = (linkUrl ?? '').trim();
 
-    final lower = u.toLowerCase();
-    final mt = (mediaType ?? '').toLowerCase();
-
-    final isSvg = lower.endsWith('.svg') || mt.contains('svg');
-    final isVideo = mt.contains('video') ||
-        lower.endsWith('.mp4') ||
-        lower.endsWith('.webm') ||
-        lower.endsWith('.mov');
+    if (mUrl.isEmpty && lUrl.isEmpty) return const SizedBox.shrink();
 
     final border = Border.all(color: AuraSurface.divider);
     final r = BorderRadius.circular(16);
 
-    Widget child;
+    if (mUrl.isNotEmpty) {
+      final lower = mUrl.toLowerCase();
+      final mt = (mediaType ?? '').toLowerCase();
 
-    // Containment rule:
-    // - No edge-to-edge dominance.
-    // - Keep a dignified frame.
-    // - Centered, calm.
-    if (isSvg) {
-      child = SvgPicture.network(
-        u,
-        fit: BoxFit.contain,
-        placeholderBuilder: (_) => const _MediaLoading(),
-      );
-    } else if (isVideo) {
-      final thumb = (mediaThumbUrl ?? '').trim();
-      child = Stack(
-        alignment: Alignment.center,
-        children: [
-          if (thumb.isNotEmpty)
-            Image.network(
-              thumb,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: 240,
-              errorBuilder: (_, __, ___) => const _MediaLoading(),
-            )
-          else
-            Container(
-              height: 220,
-              color: AuraSurface.elevated,
-              alignment: Alignment.center,
-              child: Text('Video', style: AuraText.muted),
-            ),
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: const Color(0x66000000),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
+      final isSvg = lower.endsWith('.svg') || mt.contains('svg');
+      final isVideo = mt.contains('video') ||
+          lower.endsWith('.mp4') ||
+          lower.endsWith('.webm') ||
+          lower.endsWith('.mov');
+
+      // Use media dimensions when available to avoid awkward crops.
+      double? ratio;
+      if (mediaWidth != null &&
+          mediaHeight != null &&
+          mediaWidth! > 0 &&
+          mediaHeight! > 0) {
+        ratio = mediaWidth! / mediaHeight!;
+      }
+
+      // Clamp extreme ratios (keeps layout stable across devices).
+      if (ratio != null) {
+        if (ratio! < 0.6) ratio = 0.6;
+        if (ratio! > 1.9) ratio = 1.9;
+      }
+
+      Widget inner;
+
+      if (isSvg) {
+        inner = SvgPicture.network(
+          mUrl,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => const _MediaLoading(),
+        );
+      } else if (isVideo) {
+        final thumb = (mediaThumbUrl ?? '').trim();
+
+        final poster = (thumb.isNotEmpty)
+            ? Image.network(
+                thumb,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (_, __, ___) => const _MediaLoading(),
+              )
+            : Container(
+                color: AuraSurface.elevated,
+                alignment: Alignment.center,
+                child: Text('Video', style: AuraText.muted),
+              );
+
+        final play = Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color: const Color(0x66000000),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
           ),
-        ],
-      );
-    } else {
-      child = Image.network(
-        u,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: 260,
-        loadingBuilder: (context, w, prog) {
-          if (prog == null) return w;
-          return const _MediaLoading();
-        },
-        errorBuilder: (_, __, ___) => const _MediaLoading(),
-      );
-    }
+          child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
+        );
 
-    return Padding(
-      padding: const EdgeInsets.only(top: AuraSpace.s14),
-      child: ClipRRect(
+        inner = Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(child: poster),
+            play,
+          ],
+        );
+      } else {
+        // Images: prefer contain inside a calm frame to avoid hard crops.
+        inner = Image.network(
+          mUrl,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+          loadingBuilder: (context, w, prog) {
+            if (prog == null) return w;
+            return const _MediaLoading();
+          },
+          errorBuilder: (_, __, ___) => const _MediaLoading(),
+        );
+      }
+
+      final framed = ClipRRect(
         borderRadius: r,
         child: Container(
           decoration: BoxDecoration(
@@ -447,7 +538,118 @@ class PostCard extends ConsumerWidget {
             border: border,
             color: AuraSurface.elevated,
           ),
-          child: child,
+          child: ratio == null
+              ? SizedBox(
+                  height: isVideo ? 240 : 260,
+                  child: inner,
+                )
+              : AspectRatio(
+                  aspectRatio: ratio!,
+                  child: inner,
+                ),
+        ),
+      );
+
+      // Hook point: later we can route to a dedicated viewer without changing
+      // the post structure. For now, tap keeps the existing behavior (open post).
+      return Padding(
+        padding: const EdgeInsets.only(top: AuraSpace.s14),
+        child: InkWell(
+          borderRadius: r,
+          onTap: () => context.push('/posts/$postId'),
+          child: framed,
+        ),
+      );
+    }
+
+    // LINK attachment (primary medium when present and no mediaUrl).
+    final uri = Uri.tryParse(lUrl);
+    final host = (uri != null && (uri.host).trim().isNotEmpty) ? uri.host : lUrl;
+
+    Widget? thumb;
+    final t = (linkThumbUrl ?? '').trim();
+    if (t.isNotEmpty) {
+      thumb = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          t,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      );
+    }
+
+    final title = (linkTitle ?? '').trim().isNotEmpty ? linkTitle!.trim() : host;
+    final subtitle = (linkSubtitle ?? '').trim();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s14),
+      child: InkWell(
+        borderRadius: r,
+        onTap: () async {
+          // No url_launcher dependency. Tap copies the link.
+          await Clipboard.setData(ClipboardData(text: lUrl));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Link copied')),
+            );
+          }
+        },
+        child: ClipRRect(
+          borderRadius: r,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: r,
+              border: border,
+              color: AuraSurface.elevated,
+            ),
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (thumb != null) ...[
+                  thumb,
+                  const SizedBox(width: AuraSpace.s12),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s6),
+                        Text(
+                          subtitle,
+                          style: AuraText.body.copyWith(height: 1.35),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(
+                        host,
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(
+                        'Tap to copy link',
+                        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
