@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'aura_space.dart';
@@ -40,9 +41,11 @@ class _AuraScaffoldState extends State<AuraScaffold>
   late final AnimationController _controller;
 
   static const double _defaultMaxWidth = 1040;
-  static const double _logoHeight = 22;
+  static const double _brandHeight = 22;
   static const double _leadingIconSize = 18;
   static const double _leadingTapSize = 36;
+
+  static const String _brandAsset = 'assets/brand/AURA_logo_master.svg';
 
   bool _canGoBack(BuildContext context) {
     return Navigator.of(context).canPop() || GoRouter.of(context).canPop();
@@ -72,7 +75,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 450),
     )..forward();
   }
 
@@ -93,8 +96,8 @@ class _AuraScaffoldState extends State<AuraScaffold>
         highlightColor: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.sm,
-            vertical: AuraSpace.sm,
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s10,
           ),
           child: AnimatedBuilder(
             animation: _controller,
@@ -102,14 +105,14 @@ class _AuraScaffoldState extends State<AuraScaffold>
               final t = Curves.easeOutCubic.transform(_controller.value);
               return Opacity(
                 opacity: t.clamp(0.0, 1.0),
-                child: Text(
-                  'Aura',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.title.copyWith(
-                    fontSize: _logoHeight,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
+                child: SizedBox(
+                  height: _brandHeight,
+                  child: SvgPicture.asset(
+                    _brandAsset,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.centerLeft,
+                    // If SVG fails, fallback to text so header never breaks.
+                    placeholderBuilder: (_) => _brandFallback(),
                   ),
                 ),
               );
@@ -120,23 +123,33 @@ class _AuraScaffoldState extends State<AuraScaffold>
     );
   }
 
+  Widget _brandFallback() {
+    return Text(
+      'Aura',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AuraText.title.copyWith(
+        fontSize: _brandHeight,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+      ),
+    );
+  }
+
   Widget _actionsStrip(List<Widget> actions) {
     if (actions.isEmpty) return const SizedBox.shrink();
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 40),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < actions.length; i++) ...[
-              if (i != 0) const SizedBox(width: AuraSpace.sm),
-              actions[i],
-            ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < actions.length; i++) ...[
+            if (i != 0) const SizedBox(width: AuraSpace.s12),
+            actions[i],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -177,8 +190,8 @@ class _AuraScaffoldState extends State<AuraScaffold>
           onPressed: () => context.go(widget.homePath),
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.sm,
-              vertical: AuraSpace.xs,
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s8,
             ),
             foregroundColor: AuraSurface.muted,
             textStyle: AuraText.small,
@@ -193,61 +206,63 @@ class _AuraScaffoldState extends State<AuraScaffold>
     }
     content = _wrapCentered(content);
 
-    Widget header = const SizedBox.shrink();
-
-    if (widget.showHeader) {
-      header = Container(
-        decoration: const BoxDecoration(
-          color: AuraSurface.page,
-          border: Border(
-            bottom: BorderSide(color: AuraSurface.divider),
-          ),
-        ),
-        child: _wrapCentered(
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.md,
-              vertical: AuraSpace.sm,
+    final header = widget.showHeader
+        ? Container(
+            decoration: const BoxDecoration(
+              color: AuraSurface.page,
+              border: Border(
+                bottom: BorderSide(color: AuraSurface.divider),
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _brand(context),
+            child: _wrapCentered(
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s16,
+                  vertical: AuraSpace.s10,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _brand(context),
 
-                if (resolvedLeading != null) ...[
-                  const SizedBox(width: AuraSpace.sm),
-                  IconTheme(
-                    data: IconThemeData(
-                      color: AuraSurface.muted,
-                      size: _leadingIconSize,
+                    if (resolvedLeading != null) ...[
+                      const SizedBox(width: AuraSpace.s12),
+                      IconTheme(
+                        data: const IconThemeData(
+                          color: AuraSurface.muted,
+                          size: _leadingIconSize,
+                        ),
+                        child: resolvedLeading,
+                      ),
+                      const SizedBox(width: AuraSpace.s16),
+                    ] else ...[
+                      const SizedBox(width: AuraSpace.s12),
+                    ],
+
+                    // Title region always stable: it takes the remaining space
+                    // and never pushes actions into the center.
+                    Expanded(
+                      child: showPageTitle
+                          ? (widget.centerTitle
+                              ? Center(child: _PageTitle(text: normalizedTitle))
+                              : _PageTitle(text: normalizedTitle))
+                          : const SizedBox.shrink(),
                     ),
-                    child: resolvedLeading,
-                  ),
-                  const SizedBox(width: AuraSpace.md),
-                ] else ...[
-                  const SizedBox(width: AuraSpace.lg),
-                ],
 
-                if (showPageTitle) ...[
-                  Expanded(
-                    child: widget.centerTitle
-                        ? Center(child: _PageTitle(text: normalizedTitle))
-                        : _PageTitle(text: normalizedTitle),
-                  ),
-                ] else ...[
-                  const Spacer(),
-                ],
-
-                if (headerActions.isNotEmpty) ...[
-                  const SizedBox(width: AuraSpace.md),
-                  Flexible(child: _actionsStrip(headerActions)),
-                ],
-              ],
+                    // Actions always right-aligned in a tight region.
+                    if (headerActions.isNotEmpty) ...[
+                      const SizedBox(width: AuraSpace.s16),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: _actionsStrip(headerActions),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-      );
-    }
+          )
+        : const SizedBox.shrink();
 
     return Scaffold(
       backgroundColor: AuraSurface.page,
