@@ -46,7 +46,8 @@ class MemberHomeScreen extends ConsumerWidget {
     final savedAsync = ref.watch(savedPostsProvider);
 
     // Only watch draftProvider when authed, otherwise avoid 401 churn.
-    final draftAsync = isAuthed ? ref.watch(draftProvider) : const AsyncValue<Map<String, dynamic>?>.data(null);
+    final draftAsync =
+        isAuthed ? ref.watch(draftProvider) : const AsyncValue<Map<String, dynamic>?>.data(null);
 
     return AuraScaffold(
       title: 'Aura',
@@ -69,7 +70,7 @@ class MemberHomeScreen extends ConsumerWidget {
           _SectionTitle(title: 'Continue'),
           SizedBox(height: AuraSpace.s10),
 
-          // Draft "Continue"
+          // Draft "Continue writing"
           Builder(
             builder: (_) {
               if (!isAuthed) {
@@ -97,7 +98,7 @@ class MemberHomeScreen extends ConsumerWidget {
                   final mediaType = (draft['mediaType'] ?? 'NONE').toString().toUpperCase();
                   final hasMedia = mediaType == 'IMAGE' || mediaType == 'VIDEO';
 
-                  // If there is no text and no media, nothing to continue.
+                  // IMPORTANT: allow media-only drafts too
                   if (text.isEmpty && !hasMedia) return const SizedBox.shrink();
 
                   final updatedAtRaw = (draft['updatedAt'] ?? '').toString();
@@ -108,7 +109,9 @@ class MemberHomeScreen extends ConsumerWidget {
                   if (text.isNotEmpty) {
                     preview = text.length <= 140 ? text : '${text.substring(0, 140)}…';
                   } else {
-                    preview = mediaType == 'VIDEO' ? 'Video draft (context optional).' : 'Image draft (context optional).';
+                    preview = mediaType == 'VIDEO'
+                        ? 'Video draft (context optional).'
+                        : 'Image draft (context optional).';
                   }
 
                   return Padding(
@@ -208,6 +211,10 @@ class MemberHomeScreen extends ConsumerWidget {
 
           _SectionTitle(title: 'Latest'),
           SizedBox(height: AuraSpace.s10),
+
+          // Latest feed rhythm pass:
+          // - remove compact
+          // - increase vertical breathing room
           feedAsync.when(
             data: (posts) {
               final top = posts.take(6).toList();
@@ -216,8 +223,8 @@ class MemberHomeScreen extends ConsumerWidget {
                 children: top
                     .map(
                       (p) => Padding(
-                        padding: EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: PostCard(post: p, compact: true),
+                        padding: EdgeInsets.only(bottom: AuraSpace.s18),
+                        child: PostCard(post: p),
                       ),
                     )
                     .toList(),
@@ -252,7 +259,7 @@ class _HeroCard extends StatelessWidget {
           Text('A place where weight matters.', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
           SizedBox(height: AuraSpace.s8),
           Text(
-            'Write quietly. Create carefully. Return to what you saved.',
+            'Write quietly. Read responsibly. Return to what you saved.',
             style: AuraText.body,
           ),
           SizedBox(height: AuraSpace.s12),
