@@ -28,12 +28,15 @@ dependencies:
   # Image picker for avatar upload
   image_picker: ^1.1.2
 
+  # SVG support (for Aura logo)
+  flutter_svg: ^2.0.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
-
 flutter:
   uses-material-design: true
-
+  assets:
+    - assets/brand/AURA_logo_master.svg
