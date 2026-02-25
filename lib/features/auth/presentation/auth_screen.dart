@@ -36,39 +36,44 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return v;
   }
 
-  /// Tolerant envelope unwrapping:
-  /// Accepts:
-  /// - { ok:true, data:{...} }
-  /// - { data:{...} }
-  /// - { ok:true, data:{ data:{...} } }
-  /// - already-flat maps
-  ///
-  /// Never throws on “shape”; only throws when token truly missing later.
   Map<String, dynamic> _unwrap(dynamic raw) {
-    if (raw is! Map) {
-      return <String, dynamic>{};
-    }
-
+    if (raw is! Map) return <String, dynamic>{};
     final root = Map<String, dynamic>.from(raw);
 
-    // If there's a 'data' key, unwrap it (common pattern)
     dynamic inner = root['data'];
+    if (inner is Map && inner['data'] is Map) inner = inner['data'];
 
-    // Some endpoints might return { ok:true, data:{ data:{...} } }
-    if (inner is Map && inner['data'] is Map) {
-      inner = inner['data'];
-    }
-
-    if (inner is Map) {
-      return Map<String, dynamic>.from(inner);
-    }
-
-    // Fallback to root map
+    if (inner is Map) return Map<String, dynamic>.from(inner);
     return root;
+  }
+
+  String? _extractErrorCode(dynamic data) {
+    if (data is! Map) return null;
+    final err = data['error'];
+    if (err is Map) {
+      final code = err['code'];
+      if (code is String && code.trim().isNotEmpty) return code.trim();
+    }
+    return null;
+  }
+
+  String? _extractErrorMessage(DioException e) {
+    final d = e.response?.data;
+    if (d is Map) {
+      final err = d['error'];
+      if (err is Map) {
+        final m = err['message'];
+        if (m != null) return m.toString();
+      }
+      final m2 = d['message'];
+      if (m2 != null) return m2.toString();
+    }
+    return null;
   }
 
   Future<void> _login() async {
     if (_busy) return;
+
     setState(() {
       _busy = true;
       _error = null;
@@ -112,13 +117,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (!mounted) return;
       context.go(_safeRedirect(widget.redirectTo));
     } on DioException catch (e) {
+      final code = _extractErrorCode(e.response?.data);
       final status = e.response?.statusCode;
-      final msg = e.response?.data is Map
-          ? (e.response?.data['error']?['message'] ?? e.response?.data['message'])
-          : null;
 
+      if (code == 'EMAIL_NOT_VERIFIED' || status == 403) {
+        final redirect = _safeRedirect(widget.redirectTo);
+        if (!mounted) return;
+        context.go('/verify-pending?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}');
+        return;
+      }
+
+      final msg = _extractErrorMessage(e);
       setState(() {
-        _error = msg?.toString() ?? 'Login failed (${status ?? 'no status'}).';
+        _error = msg ?? 'Login failed (${status ?? 'no status'}).';
       });
     } catch (e) {
       setState(() => _error = e.toString());
@@ -136,6 +147,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final redirect = _safeRedirect(widget.redirectTo);
+
     return AuraScaffold(
       title: 'Login',
       body: Center(
@@ -176,7 +189,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     },
                   ),
 
-                  const SizedBox(height: AuraSpace.s14),
+                  const SizedBox(height: AuraSpace.s10),
+
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => context.go('/forgot-password?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Forgot password'),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => context.go('/verify-email?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}'),
+                        child: const Text('Verify email'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AuraSpace.s8),
 
                   if (_error != null) ...[
                     Text(_error!, style: AuraText.body.copyWith(color: Colors.red)),
@@ -196,7 +229,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             ? null
                             : () {
                                 final r = widget.redirectTo;
-                                final q = (r == null || r.trim().isEmpty) ? '' : '?redirect=${Uri.encodeComponent(r)}';
+                                final q = (r == null || r.trim().isEmpty)
+                                    ? ''
+                                    : '?redirect=${Uri.encodeComponent(r)}';
                                 context.go('/register$q');
                               },
                         child: const Text('Create account'),
