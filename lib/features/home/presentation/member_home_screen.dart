@@ -69,7 +69,7 @@ class MemberHomeScreen extends ConsumerWidget {
           _SectionTitle(title: 'Continue'),
           SizedBox(height: AuraSpace.s10),
 
-          // Draft "Continue writing"
+          // Draft "Continue"
           Builder(
             builder: (_) {
               if (!isAuthed) {
@@ -80,7 +80,7 @@ class MemberHomeScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Continue writing', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
                         SizedBox(height: AuraSpace.s6),
                         Text('Login is required to restore your draft.', style: AuraText.body),
                       ],
@@ -94,13 +94,22 @@ class MemberHomeScreen extends ConsumerWidget {
                   if (draft == null) return const SizedBox.shrink();
 
                   final text = (draft['text'] ?? '').toString().trim();
-                  if (text.isEmpty) return const SizedBox.shrink();
+                  final mediaType = (draft['mediaType'] ?? 'NONE').toString().toUpperCase();
+                  final hasMedia = mediaType == 'IMAGE' || mediaType == 'VIDEO';
+
+                  // If there is no text and no media, nothing to continue.
+                  if (text.isEmpty && !hasMedia) return const SizedBox.shrink();
 
                   final updatedAtRaw = (draft['updatedAt'] ?? '').toString();
                   final dt = DateTime.tryParse(updatedAtRaw)?.toLocal();
                   final savedLine = dt == null ? 'Draft saved.' : 'Draft saved ${_time(dt)}.';
 
-                  final preview = text.length <= 140 ? text : '${text.substring(0, 140)}…';
+                  String preview;
+                  if (text.isNotEmpty) {
+                    preview = text.length <= 140 ? text : '${text.substring(0, 140)}…';
+                  } else {
+                    preview = mediaType == 'VIDEO' ? 'Video draft (context optional).' : 'Image draft (context optional).';
+                  }
 
                   return Padding(
                     padding: EdgeInsets.only(bottom: AuraSpace.s10),
@@ -109,7 +118,7 @@ class MemberHomeScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Continue writing', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                          Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
                           SizedBox(height: AuraSpace.s6),
                           Text(preview, style: AuraText.body.copyWith(height: 1.35)),
                           SizedBox(height: AuraSpace.s10),
@@ -129,7 +138,7 @@ class MemberHomeScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Continue writing', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                          Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
                           SizedBox(height: AuraSpace.s6),
                           Text(msg, style: AuraText.body),
                         ],
@@ -243,7 +252,7 @@ class _HeroCard extends StatelessWidget {
           Text('A place where weight matters.', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
           SizedBox(height: AuraSpace.s8),
           Text(
-            'Write quietly. Read responsibly. Return to what you saved.',
+            'Write quietly. Create carefully. Return to what you saved.',
             style: AuraText.body,
           ),
           SizedBox(height: AuraSpace.s12),
