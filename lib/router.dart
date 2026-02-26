@@ -97,9 +97,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // Authed: check verification
+      // -------------------------------
+      // Authed: enforce email verification gate
+      // -------------------------------
       final verifiedAsync = ref.read(emailVerifiedProvider);
-      if (verifiedAsync.isLoading) return null;
+
+      // IMPORTANT FIX:
+      // When verification state is still loading, we must NOT allow member routes,
+      // otherwise the app immediately calls /users/me and gets 403 EMAIL_NOT_VERIFIED,
+      // causing the "pretending logged-in" loop.
+      //
+      // Safe behavior:
+      // - allow public/auth routes while loading
+      // - block member routes and send to /verify-pending
+      if (verifiedAsync.isLoading) {
+        if (isPublic || isAuth) return null;
+        return '/verify-pending';
+      }
 
       final verified = verifiedAsync.valueOrNull ?? false;
 

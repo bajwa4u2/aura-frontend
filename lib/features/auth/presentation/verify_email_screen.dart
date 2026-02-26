@@ -64,7 +64,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
       setState(() {
         _verified = true;
-        _msg = 'Verified. You can continue.';
+        _msg = 'Verified. Now log in to continue.';
       });
     } on DioException catch (e) {
       final s = e.response?.statusCode;
@@ -90,7 +90,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     final dio = ref.read(dioProvider);
 
-    // Endpoint names differ across builds; try a short fallback list.
     final candidates = <String>[
       '/auth/resend-verification',
       '/auth/resend-verify-email',
@@ -106,15 +105,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           return;
         } on DioException catch (e) {
           last = e;
-          if (e.response?.statusCode == 404) {
-            continue; // try next candidate
-          }
+          if (e.response?.statusCode == 404) continue;
           rethrow;
         }
       }
       final s = last?.response?.statusCode;
       setState(() => _msg = 'Resend failed (${s ?? 'no status'}).');
-    } catch (e) {
+    } catch (_) {
       setState(() => _msg = 'Resend failed.');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -144,30 +141,25 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 Text('Email verification', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Verify to unlock the app. If your link did not open correctly, paste the token.',
+                  'Verify your email to unlock the app.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-
                 TextField(
                   controller: _tokenCtrl,
                   decoration: const InputDecoration(labelText: 'Verification token'),
                 ),
                 const SizedBox(height: AuraSpace.s12),
-
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(labelText: 'Email (for resend)'),
                 ),
-
                 const SizedBox(height: AuraSpace.s14),
-
                 if (_busy) ...[
                   const LinearProgressIndicator(),
                   const SizedBox(height: AuraSpace.s12),
                 ],
-
                 Wrap(
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
@@ -181,17 +173,16 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       child: const Text('Resend email'),
                     ),
                     TextButton(
-                      onPressed: _busy ? null : () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                      child: const Text('Back to login'),
+                      onPressed: _busy ? null : () => context.go('/verify-pending?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}'),
+                      child: const Text('Back'),
                     ),
                     if (_verified)
                       FilledButton(
-                        onPressed: () => context.go(redirect),
-                        child: const Text('Continue'),
+                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Go to login'),
                       ),
                   ],
                 ),
-
                 if (_msg != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Text(_msg!, style: AuraText.body),

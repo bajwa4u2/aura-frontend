@@ -58,6 +58,21 @@ List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
   return <Map<String, dynamic>>[];
 }
 
+bool _isEmailNotVerifiedError(Object err) {
+  if (err is DioException) {
+    final data = err.response?.data;
+    if (data is Map) {
+      final m = Map<String, dynamic>.from(data);
+      final e = m['error'];
+      if (e is Map) {
+        final em = Map<String, dynamic>.from(e);
+        return (em['code']?.toString() ?? '') == 'EMAIL_NOT_VERIFIED';
+      }
+    }
+  }
+  return false;
+}
+
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/users/me');
@@ -270,176 +285,62 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     if (ok != true) return;
 
+    final text = ctl.text.trim();
+
     final dio = ref.read(dioProvider);
-    await dio.put('/posts/draft', data: {'text': ctl.text});
+    await dio.post('/posts/draft', data: {'text': text});
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(content: Text('Draft saved.')));
   }
 
+  Future<void> _publishDraft(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final dio = ref.read(dioProvider);
+
+    try {
+      await dio.post('/posts/publish-latest-draft');
+      ref.invalidate(_meDraftProvider);
+      ref.invalidate(_mePostsProvider);
+      ref.invalidate(_meRepliesProvider);
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Published.')));
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Publish failed: $e')));
+    }
+  }
+
   Future<void> _discardDraft(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Discard draft?'),
-        content: const Text('This will delete your current draft.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Discard')),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
-
     final dio = ref.read(dioProvider);
 
-    // Backend contract may not support DELETE /posts/draft yet.
-    // We try delete first, then fall back to clearing draft content via PUT.
     try {
       await dio.delete('/posts/draft');
-    } on DioException catch (e) {
-      final status = e.response?.statusCode ?? 0;
-      if (status == 404) {
-        await dio.put('/posts/draft', data: {'text': ''});
-      } else {
-        rethrow;
-      }
-    }
-
-    ref.invalidate(_meDraftProvider);
-    if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Draft discarded.')));
-  }
-
-  Future<void> _editPost({
-    required BuildContext context,
-    required String id,
-    required String initialText,
-  }) async {
-    if (id.trim().isEmpty) return;
-    final messenger = ScaffoldMessenger.of(context);
-
-    final ctl = TextEditingController(text: initialText);
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit post'),
-        content: SizedBox(
-          width: 560,
-          child: TextField(
-            controller: ctl,
-            maxLines: 10,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
-
-    final dio = ref.read(dioProvider);
-    await dio.patch('/posts/$id', data: {'text': ctl.text});
-
-    ref.invalidate(_mePostsProvider);
-    if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Post updated.')));
-  }
-
-  Future<void> _archivePost(BuildContext context, String id) async {
-    final t = id.trim();
-    if (t.isEmpty) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final dio = ref.read(dioProvider);
-
-    // Some backends expose POST /posts/:id/archive. If not, fall back to PATCH status.
-    try {
-      await dio.post('/posts/$t/archive');
-      ref.invalidate(_mePostsProvider);
-      return;
-    } on DioException catch (e) {
-      final status = e.response?.statusCode ?? 0;
-
-      if (status == 404) {
-        try {
-          await dio.patch('/posts/$t', data: {'status': 'ARCHIVED'});
-          ref.invalidate(_mePostsProvider);
-          return;
-        } catch (_) {
-          // If archive isn't supported yet, fail gently.
-        }
-      }
-
-      messenger.showSnackBar(const SnackBar(content: Text('Archive is not supported yet.')));
+      ref.invalidate(_meDraftProvider);
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Draft discarded.')));
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Discard failed: $e')));
     }
   }
 
   Future<void> _logout(BuildContext context) async {
     if (_busyLogout) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final router = GoRouter.of(context);
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('You will need to log in again to access your account.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Log out')),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
-
     setState(() => _busyLogout = true);
 
     try {
-      final dio = ref.read(dioProvider);
-      final tokenStore = ref.read(tokenStoreProvider);
-
-      // Best effort: tell backend to revoke refresh token if we have it.
-      final rt = (tokenStore.refreshToken ?? '').trim();
-      try {
-        if (rt.isNotEmpty) {
-          await dio.post('/auth/logout', data: {'refreshToken': rt});
-        } else {
-          await dio.post('/auth/logout');
-        }
-      } catch (_) {}
-
-      await tokenStore.clear();
-
-      // Clear any cached “Me” views.
-      ref.invalidate(meProfileProvider);
-      ref.invalidate(_meDraftProvider);
-      ref.invalidate(_mePostsProvider);
-      ref.invalidate(_meSavesProvider);
-      ref.invalidate(_meRepliesProvider);
-
-      if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Logged out.')));
-      router.go('/login');
+      // Centralized logout already clears tokens + invalidates.
+      final controller = ref.read(authControllerProvider);
+      await controller.logout(context);
+    } catch (_) {
+      // ignore
     } finally {
       if (mounted) setState(() => _busyLogout = false);
+      if (!mounted) return;
+      context.go('/public');
     }
   }
 
@@ -459,25 +360,59 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Not signed in', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
+                  const SizedBox(height: AuraSpace.s8),
+                  Text('Please log in to view your profile.', style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s12),
+                  FilledButton(
+                    onPressed: () => context.go('/login?redirect=/me'),
+                    child: const Text('Log in'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final verifiedAsync = ref.watch(emailVerifiedProvider);
+
+    // Email verification gate: never let this screen fire /users/me until verified.
+    if (verifiedAsync.isLoading) {
+      return const AuraScaffold(
+        title: 'Aura',
+        showHomeAction: true,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final verified = verifiedAsync.valueOrNull ?? false;
+    if (!verified) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        context.go('/verify-pending');
+      });
+
+      return AuraScaffold(
+        title: 'Aura',
+        showHomeAction: true,
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+          children: [
+            AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Verify your email', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'Login to access your profile, drafts, posts, saves, and replies.',
+                    'Please verify your email to access your account.',
                     style: AuraText.body,
                   ),
-                  const SizedBox(height: AuraSpace.s16),
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: () => context.go('/login'),
-                        child: const Text('Login'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () => context.go('/register'),
-                        child: const Text('Create account'),
-                      ),
-                    ],
+                  const SizedBox(height: AuraSpace.s12),
+                  FilledButton(
+                    onPressed: () => context.go('/verify-pending'),
+                    child: const Text('Continue'),
                   ),
                 ],
               ),
@@ -489,6 +424,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final meAsync = ref.watch(meProfileProvider);
 
+    if (meAsync.hasError && _isEmailNotVerifiedError(meAsync.error!)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        context.go('/verify-pending');
+      });
+      return const AuraScaffold(
+        title: 'Aura',
+        showHomeAction: true,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return AuraScaffold(
       title: 'Me',
       showHomeAction: true,
@@ -496,18 +443,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
         children: [
           meAsync.when(
-            loading: () => const AuraCard(child: _LoadingBlock()),
-            error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
             data: (me) {
-              final handle = (me['handle'] ?? '').toString();
-              final displayName = (me['displayName'] ?? '').toString();
+              final baseUrl = ref.read(dioProvider).options.baseUrl;
+              final avatarUrl = (me['avatarUrl'] ?? '').toString();
+              final displayName = (me['displayName'] ?? '').toString().trim();
+              final handle = (me['handle'] ?? '').toString().trim();
               final bio = (me['bio'] ?? '').toString();
-              final email = (me['email'] ?? '').toString();
 
-              final dio = ref.read(dioProvider);
-              final baseUrl = dio.options.baseUrl.toString();
-              final avatarRaw = (me['avatarUrl'] ?? '').toString();
-              final avatarUrl = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarRaw);
+              final absAvatar = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarUrl);
 
               return AuraCard(
                 child: Column(
@@ -517,42 +460,35 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 34,
-                          backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                          child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 34) : null,
+                          radius: 26,
+                          backgroundColor: Colors.white10,
+                          backgroundImage: absAvatar.isNotEmpty ? NetworkImage(absAvatar) : null,
+                          child: absAvatar.isEmpty ? const Icon(Icons.person_outline) : null,
                         ),
-                        const SizedBox(width: AuraSpace.s16),
+                        const SizedBox(width: AuraSpace.s12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(displayName.isEmpty ? '@$handle' : displayName, style: AuraText.title),
-                              const SizedBox(height: AuraSpace.s6),
-                              if (handle.isNotEmpty) Text('@$handle', style: AuraText.muted),
+                              Text(displayName.isNotEmpty ? displayName : 'Me', style: AuraText.title),
+                              const SizedBox(height: 2),
+                              Text(handle.isNotEmpty ? '@$handle' : '', style: AuraText.muted),
                             ],
                           ),
                         ),
+                        IconButton(
+                          tooltip: 'Change photo',
+                          onPressed: () => _pickAndUploadAvatar(context),
+                          icon: const Icon(Icons.camera_alt_outlined),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: AuraSpace.s10),
-                    TextButton(
-                      onPressed: () => _pickAndUploadAvatar(context),
-                      child: const Text('Change photo'),
-                    ),
-                    if (email.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s6),
-                      Text(email, style: AuraText.muted),
-                    ],
-                    if (bio.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s12),
-                      Text(bio, style: AuraText.body),
-                    ],
-                    const SizedBox(height: AuraSpace.s16),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
+                    const SizedBox(height: AuraSpace.s12),
+                    if (bio.trim().isNotEmpty) Text(bio, style: AuraText.body),
+                    if (bio.trim().isNotEmpty) const SizedBox(height: AuraSpace.s12),
+                    Row(
                       children: [
-                        OutlinedButton(
+                        FilledButton(
                           onPressed: () => _editProfile(
                             context: context,
                             displayName: displayName,
@@ -560,28 +496,47 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           ),
                           child: const Text('Edit profile'),
                         ),
-                        if (!_busyLogout)
-                          TextButton(
-                            onPressed: () => _logout(context),
-                            child: const Text('Log out'),
-                          ),
+                        const SizedBox(width: AuraSpace.s8),
+                        OutlinedButton(
+                          onPressed: _busyLogout ? null : () => _logout(context),
+                          child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                        ),
                       ],
                     ),
                   ],
                 ),
               );
             },
+            loading: () => const AuraCard(
+              child: Padding(
+                padding: EdgeInsets.all(AuraSpace.s12),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
+            error: (e, st) => AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(AuraSpace.s12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Could not load profile', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text('$e', style: AuraText.body),
+                    const SizedBox(height: AuraSpace.s12),
+                    FilledButton(
+                      onPressed: () => ref.invalidate(meProfileProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
 
-          const SizedBox(height: AuraSpace.s16),
+          const SizedBox(height: AuraSpace.s12),
 
-          // Draft section
-          Consumer(
-            builder: (context, ref, _) {
-              final draftAsync = ref.watch(_meDraftProvider);
-              return draftAsync.when(
-                loading: () => const AuraCard(child: _LoadingBlock()),
-                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
+          // Draft + publish controls
+          ref.watch(_meDraftProvider).when(
                 data: (draft) {
                   final text = (draft['text'] ?? '').toString();
                   final hasDraft = text.trim().isNotEmpty;
@@ -591,142 +546,164 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Draft', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s10),
+                        const SizedBox(height: AuraSpace.s8),
                         Text(
-                          hasDraft ? text : 'No draft right now.',
+                          hasDraft ? text : 'No draft yet.',
                           style: AuraText.body,
                         ),
                         const SizedBox(height: AuraSpace.s12),
                         Wrap(
-                          spacing: AuraSpace.s10,
-                          runSpacing: AuraSpace.s10,
+                          spacing: AuraSpace.s8,
+                          runSpacing: AuraSpace.s8,
                           children: [
                             FilledButton(
                               onPressed: () => _editDraft(context, text),
                               child: Text(hasDraft ? 'Edit draft' : 'Start draft'),
                             ),
-                            if (hasDraft)
-                              OutlinedButton(
-                                onPressed: () => _discardDraft(context),
-                                child: const Text('Discard'),
-                              ),
+                            OutlinedButton(
+                              onPressed: hasDraft ? () => _publishDraft(context) : null,
+                              child: const Text('Publish'),
+                            ),
+                            TextButton(
+                              onPressed: hasDraft ? () => _discardDraft(context) : null,
+                              child: const Text('Discard'),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   );
                 },
-              );
-            },
-          ),
-
-          const SizedBox(height: AuraSpace.s16),
-
-          // Posts section
-          Consumer(
-            builder: (context, ref, _) {
-              final postsAsync = ref.watch(_mePostsProvider);
-              return postsAsync.when(
-                loading: () => const AuraCard(child: _LoadingBlock()),
-                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (posts) {
-                  return AuraCard(
+                loading: () => const AuraCard(
+                  child: Padding(
+                    padding: EdgeInsets.all(AuraSpace.s12),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+                error: (e, st) => AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Posts', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s10),
-                        if (posts.isEmpty)
-                          Text('No posts yet.', style: AuraText.body)
-                        else
-                          ...posts.map((p) {
-                            final id = (p['id'] ?? '').toString();
-                            final text = (p['text'] ?? '').toString();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(text, style: AuraText.body),
-                                  const SizedBox(height: AuraSpace.s8),
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () => _editPost(
-                                          context: context,
-                                          id: id,
-                                          initialText: text,
-                                        ),
-                                        child: const Text('Edit'),
-                                      ),
-                                      const SizedBox(width: AuraSpace.s10),
-                                      PopupMenuButton<String>(
-                                        onSelected: (v) async {
-                                          if (v == 'archive') {
-                                            await _archivePost(context, id);
-                                          }
-                                        },
-                                        itemBuilder: (context) => const [
-                                          PopupMenuItem(value: 'archive', child: Text('Archive')),
-                                        ],
-                                        child: const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                          child: Icon(Icons.more_horiz),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const Divider(),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                        Text('Draft error', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s8),
+                        Text('$e', style: AuraText.body),
                       ],
                     ),
-                  );
-                },
-              );
-            },
+                  ),
+                ),
+              ),
+
+          const SizedBox(height: AuraSpace.s12),
+
+          // My posts
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('My posts', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                ref.watch(_mePostsProvider).when(
+                      data: (items) {
+                        if (items.isEmpty) return Text('No posts yet.', style: AuraText.body);
+                        return Column(
+                          children: items.take(8).map((p) {
+                            final id = (p['id'] ?? '').toString();
+                            final text = (p['text'] ?? '').toString();
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                text.trim().isEmpty ? '(no text)' : text,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () => context.go('/posts/$id'),
+                            );
+                          }).toList(),
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, st) => Text('Error: $e', style: AuraText.body),
+                    ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AuraSpace.s12),
+
+          // Saved
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Saved', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                ref.watch(_meSavesProvider).when(
+                      data: (items) {
+                        if (items.isEmpty) return Text('No saved posts.', style: AuraText.body);
+                        return Column(
+                          children: items.take(8).map((p) {
+                            final id = (p['id'] ?? '').toString();
+                            final text = (p['text'] ?? '').toString();
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                text.trim().isEmpty ? '(no text)' : text,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () => context.go('/posts/$id'),
+                            );
+                          }).toList(),
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, st) => Text('Error: $e', style: AuraText.body),
+                    ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AuraSpace.s12),
+
+          // Replies
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('My replies', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                ref.watch(_meRepliesProvider).when(
+                      data: (items) {
+                        if (items.isEmpty) return Text('No replies yet.', style: AuraText.body);
+                        return Column(
+                          children: items.take(8).map((p) {
+                            final id = (p['id'] ?? '').toString();
+                            final text = (p['text'] ?? '').toString();
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                text.trim().isEmpty ? '(no text)' : text,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () => context.go('/posts/$id'),
+                            );
+                          }).toList(),
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, st) => Text('Error: $e', style: AuraText.body),
+                    ),
+              ],
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LoadingBlock extends StatelessWidget {
-  const _LoadingBlock();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: AuraSpace.s12),
-          Text('Loading…', style: AuraText.body),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Text(message, style: AuraText.body),
     );
   }
 }

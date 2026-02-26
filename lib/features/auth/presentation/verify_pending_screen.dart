@@ -35,6 +35,12 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   Future<void> _resend() async {
     if (_busy) return;
 
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _msg = 'Enter a valid email to resend verification.');
+      return;
+    }
+
     setState(() {
       _busy = true;
       _msg = null;
@@ -42,21 +48,29 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
     final dio = ref.read(dioProvider);
 
+    final candidates = <String>[
+      '/auth/resend-verification',
+      '/auth/resend-verify-email',
+      '/auth/resend-verification-email',
+    ];
+
     try {
-      final email = _emailCtrl.text.trim();
-
-      // Try the most likely endpoint name.
-      // If your backend uses a different path, the error will surface cleanly.
-      await dio.post('/auth/resend-verification', data: {'email': email});
-
-      setState(() {
-        _msg = 'We sent a verification email. Check inbox and spam.';
-      });
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      setState(() {
-        _msg = 'Could not resend (${status ?? 'no status'}). If this keeps failing, open Verify Email and paste token.';
-      });
+      DioException? last;
+      for (final path in candidates) {
+        try {
+          await dio.post(path, data: {'email': email});
+          setState(() => _msg = 'Verification email sent. Check inbox and spam.');
+          return;
+        } on DioException catch (e) {
+          last = e;
+          if (e.response?.statusCode == 404) continue;
+          rethrow;
+        }
+      }
+      final s = last?.response?.statusCode;
+      setState(() => _msg = 'Resend failed (${s ?? 'no status'}).');
+    } catch (_) {
+      setState(() => _msg = 'Resend failed. Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -84,26 +98,27 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                 Text('One more step', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'We sent a verification link to your email. Verify to continue.',
+                  'We sent a verification link to your email. Verify first, then log in.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email (for resend)'),
+                  decoration: const InputDecoration(labelText: 'Email'),
                 ),
-
                 const SizedBox(height: AuraSpace.s12),
-
+                if (_busy) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: AuraSpace.s12),
+                ],
                 Wrap(
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
                   children: [
                     FilledButton(
                       onPressed: _busy ? null : _resend,
-                      child: Text(_busy ? 'Sending…' : 'Resend verification'),
+                      child: const Text('Resend verification'),
                     ),
                     OutlinedButton(
                       onPressed: () => context.go(
@@ -113,11 +128,10 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     ),
                     TextButton(
                       onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                      child: const Text('Back to login'),
+                      child: const Text('Go to login'),
                     ),
                   ],
                 ),
-
                 if (_msg != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Text(_msg!, style: AuraText.body),

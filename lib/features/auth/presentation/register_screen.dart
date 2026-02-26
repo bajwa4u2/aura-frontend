@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_repository.dart';
-import '../../../core/auth/auth_providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({
@@ -49,47 +48,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
-  Map<String, dynamic> _asMap(dynamic v) {
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return Map<String, dynamic>.from(v);
-    return <String, dynamic>{};
-  }
-
-  /// Extract access/refresh tokens from varying backend response shapes.
-  /// Supports:
-  /// - { accessToken, refreshToken }
-  /// - { data: { accessToken, refreshToken } }
-  /// - { tokens: { accessToken, refreshToken } }
-  /// - snake_case variants
-  ({String? accessToken, String? refreshToken}) _extractTokens(Map<String, dynamic> root) {
-    String? pick(Map<String, dynamic> m, List<String> keys) {
-      for (final k in keys) {
-        final v = m[k];
-        if (v is String && v.trim().isNotEmpty) return v.trim();
-      }
-      return null;
-    }
-
-    final directAccess = pick(root, ['accessToken', 'access_token', 'token']);
-    final directRefresh = pick(root, ['refreshToken', 'refresh_token']);
-
-    if (directAccess != null) {
-      return (accessToken: directAccess, refreshToken: directRefresh);
-    }
-
-    final data = _asMap(root['data']);
-    final tokens = _asMap(root['tokens']);
-
-    final nestedAccess =
-        pick(data, ['accessToken', 'access_token', 'token']) ??
-        pick(tokens, ['accessToken', 'access_token', 'token']);
-    final nestedRefresh =
-        pick(data, ['refreshToken', 'refresh_token']) ??
-        pick(tokens, ['refreshToken', 'refresh_token']);
-
-    return (accessToken: nestedAccess, refreshToken: nestedRefresh);
-  }
-
   String _defaultHandleFromEmail(String email) {
     final e = email.trim();
     final at = e.indexOf('@');
@@ -103,6 +61,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final full = ('$fn $ln').trim();
     if (full.isNotEmpty) return full;
     return handle.trim().isEmpty ? 'Member' : handle.trim();
+  }
+
+  String _safeRedirect(String? r) {
+    final v = (r ?? '').trim();
+    if (v.isEmpty) return '/home';
+    if (!v.startsWith('/')) return '/home';
+    return v;
   }
 
   Future<void> _submit() async {
@@ -126,16 +91,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final firstName = _firstName.text.trim();
       final lastName = _lastName.text.trim();
 
-      // Keep fields optional in UI, but satisfy non-null backend contract.
-      final handle = _handle.text.trim().isEmpty
-          ? _defaultHandleFromEmail(email)
-          : _handle.text.trim();
+      final handle =
+          _handle.text.trim().isEmpty ? _defaultHandleFromEmail(email) : _handle.text.trim();
 
       final displayName = _displayName.text.trim().isEmpty
           ? _defaultDisplayName(firstName, lastName, handle)
           : _displayName.text.trim();
 
-      final out = await repo.register(
+      // IMPORTANT:
+      // Do NOT set session tokens on register.
+      // Many backends issue tokens even when email is not verified.
+      // That causes "pretend login" and then 403 EMAIL_NOT_VERIFIED loops.
+      await repo.register(
         email: email,
         password: _password.text,
         firstName: firstName,
@@ -144,25 +111,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         displayName: displayName,
       );
 
-      final tokens = _extractTokens(out);
-
-      // Persist tokens using your real TokenStore API.
-      // On web, refresh may be cookie-based; that's fine if refreshToken is null.
-      if (tokens.accessToken != null) {
-        await ref.read(tokenStoreProvider).setSession(
-              accessToken: tokens.accessToken!,
-              refreshToken: tokens.refreshToken,
-            );
-      }
-
       if (!mounted) return;
 
-      final rt = widget.redirectTo;
-      if (rt != null && rt.trim().isNotEmpty) {
-        context.go(rt);
-      } else {
-        context.go('/verify-pending');
-      }
+      final redirect = _safeRedirect(widget.redirectTo);
+      context.go(
+        '/verify-pending?email=${Uri.encodeComponent(email)}&redirect=${Uri.encodeComponent(redirect)}',
+      );
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -243,14 +197,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     validator: (v) => _req(v, 'Confirm password'),
                     obscureText: true,
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
+                    onFieldSubmitted: (_) => _loading ? null : _submit(),
                   ),
                   const SizedBox(height: 18),
-                  ElevatedButton(
+                  FilledButton(
                     onPressed: _loading ? null : _submit,
                     child: Text(_loading ? 'Creating…' : 'Create account'),
                   ),
                   const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () => context.go('/login?redirect=${Uri.encodeComponent(widget.redirectTo ?? '/home')}'),
+                    child: const Text('Already have an account? Log in'),
+                  ),
                 ],
               ),
             ),
