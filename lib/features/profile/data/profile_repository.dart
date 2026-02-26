@@ -40,7 +40,11 @@ class ProfileRepository {
 
   /// PATCH /users/me
   /// Updates: displayName, bio, avatarUrl
-  Future<Profile> updateMe({String? displayName, String? bio, String? avatarUrl}) async {
+  Future<Profile> updateMe({
+    String? displayName,
+    String? bio,
+    String? avatarUrl,
+  }) async {
     final payload = <String, dynamic>{
       if (displayName != null) 'displayName': displayName,
       if (bio != null) 'bio': bio,
@@ -93,13 +97,68 @@ class ProfileRepository {
     }
   }
 
-  /// POST /users/:handle/follow
-  Future<void> follow(String handle) async {
-    await _dio.post('/users/$handle/follow');
+  String _errorMessage(Object e) {
+    if (e is DioException) {
+      final d = e.response?.data;
+      if (d is Map) {
+        final err = d['error'];
+        if (err is Map && err['message'] is String) return err['message'] as String;
+        if (d['message'] is String) return d['message'] as String;
+      }
+      if (e.message != null) return e.message!;
+    }
+    return e.toString();
   }
 
-  /// DELETE /users/:handle/follow
+  /// POST /users/:handle/follow/request
+  ///
+  /// Aura follow requires a request (backend contract).
+  /// We also keep a fallback to /follow for compatibility if the backend changes.
+  Future<void> follow(String handle) async {
+    try {
+      await _dio.post('/users/$handle/follow/request');
+      return;
+    } catch (e) {
+      // Fallback for older/alternate backend contract
+      final msg = _errorMessage(e).toLowerCase();
+      if (msg.contains('not found') || msg.contains('cannot post')) {
+        await _dio.post('/users/$handle/follow');
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  /// DELETE follow / cancel follow request
+  ///
+  /// First try direct unfollow:
+  ///   DELETE /users/:handle/follow
+  /// If backend is request-based, fall back to cancel request:
+  ///   DELETE /users/:handle/follow/request
   Future<void> unfollow(String handle) async {
-    await _dio.delete('/users/$handle/follow');
+    try {
+      await _dio.delete('/users/$handle/follow');
+      return;
+    } catch (e) {
+      final msg = _errorMessage(e).toLowerCase();
+
+      // If backend is request-based, cancel request instead
+      if (msg.contains('requires a request') ||
+          msg.contains('follow request') ||
+          msg.contains('/follow/request') ||
+          msg.contains('bad request') ||
+          msg.contains('cannot delete')) {
+        await _dio.delete('/users/$handle/follow/request');
+        return;
+      }
+
+      // If it’s a hard 404 on /follow, try /follow/request too.
+      if (msg.contains('not found') || msg.contains('cannot delete')) {
+        await _dio.delete('/users/$handle/follow/request');
+        return;
+      }
+
+      rethrow;
+    }
   }
 }

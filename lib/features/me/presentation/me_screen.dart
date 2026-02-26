@@ -295,7 +295,19 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-    await dio.delete('/posts/draft');
+
+    // Backend contract may not support DELETE /posts/draft yet.
+    // We try delete first, then fall back to clearing draft content via PUT.
+    try {
+      await dio.delete('/posts/draft');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 0;
+      if (status == 404) {
+        await dio.put('/posts/draft', data: {'text': ''});
+      } else {
+        rethrow;
+      }
+    }
 
     ref.invalidate(_meDraftProvider);
     if (!mounted) return;
@@ -349,11 +361,33 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     messenger.showSnackBar(const SnackBar(content: Text('Post updated.')));
   }
 
-  Future<void> _archivePost(String id) async {
-    if (id.trim().isEmpty) return;
+  Future<void> _archivePost(BuildContext context, String id) async {
+    final t = id.trim();
+    if (t.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
     final dio = ref.read(dioProvider);
-    await dio.post('/posts/$id/archive');
-    ref.invalidate(_mePostsProvider);
+
+    // Some backends expose POST /posts/:id/archive. If not, fall back to PATCH status.
+    try {
+      await dio.post('/posts/$t/archive');
+      ref.invalidate(_mePostsProvider);
+      return;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 0;
+
+      if (status == 404) {
+        try {
+          await dio.patch('/posts/$t', data: {'status': 'ARCHIVED'});
+          ref.invalidate(_mePostsProvider);
+          return;
+        } catch (_) {
+          // If archive isn't supported yet, fail gently.
+        }
+      }
+
+      messenger.showSnackBar(const SnackBar(content: Text('Archive is not supported yet.')));
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -521,15 +555,16 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         OutlinedButton(
                           onPressed: () => _editProfile(
                             context: context,
-                            displayName: me['displayName']?.toString(),
-                            bio: me['bio']?.toString(),
+                            displayName: displayName,
+                            bio: bio,
                           ),
                           child: const Text('Edit profile'),
                         ),
-                        OutlinedButton(
-                          onPressed: _busyLogout ? null : () => _logout(context),
-                          child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
-                        ),
+                        if (!_busyLogout)
+                          TextButton(
+                            onPressed: () => _logout(context),
+                            child: const Text('Log out'),
+                          ),
                       ],
                     ),
                   ],
@@ -538,19 +573,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             },
           ),
 
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s16),
 
-          // Draft card
+          // Draft section
           Consumer(
             builder: (context, ref, _) {
               final draftAsync = ref.watch(_meDraftProvider);
               return draftAsync.when(
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (raw) {
-                  final m = _unwrapMap(raw);
-                  final inner = (m['data'] is Map) ? Map<String, dynamic>.from(m['data'] as Map) : m;
-                  final text = (inner['text'] ?? m['text'] ?? '').toString();
+                data: (draft) {
+                  final text = (draft['text'] ?? '').toString();
+                  final hasDraft = text.trim().isNotEmpty;
 
                   return AuraCard(
                     child: Column(
@@ -558,7 +592,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       children: [
                         Text('Draft', style: AuraText.title),
                         const SizedBox(height: AuraSpace.s10),
-                        Text(text.isEmpty ? 'No draft yet.' : text, style: AuraText.body),
+                        Text(
+                          hasDraft ? text : 'No draft right now.',
+                          style: AuraText.body,
+                        ),
                         const SizedBox(height: AuraSpace.s12),
                         Wrap(
                           spacing: AuraSpace.s10,
@@ -566,12 +603,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           children: [
                             FilledButton(
                               onPressed: () => _editDraft(context, text),
-                              child: const Text('Edit draft'),
+                              child: Text(hasDraft ? 'Edit draft' : 'Start draft'),
                             ),
-                            OutlinedButton(
-                              onPressed: () => _discardDraft(context),
-                              child: const Text('Discard'),
-                            ),
+                            if (hasDraft)
+                              OutlinedButton(
+                                onPressed: () => _discardDraft(context),
+                                child: const Text('Discard'),
+                              ),
                           ],
                         ),
                       ],
@@ -582,102 +620,72 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             },
           ),
 
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s16),
 
-          // Posts card
+          // Posts section
           Consumer(
             builder: (context, ref, _) {
               final postsAsync = ref.watch(_mePostsProvider);
               return postsAsync.when(
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (items) {
+                data: (posts) {
                   return AuraCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Posts', style: AuraText.title),
                         const SizedBox(height: AuraSpace.s10),
-                        if (items.isEmpty)
+                        if (posts.isEmpty)
                           Text('No posts yet.', style: AuraText.body)
                         else
-                          ...items.take(5).map((p) {
+                          ...posts.map((p) {
                             final id = (p['id'] ?? '').toString();
                             final text = (p['text'] ?? '').toString();
+
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                              child: Row(
+                              padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(child: Text(text.isEmpty ? '(no text)' : text, style: AuraText.body)),
-                                  const SizedBox(width: AuraSpace.s10),
-                                  PopupMenuButton<String>(
-                                    onSelected: (v) async {
-                                      if (v == 'edit') {
-                                        await _editPost(context: context, id: id, initialText: text);
-                                      } else if (v == 'archive') {
-                                        await _archivePost(id);
-                                      }
-                                    },
-                                    itemBuilder: (_) => const [
-                                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                      PopupMenuItem(value: 'archive', child: Text('Archive')),
+                                  Text(text, style: AuraText.body),
+                                  const SizedBox(height: AuraSpace.s8),
+                                  Row(
+                                    children: [
+                                      TextButton(
+                                        onPressed: () => _editPost(
+                                          context: context,
+                                          id: id,
+                                          initialText: text,
+                                        ),
+                                        child: const Text('Edit'),
+                                      ),
+                                      const SizedBox(width: AuraSpace.s10),
+                                      PopupMenuButton<String>(
+                                        onSelected: (v) async {
+                                          if (v == 'archive') {
+                                            await _archivePost(context, id);
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(value: 'archive', child: Text('Archive')),
+                                        ],
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                          child: Icon(Icons.more_horiz),
+                                        ),
+                                      ),
                                     ],
                                   ),
+                                  const Divider(),
                                 ],
                               ),
                             );
-                          }),
+                          }).toList(),
                       ],
                     ),
                   );
                 },
-              );
-            },
-          ),
-
-          const SizedBox(height: AuraSpace.s14),
-
-          // Saves card
-          Consumer(
-            builder: (context, ref, _) {
-              final savesAsync = ref.watch(_meSavesProvider);
-              return savesAsync.when(
-                loading: () => const AuraCard(child: _LoadingBlock()),
-                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (items) => AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Saves', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(items.isEmpty ? 'No saves yet.' : 'Saved items: ${items.length}', style: AuraText.body),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: AuraSpace.s14),
-
-          // Replies card
-          Consumer(
-            builder: (context, ref, _) {
-              final repliesAsync = ref.watch(_meRepliesProvider);
-              return repliesAsync.when(
-                loading: () => const AuraCard(child: _LoadingBlock()),
-                error: (e, _) => AuraCard(child: _ErrorBlock(message: '$e')),
-                data: (items) => AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Replies', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(items.isEmpty ? 'No replies yet.' : 'Replies: ${items.length}', style: AuraText.body),
-                    ],
-                  ),
-                ),
               );
             },
           ),
@@ -692,22 +700,33 @@ class _LoadingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(AuraSpace.s16),
-      child: Center(child: CircularProgressIndicator()),
+    return Padding(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Text('Loading…', style: AuraText.body),
+        ],
+      ),
     );
   }
 }
 
 class _ErrorBlock extends StatelessWidget {
   const _ErrorBlock({required this.message});
+
   final String message;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Text(message, style: AuraText.body.copyWith(color: Colors.red)),
+      child: Text(message, style: AuraText.body),
     );
   }
 }
