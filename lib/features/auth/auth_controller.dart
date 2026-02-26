@@ -1,16 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aura/core/auth/auth_providers.dart';
 import '../../core/net/dio_provider.dart';
-import 'auth_providers.dart';
 
 class AuthController {
   AuthController(this.ref);
 
   /// IMPORTANT:
-  /// auth_screen.dart passes WidgetRef, but other layers may pass Ref.
-  /// Using dynamic avoids the WidgetRef vs Ref generic mismatch.
+  /// Some screens pass WidgetRef, others may pass Ref.
+  /// Using dynamic avoids WidgetRef vs Ref generic mismatch.
   final dynamic ref;
 
   Dio _dio() => ref.read(dioProvider);
@@ -23,31 +23,41 @@ class AuthController {
     throw Exception('Unexpected response type');
   }
 
-  /// Supports BOTH call styles:
-  ///  - login(dtoMapOrDto)
-  ///  - login(email, password)
-  Future<Map<String, dynamic>> login(dynamic a, [dynamic b]) async {
-    String email = '';
-    String password = '';
+  /// Supports:
+  ///  - login(email: "a", password: "b")
+  ///  - login({"email": "...", "password": "..."})
+  ///  - login("email", "password")
+  Future<Map<String, dynamic>> login([
+    dynamic a,
+    dynamic b, {
+    String? email,
+    String? password,
+  }]) async {
+    String e = '';
+    String p = '';
 
-    if (a is String) {
-      email = a.trim();
-      password = (b?.toString() ?? '').trim();
+    if (email != null || password != null) {
+      e = (email ?? '').trim();
+      p = (password ?? '').trim();
+    } else if (a is String) {
+      e = a.trim();
+      p = (b?.toString() ?? '').trim();
     } else {
       final m = _asMap(a);
-      email = (m['email'] ?? '').toString().trim();
-      password = (m['password'] ?? '').toString().trim();
+      e = (m['email'] ?? '').toString().trim();
+      p = (m['password'] ?? '').toString().trim();
     }
 
-    if (email.isEmpty) throw Exception('Email is required');
-    if (password.isEmpty) throw Exception('Password is required');
+    if (e.isEmpty) throw Exception('Email is required');
+    if (p.isEmpty) throw Exception('Password is required');
 
     final res = await _dio().post(
       '/auth/login',
-      data: {'email': email, 'password': password},
+      data: {'email': e, 'password': p},
     );
 
     final raw = _asMap(res.data);
+
     final access = (raw['accessToken'] ?? '').toString().trim();
     final refresh = (raw['refreshToken'] ?? '').toString().trim();
 
@@ -57,7 +67,7 @@ class AuthController {
 
     await _store().setSession(
       accessToken: access,
-      refreshToken: (refresh.isNotEmpty) ? refresh : null,
+      refreshToken: refresh.isNotEmpty ? refresh : null,
     );
 
     return raw;
@@ -66,11 +76,10 @@ class AuthController {
   /// logout(context) OR logout()
   Future<void> logout([BuildContext? _]) async {
     try {
-      // Web: refresh cookie is HttpOnly, backend can revoke based on cookie.
-      // Non-web: if backend expects refreshToken in body, we send if we have it.
       final rt = _store().refreshToken;
 
       if (kIsWeb) {
+        // Web: refresh cookie is HttpOnly; backend can revoke based on cookie.
         await _dio().post('/auth/logout');
       } else {
         await _dio().post(
@@ -91,27 +100,34 @@ class AuthController {
   }
 
   Future<Map<String, dynamic>> refresh() async {
-    // Normally Dio interceptor handles refresh automatically on 401.
-    // This is here if you call it manually.
+    // Usually Dio interceptor handles refresh on 401.
+    // This exists if you trigger it manually.
     if (kIsWeb) {
       final res = await _dio().post('/auth/refresh');
       final raw = _asMap(res.data);
+
       final access = (raw['accessToken'] ?? '').toString().trim();
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
+
       await _store().setSession(accessToken: access, refreshToken: null);
       return raw;
     } else {
       final rt = _store().refreshToken;
       if (rt == null || rt.trim().isEmpty) throw Exception('Missing refresh token');
+
       final res = await _dio().post('/auth/refresh', data: {'refreshToken': rt});
       final raw = _asMap(res.data);
+
       final access = (raw['accessToken'] ?? '').toString().trim();
       final newRt = (raw['refreshToken'] ?? '').toString().trim();
+
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
+
       await _store().setSession(
         accessToken: access,
         refreshToken: newRt.isNotEmpty ? newRt : rt,
       );
+
       return raw;
     }
   }
