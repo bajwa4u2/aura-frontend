@@ -43,11 +43,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     try {
       await AuthController(ref).login(
-        context,
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
-        redirectTo: _safeRedirect(widget.redirectTo),
-      );
+      email: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+  );
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {

@@ -8,13 +8,11 @@ import '../../core/net/dio_provider.dart';
 class AuthController {
   AuthController(this.ref);
 
-  /// IMPORTANT:
-  /// Some screens pass WidgetRef, others may pass Ref.
-  /// Using dynamic avoids WidgetRef vs Ref generic mismatch.
+  /// Some screens pass WidgetRef, other layers may pass Ref.
+  /// dynamic avoids WidgetRef vs Ref generic mismatch.
   final dynamic ref;
 
   Dio _dio() => ref.read(dioProvider);
-
   TokenStore _store() => ref.read(tokenStoreProvider);
 
   Map<String, dynamic> _asMap(dynamic v) {
@@ -23,27 +21,19 @@ class AuthController {
     throw Exception('Unexpected response type');
   }
 
-  /// Supports:
-  ///  - login(email: "a", password: "b")
-  ///  - login({"email": "...", "password": "..."})
-  ///  - login("email", "password")
-  Future<Map<String, dynamic>> login([
-    dynamic a,
-    dynamic b, {
+  /// Supports BOTH:
+  ///  - login(email: ..., password: ...)
+  ///  - login(mapOrDto) where map contains email/password
+  Future<Map<String, dynamic>> login({
     String? email,
     String? password,
-  }]) async {
-    String e = '';
-    String p = '';
+    dynamic dto,
+  }) async {
+    String e = (email ?? '').trim();
+    String p = (password ?? '').trim();
 
-    if (email != null || password != null) {
-      e = (email ?? '').trim();
-      p = (password ?? '').trim();
-    } else if (a is String) {
-      e = a.trim();
-      p = (b?.toString() ?? '').trim();
-    } else {
-      final m = _asMap(a);
+    if ((e.isEmpty || p.isEmpty) && dto != null) {
+      final m = _asMap(dto);
       e = (m['email'] ?? '').toString().trim();
       p = (m['password'] ?? '').toString().trim();
     }
@@ -57,13 +47,10 @@ class AuthController {
     );
 
     final raw = _asMap(res.data);
-
     final access = (raw['accessToken'] ?? '').toString().trim();
     final refresh = (raw['refreshToken'] ?? '').toString().trim();
 
-    if (access.isEmpty) {
-      throw Exception('Login response missing accessToken');
-    }
+    if (access.isEmpty) throw Exception('Login response missing accessToken');
 
     await _store().setSession(
       accessToken: access,
@@ -79,7 +66,6 @@ class AuthController {
       final rt = _store().refreshToken;
 
       if (kIsWeb) {
-        // Web: refresh cookie is HttpOnly; backend can revoke based on cookie.
         await _dio().post('/auth/logout');
       } else {
         await _dio().post(
@@ -88,7 +74,7 @@ class AuthController {
         );
       }
     } catch (_) {
-      // Even if request fails, clear local tokens to avoid "half logged-in" state.
+      // ignore
     } finally {
       await _store().clearTokens();
     }
@@ -100,8 +86,6 @@ class AuthController {
   }
 
   Future<Map<String, dynamic>> refresh() async {
-    // Usually Dio interceptor handles refresh on 401.
-    // This exists if you trigger it manually.
     if (kIsWeb) {
       final res = await _dio().post('/auth/refresh');
       final raw = _asMap(res.data);
@@ -120,7 +104,6 @@ class AuthController {
 
       final access = (raw['accessToken'] ?? '').toString().trim();
       final newRt = (raw['refreshToken'] ?? '').toString().trim();
-
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
 
       await _store().setSession(
