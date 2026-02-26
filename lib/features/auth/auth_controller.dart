@@ -1,162 +1,160 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+  UnauthorizedException,
+} from '@nestjs/common'
+import type { Request } from 'express'
 
-import '../../core/auth/auth_providers.dart';
-import '../../core/net/dio_provider.dart';
+import { PrismaService } from '../prisma/prisma.service'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { CurrentUserId } from '../common/decorators/current-user.decorator'
 
-class AuthController {
-  AuthController(this.ref);
+import { AuthService } from './auth.service'
+import { LoginDto } from './dto/login.dto'
+import { RegisterDto } from './dto/register.dto'
+import { ForgotPasswordDto } from './dto/forgot-password.dto'
+import { ResetPasswordDto } from './dto/reset-password.dto'
+import { ResendVerificationDto } from './dto/resend-verification.dto'
+import { VerifyEmailDto } from './dto/verify-email.dto'
 
-  final WidgetRef ref;
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  Map<String, dynamic> _unwrap(dynamic raw) {
-    if (raw is! Map) return <String, dynamic>{};
-    final m = Map<String, dynamic>.from(raw);
-
-    dynamic data = m['data'];
-    if (data is Map && data['data'] is Map) {
-      data = data['data'];
-    }
-    if (data is Map) return Map<String, dynamic>.from(data);
-    return m;
+  private meta(req: any) {
+    const forwardedFor = (req.headers?.['x-forwarded-for'] as string | undefined) ?? ''
+    const ip = forwardedFor.split(',')[0]?.trim() || req.ip || null
+    const userAgent = (req.headers?.['user-agent'] as string | undefined) ?? null
+    const origin = (req.headers?.origin as string | undefined) ?? null
+    return { ip, userAgent, origin }
   }
 
-  String? _errCode(dynamic raw) {
-    if (raw is! Map) return null;
-    final err = raw['error'];
-    if (err is Map) {
-      final c = err['code'];
-      if (c is String && c.trim().isNotEmpty) return c.trim();
-    }
-    return null;
+  @Post('register')
+  async register(@Req() req: Request, @Body() dto: RegisterDto) {
+    const email = (dto.email ?? '').trim()
+    const password = dto.password ?? ''
+    const firstName = (dto.firstName ?? '').trim()
+    const lastName = (dto.lastName ?? '').trim()
+    const handle = (dto.handle ?? '').trim()
+    const displayName = (dto.displayName ?? '').trim()
+
+    if (!email) throw new BadRequestException('Email is required')
+    if (!password) throw new BadRequestException('Password is required')
+    if (!firstName || !lastName) throw new BadRequestException('First and last name required')
+
+    return this.auth.register(
+      email,
+      password,
+      { firstName, lastName, handle: handle || undefined, displayName: displayName || undefined },
+      this.meta(req),
+    )
   }
 
-  String _safeRedirect(String? redirectTo) {
-    final r = (redirectTo ?? '').trim();
-    if (r.isEmpty) return '/home';
-    if (!r.startsWith('/')) return '/home';
-    return r;
+  @Post('login')
+  async login(@Req() req: Request, @Body() dto: LoginDto) {
+    const email = (dto.email ?? '').trim()
+    const password = dto.password ?? ''
+    if (!email) throw new BadRequestException('Email is required')
+    if (!password) throw new BadRequestException('Password is required')
+    return this.auth.login(email, password, this.meta(req))
   }
 
-  Future<bool> _isVerifiedByAuthMe(Dio dio) async {
-    try {
-      final meRes = await dio.get('/auth/me');
-      final data = _unwrap(meRes.data);
-
-      final v1 = data['emailVerifiedAt'];
-      if (v1 != null && v1.toString().trim().isNotEmpty) return true;
-
-      final user = data['user'];
-      if (user is Map) {
-        final v2 = user['emailVerifiedAt'];
-        if (v2 != null && v2.toString().trim().isNotEmpty) return true;
-      }
-
-      return false;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 403) return false;
-      final code = _errCode(e.response?.data);
-      if (code == 'EMAIL_NOT_VERIFIED') return false;
-      rethrow;
-    }
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Body() dto: any) {
+    const refreshToken = (dto.refreshToken ?? '').trim()
+    if (!refreshToken) throw new BadRequestException('Refresh token is required')
+    return this.auth.refresh(refreshToken, this.meta(req))
   }
 
-  Future<void> login(
-    BuildContext context, {
-    required String email,
-    required String password,
-    String? redirectTo,
-  }) async {
-    final dio = ref.read(dioProvider);
-
-    try {
-      final res = await dio.post(
-        '/auth/login',
-        data: {
-          'email': email.trim(),
-          'password': password,
-        },
-      );
-
-      final body = res.data;
-
-      // Expect: { ok: true, data: { accessToken, refreshToken? } }
-      if (body is! Map || body['ok'] != true) {
-        throw Exception('Unexpected login response');
-      }
-
-      final payload = Map<String, dynamic>.from((body['data'] as Map?) ?? {});
-      final accessToken = (payload['accessToken'] as String?)?.trim();
-
-      if (accessToken == null || accessToken.isEmpty) {
-        throw Exception('Missing access token');
-      }
-
-      // Web cookie mode: refreshToken not expected here. Keep null.
-      await ref.read(tokenStoreProvider).setSession(
-            accessToken: accessToken,
-            refreshToken: null,
-          );
-
-      // Hard gate: do NOT enter app until verified.
-      final verified = await _isVerifiedByAuthMe(dio);
-      if (!verified) {
-        await ref.read(tokenStoreProvider).clear();
-        ref.invalidate(isAuthedProvider);
-        ref.invalidate(emailVerifiedProvider);
-
-        final dest = _safeRedirect(redirectTo);
-        context.go(
-          '/verify-email?redirect=${Uri.encodeComponent(dest)}&email=${Uri.encodeComponent(email.trim())}',
-        );
-        return;
-      }
-
-      ref.invalidate(isAuthedProvider);
-      ref.invalidate(emailVerifiedProvider);
-
-      final dest = _safeRedirect(redirectTo);
-      context.go(dest);
-    } on DioException catch (e) {
-      final responseData = e.response?.data;
-      final code = _errCode(responseData);
-
-      if (code == 'EMAIL_NOT_VERIFIED' || e.response?.statusCode == 403) {
-        final dest = _safeRedirect(redirectTo);
-        context.go(
-          '/verify-email?redirect=${Uri.encodeComponent(dest)}&email=${Uri.encodeComponent(email.trim())}',
-        );
-        return;
-      }
-
-      String? message;
-      if (responseData is Map) {
-        final err = responseData['error'];
-        if (err is Map && err['message'] != null) {
-          message = err['message'].toString();
-        } else if (responseData['message'] != null) {
-          message = responseData['message'].toString();
-        }
-      }
-
-      throw Exception(message ?? 'Login failed');
-    }
+  @Post('logout')
+  async logout(@Body() dto: any) {
+    const refreshToken = (dto.refreshToken ?? '').trim()
+    if (!refreshToken) throw new BadRequestException('Refresh token is required')
+    return this.auth.logout(refreshToken)
   }
 
-  Future<void> logout(BuildContext context) async {
-    final dio = ref.read(dioProvider);
+  @UseGuards(JwtAuthGuard)
+  @Post('logout-all')
+  async logoutAll(@CurrentUserId() userId: string) {
+    return this.auth.logoutAll(userId)
+  }
 
-    try {
-      await dio.post('/auth/logout');
-    } catch (_) {}
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const email = (dto.email ?? '').trim().toLowerCase()
+    if (!email) throw new BadRequestException('Email is required')
+    return this.auth.forgotPassword(email)
+  }
 
-    await ref.read(tokenStoreProvider).clear();
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const token = (dto.token ?? '').trim()
+    const password = dto.password ?? ''
+    if (!token) throw new BadRequestException('Token is required')
+    if (!password) throw new BadRequestException('Password is required')
+    return this.auth.resetPassword(token, password)
+  }
 
-    ref.invalidate(isAuthedProvider);
-    ref.invalidate(emailVerifiedProvider);
+  @Post('resend-verification')
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    const email = (dto.email ?? '').trim().toLowerCase()
+    if (!email) throw new BadRequestException('Email is required')
+    return this.auth.resendEmailVerification(email)
+  }
 
-    context.go('/login');
+  @UseGuards(JwtAuthGuard)
+  @Post('resend-verification/me')
+  async resendVerificationMe(@CurrentUserId() userId: string) {
+    return this.auth.resendEmailVerificationForUser(userId)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('resend-email-verification/me')
+  async resendEmailVerificationMeAlias(@CurrentUserId() userId: string) {
+    return this.auth.resendEmailVerificationForUser(userId)
+  }
+
+  @Post('resend-email-verification')
+  async resendEmailVerificationAlias(@Body() dto: ResendVerificationDto) {
+    const email = (dto.email ?? '').trim().toLowerCase()
+    if (!email) throw new BadRequestException('Email is required')
+    return this.auth.resendEmailVerification(email)
+  }
+
+  @Post('verify-email')
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    const token = (dto.token ?? '').trim()
+    if (!token) throw new BadRequestException('Token is required')
+    return this.auth.verifyEmail(token)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async me(@CurrentUserId() userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        handle: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
+        emailVerifiedAt: true,
+      },
+    })
+
+    if (!user) throw new UnauthorizedException('Unauthorized')
+
+    return { ok: true, user }
   }
 }

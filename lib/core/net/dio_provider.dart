@@ -15,8 +15,9 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 30),
-      headers: {
+      headers: const {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       // Keep 2xx-only so 401 becomes an error and flows through onError refresh logic.
       validateStatus: (code) => code != null && code >= 200 && code < 300,
@@ -49,9 +50,8 @@ final dioProvider = Provider<Dio>((ref) {
 
         // CRITICAL:
         // Avoid firing protected calls before tokens are restored from storage.
-        // This was causing requests to go out without Authorization, leading to 401 + logout feeling.
+        // This was causing requests to go out without Authorization, leading to 401 + "logged out" feeling.
         try {
-          // TokenStore in your project already supports this.
           await store.waitUntilLoaded();
         } catch (_) {
           // If anything goes wrong, proceed without blocking forever.
@@ -97,7 +97,10 @@ final dioProvider = Provider<Dio>((ref) {
                 final refreshDio = Dio(
                   BaseOptions(
                     baseUrl: AppConfig.apiBaseUrl,
-                    headers: {'Content-Type': 'application/json'},
+                    headers: const {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                    },
                     validateStatus: (c) => c != null && c >= 200 && c < 300,
                   ),
                 );
@@ -168,17 +171,19 @@ final dioProvider = Provider<Dio>((ref) {
           final newToken = ref.read(tokenStoreProvider).accessToken;
 
           // Retry original request with new token.
+          final retryHeaders = Map<String, dynamic>.from(req.headers);
+          retryHeaders.remove('Authorization');
+          if (newToken != null && newToken.trim().isNotEmpty) {
+            retryHeaders['Authorization'] = 'Bearer $newToken';
+          }
+
           final cloned = await dio.request<dynamic>(
             req.path,
             data: req.data,
             queryParameters: req.queryParameters,
             options: Options(
               method: req.method,
-              headers: Map<String, dynamic>.from(req.headers)
-                ..['Authorization'] =
-                    (newToken != null && newToken.trim().isNotEmpty)
-                        ? 'Bearer $newToken'
-                        : null,
+              headers: retryHeaders,
               extra: Map<String, dynamic>.from(req.extra)
                 ..['__retried_after_refresh'] = true,
             ),
