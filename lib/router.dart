@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 
-import 'core/auth/auth_providers.dart';
+// IMPORTANT: session_providers already brings in tokenStoreProvider.
+// Do NOT import auth_providers here, or tokenStoreProvider becomes ambiguous.
 import 'core/auth/session_providers.dart';
 
 import 'features/auth/presentation/auth_screen.dart';
