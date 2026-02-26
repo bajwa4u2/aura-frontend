@@ -5,21 +5,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/auth/auth_providers.dart';
-import 'package:aura/core/auth/session_providers.dart';
+import '../../../core/auth/auth_providers.dart'; // tokenStoreProvider
+import '../../../core/auth/session_providers.dart'; // authStatusProvider, emailVerifiedProvider, isAuthedProvider
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
-Map<String, dynamic> _unwrapMap(dynamic raw) {
-  if (raw is! Map) return <String, dynamic>{};
-  final root = Map<String, dynamic>.from(raw);
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) return Map<String, dynamic>.from(v);
+  return <String, dynamic>{};
+}
 
+/// Unwrap common envelopes:
+/// - { ok:true, data:{...} }
+/// - { ok:true, data:{ data:{...} } }
+Map<String, dynamic> _unwrapMap(dynamic raw) {
+  final root = _asMap(raw);
   dynamic inner = root['data'];
 
-  // { ok:true, data:{ data:{...} } } case
   if (inner is Map && inner['data'] is Map) {
     inner = inner['data'];
   }
@@ -29,27 +35,22 @@ Map<String, dynamic> _unwrapMap(dynamic raw) {
 }
 
 List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
-  // Accept direct list
   if (raw is List) {
     return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  // Accept envelope map
   final m = _unwrapMap(raw);
 
-  // Most common: { items: [], nextCursor: ... }
   final a = m['items'];
   if (a is List) {
     return a.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  // Some endpoints: { data: [], nextCursor: ... } inside data envelope
   final b = m['data'];
   if (b is List) {
     return b.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  // Sometimes: { data: { items:[...] } } already handled by _unwrapMap but keep fallback
   if (b is Map && b['items'] is List) {
     final list = b['items'] as List;
     return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
@@ -61,34 +62,33 @@ List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
 bool _isEmailNotVerifiedError(Object err) {
   if (err is DioException) {
     final data = err.response?.data;
-    if (data is Map) {
-      final m = Map<String, dynamic>.from(data);
-      final e = m['error'];
-      if (e is Map) {
-        final em = Map<String, dynamic>.from(e);
-        return (em['code']?.toString() ?? '') == 'EMAIL_NOT_VERIFIED';
-      }
-    }
+    final m = _asMap(data);
+    final code = _asMap(m['error'])['code']?.toString();
+    return code == 'EMAIL_NOT_VERIFIED';
   }
   return false;
 }
 
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/users/me');
-  final m = _unwrapMap(res.data);
-  // If backend returned { ok:true, data:{...} } then m is the user map.
-  // If backend returned something else, still return map to avoid crashing.
-  return m;
+  try {
+    final res = await dio.get('/users/me');
+    return _unwrapMap(res.data);
+  } on DioException catch (e) {
+    // Important: don’t crash the whole screen on EMAIL_NOT_VERIFIED
+    final m = _asMap(e.response?.data);
+    final code = _asMap(m['error'])['code']?.toString();
+    if (code == 'EMAIL_NOT_VERIFIED') {
+      return <String, dynamic>{'_emailNotVerified': true};
+    }
+    rethrow;
+  }
 });
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.read(dioProvider);
   final res = await dio.get('/posts/draft');
-  final m = _unwrapMap(res.data);
-
-  // Draft route might return null or {} depending on backend; normalize.
-  return m;
+  return _unwrapMap(res.data);
 });
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -124,7 +124,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (u.isEmpty) return '';
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
 
-    // Dio baseUrl includes /v1
     final root = baseUrl.replaceAll(RegExp(r'/?$'), '');
     if (u.startsWith('/')) return '$root$u';
     return '$root/$u';
@@ -148,35 +147,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       });
 
       final res = await dio.post('/uploads/avatar', data: form);
-      final data = res.data;
+      final data = _asMap(res.data);
 
-      String? url;
-      if (data is Map) {
-        final m = Map<String, dynamic>.from(data);
-        url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
-      }
-
-      if (url == null || url.trim().isEmpty) {
+      final url = (data['url'] ?? data['avatarUrl'] ?? data['path'])?.toString().trim();
+      if (url == null || url.isEmpty) {
         if (!mounted) return;
         messenger.showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
         return;
       }
 
-      // Store avatarUrl on user
-      await dio.patch(
-        '/users/me',
-        data: {'avatarUrl': url.trim()},
-      );
+      await dio.patch('/users/me', data: {'avatarUrl': url});
 
       ref.invalidate(meProfileProvider);
-
       if (!mounted) return;
       messenger.showSnackBar(const SnackBar(content: Text('Photo updated.')));
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('Upload failed: $e')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Upload failed: $e')));
     }
   }
 
@@ -218,14 +205,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Save'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
         ],
       ),
     );
@@ -233,296 +214,182 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (ok != true) return;
 
     final dio = ref.read(dioProvider);
-
-    // CLEAR-TO-NULL behavior:
     final dn = nameCtl.text.trim();
     final bb = bioCtl.text.trim();
 
-    await dio.patch(
-      '/users/me',
-      data: {
-        'displayName': dn.isEmpty ? null : dn,
-        'bio': bb.isEmpty ? null : bb,
-      },
-    );
+    await dio.patch('/users/me', data: {
+      'displayName': dn.isEmpty ? null : dn,
+      'bio': bb.isEmpty ? null : bb,
+    });
 
     ref.invalidate(meProfileProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(content: Text('Saved.')));
   }
 
-  Future<void> _editDraft(BuildContext context, String initial) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final ctl = TextEditingController(text: initial);
+  Future<void> _logout(BuildContext context) async {
+    if (_busyLogout) return;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit draft'),
-        content: SizedBox(
-          width: 560,
-          child: TextField(
-            controller: ctl,
-            maxLines: 10,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Write…',
-            ),
-          ),
-        ),
+        title: const Text('Log out?'),
+        content: const Text('You will need to log in again to access your account.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Save'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Log out')),
         ],
       ),
     );
 
     if (ok != true) return;
 
-    final text = ctl.text.trim();
-
-    final dio = ref.read(dioProvider);
-    await dio.post('/posts/draft', data: {'text': text});
-
-    ref.invalidate(_meDraftProvider);
-    if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Draft saved.')));
-  }
-
-  Future<void> _publishDraft(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final dio = ref.read(dioProvider);
-
-    try {
-      await dio.post('/posts/publish-latest-draft');
-      ref.invalidate(_meDraftProvider);
-      ref.invalidate(_mePostsProvider);
-      ref.invalidate(_meRepliesProvider);
-      if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Published.')));
-    } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Publish failed: $e')));
-    }
-  }
-
-  Future<void> _discardDraft(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final dio = ref.read(dioProvider);
-
-    try {
-      await dio.delete('/posts/draft');
-      ref.invalidate(_meDraftProvider);
-      if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Draft discarded.')));
-    } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Discard failed: $e')));
-    }
-  }
-
-  Future<void> _logout(BuildContext context) async {
-    if (_busyLogout) return;
     setState(() => _busyLogout = true);
 
     try {
-      // Centralized logout already clears tokens + invalidates.
-      final controller = ref.read(authControllerProvider);
-      await controller.logout(context);
-    } catch (_) {
-      // ignore
+      final dio = ref.read(dioProvider);
+      final store = ref.read(tokenStoreProvider);
+
+      // Best-effort backend revoke (works on web too; cookie refresh handled server-side)
+      try {
+        final rt = (store.refreshToken ?? '').trim();
+        if (!kIsWeb && rt.isNotEmpty) {
+          await dio.post('/auth/logout', data: {'refreshToken': rt});
+        } else {
+          await dio.post('/auth/logout');
+        }
+      } catch (_) {}
+
+      await store.clear();
+
+      // Clear cached screens
+      ref.invalidate(meProfileProvider);
+      ref.invalidate(_meDraftProvider);
+      ref.invalidate(_mePostsProvider);
+      ref.invalidate(_meSavesProvider);
+      ref.invalidate(_meRepliesProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out.')));
+      context.go('/login');
     } finally {
       if (mounted) setState(() => _busyLogout = false);
-      if (!mounted) return;
-      context.go('/public');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAuthed = ref.watch(isAuthedProvider);
+    final authStatus = ref.watch(authStatusProvider);
+    final verifiedAsync = ref.watch(emailVerifiedProvider);
 
-    if (!isAuthed) {
+    // Not authed: show simple gate
+    if (authStatus == AuthStatus.unauthed) {
       return AuraScaffold(
         title: 'Aura',
         showHomeAction: true,
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
-          children: [
-            AuraCard(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Not signed in', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s8),
-                  Text('Please log in to view your profile.', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s12),
+                  const SizedBox(height: AuraSpace.s10),
+                  Text('Log in to view your profile.', style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s14),
                   FilledButton(
-                    onPressed: () => context.go('/login?redirect=/me'),
-                    child: const Text('Log in'),
+                    onPressed: () => context.go('/login?redirect=${Uri.encodeComponent('/me')}'),
+                    child: const Text('Go to login'),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       );
     }
 
-    final verifiedAsync = ref.watch(emailVerifiedProvider);
-
-    // Email verification gate: never let this screen fire /users/me until verified.
-    if (verifiedAsync.isLoading) {
-      return const AuraScaffold(
-        title: 'Aura',
-        showHomeAction: true,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
+    // Authed but not verified: show verify gate (router should also enforce, but this makes it bulletproof)
     final verified = verifiedAsync.valueOrNull ?? false;
     if (!verified) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        context.go('/verify-pending');
-      });
-
       return AuraScaffold(
-        title: 'Aura',
+        title: 'Verify email',
         showHomeAction: true,
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
-          children: [
-            AuraCard(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Verify your email', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s8),
+                  Text('Email not verified', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
                   Text(
-                    'Please verify your email to access your account.',
+                    'Verify your email to unlock your profile.',
                     style: AuraText.body,
                   ),
-                  const SizedBox(height: AuraSpace.s12),
+                  const SizedBox(height: AuraSpace.s14),
                   FilledButton(
-                    onPressed: () => context.go('/verify-pending'),
-                    child: const Text('Continue'),
+                    onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
+                    child: const Text('Verify now'),
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  TextButton(
+                    onPressed: _busyLogout ? null : () => _logout(context),
+                    child: const Text('Log out'),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       );
     }
 
-    final meAsync = ref.watch(meProfileProvider);
-
-    if (meAsync.hasError && _isEmailNotVerifiedError(meAsync.error!)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        context.go('/verify-pending');
-      });
-      return const AuraScaffold(
-        title: 'Aura',
-        showHomeAction: true,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    // Main profile UI
+    final profile = ref.watch(meProfileProvider);
 
     return AuraScaffold(
       title: 'Me',
       showHomeAction: true,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
-        children: [
-          meAsync.when(
-            data: (me) {
-              final baseUrl = ref.read(dioProvider).options.baseUrl;
-              final avatarUrl = (me['avatarUrl'] ?? '').toString();
-              final displayName = (me['displayName'] ?? '').toString().trim();
-              final handle = (me['handle'] ?? '').toString().trim();
-              final bio = (me['bio'] ?? '').toString();
-
-              final absAvatar = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarUrl);
-
-              return AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: Colors.white10,
-                          backgroundImage: absAvatar.isNotEmpty ? NetworkImage(absAvatar) : null,
-                          child: absAvatar.isEmpty ? const Icon(Icons.person_outline) : null,
-                        ),
-                        const SizedBox(width: AuraSpace.s12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(displayName.isNotEmpty ? displayName : 'Me', style: AuraText.title),
-                              const SizedBox(height: 2),
-                              Text(handle.isNotEmpty ? '@$handle' : '', style: AuraText.muted),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Change photo',
-                          onPressed: () => _pickAndUploadAvatar(context),
-                          icon: const Icon(Icons.camera_alt_outlined),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    if (bio.trim().isNotEmpty) Text(bio, style: AuraText.body),
-                    if (bio.trim().isNotEmpty) const SizedBox(height: AuraSpace.s12),
-                    Row(
-                      children: [
-                        FilledButton(
-                          onPressed: () => _editProfile(
-                            context: context,
-                            displayName: displayName,
-                            bio: bio,
-                          ),
-                          child: const Text('Edit profile'),
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                        OutlinedButton(
-                          onPressed: _busyLogout ? null : () => _logout(context),
-                          child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
-                        ),
-                      ],
-                    ),
-                  ],
+      body: profile.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) {
+          if (_isEmailNotVerifiedError(err)) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Email not verified', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text('Go to verify pending.', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s14),
+                      FilledButton(
+                        onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
+                        child: const Text('Verify'),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
-            loading: () => const AuraCard(
-              child: Padding(
-                padding: EdgeInsets.all(AuraSpace.s12),
-                child: Center(child: CircularProgressIndicator()),
               ),
-            ),
-            error: (e, st) => AuraCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AuraSpace.s12),
+            );
+          }
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Could not load profile', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text('$e', style: AuraText.body),
-                    const SizedBox(height: AuraSpace.s12),
+                    Text('Failed to load profile', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+                    Text(err.toString(), style: AuraText.body),
+                    const SizedBox(height: AuraSpace.s14),
                     FilledButton(
                       onPressed: () => ref.invalidate(meProfileProvider),
                       child: const Text('Retry'),
@@ -531,178 +398,125 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
               ),
             ),
-          ),
-
-          const SizedBox(height: AuraSpace.s12),
-
-          // Draft + publish controls
-          ref.watch(_meDraftProvider).when(
-                data: (draft) {
-                  final text = (draft['text'] ?? '').toString();
-                  final hasDraft = text.trim().isNotEmpty;
-
-                  return AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Draft', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          hasDraft ? text : 'No draft yet.',
-                          style: AuraText.body,
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                        Wrap(
-                          spacing: AuraSpace.s8,
-                          runSpacing: AuraSpace.s8,
-                          children: [
-                            FilledButton(
-                              onPressed: () => _editDraft(context, text),
-                              child: Text(hasDraft ? 'Edit draft' : 'Start draft'),
-                            ),
-                            OutlinedButton(
-                              onPressed: hasDraft ? () => _publishDraft(context) : null,
-                              child: const Text('Publish'),
-                            ),
-                            TextButton(
-                              onPressed: hasDraft ? () => _discardDraft(context) : null,
-                              child: const Text('Discard'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const AuraCard(
-                  child: Padding(
-                    padding: EdgeInsets.all(AuraSpace.s12),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-                error: (e, st) => AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AuraSpace.s12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Draft error', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text('$e', style: AuraText.body),
-                      ],
-                    ),
+          );
+        },
+        data: (m) {
+          if (m['_emailNotVerified'] == true) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Email not verified', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text('Verify to unlock your profile.', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s14),
+                      FilledButton(
+                        onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
+                        child: const Text('Verify now'),
+                      ),
+                    ],
                   ),
                 ),
               ),
+            );
+          }
 
-          const SizedBox(height: AuraSpace.s12),
+          final handle = (m['handle'] ?? '').toString();
+          final displayName = (m['displayName'] ?? '').toString();
+          final bio = (m['bio'] ?? '').toString();
+          final avatarUrl = (m['avatarUrl'] ?? '').toString();
 
-          // My posts
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('My posts', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                ref.watch(_mePostsProvider).when(
-                      data: (items) {
-                        if (items.isEmpty) return Text('No posts yet.', style: AuraText.body);
-                        return Column(
-                          children: items.take(8).map((p) {
-                            final id = (p['id'] ?? '').toString();
-                            final text = (p['text'] ?? '').toString();
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                text.trim().isEmpty ? '(no text)' : text,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: () => context.go('/posts/$id'),
-                            );
-                          }).toList(),
-                        );
-                      },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, st) => Text('Error: $e', style: AuraText.body),
+          final baseUrl = ref.read(dioProvider).options.baseUrl;
+          final avatarAbs = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarUrl);
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+            children: [
+              AuraCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _pickAndUploadAvatar(context),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundImage: avatarAbs.isNotEmpty ? NetworkImage(avatarAbs) : null,
+                        child: avatarAbs.isEmpty ? const Icon(Icons.person) : null,
+                      ),
                     ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AuraSpace.s12),
-
-          // Saved
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Saved', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                ref.watch(_meSavesProvider).when(
-                      data: (items) {
-                        if (items.isEmpty) return Text('No saved posts.', style: AuraText.body);
-                        return Column(
-                          children: items.take(8).map((p) {
-                            final id = (p['id'] ?? '').toString();
-                            final text = (p['text'] ?? '').toString();
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                text.trim().isEmpty ? '(no text)' : text,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(displayName.isNotEmpty ? displayName : 'Member', style: AuraText.title),
+                          const SizedBox(height: 6),
+                          if (handle.isNotEmpty) Text('@$handle', style: AuraText.body),
+                          if (bio.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(bio, style: AuraText.body),
+                          ],
+                          const SizedBox(height: AuraSpace.s12),
+                          Wrap(
+                            spacing: AuraSpace.s10,
+                            runSpacing: AuraSpace.s10,
+                            children: [
+                              FilledButton(
+                                onPressed: () => _editProfile(
+                                  context: context,
+                                  displayName: displayName,
+                                  bio: bio,
+                                ),
+                                child: const Text('Edit profile'),
                               ),
-                              onTap: () => context.go('/posts/$id'),
-                            );
-                          }).toList(),
-                        );
-                      },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, st) => Text('Error: $e', style: AuraText.body),
-                    ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AuraSpace.s12),
-
-          // Replies
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('My replies', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                ref.watch(_meRepliesProvider).when(
-                      data: (items) {
-                        if (items.isEmpty) return Text('No replies yet.', style: AuraText.body);
-                        return Column(
-                          children: items.take(8).map((p) {
-                            final id = (p['id'] ?? '').toString();
-                            final text = (p['text'] ?? '').toString();
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                text.trim().isEmpty ? '(no text)' : text,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                              OutlinedButton(
+                                onPressed: _busyLogout ? null : () => _logout(context),
+                                child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
                               ),
-                              onTap: () => context.go('/posts/$id'),
-                            );
-                          }).toList(),
-                        );
-                      },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, st) => Text('Error: $e', style: AuraText.body),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-              ],
-            ),
-          ),
-        ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+
+              // Quick links
+              AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Quick', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s10,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => context.go('/compose'),
+                          child: const Text('Compose'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => context.go('/saved'),
+                          child: const Text('Saved'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => context.go('/updates'),
+                          child: const Text('Updates'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
