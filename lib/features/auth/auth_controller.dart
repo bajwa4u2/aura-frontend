@@ -1,10 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
+
+/// A thin controller around the auth endpoints.
+///
+/// IMPORTANT: This file intentionally owns the provider so screens can just:
+///   final auth = ref.read(authControllerProvider);
+final authControllerProvider = Provider<AuthController>((ref) => AuthController(ref));
 
 class AuthController {
   AuthController(this.ref);
@@ -172,7 +179,7 @@ class AuthController {
       return _unwrap(outer);
     } else {
       final rt = _store().refreshToken;
-      if (rt == null || rt.trim().isEmpty) throw Exception('Missing refresh token');
+      if (rt == null || rt.trim().isNotEmpty == false) throw Exception('Missing refresh token');
 
       final res = await _dio().post('/auth/refresh', data: {'refreshToken': rt});
       final outer = _asMap(res.data);
