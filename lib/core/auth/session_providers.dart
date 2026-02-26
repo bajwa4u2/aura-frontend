@@ -3,25 +3,13 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import 'token_store.dart';
+import 'auth_providers.dart';
 
 /// Auth lifecycle status:
 /// - loading: tokens still being restored from storage
 /// - authed: access token present
 /// - unauthed: no access token
 enum AuthStatus { loading, authed, unauthed }
-
-/// Single source of truth for tokens/auth state.
-/// NOTE: main.dart can override this provider with a preloaded TokenStore.
-final tokenStoreProvider = ChangeNotifierProvider<TokenStore>((ref) {
-  final store = TokenStore();
-
-  // If main.dart didn't override, still try to load (non-blocking).
-  // Never block app startup.
-  store.load();
-
-  return store;
-});
 
 /// Whether tokens have been loaded from storage.
 final tokenStoreLoadedProvider = Provider<bool>((ref) {
@@ -91,7 +79,7 @@ final authEventsProvider = StreamProvider<void>((ref) {
 
 /// True if the current user has verified their email.
 ///
-/// During Auth Stabilization (Mode B cookie refresh), we intentionally avoid
+/// During Auth Stabilization we intentionally avoid
 /// network-based verification checks here to prevent circular dependencies and
 /// redirect loops. Server-side still enforces verification where required.
 ///

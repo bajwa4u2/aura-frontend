@@ -5,8 +5,30 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../providers.dart';
+
+List<Post> _coercePosts(dynamic raw) {
+  if (raw is List<Post>) return raw;
+
+  if (raw is List) {
+    final out = <Post>[];
+    for (final item in raw) {
+      if (item is Post) {
+        out.add(item);
+        continue;
+      }
+      if (item is Map) {
+        out.add(Post.fromJson((item as Map).cast<String, dynamic>()));
+        continue;
+      }
+    }
+    return out;
+  }
+
+  return const <Post>[];
+}
 
 class SavedScreen extends ConsumerWidget {
   const SavedScreen({super.key});
@@ -25,25 +47,34 @@ class SavedScreen extends ConsumerWidget {
         ),
       ],
       body: ListView(
-        padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+        padding: EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s12,
+          AuraSpace.s16,
+          AuraSpace.s24,
+        ),
         children: [
           AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Return to what you chose to keep.', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Return to what you chose to keep.',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
                 SizedBox(height: AuraSpace.s6),
                 Text(
-                  'Saved posts stay private. No totals. No performance.',
-                  style: AuraText.muted,
+                  'Saved posts stay private by default.',
+                  style: AuraText.body,
                 ),
               ],
             ),
           ),
           SizedBox(height: AuraSpace.s12),
-
           savedAsync.when(
-            data: (posts) {
+            data: (raw) {
+              final posts = _coercePosts(raw);
+
               if (posts.isEmpty) {
                 return AuraCard(
                   child: Text(
@@ -84,12 +115,9 @@ class _LoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      child: Row(
-        children: [
-          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: AuraSpace.s10),
-          Text('Loading…', style: AuraText.body),
-        ],
+      child: Padding(
+        padding: EdgeInsets.all(AuraSpace.s16),
+        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }

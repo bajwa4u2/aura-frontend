@@ -1,20 +1,23 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/auth_providers.dart';
+import 'package:aura/core/auth/session_providers.dart';
+
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+
 import '../../auth/auth_controller.dart';
+import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../../saves/providers.dart';
 
-final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+final draftProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
 
   final res = await dio.get('/posts/draft');
@@ -29,6 +32,27 @@ final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) as
 
   return null;
 });
+
+List<Post> _coercePosts(dynamic raw) {
+  if (raw is List<Post>) return raw;
+
+  if (raw is List) {
+    final out = <Post>[];
+    for (final item in raw) {
+      if (item is Post) {
+        out.add(item);
+        continue;
+      }
+      if (item is Map) {
+        out.add(Post.fromJson((item as Map).cast<String, dynamic>()));
+        continue;
+      }
+    }
+    return out;
+  }
+
+  return const <Post>[];
+}
 
 class MemberHomeScreen extends ConsumerWidget {
   const MemberHomeScreen({super.key});
@@ -48,8 +72,9 @@ class MemberHomeScreen extends ConsumerWidget {
     final feedAsync = ref.watch(feedProvider);
     final savedAsync = ref.watch(savedPostsProvider);
 
-    final draftAsync =
-        isAuthed ? ref.watch(draftProvider) : const AsyncValue<Map<String, dynamic>?>.data(null);
+    final draftAsync = isAuthed
+        ? ref.watch(draftProvider)
+        : const AsyncValue<Map<String, dynamic>?>.data(null);
 
     return AuraScaffold(
       title: 'Aura',
@@ -74,95 +99,61 @@ class MemberHomeScreen extends ConsumerWidget {
           ),
       ],
       body: ListView(
-        padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+        padding: EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s12,
+          AuraSpace.s16,
+          AuraSpace.s24,
+        ),
         children: [
-          _HeroCard(
-            onCompose: () => _openCompose(context, ref),
-            onDiscover: () => context.go('/search'),
-          ),
-          SizedBox(height: AuraSpace.s14),
+          const _HeroCard(),
 
-          _SectionTitle(title: 'Continue'),
-          SizedBox(height: AuraSpace.s10),
+          SizedBox(height: AuraSpace.s18),
 
-          Builder(
-            builder: (_) {
-              if (!isAuthed) {
-                return Padding(
-                  padding: EdgeInsets.only(bottom: AuraSpace.s10),
-                  child: AuraCard(
-                    onTap: () => context.go('/login?redirect=%2Fcompose'),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                        SizedBox(height: AuraSpace.s6),
-                        Text('Login is required to restore your draft.', style: AuraText.body),
-                      ],
+          draftAsync.when(
+            data: (draft) {
+              if (!isAuthed) return const SizedBox.shrink();
+              if (draft == null) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SectionTitle(title: 'Draft'),
+                  SizedBox(height: AuraSpace.s10),
+                  AuraCard(
+                    onTap: () => context.push('/compose'),
+                    child: Text(
+                      'Continue your draft.',
+                      style: AuraText.body,
                     ),
                   ),
-                );
-              }
-
-              return draftAsync.when(
-                data: (draft) {
-                  if (draft == null) return const SizedBox.shrink();
-
-                  final text = (draft['text'] ?? '').toString().trim();
-                  final mediaType = (draft['mediaType'] ?? 'NONE').toString().toUpperCase();
-                  final hasMedia = mediaType == 'IMAGE' || mediaType == 'VIDEO';
-
-                  if (text.isEmpty && !hasMedia) return const SizedBox.shrink();
-
-                  final updatedAtRaw = (draft['updatedAt'] ?? '').toString();
-                  final dt = DateTime.tryParse(updatedAtRaw)?.toLocal();
-                  final savedLine = dt == null ? 'Draft saved.' : 'Draft saved ${_time(dt)}.';
-
-                  String preview;
-                  if (text.isNotEmpty) {
-                    preview = text.length <= 140 ? text : '${text.substring(0, 140)}…';
-                  } else {
-                    preview = mediaType == 'VIDEO'
-                        ? 'Video draft (context optional).'
-                        : 'Image draft (context optional).';
-                  }
-
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: AuraSpace.s10),
-                    child: AuraCard(
-                      onTap: () => _openCompose(context, ref),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Continue draft', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                          SizedBox(height: AuraSpace.s6),
-                          Text(preview, style: AuraText.body.copyWith(height: 1.35)),
-                          SizedBox(height: AuraSpace.s10),
-                          Text(savedLine, style: AuraText.muted),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                ],
               );
             },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
 
+          SizedBox(height: AuraSpace.s18),
+
+          _SectionTitle(title: 'Saved'),
+          SizedBox(height: AuraSpace.s10),
+
           savedAsync.when(
-            data: (posts) {
-              final count = posts.length;
+            data: (raw) {
+              final posts = _coercePosts(raw);
 
               final header = AuraCard(
                 onTap: () => context.push('/saved'),
                 child: Row(
                   children: [
-                    Text('Saved', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                    const Spacer(),
-                    Text('$count saved', style: AuraText.muted),
-                    SizedBox(width: AuraSpace.s8),
-                    const Icon(Icons.chevron_right, size: 18),
+                    Expanded(
+                      child: Text(
+                        'Saved posts',
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
                   ],
                 ),
               );
@@ -199,7 +190,8 @@ class MemberHomeScreen extends ConsumerWidget {
               );
             },
             loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(child: Text('Could not load saved: $e', style: AuraText.body)),
+            error: (e, _) =>
+                AuraCard(child: Text('Could not load saved: $e', style: AuraText.body)),
           ),
 
           SizedBox(height: AuraSpace.s18),
@@ -210,7 +202,9 @@ class MemberHomeScreen extends ConsumerWidget {
           feedAsync.when(
             data: (posts) {
               final top = posts.take(6).toList();
-              if (top.isEmpty) return AuraCard(child: Text('No posts yet.', style: AuraText.body));
+              if (top.isEmpty) {
+                return AuraCard(child: Text('No posts yet.', style: AuraText.body));
+              }
               return Column(
                 children: top
                     .map(
@@ -223,7 +217,8 @@ class MemberHomeScreen extends ConsumerWidget {
               );
             },
             loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(child: Text('Could not load feed: $e', style: AuraText.body)),
+            error: (e, _) =>
+                AuraCard(child: Text('Could not load feed: $e', style: AuraText.body)),
           ),
 
           SizedBox(height: AuraSpace.s18),
@@ -237,10 +232,7 @@ class MemberHomeScreen extends ConsumerWidget {
 }
 
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.onCompose, required this.onDiscover});
-
-  final VoidCallback onCompose;
-  final VoidCallback onDiscover;
+  const _HeroCard();
 
   @override
   Widget build(BuildContext context) {
@@ -248,28 +240,11 @@ class _HeroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('A place where weight matters.', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          Text('Settle. Read. Write with care.', style: AuraText.title),
           SizedBox(height: AuraSpace.s8),
           Text(
-            'Write quietly. Read responsibly. Return to what you saved.',
+            'A quiet space for correspondence and durable thought.',
             style: AuraText.body,
-          ),
-          SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onCompose,
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Compose'),
-              ),
-              OutlinedButton.icon(
-                onPressed: onDiscover,
-                icon: const Icon(Icons.search),
-                label: const Text('Discover'),
-              ),
-            ],
           ),
         ],
       ),
@@ -296,27 +271,22 @@ class _ToolsRow extends StatelessWidget {
       children: [
         Expanded(
           child: AuraCard(
-            onTap: () => context.go('/updates'),
-            child: Row(
-              children: [
-                const Icon(Icons.article_outlined, size: 18),
-                SizedBox(width: AuraSpace.s8),
-                Text('Updates', style: AuraText.body),
-              ],
-            ),
+            onTap: () => context.push('/updates'),
+            child: Text('Updates', style: AuraText.body),
           ),
         ),
         SizedBox(width: AuraSpace.s10),
         Expanded(
           child: AuraCard(
-            onTap: () => context.go('/me'),
-            child: Row(
-              children: [
-                const Icon(Icons.person_outline, size: 18),
-                SizedBox(width: AuraSpace.s8),
-                Text('Me', style: AuraText.body),
-              ],
-            ),
+            onTap: () => context.push('/search'),
+            child: Text('Search', style: AuraText.body),
+          ),
+        ),
+        SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: AuraCard(
+            onTap: () => context.push('/me'),
+            child: Text('Me', style: AuraText.body),
           ),
         ),
       ],
@@ -330,20 +300,10 @@ class _LoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      child: Row(
-        children: [
-          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: AuraSpace.s10),
-          Text('Loading…', style: AuraText.body),
-        ],
+      child: Padding(
+        padding: EdgeInsets.all(AuraSpace.s16),
+        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }
-}
-
-String _time(DateTime dt) {
-  final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-  final mm = dt.minute.toString().padLeft(2, '0');
-  final ap = dt.hour >= 12 ? 'pm' : 'am';
-  return '$h:$mm $ap';
 }

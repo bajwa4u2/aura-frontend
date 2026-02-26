@@ -42,10 +42,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     try {
-      await AuthController(ref).login(
-      email: _emailCtrl.text.trim(),
-      password: _passCtrl.text,
-  );
+      final email = _emailCtrl.text.trim();
+      final pass = _passwordCtrl.text;
+
+      // Post-unification: use named args
+      await AuthController(ref).login(email: email, password: pass);
+
+      final redirect = _safeRedirect(widget.redirectTo);
+      if (!mounted) return;
+      context.go(redirect);
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -62,8 +67,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final redirect = _safeRedirect(widget.redirectTo);
-
     return AuraScaffold(
       title: 'Login',
       body: Center(
@@ -78,8 +81,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 children: [
                   Text('Welcome back', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
-                  Text('Sign in to continue.', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s16),
+
+                  if (_error != null) ...[
+                    Text(_error!, style: AuraText.body.copyWith(height: 1.3)),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
 
                   TextFormField(
                     controller: _emailCtrl,
@@ -92,65 +98,38 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: AuraSpace.s12),
+                  const SizedBox(height: AuraSpace.s10),
+
                   TextFormField(
                     controller: _passwordCtrl,
                     obscureText: true,
                     decoration: const InputDecoration(labelText: 'Password'),
                     validator: (v) {
-                      if ((v ?? '').isEmpty) return 'Password is required';
+                      final s = (v ?? '').trim();
+                      if (s.isEmpty) return 'Password is required';
                       return null;
                     },
                   ),
+                  const SizedBox(height: AuraSpace.s14),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _busy ? null : _login,
+                      child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                    ),
+                  ),
 
                   const SizedBox(height: AuraSpace.s10),
-
                   Row(
                     children: [
                       TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () => context.go(
-                                  '/forgot-password?redirect=${Uri.encodeComponent(redirect)}',
-                                ),
+                        onPressed: _busy ? null : () => context.push('/forgot-password'),
                         child: const Text('Forgot password'),
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () => context.go(
-                                  '/verify-email?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}',
-                                ),
-                        child: const Text('Verify email'),
-                      ),
-                    ],
-                  ),
-
-                  if (_error != null) ...[
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(_error!, style: AuraText.body.copyWith(color: Colors.red)),
-                  ],
-
-                  const SizedBox(height: AuraSpace.s10),
-
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: _busy ? null : _login,
-                        child: Text(_busy ? 'Signing in…' : 'Login'),
-                      ),
-                      OutlinedButton(
-                        onPressed: _busy
-                            ? null
-                            : () {
-                                final q = widget.redirectTo == null || widget.redirectTo!.trim().isEmpty
-                                    ? ''
-                                    : '?redirect=${Uri.encodeComponent(widget.redirectTo!)}';
-                                context.go('/register$q');
-                              },
+                        onPressed: _busy ? null : () => context.push('/register'),
                         child: const Text('Create account'),
                       ),
                     ],

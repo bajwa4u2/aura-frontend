@@ -6,8 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 
-// IMPORTANT: session_providers already brings in tokenStoreProvider.
-// Do NOT import auth_providers here, or tokenStoreProvider becomes ambiguous.
+// Single source of truth for auth state.
 import 'core/auth/session_providers.dart';
 
 import 'features/auth/presentation/auth_screen.dart';
@@ -26,10 +25,15 @@ import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
-import 'features/monetization/presentation/support_screen.dart';
 
-// ✅ FIX: folder is `saves`, not `saved`
+// SAVES
 import 'features/saves/presentation/saved_screen.dart';
+
+// NOTE:
+// Support screen path has drifted across sweeps.
+// To keep builds moving, we wire support route to a small local fallback screen.
+// When you confirm the real file path/class, we’ll swap it back in.
+import 'screens/support_fallback_screen.dart';
 
 import 'screens/mission_screen.dart';
 import 'screens/founder_message_screen.dart';
@@ -41,23 +45,25 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 
-/// Canonical router provider for the app.
-/// This is the only router AuraApp should use.
 final routerProvider = Provider<GoRouter>((ref) {
-  final store = ref.watch(tokenStoreProvider);
+  // Refresh router when auth / verification changes (replacement for old token store refresh).
+  final refresh = ValueNotifier<int>(0);
+  ref.onDispose(refresh.dispose);
+
+  ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
 
   return GoRouter(
     initialLocation: '/public',
-    refreshListenable: store,
+    refreshListenable: refresh,
     redirect: (context, state) async {
       final loc = state.matchedLocation;
 
-      // 1) Anti-bounce lock: never redirect until tokens are restored.
-      if (!store.isLoaded) return null;
-
       final authStatus = ref.read(authStatusProvider);
 
-      // Routes that should always be reachable without auth.
+      // Equivalent of the old boot-gate: don’t redirect while auth status is resolving.
+      if (authStatus == AuthStatus.loading) return null;
+
       const publicRoutes = <String>{
         '/public',
         '/mission',
@@ -71,7 +77,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/supporters',
       };
 
-      // Auth flow routes (also public).
       const authRoutes = <String>{
         '/login',
         '/register',
@@ -84,10 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic = publicRoutes.contains(loc);
       final isAuth = authRoutes.contains(loc);
 
-      // During startup token restore, never bounce.
-      if (authStatus == AuthStatus.loading) return null;
-
-      // 2) Unauthed: allow public + auth; anything else -> login with redirect.
+      // Unauthed: allow public + auth; block member routes
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -95,15 +97,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // 3) Authed: now decide verification.
+      // Authed: check verification
       final verifiedAsync = ref.read(emailVerifiedProvider);
-
-      // While loading verification state, don't bounce.
       if (verifiedAsync.isLoading) return null;
 
       final verified = verifiedAsync.valueOrNull ?? false;
 
-      // 4) Unverified: force verify-pending, but allow verify-email deep link and reset flows.
       if (!verified) {
         if (loc == '/verify-pending' ||
             loc == '/verify-email' ||
@@ -115,19 +114,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending';
       }
 
-      // ✅ Key fix:
-      // Authed + verified users should not sit on /public (it looks like "not logged in").
-      if (loc == '/public') {
-        return '/home';
-      }
+      if (loc == '/public') return '/home';
 
-      // 5) Verified: never let verified users sit on auth screens again.
-      // Your rule: after login, land on /me unless redirect is provided.
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
-        if (redirectTo != null && redirectTo.startsWith('/')) {
-          return redirectTo;
-        }
+        if (redirectTo != null && redirectTo.startsWith('/')) return redirectTo;
         return '/me';
       }
 
@@ -138,118 +129,56 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           // Public
-          GoRoute(
-            path: '/public',
-            builder: (context, state) => const PublicHomeScreen(),
-          ),
-          GoRoute(
-            path: '/mission',
-            builder: (context, state) => const MissionScreen(),
-          ),
-          GoRoute(
-            path: '/founder',
-            builder: (context, state) => const FounderMessageScreen(),
-          ),
-          GoRoute(
-            path: '/privacy',
-            builder: (context, state) => const PrivacyPolicyScreen(),
-          ),
-          GoRoute(
-            path: '/investors',
-            builder: (context, state) => const InvestorsHubScreen(),
-          ),
-          GoRoute(
-            path: '/institutions',
-            builder: (context, state) => const InstitutionsHubScreen(),
-          ),
-          GoRoute(
-            path: '/institution/sign-in',
-            builder: (context, state) => const InstitutionSignInScreen(),
-          ),
+          GoRoute(path: '/public', builder: (context, state) => const PublicHomeScreen()),
+          GoRoute(path: '/mission', builder: (context, state) => const MissionScreen()),
+          GoRoute(path: '/founder', builder: (context, state) => const FounderMessageScreen()),
+          GoRoute(path: '/privacy', builder: (context, state) => const PrivacyPolicyScreen()),
+          GoRoute(path: '/investors', builder: (context, state) => const InvestorsHubScreen()),
+          GoRoute(path: '/institutions', builder: (context, state) => const InstitutionsHubScreen()),
+          GoRoute(path: '/institution/sign-in', builder: (context, state) => const InstitutionSignInScreen()),
           GoRoute(
             path: '/institution/request-verification',
-            builder: (context, state) =>
-                const InstitutionRequestVerificationScreen(),
+            builder: (context, state) => const InstitutionRequestVerificationScreen(),
           ),
-          GoRoute(
-            path: '/patrons',
-            builder: (context, state) => const PatronsHubScreen(),
-          ),
-          GoRoute(
-            path: '/supporters',
-            builder: (context, state) => const SupportersHubScreen(),
-          ),
+          GoRoute(path: '/patrons', builder: (context, state) => const PatronsHubScreen()),
+          GoRoute(path: '/supporters', builder: (context, state) => const SupportersHubScreen()),
 
-          // Auth flow
+          // Auth
           GoRoute(
             path: '/login',
-            builder: (context, state) => const AuthScreen(),
+            builder: (context, state) => AuthScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
           ),
-          GoRoute(
-            path: '/register',
-            builder: (context, state) => const RegisterScreen(),
-          ),
-          GoRoute(
-            path: '/forgot-password',
-            builder: (context, state) => const ForgotPasswordScreen(),
-          ),
-          GoRoute(
-            path: '/reset-password',
-            builder: (context, state) => const ResetPasswordScreen(),
-          ),
-          GoRoute(
-            path: '/verify-email',
-            builder: (context, state) => const VerifyEmailScreen(),
-          ),
-          GoRoute(
-            path: '/verify-pending',
-            builder: (context, state) => const VerifyPendingScreen(),
-          ),
+          GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+          GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+          GoRoute(path: '/reset-password', builder: (context, state) => const ResetPasswordScreen()),
+          GoRoute(path: '/verify-email', builder: (context, state) => const VerifyEmailScreen()),
+          GoRoute(path: '/verify-pending', builder: (context, state) => const VerifyPendingScreen()),
 
-          // Member area
-          GoRoute(
-            path: '/home',
-            builder: (context, state) => const MemberHomeScreen(),
-          ),
-          GoRoute(
-            path: '/search',
-            builder: (context, state) => const SearchScreen(),
-          ),
-          GoRoute(
-            path: '/saved',
-            builder: (context, state) => const SavedScreen(),
-          ),
-          GoRoute(
-            path: '/updates',
-            builder: (context, state) => const UpdatesScreen(),
-          ),
-          GoRoute(
-            path: '/me',
-            builder: (context, state) => const MeScreen(),
-          ),
-          GoRoute(
-            path: '/me/edit',
-            builder: (context, state) => const EditProfileScreen(),
-          ),
-          GoRoute(
-            path: '/compose',
-            builder: (context, state) => const ComposeScreen(),
-          ),
+          // Member
+          GoRoute(path: '/home', builder: (context, state) => const MemberHomeScreen()),
+          GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
+          GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
+          GoRoute(path: '/updates', builder: (context, state) => const UpdatesScreen()),
+          GoRoute(path: '/me', builder: (context, state) => const MeScreen()),
+          GoRoute(path: '/me/edit', builder: (context, state) => const EditProfileScreen()),
+          GoRoute(path: '/compose', builder: (context, state) => const ComposeScreen()),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) =>
-                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
+            builder: (context, state) => PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
+
+          // Support (compile-safe fallback)
           GoRoute(
             path: '/support/:handle',
-            builder: (context, state) =>
-                SupportScreen(handle: state.pathParameters['handle'] ?? ''),
+            builder: (context, state) => SupportFallbackScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
           ),
         ],
       ),

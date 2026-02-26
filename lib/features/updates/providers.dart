@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/net/dio_provider.dart';
-import '../../core/auth/auth_providers.dart';
-import 'notifications_repository.dart';
 
-final notificationsRepoProvider = Provider<NotificationsRepository>((ref) {
-  return NotificationsRepository(ref.watch(dioProvider));
+import '../../core/net/dio_provider.dart';
+import 'package:aura/core/auth/session_providers.dart';
+
+import 'updates_repository.dart';
+
+final notificationsRepoProvider = Provider<UpdatesRepository>((ref) {
+  return UpdatesRepository(ref.watch(dioProvider));
 });
 
 final notificationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -12,5 +14,5 @@ final notificationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   if (!authed) return const <Map<String, dynamic>>[];
 
   final repo = ref.watch(notificationsRepoProvider);
-  return repo.list();
+  return repo.listUpdates(limit: 24);
 });
