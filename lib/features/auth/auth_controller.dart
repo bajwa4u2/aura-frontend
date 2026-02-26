@@ -1,160 +1,115 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-  UnauthorizedException,
-} from '@nestjs/common'
-import type { Request } from 'express'
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import { PrismaService } from '../prisma/prisma.service'
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
-import { CurrentUserId } from '../common/decorators/current-user.decorator'
+import '../../core/net/dio_provider.dart';
+import 'auth_providers.dart';
 
-import { AuthService } from './auth.service'
-import { LoginDto } from './dto/login.dto'
-import { RegisterDto } from './dto/register.dto'
-import { ForgotPasswordDto } from './dto/forgot-password.dto'
-import { ResetPasswordDto } from './dto/reset-password.dto'
-import { ResendVerificationDto } from './dto/resend-verification.dto'
-import { VerifyEmailDto } from './dto/verify-email.dto'
+class AuthController {
+  AuthController(this.ref);
 
-@Controller('auth')
-export class AuthController {
-  constructor(
-    private readonly auth: AuthService,
-    private readonly prisma: PrismaService,
-  ) {}
+  final Ref ref;
 
-  private meta(req: any) {
-    const forwardedFor = (req.headers?.['x-forwarded-for'] as string | undefined) ?? ''
-    const ip = forwardedFor.split(',')[0]?.trim() || req.ip || null
-    const userAgent = (req.headers?.['user-agent'] as string | undefined) ?? null
-    const origin = (req.headers?.origin as string | undefined) ?? null
-    return { ip, userAgent, origin }
+  Dio get _dio => ref.read(dioProvider);
+
+  Future<void> login(String email, String password) async {
+    final res = await _dio.post('/auth/login', data: {
+      'email': email.trim().toLowerCase(),
+      'password': password,
+    });
+
+    final payload = _asMap(res.data);
+    final data = _unwrapData(payload);
+
+    final accessToken =
+        (data['accessToken'] ?? payload['accessToken'])?.toString();
+    final refreshToken =
+        (data['refreshToken'] ?? payload['refreshToken'])?.toString();
+
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception('Login failed: accessToken missing');
+    }
+
+    await ref.read(tokenStoreProvider).setSession(
+          accessToken: accessToken,
+          refreshToken: kIsWeb ? null : refreshToken,
+        );
   }
 
-  @Post('register')
-  async register(@Req() req: Request, @Body() dto: RegisterDto) {
-    const email = (dto.email ?? '').trim()
-    const password = dto.password ?? ''
-    const firstName = (dto.firstName ?? '').trim()
-    const lastName = (dto.lastName ?? '').trim()
-    const handle = (dto.handle ?? '').trim()
-    const displayName = (dto.displayName ?? '').trim()
-
-    if (!email) throw new BadRequestException('Email is required')
-    if (!password) throw new BadRequestException('Password is required')
-    if (!firstName || !lastName) throw new BadRequestException('First and last name required')
-
-    return this.auth.register(
-      email,
-      password,
-      { firstName, lastName, handle: handle || undefined, displayName: displayName || undefined },
-      this.meta(req),
-    )
+  Future<void> logout(BuildContext context) async {
+    try {
+      if (kIsWeb) {
+        await _dio.post('/auth/logout');
+      } else {
+        final rt = ref.read(tokenStoreProvider).refreshToken;
+        await _dio.post('/auth/logout', data: {
+          if (rt != null && rt.trim().isNotEmpty) 'refreshToken': rt.trim(),
+        });
+      }
+    } catch (_) {
+      // ignore; still clear local
+    } finally {
+      await ref.read(tokenStoreProvider).clearTokens();
+    }
   }
 
-  @Post('login')
-  async login(@Req() req: Request, @Body() dto: LoginDto) {
-    const email = (dto.email ?? '').trim()
-    const password = dto.password ?? ''
-    if (!email) throw new BadRequestException('Email is required')
-    if (!password) throw new BadRequestException('Password is required')
-    return this.auth.login(email, password, this.meta(req))
+  Future<void> register({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? handle,
+    String? displayName,
+  }) async {
+    final res = await _dio.post('/auth/register', data: {
+      'email': email.trim().toLowerCase(),
+      'password': password,
+      'firstName': firstName.trim(),
+      'lastName': lastName.trim(),
+      if (handle != null && handle.trim().isNotEmpty) 'handle': handle.trim(),
+      if (displayName != null && displayName.trim().isNotEmpty)
+        'displayName': displayName.trim(),
+    });
+
+    final payload = _asMap(res.data);
+    final data = _unwrapData(payload);
+
+    final accessToken =
+        (data['accessToken'] ?? payload['accessToken'])?.toString();
+    final refreshToken =
+        (data['refreshToken'] ?? payload['refreshToken'])?.toString();
+
+    if (accessToken != null && accessToken.isNotEmpty) {
+      await ref.read(tokenStoreProvider).setSession(
+            accessToken: accessToken,
+            refreshToken: kIsWeb ? null : refreshToken,
+          );
+    }
   }
 
-  @Post('refresh')
-  async refresh(@Req() req: Request, @Body() dto: any) {
-    const refreshToken = (dto.refreshToken ?? '').trim()
-    if (!refreshToken) throw new BadRequestException('Refresh token is required')
-    return this.auth.refresh(refreshToken, this.meta(req))
+  Future<void> resendVerification(String email) async {
+    await _dio.post('/auth/resend-verification', data: {
+      'email': email.trim().toLowerCase(),
+    });
   }
 
-  @Post('logout')
-  async logout(@Body() dto: any) {
-    const refreshToken = (dto.refreshToken ?? '').trim()
-    if (!refreshToken) throw new BadRequestException('Refresh token is required')
-    return this.auth.logout(refreshToken)
+  Future<void> verifyEmail(String token) async {
+    await _dio.post('/auth/verify-email', data: {
+      'token': token.trim(),
+    });
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('logout-all')
-  async logoutAll(@CurrentUserId() userId: string) {
-    return this.auth.logoutAll(userId)
+  Map<String, dynamic> _asMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return v.map((k, val) => MapEntry(k.toString(), val));
+    throw Exception('Unexpected response shape (not a map)');
   }
 
-  @Post('forgot-password')
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    const email = (dto.email ?? '').trim().toLowerCase()
-    if (!email) throw new BadRequestException('Email is required')
-    return this.auth.forgotPassword(email)
-  }
-
-  @Post('reset-password')
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    const token = (dto.token ?? '').trim()
-    const password = dto.password ?? ''
-    if (!token) throw new BadRequestException('Token is required')
-    if (!password) throw new BadRequestException('Password is required')
-    return this.auth.resetPassword(token, password)
-  }
-
-  @Post('resend-verification')
-  async resendVerification(@Body() dto: ResendVerificationDto) {
-    const email = (dto.email ?? '').trim().toLowerCase()
-    if (!email) throw new BadRequestException('Email is required')
-    return this.auth.resendEmailVerification(email)
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('resend-verification/me')
-  async resendVerificationMe(@CurrentUserId() userId: string) {
-    return this.auth.resendEmailVerificationForUser(userId)
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('resend-email-verification/me')
-  async resendEmailVerificationMeAlias(@CurrentUserId() userId: string) {
-    return this.auth.resendEmailVerificationForUser(userId)
-  }
-
-  @Post('resend-email-verification')
-  async resendEmailVerificationAlias(@Body() dto: ResendVerificationDto) {
-    const email = (dto.email ?? '').trim().toLowerCase()
-    if (!email) throw new BadRequestException('Email is required')
-    return this.auth.resendEmailVerification(email)
-  }
-
-  @Post('verify-email')
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
-    const token = (dto.token ?? '').trim()
-    if (!token) throw new BadRequestException('Token is required')
-    return this.auth.verifyEmail(token)
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async me(@CurrentUserId() userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        handle: true,
-        displayName: true,
-        firstName: true,
-        lastName: true,
-        emailVerifiedAt: true,
-      },
-    })
-
-    if (!user) throw new UnauthorizedException('Unauthorized')
-
-    return { ok: true, user }
+  Map<String, dynamic> _unwrapData(Map<String, dynamic> payload) {
+    final d = payload['data'];
+    if (d is Map<String, dynamic>) return d;
+    if (d is Map) return d.map((k, val) => MapEntry(k.toString(), val));
+    return payload;
   }
 }
