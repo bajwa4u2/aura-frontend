@@ -64,6 +64,9 @@ final authEventsProvider = StreamProvider<void>((ref) {
     if (!controller.isClosed) controller.add(null);
   }
 
+  // Emit once on subscription so routers refresh on boot.
+  emit();
+
   final store = ref.watch(tokenStoreProvider);
 
   void listener() => emit();
@@ -79,12 +82,15 @@ final authEventsProvider = StreamProvider<void>((ref) {
 
 /// True if the current user has verified their email.
 ///
-/// During Auth Stabilization we intentionally avoid
-/// network-based verification checks here to prevent circular dependencies and
-/// redirect loops. Server-side still enforces verification where required.
-///
-/// Once auth is stable, we can re-introduce a verified check via /v1/users/me
-/// in a separate layer.
+/// During stabilization, keep this permissive to avoid redirect loops.
+/// Once everything is stable, we can fetch /v1/auth/me or /v1/users/me here.
 final emailVerifiedProvider = FutureProvider<bool>((ref) async {
+  final status = ref.watch(authStatusProvider);
+
+  // If not authed, verification shouldn't block anything.
+  if (status != AuthStatus.authed) return true;
+
+  // Stabilization posture: treat authed as verified for now.
+  // (Backend still enforces verification where required.)
   return true;
 });
