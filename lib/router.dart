@@ -1,13 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 
-// ✅ Use the existing auth boolean provider (we know this exists in your project)
+// Single source of truth for auth state.
 import 'core/auth/session_providers.dart';
 
-// Screens / features
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
 import 'features/auth/presentation/verify_email_screen.dart';
@@ -25,11 +26,14 @@ import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 
+// SAVES
 import 'features/saves/presentation/saved_screen.dart';
 
+// Support fallback
 import 'screens/support_fallback_screen.dart';
 
 import 'screens/mission_screen.dart';
+import 'screens/white_paper_screen.dart';
 import 'screens/founder_message_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/investors_hub_screen.dart';
@@ -39,20 +43,26 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 
-// NEW
-import 'screens/white_paper_screen.dart';
-
 final routerProvider = Provider<GoRouter>((ref) {
-  // ✅ This exists in your repo and is used elsewhere.
-  final isAuthed = ref.watch(isAuthedProvider);
+  // Refresh router when auth / verification changes.
+  final refresh = ValueNotifier<int>(0);
+  ref.onDispose(refresh.dispose);
+
+  ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
 
   return GoRouter(
     initialLocation: '/public',
-    redirect: (context, state) {
-      final loc = state.uri.toString();
+    refreshListenable: refresh,
+    redirect: (context, state) async {
+      final loc = state.matchedLocation;
 
-      // Public routes always allowed
-      const publicPrefixes = <String>[
+      final authStatus = ref.read(authStatusProvider);
+
+      // Don’t redirect while auth status is resolving.
+      if (authStatus == AuthStatus.loading) return null;
+
+      const publicRoutes = <String>{
         '/public',
         '/mission',
         '/white-paper',
@@ -64,27 +74,55 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/institution/request-verification',
         '/patrons',
         '/supporters',
-        '/support/',
-      ];
+      };
 
-      final isPublic = publicPrefixes.any((p) => loc.startsWith(p));
+      const authRoutes = <String>{
+        '/login',
+        '/register',
+        '/forgot-password',
+        '/reset-password',
+        '/verify-email',
+        '/verify-pending',
+      };
 
-      // Auth routes
-      final isAuthRoute = loc.startsWith('/auth') ||
-          loc.startsWith('/register') ||
-          loc.startsWith('/verify-email') ||
-          loc.startsWith('/verify-pending') ||
-          loc.startsWith('/forgot-password') ||
-          loc.startsWith('/reset-password');
+      final isPublic = publicRoutes.contains(loc);
+      final isAuth = authRoutes.contains(loc);
 
-      // If not authed, block member-only routes
-      if (!isAuthed && !isPublic && !isAuthRoute) {
-        return '/auth';
+      // Unauthed: allow public + auth; block member routes
+      if (authStatus == AuthStatus.unauthed) {
+        if (isPublic || isAuth) return null;
+
+        final dest = state.uri.toString();
+        return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // If authed, avoid landing on auth/register
-      if (isAuthed && (loc == '/auth' || loc == '/register')) {
-        return '/home';
+      // Authed: enforce email verification gate
+      final verifiedAsync = ref.read(emailVerifiedProvider);
+
+      if (verifiedAsync.isLoading) {
+        if (isPublic || isAuth) return null;
+        return '/verify-pending';
+      }
+
+      final verified = verifiedAsync.valueOrNull ?? false;
+
+      if (!verified) {
+        if (loc == '/verify-pending' ||
+            loc == '/verify-email' ||
+            loc == '/forgot-password' ||
+            loc == '/reset-password' ||
+            isPublic) {
+          return null;
+        }
+        return '/verify-pending';
+      }
+
+      if (loc == '/public') return '/home';
+
+      if (isAuth) {
+        final redirectTo = state.uri.queryParameters['redirect'];
+        if (redirectTo != null && redirectTo.startsWith('/')) return redirectTo;
+        return '/me';
       }
 
       return null;
@@ -110,35 +148,36 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/supporters', builder: (context, state) => const SupportersHubScreen()),
 
           // Auth
-          GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => AuthScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
           GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
-          GoRoute(path: '/verify-email', builder: (context, state) => const VerifyEmailScreen()),
-          GoRoute(path: '/verify-pending', builder: (context, state) => const VerifyPendingScreen()),
           GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
           GoRoute(path: '/reset-password', builder: (context, state) => const ResetPasswordScreen()),
+          GoRoute(path: '/verify-email', builder: (context, state) => const VerifyEmailScreen()),
+          GoRoute(path: '/verify-pending', builder: (context, state) => const VerifyPendingScreen()),
 
           // Member
           GoRoute(path: '/home', builder: (context, state) => const MemberHomeScreen()),
           GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
+          GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (context, state) => const UpdatesScreen()),
           GoRoute(path: '/me', builder: (context, state) => const MeScreen()),
           GoRoute(path: '/me/edit', builder: (context, state) => const EditProfileScreen()),
           GoRoute(path: '/compose', builder: (context, state) => const ComposeScreen()),
           GoRoute(
-            path: '/post/:id',
-            builder: (context, state) => PostDetailScreen(
-              postId: state.pathParameters['id'] ?? '',
-            ),
+            path: '/posts/:id',
+            builder: (context, state) => PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           GoRoute(
-            path: '/author/:handle',
-            builder: (context, state) => AuthorProfileScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            path: '/u/:handle',
+            builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
-          GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
 
-          // Support fallback
+          // Support (compile-safe fallback)
           GoRoute(
             path: '/support/:handle',
             builder: (context, state) => SupportFallbackScreen(
@@ -150,3 +189,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _sub = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
