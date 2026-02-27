@@ -1,14 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 
-// Single source of truth for auth state.
+// ✅ Use the existing auth boolean provider (we know this exists in your project)
 import 'core/auth/session_providers.dart';
 
+// Screens / features
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
 import 'features/auth/presentation/verify_email_screen.dart';
@@ -26,13 +25,8 @@ import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 
-// SAVES
 import 'features/saves/presentation/saved_screen.dart';
 
-// NOTE:
-// Support screen path has drifted across sweeps.
-// To keep builds moving, we wire support route to a small local fallback screen.
-// When you confirm the real file path/class, we’ll swap it back in.
 import 'screens/support_fallback_screen.dart';
 
 import 'screens/mission_screen.dart';
@@ -49,15 +43,13 @@ import 'screens/institution_request_verification_screen.dart';
 import 'screens/white_paper_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Refresh router when auth state changes.
-  final authState = ref.watch(sessionStateProvider);
+  // ✅ This exists in your repo and is used elsewhere.
+  final isAuthed = ref.watch(isAuthedProvider);
 
   return GoRouter(
     initialLocation: '/public',
-    refreshListenable: GoRouterRefreshStream(ref.watch(sessionStreamProvider)),
     redirect: (context, state) {
       final loc = state.uri.toString();
-      final isAuthed = authState.isAuthed;
 
       // Public routes always allowed
       const publicPrefixes = <String>[
@@ -80,14 +72,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth routes
       final isAuthRoute = loc.startsWith('/auth') ||
           loc.startsWith('/register') ||
-          loc.startsWith('/verify') ||
+          loc.startsWith('/verify-email') ||
+          loc.startsWith('/verify-pending') ||
           loc.startsWith('/forgot-password') ||
           loc.startsWith('/reset-password');
 
+      // If not authed, block member-only routes
       if (!isAuthed && !isPublic && !isAuthRoute) {
         return '/auth';
       }
 
+      // If authed, avoid landing on auth/register
       if (isAuthed && (loc == '/auth' || loc == '/register')) {
         return '/home';
       }
@@ -155,17 +150,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    _sub = stream.listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _sub;
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
-  }
-}
