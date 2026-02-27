@@ -8,7 +8,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DocumentScaffold(
-      title: 'Privacy Policy',
+      title: 'Privacy',
       child: _PrivacyBody(),
     );
   }
@@ -22,67 +22,61 @@ class _PrivacyBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Doc.title('Privacy Policy'),
+        Doc.title('Privacy'),
         const SizedBox(height: 10),
-        Doc.meta('Effective date: February 8, 2026'),
-        const SizedBox(height: 4),
-        Doc.meta('Version: v1.1'),
-        const SizedBox(height: 16),
-
-        Doc.p(
-          'Aura is committed to protecting the privacy, dignity, and autonomy of its readers, contributors, and visitors. '
-          'This Privacy Policy explains what information Aura collects, how it is used, and the principles governing data handling.',
+        Doc.meta('Data minimization. Identity integrity. No surveillance incentives.'),
+        Doc.lede(
+          'Aura collects only what is necessary to preserve identity integrity, moderation continuity, and structural record.',
         ),
-        Doc.p('Aura treats privacy as an ethical obligation, not merely a legal requirement.'),
 
-        Doc.h('1. Information We Collect'),
-        Doc.p('Aura collects only the minimum information necessary to operate:'),
+        Doc.h('What we collect'),
         Doc.bullets([
-          'Account information provided voluntarily (such as name or email)',
-          'Content submitted by users (essays, notes, correspondence)',
-          'Technical data required for basic site functionality (such as cookies essential for login)',
-        ]),
-        Doc.p('Aura does not collect behavioral analytics for engagement optimization.'),
-
-        Doc.h('2. Information We Do Not Collect'),
-        Doc.p('Aura explicitly does not collect:'),
-        Doc.bullets([
-          'Behavioral tracking data',
-          'Third-party advertising identifiers',
-          'Location tracking beyond coarse operational needs',
-          'Social graph data',
-          'Biometric or sensitive personal data',
+          'Account identity information (email, handle, profile data)',
+          'Authentication and session data required for secure access',
+          'Posts, replies, and related moderation records',
+          'Limited technical logs for security and abuse prevention',
         ]),
 
-        Doc.h('3. How Information Is Used'),
-        Doc.p('Information is used only to:'),
+        Doc.h('What we do not collect'),
         Doc.bullets([
-          'Provide access to Aura’s services',
-          'Preserve and display submitted content',
-          'Communicate essential service-related information',
+          'Behavioral tracking for advertising purposes',
+          'Public engagement analytics as social scoreboards',
+          'Shadow profiles or off-platform surveillance data',
         ]),
-        Doc.p('Aura does not use personal data to influence behavior, personalize feeds, or drive engagement.'),
 
-        Doc.h('4. Sharing and Disclosure'),
+        Doc.h('How data is used'),
         Doc.p(
-          'Aura does not sell personal information. Aura shares data only when required to operate the service '
-          '(for example, infrastructure providers) or when legally required.',
+          'Data is used to maintain account integrity, enforce moderation policies, preserve chronological record, and prevent abuse. It is not used to optimize engagement velocity or manipulate visibility.',
         ),
 
-        Doc.h('5. Data Retention'),
+        Doc.h('AI usage'),
         Doc.p(
-          'Aura retains account and content data only as long as needed for the service to function. '
-          'Users may request deletion of their account and associated data, subject to legitimate operational and legal constraints.',
+          'AI systems may assist with structural tasks such as moderation support, pattern detection, and workflow efficiency. AI is not used as an amplification engine and does not determine public visibility through opaque ranking mechanisms.',
         ),
 
-        Doc.h('6. Security'),
+        Doc.h('Data retention'),
         Doc.p(
-          'Aura applies reasonable administrative, technical, and organizational safeguards. '
-          'No system is perfect, but Aura is designed to minimize data exposure by collecting less in the first place.',
+          'Records are retained to preserve continuity, moderation accountability, and lawful compliance. Where deletion is permitted, it follows structured review rather than silent erasure.',
         ),
 
-        Doc.h('7. Contact'),
-        Doc.p('Questions or requests can be directed to: muhammadsakhawat@gmail.com'),
+        Doc.h('User control'),
+        Doc.p(
+          'Users may update profile information and request account deletion subject to legal and moderation constraints. Certain records may remain where required for structural continuity or lawful obligation.',
+        ),
+
+        Doc.h('Security'),
+        Doc.p(
+          'Aura implements reasonable technical and organizational safeguards to protect account data and system integrity. No system can guarantee absolute security, but the architecture is designed to minimize unnecessary exposure.',
+        ),
+
+        Doc.h('Policy updates'),
+        Doc.p(
+          'Privacy commitments may evolve as the platform matures. Material changes will be reflected clearly and without hidden retroactive shifts in data use.',
+        ),
+
+        Doc.callout(
+          'Privacy in Aura is structural, not performative. Data exists to protect the record, not to extract leverage from it.',
+        ),
       ],
     );
   }

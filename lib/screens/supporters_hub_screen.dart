@@ -16,7 +16,7 @@ class SupportersHubScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Doc.meta('Readers, builders, reviewers, moderators.'),
           Doc.lede(
-            'Aura needs people who care about clarity more than victory.',
+            'Aura depends on people who value clarity, restraint, and structural fairness over spectacle.',
           ),
           Doc.p(
             'Support can be technical, editorial, or civic. The goal is not to agree. The goal is to keep the record honest and readable.',

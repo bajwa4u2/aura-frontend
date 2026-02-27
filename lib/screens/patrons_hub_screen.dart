@@ -16,10 +16,10 @@ class PatronsHubScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Doc.meta('Support without steering.'),
           Doc.lede(
-            'Patronage in Aura is meant to protect the space, not control it.',
+            'Patronage in Aura exists to protect structural integrity, not to influence visibility or direction.',
           ),
           Doc.p(
-            'This lane will open once the core experience is stable and moderation is mature. When it opens, it will be designed to avoid the usual pressure that money creates inside public speech.',
+            'This lane will open only after the core architecture is stable and moderation systems are mature. Financial support must reduce distortion, not introduce new leverage.',
           ),
           Doc.h('Planned principles'),
           Doc.bullets([

@@ -46,14 +46,17 @@ class InstitutionsHubScreen extends StatelessWidget {
                       vertical: AuraSpace.s12,
                     ),
                   ),
-                  child: Text('Request verification', style: AuraText.body.copyWith(color: Colors.white)),
+                  child: Text(
+                    'Request verification',
+                    style: AuraText.body.copyWith(color: Colors.white),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AuraSpace.s10),
           Doc.p(
-            'This lane exists because alignment requires two sides. Public witness matters, and institutional speech matters. What fails is when either side has no accountable place to stand.',
+            'This lane exists because alignment requires both public witness and accountable institutional speech. Distortion begins when either side has no structured place to stand.',
           ),
           Doc.h('What institutions can do here'),
           Doc.bullets([

@@ -13,7 +13,6 @@ class MissionScreen extends ConsumerWidget {
   const MissionScreen({super.key});
 
   Future<void> _openWhitePaper(BuildContext context, String baseUrl) async {
-    // baseUrl is something like https://api.example.com
     final uri = Uri.parse(baseUrl).replace(path: AuraLinks.whitePaperPath);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
@@ -39,10 +38,9 @@ class MissionScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           Doc.meta('What Aura is protecting, and what it refuses to become.'),
           Doc.lede(
-            'Aura is a civic communication layer: a place where people and institutions can speak in a way that can be checked, carried, and returned to.',
+            'Aura is a civic communication layer. It is a place where people and institutions speak within a shared, accountable record.',
           ),
 
-          // White paper (primary depth layer)
           const SizedBox(height: AuraSpace.s12),
           Row(
             children: [
@@ -66,28 +64,33 @@ class MissionScreen extends ConsumerWidget {
           ),
 
           Doc.p(
-            'Aura is not trying to win attention. It is trying to reduce distortion.',
+            'Aura does not optimize for engagement. It does not rank by reaction. It introduces structural constraints so that speech can be checked, carried, and returned to.',
           ),
+
           Doc.h('What Aura is'),
           Doc.bullets([
             'A durable public record for approved posts',
-            'A member space for drafting, replies, and responsible participation',
+            'A member space for drafting, replies, and identity-bound participation',
             'A verification lane for institutions to participate as themselves',
             'A moderation foundation that prefers repair over removal',
+            'AI operating as structural assistance, never amplification',
           ]),
+
           Doc.h('What Aura avoids'),
           Doc.bullets([
-            'Ranking-by-reaction as the main organizing force',
+            'Ranking-by-reaction as the organizing force',
             'Viral mechanics that punish nuance',
             'Public counts that turn people into trophies',
             'Design that rewards outrage, bait, or performance',
+            'Algorithmic amplification as a visibility engine',
           ]),
+
           Doc.h('How alignment happens here'),
           Doc.p(
             'Alignment is not agreement. It is clarity: what was said, by whom, under what responsibility, and what response followed.',
           ),
           Doc.p(
-            'Aura is built so that disagreement can exist without becoming a weapon, and institutional speech can exist without becoming propaganda.',
+            'Disagreement remains visible. Correction remains attached. AI may assist review and continuity, but final authority remains human and identity-bound.',
           ),
           Doc.callout(
             'This document does not propose a platform of influence. It proposes a layer of accountability and alignment.',

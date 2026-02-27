@@ -71,7 +71,7 @@ class _InstitutionRequestVerificationScreenState extends State<InstitutionReques
           const SizedBox(height: 10),
           Doc.meta('For institutions that want to participate as themselves.'),
           Doc.lede(
-            'Verification is not a badge. It is a structural commitment to correction, continuity, and accountable speech.',
+              'Verification is not a badge. It is a structural commitment to visible correction, continuity of record, and accountable institutional speech.',
           ),
           const SizedBox(height: AuraSpace.s12),
           AuraCard(

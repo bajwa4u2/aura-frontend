@@ -94,20 +94,20 @@ class Doc {
         style: AuraText.title,
       );
 
+  static Widget meta(String text) => Text(
+        text,
+        style: AuraText.muted,
+      );
+
   static Widget lede(String text) => Padding(
         padding: const EdgeInsets.only(top: AuraSpace.sm),
         child: Text(
           text,
           style: AuraText.body.copyWith(
             fontSize: 16,
-            height: 1.7,
+            height: 1.8,
           ),
         ),
-      );
-
-  static Widget meta(String text) => Text(
-        text,
-        style: AuraText.muted,
       );
 
   static Widget h(String text) => Padding(
@@ -127,12 +127,14 @@ class Doc {
         padding: const EdgeInsets.only(bottom: AuraSpace.sm),
         child: Text(
           text,
-          style: AuraText.body,
+          style: AuraText.body.copyWith(
+            height: 1.7,
+          ),
         ),
       );
 
   static Widget callout(String text) => Container(
-        margin: const EdgeInsets.symmetric(vertical: AuraSpace.sm),
+        margin: const EdgeInsets.symmetric(vertical: AuraSpace.md),
         padding: const EdgeInsets.all(AuraSpace.md),
         decoration: BoxDecoration(
           color: AuraSurface.elevated,
@@ -141,7 +143,7 @@ class Doc {
         ),
         child: Text(
           text,
-          style: AuraText.body,
+          style: AuraText.body.copyWith(height: 1.6),
         ),
       );
 
@@ -152,12 +154,12 @@ class Doc {
           children: items
               .map(
                 (x) => Padding(
-                  padding: const EdgeInsets.only(bottom: AuraSpace.xs),
+                  padding: const EdgeInsets.only(bottom: AuraSpace.sm),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: 9),
                         child: Icon(
                           Icons.circle,
                           size: 6,
@@ -168,7 +170,7 @@ class Doc {
                       Expanded(
                         child: Text(
                           x,
-                          style: AuraText.body,
+                          style: AuraText.body.copyWith(height: 1.6),
                         ),
                       ),
                     ],
