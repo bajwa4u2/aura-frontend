@@ -92,7 +92,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
         splashColor: AuraSurface.accentSoft,
         highlightColor: Colors.transparent,
         child: Padding(
-          // More breathing room = more authority
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s12,
             vertical: AuraSpace.s10,
@@ -103,7 +102,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
               final t = Curves.easeOutCubic.transform(_controller.value);
               return Opacity(
                 opacity: t.clamp(0.0, 1.0),
-                child: _BrandMark(),
+                child: const _BrandMark(),
               );
             },
           ),
@@ -192,7 +191,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
             ),
             child: _wrapCentered(
               Padding(
-                // More vertical room so the 42px identity feels “settled”
                 padding: const EdgeInsets.symmetric(
                   horizontal: AuraSpace.s16,
                   vertical: AuraSpace.s16,
@@ -200,9 +198,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Brand has real visual weight now
                     _brand(context),
-
                     if (resolvedLeading != null) ...[
                       const SizedBox(width: AuraSpace.s12),
                       IconTheme(
@@ -216,8 +212,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
                     ] else ...[
                       const SizedBox(width: AuraSpace.s12),
                     ],
-
-                    // Keep title area stable and ellipsized
                     Expanded(
                       child: showPageTitle
                           ? (widget.centerTitle
@@ -225,7 +219,6 @@ class _AuraScaffoldState extends State<AuraScaffold>
                               : _PageTitle(text: normalizedTitle))
                           : const SizedBox.shrink(),
                     ),
-
                     if (headerActions.isNotEmpty) ...[
                       const SizedBox(width: AuraSpace.s16),
                       Align(
@@ -257,30 +250,31 @@ class _AuraScaffoldState extends State<AuraScaffold>
 class _BrandMark extends StatelessWidget {
   const _BrandMark();
 
-  // Desktop / tablet target
-  static const double _wordmarkSize = 42;
+  // Original SVG colors
+  static const Color _ringColor = Color(0xFFA0916E); // #A0916E
+  static const Color _wordColor = Color(0xFF3C3C3C); // #3C3C3C
 
-  // Ring should feel intentional, not like a radio button
-  static const double _ringSize = 48;
-  static const double _ringStroke = 3;
+  // 10% smaller than 42px
+  static const double _wordmarkSize = 38;
 
-  // Responsive fallback so we don’t break narrow screens
-  static const double _wordmarkSizeSmall = 32;
-  static const double _ringSizeSmall = 40;
-  static const double _ringStrokeSmall = 2.5;
+  // Keep ring intentional + proportional to wordmark
+  static const double _ringSize = 44;
+  static const double _ringStroke = 2.7;
+
+  // Responsive fallback for narrow screens
+  static const double _wordmarkSizeSmall = 29; // 32 -> ~29
+  static const double _ringSizeSmall = 36; // 40 -> ~36
+  static const double _ringStrokeSmall = 2.25; // 2.5 -> ~2.25
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (ctx, c) {
-        // Heuristic: keep the big identity unless the available width is tight
         final isTight = c.maxWidth.isFinite && c.maxWidth < 360;
 
         final fontSize = isTight ? _wordmarkSizeSmall : _wordmarkSize;
         final ringSize = isTight ? _ringSizeSmall : _ringSize;
         final stroke = isTight ? _ringStrokeSmall : _ringStroke;
-
-        final ink = AuraSurface.ink;
 
         return Row(
           mainAxisSize: MainAxisSize.min,
@@ -292,7 +286,7 @@ class _BrandMark extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: ink,
+                    color: _ringColor,
                     width: stroke,
                   ),
                 ),
@@ -306,9 +300,9 @@ class _BrandMark extends StatelessWidget {
               style: AuraText.title.copyWith(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
-                color: ink,
-                // Subtle tracking so it reads like a masthead
-                letterSpacing: 1.6,
+                color: _wordColor,
+                // Keep it “masthead”, but not overly spaced
+                letterSpacing: 1.4,
                 height: 1.0,
               ),
             ),
