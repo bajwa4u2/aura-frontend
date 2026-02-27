@@ -22,8 +22,10 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
   bool _loading = true;
   bool _error = false;
 
-  static const String _rawBase =
-      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.aura.bajwadynesty.us');
+  static const String _rawBase = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://api.aura.bajwadynesty.us',
+  );
 
   late final String _base = _rawBase.endsWith('/v1') ? _rawBase : '$_rawBase/v1';
 
@@ -129,10 +131,11 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
                       ],
                     ),
                     const SizedBox(height: AuraSpace.s14),
+
+                    // Keep the page title, but remove any internal/source-path text.
                     Doc.title('Aura White Paper'),
-                    const SizedBox(height: AuraSpace.s8),
-                    Doc.meta('Rendered from /v1/mission/white-paper.md'),
                     const SizedBox(height: AuraSpace.s16),
+
                     MarkdownBody(
                       data: _md ?? '',
                       selectable: true,
