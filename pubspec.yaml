@@ -31,12 +31,13 @@ dependencies:
   # SVG support (for Aura logo)
   flutter_svg: ^2.0.10
 
+  # Render white paper markdown in-app
+  flutter_markdown: ^0.7.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/brand/AURA_logo_master.svg
