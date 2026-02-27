@@ -132,10 +132,9 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
                     ),
                     const SizedBox(height: AuraSpace.s14),
 
-                    // Keep the page title, but remove any internal/source-path text.
-                    Doc.title('Aura White Paper'),
-                    const SizedBox(height: AuraSpace.s16),
-
+                    //  remove any internal/source-path text.
+                    
+                    
                     MarkdownBody(
                       data: _md ?? '',
                       selectable: true,
