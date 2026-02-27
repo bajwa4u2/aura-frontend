@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'aura_space.dart';
@@ -42,15 +41,8 @@ class _AuraScaffoldState extends State<AuraScaffold>
 
   static const double _defaultMaxWidth = 1040;
 
-  // Brand sizing (fix: make logo visually prominent, not a dot)
-  static const double _brandHeight = 34; // was 22
-  static const double _brandMinWidth = 140;
-  static const double _brandMaxWidth = 220;
-
   static const double _leadingIconSize = 18;
   static const double _leadingTapSize = 36;
-
-  static const String _brandAsset = 'assets/brand/AURA_logo_master.svg';
 
   bool _canGoBack(BuildContext context) {
     return Navigator.of(context).canPop() || GoRouter.of(context).canPop();
@@ -100,9 +92,10 @@ class _AuraScaffoldState extends State<AuraScaffold>
         splashColor: AuraSurface.accentSoft,
         highlightColor: Colors.transparent,
         child: Padding(
+          // More breathing room = more authority
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s8, // slightly tighter than before
+            vertical: AuraSpace.s10,
           ),
           child: AnimatedBuilder(
             animation: _controller,
@@ -110,38 +103,11 @@ class _AuraScaffoldState extends State<AuraScaffold>
               final t = Curves.easeOutCubic.transform(_controller.value);
               return Opacity(
                 opacity: t.clamp(0.0, 1.0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: _brandMinWidth,
-                    maxWidth: _brandMaxWidth,
-                  ),
-                  child: SizedBox(
-                    height: _brandHeight,
-                    child: SvgPicture.asset(
-                      _brandAsset,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.centerLeft,
-                      placeholderBuilder: (_) => _brandFallback(),
-                    ),
-                  ),
-                ),
+                child: _BrandMark(),
               );
             },
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _brandFallback() {
-    return Text(
-      'Aura',
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: AuraText.title.copyWith(
-        fontSize: _brandHeight,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.4,
       ),
     );
   }
@@ -226,13 +192,15 @@ class _AuraScaffoldState extends State<AuraScaffold>
             ),
             child: _wrapCentered(
               Padding(
+                // More vertical room so the 42px identity feels “settled”
                 padding: const EdgeInsets.symmetric(
                   horizontal: AuraSpace.s16,
-                  vertical: AuraSpace.s10,
+                  vertical: AuraSpace.s16,
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Brand has real visual weight now
                     _brand(context),
 
                     if (resolvedLeading != null) ...[
@@ -249,6 +217,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
                       const SizedBox(width: AuraSpace.s12),
                     ],
 
+                    // Keep title area stable and ellipsized
                     Expanded(
                       child: showPageTitle
                           ? (widget.centerTitle
@@ -281,6 +250,71 @@ class _AuraScaffoldState extends State<AuraScaffold>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
+
+  // Desktop / tablet target
+  static const double _wordmarkSize = 42;
+
+  // Ring should feel intentional, not like a radio button
+  static const double _ringSize = 48;
+  static const double _ringStroke = 3;
+
+  // Responsive fallback so we don’t break narrow screens
+  static const double _wordmarkSizeSmall = 32;
+  static const double _ringSizeSmall = 40;
+  static const double _ringStrokeSmall = 2.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        // Heuristic: keep the big identity unless the available width is tight
+        final isTight = c.maxWidth.isFinite && c.maxWidth < 360;
+
+        final fontSize = isTight ? _wordmarkSizeSmall : _wordmarkSize;
+        final ringSize = isTight ? _ringSizeSmall : _ringSize;
+        final stroke = isTight ? _ringStrokeSmall : _ringStroke;
+
+        final ink = AuraSurface.ink;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: ringSize,
+              height: ringSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ink,
+                    width: stroke,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s12),
+            Text(
+              'AURA',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.title.copyWith(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                color: ink,
+                // Subtle tracking so it reads like a masthead
+                letterSpacing: 1.6,
+                height: 1.0,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
