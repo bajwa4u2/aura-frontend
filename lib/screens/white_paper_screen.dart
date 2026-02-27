@@ -21,8 +21,16 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
   bool _loading = true;
   bool _error = false;
 
-  static const String mdUrl = 'https://api.aura.bajwadynesty.us/mission/white-paper.md';
-  static const String pdfUrl = 'https://api.aura.bajwadynesty.us/mission/white-paper.pdf';
+  // Use the same build-time API base used everywhere else.
+  // In Railway you build with: --dart-define=API_BASE_URL=https://api.aura.bajwadynesty.us
+  // Most of your app endpoints are /v1/*, so we append /v1 here safely if missing.
+  static const String _rawBase =
+      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.aura.bajwadynesty.us');
+
+  late final String _base = _rawBase.endsWith('/v1') ? _rawBase : '$_rawBase/v1';
+
+  late final String mdUrl = '$_base/mission/white-paper.md';
+  late final String pdfUrl = '$_base/mission/white-paper.pdf';
 
   @override
   void initState() {
@@ -48,6 +56,7 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
       setState(() {
         _md = text;
         _loading = false;
+        _error = false;
       });
     } catch (_) {
       if (!mounted) return;
