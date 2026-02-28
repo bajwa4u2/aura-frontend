@@ -35,6 +35,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _posting = false;
   bool _saving = false;
 
+  // Option 2: enforce text always
+  bool _showTextError = false;
+
   _ComposeMode _mode = _ComposeMode.text;
 
   XFile? _pickedFile;
@@ -50,19 +53,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Timer? _autosaveDebounce;
 
   bool get _isReply => widget.replyToPostId != null;
+
   bool get _hasText => _textController.text.trim().isNotEmpty;
+  bool get _textTooLong => _textController.text.trim().length > _limit;
 
   bool get _hasPickedMedia =>
       _pickedFile != null && (_mode == _ComposeMode.image || _mode == _ComposeMode.video);
+
   bool get _hasExistingMedia =>
       (_existingMediaUrl ?? '').trim().isNotEmpty &&
       (_mode == _ComposeMode.image || _mode == _ComposeMode.video);
+
   bool get _hasAnyMedia => _hasPickedMedia || _hasExistingMedia;
 
+  // Option 2: text is required in ALL modes.
   bool get _canPublish {
+    if (!_hasText) return false;
+    if (_textTooLong) return false;
+
     switch (_mode) {
       case _ComposeMode.text:
-        return _hasText;
+        return true;
       case _ComposeMode.image:
       case _ComposeMode.video:
         return _hasAnyMedia;
@@ -186,6 +197,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _imgH = (h is int) ? h : int.tryParse((h ?? '').toString());
 
         _lastSavedAt = savedAt;
+
+        // reset error state on restore if valid
+        if (_hasText) _showTextError = false;
       });
     } catch (_) {
       // ignore: draft restore is best-effort
@@ -199,10 +213,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (!mounted) return;
       if (_posting) return;
 
-      // Only autosave when there's something meaningful.
-      if (_mode == _ComposeMode.text && !_hasText) return;
-      if ((_mode == _ComposeMode.image || _mode == _ComposeMode.video) && !_hasAnyMedia) return;
+      // Option 2: do not autosave empty text (backend enforces text required)
+      if (!_hasText) return;
 
+      // For media modes, autosave is meaningful even if media isn't picked yet
+      // (it saves the text), but we must avoid writing IMAGE/VIDEO type with no media.
       _saveDraft(silent: true);
     });
   }
@@ -226,6 +241,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _contextController.clear();
       }
     });
+
+    _scheduleAutosave();
   }
 
   void _clearMedia() {
@@ -286,13 +303,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   String _mediaTypeForMode() {
+    // Foolproof: never claim IMAGE/VIDEO in draft unless media actually exists.
     switch (_mode) {
       case _ComposeMode.text:
         return 'NONE';
       case _ComposeMode.image:
-        return 'IMAGE';
+        return _hasAnyMedia ? 'IMAGE' : 'NONE';
       case _ComposeMode.video:
-        return 'VIDEO';
+        return _hasAnyMedia ? 'VIDEO' : 'NONE';
     }
   }
 
@@ -306,6 +324,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _saveDraft({bool silent = false, String? mediaUrlOverride}) async {
     if (_saving || _posting) return;
 
+    // Option 2: enforce text always (stop backend 400s before they happen)
+    if (!_hasText) {
+      if (!silent && mounted) {
+        setState(() => _showTextError = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Text is required.')),
+        );
+      }
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {
@@ -317,7 +346,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       };
 
       // Media payload
-      if (_mode == _ComposeMode.image) {
+      if (_mode == _ComposeMode.image && _hasAnyMedia) {
         final url = (mediaUrlOverride ?? _existingMediaUrl ?? '').trim();
         if (url.isNotEmpty) payload['mediaUrl'] = url;
         if (_imgW != null) payload['mediaWidth'] = _imgW;
@@ -327,7 +356,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         if (ctx.isNotEmpty) payload['caption'] = ctx;
       }
 
-      if (_mode == _ComposeMode.video) {
+      if (_mode == _ComposeMode.video && _hasAnyMedia) {
         final url = (mediaUrlOverride ?? _existingMediaUrl ?? '').trim();
         if (url.isNotEmpty) payload['mediaUrl'] = url;
 
@@ -354,7 +383,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _publish() async {
     if (_posting) return;
 
-    if (_textController.text.trim().length > _limit) {
+    // Option 2: enforce text always (UI + function guard)
+    if (!_hasText) {
+      setState(() => _showTextError = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Text is required.')),
+      );
+      return;
+    }
+
+    if (_textTooLong) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Too long. Please shorten your post.')),
       );
@@ -543,33 +581,39 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _divider(),
               const SizedBox(height: AuraSpace.s12),
 
-              if (_mode == _ComposeMode.text) ...[
-                // Writing surface
-                Container(
-                  decoration: BoxDecoration(
-                    color: AuraSurface.page,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AuraSurface.divider),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
-                  child: TextField(
-                    controller: _textController,
-                    maxLines: null,
-                    minLines: 10,
-                    onChanged: (_) => setState(() {}),
-                    style: AuraText.body,
-                    decoration: InputDecoration(
-                      hintText: _isReply ? 'Write a reply…' : 'Add to the record…',
-                      hintStyle: AuraText.muted,
-                      border: InputBorder.none,
-                    ),
+              // Writing surface (always shown; text required for all modes)
+              Container(
+                decoration: BoxDecoration(
+                  color: AuraSurface.page,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
+                child: TextField(
+                  controller: _textController,
+                  maxLines: null,
+                  minLines: 10,
+                  onChanged: (_) {
+                    if (_showTextError && _hasText) {
+                      setState(() => _showTextError = false);
+                    } else {
+                      setState(() {});
+                    }
+                  },
+                  style: AuraText.body,
+                  decoration: InputDecoration(
+                    hintText: _isReply ? 'Write a reply…' : 'Add to the record… (required)',
+                    hintStyle: AuraText.muted,
+                    border: InputBorder.none,
+                    errorText: _showTextError ? 'Text is required' : null,
                   ),
                 ),
-                const SizedBox(height: AuraSpace.s8),
-                Text('${_textController.text.trim().length}/$_limit', style: AuraText.small),
-              ],
+              ),
+              const SizedBox(height: AuraSpace.s8),
+              Text('${_textController.text.trim().length}/$_limit', style: AuraText.small),
 
               if (_mode == _ComposeMode.image) ...[
+                const SizedBox(height: AuraSpace.s12),
                 _MediaZone(
                   label: _hasAnyMedia ? 'Image attached' : 'Add image',
                   sublabel: _hasAnyMedia ? 'Tap to replace, or remove.' : 'One image per post.',
@@ -614,6 +658,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ],
 
               if (_mode == _ComposeMode.video) ...[
+                const SizedBox(height: AuraSpace.s12),
                 _MediaZone(
                   label: _hasAnyMedia ? 'Video attached' : 'Add video',
                   sublabel: _hasAnyMedia ? 'Tap to replace, or remove.' : 'One video per post.',
@@ -652,12 +697,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               Row(
                 children: [
                   TextButton(
-                    onPressed: (_posting || _saving) ? null : () => _saveDraft(silent: false),
+                    onPressed: (_posting || _saving || !_hasText)
+                        ? null
+                        : () {
+                            if (!_hasText) {
+                              setState(() => _showTextError = true);
+                              return;
+                            }
+                            _saveDraft(silent: false);
+                          },
                     child: const Text('Save draft'),
                   ),
                   const Spacer(),
                   FilledButton(
-                    onPressed: (_posting || !_canPublish) ? null : _publish,
+                    onPressed: (_posting || !_canPublish)
+                        ? null
+                        : () {
+                            if (!_hasText) {
+                              setState(() => _showTextError = true);
+                              return;
+                            }
+                            _publish();
+                          },
                     child: Text(_posting ? 'Publishing…' : 'Publish to record'),
                   ),
                 ],

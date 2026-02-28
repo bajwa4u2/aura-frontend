@@ -38,7 +38,7 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
 
-  // Backend route: GET /v1/reactions/:postId
+  // Backend route: GET /v1/reactions/:postId (server may also accept /reactions/:postId)
   final res = await dio.get('/reactions/$postId');
 
   if (res.data is Map) {
@@ -52,7 +52,7 @@ final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async 
 final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
 
-  // Backend route: GET /v1/saves/:postId
+  // Backend route: GET /v1/saves/:postId (server may also accept /saves/:postId)
   final res = await dio.get('/saves/$postId');
 
   if (res.data is Map) {
@@ -90,13 +90,148 @@ String _formatDateAbsolute(DateTime dt) {
   return '$m ${dt.day}, ${dt.year}';
 }
 
-class PostCard extends ConsumerWidget {
+class PostCard extends ConsumerStatefulWidget {
   const PostCard({super.key, required this.post, this.compact = false});
   final Post post;
   final bool compact;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends ConsumerState<PostCard> {
+  bool _expanded = false;
+
+  // Feed modernization: keep media contained, never a screen takeover.
+  double _mediaMaxHeight(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    // Simple heuristic: small screens get a shorter clamp.
+    return w < 520 ? 320 : 420;
+  }
+
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
+  }
+
+  Future<void> _openImageViewer({
+    required String url,
+    required bool isSvg,
+  }) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: const Color(0xAA000000),
+      builder: (ctx) {
+        return _MediaViewerDialog(
+          title: 'Media',
+          child: isSvg
+              ? SvgPicture.network(
+                  url,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (_) => const _MediaLoading(constrained: false),
+                )
+              : Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, w, prog) {
+                    if (prog == null) return w;
+                    return const _MediaLoading(constrained: false);
+                  },
+                  errorBuilder: (_, __, ___) => const _MediaLoading(constrained: false),
+                ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openVideoViewer({
+    required String postId,
+    required Widget poster,
+  }) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: const Color(0xAA000000),
+      builder: (ctx) {
+        return _MediaViewerDialog(
+          title: 'Video',
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.push('/posts/$postId');
+              },
+              child: const Text('Open'),
+            ),
+          ],
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(child: poster),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0x66000000),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: const Icon(Icons.play_arrow, color: AuraSurface.ink, size: 34),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s12,
+                      vertical: AuraSpace.s10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xB3000000),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x33FFFFFF)),
+                    ),
+                    child: Text(
+                      'Video playback opens from the post page.',
+                      style: AuraText.small.copyWith(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  bool _textOverflows({
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+    required int maxLines,
+  }) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: maxLines,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth);
+
+    return tp.didExceedMaxLines;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.post;
+    final compact = widget.compact;
+
     final a = post.author;
     final displayName = (a?.displayName ?? '').trim();
     final handle = (a?.handle ?? '').trim();
@@ -239,6 +374,9 @@ class PostCard extends ConsumerWidget {
     if (handle.isNotEmpty) metaParts.add('@$handle');
     if (createdAt != null) metaParts.add(_formatDateAbsolute(createdAt!));
     final metaLine = metaParts.join(' • ');
+
+    final bodyTextStyle = AuraText.body.copyWith(height: 1.55);
+    final collapsedLines = compact ? 4 : 8;
 
     return AuraCard(
       padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s18),
@@ -384,14 +522,56 @@ class PostCard extends ConsumerWidget {
             ),
           ],
 
-          // ---------- BODY ----------
+          // ---------- BODY (text first, collapsible) ----------
           if (text.isNotEmpty) ...[
             SizedBox(height: AuraSpace.s12),
-            Text(
-              text,
-              maxLines: compact ? 4 : null,
-              overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
-              style: AuraText.body.copyWith(height: 1.55),
+            LayoutBuilder(
+              builder: (ctx, c) {
+                final maxW = c.maxWidth.isFinite ? c.maxWidth : MediaQuery.of(ctx).size.width;
+                final overflows = _textOverflows(
+                  text: text,
+                  style: bodyTextStyle,
+                  maxWidth: maxW,
+                  maxLines: collapsedLines,
+                );
+
+                final showToggle = !compact && overflows;
+                final maxLines = (compact)
+                    ? 4
+                    : (_expanded ? null : (showToggle ? collapsedLines : null));
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      maxLines: maxLines,
+                      overflow: (maxLines == null) ? TextOverflow.visible : TextOverflow.ellipsis,
+                      style: bodyTextStyle,
+                    ),
+                    if (showToggle) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      InkWell(
+                        onTap: _toggleExpanded,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AuraSpace.s10,
+                            vertical: AuraSpace.s6,
+                          ),
+                          child: Text(
+                            _expanded ? 'Collapse' : 'Open',
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AuraSurface.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ],
 
@@ -472,6 +652,8 @@ class PostCard extends ConsumerWidget {
         if (ratio! > 1.9) ratio = 1.9;
       }
 
+      final maxH = _mediaMaxHeight(context);
+
       Widget inner;
 
       if (isSvg) {
@@ -497,29 +679,65 @@ class PostCard extends ConsumerWidget {
                 child: Text('Video', style: AuraText.muted),
               );
 
-        final play = Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: const Color(0x66000000),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
-        );
-
         inner = Stack(
           alignment: Alignment.center,
           children: [
             Positioned.fill(child: poster),
-            play,
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: const Color(0x66000000),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
+            ),
           ],
         );
+
+        final framed = ClipRRect(
+          borderRadius: r,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: r,
+              border: border,
+              color: AuraSurface.elevated,
+            ),
+            child: ratio == null
+                ? ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: maxH,
+                      minHeight: 220,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: inner,
+                    ),
+                  )
+                : ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxH),
+                    child: AspectRatio(
+                      aspectRatio: ratio!,
+                      child: inner,
+                    ),
+                  ),
+          ),
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(top: AuraSpace.s14),
+          child: InkWell(
+            borderRadius: r,
+            onTap: () => _openVideoViewer(postId: postId, poster: poster),
+            child: framed,
+          ),
+        );
       } else {
-        // Images: prefer contain inside a calm frame to avoid hard crops.
+        // Images: modern frame, contained height clamp.
         inner = Image.network(
           mUrl,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
           loadingBuilder: (context, w, prog) {
@@ -539,24 +757,32 @@ class PostCard extends ConsumerWidget {
             color: AuraSurface.elevated,
           ),
           child: ratio == null
-              ? SizedBox(
-                  height: isVideo ? 240 : 260,
-                  child: inner,
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: maxH,
+                    minHeight: isSvg ? 180 : 220,
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: inner,
+                  ),
                 )
-              : AspectRatio(
-                  aspectRatio: ratio!,
-                  child: inner,
+              : ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxH),
+                  child: AspectRatio(
+                    aspectRatio: ratio!,
+                    child: inner,
+                  ),
                 ),
         ),
       );
 
-      // Hook point: later we can route to a dedicated viewer without changing
-      // the post structure. For now, tap keeps the existing behavior (open post).
+      // Tap opens a viewer overlay (no navigation jump).
       return Padding(
         padding: const EdgeInsets.only(top: AuraSpace.s14),
         child: InkWell(
           borderRadius: r,
-          onTap: () => context.push('/posts/$postId'),
+          onTap: () => _openImageViewer(url: mUrl, isSvg: isSvg),
           child: framed,
         ),
       );
@@ -874,18 +1100,105 @@ class _Badge extends StatelessWidget {
 }
 
 class _MediaLoading extends StatelessWidget {
-  const _MediaLoading();
+  const _MediaLoading({this.constrained = true});
+
+  final bool constrained;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 220,
+    final child = Container(
       alignment: Alignment.center,
       color: AuraSurface.elevated,
       child: const SizedBox(
         width: 18,
         height: 18,
         child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+
+    if (!constrained) return child;
+
+    return SizedBox(
+      height: 220,
+      child: child,
+    );
+  }
+}
+
+class _MediaViewerDialog extends StatelessWidget {
+  const _MediaViewerDialog({
+    required this.title,
+    required this.child,
+    this.actions,
+  });
+
+  final String title;
+  final Widget child;
+  final List<Widget>? actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxW = MediaQuery.of(context).size.width < 720 ? 560.0 : 820.0;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxW),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            color: AuraSurface.page,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s14,
+                    vertical: AuraSpace.s12,
+                  ),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (actions != null) ...actions!,
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    // Viewer stays contained; no forced fullscreen takeover.
+                    maxHeight: MediaQuery.of(context).size.height * 0.78,
+                  ),
+                  child: InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    child: Container(
+                      color: AuraSurface.page,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(AuraSpace.s12),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
