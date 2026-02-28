@@ -11,7 +11,7 @@ import 'package:aura/core/ui/aura_text.dart';
 
 final meProfileRawProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/users/me');
+  final res = await dio.get('/users/me');
   final raw = res.data;
   if (raw is! Map) throw Exception('Unexpected response');
   final ok = raw['ok'] == true;
@@ -162,7 +162,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         }
       };
 
-      final res = await dio.put('/v1/users/me', data: body);
+      final res = await dio.put('/users/me', data: body);
       final raw = res.data;
       if (raw is! Map) throw Exception('Unexpected response');
       if (raw['ok'] != true) {
