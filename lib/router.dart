@@ -58,11 +58,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/public',
     refreshListenable: refresh,
     redirect: (context, state) async {
-      final loc = state.matchedLocation;
+      // Use uri.path so query params don’t affect route grouping.
+      final loc = state.uri.path;
 
       final authStatus = ref.read(authStatusProvider);
 
       // Don’t redirect while auth status is resolving.
+      // This prevents logout-on-refresh loops.
       if (authStatus == AuthStatus.loading) return null;
 
       const publicRoutes = <String>{
