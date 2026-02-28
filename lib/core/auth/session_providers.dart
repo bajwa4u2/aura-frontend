@@ -5,109 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../net/dio_provider.dart';
+import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
 
 /// Auth lifecycle status:
-/// - loading: boot/refresh check in progress (DO NOT redirect yet)
-/// - authed: access token present / session confirmed
-/// - unauthed: session not available
+/// - loading: tokens still being restored from storage / bootstrap in-flight
+/// - authed: access token present
+/// - unauthed: no access token
 enum AuthStatus { loading, authed, unauthed }
-
-/// Boot controller:
-/// Ensures we attempt cookie refresh ONCE on web before declaring unauthed.
-/// Prevents the "refresh logs me out" loop.
-final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthStatus>((ref) {
-  return AuthController(ref);
-});
-
-class AuthController extends StateNotifier<AuthStatus> {
-  AuthController(this._ref) : super(AuthStatus.loading) {
-    _boot();
-  }
-
-  final Ref _ref;
-  bool _booted = false;
-
-  Future<void> _boot() async {
-    if (_booted) return;
-    _booted = true;
-
-    final store = _ref.read(tokenStoreProvider);
-
-    // 1) Wait for tokens to restore (storage, etc.)
-    try {
-      await store.waitUntilLoaded();
-    } catch (_) {
-      // Even if storage restore fails, we still proceed to refresh attempt.
-    }
-
-    // 2) If already authed, we're done.
-    if (store.isAuthed) {
-      state = AuthStatus.authed;
-      return;
-    }
-
-    // 3) Not authed yet: try a single refresh attempt.
-    final ok = await _tryRefreshOnce();
-
-    // 4) Re-evaluate
-    final now = _ref.read(tokenStoreProvider);
-    if (ok && now.isAuthed) {
-      state = AuthStatus.authed;
-    } else {
-      state = AuthStatus.unauthed;
-    }
-  }
-
-  Future<bool> _tryRefreshOnce() async {
-    try {
-      final dio = _ref.read(dioProvider);
-      final store = _ref.read(tokenStoreProvider);
-
-      // We intentionally call refresh directly (not relying on 401 interceptor).
-      // Web: refresh cookie is HttpOnly and should be sent via withCredentials.
-      // Mobile: refresh token may be stored locally and sent in body if backend requires it.
-      Response res;
-
-      if (kIsWeb) {
-        res = await dio.post('/auth/refresh');
-      } else {
-        final rt = store.refreshToken;
-        if (rt == null || rt.trim().isEmpty) return false;
-        res = await dio.post('/auth/refresh', data: {'refreshToken': rt});
-      }
-
-      final raw = res.data;
-      if (raw is! Map) return false;
-
-      final access = raw['accessToken']?.toString();
-      final newRefresh = raw['refreshToken']?.toString();
-
-      if (access == null || access.trim().isEmpty) return false;
-
-      await store.setSession(
-        accessToken: access,
-        refreshToken: kIsWeb
-            ? null
-            : ((newRefresh != null && newRefresh.trim().isNotEmpty)
-                ? newRefresh
-                : store.refreshToken),
-      );
-
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> forceRecheck() async {
-    state = AuthStatus.loading;
-    _booted = false;
-    await _boot();
-  }
-}
 
 /// Whether tokens have been loaded from storage.
 final tokenStoreLoadedProvider = Provider<bool>((ref) {
@@ -115,15 +20,88 @@ final tokenStoreLoadedProvider = Provider<bool>((ref) {
   return store.isLoaded;
 });
 
-/// True only when auth controller confirms authed.
+/// True only when tokens are loaded AND we have an access token.
 final isAuthedProvider = Provider<bool>((ref) {
-  final status = ref.watch(authControllerProvider);
-  return status == AuthStatus.authed;
+  final store = ref.watch(tokenStoreProvider);
+  return store.isLoaded && store.isAuthed;
+});
+
+/// Bootstrap auth once on app start:
+/// - waits for TokenStore load
+/// - if already authed -> done
+/// - on web: tries cookie-based refresh to obtain a fresh access token
+///
+/// IMPORTANT:
+/// authStatusProvider watches this provider so GoRouter won't redirect
+/// while bootstrap is running (prevents logout-on-refresh loops).
+final authBootstrapProvider = FutureProvider<void>((ref) async {
+  final store = ref.read(tokenStoreProvider);
+
+  // Ensure local storage / token cache has finished initializing.
+  try {
+    await store.waitUntilLoaded();
+  } catch (_) {
+    // If store load fails, just continue; routing will treat as unauthed.
+    return;
+  }
+
+  // If we already have an access token, nothing to do.
+  if (store.isAuthed) return;
+
+  // Web: we rely on HttpOnly refresh cookie. Try to refresh on boot.
+  // Non-web: refresh token may be stored; your dio_provider already handles
+  // refresh on 401 using stored refresh token, so we don't force it here.
+  if (!kIsWeb) return;
+
+  final refreshDio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      headers: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      // Keep it strict; anything outside 2xx throws.
+      validateStatus: (c) => c != null && c >= 200 && c < 300,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
+
+  // Web needs cookies included for refresh.
+  configureDioForPlatform(refreshDio);
+
+  try {
+    final res = await refreshDio.post('/auth/refresh');
+    final raw = res.data;
+
+    if (raw is! Map) return;
+
+    final access = raw['accessToken']?.toString();
+    if (access == null || access.trim().isEmpty) return;
+
+    // On web we do NOT store refresh token in JS storage.
+    await store.setSession(accessToken: access, refreshToken: null);
+  } catch (_) {
+    // If refresh cookie missing/expired, we simply remain unauthed.
+    return;
+  }
 });
 
 /// Use this for routing/guards.
+///
+/// KEY RULE:
+/// If bootstrap is still running, return AuthStatus.loading so router does NOT redirect.
 final authStatusProvider = Provider<AuthStatus>((ref) {
-  return ref.watch(authControllerProvider);
+  // Watch bootstrap so router waits during refresh attempt.
+  final boot = ref.watch(authBootstrapProvider);
+  if (boot.isLoading) return AuthStatus.loading;
+
+  final store = ref.watch(tokenStoreProvider);
+
+  if (!store.isLoaded) return AuthStatus.loading;
+  if (store.isAuthed) return AuthStatus.authed;
+  return AuthStatus.unauthed;
 });
 
 /// Derived session values used by Dio and other layers.
@@ -150,7 +128,7 @@ final sessionStateProvider = Provider<SessionState>((ref) {
 });
 
 /// A simple auth "event bus" for GoRouter refresh.
-/// We trigger it whenever TokenStore notifies AND once on subscription.
+/// We trigger it whenever TokenStore notifies.
 final authEventsProvider = StreamProvider<void>((ref) {
   final controller = StreamController<void>.broadcast();
 
@@ -162,6 +140,7 @@ final authEventsProvider = StreamProvider<void>((ref) {
   emit();
 
   final store = ref.watch(tokenStoreProvider);
+
   void listener() => emit();
   store.addListener(listener);
 
@@ -184,5 +163,6 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   if (status != AuthStatus.authed) return true;
 
   // Stabilization posture: treat authed as verified for now.
+  // (Backend still enforces verification where required.)
   return true;
 });
