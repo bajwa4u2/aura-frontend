@@ -1,17 +1,15 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/auth/auth_providers.dart'; // tokenStoreProvider
-import '../../../core/auth/session_providers.dart'; // authStatusProvider, emailVerifiedProvider, isAuthedProvider
-import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart' as ui;
-import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_text.dart';
+import '../../core/auth/session_providers.dart';
+import '../../core/net/dio_provider.dart';
+import '../../core/ui/aura_card.dart';
+import '../../core/ui/aura_scaffold.dart';
+import '../../core/ui/aura_space.dart';
+import '../../core/ui/aura_text.dart';
 
 import 'edit_profile_screen.dart';
 
@@ -126,7 +124,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (t.isEmpty) return '';
     if (t.startsWith('http://') || t.startsWith('https://')) return t;
 
-    // If server returns "/uploads/..." build absolute from Dio baseUrl.
     final base = dio.options.baseUrl.trim();
     if (base.isEmpty) return t;
 
@@ -142,13 +139,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      // Attempt backend revoke (best-effort).
+      // Best-effort backend logout.
       try {
         await dio.post('/auth/logout');
-      } catch (_) {
-        // Ignore; local clear still happens.
-      }
+      } catch (_) {}
 
+      // Clear local session
       final store = ref.read(tokenStoreProvider);
       await store.clear();
 
@@ -181,8 +177,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       });
 
       final res = await dio.post('/uploads/avatar', data: form);
-      final data = _asMap(res.data);
-      final unwrapped = _unwrapMap(data);
+      final unwrapped = _unwrapMap(res.data);
       final url = (unwrapped['url'] ?? unwrapped['avatarUrl'] ?? unwrapped['path'])?.toString().trim() ?? '';
 
       if (url.isEmpty) {
@@ -190,10 +185,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         return;
       }
 
-      // Apply immediately.
       await dio.patch('/users/me', data: {'avatarUrl': url});
-
       ref.invalidate(meProfileProvider);
+
       if (!mounted) return;
       messenger.showSnackBar(const SnackBar(content: Text('Avatar updated.')));
     } catch (e) {
@@ -201,17 +195,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     }
   }
 
-  Future<void> _editProfile({
-    required BuildContext context,
-    required String? displayName,
-    required String? bio,
-  }) async {
-    // Keep the call site stable, but route to the full Edit Profile screen.
+  Future<void> _openEditProfile(BuildContext context) async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
 
-    // Refresh profile + related panels after returning.
+    // Refresh everything after returning
     ref.invalidate(meProfileProvider);
     ref.invalidate(_meDraftProvider);
     ref.invalidate(_mePostsProvider);
@@ -226,9 +215,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (!authed) {
       return AuraScaffold(
         title: 'Me',
-        child: Padding(
+        body: Padding(
           padding: const EdgeInsets.all(AuraSpace.s16),
-          child: ui.AuraCard(
+          child: AuraCard(
             child: Padding(
               padding: const EdgeInsets.all(AuraSpace.s16),
               child: Column(
@@ -254,10 +243,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     return AuraScaffold(
       title: 'Me',
-      child: profileAsync.when(
+      body: profileAsync.when(
         data: (me) {
           final emailNotVerified = me['_emailNotVerified'] == true;
-
           final dio = ref.read(dioProvider);
 
           final displayName = (me['displayName'] ?? '').toString().trim();
@@ -267,11 +255,15 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           final avatarRaw = (me['avatarUrl'] ?? '').toString().trim();
           final avatarAbs = _absFromMaybeRelative(avatarRaw, dio);
 
+          // Admin capability discovery:
+          // backend should add isAdmin to /users/me response.
+          final isAdmin = me['isAdmin'] == true;
+
           return ListView(
             padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s16, AuraSpace.s16, AuraSpace.s24),
             children: [
               if (emailNotVerified)
-                ui.AuraCard(
+                AuraCard(
                   child: Padding(
                     padding: const EdgeInsets.all(AuraSpace.s16),
                     child: Column(
@@ -279,10 +271,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       children: [
                         Text('Email verification required', style: AuraText.title),
                         const SizedBox(height: AuraSpace.s10),
-                        Text(
-                          'Please verify your email to unlock writing and full account features.',
-                          style: AuraText.body,
-                        ),
+                        Text('Please verify your email to unlock writing and full account features.', style: AuraText.body),
                         const SizedBox(height: AuraSpace.s12),
                         Wrap(
                           spacing: AuraSpace.s10,
@@ -303,7 +292,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ),
                 ),
 
-              ui.AuraCard(
+              AuraCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -337,11 +326,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               runSpacing: AuraSpace.s10,
                               children: [
                                 FilledButton(
-                                  onPressed: () => _editProfile(
-                                    context: context,
-                                    displayName: displayName,
-                                    bio: bio,
-                                  ),
+                                  onPressed: () => _openEditProfile(context),
                                   child: const Text('Edit profile'),
                                 ),
                                 OutlinedButton(
@@ -351,10 +336,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               ],
                             ),
                             const SizedBox(height: AuraSpace.s10),
-                            Text(
-                              'Tip: tap your avatar to upload a new photo.',
-                              style: AuraText.small,
-                            ),
+                            Text('Tip: tap your avatar to upload a new photo.', style: AuraText.small),
                           ],
                         ),
                       ),
@@ -365,7 +347,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              ui.AuraCard(
+              AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s16),
                   child: Column(
@@ -397,6 +379,28 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
               ),
 
+              if (isAdmin) ...[
+                const SizedBox(height: AuraSpace.s14),
+                AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Admin', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s10),
+                        Text('Administrative actions are only visible to admins.', style: AuraText.small),
+                        const SizedBox(height: AuraSpace.s12),
+                        FilledButton(
+                          onPressed: () => context.go('/announcements?admin=1'),
+                          child: const Text('Manage announcements'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: AuraSpace.s14),
 
               Consumer(
@@ -408,7 +412,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       if (!hasDraft) return const SizedBox.shrink();
 
                       final title = (d['title'] ?? 'Draft').toString().trim();
-                      return ui.AuraCard(
+                      return AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(AuraSpace.s16),
                           child: Column(
@@ -429,9 +433,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     },
                     loading: () => const SizedBox.shrink(),
                     error: (err, st) {
-                      // If email is not verified, draft endpoints might be blocked.
                       if (_isEmailNotVerifiedError(err)) return const SizedBox.shrink();
-                      return ui.AuraCard(
+                      return AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(AuraSpace.s16),
                           child: Text('Draft load failed: $err', style: AuraText.small),
@@ -450,7 +453,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   return postsAsync.when(
                     data: (items) {
                       if (items.isEmpty) {
-                        return ui.AuraCard(
+                        return AuraCard(
                           child: Padding(
                             padding: const EdgeInsets.all(AuraSpace.s16),
                             child: Column(
@@ -465,7 +468,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         );
                       }
 
-                      return ui.AuraCard(
+                      return AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(AuraSpace.s16),
                           child: Column(
@@ -487,7 +490,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       );
                     },
                     loading: () => const SizedBox.shrink(),
-                    error: (err, st) => ui.AuraCard(
+                    error: (err, st) => AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(AuraSpace.s16),
                         child: Text('Posts load failed: $err', style: AuraText.small),
@@ -504,7 +507,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   final savesAsync = ref.watch(_meSavesProvider);
                   return savesAsync.when(
                     data: (items) {
-                      return ui.AuraCard(
+                      return AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(AuraSpace.s16),
                           child: Column(
@@ -524,7 +527,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       );
                     },
                     loading: () => const SizedBox.shrink(),
-                    error: (err, st) => ui.AuraCard(
+                    error: (err, st) => AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(AuraSpace.s16),
                         child: Text('Saved load failed: $err', style: AuraText.small),
@@ -541,7 +544,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   final repliesAsync = ref.watch(_meRepliesProvider);
                   return repliesAsync.when(
                     data: (items) {
-                      return ui.AuraCard(
+                      return AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(AuraSpace.s16),
                           child: Column(
@@ -561,7 +564,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       );
                     },
                     loading: () => const SizedBox.shrink(),
-                    error: (err, st) => ui.AuraCard(
+                    error: (err, st) => AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(AuraSpace.s16),
                         child: Text('Replies load failed: $err', style: AuraText.small),
@@ -578,7 +581,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(AuraSpace.s16),
-              child: ui.AuraCard(
+              child: AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Column(

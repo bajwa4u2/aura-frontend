@@ -1,16 +1,15 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_text.dart';
+import '../../core/net/dio_provider.dart';
+import '../../core/ui/aura_card.dart';
+import '../../core/ui/aura_scaffold.dart';
+import '../../core/ui/aura_space.dart';
+import '../../core/ui/aura_text.dart';
 
 final meProfileRawProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
@@ -61,7 +60,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _saving = false;
   bool _uploading = false;
 
-  // Cache-bust nonce for avatar preview. Bumped after upload/save.
   int _avatarBust = 0;
 
   @override
@@ -85,12 +83,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  String _str(Map<String, dynamic> m, String key) {
-    final v = m[key];
-    if (v is String) return v;
-    return '';
-  }
-
   String? _nullableStr(Map<String, dynamic> m, String key) {
     final v = m[key];
     if (v is String) return v;
@@ -110,7 +102,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _firstName.text = (_nullableStr(me, 'firstName') ?? '').trim();
     _lastName.text = (_nullableStr(me, 'lastName') ?? '').trim();
 
-    _displayName.text = _str(me, 'displayName').trim();
+    _displayName.text = (_nullableStr(me, 'displayName') ?? '').trim();
     _bio.text = (_nullableStr(me, 'bio') ?? '').trim();
     _avatarUrl.text = (_nullableStr(me, 'avatarUrl') ?? '').trim();
     _city.text = (_nullableStr(me, 'city') ?? '').trim();
@@ -163,9 +155,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     setState(() => _avatarBust++);
   }
 
+  String _absoluteFromMaybeRelative(String raw, Dio dio) {
+    final t = raw.trim();
+    if (t.isEmpty) return '';
+    if (t.startsWith('http://') || t.startsWith('https://')) return t;
+
+    final base = dio.options.baseUrl.trim();
+    if (base.isEmpty) return t;
+
+    final b = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final p = t.startsWith('/') ? t : '/$t';
+    return '$b$p';
+  }
+
   Future<void> _uploadAvatar() async {
     if (_uploading) return;
-
     setState(() => _uploading = true);
 
     try {
@@ -185,9 +189,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       final res = await dio.post('/uploads/avatar', data: form);
       final m = _unwrap(res.data);
-      String? url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
+      final url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString().trim() ?? '';
 
-      if (url == null || url.trim().isEmpty) {
+      if (url.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Upload completed but no URL returned.')),
@@ -195,7 +199,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         return;
       }
 
-      _avatarUrl.text = url.trim();
+      _avatarUrl.text = url;
       _touchAvatarBust();
 
       if (!mounted) return;
@@ -253,26 +257,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return out;
   }
 
-  String _absoluteFromMaybeRelative(String raw, Dio dio) {
-    final t = raw.trim();
-    if (t.isEmpty) return '';
-    if (t.startsWith('http://') || t.startsWith('https://')) return t;
-
-    final base = dio.options.baseUrl.trim();
-    if (base.isEmpty) return t;
-
-    final b = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
-    final p = t.startsWith('/') ? t : '/$t';
-    return '$b$p';
-  }
-
   Future<void> _save() async {
     if (_saving) return;
 
     final dn = _displayName.text.trim();
-    final fn = _firstName.text.trim();
-    final ln = _lastName.text.trim();
-
     if (dn.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Display name is required.')),
@@ -313,7 +301,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      // CLEAR-TO-NULL behavior
+      final fn = _firstName.text.trim();
+      final ln = _lastName.text.trim();
       final bb = _bio.text.trim();
       final av = _avatarUrl.text.trim();
       final city = _city.text.trim();
@@ -342,23 +331,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _touchAvatarBust();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
       Navigator.of(context).pop(res.data);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _addLink() {
-    setState(() => _links.add(_LinkRow()));
-  }
+  void _addLink() => setState(() => _links.add(_LinkRow()));
 
   void _removeLink(int i) {
     if (i < 0 || i >= _links.length) return;
@@ -369,9 +352,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
   }
 
-  void _addPublication() {
-    setState(() => _publications.add(_PublicationRow()));
-  }
+  void _addPublication() => setState(() => _publications.add(_PublicationRow()));
 
   void _removePublication(int i) {
     if (i < 0 || i >= _publications.length) return;
@@ -388,7 +369,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     return AuraScaffold(
       title: 'Edit profile',
-      child: meAsync.when(
+      body: meAsync.when(
         data: (raw) {
           final me = _unwrap(raw);
           _seed(me);
@@ -446,10 +427,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               onChanged: (_) => _touchAvatarBust(),
                             ),
                             const SizedBox(height: AuraSpace.s8),
-                            Text(
-                              'Upload is preferred. URL is available for debugging or advanced use.',
-                              style: AuraText.small,
-                            ),
+                            Text('Upload is preferred. URL is available for debugging or advanced use.', style: AuraText.small),
                           ],
                         ),
                       ),
@@ -460,7 +438,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Identity
               AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
@@ -500,9 +477,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           hintText: 'Your name',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: AuraSpace.s14),
+
                       Text('Website', style: AuraText.body),
                       const SizedBox(height: AuraSpace.s8),
                       TextField(
@@ -513,6 +490,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s14),
+
                       Text('Bio', style: AuraText.body),
                       const SizedBox(height: AuraSpace.s8),
                       TextField(
@@ -530,7 +508,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Location
               AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
@@ -583,7 +560,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Links
               AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
@@ -594,7 +570,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       const SizedBox(height: AuraSpace.s10),
                       for (int i = 0; i < _links.length; i++) ...[
                         _links[i].build(
-                          context: context,
                           index: i,
                           onRemove: () => _removeLink(i),
                         ),
@@ -610,7 +585,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Publications
               AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(AuraSpace.s16),
@@ -621,7 +595,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       const SizedBox(height: AuraSpace.s10),
                       for (int i = 0; i < _publications.length; i++) ...[
                         _publications[i].build(
-                          context: context,
                           index: i,
                           onRemove: () => _removePublication(i),
                         ),
@@ -701,7 +674,6 @@ class _LinkRow {
   }
 
   Widget build({
-    required BuildContext context,
     required int index,
     required VoidCallback onRemove,
   }) {
@@ -772,7 +744,6 @@ class _PublicationRow {
   }
 
   Widget build({
-    required BuildContext context,
     required int index,
     required VoidCallback onRemove,
   }) {
