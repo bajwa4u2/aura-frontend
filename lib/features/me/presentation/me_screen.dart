@@ -13,6 +13,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
+import 'edit_profile_screen.dart';
+
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
   if (v is Map) return Map<String, dynamic>.from(v);
@@ -119,25 +121,57 @@ class MeScreen extends ConsumerStatefulWidget {
 class _MeScreenState extends ConsumerState<MeScreen> {
   bool _busyLogout = false;
 
-  String _absoluteAvatarUrl({required String baseUrl, required String avatarUrl}) {
-    final u = avatarUrl.trim();
-    if (u.isEmpty) return '';
-    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+  String _absFromMaybeRelative(String raw, Dio dio) {
+    final t = raw.trim();
+    if (t.isEmpty) return '';
+    if (t.startsWith('http://') || t.startsWith('https://')) return t;
 
-    final root = baseUrl.replaceAll(RegExp(r'/?$'), '');
-    if (u.startsWith('/')) return '$root$u';
-    return '$root/$u';
+    // If server returns "/uploads/..." build absolute from Dio baseUrl.
+    final base = dio.options.baseUrl.trim();
+    if (base.isEmpty) return t;
+
+    final b = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final p = t.startsWith('/') ? t : '/$t';
+    return '$b$p';
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    if (_busyLogout) return;
+    setState(() => _busyLogout = true);
+
+    try {
+      final dio = ref.read(dioProvider);
+
+      // Attempt backend revoke (best-effort).
+      try {
+        await dio.post('/auth/logout');
+      } catch (_) {
+        // Ignore; local clear still happens.
+      }
+
+      final store = ref.read(tokenStoreProvider);
+      await store.clear();
+
+      if (!mounted) return;
+      ref.invalidate(authStatusProvider);
+      ref.invalidate(isAuthedProvider);
+      ref.invalidate(emailVerifiedProvider);
+
+      context.go('/login');
+    } finally {
+      if (mounted) setState(() => _busyLogout = false);
+    }
   }
 
   Future<void> _pickAndUploadAvatar(BuildContext context) async {
-    final picker = ImagePicker();
     final messenger = ScaffoldMessenger.of(context);
     try {
+      final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
       if (picked == null) return;
 
-      final bytes = await picked.readAsBytes();
       final dio = ref.read(dioProvider);
+      final bytes = await picked.readAsBytes();
 
       final form = FormData.fromMap({
         'file': MultipartFile.fromBytes(
@@ -148,22 +182,22 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
       final res = await dio.post('/uploads/avatar', data: form);
       final data = _asMap(res.data);
+      final unwrapped = _unwrapMap(data);
+      final url = (unwrapped['url'] ?? unwrapped['avatarUrl'] ?? unwrapped['path'])?.toString().trim() ?? '';
 
-      final url = (data['url'] ?? data['avatarUrl'] ?? data['path'])?.toString().trim();
-      if (url == null || url.isEmpty) {
-        if (!mounted) return;
-        messenger.showSnackBar(const SnackBar(content: Text('Upload succeeded but no URL returned.')));
+      if (url.isEmpty) {
+        messenger.showSnackBar(const SnackBar(content: Text('Upload completed but no URL returned.')));
         return;
       }
 
+      // Apply immediately.
       await dio.patch('/users/me', data: {'avatarUrl': url});
 
       ref.invalidate(meProfileProvider);
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Photo updated.')));
+      messenger.showSnackBar(const SnackBar(content: Text('Avatar updated.')));
     } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      messenger.showSnackBar(SnackBar(content: Text('Avatar upload failed: $e')));
     }
   }
 
@@ -172,135 +206,41 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     required String? displayName,
     required String? bio,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final nameCtl = TextEditingController(text: displayName ?? '');
-    final bioCtl = TextEditingController(text: bio ?? '');
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit profile'),
-        content: SizedBox(
-          width: 560,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtl,
-                decoration: const InputDecoration(
-                  labelText: 'Display name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              TextField(
-                controller: bioCtl,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Bio',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
-        ],
-      ),
+    // Keep the call site stable, but route to the full Edit Profile screen.
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
 
-    if (ok != true) return;
-
-    final dio = ref.read(dioProvider);
-    final dn = nameCtl.text.trim();
-    final bb = bioCtl.text.trim();
-
-    await dio.patch('/users/me', data: {
-      'displayName': dn.isEmpty ? null : dn,
-      'bio': bb.isEmpty ? null : bb,
-    });
-
+    // Refresh profile + related panels after returning.
     ref.invalidate(meProfileProvider);
-    if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Saved.')));
-  }
-
-  Future<void> _logout(BuildContext context) async {
-    if (_busyLogout) return;
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('You will need to log in again to access your account.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Log out')),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
-
-    setState(() => _busyLogout = true);
-
-    try {
-      final dio = ref.read(dioProvider);
-      final store = ref.read(tokenStoreProvider);
-
-      // Best-effort backend revoke (works on web too; cookie refresh handled server-side)
-      try {
-        final rt = (store.refreshToken ?? '').trim();
-        if (!kIsWeb && rt.isNotEmpty) {
-          await dio.post('/auth/logout', data: {'refreshToken': rt});
-        } else {
-          await dio.post('/auth/logout');
-        }
-      } catch (_) {}
-
-      await store.clear();
-
-      // Clear cached screens
-      ref.invalidate(meProfileProvider);
-      ref.invalidate(_meDraftProvider);
-      ref.invalidate(_mePostsProvider);
-      ref.invalidate(_meSavesProvider);
-      ref.invalidate(_meRepliesProvider);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out.')));
-      context.go('/login');
-    } finally {
-      if (mounted) setState(() => _busyLogout = false);
-    }
+    ref.invalidate(_meDraftProvider);
+    ref.invalidate(_mePostsProvider);
+    ref.invalidate(_meSavesProvider);
+    ref.invalidate(_meRepliesProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authStatus = ref.watch(authStatusProvider);
-    final verifiedAsync = ref.watch(emailVerifiedProvider);
+    final authed = ref.watch(isAuthedProvider);
 
-    // Not authed: show simple gate
-    if (authStatus == AuthStatus.unauthed) {
+    if (!authed) {
       return AuraScaffold(
-        title: 'Aura',
-        showHomeAction: true,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ui.AuraCard(
+        title: 'Me',
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          child: ui.AuraCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AuraSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Not signed in', style: AuraText.title),
+                  Text('You are not signed in.', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
-                  Text('Log in to view your profile.', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s14),
+                  Text('Sign in to manage your profile and see your drafts, posts, and saved items.', style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s12),
                   FilledButton(
-                    onPressed: () => context.go('/login?redirect=${Uri.encodeComponent('/me')}'),
-                    child: const Text('Go to login'),
+                    onPressed: () => context.go('/login?redirect=/me'),
+                    child: const Text('Sign in'),
                   ),
                 ],
               ),
@@ -310,131 +250,59 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       );
     }
 
-    // Authed but not verified: show verify gate (router should also enforce, but this makes it bulletproof)
-    final verified = verifiedAsync.valueOrNull ?? false;
-    if (!verified) {
-      return AuraScaffold(
-        title: 'Verify email',
-        showHomeAction: true,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ui.AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Email not verified', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    'Verify your email to unlock your profile.',
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  FilledButton(
-                    onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
-                    child: const Text('Verify now'),
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                  TextButton(
-                    onPressed: _busyLogout ? null : () => _logout(context),
-                    child: const Text('Log out'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Main profile UI
-    final profile = ref.watch(meProfileProvider);
+    final profileAsync = ref.watch(meProfileProvider);
 
     return AuraScaffold(
       title: 'Me',
-      showHomeAction: true,
-      body: profile.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) {
-          if (_isEmailNotVerifiedError(err)) {
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: ui.AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Email not verified', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text('Go to verify pending.', style: AuraText.body),
-                      const SizedBox(height: AuraSpace.s14),
-                      FilledButton(
-                        onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
-                        child: const Text('Verify'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
+      child: profileAsync.when(
+        data: (me) {
+          final emailNotVerified = me['_emailNotVerified'] == true;
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: ui.AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Failed to load profile', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(err.toString(), style: AuraText.body),
-                    const SizedBox(height: AuraSpace.s14),
-                    FilledButton(
-                      onPressed: () => ref.invalidate(meProfileProvider),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-        data: (m) {
-          if (m['_emailNotVerified'] == true) {
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: ui.AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Email not verified', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text('Verify to unlock your profile.', style: AuraText.body),
-                      const SizedBox(height: AuraSpace.s14),
-                      FilledButton(
-                        onPressed: () => context.go('/verify-pending?redirect=${Uri.encodeComponent('/me')}'),
-                        child: const Text('Verify now'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
+          final dio = ref.read(dioProvider);
 
-          final handle = (m['handle'] ?? '').toString();
-          final displayName = (m['displayName'] ?? '').toString();
-          final bio = (m['bio'] ?? '').toString();
-          final avatarUrl = (m['avatarUrl'] ?? '').toString();
-
-          final baseUrl = ref.read(dioProvider).options.baseUrl;
-          final avatarAbs = _absoluteAvatarUrl(baseUrl: baseUrl, avatarUrl: avatarUrl);
+          final displayName = (me['displayName'] ?? '').toString().trim();
+          final handle = (me['handle'] ?? '').toString().trim();
+          final email = (me['email'] ?? '').toString().trim();
+          final bio = (me['bio'] ?? '').toString().trim();
+          final avatarRaw = (me['avatarUrl'] ?? '').toString().trim();
+          final avatarAbs = _absFromMaybeRelative(avatarRaw, dio);
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+            padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s16, AuraSpace.s16, AuraSpace.s24),
             children: [
+              if (emailNotVerified)
+                ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Email verification required', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(
+                          'Please verify your email to unlock writing and full account features.',
+                          style: AuraText.body,
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            FilledButton(
+                              onPressed: () => context.go('/verify'),
+                              child: const Text('Verify email'),
+                            ),
+                            OutlinedButton(
+                              onPressed: () => _logout(context),
+                              child: const Text('Log out'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               ui.AuraCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,104 +317,286 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     ),
                     const SizedBox(width: AuraSpace.s12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(displayName.isNotEmpty ? displayName : 'Member', style: AuraText.title),
-                          const SizedBox(height: 6),
-                          if (handle.isNotEmpty) Text('@$handle', style: AuraText.body),
-                          if (bio.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(bio, style: AuraText.body),
-                          ],
-                          const SizedBox(height: AuraSpace.s12),
-                          Wrap(
-                            spacing: AuraSpace.s10,
-                            runSpacing: AuraSpace.s10,
-                            children: [
-                              FilledButton(
-                                onPressed: () => _editProfile(
-                                  context: context,
-                                  displayName: displayName,
-                                  bio: bio,
-                                ),
-                                child: const Text('Edit profile'),
-                              ),
-                              OutlinedButton(
-                                onPressed: _busyLogout ? null : () => _logout(context),
-                                child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
-                              ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, AuraSpace.s14, AuraSpace.s16, AuraSpace.s14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
+                            const SizedBox(height: AuraSpace.s6),
+                            Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
+                            const SizedBox(height: AuraSpace.s6),
+                            Text(email.isNotEmpty ? email : '—', style: AuraText.small),
+                            if (bio.isNotEmpty) ...[
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(bio, style: AuraText.body),
                             ],
-                          ),
-                        ],
+                            const SizedBox(height: AuraSpace.s12),
+                            Wrap(
+                              spacing: AuraSpace.s10,
+                              runSpacing: AuraSpace.s10,
+                              children: [
+                                FilledButton(
+                                  onPressed: () => _editProfile(
+                                    context: context,
+                                    displayName: displayName,
+                                    bio: bio,
+                                  ),
+                                  child: const Text('Edit profile'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: _busyLogout ? null : () => _logout(context),
+                                  child: Text(_busyLogout ? 'Logging out…' : 'Log out'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AuraSpace.s10),
+                            Text(
+                              'Tip: tap your avatar to upload a new photo.',
+                              style: AuraText.small,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: AuraSpace.s14),
 
-              // Quick links
               ui.AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Quick', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => context.go('/compose'),
-                          child: const Text('Compose'),
-                        ),
-                        OutlinedButton(
-                          onPressed: () => context.go('/saved'),
-                          child: const Text('Saved'),
-                        ),
-                        OutlinedButton(
-                          onPressed: () => context.go('/updates'),
-                          child: const Text('Updates'),
-                        ),
-                      ],
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tools', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Wrap(
+                        spacing: AuraSpace.s10,
+                        runSpacing: AuraSpace.s10,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => context.go('/announcements'),
+                            child: const Text('Announcements'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/ai/claim-audit'),
+                            child: const Text('Claim audit'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text(
+                        'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
+                        style: AuraText.small,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Tools (beta)
-              ui.AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tools', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => context.go('/announcements'),
-                          child: const Text('Announcements'),
+              Consumer(
+                builder: (context, ref, _) {
+                  final draftAsync = ref.watch(_meDraftProvider);
+                  return draftAsync.when(
+                    data: (d) {
+                      final hasDraft = (d['id'] ?? '').toString().trim().isNotEmpty;
+                      if (!hasDraft) return const SizedBox.shrink();
+
+                      final title = (d['title'] ?? 'Draft').toString().trim();
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Draft', style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(title, style: AuraText.body),
+                              const SizedBox(height: AuraSpace.s12),
+                              FilledButton(
+                                onPressed: () => context.go('/compose?draft=1'),
+                                child: const Text('Continue writing'),
+                              ),
+                            ],
+                          ),
                         ),
-                        OutlinedButton(
-                          onPressed: () => context.go('/ai/claim-audit'),
-                          child: const Text('Claim audit'),
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (err, st) {
+                      // If email is not verified, draft endpoints might be blocked.
+                      if (_isEmailNotVerifiedError(err)) return const SizedBox.shrink();
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s16),
+                          child: Text('Draft load failed: $err', style: AuraText.small),
                         ),
-                      ],
+                      );
+                    },
+                  );
+                },
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              Consumer(
+                builder: (context, ref, _) {
+                  final postsAsync = ref.watch(_mePostsProvider);
+                  return postsAsync.when(
+                    data: (items) {
+                      if (items.isEmpty) {
+                        return ui.AuraCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AuraSpace.s16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Your posts', style: AuraText.title),
+                                const SizedBox(height: AuraSpace.s10),
+                                Text('No posts yet.', style: AuraText.small),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Your posts', style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final p in items.take(6)) ...[
+                                Text((p['text'] ?? '').toString().trim(), style: AuraText.body),
+                                const SizedBox(height: AuraSpace.s10),
+                              ],
+                              OutlinedButton(
+                                onPressed: () => context.go('/posts/mine'),
+                                child: const Text('View all'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AuraSpace.s16),
+                        child: Text('Posts load failed: $err', style: AuraText.small),
+                      ),
                     ),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(
-                      'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
-                      style: AuraText.small,
+                  );
+                },
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              Consumer(
+                builder: (context, ref, _) {
+                  final savesAsync = ref.watch(_meSavesProvider);
+                  return savesAsync.when(
+                    data: (items) {
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Saved', style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(items.isEmpty ? 'Nothing saved yet.' : 'You have ${items.length} saved item(s).', style: AuraText.small),
+                              const SizedBox(height: AuraSpace.s12),
+                              OutlinedButton(
+                                onPressed: () => context.go('/saves'),
+                                child: const Text('Open saved'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AuraSpace.s16),
+                        child: Text('Saved load failed: $err', style: AuraText.small),
+                      ),
                     ),
-                  ],
-                ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              Consumer(
+                builder: (context, ref, _) {
+                  final repliesAsync = ref.watch(_meRepliesProvider);
+                  return repliesAsync.when(
+                    data: (items) {
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Replies', style: AuraText.title),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(items.isEmpty ? 'No replies yet.' : 'You have ${items.length} reply/replies.', style: AuraText.small),
+                              const SizedBox(height: AuraSpace.s12),
+                              OutlinedButton(
+                                onPressed: () => context.go('/replies/mine'),
+                                child: const Text('Open replies'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AuraSpace.s16),
+                        child: Text('Replies load failed: $err', style: AuraText.small),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, st) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AuraSpace.s16),
+              child: ui.AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Could not load your profile.', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Text('$err', style: AuraText.small),
+                      const SizedBox(height: AuraSpace.s12),
+                      FilledButton(
+                        onPressed: () => ref.invalidate(meProfileProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           );
         },
       ),

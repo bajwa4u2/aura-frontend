@@ -19,8 +19,23 @@ final meProfileRawProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
 
   if (data is Map<String, dynamic>) return data;
   if (data is Map) return Map<String, dynamic>.from(data);
-  throw Exception('Unexpected /users/me response');
+
+  throw Exception('Unexpected response');
 });
+
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) return Map<String, dynamic>.from(v);
+  return <String, dynamic>{};
+}
+
+Map<String, dynamic> _unwrap(dynamic raw) {
+  final root = _asMap(raw);
+  dynamic inner = root['data'];
+  if (inner is Map && inner['data'] is Map) inner = inner['data'];
+  if (inner is Map) return Map<String, dynamic>.from(inner);
+  return root;
+}
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -30,6 +45,8 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
   final _displayName = TextEditingController();
   final _bio = TextEditingController();
   final _avatarUrl = TextEditingController();
@@ -40,15 +57,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final List<_LinkRow> _links = [];
   final List<_PublicationRow> _publications = [];
 
+  bool _seeded = false;
   bool _saving = false;
   bool _uploading = false;
-  bool _seeded = false;
 
   // Cache-bust nonce for avatar preview. Bumped after upload/save.
   int _avatarBust = 0;
 
   @override
   void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
     _displayName.dispose();
     _bio.dispose();
     _avatarUrl.dispose();
@@ -74,7 +93,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   String? _nullableStr(Map<String, dynamic> m, String key) {
     final v = m[key];
-    if (v == null) return null;
     if (v is String) return v;
     return null;
   }
@@ -88,6 +106,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _seed(Map<String, dynamic> me) {
     if (_seeded) return;
     _seeded = true;
+
+    _firstName.text = (_nullableStr(me, 'firstName') ?? '').trim();
+    _lastName.text = (_nullableStr(me, 'lastName') ?? '').trim();
 
     _displayName.text = _str(me, 'displayName').trim();
     _bio.text = (_nullableStr(me, 'bio') ?? '').trim();
@@ -112,34 +133,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final m = Map<String, dynamic>.from(raw);
       final title = (m['title'] ?? '').toString().trim();
       if (title.isEmpty) continue;
+
       final url = (m['url'] ?? '').toString().trim();
       final publisher = (m['publisher'] ?? '').toString().trim();
-      final year = m['year'];
-      final yearStr = year == null ? '' : year.toString();
+      final year = (m['year'] ?? '').toString().trim();
+
       _publications.add(
         _PublicationRow(
           title: title,
           url: url,
           publisher: publisher,
-          year: yearStr,
+          year: year,
         ),
       );
     }
 
-    // Always show at least one empty row for UX.
     if (_links.isEmpty) _links.add(_LinkRow());
     if (_publications.isEmpty) _publications.add(_PublicationRow());
-  }
-
-  String _absoluteFromMaybeRelative(String url, Dio dio) {
-    final u = url.trim();
-    if (u.isEmpty) return u;
-    if (u.startsWith('http://') || u.startsWith('https://')) return u;
-
-    final base = dio.options.baseUrl.trim();
-    if (base.isEmpty) return u;
-    if (u.startsWith('/')) return '$base$u';
-    return '$base/$u';
   }
 
   bool _isHttpUrl(String s) {
@@ -174,18 +184,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       });
 
       final res = await dio.post('/uploads/avatar', data: form);
-      final data = res.data;
-
-      String? url;
-      if (data is Map) {
-        final m = Map<String, dynamic>.from(data);
-        url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
-      }
+      final m = _unwrap(res.data);
+      String? url = (m['url'] ?? m['avatarUrl'] ?? m['path'])?.toString();
 
       if (url == null || url.trim().isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload succeeded but no URL returned.')),
+          const SnackBar(content: Text('Upload completed but no URL returned.')),
         );
         return;
       }
@@ -211,8 +216,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final out = <Map<String, dynamic>>[];
     for (final r in _links) {
       final url = r.url.text.trim();
-      final label = r.label.text.trim();
       if (url.isEmpty) continue;
+
+      final label = r.label.text.trim();
       out.add({
         'label': label.isEmpty ? null : label,
         'url': url,
@@ -247,10 +253,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return out;
   }
 
+  String _absoluteFromMaybeRelative(String raw, Dio dio) {
+    final t = raw.trim();
+    if (t.isEmpty) return '';
+    if (t.startsWith('http://') || t.startsWith('https://')) return t;
+
+    final base = dio.options.baseUrl.trim();
+    if (base.isEmpty) return t;
+
+    final b = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final p = t.startsWith('/') ? t : '/$t';
+    return '$b$p';
+  }
+
   Future<void> _save() async {
     if (_saving) return;
 
     final dn = _displayName.text.trim();
+    final fn = _firstName.text.trim();
+    final ln = _lastName.text.trim();
+
     if (dn.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Display name is required.')),
@@ -304,6 +326,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         '/users/me',
         data: {
           'displayName': dn,
+          'firstName': fn.isEmpty ? null : fn,
+          'lastName': ln.isEmpty ? null : ln,
           'bio': bb.isEmpty ? null : bb,
           'avatarUrl': av.isEmpty ? null : av,
           'city': city.isEmpty ? null : city,
@@ -325,7 +349,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save: $e')),
+        SnackBar(content: Text('Save failed: $e')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -339,8 +363,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _removeLink(int i) {
     if (i < 0 || i >= _links.length) return;
     setState(() {
-      final row = _links.removeAt(i);
-      row.dispose();
+      _links[i].dispose();
+      _links.removeAt(i);
       if (_links.isEmpty) _links.add(_LinkRow());
     });
   }
@@ -352,383 +376,346 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _removePublication(int i) {
     if (i < 0 || i >= _publications.length) return;
     setState(() {
-      final row = _publications.removeAt(i);
-      row.dispose();
+      _publications[i].dispose();
+      _publications.removeAt(i);
       if (_publications.isEmpty) _publications.add(_PublicationRow());
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final dio = ref.watch(dioProvider);
+    final meAsync = ref.watch(meProfileRawProvider);
 
     return AuraScaffold(
-      title: 'Edit Profile',
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving…' : 'Save'),
-        ),
-      ],
-      body: Consumer(
-        builder: (context, ref, _) {
-          final meAsync = ref.watch(meProfileRawProvider);
+      title: 'Edit profile',
+      child: meAsync.when(
+        data: (raw) {
+          final me = _unwrap(raw);
+          _seed(me);
 
-          return meAsync.when(
-            data: (me) {
-              _seed(me);
+          final dio = ref.read(dioProvider);
+          final avatarRaw = _absoluteFromMaybeRelative(_avatarUrl.text, dio);
+          final avatar = avatarRaw.isNotEmpty
+              ? (avatarRaw.contains('?') ? '$avatarRaw&v=$_avatarBust' : '$avatarRaw?v=$_avatarBust')
+              : '';
 
-              final handle = _str(me, 'handle');
-              final avatarRaw = _absoluteFromMaybeRelative(_avatarUrl.text, dio);
-              final avatar = avatarRaw.isNotEmpty
-                  ? (avatarRaw.contains('?') ? '${avatarRaw}&v=$_avatarBust' : '${avatarRaw}?v=$_avatarBust')
-                  : '';
-
-              return ListView(
-                padding: const EdgeInsets.all(AuraSpace.s16),
-                children: [
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 34,
-                                backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                                child: avatar.isEmpty ? const Icon(Icons.person, size: 34) : null,
-                              ),
-                              const SizedBox(width: AuraSpace.s16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _displayName.text.trim().isEmpty ? 'Member' : _displayName.text.trim(),
-                                      style: AuraText.title,
-                                    ),
-                                    const SizedBox(height: AuraSpace.s6),
-                                    Text(handle.isEmpty ? '' : '@$handle', style: AuraText.muted),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AuraSpace.s14),
-                          Row(
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: _uploading ? null : _uploadAvatar,
-                                icon: _uploading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.image_outlined),
-                                label: Text(_uploading ? 'Uploading…' : 'Upload avatar'),
-                              ),
-                              const SizedBox(width: AuraSpace.s12),
-                              Expanded(
-                                child: Text(
-                                  'Upload updates the URL field. Tap Save to apply.',
-                                  style: AuraText.small,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+          return ListView(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            children: [
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 34,
+                        backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                        child: avatar.isEmpty ? const Icon(Icons.person, size: 34) : null,
                       ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  // Identity
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Identity', style: AuraText.title),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text('Display name', style: AuraText.body),
-                          const SizedBox(height: AuraSpace.s8),
-                          TextField(
-                            controller: _displayName,
-                            decoration: const InputDecoration(
-                              hintText: 'Your name',
-                              border: OutlineInputBorder(),
-                            ),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          const SizedBox(height: AuraSpace.s14),
-                          Text('Website', style: AuraText.body),
-                          const SizedBox(height: AuraSpace.s8),
-                          TextField(
-                            controller: _websiteUrl,
-                            decoration: const InputDecoration(
-                              hintText: 'https://your-site.com',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  // About
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('About', style: AuraText.title),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text('Bio', style: AuraText.body),
-                          const SizedBox(height: AuraSpace.s8),
-                          TextField(
-                            controller: _bio,
-                            maxLines: 5,
-                            decoration: const InputDecoration(
-                              hintText: 'A few lines about you',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  // Location
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Location', style: AuraText.title),
-                          const SizedBox(height: AuraSpace.s10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('City', style: AuraText.body),
-                                    const SizedBox(height: AuraSpace.s8),
-                                    TextField(
-                                      controller: _city,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Canton',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: AuraSpace.s12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Country', style: AuraText.body),
-                                    const SizedBox(height: AuraSpace.s8),
-                                    TextField(
-                                      controller: _country,
-                                      decoration: const InputDecoration(
-                                        hintText: 'USA',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text(
-                            'These are optional. If you prefer privacy, leave them blank.',
-                            style: AuraText.small,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  // Links
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(child: Text('Links', style: AuraText.title)),
-                              TextButton.icon(
-                                onPressed: _addLink,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AuraSpace.s6),
-                          Text('Add your key links (site, newsletter, socials).', style: AuraText.small),
-                          const SizedBox(height: AuraSpace.s10),
-                          for (int i = 0; i < _links.length; i++) ...[
-                            _LinkEditorRow(
-                              row: _links[i],
-                              onRemove: _links.length <= 1 ? null : () => _removeLink(i),
-                            ),
+                      const SizedBox(width: AuraSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Avatar', style: AuraText.title),
                             const SizedBox(height: AuraSpace.s10),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  // Publications
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(child: Text('Publications', style: AuraText.title)),
-                              TextButton.icon(
-                                onPressed: _addPublication,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AuraSpace.s6),
-                          Text('Articles, papers, books, interviews, or notable links.', style: AuraText.small),
-                          const SizedBox(height: AuraSpace.s10),
-                          for (int i = 0; i < _publications.length; i++) ...[
-                            _PublicationEditorRow(
-                              row: _publications[i],
-                              onRemove: _publications.length <= 1 ? null : () => _removePublication(i),
+                            Wrap(
+                              spacing: AuraSpace.s10,
+                              runSpacing: AuraSpace.s10,
+                              children: [
+                                FilledButton(
+                                  onPressed: _uploading ? null : _uploadAvatar,
+                                  child: Text(_uploading ? 'Uploading…' : 'Upload avatar'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: _touchAvatarBust,
+                                  child: const Text('Refresh preview'),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: AuraSpace.s12),
+                            Text('Avatar URL', style: AuraText.body),
+                            const SizedBox(height: AuraSpace.s8),
+                            TextField(
+                              controller: _avatarUrl,
+                              decoration: const InputDecoration(
+                                hintText: 'https://…',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (_) => _touchAvatarBust(),
+                            ),
+                            const SizedBox(height: AuraSpace.s8),
+                            Text(
+                              'Upload is preferred. URL is available for debugging or advanced use.',
+                              style: AuraText.small,
+                            ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: AuraSpace.s14),
+              const SizedBox(height: AuraSpace.s14),
 
-                  // Advanced
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              // Identity
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Identity', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+
+                      Text('First name (private)', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s8),
+                      TextField(
+                        controller: _firstName,
+                        decoration: const InputDecoration(
+                          hintText: 'Muhammad',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+
+                      Text('Last name (private)', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s8),
+                      TextField(
+                        controller: _lastName,
+                        decoration: const InputDecoration(
+                          hintText: 'Sakhawat',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+
+                      Text('Display name', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s8),
+                      TextField(
+                        controller: _displayName,
+                        decoration: const InputDecoration(
+                          hintText: 'Your name',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      Text('Website', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s8),
+                      TextField(
+                        controller: _websiteUrl,
+                        decoration: const InputDecoration(
+                          hintText: 'https://…',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      Text('Bio', style: AuraText.body),
+                      const SizedBox(height: AuraSpace.s8),
+                      TextField(
+                        controller: _bio,
+                        maxLines: 6,
+                        decoration: const InputDecoration(
+                          hintText: 'A short note about you (optional)',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              // Location
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Location', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      Row(
                         children: [
-                          Text('Advanced', style: AuraText.title),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text('Avatar URL', style: AuraText.body),
-                          const SizedBox(height: AuraSpace.s8),
-                          TextField(
-                            controller: _avatarUrl,
-                            decoration: const InputDecoration(
-                              hintText: 'https://…',
-                              border: OutlineInputBorder(),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('City', style: AuraText.body),
+                                const SizedBox(height: AuraSpace.s8),
+                                TextField(
+                                  controller: _city,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Canton',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ],
                             ),
-                            onChanged: (_) => _touchAvatarBust(),
                           ),
-                          const SizedBox(height: AuraSpace.s12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FilledButton(
-                              onPressed: _saving ? null : _save,
-                              child: Text(_saving ? 'Saving…' : 'Save'),
+                          const SizedBox(width: AuraSpace.s12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Country', style: AuraText.body),
+                                const SizedBox(height: AuraSpace.s8),
+                                TextField(
+                                  controller: _country,
+                                  decoration: const InputDecoration(
+                                    hintText: 'USA',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              // Links
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Links', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      for (int i = 0; i < _links.length; i++) ...[
+                        _links[i].build(
+                          context: context,
+                          index: i,
+                          onRemove: () => _removeLink(i),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+                      OutlinedButton(onPressed: _addLink, child: const Text('Add link')),
+                      const SizedBox(height: AuraSpace.s8),
+                      Text('Examples: personal site, author page, organization profile.', style: AuraText.small),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              // Publications
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Publications', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      for (int i = 0; i < _publications.length; i++) ...[
+                        _publications[i].build(
+                          context: context,
+                          index: i,
+                          onRemove: () => _removePublication(i),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+                      OutlinedButton(onPressed: _addPublication, child: const Text('Add publication')),
+                      const SizedBox(height: AuraSpace.s8),
+                      Text('Add books, essays, or notable work. Keep it minimal and factual.', style: AuraText.small),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
                     ),
                   ),
-
-                  const SizedBox(height: AuraSpace.s16),
+                  const SizedBox(width: AuraSpace.s12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _saving ? null : _save,
+                      child: Text(_saving ? 'Saving…' : 'Save'),
+                    ),
+                  ),
                 ],
-              );
-            },
-            loading: () => const _LoadingBlock(),
-            error: (e, _) => _ErrorBlock(message: e.toString()),
+              ),
+            ],
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, st) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            child: AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(AuraSpace.s16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Could not load your profile.', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+                    Text('$err', style: AuraText.small),
+                    const SizedBox(height: AuraSpace.s12),
+                    FilledButton(
+                      onPressed: () => ref.invalidate(meProfileRawProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
 class _LinkRow {
-  _LinkRow({String label = '', String url = ''})
-      : label = TextEditingController(text: label),
-        url = TextEditingController(text: url);
+  final label = TextEditingController();
+  final url = TextEditingController();
 
-  final TextEditingController label;
-  final TextEditingController url;
+  _LinkRow({String label = '', String url = ''}) {
+    this.label.text = label;
+    this.url.text = url;
+  }
 
   void dispose() {
     label.dispose();
     url.dispose();
   }
-}
 
-class _PublicationRow {
-  _PublicationRow({String title = '', String url = '', String publisher = '', String year = ''})
-      : title = TextEditingController(text: title),
-        url = TextEditingController(text: url),
-        publisher = TextEditingController(text: publisher),
-        year = TextEditingController(text: year);
-
-  final TextEditingController title;
-  final TextEditingController url;
-  final TextEditingController publisher;
-  final TextEditingController year;
-
-  void dispose() {
-    title.dispose();
-    url.dispose();
-    publisher.dispose();
-    year.dispose();
-  }
-}
-
-class _LinkEditorRow extends StatelessWidget {
-  const _LinkEditorRow({required this.row, this.onRemove});
-
-  final _LinkRow row;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build({
+    required BuildContext context,
+    required int index,
+    required VoidCallback onRemove,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Link ${index + 1}', style: AuraText.body),
+        const SizedBox(height: AuraSpace.s8),
         Row(
           children: [
             Expanded(
+              flex: 4,
               child: TextField(
-                controller: row.label,
+                controller: label,
                 decoration: const InputDecoration(
                   hintText: 'Label (optional)',
                   border: OutlineInputBorder(),
@@ -736,78 +723,89 @@ class _LinkEditorRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AuraSpace.s10),
-            if (onRemove != null)
-              IconButton(
-                onPressed: onRemove,
-                icon: const Icon(Icons.close),
-                tooltip: 'Remove link',
+            Expanded(
+              flex: 6,
+              child: TextField(
+                controller: url,
+                decoration: const InputDecoration(
+                  hintText: 'https://…',
+                  border: OutlineInputBorder(),
+                ),
               ),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close),
+              tooltip: 'Remove',
+            ),
           ],
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        TextField(
-          controller: row.url,
-          decoration: const InputDecoration(
-            hintText: 'https://…',
-            border: OutlineInputBorder(),
-          ),
         ),
       ],
     );
   }
 }
 
-class _PublicationEditorRow extends StatelessWidget {
-  const _PublicationEditorRow({required this.row, this.onRemove});
+class _PublicationRow {
+  final title = TextEditingController();
+  final url = TextEditingController();
+  final publisher = TextEditingController();
+  final year = TextEditingController();
 
-  final _PublicationRow row;
-  final VoidCallback? onRemove;
+  _PublicationRow({
+    String title = '',
+    String url = '',
+    String publisher = '',
+    String year = '',
+  }) {
+    this.title.text = title;
+    this.url.text = url;
+    this.publisher.text = publisher;
+    this.year.text = year;
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  void dispose() {
+    title.dispose();
+    url.dispose();
+    publisher.dispose();
+    year.dispose();
+  }
+
+  Widget build({
+    required BuildContext context,
+    required int index,
+    required VoidCallback onRemove,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Publication ${index + 1}', style: AuraText.body),
+        const SizedBox(height: AuraSpace.s8),
+        TextField(
+          controller: title,
+          decoration: const InputDecoration(
+            hintText: 'Title',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s10),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: row.title,
-                    decoration: const InputDecoration(
-                      hintText: 'Title',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s8),
-                  TextField(
-                    controller: row.url,
-                    decoration: const InputDecoration(
-                      hintText: 'URL (optional) https://…',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
+              flex: 6,
+              child: TextField(
+                controller: url,
+                decoration: const InputDecoration(
+                  hintText: 'URL (optional)',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
             const SizedBox(width: AuraSpace.s10),
-            if (onRemove != null)
-              IconButton(
-                onPressed: onRemove,
-                icon: const Icon(Icons.close),
-                tooltip: 'Remove publication',
-              ),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Row(
-          children: [
             Expanded(
+              flex: 4,
               child: TextField(
-                controller: row.publisher,
+                controller: publisher,
                 decoration: const InputDecoration(
                   hintText: 'Publisher (optional)',
                   border: OutlineInputBorder(),
@@ -818,7 +816,7 @@ class _PublicationEditorRow extends StatelessWidget {
             SizedBox(
               width: 110,
               child: TextField(
-                controller: row.year,
+                controller: year,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   hintText: 'Year',
@@ -826,43 +824,15 @@ class _PublicationEditorRow extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: AuraSpace.s10),
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close),
+              tooltip: 'Remove',
+            ),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _LoadingBlock extends StatelessWidget {
-  const _LoadingBlock();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(AuraSpace.s16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: AuraSpace.s12),
-            Text('Loading…', style: AuraText.muted),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Text(message, style: AuraText.body),
     );
   }
 }
