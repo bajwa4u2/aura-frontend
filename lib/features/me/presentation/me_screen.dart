@@ -14,8 +14,16 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import 'edit_profile_screen.dart';
 
-const String _adminUserId = String.fromEnvironment('ADMIN_USER_ID', defaultValue: '');
+const String _adminUserIds =
+    String.fromEnvironment('AURA_ADMIN_USER_IDS', defaultValue: '');
 
+List<String> _adminUserIdList() {
+  return _adminUserIds
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+}
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
   if (v is Map) return Map<String, dynamic>.from(v);
