@@ -1,35 +1,39 @@
-import 'package:flutter/foundation.dart';
+import 'dart:core';
 
 class AppConfig {
-  // Build-time define from Docker/Railway:
-  // flutter build web --dart-define=API_BASE_URL=https://api.aura.bajwadynesty.us
-  static const String _rawBase = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.aura.bajwadynesty.us',
-  );
+  const AppConfig._();
 
-  /// Normalized API base URL:
-  /// - no trailing slash
-  /// - always includes /v1
-  static final String apiBaseUrl = _normalizeBase(_rawBase);
+  /// API base URL (NO /v1 here).
+  ///
+  /// Set via:
+  /// flutter build web --dart-define=API_BASE_URL=https://api.aura.bajwadynesty.us
+  ///
+  /// IMPORTANT:
+  /// - Do not include /v1 in API_BASE_URL.
+  /// - Client code may call endpoints like: /v1/users/me, /v1/posts, etc.
+  static String get apiBaseUrl {
+    final raw = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://api.aura.bajwadynesty.us',
+    ).trim();
 
-  static String _normalizeBase(String input) {
-    var u = input.trim();
-    if (u.isEmpty) return 'https://api.aura.bajwadynesty.us/v1';
+    if (raw.isEmpty) return 'https://api.aura.bajwadynesty.us';
 
-    // remove trailing slashes
+    var u = raw;
+
+    // Strip trailing slashes
     while (u.endsWith('/')) {
       u = u.substring(0, u.length - 1);
     }
 
-    // already includes /v1
-    if (u.endsWith('/v1')) return u;
+    // If someone mistakenly provides .../v1, strip it to prevent /v1/v1.
+    if (u.endsWith('/v1')) {
+      u = u.substring(0, u.length - 3);
+      while (u.endsWith('/')) {
+        u = u.substring(0, u.length - 1);
+      }
+    }
 
-    return '$u/v1';
-  }
-
-  static String describe() {
-    return 'AppConfig(raw=$_rawBase, apiBaseUrl=$apiBaseUrl, '
-        'kIsWeb=$kIsWeb, kReleaseMode=$kReleaseMode)';
+    return u;
   }
 }
