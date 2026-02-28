@@ -31,6 +31,10 @@ class UpdatesScreen extends ConsumerWidget {
         title: 'Updates',
         actions: [
           TextButton(
+            onPressed: () => context.go('/announcements'),
+            child: const Text('Announcements'),
+          ),
+          TextButton(
             onPressed: () => context.go('/login?redirect=%2Fupdates'),
             child: const Text('Login'),
           ),
@@ -98,6 +102,10 @@ class UpdatesScreen extends ConsumerWidget {
     return AuraScaffold(
       title: 'Updates',
       actions: [
+        TextButton(
+          onPressed: () => context.go('/announcements'),
+          child: const Text('Announcements'),
+        ),
         TextButton(
           onPressed: () async {
             final repo = ref.read(notificationsRepoProvider);

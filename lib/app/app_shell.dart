@@ -41,6 +41,7 @@ class AppShell extends ConsumerWidget {
       '/institutions',
       '/patrons',
       '/supporters',
+      '/announcements',
       '/verify',
       '/verify-pending',
       '/forgot-password',

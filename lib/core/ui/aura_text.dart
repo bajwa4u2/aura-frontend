@@ -17,6 +17,9 @@ class AuraText {
     color: AuraSurface.ink,
   );
 
+  // Back-compat heading alias used by some screens
+  static TextStyle get h1 => title;
+
   // Primary body text
   // Increased line height for immersive reading
   static const TextStyle body = TextStyle(

@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/auth/auth_providers.dart'; // tokenStoreProvider
 import '../../../core/auth/session_providers.dart'; // authStatusProvider, emailVerifiedProvider, isAuthedProvider
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_card.dart' as ui;
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -99,7 +99,7 @@ final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
 
 final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.read(dioProvider);
-  final res = await dio.get('/saves', queryParameters: {'limit': 12});
+  final res = await dio.get('/saves/me', queryParameters: {'limit': 12});
   return _unwrapItems(res.data);
 });
 
@@ -290,7 +290,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
+            child: ui.AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -319,7 +319,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
+            child: ui.AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -360,7 +360,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
-                child: AuraCard(
+                child: ui.AuraCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -382,7 +382,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
-              child: AuraCard(
+              child: ui.AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -405,7 +405,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
-                child: AuraCard(
+                child: ui.AuraCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -435,7 +435,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
             children: [
-              AuraCard(
+              ui.AuraCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -487,7 +487,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               const SizedBox(height: AuraSpace.s14),
 
               // Quick links
-              AuraCard(
+              ui.AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -510,6 +510,38 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           child: const Text('Updates'),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
+              // Tools (beta)
+              ui.AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tools', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s10,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => context.go('/announcements'),
+                          child: const Text('Announcements'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => context.go('/ai/claim-audit'),
+                          child: const Text('Claim audit'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                    Text(
+                      'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
+                      style: AuraText.small,
                     ),
                   ],
                 ),

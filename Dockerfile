@@ -1,26 +1,24 @@
-# ---- Build stage ----
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+# AURA Frontend (Flutter Web) - Public Beta Dockerfile
 
+# Build stage
+FROM ghcr.io/cirruslabs/flutter:stable AS builder
 WORKDIR /app
 
-# Copy only pubspec first for better caching
-COPY pubspec.yaml ./
-
-# Generate deps (pubspec.lock will be created inside the container)
+COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
-# Now copy the rest of the project
 COPY . .
 
-# Build web with API base
-ARG API_BASE_URL=https://api.aura.bajwadynesty.us
-RUN echo "[build] API_BASE_URL=${API_BASE_URL}" && \
-    flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+# Railway build-time define:
+#   API_BASE_URL=https://api.aura.bajwadynesty.us
+ARG API_BASE_URL
+ENV API_BASE_URL=${API_BASE_URL}
 
-# ---- Runtime stage ----
+RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+
+# Runtime stage
 FROM nginx:alpine
-
-# If you have nginx.conf in repo, keep this. If not, tell me.
-COPY nginx.conf /etc/nginx/templates/default.conf.template
-
-COPY --from=build /app/build/web /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/build/web /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx","-g","daemon off;"]

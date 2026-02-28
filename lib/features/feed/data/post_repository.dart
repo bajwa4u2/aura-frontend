@@ -109,14 +109,6 @@ class PostsRepository {
     );
   }
 
-  Future<Map<String, dynamic>> fetchLinkPreview({required String url}) async {
-    final res = await _dio.post(
-      '/media/link-preview',
-      data: {'url': url},
-    );
-    return Map<String, dynamic>.from(res.data as Map);
-  }
-
   Future<void> markMediaReady(String mediaId) async {
     await _dio.post('/media/$mediaId/ready');
   }

@@ -6,14 +6,14 @@ class SavesRepository {
   SavesRepository(this._dio);
   final Dio _dio;
 
-  /// GET /saves?limit=...
+  /// Canonical: GET /saves/me?limit=...
+  /// Response envelope: { ok: true, data: { items: [...], nextCursor: <postId|null> } }
   Future<List<Post>> listSaved({int limit = 20}) async {
-    final res = await _dio.get('/saves', queryParameters: {'limit': limit});
-    final data = res.data;
+    final res = await _dio.get('/saves/me', queryParameters: {'limit': limit});
+    final raw = res.data;
 
-    final List items = (data is Map && data['data'] is List)
-        ? (data['data'] as List)
-        : const [];
+    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
+    final List items = (data['items'] is List) ? (data['items'] as List) : const [];
 
     return items
         .whereType<Map>()
@@ -21,23 +21,16 @@ class SavesRepository {
         .toList();
   }
 
-  /// POST /saves/:postId/toggle
   Future<void> toggleSave(String postId) async {
     await _dio.post('/saves/$postId/toggle');
   }
 
-  /// GET /saves/:postId -> { saved: true } (fallback supported)
   Future<bool> isSaved(String postId) async {
     final res = await _dio.get('/saves/$postId');
-    final body = res.data;
-    if (body is Map) {
-      final v = body['saved'] ?? body['isSaved'] ?? body['data'];
-      if (v is bool) return v;
-      if (v is Map) {
-        final inner = v['saved'] ?? v['isSaved'];
-        if (inner is bool) return inner;
-      }
-    }
-    return false;
+    final raw = res.data;
+
+    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
+    final v = data['saved'];
+    return v is bool ? v : false;
   }
 }

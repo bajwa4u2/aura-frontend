@@ -44,13 +44,13 @@ class UpdatesRepository {
     return const <Map<String, dynamic>>[];
   }
 
-  Future<void> markRead(String id) async {
-    final t = id.trim();
-    if (t.isEmpty) return;
-    await _dio.post('/updates/$t/read');
+  Future<void> markRead(String t) async {
+    // Updates are currently a view over the public feed; read-tracking is not implemented yet.
+    return;
   }
 
   Future<void> markAllRead() async {
-    await _dio.post('/updates/read-all');
+    // No-op until server implements read-tracking.
+    return;
   }
 }

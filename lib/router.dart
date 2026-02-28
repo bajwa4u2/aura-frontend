@@ -20,6 +20,9 @@ import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
+import 'features/announcements/presentation/announcements_screen.dart';
+import 'features/announcements/presentation/announcement_detail_screen.dart';
+import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
@@ -63,6 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (authStatus == AuthStatus.loading) return null;
 
       const publicRoutes = <String>{
+        '/announcements',
         '/public',
         '/mission',
         '/white-paper',
@@ -85,7 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/verify-pending',
       };
 
-      final isPublic = publicRoutes.contains(loc);
+      final isPublic = publicRoutes.contains(loc) || loc.startsWith('/announcements');
       final isAuth = authRoutes.contains(loc);
 
       // Unauthed: allow public + auth; block member routes
@@ -165,6 +169,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (context, state) => const UpdatesScreen()),
+          GoRoute(path: '/announcements', builder: (context, state) => const AnnouncementsScreen()),
+          GoRoute(
+            path: '/announcements/:slug',
+            builder: (context, state) => AnnouncementDetailScreen(slug: state.pathParameters['slug'] ?? ''),
+          ),
+          GoRoute(path: '/ai/claim-audit', builder: (context, state) => const ClaimAuditScreen()),
           GoRoute(path: '/me', builder: (context, state) => const MeScreen()),
           GoRoute(path: '/me/edit', builder: (context, state) => const EditProfileScreen()),
           GoRoute(path: '/compose', builder: (context, state) => const ComposeScreen()),

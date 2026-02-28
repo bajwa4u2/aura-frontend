@@ -67,6 +67,8 @@ class ProfileRepository {
 
   /// If your backend has a posts-by-author route, set it here.
   /// If not, this still compiles and returns empty.
+    /// If your backend has a posts-by-author route, set it here.
+  /// If not, this still compiles and returns empty.
   Future<List<Post>> getUserPosts(String handle, {int limit = 20, String? cursor}) async {
     try {
       final res = await _dio.get(
@@ -78,26 +80,32 @@ class ProfileRepository {
       );
 
       final body = res.data;
-      final list = (body is Map ? (body['data'] as List?) : null) ?? const <dynamic>[];
-      return list.map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList();
+      final data = (body is Map && body['data'] is Map) ? body['data'] as Map : (body is Map ? body : null);
+      final items = (data?['items'] as List?) ?? const <dynamic>[];
+      return items.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     } catch (_) {
       return const <Post>[];
     }
   }
 
-  /// If your backend exposes follow state, use it. Otherwise return false.
+/// If your backend exposes follow state, use it. Otherwise return false.
+    /// If your backend exposes follow state, use it. Otherwise return false.
   Future<bool> isFollowing(String handle) async {
     try {
-      final res = await _dio.get('/users/$handle/following');
+      final res = await _dio.get('/users/$handle/follow/state');
       final body = res.data;
-      if (body is Map) return body['isFollowing'] == true || body['following'] == true;
+      if (body is Map) {
+        final data = (body['data'] is Map) ? body['data'] as Map : body;
+        final state = (data['state'] ?? '').toString();
+        return state == 'following';
+      }
       return false;
     } catch (_) {
       return false;
     }
   }
 
-  String _errorMessage(Object e) {
+String _errorMessage(Object e) {
     if (e is DioException) {
       final d = e.response?.data;
       if (d is Map) {
@@ -137,7 +145,7 @@ class ProfileRepository {
   ///   DELETE /users/:handle/follow/request
   Future<void> unfollow(String handle) async {
     try {
-      await _dio.delete('/users/$handle/follow');
+      await _dio.post('/users/$handle/follow/cancel');
       return;
     } catch (e) {
       final msg = _errorMessage(e).toLowerCase();
@@ -148,13 +156,13 @@ class ProfileRepository {
           msg.contains('/follow/request') ||
           msg.contains('bad request') ||
           msg.contains('cannot delete')) {
-        await _dio.delete('/users/$handle/follow/request');
+        await _dio.post('/users/$handle/follow/cancel');
         return;
       }
 
       // If it’s a hard 404 on /follow, try /follow/request too.
       if (msg.contains('not found') || msg.contains('cannot delete')) {
-        await _dio.delete('/users/$handle/follow/request');
+        await _dio.post('/users/$handle/follow/cancel');
         return;
       }
 
