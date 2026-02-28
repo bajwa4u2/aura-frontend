@@ -132,7 +132,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   bool _isAdmin(Map<String, dynamic> me) {
     final id = (me['id'] ?? '').toString();
-    return _adminUserId.isNotEmpty && id.isNotEmpty && id == _adminUserId;
+    return id.isNotEmpty && _adminUserIdList().contains(id);
   }
 
   Future<void> _openEditProfile() async {
@@ -801,7 +801,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
                       style: AuraText.small,
                     ),
-                    if (!isAdmin && _adminUserId.isNotEmpty) ...[
+                    if (!isAdmin && _adminUserIds.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         'Admin mode is configured, but your account is not the admin user.',
