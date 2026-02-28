@@ -19,24 +19,33 @@ RUN flutter build web --release \
 # ---- runtime stage ----
 FROM nginx:alpine
 
-# Railway provides $PORT dynamically (usually 8080)
-ENV PORT=8080
-
-# Custom nginx config to listen on $PORT
-RUN printf 'server {\n\
-  listen       ${PORT};\n\
-  listen  [::]:${PORT};\n\
-  server_name  _;\n\
-  root   /usr/share/nginx/html;\n\
-  index  index.html;\n\
-\n\
-  location / {\n\
-    try_files $uri $uri/ /index.html;\n\
-  }\n\
-}\n' > /etc/nginx/conf.d/default.conf
-
+# Copy built web assets
 COPY --from=build /app/build/web /usr/share/nginx/html
 
+# Add startup script to write nginx config using $PORT
+RUN mkdir -p /docker-entrypoint.d
+RUN printf '%s\n' \
+'#!/bin/sh' \
+'set -e' \
+': "${PORT:=8080}"' \
+'cat > /etc/nginx/conf.d/default.conf <<EOF' \
+'server {' \
+'  listen       ${PORT};' \
+'  listen  [::]:${PORT};' \
+'  server_name  _;' \
+'  root   /usr/share/nginx/html;' \
+'  index  index.html;' \
+'' \
+'  location / {' \
+'    try_files $uri $uri/ /index.html;' \
+'  }' \
+'}' \
+'EOF' \
+> /docker-entrypoint.d/99-port.sh
+
+RUN chmod +x /docker-entrypoint.d/99-port.sh
+
+# (Optional) for clarity
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
