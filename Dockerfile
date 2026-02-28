@@ -19,16 +19,16 @@ RUN flutter build web --release \
 # ---- runtime stage ----
 FROM nginx:alpine
 
+# Railway sets PORT at runtime; default for local
+ENV PORT=8080
+
 # Copy built web assets
 COPY --from=build /app/build/web /usr/share/nginx/html
 
-# Add startup script to write nginx config using $PORT
-RUN mkdir -p /docker-entrypoint.d
-RUN printf '%s\n' \
-'#!/bin/sh' \
-'set -e' \
-': "${PORT:=8080}"' \
-'cat > /etc/nginx/conf.d/default.conf <<EOF' \
+# Use nginx template + envsubst (built into nginx image entrypoint)
+RUN rm -f /etc/nginx/conf.d/default.conf \
+ && mkdir -p /etc/nginx/templates \
+ && printf '%s\n' \
 'server {' \
 '  listen       ${PORT};' \
 '  listen  [::]:${PORT};' \
@@ -40,12 +40,8 @@ RUN printf '%s\n' \
 '    try_files $uri $uri/ /index.html;' \
 '  }' \
 '}' \
-'EOF' \
-> /docker-entrypoint.d/99-port.sh
+> /etc/nginx/templates/default.conf.template
 
-RUN chmod +x /docker-entrypoint.d/99-port.sh
-
-# (Optional) for clarity
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
