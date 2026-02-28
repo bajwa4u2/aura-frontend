@@ -8,8 +8,9 @@ import 'aura_text.dart';
 class AuraScaffold extends StatefulWidget {
   const AuraScaffold({
     super.key,
-    required this.title,
-    required this.body,
+    this.title = 'Aura',
+    Widget? body,
+    Widget? child,
     this.actions,
     this.leading,
     this.centerTitle = false,
@@ -18,10 +19,22 @@ class AuraScaffold extends StatefulWidget {
     this.showHomeAction = false,
     this.homePath = '/public',
     this.showHeader = true,
-  });
+  })  : assert(
+          body != null || child != null,
+          'AuraScaffold requires either body: or child:',
+        ),
+        assert(
+          body == null || child == null,
+          'AuraScaffold: provide only one of body: or child:',
+        ),
+        body = body ?? child!;
 
   final String title;
+
+  /// Primary content area for the page.
+  /// Prefer `body:` going forward; `child:` is supported as an alias.
   final Widget body;
+
   final List<Widget>? actions;
   final Widget? leading;
   final bool centerTitle;
@@ -215,7 +228,9 @@ class _AuraScaffoldState extends State<AuraScaffold>
                     Expanded(
                       child: showPageTitle
                           ? (widget.centerTitle
-                              ? Center(child: _PageTitle(text: normalizedTitle))
+                              ? Center(
+                                  child: _PageTitle(text: normalizedTitle),
+                                )
                               : _PageTitle(text: normalizedTitle))
                           : const SizedBox.shrink(),
                     ),
@@ -301,7 +316,6 @@ class _BrandMark extends StatelessWidget {
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
                 color: _wordColor,
-                // Keep it “masthead”, but not overly spaced
                 letterSpacing: 1.4,
                 height: 1.0,
               ),
