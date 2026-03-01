@@ -73,7 +73,9 @@ final dioProvider = Provider<Dio>((ref) {
     return false;
   }
 
-  final refreshDio = dio;        
+  Future<void> performRefresh() async {
+    // Use the SAME Dio instance so web credentials/cookies are guaranteed to ride along.
+    final refreshDio = dio;
 
     if (kIsWeb) {
       // Web: refresh token is in HttpOnly cookie.
