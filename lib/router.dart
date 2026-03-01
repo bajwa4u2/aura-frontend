@@ -54,47 +54,51 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
 
+  const publicRoutes = <String>{
+    '/announcements',
+    '/public',
+    '/mission',
+    '/white-paper',
+    '/founder',
+    '/privacy',
+    '/investors',
+    '/institutions',
+    '/institution/sign-in',
+    '/institution/request-verification',
+    '/patrons',
+    '/supporters',
+  };
+
+  const authRoutes = <String>{
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/verify-pending',
+  };
+
+  bool isPublicPath(String loc) => publicRoutes.contains(loc) || loc.startsWith('/announcements');
+  bool isAuthPath(String loc) => authRoutes.contains(loc);
+
   return GoRouter(
     initialLocation: '/public',
     refreshListenable: refresh,
     redirect: (context, state) async {
-      // Use uri.path so query params don’t affect route grouping.
       final loc = state.uri.path;
 
+      // Read current status.
+      // Using read is OK because we explicitly refresh the router via ValueNotifier,
+      // but we keep behavior conservative during transitions.
       final authStatus = ref.read(authStatusProvider);
 
-      // Don’t redirect while auth status is resolving.
-      // This prevents logout-on-refresh loops.
+      // Never redirect while auth bootstrap is running.
       if (authStatus == AuthStatus.loading) return null;
 
-      const publicRoutes = <String>{
-        '/announcements',
-        '/public',
-        '/mission',
-        '/white-paper',
-        '/founder',
-        '/privacy',
-        '/investors',
-        '/institutions',
-        '/institution/sign-in',
-        '/institution/request-verification',
-        '/patrons',
-        '/supporters',
-      };
+      final isPublic = isPublicPath(loc);
+      final isAuth = isAuthPath(loc);
 
-      const authRoutes = <String>{
-        '/login',
-        '/register',
-        '/forgot-password',
-        '/reset-password',
-        '/verify-email',
-        '/verify-pending',
-      };
-
-      final isPublic = publicRoutes.contains(loc) || loc.startsWith('/announcements');
-      final isAuth = authRoutes.contains(loc);
-
-      // Unauthed: allow public + auth; block member routes
+      // --- UNAUNTHED ---
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -102,17 +106,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // Authed: enforce email verification gate
+      // --- AUTHED ---
+      // If authed, we *wait* for emailVerifiedProvider to resolve before forcing verify routes.
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
+      // If verification status is still loading, do NOT redirect into verify-pending.
+      // This avoids "feels like logout" during fresh login/refresh.
       if (verifiedAsync.isLoading) {
-        if (isPublic || isAuth) return null;
-        return '/verify-pending';
+        return null;
       }
 
       final verified = verifiedAsync.valueOrNull ?? false;
 
       if (!verified) {
+        // Allow public routes + verification + password flows.
         if (loc == '/verify-pending' ||
             loc == '/verify-email' ||
             loc == '/forgot-password' ||
@@ -123,8 +130,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending';
       }
 
+      // Verified authed: normalize public landing
       if (loc == '/public') return '/home';
 
+      // If already authed and someone hits auth screens, send them onward.
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) return redirectTo;

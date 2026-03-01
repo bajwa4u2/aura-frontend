@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
+import '../auth/auth_providers.dart';
 import '../net/platform_http_adapter.dart';
-import 'auth_providers.dart';
 
 /// Auth lifecycle status:
 /// - loading: tokens still being restored from storage / bootstrap in-flight
@@ -25,6 +26,17 @@ final isAuthedProvider = Provider<bool>((ref) {
   final store = ref.watch(tokenStoreProvider);
   return store.isLoaded && store.isAuthed;
 });
+
+void _ensureWebCredentials(Dio d) {
+  if (!kIsWeb) return;
+
+  final a = d.httpClientAdapter;
+  if (a is BrowserHttpClientAdapter) {
+    a.withCredentials = true;
+  } else {
+    d.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
+  }
+}
 
 /// Bootstrap auth once on app start:
 /// - waits for TokenStore load
@@ -48,9 +60,7 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
   // If we already have an access token, nothing to do.
   if (store.isAuthed) return;
 
-  // Web: we rely on HttpOnly refresh cookie. Try to refresh on boot.
-  // Non-web: refresh token may be stored; your dio_provider already handles
-  // refresh on 401 using stored refresh token, so we don't force it here.
+  // Only web needs a proactive refresh-on-boot because refresh token is HttpOnly cookie.
   if (!kIsWeb) return;
 
   final refreshDio = Dio(
@@ -60,7 +70,6 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      // Keep it strict; anything outside 2xx throws.
       validateStatus: (c) => c != null && c >= 200 && c < 300,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
@@ -68,8 +77,9 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
     ),
   );
 
-  // Web needs cookies included for refresh.
+  // Keep existing adapter config, then HARD guarantee cookies ride along.
   configureDioForPlatform(refreshDio);
+  _ensureWebCredentials(refreshDio);
 
   try {
     final res = await refreshDio.post('/auth/refresh');
@@ -80,8 +90,10 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
     final access = raw['accessToken']?.toString();
     if (access == null || access.trim().isEmpty) return;
 
-    // On web we do NOT store refresh token in JS storage.
-    await store.setSession(accessToken: access, refreshToken: null);
+    // IMPORTANT:
+    // On web, NEVER pass refreshToken: null into your store.
+    // Refresh token is in HttpOnly cookie; JS cannot read it.
+    await store.setSession(accessToken: access);
   } catch (_) {
     // If refresh cookie missing/expired, we simply remain unauthed.
     return;
@@ -93,7 +105,6 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
 /// KEY RULE:
 /// If bootstrap is still running, return AuthStatus.loading so router does NOT redirect.
 final authStatusProvider = Provider<AuthStatus>((ref) {
-  // Watch bootstrap so router waits during refresh attempt.
   final boot = ref.watch(authBootstrapProvider);
   if (boot.isLoading) return AuthStatus.loading;
 
@@ -150,19 +161,4 @@ final authEventsProvider = StreamProvider<void>((ref) {
   });
 
   return controller.stream;
-});
-
-/// True if the current user has verified their email.
-///
-/// During stabilization, keep this permissive to avoid redirect loops.
-/// Once everything is stable, we can fetch /auth/me or /users/me here.
-final emailVerifiedProvider = FutureProvider<bool>((ref) async {
-  final status = ref.watch(authStatusProvider);
-
-  // If not authed, verification shouldn't block anything.
-  if (status != AuthStatus.authed) return true;
-
-  // Stabilization posture: treat authed as verified for now.
-  // (Backend still enforces verification where required.)
-  return true;
 });
