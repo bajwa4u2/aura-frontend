@@ -29,29 +29,33 @@ final dioProvider = Provider<Dio>((ref) {
   configureDioForPlatform(dio);
 
   // HARD GUARANTEE (web): cookies must be included on XHR, otherwise refresh cookie never rides along.
-  if (kIsWeb) {
-    final a = dio.httpClientAdapter;
+  void ensureWebCredentials(Dio d) {
+    if (!kIsWeb) return;
+
+    final a = d.httpClientAdapter;
     if (a is BrowserHttpClientAdapter) {
       a.withCredentials = true;
     } else {
-      dio.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
+      d.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
     }
   }
 
-  // Single-flight refresh gate:
-  // multiple 401s will wait on the same refresh Future.
+  ensureWebCredentials(dio);
+
+  // Single-flight refresh gate: multiple 401s will wait on the same refresh Future.
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
-    final p = o.path;
-    return p.contains('/auth/login') ||
-        p.contains('/auth/register') ||
-        p.contains('/auth/verify-email') ||
-        p.contains('/auth/resend-verification') ||
-        p.contains('/auth/forgot-password') ||
-        p.contains('/auth/reset-password') ||
-        p.contains('/auth/refresh') ||
-        p.contains('/auth/logout');
+    // Normalize the path (Dio can include full URL sometimes depending on usage)
+    final path = o.path;
+
+    // Strict allowlist: anything under /auth is auth.
+    if (path.startsWith('/auth/')) return true;
+
+    // If your backend is mounted under /v1, sometimes caller may pass /v1/auth/...
+    if (path.startsWith('/v1/auth/')) return true;
+
+    return false;
   }
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
@@ -60,8 +64,10 @@ final dioProvider = Provider<Dio>((ref) {
     if (error is DioException) {
       final s = error.response?.statusCode;
       if (s == 401 || s == 403) return true;
-      final msg = error.message?.toLowerCase() ?? '';
+
+      final msg = (error.message ?? '').toLowerCase();
       if (msg.contains('invalid') || msg.contains('unauthorized')) return true;
+
       return false;
     }
     return false;
@@ -80,16 +86,7 @@ final dioProvider = Provider<Dio>((ref) {
     );
 
     configureDioForPlatform(refreshDio);
-
-    // Same hard guarantee for refresh Dio.
-    if (kIsWeb) {
-      final a = refreshDio.httpClientAdapter;
-      if (a is BrowserHttpClientAdapter) {
-        a.withCredentials = true;
-      } else {
-        refreshDio.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
-      }
-    }
+    ensureWebCredentials(refreshDio);
 
     if (kIsWeb) {
       // Web: refresh token is in HttpOnly cookie.
@@ -139,6 +136,35 @@ final dioProvider = Provider<Dio>((ref) {
     await store.setSession(
       accessToken: access,
       refreshToken: (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+    );
+  }
+
+  // Clone & retry preserving the important RequestOptions fields.
+  Future<Response<T>> retryRequest<T>(RequestOptions req, Map<String, dynamic> retryHeaders) {
+    final options = Options(
+      method: req.method,
+      headers: retryHeaders,
+      responseType: req.responseType,
+      contentType: req.contentType,
+      followRedirects: req.followRedirects,
+      receiveDataWhenStatusError: req.receiveDataWhenStatusError,
+      sendTimeout: req.sendTimeout,
+      receiveTimeout: req.receiveTimeout,
+      extra: Map<String, dynamic>.from(req.extra),
+      validateStatus: req.validateStatus,
+      requestEncoder: req.requestEncoder,
+      responseDecoder: req.responseDecoder,
+      listFormat: req.listFormat,
+    );
+
+    return dio.request<T>(
+      req.path,
+      data: req.data,
+      queryParameters: req.queryParameters,
+      options: options,
+      cancelToken: req.cancelToken,
+      onReceiveProgress: req.onReceiveProgress,
+      onSendProgress: req.onSendProgress,
     );
   }
 
@@ -209,24 +235,32 @@ final dioProvider = Provider<Dio>((ref) {
             retryHeaders['Authorization'] = 'Bearer $newToken';
           }
 
-          final cloned = await dio.request<dynamic>(
-            req.path,
-            data: req.data,
-            queryParameters: req.queryParameters,
-            options: Options(
-              method: req.method,
-              headers: retryHeaders,
-              extra: Map<String, dynamic>.from(req.extra)
-                ..['__retried_after_refresh'] = true,
-            ),
-          );
+          final extra = Map<String, dynamic>.from(req.extra);
+          extra['__retried_after_refresh'] = true;
 
+          final reqWithExtra = req.copyWith(extra: extra);
+
+          final cloned = await retryRequest<dynamic>(reqWithExtra, retryHeaders);
           handler.resolve(cloned);
-        } catch (e) {
-          if (shouldClearTokensOnRefreshFailure(e)) {
+        } catch (refreshError) {
+          if (shouldClearTokensOnRefreshFailure(refreshError)) {
             await ref.read(tokenStoreProvider).clearTokens();
           }
-          handler.next(err);
+
+          // IMPORTANT: bubble the refresh failure, not just the original 401.
+          // This stops you from chasing the wrong thing.
+          if (refreshError is DioException) {
+            handler.next(refreshError);
+          } else {
+            handler.next(
+              DioException(
+                requestOptions: req,
+                type: DioExceptionType.unknown,
+                error: refreshError,
+                message: 'Refresh failed: $refreshError',
+              ),
+            );
+          }
         }
       },
     ),
