@@ -73,20 +73,7 @@ final dioProvider = Provider<Dio>((ref) {
     return false;
   }
 
-  Future<void> performRefresh() async {
-    final refreshDio = Dio(
-      BaseOptions(
-        baseUrl: AppConfig.apiBaseUrl,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        validateStatus: (c) => c != null && c >= 200 && c < 300,
-      ),
-    );
-
-    configureDioForPlatform(refreshDio);
-    ensureWebCredentials(refreshDio);
+  final refreshDio = dio;        
 
     if (kIsWeb) {
       // Web: refresh token is in HttpOnly cookie.
