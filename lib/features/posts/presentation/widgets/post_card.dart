@@ -22,7 +22,7 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   // Backend stores avatarUrl like: /uploads/<file>
   // Must load it from API host, not from the frontend origin.
   final dio = ref.read(dioProvider);
-  var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
+  var base = dio.options.baseUrl; // e.g. https://api.../v1
 
   // Strip trailing /v1 (or /v1/) reliably
   if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
@@ -44,7 +44,7 @@ String? _resolveMediaUrl(WidgetRef ref, String? raw) {
 
   // Media may be stored as a relative path on the API host.
   final dio = ref.read(dioProvider);
-  var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
+  var base = dio.options.baseUrl; // e.g. https://api.../v1
 
   if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
   if (base.endsWith('/v1/')) base = base.substring(0, base.length - 4);
@@ -59,7 +59,7 @@ String? _resolveMediaUrl(WidgetRef ref, String? raw) {
 
 const String _kAuraWebBaseUrl = String.fromEnvironment(
   'AURA_WEB_BASE_URL',
-  defaultValue: 'https://aura.bajwadynesty.us',
+  defaultValue: 'https://app.bajwadynesty.us',
 );
 
 String _canonicalPostUrl(String postId) {

@@ -10,7 +10,7 @@ class MissionScreen extends StatelessWidget {
   const MissionScreen({super.key});
 
   static const String _rawBase =
-      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.aura.bajwadynesty.us');
+      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.bajwadynesty.us');
 
   static String get _base => _rawBase.endsWith('/v1') ? _rawBase : '$_rawBase/v1';
 

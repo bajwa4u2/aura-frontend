@@ -9,6 +9,6 @@ class AuraLinks {
 
   /// Optional: keep a single source of truth for external URLs as you grow.
   /// Use only if you want them. Safe to leave unused.
-  static const String website = 'https://aura.example';
-  static const String docs = 'https://aura.example/docs';
+  static const String website = 'https://app.example';
+  static const String docs = 'https://app.example/docs';
 }
