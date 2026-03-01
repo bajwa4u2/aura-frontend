@@ -46,29 +46,23 @@ final dioProvider = Provider<Dio>((ref) {
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
-    // Normalize the path (Dio can include full URL sometimes depending on usage)
     final path = o.path;
 
     // Strict allowlist: anything under /auth is auth.
     if (path.startsWith('/auth/')) return true;
 
-    // If your backend is mounted under /v1, sometimes caller may pass /v1/auth/...
+    // If backend is mounted under /v1, sometimes caller may pass /v1/auth/...
     if (path.startsWith('/v1/auth/')) return true;
 
     return false;
   }
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
-    // Only clear tokens when we are confident the session is invalid.
-    // Network / timeouts should NOT force a logout.
+    // Strict: ONLY clear on confirmed invalid session signals.
+    // Avoid message sniffing; it causes false logouts on web.
     if (error is DioException) {
       final s = error.response?.statusCode;
-      if (s == 401 || s == 403) return true;
-
-      final msg = (error.message ?? '').toLowerCase();
-      if (msg.contains('invalid') || msg.contains('unauthorized')) return true;
-
-      return false;
+      return s == 401 || s == 403;
     }
     return false;
   }
@@ -89,11 +83,9 @@ final dioProvider = Provider<Dio>((ref) {
         throw Exception('No access token returned');
       }
 
-      // Do NOT store refresh token on web.
-      await ref.read(tokenStoreProvider).setSession(
-            accessToken: access,
-            refreshToken: null,
-          );
+      // IMPORTANT:
+      // Do NOT pass refreshToken: null. Many stores treat that as "clear session".
+      await ref.read(tokenStoreProvider).setSession(accessToken: access);
       return;
     }
 
@@ -183,11 +175,13 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
+        // Not a 401, or it's already an auth endpoint => do not refresh.
         if (status != 401 || isAuthEndpoint(req)) {
           handler.next(err);
           return;
         }
 
+        // Prevent infinite loops.
         if (req.extra['__retried_after_refresh'] == true) {
           handler.next(err);
           return;
@@ -232,12 +226,12 @@ final dioProvider = Provider<Dio>((ref) {
           final cloned = await retryRequest<dynamic>(reqWithExtra, retryHeaders);
           handler.resolve(cloned);
         } catch (refreshError) {
+          // Only clear when refresh itself confirms session invalid.
           if (shouldClearTokensOnRefreshFailure(refreshError)) {
             await ref.read(tokenStoreProvider).clearTokens();
           }
 
-          // IMPORTANT: bubble the refresh failure, not just the original 401.
-          // This stops you from chasing the wrong thing.
+          // Bubble the refresh failure (not the original 401).
           if (refreshError is DioException) {
             handler.next(refreshError);
           } else {
