@@ -34,4 +34,19 @@ class AuraSurface {
 
   /// Soft accent glow (hover / active states)
   static const Color accentSoft = Color(0x335B6CFF);
+
+  // --- Semantic status surfaces (for badges, callouts, quiet system feedback) ---
+  // These are intentionally low-chroma so Aura stays “quiet” and institutional.
+
+  static const Color goodBg = Color(0xFF14251B);
+  static const Color goodInk = Color(0xFF9FE3B7);
+
+  static const Color warnBg = Color(0xFF2A2214);
+  static const Color warnInk = Color(0xFFF2D08A);
+
+  static const Color dangerBg = Color(0xFF2A1717);
+  static const Color dangerInk = Color(0xFFF0A3A3);
+
+  static const Color infoBg = Color(0xFF16212B);
+  static const Color infoInk = Color(0xFF9BC7F0);
 }

@@ -24,6 +24,7 @@ List<String> _adminUserIdList() {
       .where((e) => e.isNotEmpty)
       .toList();
 }
+
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
   if (v is Map) return Map<String, dynamic>.from(v);
@@ -63,61 +64,74 @@ List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
   }
 
   if (b is Map && b['items'] is List) {
-    final list = b['items'] as List;
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final l = b['items'] as List;
+    return l.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  if (b is Map && b['data'] is List) {
+    final l = b['data'] as List;
+    return l.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
   return <Map<String, dynamic>>[];
 }
 
 bool _isEmailNotVerifiedError(Object err) {
-  if (err is DioException) {
-    final data = err.response?.data;
-    final m = _asMap(data);
-    final code = _asMap(m['error'])['code']?.toString();
-    return code == 'EMAIL_NOT_VERIFIED';
-  }
-  return false;
+  final s = err.toString().toLowerCase();
+  return s.contains('email_not_verified') ||
+      s.contains('email not verified') ||
+      s.contains('email verification') ||
+      s.contains('verify your email');
 }
 
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final dio = ref.read(dioProvider);
-  try {
-    final res = await dio.get('/users/me');
-    return _unwrapMap(res.data);
-  } on DioException catch (e) {
-    // Important: don’t crash the whole screen on EMAIL_NOT_VERIFIED
-    final m = _asMap(e.response?.data);
-    final code = _asMap(m['error'])['code']?.toString();
-    if (code == 'EMAIL_NOT_VERIFIED') {
-      return <String, dynamic>{'_emailNotVerified': true};
-    }
-    rethrow;
-  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/v1/users/me');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapMap(raw);
+  throw Exception('Unexpected response');
 });
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final dio = ref.read(dioProvider);
-  final res = await dio.get('/posts/draft');
-  return _unwrapMap(res.data);
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/v1/posts/draft?limit=1');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) {
+    final items = _unwrapItems(raw);
+    if (items.isNotEmpty) return items.first;
+    final m = _unwrapMap(raw);
+    if (m.isNotEmpty) return m;
+  }
+  return <String, dynamic>{};
 });
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final dio = ref.read(dioProvider);
-  final res = await dio.get('/posts/mine');
-  return _unwrapItems(res.data);
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/v1/posts?limit=12');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapItems(raw);
+  return <Map<String, dynamic>>[];
 });
 
-final _meSavesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final dio = ref.read(dioProvider);
-  final res = await dio.get('/saves/me', queryParameters: {'limit': 12});
-  return _unwrapItems(res.data);
+final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/v1/saves?limit=12');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapItems(raw);
+  return <Map<String, dynamic>>[];
 });
 
 final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final dio = ref.read(dioProvider);
-  final res = await dio.get('/replies/mine');
-  return _unwrapItems(res.data);
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/v1/replies?limit=12');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapItems(raw);
+  return <Map<String, dynamic>>[];
 });
 
 class MeScreen extends ConsumerStatefulWidget {
@@ -131,154 +145,24 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   bool _busyLogout = false;
 
   bool _isAdmin(Map<String, dynamic> me) {
+    final role = (me['role'] ?? '').toString().toLowerCase();
+    if (role == 'admin') return true;
+
+    final list = _adminUserIdList();
+    if (list.isEmpty) return false;
+
     final id = (me['id'] ?? '').toString();
-    return id.isNotEmpty && _adminUserIdList().contains(id);
+    return id.isNotEmpty && list.contains(id);
   }
 
   Future<void> _openEditProfile() async {
-    final res = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    final me = ref.read(meProfileProvider).valueOrNull ?? <String, dynamic>{};
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const EditProfileScreen(),
+      ),
     );
-
-    // If user saved, refresh profile/drafts/etc
-    if (res != null) {
-      ref.invalidate(meProfileProvider);
-      ref.invalidate(_meDraftProvider);
-      ref.invalidate(_mePostsProvider);
-      ref.invalidate(_meSavesProvider);
-      ref.invalidate(_meRepliesProvider);
-    }
-  }
-
-  Future<void> _adminCreateAnnouncementDialog() async {
-    final titleCtl = TextEditingController();
-    final bodyCtl = TextEditingController();
-    String audience = 'MEMBERS';
-    String kind = 'GENERAL';
-    String status = 'PUBLISHED';
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('New announcement'),
-          content: SizedBox(
-            width: 520,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtl,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      hintText: 'Short, factual, official',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: bodyCtl,
-                    maxLines: 7,
-                    decoration: const InputDecoration(
-                      labelText: 'Body',
-                      hintText: 'Write the announcement. Keep it clear and calm.',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: audience,
-                          decoration: const InputDecoration(labelText: 'Audience'),
-                          items: const [
-                            DropdownMenuItem(value: 'PUBLIC', child: Text('PUBLIC')),
-                            DropdownMenuItem(value: 'MEMBERS', child: Text('MEMBERS')),
-                            DropdownMenuItem(value: 'INTERNAL', child: Text('INTERNAL')),
-                          ],
-                          onChanged: (v) => audience = v ?? 'MEMBERS',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: kind,
-                          decoration: const InputDecoration(labelText: 'Kind'),
-                          items: const [
-                            DropdownMenuItem(value: 'GENERAL', child: Text('GENERAL')),
-                            DropdownMenuItem(value: 'RELEASE', child: Text('RELEASE')),
-                            DropdownMenuItem(value: 'SAFETY', child: Text('SAFETY')),
-                            DropdownMenuItem(value: 'GOVERNANCE', child: Text('GOVERNANCE')),
-                          ],
-                          onChanged: (v) => kind = v ?? 'GENERAL',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: status,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: const [
-                      DropdownMenuItem(value: 'DRAFT', child: Text('DRAFT')),
-                      DropdownMenuItem(value: 'PUBLISHED', child: Text('PUBLISHED')),
-                    ],
-                    onChanged: (v) => status = v ?? 'PUBLISHED',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Publish')),
-          ],
-        );
-      },
-    );
-
-    if (ok != true) return;
-
-    final title = titleCtl.text.trim();
-    final body = bodyCtl.text.trim();
-
-    if (title.isEmpty || body.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title and body are required.')),
-      );
-      return;
-    }
-
-    try {
-      final dio = ref.read(dioProvider);
-
-      // Assumed endpoint contract: POST /announcements
-      // Backend should enforce admin permission; UI only gates visibility.
-      await dio.post(
-        '/announcements',
-        data: {
-          'title': title,
-          'body': body,
-          'audience': audience,
-          'kind': kind,
-          'status': status,
-        },
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Announcement created')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create announcement: $e')),
-      );
-    } finally {
-      titleCtl.dispose();
-      bodyCtl.dispose();
-    }
+    ref.invalidate(meProfileProvider);
   }
 
   Future<void> _logout() async {
@@ -287,15 +171,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     try {
       final dio = ref.read(dioProvider);
+      await dio.post('/auth/logout');
+    } catch (_) {
+      // ignore
+    }
 
-      // Best-effort revoke server session (ignore failures)
-      try {
-        await dio.post('/auth/logout');
-      } catch (_) {}
-
-      final store = ref.read(tokenStoreProvider);
-      await store.clear();
-
+    try {
+      ref.read(tokenStoreProvider).clear();
       ref.invalidate(authStatusProvider);
       ref.invalidate(isAuthedProvider);
       ref.invalidate(emailVerifiedProvider);
@@ -305,6 +187,166 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       context.go('/');
     } finally {
       if (mounted) setState(() => _busyLogout = false);
+    }
+  }
+
+  Future<void> _adminCreateAnnouncementDialog() async {
+    final titleCtrl = TextEditingController();
+    final bodyCtrl = TextEditingController();
+
+    String audience = 'PUBLIC';
+    String kind = 'RELEASE';
+    String status = 'PUBLISHED';
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              title: const Text('New announcement'),
+              content: SizedBox(
+                width: 520,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Title',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: bodyCtrl,
+                      maxLines: 6,
+                      decoration: const InputDecoration(
+                        labelText: 'Body',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: audience,
+                            decoration: const InputDecoration(labelText: 'Audience'),
+                            items: const [
+                              DropdownMenuItem(value: 'PUBLIC', child: Text('PUBLIC')),
+                              DropdownMenuItem(value: 'MEMBERS', child: Text('MEMBERS')),
+                              DropdownMenuItem(value: 'ADMINS', child: Text('ADMINS')),
+                            ],
+                            onChanged: (v) => setState(() => audience = v ?? audience),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: kind,
+                            decoration: const InputDecoration(labelText: 'Kind'),
+                            items: const [
+                              DropdownMenuItem(value: 'RELEASE', child: Text('RELEASE')),
+                              DropdownMenuItem(value: 'NOTICE', child: Text('NOTICE')),
+                              DropdownMenuItem(value: 'POLICY', child: Text('POLICY')),
+                            ],
+                            onChanged: (v) => setState(() => kind = v ?? kind),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: status,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: const [
+                        DropdownMenuItem(value: 'PUBLISHED', child: Text('PUBLISHED')),
+                        DropdownMenuItem(value: 'DRAFT', child: Text('DRAFT')),
+                      ],
+                      onChanged: (v) => setState(() => status = v ?? status),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Publish'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (ok != true) return;
+
+    final title = titleCtrl.text.trim();
+    final body = bodyCtrl.text.trim();
+    if (title.isEmpty || body.isEmpty) return;
+
+    final dio = ref.read(dioProvider);
+    try {
+      await dio.post(
+        '/v1/announcements',
+        data: {
+          'title': title,
+          'body': body,
+          'audience': audience,
+          'kind': kind,
+          'status': status,
+        },
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Announcement published.')),
+        );
+      }
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? (e.response?.data).toString()
+          : (e.message ?? 'Request failed');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024);
+      if (file == null) return;
+
+      final dio = ref.read(dioProvider);
+      final form = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path),
+      });
+
+      await dio.post('/v1/uploads/avatar', data: form);
+      ref.invalidate(meProfileProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Avatar uploaded')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
     }
   }
 
@@ -359,7 +401,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, st) {
-          // Allow a friendly message for EMAIL_NOT_VERIFIED
           if (_isEmailNotVerifiedError(err)) {
             return Padding(
               padding: const EdgeInsets.all(16),
@@ -422,8 +463,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Could not load your profile.', style: AuraText.title),
-                    const SizedBox(height: 12),
+                    Text('Profile load failed', style: AuraText.title),
+                    const SizedBox(height: 10),
                     Text('$err', style: AuraText.small),
                     const SizedBox(height: 12),
                     OutlinedButton(
@@ -449,68 +490,143 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              // Profile
-              ui.AuraCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        // Quick avatar upload entrypoint remains: edit screen has full flow
-                        await _openEditProfile();
-                      },
-                      child: CircleAvatar(
-                        radius: 28,
-                        backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                        child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
+              // Profile + Tools (top)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 960;
+
+                  final profileCard =
+                      ui.AuraCard(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                await _openEditProfile();
+                              },
+                              child: CircleAvatar(
+                                radius: 28,
+                                backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                                child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
+                                    const SizedBox(height: 6),
+                                    Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
+                                    const SizedBox(height: 6),
+                                    Text(email.isNotEmpty ? email : '—', style: AuraText.small),
+                                    if (bio.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 10),
+                                      Text(bio, style: AuraText.body),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 10,
+                                      runSpacing: 10,
+                                      children: [
+                                        FilledButton(
+                                          onPressed: _openEditProfile,
+                                          child: const Text('Edit profile'),
+                                        ),
+                                        OutlinedButton(
+                                          onPressed: _busyLogout ? null : _logout,
+                                          child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                                        ),
+                                        OutlinedButton(
+                                          onPressed: _pickAndUploadAvatar,
+                                          child: const Text('Upload avatar'),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Tip: tap your avatar to edit and upload a new photo.',
+                                      style: AuraText.small,
+                                    ),
+                                    if (kDebugMode && id.isNotEmpty) ...[
+                                      const SizedBox(height: 10),
+                                      SelectableText('User ID: $id', style: AuraText.small),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      ;
+
+                  final toolsCard =
+                      ui.AuraCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
-                            const SizedBox(height: 6),
-                            Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
-                            const SizedBox(height: 6),
-                            Text(email.isNotEmpty ? email : '—', style: AuraText.small),
-                            if (bio.trim().isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              Text(bio, style: AuraText.body),
-                            ],
-                            const SizedBox(height: 12),
+                            Text('Tools', style: AuraText.title),
+                            const SizedBox(height: AuraSpace.s10),
                             Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
+                              spacing: AuraSpace.s10,
+                              runSpacing: AuraSpace.s10,
                               children: [
-                                FilledButton(
-                                  onPressed: _openEditProfile,
-                                  child: const Text('Edit profile'),
-                                ),
                                 OutlinedButton(
-                                  onPressed: _busyLogout ? null : _logout,
-                                  child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                                  onPressed: () => context.go('/announcements'),
+                                  child: const Text('Announcements'),
+                                ),
+                                if (isAdmin)
+                                  FilledButton(
+                                    onPressed: _adminCreateAnnouncementDialog,
+                                    child: const Text('New announcement'),
+                                  ),
+                                OutlinedButton(
+                                  onPressed: () => context.go('/ai/claim-audit'),
+                                  child: const Text('Claim audit'),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AuraSpace.s10),
                             Text(
-                              'Tip: tap your avatar to edit and upload a new photo.',
+                              isAdmin
+                                  ? 'Announcements are official notes. Admins can publish announcements directly from here.'
+                                  : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
                               style: AuraText.small,
                             ),
-                            if (kDebugMode && id.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              SelectableText('User ID: $id', style: AuraText.small),
+                            if (!isAdmin && _adminUserIds.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                'Admin mode is configured, but your account is not the admin user.',
+                                style: AuraText.small,
+                              ),
                             ],
                           ],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
+                      )
+                      ;
+
+                  if (!wide) {
+                    return Column(
+                      children: [
+                        profileCard,
+                        const SizedBox(height: AuraSpace.s14),
+                        toolsCard,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: profileCard),
+                      const SizedBox(width: AuraSpace.s14),
+                      Expanded(child: toolsCard),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: AuraSpace.s14),
@@ -560,6 +676,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         );
                       }
 
+                      final id = (draft['id'] ?? '').toString();
                       return ui.AuraCard(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -568,7 +685,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             children: [
                               Text('Draft', style: AuraText.title),
                               const SizedBox(height: 10),
-                              Text(title.isNotEmpty ? title : '(Untitled)', style: AuraText.body),
+                              Text(
+                                title.isEmpty ? '(untitled)' : title,
+                                style: AuraText.body,
+                              ),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 10,
@@ -576,11 +696,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 children: [
                                   FilledButton(
                                     onPressed: () => context.go('/compose'),
-                                    child: const Text('Continue'),
+                                    child: const Text('Continue drafting'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meDraftProvider),
-                                    child: const Text('Refresh'),
+                                    onPressed: id.isEmpty ? null : () => context.go('/posts/$id'),
+                                    child: const Text('Open'),
                                   ),
                                 ],
                               ),
@@ -620,24 +740,24 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Your posts', style: AuraText.title),
+                              Text('Posts', style: AuraText.title),
                               const SizedBox(height: 10),
-                              if (items.isEmpty)
-                                Text('No posts yet.', style: AuraText.small)
-                              else
-                                Text('You have ${items.length} post(s).', style: AuraText.small),
+                              Text(
+                                items.isEmpty ? 'No posts yet.' : 'You have ${items.length} post(s).',
+                                style: AuraText.small,
+                              ),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 10,
                                 runSpacing: 10,
                                 children: [
-                                  OutlinedButton(
+                                  FilledButton(
                                     onPressed: () => context.go('/compose'),
                                     child: const Text('Compose'),
                                   ),
                                   OutlinedButton(
                                     onPressed: () => context.go('/feed'),
-                                    child: const Text('View feed'),
+                                    child: const Text('Browse feed'),
                                   ),
                                   OutlinedButton(
                                     onPressed: () => ref.invalidate(_mePostsProvider),
@@ -655,7 +775,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               const SizedBox(height: AuraSpace.s14),
 
               // Saved
-              ref.watch(_meSavesProvider).when(
+              ref.watch(_meSavedProvider).when(
                     loading: () => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -684,7 +804,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               Text('Saved', style: AuraText.title),
                               const SizedBox(height: 10),
                               Text(
-                                items.isEmpty ? 'Nothing saved yet.' : 'You have ${items.length} saved item(s).',
+                                items.isEmpty ? 'No saved posts yet.' : 'You have ${items.length} saved item(s).',
                                 style: AuraText.small,
                               ),
                               const SizedBox(height: 12),
@@ -694,10 +814,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 children: [
                                   OutlinedButton(
                                     onPressed: () => context.go('/saved'),
-                                    child: const Text('Open saved'),
+                                    child: const Text('View saved'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meSavesProvider),
+                                    onPressed: () => ref.invalidate(_meSavedProvider),
                                     child: const Text('Refresh'),
                                   ),
                                 ],
@@ -765,52 +885,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       );
                     },
                   ),
-
-              const SizedBox(height: AuraSpace.s14),
-
-              // Tools (beta)
-              ui.AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tools', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => context.go('/announcements'),
-                          child: const Text('Announcements'),
-                        ),
-                        if (isAdmin)
-                          FilledButton(
-                            onPressed: _adminCreateAnnouncementDialog,
-                            child: const Text('New announcement'),
-                          ),
-                        OutlinedButton(
-                          onPressed: () => context.go('/ai/claim-audit'),
-                          child: const Text('Claim audit'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(
-                      isAdmin
-                          ? 'Announcements are official notes. Admins can publish announcements directly from here.'
-                          : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
-                      style: AuraText.small,
-                    ),
-                    if (!isAdmin && _adminUserIds.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Admin mode is configured, but your account is not the admin user.',
-                        style: AuraText.small,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ],
           );
         },

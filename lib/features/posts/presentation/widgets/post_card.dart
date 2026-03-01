@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -35,65 +36,88 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   return '$base$url';
 }
 
-final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
-  final dio = ref.watch(dioProvider);
+String? _resolveMediaUrl(WidgetRef ref, String? raw) {
+  final url = (raw ?? '').trim();
+  if (url.isEmpty) return null;
 
-  // Backend route: GET /v1/reactions/:postId (server may also accept /reactions/:postId)
-  final res = await dio.get('/reactions/$postId');
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
-  if (res.data is Map) {
-    final m = Map<String, dynamic>.from(res.data as Map);
-    return (m['liked'] == true) || (m['isLiked'] == true);
+  // Media may be stored as a relative path on the API host.
+  final dio = ref.read(dioProvider);
+  var base = dio.options.baseUrl; // e.g. https://api.aura.../v1
+
+  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
+  if (base.endsWith('/v1/')) base = base.substring(0, base.length - 4);
+
+  while (base.endsWith('/')) {
+    base = base.substring(0, base.length - 1);
   }
 
+  if (!url.startsWith('/')) return '$base/$url';
+  return '$base$url';
+}
+
+const String _kAuraWebBaseUrl = String.fromEnvironment(
+  'AURA_WEB_BASE_URL',
+  defaultValue: 'https://aura.bajwadynesty.us',
+);
+
+String _canonicalPostUrl(String postId) {
+  var base = _kAuraWebBaseUrl.trim();
+  if (base.endsWith('/')) base = base.substring(0, base.length - 1);
+
+  // Flutter web commonly serves with a hash router. Keep this stable for now.
+  return '$base/#/posts/$postId';
+}
+
+String _linkedInShareUrl(String postUrl) {
+  final u = Uri.encodeComponent(postUrl);
+  return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
+}
+
+final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/reactions/$postId');
+  final data = res.data;
+
+  if (data is Map && data['ok'] == true) {
+    final inner = data['data'];
+    if (inner is Map && inner['liked'] is bool) return inner['liked'] as bool;
+    if (inner is Map && inner['isLiked'] is bool) return inner['isLiked'] as bool;
+  }
+
+  // Default: not liked
   return false;
 });
 
 final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
-
-  // Backend route: GET /v1/saves/:postId (server may also accept /saves/:postId)
   final res = await dio.get('/saves/$postId');
+  final data = res.data;
 
-  if (res.data is Map) {
-    final m = Map<String, dynamic>.from(res.data as Map);
-    return (m['saved'] == true) || (m['isSaved'] == true);
+  if (data is Map && data['ok'] == true) {
+    final inner = data['data'];
+    if (inner is Map && inner['saved'] is bool) return inner['saved'] as bool;
+    if (inner is Map && inner['isSaved'] is bool) return inner['isSaved'] as bool;
   }
 
+  // Default: not saved
   return false;
 });
 
-DateTime? _tryParseDate(Object? v) {
-  if (v == null) return null;
-  if (v is DateTime) return v.toLocal();
-  final s = v.toString().trim();
-  if (s.isEmpty) return null;
-  return DateTime.tryParse(s)?.toLocal();
-}
-
-String _formatDateAbsolute(DateTime dt) {
-  const months = <String>[
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  final m = months[(dt.month - 1).clamp(0, 11)];
-  return '$m ${dt.day}, ${dt.year}';
-}
-
 class PostCard extends ConsumerStatefulWidget {
-  const PostCard({super.key, required this.post, this.compact = false});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.compact = false,
+    this.showAdminBadges = false,
+  });
+
   final Post post;
   final bool compact;
+
+  /// When true, show small internal badges (Status/Visibility) for debugging/admin.
+  final bool showAdminBadges;
 
   @override
   ConsumerState<PostCard> createState() => _PostCardState();
@@ -102,116 +126,17 @@ class PostCard extends ConsumerStatefulWidget {
 class _PostCardState extends ConsumerState<PostCard> {
   bool _expanded = false;
 
-  // Feed modernization: keep media contained, never a screen takeover.
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
+
   double _mediaMaxHeight(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    // Simple heuristic: small screens get a shorter clamp.
-    return w < 520 ? 320 : 420;
+    if (w >= 1200) return 520;
+    if (w >= 900) return 460;
+    if (w >= 600) return 420;
+    return 360;
   }
 
-  void _toggleExpanded() {
-    setState(() => _expanded = !_expanded);
-  }
-
-  Future<void> _openImageViewer({
-    required String url,
-    required bool isSvg,
-  }) async {
-    if (!mounted) return;
-
-    await showDialog<void>(
-      context: context,
-      barrierColor: const Color(0xAA000000),
-      builder: (ctx) {
-        return _MediaViewerDialog(
-          title: 'Media',
-          child: isSvg
-              ? SvgPicture.network(
-                  url,
-                  fit: BoxFit.contain,
-                  placeholderBuilder: (_) => const _MediaLoading(constrained: false),
-                )
-              : Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, w, prog) {
-                    if (prog == null) return w;
-                    return const _MediaLoading(constrained: false);
-                  },
-                  errorBuilder: (_, __, ___) => const _MediaLoading(constrained: false),
-                ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openVideoViewer({
-    required String postId,
-    required Widget poster,
-  }) async {
-    if (!mounted) return;
-
-    await showDialog<void>(
-      context: context,
-      barrierColor: const Color(0xAA000000),
-      builder: (ctx) {
-        return _MediaViewerDialog(
-          title: 'Video',
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                context.push('/posts/$postId');
-              },
-              child: const Text('Open'),
-            ),
-          ],
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(child: poster),
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0x66000000),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: const Icon(Icons.play_arrow, color: AuraSurface.ink, size: 34),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(AuraSpace.s12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s12,
-                      vertical: AuraSpace.s10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xB3000000),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0x33FFFFFF)),
-                    ),
-                    child: Text(
-                      'Video playback opens from the post page.',
-                      style: AuraText.small.copyWith(color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  bool _textOverflows({
+  bool _willOverflow({
     required String text,
     required TextStyle style,
     required double maxWidth,
@@ -285,6 +210,59 @@ class _PostCardState extends ConsumerState<PostCard> {
       } catch (_) {}
     }
 
+    // Fallback: if the backend returns a media array instead of flattened fields,
+    // use the first item as the primary medium.
+    try {
+      if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
+        final list = (dyn.media as Object?);
+        if (list is List && list.isNotEmpty) {
+          final first = list.first;
+          if (first is Map) {
+            final fm = Map<String, dynamic>.from(first);
+            final u = (fm['url'] ?? fm['publicUrl'] ?? '').toString().trim();
+            if (u.isNotEmpty) mediaUrl = u;
+
+            final tu = (fm['thumbUrl'] ?? fm['thumbnailUrl'] ?? fm['thumb'] ?? '').toString().trim();
+            if (tu.isNotEmpty) mediaThumbUrl ??= tu;
+
+            final t = (fm['type'] ?? fm['kind'] ?? fm['mediaType']);
+            if (t != null && t.toString().trim().isNotEmpty) mediaType ??= t.toString();
+
+            final w = fm['width'];
+            final h = fm['height'];
+            if (mediaWidth == null) mediaWidth = (w is int) ? w : int.tryParse((w ?? '').toString());
+            if (mediaHeight == null) mediaHeight = (h is int) ? h : int.tryParse((h ?? '').toString());
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Also tolerate other common field names: mediaItems, mediaAttachments.
+    try {
+      if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
+        final list = (dyn.mediaItems as Object?);
+        if (list is List && list.isNotEmpty) {
+          final first = list.first;
+          if (first is Map) {
+            final fm = Map<String, dynamic>.from(first);
+            final u = (fm['url'] ?? fm['publicUrl'] ?? '').toString().trim();
+            if (u.isNotEmpty) mediaUrl = u;
+
+            final tu = (fm['thumbUrl'] ?? fm['thumbnailUrl'] ?? fm['thumb'] ?? '').toString().trim();
+            if (tu.isNotEmpty) mediaThumbUrl ??= tu;
+
+            final t = (fm['type'] ?? fm['kind'] ?? fm['mediaType']);
+            if (t != null && t.toString().trim().isNotEmpty) mediaType ??= t.toString();
+
+            final w = fm['width'];
+            final h = fm['height'];
+            if (mediaWidth == null) mediaWidth = (w is int) ? w : int.tryParse((w ?? '').toString());
+            if (mediaHeight == null) mediaHeight = (h is int) ? h : int.tryParse((h ?? '').toString());
+          }
+        }
+      }
+    } catch (_) {}
+
     // Optional link attachment (treated as its own primary medium when present)
     String? linkUrl;
     String? linkTitle;
@@ -322,6 +300,9 @@ class _PostCardState extends ConsumerState<PostCard> {
       } catch (_) {}
     }
 
+    final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
+    final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
+
     // Intentionally not used for UI: Aura rule is no public counts.
     // We keep the reads to avoid breaking any upstream logic, but we never display them.
     int? _asInt(Object? v) {
@@ -349,258 +330,170 @@ class _PostCardState extends ConsumerState<PostCard> {
       saveCount = _asInt(dyn.saveCount);
     } catch (_) {}
 
-    bool isOwner = false;
-    try {
-      isOwner = dyn.viewerIsOwner == true || dyn.isOwner == true;
-    } catch (_) {}
+    final createdAt = post.createdAt;
+    final createdLabel = (createdAt == null)
+        ? ''
+        : '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
 
-    final showRepostTag =
-        post.repostOfPostId != null && post.repostOfPostId!.trim().isNotEmpty;
+    final postId = post.id;
+    final text = (post.text ?? '').trim();
 
-    final text = (post.text).trim();
+    final headerName = displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : '—');
+    final headerSub = handle.isNotEmpty ? '@$handle' : '';
 
-    DateTime? createdAt;
-    try {
-      createdAt = _tryParseDate(dyn.createdAt);
-    } catch (_) {
-      createdAt = null;
-    }
+    final bodyTextStyle = AuraText.body.copyWith(height: 1.42);
 
-    final titleText = displayName.isNotEmpty
-        ? displayName
-        : (handle.isNotEmpty ? '@$handle' : 'Member');
-
-    final metaParts = <String>[];
-    if (handle.isNotEmpty) metaParts.add('@$handle');
-    if (createdAt != null) metaParts.add(_formatDateAbsolute(createdAt!));
-    final metaLine = metaParts.join(' • ');
-
-    final bodyTextStyle = AuraText.body.copyWith(height: 1.55);
-    final collapsedLines = compact ? 4 : 8;
+    final collapsedLines = compact ? 4 : 7;
 
     return AuraCard(
-      padding: EdgeInsets.all(compact ? AuraSpace.s14 : AuraSpace.s18),
-      onTap: () => context.push('/posts/${post.id}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ---------- HEADER ----------
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (a != null)
+      child: Padding(
+        padding: EdgeInsets.all(compact ? AuraSpace.s12 : AuraSpace.s14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ---------- HEADER ----------
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                 CircleAvatar(
-                  radius: compact ? 15 : 16,
-                  backgroundColor: const Color(0x332E2A26),
-                  backgroundImage:
-                      (avatarResolved != null) ? NetworkImage(avatarResolved) : null,
-                  child: (avatarResolved == null)
-                      ? Text(
-                          titleText.isNotEmpty ? titleText[0].toUpperCase() : 'A',
-                          style: AuraText.body,
-                        )
-                      : null,
-                )
-              else
-                Container(
-                  width: compact ? 30 : 32,
-                  height: compact ? 30 : 32,
-                  decoration: BoxDecoration(
-                    color: AuraSurface.elevated,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AuraSurface.divider),
-                  ),
+                  radius: compact ? 18 : 20,
+                  backgroundImage: avatarResolved != null ? NetworkImage(avatarResolved) : null,
+                  child: avatarResolved == null ? const Icon(Icons.person, size: 18) : null,
                 ),
-              SizedBox(width: AuraSpace.s10),
-
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    if (handle.isNotEmpty) context.push('/u/$handle');
-                  },
+                const SizedBox(width: AuraSpace.s10),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        titleText,
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        headerName,
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (metaLine.isNotEmpty)
-                        Text(
-                          metaLine,
-                          style: AuraText.small.copyWith(color: AuraSurface.muted),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      if (headerSub.isNotEmpty || createdLabel.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            [headerSub, createdLabel].where((e) => e.trim().isNotEmpty).join(' · '),
+                            style: AuraText.small.copyWith(color: AuraSurface.muted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                     ],
                   ),
                 ),
-              ),
-
-              // Badges (status + visibility) + owner menu
-              if ((status ?? '').isNotEmpty || (visibility ?? '').isNotEmpty) ...[
-                const SizedBox(width: AuraSpace.s8),
-                Wrap(
-                  spacing: AuraSpace.s6,
-                  children: [
-                    if ((status ?? '').isNotEmpty)
-                      _Badge(
-                        text: _prettyEnum(status!),
-                        tone: status!.toUpperCase().contains('DRAFT')
-                            ? _BadgeTone.warn
-                            : _BadgeTone.neutral,
-                      ),
-                    if ((visibility ?? '').isNotEmpty)
-                      _Badge(
-                        text: _prettyEnum(visibility!),
-                        tone: (visibility ?? '').toLowerCase().contains('public')
-                            ? _BadgeTone.good
-                            : _BadgeTone.neutral,
-                      ),
-                  ],
+                const SizedBox(width: AuraSpace.s10),
+                IconButton(
+                  tooltip: 'Open',
+                  onPressed: () => context.push('/posts/$postId'),
+                  icon: const Icon(Icons.open_in_new, size: 18),
                 ),
               ],
-
-              if (isOwner) ...[
-                const SizedBox(width: AuraSpace.s6),
-                PopupMenuButton<String>(
-                  tooltip: 'Post options',
-                  onSelected: (v) async {
-                    if (v == 'edit') {
-                      context.push('/compose?edit=${post.id}');
-                      return;
-                    }
-                    if (v == 'delete') {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete post?'),
-                          content: const Text('This will remove the post.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok == true) {
-                        final dio = ref.read(dioProvider);
-                        await dio.delete('/posts/${post.id}');
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Deleted')),
-                          );
-                        }
-                      }
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                  icon: const Icon(Icons.more_horiz, color: AuraSurface.muted),
-                ),
-              ],
-            ],
-          ),
-
-          if (showRepostTag) ...[
-            SizedBox(height: AuraSpace.s12),
-            Text(
-              'Repost',
-              style: AuraText.small.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AuraSurface.muted,
-              ),
             ),
-          ],
 
-          // ---------- BODY (text first, collapsible) ----------
-          if (text.isNotEmpty) ...[
-            SizedBox(height: AuraSpace.s12),
-            LayoutBuilder(
-              builder: (ctx, c) {
-                final maxW = c.maxWidth.isFinite ? c.maxWidth : MediaQuery.of(ctx).size.width;
-                final overflows = _textOverflows(
-                  text: text,
-                  style: bodyTextStyle,
-                  maxWidth: maxW,
-                  maxLines: collapsedLines,
-                );
-
-                final showToggle = !compact && overflows;
-                final maxLines = (compact)
-                    ? 4
-                    : (_expanded ? null : (showToggle ? collapsedLines : null));
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      text,
-                      maxLines: maxLines,
-                      overflow: (maxLines == null) ? TextOverflow.visible : TextOverflow.ellipsis,
-                      style: bodyTextStyle,
+            // ---------- BADGES ----------
+            if (widget.showAdminBadges) ...[
+              const SizedBox(height: AuraSpace.s10),
+              Wrap(
+                spacing: AuraSpace.s10,
+                runSpacing: AuraSpace.s10,
+                children: [
+                  if ((status ?? '').trim().isNotEmpty)
+                    _Badge(
+                      text: (status ?? '').toUpperCase(),
+                      tone: (status ?? '').toLowerCase().contains('published')
+                          ? _BadgeTone.good
+                          : _BadgeTone.warn,
                     ),
-                    if (showToggle) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      InkWell(
-                        onTap: _toggleExpanded,
-                        borderRadius: BorderRadius.circular(999),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s10,
-                            vertical: AuraSpace.s6,
-                          ),
-                          child: Text(
-                            _expanded ? 'Collapse' : 'Open',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: AuraSurface.muted,
+                  if ((visibility ?? '').trim().isNotEmpty)
+                    _Badge(
+                      text: (visibility ?? '').toUpperCase(),
+                      tone: _BadgeTone.neutral,
+                    ),
+                ],
+              ),
+            ],
+
+            // ---------- BODY ----------
+            if (text.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s12),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final showToggle = _willOverflow(
+                    text: text,
+                    style: bodyTextStyle,
+                    maxWidth: c.maxWidth,
+                    maxLines: collapsedLines,
+                  );
+
+                  final maxLines = _expanded
+                      ? null
+                      : (showToggle ? collapsedLines : collapsedLines);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        text,
+                        maxLines: maxLines,
+                        overflow: (maxLines == null) ? TextOverflow.visible : TextOverflow.ellipsis,
+                        style: bodyTextStyle,
+                      ),
+                      if (showToggle) ...[
+                        const SizedBox(height: AuraSpace.s8),
+                        InkWell(
+                          onTap: _toggleExpanded,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AuraSpace.s10,
+                              vertical: AuraSpace.s6,
+                            ),
+                            child: Text(
+                              _expanded ? 'Collapse' : 'Open',
+                              style: AuraText.small.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AuraSurface.muted,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
-                );
-              },
+                  );
+                },
+              ),
+            ],
+
+            // ---------- ATTACHMENT (MEDIA or LINK) ----------
+            _finalAttachmentBlock(
+              context,
+              postId: post.id,
+              mediaUrl: resolvedMediaUrl,
+              mediaThumbUrl: resolvedMediaThumbUrl,
+              mediaType: mediaType,
+              mediaWidth: mediaWidth,
+              mediaHeight: mediaHeight,
+              linkUrl: linkUrl,
+              linkTitle: linkTitle,
+              linkSubtitle: linkSubtitle,
+              linkThumbUrl: linkThumbUrl,
+            ),
+
+            SizedBox(height: AuraSpace.s12),
+
+            // ---------- ACTIONS ----------
+            _ActionRow(
+              postId: post.id,
+              likeCount: likeCount,
+              repostCount: repostCount,
+              saveCount: saveCount,
+              replyCount: replyCount,
             ),
           ],
-
-          // ---------- ATTACHMENT (MEDIA or LINK) ----------
-          _finalAttachmentBlock(
-            context,
-            postId: post.id,
-            mediaUrl: mediaUrl,
-            mediaThumbUrl: mediaThumbUrl,
-            mediaType: mediaType,
-            mediaWidth: mediaWidth,
-            mediaHeight: mediaHeight,
-            linkUrl: linkUrl,
-            linkTitle: linkTitle,
-            linkSubtitle: linkSubtitle,
-            linkThumbUrl: linkThumbUrl,
-          ),
-
-          SizedBox(height: AuraSpace.s12),
-
-          // ---------- ACTIONS ----------
-          _ActionRow(
-            postId: post.id,
-            likeCount: likeCount,
-            repostCount: repostCount,
-            saveCount: saveCount,
-            replyCount: replyCount,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -659,96 +552,46 @@ class _PostCardState extends ConsumerState<PostCard> {
       if (isSvg) {
         inner = SvgPicture.network(
           mUrl,
-          fit: BoxFit.contain,
-          placeholderBuilder: (_) => const _MediaLoading(),
-        );
-      } else if (isVideo) {
-        final thumb = (mediaThumbUrl ?? '').trim();
-
-        final poster = (thumb.isNotEmpty)
-            ? Image.network(
-                thumb,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (_, __, ___) => const _MediaLoading(),
-              )
-            : Container(
-                color: AuraSurface.elevated,
-                alignment: Alignment.center,
-                child: Text('Video', style: AuraText.muted),
-              );
-
-        inner = Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned.fill(child: poster),
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: const Color(0x66000000),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AuraSurface.divider),
-              ),
-              child: const Icon(Icons.play_arrow, color: AuraSurface.ink),
-            ),
-          ],
-        );
-
-        final framed = ClipRRect(
-          borderRadius: r,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: r,
-              border: border,
-              color: AuraSurface.elevated,
-            ),
-            child: ratio == null
-                ? ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: maxH,
-                      minHeight: 220,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: inner,
-                    ),
-                  )
-                : ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: maxH),
-                    child: AspectRatio(
-                      aspectRatio: ratio!,
-                      child: inner,
-                    ),
-                  ),
-          ),
-        );
-
-        return Padding(
-          padding: const EdgeInsets.only(top: AuraSpace.s14),
-          child: InkWell(
-            borderRadius: r,
-            onTap: () => _openVideoViewer(postId: postId, poster: poster),
-            child: framed,
+          fit: BoxFit.cover,
+          placeholderBuilder: (_) => const SizedBox(
+            height: 140,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
         );
       } else {
-        // Images: modern frame, contained height clamp.
+        // Video: show a thumbnail if available, else show an image placeholder.
+        final thumb = (mediaThumbUrl ?? '').trim();
+        final show = (isVideo && thumb.isNotEmpty) ? thumb : mUrl;
+
         inner = Image.network(
-          mUrl,
+          show,
           fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          loadingBuilder: (context, w, prog) {
-            if (prog == null) return w;
-            return const _MediaLoading();
+          errorBuilder: (_, __, ___) => Container(
+            height: 200,
+            alignment: Alignment.center,
+            child: Text(
+              isVideo ? 'Video attached' : 'Media unavailable',
+              style: AuraText.small,
+            ),
+          ),
+          loadingBuilder: (c, child, p) {
+            if (p == null) return child;
+            return SizedBox(
+              height: 220,
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: (p.expectedTotalBytes != null)
+                      ? (p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 1))
+                      : null,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
           },
-          errorBuilder: (_, __, ___) => const _MediaLoading(),
         );
       }
 
-      final framed = ClipRRect(
+      final content = ClipRRect(
         borderRadius: r,
         child: Container(
           decoration: BoxDecoration(
@@ -758,32 +601,25 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
           child: ratio == null
               ? ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: maxH,
-                    minHeight: isSvg ? 180 : 220,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: inner,
-                  ),
-                )
-              : ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: maxH),
-                  child: AspectRatio(
-                    aspectRatio: ratio!,
-                    child: inner,
-                  ),
+                  child: inner,
+                )
+              : AspectRatio(
+                  aspectRatio: ratio!,
+                  child: inner,
                 ),
         ),
       );
 
-      // Tap opens a viewer overlay (no navigation jump).
       return Padding(
         padding: const EdgeInsets.only(top: AuraSpace.s14),
         child: InkWell(
           borderRadius: r,
-          onTap: () => _openImageViewer(url: mUrl, isSvg: isSvg),
-          child: framed,
+          onTap: () {
+            // Open post detail (media can be expanded there later)
+            context.push('/posts/$postId');
+          },
+          child: content,
         ),
       );
     }
@@ -858,17 +694,17 @@ class _PostCardState extends ConsumerState<PostCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      const SizedBox(height: AuraSpace.s10),
+                      const SizedBox(height: AuraSpace.s8),
                       Text(
                         host,
                         style: AuraText.small.copyWith(color: AuraSurface.muted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: AuraSpace.s10),
+                      const SizedBox(height: AuraSpace.s6),
                       Text(
                         'Tap to copy link',
-                        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
                       ),
                     ],
                   ),
@@ -964,6 +800,114 @@ class _ActionRow extends ConsumerWidget {
       }
     }
 
+    Future<void> share() async {
+      final postUrl = _canonicalPostUrl(postId);
+      final linkedInUrl = _linkedInShareUrl(postUrl);
+
+      // No url_launcher dependency (keeps builds stable). We copy links instead.
+      await Clipboard.setData(ClipboardData(text: postUrl));
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post link copied')),
+      );
+
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Share', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  'Aura does not auto-post on your behalf. We keep it clean: you copy a link and share intentionally.',
+                  style: AuraText.body,
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Post URL', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        SelectableText(postUrl, style: AuraText.small),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () async {
+                                await Clipboard.setData(ClipboardData(text: postUrl));
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(content: Text('Post link copied')),
+                                  );
+                                }
+                              },
+                              child: const Text('Copy link'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('LinkedIn share URL', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        SelectableText(linkedInUrl, style: AuraText.small),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () async {
+                                await Clipboard.setData(ClipboardData(text: linkedInUrl));
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(content: Text('LinkedIn share URL copied')),
+                                  );
+                                }
+                              },
+                              child: const Text('Copy LinkedIn share URL'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
     Widget pill({
       required IconData icon,
       required String label,
@@ -1048,6 +992,11 @@ class _ActionRow extends ConsumerWidget {
           label: 'Reply',
           onTap: () => context.push('/compose?replyTo=$postId'),
         ),
+        pill(
+          icon: Icons.share_outlined,
+          label: 'Share',
+          onTap: () => share(),
+        ),
       ],
     );
   }
@@ -1067,25 +1016,22 @@ class _Badge extends StatelessWidget {
 
     switch (tone) {
       case _BadgeTone.good:
-        bg = const Color(0x1F5B6CFF);
-        fg = AuraSurface.ink;
+        bg = AuraSurface.goodBg;
+        fg = AuraSurface.goodInk;
         break;
       case _BadgeTone.warn:
-        bg = const Color(0x22FFB020);
-        fg = AuraSurface.ink;
+        bg = AuraSurface.warnBg;
+        fg = AuraSurface.warnInk;
         break;
       case _BadgeTone.neutral:
       default:
         bg = AuraSurface.elevated;
-        fg = AuraSurface.muted;
+        fg = AuraSurface.ink;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -1093,126 +1039,8 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w700),
+        style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w800),
       ),
     );
   }
-}
-
-class _MediaLoading extends StatelessWidget {
-  const _MediaLoading({this.constrained = true});
-
-  final bool constrained;
-
-  @override
-  Widget build(BuildContext context) {
-    final child = Container(
-      alignment: Alignment.center,
-      color: AuraSurface.elevated,
-      child: const SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-    );
-
-    if (!constrained) return child;
-
-    return SizedBox(
-      height: 220,
-      child: child,
-    );
-  }
-}
-
-class _MediaViewerDialog extends StatelessWidget {
-  const _MediaViewerDialog({
-    required this.title,
-    required this.child,
-    this.actions,
-  });
-
-  final String title;
-  final Widget child;
-  final List<Widget>? actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxW = MediaQuery.of(context).size.width < 720 ? 560.0 : 820.0;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxW),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            color: AuraSurface.page,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s14,
-                    vertical: AuraSpace.s12,
-                  ),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (actions != null) ...actions!,
-                      IconButton(
-                        tooltip: 'Close',
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    // Viewer stays contained; no forced fullscreen takeover.
-                    maxHeight: MediaQuery.of(context).size.height * 0.78,
-                  ),
-                  child: InteractiveViewer(
-                    minScale: 1.0,
-                    maxScale: 4.0,
-                    child: Container(
-                      color: AuraSurface.page,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.all(AuraSpace.s12),
-                      child: child,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-String _prettyEnum(String raw) {
-  final s = raw
-      .replaceAll('PostStatus.', '')
-      .replaceAll('Visibility.', '')
-      .replaceAll('_', ' ')
-      .trim();
-  if (s.isEmpty) return raw;
-  return s.split(' ').map((w) {
-    if (w.isEmpty) return w;
-    return w[0].toUpperCase() + w.substring(1).toLowerCase();
-  }).join(' ');
 }

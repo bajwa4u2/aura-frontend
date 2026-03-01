@@ -29,9 +29,9 @@ final dioProvider = Provider<Dio>((ref) {
 
   // Single-flight refresh gate:
   // multiple 401s will wait on the same refresh Future.
-  Future<void>? _refreshInFlight;
+  Future<void>? refreshInFlight;
 
-  bool _isAuthEndpoint(RequestOptions o) {
+  bool isAuthEndpoint(RequestOptions o) {
     final p = o.path;
     return p.contains('/auth/login') ||
         p.contains('/auth/register') ||
@@ -43,19 +43,95 @@ final dioProvider = Provider<Dio>((ref) {
         p.contains('/auth/logout');
   }
 
+  bool shouldClearTokensOnRefreshFailure(Object error) {
+    // Only clear tokens when we are confident the session is invalid.
+    // Network / timeouts should NOT force a logout.
+    if (error is DioException) {
+      final s = error.response?.statusCode;
+      if (s == 401 || s == 403) return true;
+      // If server explicitly says token invalid/expired in a structured way, treat as logout.
+      final msg = error.message?.toLowerCase() ?? '';
+      if (msg.contains('invalid') || msg.contains('unauthorized')) return true;
+      return false;
+    }
+    return false;
+  }
+
+  Future<void> performRefresh() async {
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        validateStatus: (c) => c != null && c >= 200 && c < 300,
+      ),
+    );
+
+    configureDioForPlatform(refreshDio);
+
+    if (kIsWeb) {
+      // Web: refresh token is in HttpOnly cookie.
+      final res = await refreshDio.post('/auth/refresh');
+      final raw = res.data;
+
+      if (raw is! Map) throw Exception('Invalid refresh response');
+
+      final access = raw['accessToken']?.toString();
+      if (access == null || access.isEmpty) {
+        throw Exception('No access token returned');
+      }
+
+      // Do NOT store refresh token on web.
+      await ref.read(tokenStoreProvider).setSession(
+            accessToken: access,
+            refreshToken: null,
+          );
+      return;
+    }
+
+    // Non-web: refresh token may be stored and sent in body.
+    final store = ref.read(tokenStoreProvider);
+    await store.waitUntilLoaded();
+
+    final refreshToken = store.refreshToken;
+    if (refreshToken == null || refreshToken.trim().isEmpty) {
+      throw Exception('Missing refresh token');
+    }
+
+    final res = await refreshDio.post(
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken},
+      options: Options(headers: const {'x-token-transport': 'body'}),
+    );
+
+    final raw = res.data;
+    if (raw is! Map) throw Exception('Invalid refresh response');
+
+    final access = raw['accessToken']?.toString();
+    final newRefresh = raw['refreshToken']?.toString();
+
+    if (access == null || access.isEmpty) {
+      throw Exception('No access token returned');
+    }
+
+    await store.setSession(
+      accessToken: access,
+      refreshToken: (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+    );
+  }
+
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
         final store = ref.read(tokenStoreProvider);
 
-        // CRITICAL:
         // Avoid firing protected calls before tokens are restored from storage.
-        // This was causing requests to go out without Authorization, leading to 401 + "logged out" feeling.
         try {
           await store.waitUntilLoaded();
         } catch (_) {
-          // If anything goes wrong, proceed without blocking forever.
-          // Worst case the request 401s and refresh logic can handle it.
+          // Don't block forever.
         }
 
         // Attach access token if present.
@@ -72,96 +148,33 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
-        if (status != 401 || _isAuthEndpoint(req)) {
+        if (status != 401 || isAuthEndpoint(req)) {
           handler.next(err);
           return;
         }
 
         if (req.extra['__retried_after_refresh'] == true) {
-          // Avoid loops, but DO NOT clear tokens here.
-          // Clearing tokens on a single repeated 401 makes the user feel randomly logged out.
+          // Avoid loops, but do not clear tokens here.
           handler.next(err);
           return;
         }
 
         try {
           // --- Single-flight refresh ---
-          if (_refreshInFlight != null) {
-            await _refreshInFlight!;
+          if (refreshInFlight != null) {
+            await refreshInFlight!;
           } else {
             final completer = Completer<void>();
-            _refreshInFlight = completer.future;
+            refreshInFlight = completer.future;
 
             () async {
               try {
-                final refreshDio = Dio(
-                  BaseOptions(
-                    baseUrl: AppConfig.apiBaseUrl,
-                    headers: const {
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json',
-                    },
-                    validateStatus: (c) => c != null && c >= 200 && c < 300,
-                  ),
-                );
-
-                // Make sure refresh call uses cookies on web.
-                configureDioForPlatform(refreshDio);
-
-                if (kIsWeb) {
-                  // Web: refresh token is in HttpOnly cookie.
-                  final res = await refreshDio.post('/auth/refresh');
-                  final raw = res.data;
-
-                  if (raw is! Map) throw Exception('Invalid refresh response');
-
-                  final access = raw['accessToken']?.toString();
-                  if (access == null || access.isEmpty) {
-                    throw Exception('No access token returned');
-                  }
-
-                  // Do NOT store refresh token on web.
-                  await ref.read(tokenStoreProvider).setSession(
-                        accessToken: access,
-                        refreshToken: null,
-                      );
-                } else {
-                  // Non-web: refresh token may be stored and sent in body.
-                  final store = ref.read(tokenStoreProvider);
-                  final refreshToken = store.refreshToken;
-
-                  if (refreshToken == null || refreshToken.trim().isEmpty) {
-                    throw Exception('Missing refresh token');
-                  }
-
-                  final res = await refreshDio.post(
-                    '/auth/refresh',
-                    data: {'refreshToken': refreshToken},
-                  );
-
-                  final raw = res.data;
-                  if (raw is! Map) throw Exception('Invalid refresh response');
-
-                  final access = raw['accessToken']?.toString();
-                  final newRefresh = raw['refreshToken']?.toString();
-
-                  if (access == null || access.isEmpty) {
-                    throw Exception('No access token returned');
-                  }
-
-                  await store.setSession(
-                    accessToken: access,
-                    refreshToken: (newRefresh != null && newRefresh.isNotEmpty)
-                        ? newRefresh
-                        : refreshToken,
-                  );
-                }
-
+                await performRefresh();
                 completer.complete();
               } catch (e, st) {
                 completer.completeError(e, st);
               } finally {
-                _refreshInFlight = null;
+                refreshInFlight = null;
               }
             }();
 
@@ -190,10 +203,13 @@ final dioProvider = Provider<Dio>((ref) {
           );
 
           handler.resolve(cloned);
-        } catch (_) {
-          // Refresh failed: clear and bubble up the original error.
-          // If refresh cookie/token is missing, user is effectively logged out anyway.
-          await ref.read(tokenStoreProvider).clearTokens();
+        } catch (e) {
+          // Refresh failed:
+          // - If it's an actual auth invalidation -> clear tokens (real logout)
+          // - If it's network/transient -> keep tokens and bubble error (no forced logout)
+          if (shouldClearTokensOnRefreshFailure(e)) {
+            await ref.read(tokenStoreProvider).clearTokens();
+          }
           handler.next(err);
         }
       },

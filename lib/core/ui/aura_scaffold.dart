@@ -6,7 +6,8 @@ import 'aura_surface.dart';
 import 'aura_text.dart';
 
 class AuraScaffold extends StatefulWidget {
-  const AuraScaffold({
+  // NOTE: Not const because we normalize `body` vs `child` at runtime.
+  AuraScaffold({
     super.key,
     this.title = 'Aura',
     Widget? body,
@@ -19,14 +20,8 @@ class AuraScaffold extends StatefulWidget {
     this.showHomeAction = false,
     this.homePath = '/public',
     this.showHeader = true,
-  })  : assert(
-          body != null || child != null,
-          'AuraScaffold requires either body: or child:',
-        ),
-        assert(
-          body == null || child == null,
-          'AuraScaffold: provide only one of body: or child:',
-        ),
+  })  : assert(body != null || child != null, 'AuraScaffold requires either body: or child:'),
+        assert(body == null || child == null, 'AuraScaffold: provide only one of body: or child:'),
         body = body ?? child!;
 
   final String title;
@@ -48,12 +43,10 @@ class AuraScaffold extends StatefulWidget {
   State<AuraScaffold> createState() => _AuraScaffoldState();
 }
 
-class _AuraScaffoldState extends State<AuraScaffold>
-    with SingleTickerProviderStateMixin {
+class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   static const double _defaultMaxWidth = 1040;
-
   static const double _leadingIconSize = 18;
   static const double _leadingTapSize = 36;
 
@@ -168,8 +161,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
     final resolvedLeading = _buildLeading(context);
 
     final normalizedTitle = widget.title.trim();
-    final showPageTitle =
-        normalizedTitle.isNotEmpty && normalizedTitle.toLowerCase() != 'aura';
+    final showPageTitle = normalizedTitle.isNotEmpty && normalizedTitle.toLowerCase() != 'aura';
 
     final headerActions = <Widget>[
       ...(widget.actions ?? const <Widget>[]),
@@ -228,9 +220,7 @@ class _AuraScaffoldState extends State<AuraScaffold>
                     Expanded(
                       child: showPageTitle
                           ? (widget.centerTitle
-                              ? Center(
-                                  child: _PageTitle(text: normalizedTitle),
-                                )
+                              ? Center(child: _PageTitle(text: normalizedTitle))
                               : _PageTitle(text: normalizedTitle))
                           : const SizedBox.shrink(),
                     ),
@@ -267,19 +257,17 @@ class _BrandMark extends StatelessWidget {
 
   // Original SVG colors
   static const Color _ringColor = Color(0xFFA0916E); // #A0916E
-  static const Color _wordColor = Color(0xFF3C3C3C); // #3C3C3C
-
-  // 10% smaller than 42px
-  static const double _wordmarkSize = 38;
+  static const Color _wordColor = Color(0xFFE8EAED); // align with dark theme ink
 
   // Keep ring intentional + proportional to wordmark
+  static const double _wordmarkSize = 38;
   static const double _ringSize = 44;
   static const double _ringStroke = 2.7;
 
   // Responsive fallback for narrow screens
-  static const double _wordmarkSizeSmall = 29; // 32 -> ~29
-  static const double _ringSizeSmall = 36; // 40 -> ~36
-  static const double _ringStrokeSmall = 2.25; // 2.5 -> ~2.25
+  static const double _wordmarkSizeSmall = 29;
+  static const double _ringSizeSmall = 36;
+  static const double _ringStrokeSmall = 2.25;
 
   @override
   Widget build(BuildContext context) {

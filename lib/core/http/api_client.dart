@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'dio_provider.dart';
+import '../net/dio_provider.dart';
 
 /// ApiClient is a lightweight wrapper around the app's single Dio instance.
 /// IMPORTANT:
