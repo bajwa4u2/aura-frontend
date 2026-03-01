@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,8 +25,18 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  // Web needs cookies (HttpOnly refresh cookie) to be included on requests.
+  // Keep your existing platform config (IO vs web adapter specifics).
   configureDioForPlatform(dio);
+
+  // HARD GUARANTEE (web): cookies must be included on XHR, otherwise refresh cookie never rides along.
+  if (kIsWeb) {
+    final a = dio.httpClientAdapter;
+    if (a is BrowserHttpClientAdapter) {
+      a.withCredentials = true;
+    } else {
+      dio.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
+    }
+  }
 
   // Single-flight refresh gate:
   // multiple 401s will wait on the same refresh Future.
@@ -49,7 +60,6 @@ final dioProvider = Provider<Dio>((ref) {
     if (error is DioException) {
       final s = error.response?.statusCode;
       if (s == 401 || s == 403) return true;
-      // If server explicitly says token invalid/expired in a structured way, treat as logout.
       final msg = error.message?.toLowerCase() ?? '';
       if (msg.contains('invalid') || msg.contains('unauthorized')) return true;
       return false;
@@ -70,6 +80,16 @@ final dioProvider = Provider<Dio>((ref) {
     );
 
     configureDioForPlatform(refreshDio);
+
+    // Same hard guarantee for refresh Dio.
+    if (kIsWeb) {
+      final a = refreshDio.httpClientAdapter;
+      if (a is BrowserHttpClientAdapter) {
+        a.withCredentials = true;
+      } else {
+        refreshDio.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
+      }
+    }
 
     if (kIsWeb) {
       // Web: refresh token is in HttpOnly cookie.
@@ -154,7 +174,6 @@ final dioProvider = Provider<Dio>((ref) {
         }
 
         if (req.extra['__retried_after_refresh'] == true) {
-          // Avoid loops, but do not clear tokens here.
           handler.next(err);
           return;
         }
@@ -204,9 +223,6 @@ final dioProvider = Provider<Dio>((ref) {
 
           handler.resolve(cloned);
         } catch (e) {
-          // Refresh failed:
-          // - If it's an actual auth invalidation -> clear tokens (real logout)
-          // - If it's network/transient -> keep tokens and bubble error (no forced logout)
           if (shouldClearTokensOnRefreshFailure(e)) {
             await ref.read(tokenStoreProvider).clearTokens();
           }
