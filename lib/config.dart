@@ -6,7 +6,7 @@ class AppConfig {
   /// API base URL (NO /v1 here).
   ///
   /// Set via:
-  /// flutter build web --dart-define=API_BASE_URL=https://api.bajwadynesty.us
+  /// flutter build web --dart-define=API_BASE_URL=https://aura.auraplatform.org
   ///
   /// IMPORTANT:
   /// - Do not include /v1 in API_BASE_URL.
@@ -14,10 +14,10 @@ class AppConfig {
   static String get apiBaseUrl {
     final raw = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://api.bajwadynesty.us',
+      defaultValue: 'https://aura.auraplatform.org',
     ).trim();
 
-    if (raw.isEmpty) return 'https://api.bajwadynesty.us';
+    if (raw.isEmpty) return 'https://aura.auraplatform.org';
 
     var u = raw;
 
