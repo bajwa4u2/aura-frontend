@@ -118,7 +118,7 @@ final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
 
 final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/saves?limit=12');
+  final res = await dio.get('/saves/me', queryParameters: {'limit': 12});
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
