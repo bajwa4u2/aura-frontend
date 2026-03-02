@@ -3,34 +3,35 @@ import 'dart:core';
 class AppConfig {
   const AppConfig._();
 
-  /// API base URL (NO /v1 here).
+  /// API base URL (INCLUDES /v1).
   ///
   /// Set via:
-  /// flutter build web --dart-define=API_BASE_URL=https://api.auraplatform.org
+  /// flutter build web --dart-define=API_BASE_URL=https://api.auraplatform.org/v1
   ///
   /// IMPORTANT:
-  /// - Do not include /v1 in API_BASE_URL.
-  /// - Client code calls endpoints like: /v1/users/me, /v1/posts, etc.
+  /// - API_BASE_URL must include /v1
+  /// - Client code should call endpoints like: /auth/login, /users/me, /posts, etc.
+  ///   (do NOT prefix endpoints with /v1 in code)
   static String get apiBaseUrl {
     final raw = const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://api.auraplatform.org',
+      defaultValue: 'https://api.auraplatform.org/v1',
     ).trim();
 
-    if (raw.isEmpty) return 'https://api.auraplatform.org';
+    var u = raw.isEmpty ? 'https://api.auraplatform.org/v1' : raw;
 
-    var u = raw;
-
+    // Remove trailing slashes
     while (u.endsWith('/')) {
       u = u.substring(0, u.length - 1);
     }
 
-    if (u.endsWith('/v1')) {
-      u = u.substring(0, u.length - 3);
-      while (u.endsWith('/')) {
-        u = u.substring(0, u.length - 1);
-      }
+    // Ensure /v1 is present exactly once at the end
+    if (!u.endsWith('/v1')) {
+      u = '$u/v1';
     }
+
+    // Safety: collapse accidental double /v1/v1
+    u = u.replaceAll(RegExp(r'(/v1)+$'), '/v1');
 
     return u;
   }

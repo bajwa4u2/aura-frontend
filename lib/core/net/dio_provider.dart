@@ -52,7 +52,7 @@ final dioProvider = Provider<Dio>((ref) {
     if (path.startsWith('/auth/')) return true;
 
     // If backend is mounted under /v1, sometimes caller may pass /v1/auth/...
-    if (path.startsWith('/v1/auth/')) return true;
+    if (path.startsWith('/auth/')) return true;
 
     return false;
   }

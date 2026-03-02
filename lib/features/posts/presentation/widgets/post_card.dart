@@ -19,36 +19,13 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   // Already absolute
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
-  // Backend stores avatarUrl like: /uploads/<file>
-  // Must load it from API host, not from the frontend origin.
-  final dio = ref.read(dioProvider);
-  var base = dio.options.baseUrl; // e.g. https://api.../v1
+  // Serve relative paths from uploads domain
+  const uploadsBase = String.fromEnvironment(
+    'UPLOADS_BASE_URL',
+    defaultValue: 'https://uploads.auraplatform.org',
+  );
 
-  // Strip trailing /v1 (or /v1/) reliably
-  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
-  if (base.endsWith('/v1/')) base = base.substring(0, base.length - 4);
-
-  while (base.endsWith('/')) {
-    base = base.substring(0, base.length - 1);
-  }
-
-  if (!url.startsWith('/')) return '$base/$url';
-  return '$base$url';
-}
-
-String? _resolveMediaUrl(WidgetRef ref, String? raw) {
-  final url = (raw ?? '').trim();
-  if (url.isEmpty) return null;
-
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-
-  // Media may be stored as a relative path on the API host.
-  final dio = ref.read(dioProvider);
-  var base = dio.options.baseUrl; // e.g. https://api.../v1
-
-  if (base.endsWith('/v1')) base = base.substring(0, base.length - 3);
-  if (base.endsWith('/v1/')) base = base.substring(0, base.length - 4);
-
+  var base = uploadsBase.trim();
   while (base.endsWith('/')) {
     base = base.substring(0, base.length - 1);
   }
@@ -59,15 +36,13 @@ String? _resolveMediaUrl(WidgetRef ref, String? raw) {
 
 const String _kAuraWebBaseUrl = String.fromEnvironment(
   'AURA_WEB_BASE_URL',
-  defaultValue: 'https://app.bajwadynesty.us',
+  defaultValue: 'https://app.auraplatform.org',
 );
 
 String _canonicalPostUrl(String postId) {
   var base = _kAuraWebBaseUrl.trim();
   if (base.endsWith('/')) base = base.substring(0, base.length - 1);
-
-  // Flutter web commonly serves with a hash router. Keep this stable for now.
-  return '$base/#/posts/$postId';
+  return '$base/posts/$postId';
 }
 
 String _linkedInShareUrl(String postUrl) {
@@ -86,7 +61,6 @@ final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async 
     if (inner is Map && inner['isLiked'] is bool) return inner['isLiked'] as bool;
   }
 
-  // Default: not liked
   return false;
 });
 
@@ -101,7 +75,6 @@ final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async 
     if (inner is Map && inner['isSaved'] is bool) return inner['isSaved'] as bool;
   }
 
-  // Default: not saved
   return false;
 });
 
@@ -115,8 +88,6 @@ class PostCard extends ConsumerStatefulWidget {
 
   final Post post;
   final bool compact;
-
-  /// When true, show small internal badges (Status/Visibility) for debugging/admin.
   final bool showAdminBadges;
 
   @override

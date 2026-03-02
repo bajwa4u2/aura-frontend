@@ -86,7 +86,7 @@ bool _isEmailNotVerifiedError(Object err) {
 
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/users/me');
+  final res = await dio.get('/users/me');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapMap(raw);
@@ -95,7 +95,7 @@ final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/posts/draft?limit=1');
+  final res = await dio.get('/posts/draft?limit=1');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) {
@@ -109,7 +109,7 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/posts?limit=12');
+  final res = await dio.get('/posts?limit=12');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
@@ -118,7 +118,7 @@ final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
 
 final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/saves?limit=12');
+  final res = await dio.get('/saves?limit=12');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
@@ -127,7 +127,7 @@ final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
 
 final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/v1/replies?limit=12');
+  final res = await dio.get('/replies?limit=12');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
@@ -292,7 +292,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final dio = ref.read(dioProvider);
     try {
       await dio.post(
-        '/v1/announcements',
+        '/announcements',
         data: {
           'title': title,
           'body': body,
@@ -335,7 +335,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         'file': await MultipartFile.fromFile(file.path),
       });
 
-      await dio.post('/v1/uploads/avatar', data: form);
+      await dio.post('/uploads/avatar', data: form);
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
