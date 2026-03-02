@@ -98,6 +98,36 @@ class _PostCardState extends ConsumerState<PostCard> {
   bool _expanded = false;
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
+   
+  String? _resolveMediaUrl(WidgetRef ref, String? raw) {
+  if (raw == null) return null;
+  final s = raw.trim();
+  if (s.isEmpty) return null;
+
+  // Already absolute
+  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+
+  // Protocol-relative
+  if (s.startsWith('//')) return 'https:$s';
+
+  // Build absolute from API_BASE_URL origin (strip /v1 etc)
+  final apiBase = const String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  if (apiBase.isNotEmpty) {
+    final uri = Uri.tryParse(apiBase);
+    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+      final origin = uri.origin;
+
+      // If backend returns "/uploads/..." or "/media/..." etc.
+      if (s.startsWith('/')) return '$origin$s';
+
+      // If backend returns "uploads/..." (rare but happens)
+      return '$origin/$s';
+    }
+  }
+
+  // Fallback: if we cannot determine origin, return as-is
+  return s;
+}
 
   double _mediaMaxHeight(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
