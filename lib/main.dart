@@ -12,7 +12,7 @@ Future<void> main() async {
   // IMPORTANT:
   // This removes the hash (#) from Flutter web URLs and enables clean path routing:
   //   /login, /reset-password, etc.
-  setUrlStrategy(const PathUrlStrategy());
+  setUrlStrategy(PathUrlStrategy());
 
   final store = TokenStore();
 
