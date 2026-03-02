@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
@@ -7,6 +8,11 @@ import 'core/auth/session_bootstrap.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // IMPORTANT:
+  // This removes the hash (#) from Flutter web URLs and enables clean path routing:
+  //   /login, /reset-password, etc.
+  setUrlStrategy(const PathUrlStrategy());
 
   final store = TokenStore();
 
