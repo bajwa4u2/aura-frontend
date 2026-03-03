@@ -20,15 +20,12 @@ final dioProvider = Provider<Dio>((ref) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      // Keep 2xx-only so 401 becomes an error and flows through onError refresh logic.
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
 
-  // Keep your existing platform config (IO vs web adapter specifics).
   configureDioForPlatform(dio);
 
-  // HARD GUARANTEE (web): cookies must be included on XHR, otherwise refresh cookie never rides along.
   void ensureWebCredentials(Dio d) {
     if (!kIsWeb) return;
 
@@ -42,9 +39,6 @@ final dioProvider = Provider<Dio>((ref) {
 
   ensureWebCredentials(dio);
 
-  // -----------------------------
-  // Helpers: unwrap API envelopes
-  // -----------------------------
   Map<String, dynamic> _asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
     if (v is Map) return Map<String, dynamic>.from(v);
@@ -52,18 +46,15 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   String _readAccessToken(Map<String, dynamic> outer) {
-    // token at top-level
     final t1 = (outer['accessToken'] ?? '').toString().trim();
     if (t1.isNotEmpty) return t1;
 
-    // token inside { data: { accessToken } }
     final data = outer['data'];
     if (data is Map) {
       final inner = Map<String, dynamic>.from(data as Map);
       final t2 = (inner['accessToken'] ?? '').toString().trim();
       if (t2.isNotEmpty) return t2;
     }
-
     return '';
   }
 
@@ -77,28 +68,22 @@ final dioProvider = Provider<Dio>((ref) {
       final r2 = (inner['refreshToken'] ?? '').toString().trim();
       if (r2.isNotEmpty) return r2;
     }
-
     return null;
   }
 
-  // Single-flight refresh gate: multiple 401s will wait on the same refresh Future.
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
     final path = o.path;
 
-    // Strict allowlist: anything under /auth is auth.
-    if (path.startsWith('/auth/')) return true;
-
-    // If backend is mounted under /v1, sometimes caller may pass /v1/auth/...
-    if (path.startsWith('/auth/')) return true;
+    // Any auth path should NOT trigger interceptor refresh.
+    if (path.startsWith('/auth')) return true;
+    if (path.startsWith('/v1/auth')) return true;
 
     return false;
   }
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
-    // Strict: ONLY clear on confirmed invalid session signals.
-    // Avoid message sniffing; it causes false logouts on web.
     if (error is DioException) {
       final s = error.response?.statusCode;
       return s == 401 || s == 403;
@@ -107,26 +92,35 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   Future<void> performRefresh() async {
-    // Use the SAME Dio instance so web credentials/cookies are guaranteed to ride along.
     final refreshDio = dio;
 
     if (kIsWeb) {
-      // Web: refresh token is in HttpOnly cookie.
-      final res = await refreshDio.post('/auth/refresh');
-      final outer = _asMap(res.data);
+      // Web refresh: cookie-based, NO JSON body, avoid preflight where possible.
+      final res = await refreshDio.post(
+        '/auth/refresh',
+        data: null,
+        options: Options(
+          contentType: Headers.textPlainContentType,
+          headers: const {
+            'Content-Type': 'text/plain',
+            'Accept': 'application/json',
+          },
+        ),
+      );
 
+      if (res.statusCode == 204) return;
+
+      final outer = _asMap(res.data);
       final access = _readAccessToken(outer);
+
       if (access.isEmpty) {
         throw Exception('No access token returned');
       }
 
-      // IMPORTANT:
-      // Do NOT pass refreshToken: null. Many stores treat that as "clear session".
       await ref.read(tokenStoreProvider).setSession(accessToken: access);
       return;
     }
 
-    // Non-web: refresh token may be stored and sent in body.
     final store = ref.read(tokenStoreProvider);
     await store.waitUntilLoaded();
 
@@ -142,7 +136,6 @@ final dioProvider = Provider<Dio>((ref) {
     );
 
     final outer = _asMap(res.data);
-
     final access = _readAccessToken(outer);
     final newRefresh = _readRefreshToken(outer);
 
@@ -156,7 +149,6 @@ final dioProvider = Provider<Dio>((ref) {
     );
   }
 
-  // Clone & retry preserving the important RequestOptions fields.
   Future<Response<T>> retryRequest<T>(RequestOptions req, Map<String, dynamic> retryHeaders) {
     final options = Options(
       method: req.method,
@@ -190,14 +182,10 @@ final dioProvider = Provider<Dio>((ref) {
       onRequest: (options, handler) async {
         final store = ref.read(tokenStoreProvider);
 
-        // Avoid firing protected calls before tokens are restored from storage.
         try {
           await store.waitUntilLoaded();
-        } catch (_) {
-          // Don't block forever.
-        }
+        } catch (_) {}
 
-        // Attach access token if present.
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -211,20 +199,17 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
-        // Not a 401, or it's already an auth endpoint => do not refresh.
         if (status != 401 || isAuthEndpoint(req)) {
           handler.next(err);
           return;
         }
 
-        // Prevent infinite loops.
         if (req.extra['__retried_after_refresh'] == true) {
           handler.next(err);
           return;
         }
 
         try {
-          // --- Single-flight refresh ---
           if (refreshInFlight != null) {
             await refreshInFlight!;
           } else {
@@ -247,7 +232,6 @@ final dioProvider = Provider<Dio>((ref) {
 
           final newToken = ref.read(tokenStoreProvider).accessToken;
 
-          // Retry original request with new token.
           final retryHeaders = Map<String, dynamic>.from(req.headers);
           retryHeaders.remove('Authorization');
           if (newToken != null && newToken.trim().isNotEmpty) {
@@ -258,16 +242,14 @@ final dioProvider = Provider<Dio>((ref) {
           extra['__retried_after_refresh'] = true;
 
           final reqWithExtra = req.copyWith(extra: extra);
-
           final cloned = await retryRequest<dynamic>(reqWithExtra, retryHeaders);
+
           handler.resolve(cloned);
         } catch (refreshError) {
-          // Only clear when refresh itself confirms session invalid.
           if (shouldClearTokensOnRefreshFailure(refreshError)) {
             await ref.read(tokenStoreProvider).clearTokens();
           }
 
-          // Bubble the refresh failure (not the original 401).
           if (refreshError is DioException) {
             handler.next(refreshError);
           } else {

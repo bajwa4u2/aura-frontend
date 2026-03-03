@@ -1,46 +1,54 @@
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../net/dio_provider.dart';
 import '../auth/auth_providers.dart';
+import '../net/dio_provider.dart';
 
 /// Bootstraps session at app start:
 /// - Web: attempts /auth/refresh using httpOnly cookie.
 /// - Non-web: uses stored refreshToken if accessToken missing.
 ///
-/// This avoids "logged out on hard refresh" and reduces 401 churn.
+/// Goal: avoid "logged out on hard refresh" without creating refresh storms.
 final sessionBootstrapProvider = FutureProvider<void>((ref) async {
   final store = ref.read(tokenStoreProvider);
   final dio = ref.read(dioProvider);
 
-  // Ensure persisted tokens are loaded before making decisions.
   try {
     await store.waitUntilLoaded();
-  } catch (_) {
-    // If store fails to load, don't block boot.
-  }
+  } catch (_) {}
 
-  // If already have an access token, nothing to do.
   if (store.isAuthed) return;
 
   try {
     if (kIsWeb) {
-      // Web refresh uses HttpOnly cookie; no body refreshToken needed.
-      final res = await dio.post('/auth/refresh', data: {});
-      final raw = res.data;
+      final res = await dio.post(
+        '/auth/refresh',
+        data: null,
+        options: Options(
+          contentType: Headers.textPlainContentType,
+          headers: const {
+            'Content-Type': 'text/plain',
+            'Accept': 'application/json',
+          },
+        ),
+      );
 
+      if (res.statusCode == 204) return;
+
+      final raw = res.data;
       if (raw is! Map) return;
 
-      final access = raw['accessToken']?.toString() ?? '';
+      String access = (raw['accessToken'] ?? '').toString().trim();
+      if (access.isEmpty && raw['data'] is Map) {
+        access = ((raw['data'] as Map)['accessToken'] ?? '').toString().trim();
+      }
       if (access.isEmpty) return;
 
-      // Web: keep refresh token null (cookie-managed).
-      await store.setSession(accessToken: access, refreshToken: null);
+      await store.setSession(accessToken: access);
       return;
     }
 
-    // Non-web: send refreshToken in body.
     final rt = store.refreshToken;
     if (rt == null || rt.trim().isEmpty) return;
 
@@ -53,16 +61,23 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     final raw = res.data;
     if (raw is! Map) return;
 
-    final access = raw['accessToken']?.toString() ?? '';
+    String access = (raw['accessToken'] ?? '').toString().trim();
+    if (access.isEmpty && raw['data'] is Map) {
+      access = ((raw['data'] as Map)['accessToken'] ?? '').toString().trim();
+    }
     if (access.isEmpty) return;
 
-    final newRefresh = raw['refreshToken']?.toString();
+    String? newRefresh = (raw['refreshToken'] ?? '').toString().trim();
+    if ((newRefresh.isEmpty) && raw['data'] is Map) {
+      newRefresh = ((raw['data'] as Map)['refreshToken'] ?? '').toString().trim();
+    }
+    if (newRefresh.isEmpty) newRefresh = null;
+
     await store.setSession(
       accessToken: access,
-      refreshToken: (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : rt,
+      refreshToken: newRefresh ?? rt,
     );
   } catch (_) {
-    // Silent no-op: not logged in, or cookie missing/expired.
     return;
   }
 });
