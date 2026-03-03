@@ -82,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool isAuthPath(String loc) => authRoutes.contains(loc);
 
   return GoRouter(
-    initialLocation: '/public',
+    
     refreshListenable: refresh,
     redirect: (context, state) async {
       final loc = state.uri.path;
