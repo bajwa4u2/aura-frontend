@@ -46,7 +46,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
-  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<bool>>(
+    emailVerifiedProvider,
+    (_, __) => refresh.value++,
+  );
 
   const publicRoutes = <String>{
     '/announcements',
@@ -73,7 +76,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     '/verify-pending',
   };
 
-  bool isPublicPath(String loc) => publicRoutes.contains(loc) || loc.startsWith('/announcements');
+  bool isPublicPath(String loc) =>
+      publicRoutes.contains(loc) || loc.startsWith('/announcements');
   bool isAuthPath(String loc) => authRoutes.contains(loc);
 
   String _normalizeRedirectDest(String dest) {
@@ -104,9 +108,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // --- AUTHED ---
       final verifiedAsync = ref.read(emailVerifiedProvider);
-      if (verifiedAsync.isLoading) return null;
 
-      final verified = verifiedAsync.valueOrNull ?? false;
+      // If verification state is not known yet (loading OR error), don't redirect.
+      // Let the app settle and retry /auth/me.
+      if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
+
+      final verified = verifiedAsync.value ?? false;
 
       if (!verified) {
         // Allow verification + password flows even when not verified.
@@ -119,6 +126,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         return '/verify-pending';
       }
+
+      // If verified, never keep them stuck on verify screens.
+      if (loc == '/verify-pending' || loc == '/verify-email') return '/home';
 
       if (loc == '/public') return '/home';
 
@@ -139,30 +149,66 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/', redirect: (context, state) => '/public'),
 
           // Public
-          GoRoute(path: '/public', builder: (context, state) => const PublicHomeScreen()),
-          GoRoute(path: '/mission', builder: (context, state) => const MissionScreen()),
-          GoRoute(path: '/white-paper', builder: (context, state) => const WhitePaperScreen()),
-          GoRoute(path: '/founder', builder: (context, state) => const FounderMessageScreen()),
-          GoRoute(path: '/privacy', builder: (context, state) => const PrivacyPolicyScreen()),
-          GoRoute(path: '/investors', builder: (context, state) => const InvestorsHubScreen()),
-          GoRoute(path: '/institutions', builder: (context, state) => const InstitutionsHubScreen()),
-          GoRoute(path: '/institution/sign-in', builder: (context, state) => const InstitutionSignInScreen()),
+          GoRoute(
+            path: '/public',
+            builder: (context, state) => const PublicHomeScreen(),
+          ),
+          GoRoute(
+            path: '/mission',
+            builder: (context, state) => const MissionScreen(),
+          ),
+          GoRoute(
+            path: '/white-paper',
+            builder: (context, state) => const WhitePaperScreen(),
+          ),
+          GoRoute(
+            path: '/founder',
+            builder: (context, state) => const FounderMessageScreen(),
+          ),
+          GoRoute(
+            path: '/privacy',
+            builder: (context, state) => const PrivacyPolicyScreen(),
+          ),
+          GoRoute(
+            path: '/investors',
+            builder: (context, state) => const InvestorsHubScreen(),
+          ),
+          GoRoute(
+            path: '/institutions',
+            builder: (context, state) => const InstitutionsHubScreen(),
+          ),
+          GoRoute(
+            path: '/institution/sign-in',
+            builder: (context, state) => const InstitutionSignInScreen(),
+          ),
           GoRoute(
             path: '/institution/request-verification',
-            builder: (context, state) => const InstitutionRequestVerificationScreen(),
+            builder: (context, state) =>
+                const InstitutionRequestVerificationScreen(),
           ),
-          GoRoute(path: '/patrons', builder: (context, state) => const PatronsHubScreen()),
-          GoRoute(path: '/supporters', builder: (context, state) => const SupportersHubScreen()),
+          GoRoute(
+            path: '/patrons',
+            builder: (context, state) => const PatronsHubScreen(),
+          ),
+          GoRoute(
+            path: '/supporters',
+            builder: (context, state) => const SupportersHubScreen(),
+          ),
 
           // Auth
           GoRoute(
             path: '/login',
-            builder: (context, state) => AuthScreen(
-              redirectTo: state.uri.queryParameters['redirect'],
-            ),
+            builder: (context, state) =>
+                AuthScreen(redirectTo: state.uri.queryParameters['redirect']),
           ),
-          GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
-          GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+          GoRoute(
+            path: '/register',
+            builder: (context, state) => const RegisterScreen(),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            builder: (context, state) => const ForgotPasswordScreen(),
+          ),
           GoRoute(
             path: '/reset-password',
             builder: (context, state) => ResetPasswordScreen(
@@ -179,31 +225,62 @@ final routerProvider = Provider<GoRouter>((ref) {
               redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
-          GoRoute(path: '/verify-pending', builder: (context, state) => const VerifyPendingScreen()),
+          GoRoute(
+            path: '/verify-pending',
+            builder: (context, state) => const VerifyPendingScreen(),
+          ),
 
           // Member
-          GoRoute(path: '/home', builder: (context, state) => const MemberHomeScreen()),
-          GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
-          GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
-          GoRoute(path: '/updates', builder: (context, state) => const UpdatesScreen()),
-          GoRoute(path: '/announcements', builder: (context, state) => const AnnouncementsScreen()),
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const MemberHomeScreen(),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (context, state) => const SearchScreen(),
+          ),
+          GoRoute(
+            path: '/saved',
+            builder: (context, state) => const SavedScreen(),
+          ),
+          GoRoute(
+            path: '/updates',
+            builder: (context, state) => const UpdatesScreen(),
+          ),
+          GoRoute(
+            path: '/announcements',
+            builder: (context, state) => const AnnouncementsScreen(),
+          ),
           GoRoute(
             path: '/announcements/:slug',
-            builder: (context, state) => AnnouncementDetailScreen(slug: state.pathParameters['slug'] ?? ''),
+            builder: (context, state) => AnnouncementDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
           ),
-          GoRoute(path: '/ai/claim-audit', builder: (context, state) => const ClaimAuditScreen()),
+          GoRoute(
+            path: '/ai/claim-audit',
+            builder: (context, state) => const ClaimAuditScreen(),
+          ),
           GoRoute(path: '/me', builder: (context, state) => const MeScreen()),
-          GoRoute(path: '/me/edit', builder: (context, state) => const EditProfileScreen()),
-          GoRoute(path: '/compose', builder: (context, state) => const ComposeScreen()),
+          GoRoute(
+            path: '/me/edit',
+            builder: (context, state) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: '/compose',
+            builder: (context, state) => const ComposeScreen(),
+          ),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) => PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
+            builder: (context, state) =>
+                PostDetailScreen(postId: state.pathParameters['id'] ?? ''),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
+            builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
           ),
-
           GoRoute(
             path: '/support/:handle',
             builder: (context, state) => SupportFallbackScreen(
