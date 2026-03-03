@@ -42,6 +42,18 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
   return AuthStatus.unauthed;
 });
 
+Map<String, dynamic> _toMap(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) return v.map((k, val) => MapEntry(k.toString(), val));
+  return <String, dynamic>{};
+}
+
+dynamic _unwrapData(dynamic v) {
+  final m = _toMap(v);
+  if (m.containsKey('data')) return m['data'];
+  return m;
+}
+
 /// Email verification status (authed-only).
 ///
 /// Reads /auth/me and extracts:
@@ -51,42 +63,60 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
 /// IMPORTANT:
 /// Some endpoints are double-wrapped: { ok:true, data:{ ok:true, data:{...} } }.
 /// We unwrap up to 2 levels.
+///
+/// Critical behavior:
+/// - NEVER throw from this provider. If it throws, router can get stuck in error states
+///   and the app starts "playing" with screens.
+/// - If /auth/me returns 401/403, treat as not authed and settle to false.
 final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   final authed = ref.watch(isAuthedProvider);
   if (!authed) return false;
 
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/auth/me');
-  final raw = res.data;
 
-  Map<String, dynamic> toMap(dynamic v) {
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return v.map((k, val) => MapEntry(k.toString(), val));
-    return <String, dynamic>{};
+  try {
+    final res = await dio.get('/auth/me');
+    final raw = res.data;
+
+    // unwrap once or twice (handles {data:{data:{...}}})
+    final level1 = _unwrapData(raw);
+    final level2 = _unwrapData(level1);
+
+    final inner = _toMap(level2);
+
+    final direct = inner['emailVerified'];
+    if (direct is bool) return direct;
+
+    final user = inner['user'];
+    if (user is Map) {
+      final ev = (user as Map)['emailVerifiedAt'];
+      if (ev != null) return true;
+    }
+
+    return false;
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+
+    // If /auth/me says 401/403, it means current access token is not valid.
+    // Do NOT throw. Return false so router doesn't oscillate between states.
+    if (code == 401 || code == 403) {
+      // On non-web, clearing tokens helps converge the app to UNAUTHED cleanly.
+      // On web, refresh might still be cookie-driven; clearing aggressively can cause thrash.
+      if (!kIsWeb) {
+        try {
+          await ref.read(tokenStoreProvider).clearTokens();
+        } catch (_) {}
+      }
+      return false;
+    }
+
+    // For any other error (network hiccup, 5xx), be conservative and return false.
+    // This avoids "hasError" loops causing UI overlays and redirect thrash.
+    return false;
+  } catch (_) {
+    // Same rule: never throw.
+    return false;
   }
-
-  dynamic unwrapData(dynamic v) {
-    final m = toMap(v);
-    if (m.containsKey('data')) return m['data'];
-    return m;
-  }
-
-  // unwrap once or twice (handles {data:{data:{...}}})
-  final level1 = unwrapData(raw);
-  final level2 = unwrapData(level1);
-
-  final inner = toMap(level2);
-
-  final direct = inner['emailVerified'];
-  if (direct is bool) return direct;
-
-  final user = inner['user'];
-  if (user is Map) {
-    final ev = (user as Map)['emailVerifiedAt'];
-    if (ev != null) return true;
-  }
-
-  return false;
 });
 
 /// Derived session values used by Dio and other layers.

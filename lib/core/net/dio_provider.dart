@@ -20,6 +20,7 @@ final dioProvider = Provider<Dio>((ref) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      // Treat ONLY 2xx as success. Everything else becomes a Dio error.
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
@@ -38,6 +39,23 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   ensureWebCredentials(dio);
+
+  // A dedicated Dio for refresh calls, intentionally WITHOUT interceptors.
+  // This avoids recursion and reduces auth-state thrash.
+  final refreshDio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      headers: const {
+        'Accept': 'application/json',
+      },
+      validateStatus: (code) => code != null && code >= 200 && code < 300,
+    ),
+  );
+  configureDioForPlatform(refreshDio);
+  ensureWebCredentials(refreshDio);
 
   Map<String, dynamic> _asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
@@ -73,17 +91,43 @@ final dioProvider = Provider<Dio>((ref) {
 
   Future<void>? refreshInFlight;
 
+  String _normalizedPath(RequestOptions o) {
+    // RequestOptions.path may be "/v1/auth/me" or "/auth/refresh" etc.
+    // Normalize by removing an optional "/v1" prefix.
+    var p = o.path.trim();
+    if (p.startsWith('http://') || p.startsWith('https://')) {
+      // Best-effort parse if someone passed a full URL as path.
+      final uri = Uri.tryParse(p);
+      if (uri != null) p = uri.path;
+    }
+    if (p.startsWith('/v1/')) p = p.substring(3); // remove "/v1"
+    return p; // now like "/auth/me", "/posts", etc.
+  }
+
   bool isAuthEndpoint(RequestOptions o) {
-    final path = o.path;
+    final p = _normalizedPath(o);
 
-    // Any auth path should NOT trigger interceptor refresh.
-    if (path.startsWith('/auth')) return true;
-    if (path.startsWith('/v1/auth')) return true;
+    // Any auth endpoint should NOT trigger interceptor refresh.
+    if (p.startsWith('/auth')) return true;
 
+    // Also exclude any token/session endpoints you might add later.
     return false;
   }
 
+  bool _shouldAttemptRefreshNow() {
+    // Critical: do NOT attempt refresh when app already considers itself unauthed/loading.
+    // That causes redirect thrash and login overlay issues.
+    final s = ref.read(authStatusProvider);
+    if (s == AuthStatus.loading) return false;
+    if (s == AuthStatus.unauthed) return false;
+    return true; // only when authed
+  }
+
   bool shouldClearTokensOnRefreshFailure(Object error) {
+    // On web, a refresh failure is often just "no cookie" for logged-out users.
+    // Clearing tokens here causes pointless state flips and router thrash.
+    if (kIsWeb) return false;
+
     if (error is DioException) {
       final s = error.response?.statusCode;
       return s == 401 || s == 403;
@@ -92,10 +136,9 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   Future<void> performRefresh() async {
-    final refreshDio = dio;
-
     if (kIsWeb) {
-      // Web refresh: cookie-based, NO JSON body, avoid preflight where possible.
+      // Web refresh: cookie-based, NO JSON body.
+      // Keep it minimal to reduce preflight and avoid browser oddities.
       final res = await refreshDio.post(
         '/auth/refresh',
         data: null,
@@ -108,6 +151,7 @@ final dioProvider = Provider<Dio>((ref) {
         ),
       );
 
+      // Backend may return 204 for "refreshed via cookie, nothing to return".
       if (res.statusCode == 204) return;
 
       final outer = _asMap(res.data);
@@ -121,6 +165,7 @@ final dioProvider = Provider<Dio>((ref) {
       return;
     }
 
+    // Non-web: body-based refresh token
     final store = ref.read(tokenStoreProvider);
     await store.waitUntilLoaded();
 
@@ -145,11 +190,16 @@ final dioProvider = Provider<Dio>((ref) {
 
     await store.setSession(
       accessToken: access,
-      refreshToken: (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+      refreshToken: (newRefresh != null && newRefresh.isNotEmpty)
+          ? newRefresh
+          : refreshToken,
     );
   }
 
-  Future<Response<T>> retryRequest<T>(RequestOptions req, Map<String, dynamic> retryHeaders) {
+  Future<Response<T>> retryRequest<T>(
+    RequestOptions req,
+    Map<String, dynamic> retryHeaders,
+  ) {
     final options = Options(
       method: req.method,
       headers: retryHeaders,
@@ -199,17 +249,26 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
+        // Only handle 401s, and never for auth endpoints themselves.
         if (status != 401 || isAuthEndpoint(req)) {
           handler.next(err);
           return;
         }
 
+        // If we already retried this request after refresh, do not loop.
         if (req.extra['__retried_after_refresh'] == true) {
           handler.next(err);
           return;
         }
 
+        // If auth is not in a state where refresh makes sense, do not attempt it.
+        if (!_shouldAttemptRefreshNow()) {
+          handler.next(err);
+          return;
+        }
+
         try {
+          // Single-flight refresh: all 401s await the same refresh future.
           if (refreshInFlight != null) {
             await refreshInFlight!;
           } else {
@@ -230,6 +289,7 @@ final dioProvider = Provider<Dio>((ref) {
             await completer.future;
           }
 
+          // Retry the original request once with the newest token.
           final newToken = ref.read(tokenStoreProvider).accessToken;
 
           final retryHeaders = Map<String, dynamic>.from(req.headers);
@@ -246,6 +306,7 @@ final dioProvider = Provider<Dio>((ref) {
 
           handler.resolve(cloned);
         } catch (refreshError) {
+          // Only clear tokens where it is truly appropriate.
           if (shouldClearTokensOnRefreshFailure(refreshError)) {
             await ref.read(tokenStoreProvider).clearTokens();
           }

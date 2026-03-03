@@ -19,21 +19,21 @@ class AppShell extends ConsumerWidget {
     _TabItem(label: 'Me', icon: Icons.person_outline, path: '/me'),
   ];
 
-  int _indexForLocation(String location) {
+  int _indexForPath(String path) {
     for (var i = 0; i < _tabs.length; i++) {
-      if (location == _tabs[i].path ||
-          location.startsWith('${_tabs[i].path}/')) {
+      final tabPath = _tabs[i].path;
+      if (path == tabPath || path.startsWith('$tabPath/')) {
         return i;
       }
     }
     return 0;
   }
 
-  bool _isPublicRoute(String location) {
+  bool _isPublicRoutePath(String path) {
+    // IMPORTANT: use PATH ONLY (no query params). Queries broke your logic:
+    // /login?redirect=/home was not matching /login and the bottom nav appeared.
     const publicPrefixes = <String>[
       '/public',
-      '/login',
-      '/register',
       '/privacy',
       '/mission',
       '/founder',
@@ -42,23 +42,32 @@ class AppShell extends ConsumerWidget {
       '/patrons',
       '/supporters',
       '/announcements',
-      '/verify',
-      '/verify-pending',
+
+      // Auth routes (exactly as in router.dart)
+      '/login',
+      '/register',
       '/forgot-password',
       '/reset-password',
+      '/verify-email',
+      '/verify-pending',
+
+      // Institution flows
+      '/institution/sign-in',
+      '/institution/request-verification',
     ];
 
     for (final p in publicPrefixes) {
-      if (location == p || location.startsWith('$p/')) return true;
+      if (path == p || path.startsWith('$p/')) return true;
     }
     return false;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.toString();
-    final currentIndex = _indexForLocation(location);
-    final showBottomNav = !_isPublicRoute(location);
+    final uri = GoRouterState.of(context).uri;
+    final path = uri.path; // ✅ path only, no query
+    final currentIndex = _indexForPath(path);
+    final showBottomNav = !_isPublicRoutePath(path);
 
     return Scaffold(
       backgroundColor: AuraSurface.page,
@@ -71,8 +80,7 @@ class AppShell extends ConsumerWidget {
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxWidth: _maxContentWidth),
+                  constraints: const BoxConstraints(maxWidth: _maxContentWidth),
                   child: child,
                 ),
               ),
@@ -121,7 +129,7 @@ class AppShell extends ConsumerWidget {
                       color: AuraSurface.muted,
                     ),
                   ),
-                  iconTheme: MaterialStatePropertyAll(
+                  iconTheme: const MaterialStatePropertyAll(
                     IconThemeData(
                       color: AuraSurface.muted,
                     ),
@@ -129,8 +137,7 @@ class AppShell extends ConsumerWidget {
                 ),
                 child: NavigationBar(
                   height: 64,
-                  selectedIndex:
-                      currentIndex.clamp(0, _tabs.length - 1),
+                  selectedIndex: currentIndex.clamp(0, _tabs.length - 1),
                   onDestinationSelected: (i) {
                     final tab = _tabs[i];
                     context.go(tab.path);
