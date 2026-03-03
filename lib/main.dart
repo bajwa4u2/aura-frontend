@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -10,12 +9,8 @@ import 'core/auth/session_bootstrap.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Web: remove hash (#) routing so links like
-  // https://auraplatform.org/reset-password?token=...
-  // land on real routes.
-  if (kIsWeb) {
-    setUrlStrategy(PathUrlStrategy());
-  }
+  // Clean URLs (no #)
+  setUrlStrategy(PathUrlStrategy());
 
   final store = TokenStore();
 
