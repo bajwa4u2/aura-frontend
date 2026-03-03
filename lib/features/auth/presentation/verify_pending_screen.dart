@@ -20,7 +20,7 @@ class VerifyPendingScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
-  late final _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
+  late final _email = TextEditingController(text: (widget.email ?? '').trim());
 
   bool _busy = false;
   String? _msg;
@@ -35,7 +35,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   Future<void> _resend() async {
     if (_busy) return;
 
-    final email = _emailCtrl.text.trim();
+    final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _msg = 'Enter a valid email to resend verification.');
       return;
@@ -48,6 +48,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
     final dio = ref.read(dioProvider);
 
+    // Try a few candidates so UI survives backend naming changes.
     final candidates = <String>[
       '/auth/resend-verification',
       '/auth/resend-verify-email',
@@ -67,10 +68,12 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
           rethrow;
         }
       }
-      final s = last?.response?.statusCode;
-      setState(() => _msg = 'Resend failed (${s ?? 'no status'}).');
-    } catch (_) {
-      setState(() => _msg = 'Resend failed. Try again.');
+
+      debugPrint('resend verify failed: ${last?.response?.statusCode} ${last?.response?.data}');
+      setState(() => _msg = 'Could not resend right now.');
+    } catch (e) {
+      debugPrint('resend verify failed: $e');
+      setState(() => _msg = 'Could not resend right now.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -78,7 +81,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -87,7 +90,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     final redirect = _safeRedirect(widget.redirectTo);
 
     return AuraScaffold(
-      title: 'Verify pending',
+      title: 'Verify your email',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
@@ -95,46 +98,42 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Check your email', style: AuraText.title),
+                Text('Almost there', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'We sent a verification link. Open it to activate your account.',
+                  'We need to verify your email before you can continue. Open the email we sent and click the link.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-
                 TextField(
-                  controller: _emailCtrl,
+                  controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(labelText: 'Email (for resend)'),
                 ),
-                const SizedBox(height: AuraSpace.s10),
-
-                if (_msg != null) ...[
-                  Text(_msg!, style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s10),
+                const SizedBox(height: AuraSpace.s14),
+                if (_busy) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: AuraSpace.s12),
                 ],
-
-                Row(
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
                   children: [
-                    ElevatedButton(
+                    FilledButton(
                       onPressed: _busy ? null : _resend,
-                      child: _busy
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Resend email'),
+                      child: Text(_busy ? 'Sending…' : 'Resend verification'),
                     ),
-                    const SizedBox(width: 12),
                     TextButton(
                       onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                       child: const Text('Back to login'),
                     ),
                   ],
                 ),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Tip: If you verified already, just log in. No extra steps.',
-                  style: AuraText.subtle,
-                ),
+                if (_msg != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(_msg!, style: AuraText.body),
+                ],
               ],
             ),
           ),

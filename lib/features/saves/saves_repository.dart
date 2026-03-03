@@ -1,54 +1,57 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../feed/domain/post.dart';
+import '../../core/net/dio_provider.dart';
 
 class SavesRepository {
   SavesRepository(this._dio);
   final Dio _dio;
 
-  /// Canonical (clean REST):
-  ///   GET /saves?limit=...
-  /// Backend controller: @Get() on /v1/saves
-  Future<List<Post>> listSaved({int limit = 20}) async {
-    final res = await _dio.get('/saves', queryParameters: {'limit': limit});
-    final raw = res.data;
+  /// GET /saves?limit=..&cursor=..
+  Future<dynamic> listSaved({int limit = 24, String? cursor}) async {
+    final res = await _dio.get(
+      '/saves',
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
 
-    // Accept envelope: { ok: true, data: { items: [...] } }
-    // Also tolerate direct list (defensive).
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((e) => Post.fromJson(e.cast<String, dynamic>()))
-          .toList();
-    }
-
-    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
-    final List items = (data['items'] is List) ? (data['items'] as List) : const [];
-
-    return items
-        .whereType<Map>()
-        .map((e) => Post.fromJson(e.cast<String, dynamic>()))
-        .toList();
+    final data = res.data;
+    if (data is Map && data['items'] != null) return data['items'];
+    return data;
   }
 
-  /// Backend: POST /v1/saves/toggle/:postId
-  Future<void> toggleSave(String postId) async {
-    await _dio.post('/saves/toggle/$postId');
-  }
-
-  /// Backend: GET /v1/saves/for/:postId
-  /// Expected: { ok: true, data: { saved: bool } } OR { saved: bool }
+  /// GET /saves/for/:postId
   Future<bool> isSaved(String postId) async {
     final res = await _dio.get('/saves/for/$postId');
-    final raw = res.data;
+    final data = res.data;
 
-    if (raw is Map) {
-      if (raw['saved'] is bool) return raw['saved'] as bool;
-
-      final d = raw['data'];
-      if (d is Map && d['saved'] is bool) return d['saved'] as bool;
+    if (data is Map) {
+      final v = data['saved'] ?? data['isSaved'];
+      if (v is bool) return v;
     }
+    if (data is bool) return data;
 
     return false;
   }
+
+  /// POST /saves/toggle/:postId
+  Future<bool> toggle(String postId) async {
+    final res = await _dio.post('/saves/toggle/$postId');
+    final data = res.data;
+
+    if (data is Map) {
+      final v = data['saved'] ?? data['isSaved'];
+      if (v is bool) return v;
+    }
+    if (data is bool) return data;
+
+    return true;
+  }
 }
+
+final savesRepositoryProvider = Provider<SavesRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return SavesRepository(dio);
+});

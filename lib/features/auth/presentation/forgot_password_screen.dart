@@ -10,8 +10,9 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
-  const ForgotPasswordScreen({super.key, this.redirectTo});
+  const ForgotPasswordScreen({super.key, this.email, this.redirectTo});
 
+  final String? email;
   final String? redirectTo;
 
   @override
@@ -19,10 +20,10 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  final _email = TextEditingController();
+  late final _email = TextEditingController(text: (widget.email ?? '').trim());
+
   bool _busy = false;
   String? _msg;
-  bool _sent = false;
 
   String _safeRedirect(String? r) {
     final v = (r ?? '').trim();
@@ -36,14 +37,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     final email = _email.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _msg = 'Enter a valid email address.');
+      setState(() => _msg = 'Enter a valid email.');
       return;
     }
 
     setState(() {
       _busy = true;
       _msg = null;
-      _sent = false;
     });
 
     final dio = ref.read(dioProvider);
@@ -51,12 +51,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     try {
       await dio.post('/auth/forgot-password', data: {'email': email});
       setState(() {
-        _sent = true;
-        _msg = 'If an account exists for this email, we sent a password reset link. Check inbox and spam.';
+        _msg = 'If that email exists, we sent a reset link. Check inbox and spam.';
       });
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      setState(() => _msg = 'Request failed (${status ?? 'no status'}). Try again.');
+      // Keep it generic to avoid account enumeration.
+      debugPrint('forgot-password failed: ${e.response?.statusCode} ${e.response?.data}');
+      setState(() {
+        _msg = 'If that email exists, we sent a reset link. Check inbox and spam.';
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -84,43 +86,35 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 Text('Reset your password', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Enter your email and we will send you a reset link.',
+                  'Enter your email. We will send you a secure link to set a new password.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
                 TextField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.email],
                   decoration: const InputDecoration(labelText: 'Email'),
-                  onSubmitted: (_) => _busy ? null : _submit(),
+                  onSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: AuraSpace.s14),
-                if (_msg != null) ...[
-                  Text(_msg!, style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s10),
-                ],
-                Row(
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
                   children: [
-                    ElevatedButton(
+                    FilledButton(
                       onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Send reset link'),
+                      child: Text(_busy ? 'Sending…' : 'Send reset link'),
                     ),
-                    const SizedBox(width: 12),
                     TextButton(
                       onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                       child: const Text('Back to login'),
                     ),
                   ],
                 ),
-                if (_sent) ...[
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    'Tip: If you do not see it, wait a minute and check spam.',
-                    style: AuraText.subtle,
-                  ),
+                if (_msg != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(_msg!, style: AuraText.body),
                 ],
               ],
             ),

@@ -75,10 +75,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool isPublicPath(String loc) => publicRoutes.contains(loc) || loc.startsWith('/announcements');
   bool isAuthPath(String loc) => authRoutes.contains(loc);
 
-  String _normalizeRedirectDest(String dest) {
-    final trimmed = dest.trim();
+  String normalizeRedirectDest(String? dest) {
+    final trimmed = (dest ?? '').trim();
     if (trimmed.isEmpty) return '/home';
     if (trimmed == '/') return '/home';
+    if (!trimmed.startsWith('/')) return '/home';
     return trimmed;
   }
 
@@ -121,7 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) {
-          return _normalizeRedirectDest(redirectTo);
+          return normalizeRedirectDest(redirectTo);
         }
         return '/me';
       }
@@ -134,7 +135,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/', redirect: (context, state) => '/public'),
 
-          // Public
           GoRoute(path: '/public', builder: (context, state) => const PublicHomeScreen()),
           GoRoute(path: '/mission', builder: (context, state) => const MissionScreen()),
           GoRoute(path: '/white-paper', builder: (context, state) => const WhitePaperScreen()),
@@ -150,29 +150,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/patrons', builder: (context, state) => const PatronsHubScreen()),
           GoRoute(path: '/supporters', builder: (context, state) => const SupportersHubScreen()),
 
-          // Auth (IMPORTANT: pass query params)
           GoRoute(
             path: '/login',
             builder: (context, state) => AuthScreen(
               redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
-          GoRoute(
-            path: '/register',
-            builder: (context, state) => RegisterScreen(
-              redirectTo: state.uri.queryParameters['redirect'],
-            ),
-          ),
+          GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
           GoRoute(
             path: '/forgot-password',
             builder: (context, state) => ForgotPasswordScreen(
+              email: state.uri.queryParameters['email'],
               redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
           GoRoute(
             path: '/reset-password',
             builder: (context, state) => ResetPasswordScreen(
-              initialToken: state.uri.queryParameters['token'] ?? '',
+              token: state.uri.queryParameters['token'],
+              email: state.uri.queryParameters['email'],
               redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
@@ -192,7 +188,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
-          // Member
           GoRoute(path: '/home', builder: (context, state) => const MemberHomeScreen()),
           GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (context, state) => const SavedScreen()),
@@ -214,12 +209,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/u/:handle',
             builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
-
           GoRoute(
             path: '/support/:handle',
-            builder: (context, state) => SupportFallbackScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            builder: (context, state) => SupportFallbackScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
         ],
       ),
