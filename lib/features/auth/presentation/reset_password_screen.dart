@@ -20,12 +20,13 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
-  late final _token = TextEditingController(text: widget.initialToken);
+  late String _token = widget.initialToken.trim();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
 
   bool _busy = false;
   String? _msg;
+  bool _done = false;
 
   String _safeRedirect(String? r) {
     final v = (r ?? '').trim();
@@ -37,12 +38,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Future<void> _submit() async {
     if (_busy) return;
 
-    final token = _token.text.trim();
     final pass = _password.text;
     final confirm = _confirm.text;
 
-    if (token.isEmpty) {
-      setState(() => _msg = 'Reset token is required.');
+    if (_token.isEmpty) {
+      setState(() => _msg = 'This reset link is missing a token. Request a new link.');
       return;
     }
     if (pass.length < 8) {
@@ -57,20 +57,24 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     setState(() {
       _busy = true;
       _msg = null;
+      _done = false;
     });
 
     final dio = ref.read(dioProvider);
 
     try {
       await dio.post('/auth/reset-password', data: {
-        'token': token,
+        'token': _token,
         'newPassword': pass,
       });
 
-      setState(() => _msg = 'Password updated. You can log in now.');
+      setState(() {
+        _done = true;
+        _msg = 'Password updated successfully.';
+      });
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      setState(() => _msg = 'Reset failed (${status ?? 'no status'}).');
+      setState(() => _msg = 'Reset failed (${status ?? 'no status'}). The link may be expired.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -78,7 +82,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   void dispose() {
-    _token.dispose();
     _password.dispose();
     _confirm.dispose();
     super.dispose();
@@ -100,45 +103,66 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 Text('Set a new password', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Paste the token from your email, then choose a new password.',
+                  'Choose a strong password you have not used before.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-                TextField(
-                  controller: _token,
-                  decoration: const InputDecoration(labelText: 'Reset token'),
-                ),
-                const SizedBox(height: AuraSpace.s12),
+
+                if (_token.isEmpty) ...[
+                  Text(
+                    'This link is incomplete or expired.',
+                    style: AuraText.body,
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  TextButton(
+                    onPressed: () => context.go('/forgot-password?redirect=${Uri.encodeComponent(redirect)}'),
+                    child: const Text('Request a new reset link'),
+                  ),
+                  return const SizedBox(height: 0),
+                ],
+
                 TextField(
                   controller: _password,
                   obscureText: true,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(labelText: 'New password'),
                 ),
-                const SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s10),
                 TextField(
                   controller: _confirm,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Confirm password'),
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(labelText: 'Confirm new password'),
+                  onSubmitted: (_) => _busy ? null : _submit(),
                 ),
                 const SizedBox(height: AuraSpace.s14),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
+
+                if (_msg != null) ...[
+                  Text(_msg!, style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+
+                Row(
                   children: [
-                    FilledButton(
+                    ElevatedButton(
                       onPressed: _busy ? null : _submit,
-                      child: Text(_busy ? 'Updating…' : 'Update password'),
+                      child: _busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Update password'),
                     ),
-                    TextButton(
-                      onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                      child: const Text('Back to login'),
-                    ),
+                    const SizedBox(width: 12),
+                    if (_done)
+                      TextButton(
+                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Go to login'),
+                      )
+                    else
+                      TextButton(
+                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Cancel'),
+                      ),
                   ],
                 ),
-                if (_msg != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(_msg!, style: AuraText.body),
-                ],
               ],
             ),
           ),

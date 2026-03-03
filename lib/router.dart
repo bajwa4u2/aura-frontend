@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
-
-// Single source of truth for auth state.
 import 'core/auth/session_providers.dart';
 
 import 'features/auth/presentation/auth_screen.dart';
@@ -29,12 +27,9 @@ import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 
-// SAVES
 import 'features/saves/presentation/saved_screen.dart';
 
-// Support fallback
 import 'screens/support_fallback_screen.dart';
-
 import 'screens/mission_screen.dart';
 import 'screens/white_paper_screen.dart';
 import 'screens/founder_message_screen.dart';
@@ -47,7 +42,6 @@ import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Refresh router when auth / verification changes.
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 
@@ -81,8 +75,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool isPublicPath(String loc) => publicRoutes.contains(loc) || loc.startsWith('/announcements');
   bool isAuthPath(String loc) => authRoutes.contains(loc);
 
-  // Normalize redirect destinations coming from query params.
-  // We never want to navigate to "/" because we don't treat it as a real screen.
   String _normalizeRedirectDest(String dest) {
     final trimmed = dest.trim();
     if (trimmed.isEmpty) return '/home';
@@ -91,21 +83,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   }
 
   return GoRouter(
-    // IMPORTANT: Do not force initialLocation here.
-    // Let browser deep links win (reset-password, verify-email, etc.)
     refreshListenable: refresh,
     redirect: (context, state) async {
       final loc = state.uri.path;
-
       final authStatus = ref.read(authStatusProvider);
 
-      // Never redirect while auth bootstrap is running.
       if (authStatus == AuthStatus.loading) return null;
 
       final isPublic = isPublicPath(loc);
       final isAuth = isAuthPath(loc);
 
-      // --- UNAUNTHED ---
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -113,19 +100,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // --- AUTHED ---
-      // If authed, wait for emailVerifiedProvider to resolve before forcing verify routes.
       final verifiedAsync = ref.read(emailVerifiedProvider);
-
-      // If verification status is still loading, do NOT redirect into verify-pending.
-      if (verifiedAsync.isLoading) {
-        return null;
-      }
+      if (verifiedAsync.isLoading) return null;
 
       final verified = verifiedAsync.valueOrNull ?? false;
 
       if (!verified) {
-        // Allow public routes + verification + password flows.
         if (loc == '/verify-pending' ||
             loc == '/verify-email' ||
             loc == '/forgot-password' ||
@@ -136,10 +116,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending';
       }
 
-      // Verified authed: normalize public landing
       if (loc == '/public') return '/home';
 
-      // If already authed and someone hits auth screens, send them onward.
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) {
@@ -154,12 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
-          // Root: always land somewhere real.
-          // This prevents "GoException: no routes for location: /"
-          GoRoute(
-            path: '/',
-            redirect: (context, state) => '/public',
-          ),
+          GoRoute(path: '/', redirect: (context, state) => '/public'),
 
           // Public
           GoRoute(path: '/public', builder: (context, state) => const PublicHomeScreen()),
@@ -177,18 +150,47 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/patrons', builder: (context, state) => const PatronsHubScreen()),
           GoRoute(path: '/supporters', builder: (context, state) => const SupportersHubScreen()),
 
-          // Auth
+          // Auth (IMPORTANT: pass query params)
           GoRoute(
             path: '/login',
             builder: (context, state) => AuthScreen(
               redirectTo: state.uri.queryParameters['redirect'],
             ),
           ),
-          GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
-          GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
-          GoRoute(path: '/reset-password', builder: (context, state) => const ResetPasswordScreen()),
-          GoRoute(path: '/verify-email', builder: (context, state) => const VerifyEmailScreen()),
-          GoRoute(path: '/verify-pending', builder: (context, state) => const VerifyPendingScreen()),
+          GoRoute(
+            path: '/register',
+            builder: (context, state) => RegisterScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            builder: (context, state) => ForgotPasswordScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            builder: (context, state) => ResetPasswordScreen(
+              initialToken: state.uri.queryParameters['token'] ?? '',
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/verify-email',
+            builder: (context, state) => VerifyEmailScreen(
+              token: state.uri.queryParameters['token'],
+              email: state.uri.queryParameters['email'],
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/verify-pending',
+            builder: (context, state) => VerifyPendingScreen(
+              email: state.uri.queryParameters['email'],
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
 
           // Member
           GoRoute(path: '/home', builder: (context, state) => const MemberHomeScreen()),
@@ -213,7 +215,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => AuthorProfileScreen(handle: state.pathParameters['handle'] ?? ''),
           ),
 
-          // Support (compile-safe fallback)
           GoRoute(
             path: '/support/:handle',
             builder: (context, state) => SupportFallbackScreen(

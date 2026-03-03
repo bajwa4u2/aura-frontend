@@ -87,7 +87,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     final redirect = _safeRedirect(widget.redirectTo);
 
     return AuraScaffold(
-      title: 'Verify your email',
+      title: 'Verify pending',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
@@ -95,47 +95,46 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('One more step', style: AuraText.title),
+                Text('Check your email', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'We sent a verification link to your email. Verify first, then log in.',
+                  'We sent a verification link. Open it to activate your account.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
+
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(labelText: 'Email'),
                 ),
-                const SizedBox(height: AuraSpace.s12),
-                if (_busy) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s10),
+
+                if (_msg != null) ...[
+                  Text(_msg!, style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s10),
                 ],
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
+
+                Row(
                   children: [
-                    FilledButton(
+                    ElevatedButton(
                       onPressed: _busy ? null : _resend,
-                      child: const Text('Resend verification'),
+                      child: _busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Resend email'),
                     ),
-                    OutlinedButton(
-                      onPressed: () => context.go(
-                        '/verify-email?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}',
-                      ),
-                      child: const Text('I have a token'),
-                    ),
+                    const SizedBox(width: 12),
                     TextButton(
                       onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                      child: const Text('Go to login'),
+                      child: const Text('Back to login'),
                     ),
                   ],
                 ),
-                if (_msg != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(_msg!, style: AuraText.body),
-                ],
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  'Tip: If you verified already, just log in. No extra steps.',
+                  style: AuraText.subtle,
+                ),
               ],
             ),
           ),

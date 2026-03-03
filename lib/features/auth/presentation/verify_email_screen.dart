@@ -21,12 +21,12 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  late final _tokenCtrl = TextEditingController(text: (widget.token ?? '').trim());
-  late final _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
-
   bool _busy = false;
   String? _msg;
   bool _verified = false;
+
+  late final String _token = (widget.token ?? '').trim();
+  late final TextEditingController _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
 
   String _safeRedirect(String? r) {
     final v = (r ?? '').trim();
@@ -38,17 +38,16 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
-    if ((widget.token ?? '').trim().isNotEmpty) {
-      _verify();
+    if (_token.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _verify());
     }
   }
 
   Future<void> _verify() async {
     if (_busy) return;
 
-    final token = _tokenCtrl.text.trim();
-    if (token.isEmpty) {
-      setState(() => _msg = 'Paste the verification token from your email.');
+    if (_token.isEmpty) {
+      setState(() => _msg = 'This verification link is missing a token. Request a new verification email.');
       return;
     }
 
@@ -60,15 +59,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     try {
       final dio = ref.read(dioProvider);
-      await dio.post('/auth/verify-email', data: {'token': token});
+      await dio.post('/auth/verify-email', data: {'token': _token});
 
       setState(() {
         _verified = true;
-        _msg = 'Verified. Now log in to continue.';
+        _msg = 'Email verified.';
       });
     } on DioException catch (e) {
       final s = e.response?.statusCode;
-      setState(() => _msg = 'Verification failed (${s ?? 'no status'}). The token may be expired.');
+      setState(() => _msg = 'Verification failed (${s ?? 'no status'}). The link may be expired.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -79,7 +78,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     final email = _emailCtrl.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _msg = 'Enter your email to resend verification.');
+      setState(() => _msg = 'Enter a valid email to resend verification.');
       return;
     }
 
@@ -90,29 +89,12 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     final dio = ref.read(dioProvider);
 
-    final candidates = <String>[
-      '/auth/resend-verification',
-      '/auth/resend-verify-email',
-      '/auth/resend-verification-email',
-    ];
-
     try {
-      DioException? last;
-      for (final path in candidates) {
-        try {
-          await dio.post(path, data: {'email': email});
-          setState(() => _msg = 'Verification email sent. Check inbox and spam.');
-          return;
-        } on DioException catch (e) {
-          last = e;
-          if (e.response?.statusCode == 404) continue;
-          rethrow;
-        }
-      }
-      final s = last?.response?.statusCode;
+      await dio.post('/auth/resend-verification', data: {'email': email});
+      setState(() => _msg = 'Verification email sent. Check inbox and spam.');
+    } on DioException catch (e) {
+      final s = e.response?.statusCode;
       setState(() => _msg = 'Resend failed (${s ?? 'no status'}).');
-    } catch (_) {
-      setState(() => _msg = 'Resend failed.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -120,7 +102,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   @override
   void dispose() {
-    _tokenCtrl.dispose();
     _emailCtrl.dispose();
     super.dispose();
   }
@@ -130,7 +111,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     final redirect = _safeRedirect(widget.redirectTo);
 
     return AuraScaffold(
-      title: 'Verify Email',
+      title: 'Verify email',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
@@ -138,54 +119,59 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Email verification', style: AuraText.title),
+                Text('Verify your email', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Verify your email to unlock the app.',
+                  _token.isNotEmpty
+                      ? 'We are verifying your email now.'
+                      : 'Request a new verification email.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-                TextField(
-                  controller: _tokenCtrl,
-                  decoration: const InputDecoration(labelText: 'Verification token'),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                TextField(
-                  controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email (for resend)'),
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                if (_busy) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: AuraSpace.s12),
-                ],
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    FilledButton(
-                      onPressed: _busy ? null : _verify,
-                      child: const Text('Verify'),
-                    ),
-                    OutlinedButton(
-                      onPressed: _busy ? null : _resend,
-                      child: const Text('Resend email'),
-                    ),
-                    TextButton(
-                      onPressed: _busy ? null : () => context.go('/verify-pending?redirect=${Uri.encodeComponent(redirect)}&email=${Uri.encodeComponent(_emailCtrl.text.trim())}'),
-                      child: const Text('Back'),
-                    ),
-                    if (_verified)
-                      FilledButton(
-                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                        child: const Text('Go to login'),
-                      ),
-                  ],
-                ),
+
                 if (_msg != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
                   Text(_msg!, style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+
+                if (_verified) ...[
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Continue to login'),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _busy ? null : _verify,
+                        child: _busy
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Verify now'),
+                      ),
+                      const SizedBox(width: 12),
+                      TextButton(
+                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        child: const Text('Back to login'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s14),
+                  Text('Need a new email?', style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s10),
+                  TextField(
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  TextButton(
+                    onPressed: _busy ? null : _resend,
+                    child: const Text('Resend verification email'),
+                  ),
                 ],
               ],
             ),

@@ -22,6 +22,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _email = TextEditingController();
   bool _busy = false;
   String? _msg;
+  bool _sent = false;
 
   String _safeRedirect(String? r) {
     final v = (r ?? '').trim();
@@ -33,19 +34,29 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _submit() async {
     if (_busy) return;
 
+    final email = _email.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _msg = 'Enter a valid email address.');
+      return;
+    }
+
     setState(() {
       _busy = true;
       _msg = null;
+      _sent = false;
     });
 
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/auth/forgot-password', data: {'email': _email.text.trim()});
-      setState(() => _msg = 'If the email exists, we sent a reset link or token. Check inbox and spam.');
+      await dio.post('/auth/forgot-password', data: {'email': email});
+      setState(() {
+        _sent = true;
+        _msg = 'If an account exists for this email, we sent a password reset link. Check inbox and spam.';
+      });
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      setState(() => _msg = 'Failed to request reset (${status ?? 'no status'}).');
+      setState(() => _msg = 'Request failed (${status ?? 'no status'}). Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -73,37 +84,43 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 Text('Reset your password', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Enter your email. We will send a reset link or token.',
+                  'Enter your email and we will send you a reset link.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
                 TextField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(labelText: 'Email'),
+                  onSubmitted: (_) => _busy ? null : _submit(),
                 ),
                 const SizedBox(height: AuraSpace.s14),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
+                if (_msg != null) ...[
+                  Text(_msg!, style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+                Row(
                   children: [
-                    FilledButton(
+                    ElevatedButton(
                       onPressed: _busy ? null : _submit,
-                      child: Text(_busy ? 'Sending…' : 'Send reset'),
+                      child: _busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Send reset link'),
                     ),
-                    OutlinedButton(
-                      onPressed: () => context.go('/reset-password?redirect=${Uri.encodeComponent(redirect)}'),
-                      child: const Text('I already have a token'),
-                    ),
+                    const SizedBox(width: 12),
                     TextButton(
                       onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                       child: const Text('Back to login'),
                     ),
                   ],
                 ),
-                if (_msg != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(_msg!, style: AuraText.body),
+                if (_sent) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    'Tip: If you do not see it, wait a minute and check spam.',
+                    style: AuraText.subtle,
+                  ),
                 ],
               ],
             ),
