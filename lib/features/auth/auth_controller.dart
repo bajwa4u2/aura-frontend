@@ -32,7 +32,6 @@ class AuthController {
   /// Unwrap common API envelopes:
   /// - { ok: true, data: {...} }
   /// - { data: {...} }
-  /// Returns the "best" inner map, but never loses the outer map if needed.
   Map<String, dynamic> _unwrap(dynamic raw) {
     final m = _asMap(raw);
 
@@ -44,12 +43,10 @@ class AuthController {
     return m;
   }
 
-  String _readToken(Map<String, dynamic> outer) {
-    // Try token at top-level
+  String _readAccessToken(Map<String, dynamic> outer) {
     final t1 = (outer['accessToken'] ?? '').toString().trim();
     if (t1.isNotEmpty) return t1;
 
-    // Try token inside {data:{...}}
     final data = outer['data'];
     if (data is Map) {
       final inner = (data as Map).cast<String, dynamic>();
@@ -60,7 +57,7 @@ class AuthController {
     return '';
   }
 
-  String? _readRefresh(Map<String, dynamic> outer) {
+  String? _readRefreshToken(Map<String, dynamic> outer) {
     final r1 = (outer['refreshToken'] ?? '').toString().trim();
     if (r1.isNotEmpty) return r1;
 
@@ -75,7 +72,6 @@ class AuthController {
   }
 
   void _invalidateAuth() {
-    // WidgetRef and Ref both support invalidate in riverpod 2+.
     try {
       ref.invalidate(tokenStoreLoadedProvider);
     } catch (_) {}
@@ -119,11 +115,10 @@ class AuthController {
     );
 
     final outer = _asMap(res.data);
-    final access = _readToken(outer);
-    final refresh = _readRefresh(outer);
+    final access = _readAccessToken(outer);
+    final refresh = _readRefreshToken(outer);
 
     if (access.isEmpty) {
-      // Provide a useful error for debugging
       throw Exception('Login response missing accessToken (envelope mismatch)');
     }
 
@@ -132,10 +127,7 @@ class AuthController {
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
 
-    // Force UI/router to see the new auth state immediately.
     _invalidateAuth();
-
-    // Return inner payload (most screens expect user/accessToken fields there)
     return _unwrap(outer);
   }
 
@@ -166,26 +158,47 @@ class AuthController {
     return _unwrap(outer);
   }
 
+  /// Manual refresh. Prefer relying on Dio interceptor for normal API traffic.
   Future<Map<String, dynamic>> refresh() async {
     if (kIsWeb) {
-      final res = await _dio().post('/auth/refresh');
-      final outer = _asMap(res.data);
+      // Web refresh: cookie-based.
+      // Use text/plain + no body to reduce preflight noise.
+      final res = await _dio().post(
+        '/auth/refresh',
+        data: null,
+        options: Options(
+          contentType: Headers.textPlainContentType,
+          headers: const {
+            'Content-Type': 'text/plain',
+            'Accept': 'application/json',
+          },
+        ),
+      );
 
-      final access = _readToken(outer);
+      if (res.statusCode == 204) throw Exception('No session (204)');
+
+      final outer = _asMap(res.data);
+      final access = _readAccessToken(outer);
+
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
 
-      await _store().setSession(accessToken: access, refreshToken: null);
+      // IMPORTANT: do NOT pass refreshToken: null on web (cookie is HttpOnly).
+      await _store().setSession(accessToken: access);
       _invalidateAuth();
       return _unwrap(outer);
     } else {
       final rt = _store().refreshToken;
-      if (rt == null || rt.trim().isNotEmpty == false) throw Exception('Missing refresh token');
+      if (rt == null || rt.trim().isEmpty) throw Exception('Missing refresh token');
 
-      final res = await _dio().post('/auth/refresh', data: {'refreshToken': rt});
+      final res = await _dio().post(
+        '/auth/refresh',
+        data: {'refreshToken': rt},
+        options: Options(headers: const {'x-token-transport': 'body'}),
+      );
+
       final outer = _asMap(res.data);
-
-      final access = _readToken(outer);
-      final newRt = _readRefresh(outer);
+      final access = _readAccessToken(outer);
+      final newRt = _readRefreshToken(outer);
 
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
 
