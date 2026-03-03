@@ -81,15 +81,22 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool isPublicPath(String loc) => publicRoutes.contains(loc) || loc.startsWith('/announcements');
   bool isAuthPath(String loc) => authRoutes.contains(loc);
 
+  // Normalize redirect destinations coming from query params.
+  // We never want to navigate to "/" because we don't treat it as a real screen.
+  String _normalizeRedirectDest(String dest) {
+    final trimmed = dest.trim();
+    if (trimmed.isEmpty) return '/home';
+    if (trimmed == '/') return '/home';
+    return trimmed;
+  }
+
   return GoRouter(
-    
+    // IMPORTANT: Do not force initialLocation here.
+    // Let browser deep links win (reset-password, verify-email, etc.)
     refreshListenable: refresh,
     redirect: (context, state) async {
       final loc = state.uri.path;
 
-      // Read current status.
-      // Using read is OK because we explicitly refresh the router via ValueNotifier,
-      // but we keep behavior conservative during transitions.
       final authStatus = ref.read(authStatusProvider);
 
       // Never redirect while auth bootstrap is running.
@@ -107,11 +114,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // --- AUTHED ---
-      // If authed, we *wait* for emailVerifiedProvider to resolve before forcing verify routes.
+      // If authed, wait for emailVerifiedProvider to resolve before forcing verify routes.
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
       // If verification status is still loading, do NOT redirect into verify-pending.
-      // This avoids "feels like logout" during fresh login/refresh.
       if (verifiedAsync.isLoading) {
         return null;
       }
@@ -136,7 +142,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If already authed and someone hits auth screens, send them onward.
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
-        if (redirectTo != null && redirectTo.startsWith('/')) return redirectTo;
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return _normalizeRedirectDest(redirectTo);
+        }
         return '/me';
       }
 
@@ -146,6 +154,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
+          // Root: always land somewhere real.
+          // This prevents "GoException: no routes for location: /"
+          GoRoute(
+            path: '/',
+            redirect: (context, state) => '/public',
+          ),
+
           // Public
           GoRoute(path: '/public', builder: (context, state) => const PublicHomeScreen()),
           GoRoute(path: '/mission', builder: (context, state) => const MissionScreen()),
