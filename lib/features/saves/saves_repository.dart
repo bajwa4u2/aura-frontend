@@ -1,45 +1,54 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/net/dio_provider.dart';
+import '../feed/domain/post.dart';
 
 class SavesRepository {
   SavesRepository(this._dio);
-
   final Dio _dio;
 
-  Future<Map<String, dynamic>> listMine({int? limit, String? cursor}) async {
-    final res = await _dio.get(
-      '/saves',
-      queryParameters: {
-        if (limit != null) 'limit': limit,
-        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
-      },
-    );
+  /// Canonical (clean REST):
+  ///   GET /saves?limit=...
+  /// Backend controller: @Get() on /v1/saves
+  Future<List<Post>> listSaved({int limit = 20}) async {
+    final res = await _dio.get('/saves', queryParameters: {'limit': limit});
+    final raw = res.data;
 
-    final data = res.data;
-    if (data is Map<String, dynamic>) return data;
-    throw Exception('Invalid response for /saves');
+    // Accept envelope: { ok: true, data: { items: [...] } }
+    // Also tolerate direct list (defensive).
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((e) => Post.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    }
+
+    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
+    final List items = (data['items'] is List) ? (data['items'] as List) : const [];
+
+    return items
+        .whereType<Map>()
+        .map((e) => Post.fromJson(e.cast<String, dynamic>()))
+        .toList();
   }
 
+  /// Backend: POST /v1/saves/toggle/:postId
+  Future<void> toggleSave(String postId) async {
+    await _dio.post('/saves/toggle/$postId');
+  }
+
+  /// Backend: GET /v1/saves/for/:postId
+  /// Expected: { ok: true, data: { saved: bool } } OR { saved: bool }
   Future<bool> isSaved(String postId) async {
     final res = await _dio.get('/saves/for/$postId');
-    final data = res.data;
-    if (data is Map && data['saved'] is bool) return data['saved'] as bool;
-    // if backend returns boolean directly, tolerate that too
-    if (data is bool) return data;
-    throw Exception('Invalid response for /saves/for/:postId');
-  }
+    final raw = res.data;
 
-  Future<Map<String, dynamic>> toggle(String postId) async {
-    final res = await _dio.post('/saves/toggle/$postId');
-    final data = res.data;
-    if (data is Map<String, dynamic>) return data;
-    throw Exception('Invalid response for /saves/toggle/:postId');
+    if (raw is Map) {
+      if (raw['saved'] is bool) return raw['saved'] as bool;
+
+      final d = raw['data'];
+      if (d is Map && d['saved'] is bool) return d['saved'] as bool;
+    }
+
+    return false;
   }
 }
-
-final savesRepositoryProvider = Provider<SavesRepository>((ref) {
-  final dio = ref.read(dioProvider);
-  return SavesRepository(dio);
-});

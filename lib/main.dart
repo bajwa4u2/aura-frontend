@@ -10,7 +10,9 @@ import 'core/auth/session_bootstrap.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Web only: remove hash (#) from URLs.
+  // Web: remove hash (#) routing so links like
+  // https://auraplatform.org/reset-password?token=...
+  // land on real routes.
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   }
@@ -20,7 +22,6 @@ Future<void> main() async {
   try {
     await store.load();
   } catch (e) {
-    // Never block app startup on token loading.
     debugPrint('TokenStore.load failed: $e');
   }
 
@@ -45,8 +46,6 @@ class _AuraBoot extends ConsumerWidget {
       data: (_) => const AuraApp(),
       loading: () => const _BootSplash(),
       error: (e, _) {
-        // Don’t brick the app on bootstrap failure.
-        // If cookie is missing/expired, user just lands logged out.
         debugPrint('sessionBootstrapProvider error: $e');
         return const AuraApp();
       },
