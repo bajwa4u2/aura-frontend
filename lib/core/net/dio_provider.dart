@@ -42,6 +42,45 @@ final dioProvider = Provider<Dio>((ref) {
 
   ensureWebCredentials(dio);
 
+  // -----------------------------
+  // Helpers: unwrap API envelopes
+  // -----------------------------
+  Map<String, dynamic> _asMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    throw Exception('Invalid response type');
+  }
+
+  String _readAccessToken(Map<String, dynamic> outer) {
+    // token at top-level
+    final t1 = (outer['accessToken'] ?? '').toString().trim();
+    if (t1.isNotEmpty) return t1;
+
+    // token inside { data: { accessToken } }
+    final data = outer['data'];
+    if (data is Map) {
+      final inner = Map<String, dynamic>.from(data as Map);
+      final t2 = (inner['accessToken'] ?? '').toString().trim();
+      if (t2.isNotEmpty) return t2;
+    }
+
+    return '';
+  }
+
+  String? _readRefreshToken(Map<String, dynamic> outer) {
+    final r1 = (outer['refreshToken'] ?? '').toString().trim();
+    if (r1.isNotEmpty) return r1;
+
+    final data = outer['data'];
+    if (data is Map) {
+      final inner = Map<String, dynamic>.from(data as Map);
+      final r2 = (inner['refreshToken'] ?? '').toString().trim();
+      if (r2.isNotEmpty) return r2;
+    }
+
+    return null;
+  }
+
   // Single-flight refresh gate: multiple 401s will wait on the same refresh Future.
   Future<void>? refreshInFlight;
 
@@ -74,12 +113,10 @@ final dioProvider = Provider<Dio>((ref) {
     if (kIsWeb) {
       // Web: refresh token is in HttpOnly cookie.
       final res = await refreshDio.post('/auth/refresh');
-      final raw = res.data;
+      final outer = _asMap(res.data);
 
-      if (raw is! Map) throw Exception('Invalid refresh response');
-
-      final access = raw['accessToken']?.toString();
-      if (access == null || access.isEmpty) {
+      final access = _readAccessToken(outer);
+      if (access.isEmpty) {
         throw Exception('No access token returned');
       }
 
@@ -104,13 +141,12 @@ final dioProvider = Provider<Dio>((ref) {
       options: Options(headers: const {'x-token-transport': 'body'}),
     );
 
-    final raw = res.data;
-    if (raw is! Map) throw Exception('Invalid refresh response');
+    final outer = _asMap(res.data);
 
-    final access = raw['accessToken']?.toString();
-    final newRefresh = raw['refreshToken']?.toString();
+    final access = _readAccessToken(outer);
+    final newRefresh = _readRefreshToken(outer);
 
-    if (access == null || access.isEmpty) {
+    if (access.isEmpty) {
       throw Exception('No access token returned');
     }
 
