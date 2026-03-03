@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -9,10 +10,10 @@ import 'core/auth/session_bootstrap.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // IMPORTANT:
-  // This removes the hash (#) from Flutter web URLs and enables clean path routing:
-  //   /login, /reset-password, etc.
-  setUrlStrategy(PathUrlStrategy());
+  // Web only: remove hash (#) from URLs.
+  if (kIsWeb) {
+    setUrlStrategy(PathUrlStrategy());
+  }
 
   final store = TokenStore();
 
@@ -58,7 +59,6 @@ class _BootSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep it simple: no flicker, no heavy UI.
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(

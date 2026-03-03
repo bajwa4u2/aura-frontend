@@ -1,36 +1,45 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../feed/domain/post.dart';
+import '../../../core/net/dio_provider.dart';
 
 class SavesRepository {
   SavesRepository(this._dio);
+
   final Dio _dio;
 
-  /// Canonical: GET /saves/me?limit=...
-  /// Response envelope: { ok: true, data: { items: [...], nextCursor: <postId|null> } }
-  Future<List<Post>> listSaved({int limit = 20}) async {
-    final res = await _dio.get('/saves/me', queryParameters: {'limit': limit});
-    final raw = res.data;
+  Future<Map<String, dynamic>> listMine({int? limit, String? cursor}) async {
+    final res = await _dio.get(
+      '/saves',
+      queryParameters: {
+        if (limit != null) 'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
 
-    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
-    final List items = (data['items'] is List) ? (data['items'] as List) : const [];
-
-    return items
-        .whereType<Map>()
-        .map((e) => Post.fromJson(e.cast<String, dynamic>()))
-        .toList();
-  }
-
-  Future<void> toggleSave(String postId) async {
-    await _dio.post('/saves/$postId/toggle');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw Exception('Invalid response for /saves');
   }
 
   Future<bool> isSaved(String postId) async {
-    final res = await _dio.get('/saves/$postId');
-    final raw = res.data;
+    final res = await _dio.get('/saves/for/$postId');
+    final data = res.data;
+    if (data is Map && data['saved'] is bool) return data['saved'] as bool;
+    // if backend returns boolean directly, tolerate that too
+    if (data is bool) return data;
+    throw Exception('Invalid response for /saves/for/:postId');
+  }
 
-    final Map data = (raw is Map && raw['data'] is Map) ? (raw['data'] as Map) : const {};
-    final v = data['saved'];
-    return v is bool ? v : false;
+  Future<Map<String, dynamic>> toggle(String postId) async {
+    final res = await _dio.post('/saves/toggle/$postId');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw Exception('Invalid response for /saves/toggle/:postId');
   }
 }
+
+final savesRepositoryProvider = Provider<SavesRepository>((ref) {
+  final dio = ref.read(dioProvider);
+  return SavesRepository(dio);
+});
