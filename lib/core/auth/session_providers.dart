@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
 import '../net/dio_provider.dart';
-import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
 
 /// Auth lifecycle status:
@@ -27,6 +26,29 @@ final isAuthedProvider = Provider<bool>((ref) {
   return store.isLoaded && store.isAuthed;
 });
 
+Map<String, dynamic>? _asMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) return raw;
+  if (raw is Map) return raw.map((k, v) => MapEntry(k.toString(), v));
+  return null;
+}
+
+String? _extractAccessToken(dynamic raw) {
+  final m = _asMap(raw);
+  if (m == null) return null;
+
+  // 1) top-level accessToken
+  final t1 = m['accessToken']?.toString().trim();
+  if (t1 != null && t1.isNotEmpty) return t1;
+
+  // 2) wrapped: { ok:true, data:{ accessToken:"..." } }
+  final data = m['data'];
+  final dm = _asMap(data);
+  final t2 = dm?['accessToken']?.toString().trim();
+  if (t2 != null && t2.isNotEmpty) return t2;
+
+  return null;
+}
+
 /// Web-only: boot refresh using HttpOnly cookie to fetch a fresh access token.
 final authBootstrapProvider = FutureProvider<void>((ref) async {
   final store = ref.read(tokenStoreProvider);
@@ -40,30 +62,20 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
   if (store.isAuthed) return;
   if (!kIsWeb) return;
 
-  final refreshDio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      validateStatus: (c) => c != null && c >= 200 && c < 300,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-    ),
-  );
-
-  configureDioForPlatform(refreshDio);
+  // IMPORTANT:
+  // Use the shared Dio (dioProvider) because it is the one configured
+  // for web cookies/credentials. Creating a new Dio here can drop cookies
+  // and cause refresh to return 204/401.
+  final dio = ref.read(dioProvider);
 
   try {
-    final res = await refreshDio.post('/auth/refresh');
-    final raw = res.data;
+    final res = await dio.post('/auth/refresh');
 
-    if (raw is! Map) return;
+    // If backend returns 204 (no content) we cannot bootstrap.
+    if (res.statusCode == 204) return;
 
-    final access = raw['accessToken']?.toString();
-    if (access == null || access.trim().isEmpty) return;
+    final access = _extractAccessToken(res.data);
+    if (access == null || access.isEmpty) return;
 
     // IMPORTANT: on web do NOT pass refreshToken:null.
     await store.setSession(accessToken: access);
@@ -100,17 +112,10 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   final res = await dio.get('/auth/me');
   final raw = res.data;
 
-  // API might be wrapped: { ok:true, data:{...} } or direct map
-  Map<String, dynamic>? m;
-  if (raw is Map<String, dynamic>) {
-    m = raw;
-  } else if (raw is Map) {
-    m = raw.map((k, v) => MapEntry(k.toString(), v));
-  } else {
-    return false;
-  }
+  final m = _asMap(raw);
+  if (m == null) return false;
 
-  final inner = (m['data'] is Map) ? m['data'] as Map : m;
+  final inner = (m['data'] is Map) ? (m['data'] as Map) : m;
 
   // Preferred: explicit boolean
   final v = inner['emailVerified'];
