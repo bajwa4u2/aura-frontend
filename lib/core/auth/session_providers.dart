@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
@@ -13,11 +15,13 @@ import 'session_bootstrap.dart';
 /// - unauthed: no access token
 enum AuthStatus { loading, authed, unauthed }
 
+/// Whether tokens have been loaded from storage.
 final tokenStoreLoadedProvider = Provider<bool>((ref) {
   final store = ref.watch(tokenStoreProvider);
   return store.isLoaded;
 });
 
+/// True only when tokens are loaded AND we have an access token.
 final isAuthedProvider = Provider<bool>((ref) {
   final store = ref.watch(tokenStoreProvider);
   return store.isLoaded && store.isAuthed;
@@ -40,34 +44,52 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
 
 /// Email verification status (authed-only).
 ///
-/// Reads real state from GET /auth/me.
-/// Supports:
-/// - emailVerified: true/false
-/// - emailVerifiedAt: timestamp/null
+/// Reads /auth/me and extracts:
+/// - data.emailVerified (bool), OR
+/// - data.user.emailVerifiedAt (presence)
+///
+/// IMPORTANT:
+/// Some endpoints are double-wrapped: { ok:true, data:{ ok:true, data:{...} } }.
+/// We unwrap up to 2 levels.
 final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   final authed = ref.watch(isAuthedProvider);
   if (!authed) return false;
 
-  final dio = ref.read(dioProvider);
+  final dio = ref.watch(dioProvider);
   final res = await dio.get('/auth/me');
+  final raw = res.data;
 
-  final body = res.data;
-  if (body is! Map) return false;
+  Map<String, dynamic> toMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return v.map((k, val) => MapEntry(k.toString(), val));
+    return <String, dynamic>{};
+  }
 
-  // Backend may return { data: { ...user } } or just { ...user }
-  final rawUser = body['data'] ?? body;
-  if (rawUser is! Map) return false;
+  dynamic unwrapData(dynamic v) {
+    final m = toMap(v);
+    if (m.containsKey('data')) return m['data'];
+    return m;
+  }
 
-  final emailVerified = rawUser['emailVerified'];
-  if (emailVerified == true) return true;
+  // unwrap once or twice (handles {data:{data:{...}}})
+  final level1 = unwrapData(raw);
+  final level2 = unwrapData(level1);
 
-  final emailVerifiedAt = rawUser['emailVerifiedAt'];
-  if (emailVerifiedAt != null && emailVerifiedAt.toString().trim().isNotEmpty) {
-    return true;
+  final inner = toMap(level2);
+
+  final direct = inner['emailVerified'];
+  if (direct is bool) return direct;
+
+  final user = inner['user'];
+  if (user is Map) {
+    final ev = (user as Map)['emailVerifiedAt'];
+    if (ev != null) return true;
   }
 
   return false;
 });
+
+/// Derived session values used by Dio and other layers.
 class SessionState {
   SessionState({
     required this.baseUrl,
@@ -90,6 +112,8 @@ final sessionStateProvider = Provider<SessionState>((ref) {
   );
 });
 
+/// A simple auth "event bus" for GoRouter refresh.
+/// We trigger it whenever TokenStore notifies.
 final authEventsProvider = StreamProvider<void>((ref) {
   final controller = StreamController<void>.broadcast();
 
