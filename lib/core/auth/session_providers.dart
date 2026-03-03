@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
+import '../net/dio_provider.dart';
 import 'auth_providers.dart';
 import 'session_bootstrap.dart';
 
@@ -39,18 +40,34 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
 
 /// Email verification status (authed-only).
 ///
-/// Returns false if unauthed or if response is unexpected.
-/// NOTE: This provider assumes some other layer is calling /auth/me.
-/// If your app uses this, keep it, otherwise you can remove later.
+/// Reads real state from GET /auth/me.
+/// Supports:
+/// - emailVerified: true/false
+/// - emailVerifiedAt: timestamp/null
 final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   final authed = ref.watch(isAuthedProvider);
   if (!authed) return false;
 
-  // Keep this lightweight: rely on your existing Dio interceptor + auth/me calls elsewhere.
-  // If you want, we can wire it back to dioProvider later.
+  final dio = ref.read(dioProvider);
+  final res = await dio.get('/auth/me');
+
+  final body = res.data;
+  if (body is! Map) return false;
+
+  // Backend may return { data: { ...user } } or just { ...user }
+  final rawUser = body['data'] ?? body;
+  if (rawUser is! Map) return false;
+
+  final emailVerified = rawUser['emailVerified'];
+  if (emailVerified == true) return true;
+
+  final emailVerifiedAt = rawUser['emailVerifiedAt'];
+  if (emailVerifiedAt != null && emailVerifiedAt.toString().trim().isNotEmpty) {
+    return true;
+  }
+
   return false;
 });
-
 class SessionState {
   SessionState({
     required this.baseUrl,
