@@ -5,7 +5,7 @@ import '../feed/domain/post.dart';
 import 'saves_repository.dart';
 
 final savesRepositoryProvider = Provider<SavesRepository>((ref) {
-  return SavesRepository(ref.watch(dioProvider));
+  return SavesRepository(ref, ref.watch(dioProvider));
 });
 
 final savedPostsProvider = FutureProvider<List<Post>>((ref) async {
