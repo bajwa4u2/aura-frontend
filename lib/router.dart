@@ -118,6 +118,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // --- AUTHED ---
+      // If we just became authed and we are still on login/register, don't hang on auth pages
+      // while emailVerifiedProvider is loading. Move to verify-pending (allowed for unverified),
+      // carrying redirect if present.
+      if (path == '/login' || path == '/register') {
+        final redirectTo = state.uri.queryParameters['redirect'];
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return '/verify-pending?redirect=${Uri.encodeComponent(redirectTo)}';
+        }
+        return '/verify-pending';
+      }
+
       final verifiedAsync = ref.read(emailVerifiedProvider);
       if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
       final verified = verifiedAsync.value ?? false;
@@ -134,7 +145,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Verified: never stay on verify screens
-      if (path == '/verify-pending' || path == '/verify-email') return '/home';
+      if (path == '/verify-email') return '/home';
+      if (path == '/verify-pending') {
+        final redirectTo = state.uri.queryParameters['redirect'];
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return _normalizeRedirectDest(redirectTo);
+        }
+        return '/home';
+      }
 
       // If authed user hits auth pages, take them to redirect or /me
       if (isAuth) {
