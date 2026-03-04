@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_card.dart';
@@ -20,7 +19,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
   final _ctl = TextEditingController();
   bool _busy = false;
 
-  Map<String, dynamic>? _payload; // full response we got back (either {ok,data} or {claims...})
+  Map<String, dynamic>? _payload; // {ok,data} or {claims,...}
   String? _error;
 
   @override
@@ -33,7 +32,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
     final text = _ctl.text.trim();
     if (text.isEmpty) {
       setState(() {
-        _error = 'Paste a claim or paragraph to audit.';
+        _error = 'Paste text to review.';
         _payload = null;
       });
       return;
@@ -51,25 +50,28 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
 
       final m = _asMap(out);
 
+      if (!mounted) return;
       setState(() {
         _payload = m;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+      });
     }
   }
 
   Map<String, dynamic> _asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
-    if (v is Map) return v.map((k, val) => MapEntry(k.toString(), val));
+    if (v is Map) {
+      return v.map((k, val) => MapEntry(k.toString(), val));
+    }
     return <String, dynamic>{'raw': v?.toString()};
   }
 
@@ -82,11 +84,12 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final input = _ctl.text.trim();
     final payload = _payload;
     final data = payload == null ? null : _data(payload);
 
     return AuraScaffold(
-      title: 'Claim audit',
+      title: 'Aura Editor',
       showHomeAction: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -100,10 +103,10 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AI claim audit (beta)', style: AuraText.title),
+                Text('Aura Editor', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'This tool checks whether your text contains claims that need evidence, definitions, or caution. It does not publish anything.',
+                  'A calm editorial review for clarity, responsibility, and civic impact.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
@@ -111,7 +114,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   controller: _ctl,
                   maxLines: 8,
                   decoration: const InputDecoration(
-                    labelText: 'Text to audit',
+                    labelText: 'Draft to review',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -122,7 +125,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   children: [
                     FilledButton(
                       onPressed: _busy ? null : _run,
-                      child: Text(_busy ? 'Running…' : 'Run audit'),
+                      child: Text(_busy ? 'Reviewing…' : 'Review with Aura Editor'),
                     ),
                     OutlinedButton(
                       onPressed: _busy
@@ -147,17 +150,18 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Error', style: AuraText.title),
+                  Text('Note', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   Text(_error!, style: AuraText.body),
                 ],
               ),
             ),
           if (data != null) ...[
+            const SizedBox(height: AuraSpace.s12),
             AuraCard(
-              child: _ResultView(
+              child: _AuraEditorReport(
+                inputText: input,
                 data: data,
-                rawPayload: payload!,
               ),
             ),
           ],
@@ -167,146 +171,259 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
   }
 }
 
-class _ResultView extends StatefulWidget {
-  const _ResultView({
+class _AuraEditorReport extends StatelessWidget {
+  const _AuraEditorReport({
+    required this.inputText,
     required this.data,
-    required this.rawPayload,
   });
 
+  final String inputText;
   final Map<String, dynamic> data;
-  final Map<String, dynamic> rawPayload;
 
-  @override
-  State<_ResultView> createState() => _ResultViewState();
-}
+  bool get _looksLikeQuestion {
+    final t = inputText.trim();
+    if (t.isEmpty) return false;
+    if (t.endsWith('?')) return true;
 
-class _ResultViewState extends State<_ResultView> {
-  bool _showRaw = false;
+    final lower = t.toLowerCase();
+    const starters = ['who', 'what', 'where', 'when', 'why', 'how', 'is ', 'are ', 'do ', 'does '];
+    for (final s in starters) {
+      if (lower.startsWith(s)) return true;
+    }
+    return false;
+  }
 
-  TextStyle get _metaStyle {
-    // Safe “meta” style without relying on AuraText.meta existing.
-    return Theme.of(context).textTheme.bodySmall ?? AuraText.body;
+  List<Map<String, dynamic>> _claims() {
+    final c = data['claims'];
+    if (c is! List) return const [];
+    return c.map((e) {
+      if (e is Map<String, dynamic>) return e;
+      if (e is Map) return e.map((k, v) => MapEntry(k.toString(), v));
+      return <String, dynamic>{'text': e.toString()};
+    }).toList();
+  }
+
+  List<dynamic> _listAny(String key) {
+    final v = data[key];
+    return v is List ? v : const [];
+  }
+
+  String _oneLine(dynamic v) {
+    if (v == null) return '';
+    if (v is String) return v.trim();
+    if (v is Map) {
+      final code = v['code']?.toString().trim();
+      final label = v['label']?.toString().trim();
+      final msg = v['message']?.toString().trim();
+      return (label?.isNotEmpty == true)
+          ? label!
+          : (msg?.isNotEmpty == true)
+              ? msg!
+              : (code?.isNotEmpty == true)
+                  ? code!
+                  : v.toString();
+    }
+    return v.toString();
+  }
+
+  List<String> _topSuggestions({
+    required bool hasClaims,
+    required bool hasClarityIssues,
+    required bool hasToneFlags,
+    required bool isQuestion,
+  }) {
+    final out = <String>[];
+
+    if (isQuestion) {
+      out.add('If you are asking readers for help, add a little context (location, timeframe, or why you’re asking).');
+      return out.take(3).toList();
+    }
+
+    if (hasClaims) {
+      out.add('If this is intended as a factual claim, add a source or a brief context line to support it.');
+    } else {
+      out.add('If you want readers to respond thoughtfully, make your intent explicit in one clear sentence.');
+    }
+
+    if (hasClarityIssues) {
+      out.add('Clarify the key term or reference that a new reader may not understand.');
+    }
+
+    if (hasToneFlags) {
+      out.add('Consider softening the wording so the point lands without sounding accusatory.');
+    }
+
+    // Keep it limited.
+    return out.where((s) => s.trim().isNotEmpty).take(3).toList();
+  }
+
+  String _whatItIsDoing({
+    required bool hasClaims,
+    required bool isQuestion,
+  }) {
+    if (isQuestion) return 'This reads as an informational question.';
+    if (hasClaims) return 'This reads as a statement that includes factual claims.';
+    return 'This reads as an opinion or a general statement.';
+  }
+
+  String _civicAwareness({
+    required bool hasToneFlags,
+    required bool hasClaims,
+    required bool isQuestion,
+  }) {
+    if (isQuestion) return 'No civic concerns detected.';
+    if (hasToneFlags) {
+      return 'This may be read as charged or targeting. A small shift toward neutral wording can reduce harm and misunderstanding.';
+    }
+    if (hasClaims) {
+      return 'If this touches public institutions, communities, or real-world events, context and sources help protect trust.';
+    }
+    return 'No civic concerns detected.';
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.data;
+    final claims = _claims();
+    final assumptions = _listAny('assumptions');
+    final clarity = _listAny('clarity_issues');
+    final tone = _listAny('tone_flags');
 
-    final claims = (data['claims'] is List)
-        ? (data['claims'] as List).map((e) => e is Map ? e : {'text': e.toString()}).toList()
-        : const [];
+    final hasClaims = claims.isNotEmpty;
+    final hasClarity = clarity.isNotEmpty;
+    final hasTone = tone.isNotEmpty;
+    final isQuestion = _looksLikeQuestion;
 
-    final assumptions = (data['assumptions'] is List) ? data['assumptions'] as List : const [];
-    final clarityIssues =
-        (data['clarity_issues'] is List) ? data['clarity_issues'] as List : const [];
-    final toneFlags = (data['tone_flags'] is List) ? data['tone_flags'] as List : const [];
+    final what = _whatItIsDoing(hasClaims: hasClaims, isQuestion: isQuestion);
 
-    final meta = data['meta'] is Map ? data['meta'] as Map : null;
-    final contextStr = meta?['context']?.toString();
-    final modeStr = meta?['mode']?.toString();
+    final consider = <String>[
+      if (hasClaims) 'Readers may interpret this as a factual assertion. If so, it benefits from evidence or context.',
+      if (hasClarity) 'Some wording may be unclear to a reader who doesn’t know the background.',
+      if (assumptions.isNotEmpty) 'There may be implicit assumptions. Making them explicit can improve fairness and clarity.',
+      if (!hasClaims && !hasClarity && !isQuestion) 'If your goal is persuasion, add one concrete example to anchor the point.',
+    ].where((s) => s.trim().isNotEmpty).take(3).toList();
+
+    final suggestions = _topSuggestions(
+      hasClaims: hasClaims,
+      hasClarityIssues: hasClarity,
+      hasToneFlags: hasTone,
+      isQuestion: isQuestion,
+    );
+
+    final civic = _civicAwareness(
+      hasToneFlags: hasTone,
+      hasClaims: hasClaims,
+      isQuestion: isQuestion,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Result', style: AuraText.title),
+        Text('Aura Editor review', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
 
-        if (contextStr != null || modeStr != null)
-          Text(
-            [
-              if (contextStr != null && contextStr.trim().isNotEmpty) 'Context: $contextStr',
-              if (modeStr != null && modeStr.trim().isNotEmpty) 'Mode: $modeStr',
-            ].join(' • '),
-            style: _metaStyle,
-          ),
+        Text('What this piece is doing', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(what, style: AuraText.body),
 
-        if (contextStr != null || modeStr != null) const SizedBox(height: AuraSpace.s10),
+        const SizedBox(height: AuraSpace.s14),
 
-        Text(
-          claims.isEmpty ? 'No clear claims detected.' : 'Claims found: ${claims.length}',
-          style: AuraText.body,
-        ),
+        Text('Things to consider', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        if (consider.isEmpty)
+          Text('No concerns detected.', style: AuraText.body)
+        else
+          ...consider.map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('• $s', style: AuraText.body),
+              )),
 
-        if (claims.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s10),
-          ...claims.map((c) {
-            final m = c is Map ? c : <String, dynamic>{'text': c.toString()};
-            final text = m['text']?.toString().trim() ?? '';
-            final type = m['type']?.toString().trim();
-            final conf = m['confidence'];
+        const SizedBox(height: AuraSpace.s14),
 
-            String confStr = '';
-            if (conf is num) {
-              confStr = '${(conf * 100).round()}%';
-            } else if (conf != null) {
-              confStr = conf.toString();
-            }
+        Text('Ways to strengthen it', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        if (suggestions.isEmpty)
+          Text('No changes suggested.', style: AuraText.body)
+        else
+          ...suggestions.map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('• $s', style: AuraText.body),
+              )),
 
-            final tail = [
-              if (type != null && type.isNotEmpty) type,
-              if (confStr.isNotEmpty) confStr,
-            ].join(' • ');
+        const SizedBox(height: AuraSpace.s14),
 
+        Text('Civic awareness', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(civic, style: AuraText.body),
+
+        // Keep internal analysis invisible. But we can show a calm “details” section with claims only.
+        if (hasClaims) ...[
+          const SizedBox(height: AuraSpace.s14),
+          Text('Claims detected', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          ...claims.take(5).map((c) {
+            final text = (c['text']?.toString() ?? '').trim();
             return Padding(
-              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(text.isEmpty ? '—' : text, style: AuraText.body),
-                  if (tail.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(tail, style: _metaStyle),
-                  ],
-                ],
-              ),
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('• ${text.isEmpty ? '—' : text}', style: AuraText.body),
             );
           }),
         ],
 
-        if (assumptions.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s12),
-          Text('Assumptions', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          ...assumptions.map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• ${e.toString()}', style: AuraText.body),
-              )),
-        ],
-
-        if (clarityIssues.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s12),
-          Text('Clarity issues', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          ...clarityIssues.map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• ${e.toString()}', style: AuraText.body),
-              )),
-        ],
-
-        if (toneFlags.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s12),
-          Text('Tone flags', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          ...toneFlags.map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• ${e.toString()}', style: AuraText.body),
-              )),
-        ],
-
-        const SizedBox(height: AuraSpace.s12),
-
-        OutlinedButton(
-          onPressed: () => setState(() => _showRaw = !_showRaw),
-          child: Text(_showRaw ? 'Hide raw' : 'Show raw'),
-        ),
-
-        if (_showRaw) ...[
-          const SizedBox(height: AuraSpace.s10),
+        // Optional: if we ever add "suggested_refinement" from backend, we render it here.
+        if (data['suggested_refinement'] != null) ...[
+          const SizedBox(height: AuraSpace.s14),
+          Text('Suggested refinement', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          _CopySuggestionBox(text: data['suggested_refinement'].toString()),
+        ] else if (hasTone || hasClarity || hasClaims) ...[
+          const SizedBox(height: AuraSpace.s14),
+          Text('Suggested refinement', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Text(
-            const JsonEncoder.withIndent('  ').convert(widget.rawPayload),
+            'A refined version will appear here once the backend returns a single editorial rewrite. For now, use the guidance above.',
             style: AuraText.body,
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _CopySuggestionBox extends StatelessWidget {
+  const _CopySuggestionBox({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleaned = text.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AuraSpace.s12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(cleaned.isEmpty ? '—' : cleaned, style: AuraText.body),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton(
+            onPressed: cleaned.isEmpty
+                ? null
+                : () async {
+                    await Clipboard.setData(ClipboardData(text: cleaned));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Suggestion copied')),
+                    );
+                  },
+            child: const Text('Copy suggestion'),
+          ),
+        ),
       ],
     );
   }
