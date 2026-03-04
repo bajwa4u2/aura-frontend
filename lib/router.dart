@@ -71,6 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
+
     if (path == '/mission' ||
         path == '/white-paper' ||
         path == '/founder' ||
@@ -83,7 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/supporters') {
       return true;
     }
+
     if (path == '/announcements' || path.startsWith('/announcements/')) return true;
+
+    // legacy alias is public-safe
+    if (path == '/auth') return true;
+
     return false;
   }
 
@@ -93,33 +99,116 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/forgot-password' ||
         path == '/reset-password' ||
         path == '/verify-email' ||
-        path == '/verify-pending';
+        path == '/verify-pending' ||
+        path == '/auth'; // legacy alias
   }
 
   return GoRouter(
+    initialLocation: '/boot',
     refreshListenable: refresh,
+
+    // If anything isn't wired, don't show a dead blank page.
+    errorBuilder: (context, state) {
+      final path = state.uri.toString();
+      return Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Page not found',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Route: $path',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      FilledButton(
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Go to Home'),
+                      ),
+                      OutlinedButton(
+                        onPressed: () => context.go('/public'),
+                        child: const Text('Public home'),
+                      ),
+                      OutlinedButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text('Sign in'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+
     redirect: (context, state) async {
       final path = state.uri.path;
       final authStatus = ref.read(authStatusProvider);
 
-      // Prevent thrash while bootstrapping
-      if (_isTransientUnauthed(ref)) return null;
+      // ------------------------------------------------------------
+      // BOOT GATE: never render public/home until bootstrap settles
+      // ------------------------------------------------------------
+      if (_isTransientUnauthed(ref)) {
+        return path == '/boot' ? null : '/boot';
+      }
 
-      if (authStatus == AuthStatus.loading) return null;
+      if (authStatus == AuthStatus.loading) {
+        return path == '/boot' ? null : '/boot';
+      }
+
+      // Once stable, /boot decides where to go and exits.
+      if (path == '/boot') {
+        if (authStatus == AuthStatus.unauthed) return '/public';
+
+        final verifiedAsync = ref.read(emailVerifiedProvider);
+        if (verifiedAsync.isLoading || verifiedAsync.hasError) return '/verify-pending';
+
+        final verified = verifiedAsync.value ?? false;
+        return verified ? '/home' : '/verify-pending';
+      }
+
+      // Alias: some older UI calls /auth
+      if (path == '/auth') {
+        final dest = state.uri.queryParameters['redirect'];
+        if (dest != null && dest.trim().isNotEmpty) {
+          return '/login?redirect=${Uri.encodeComponent(dest)}';
+        }
+        return '/login';
+      }
 
       final isPublic = isPublicPath(path);
       final isAuth = isAuthPath(path);
 
-      // --- UNAUTHED ---
+      // -------------------------
+      // UNAUTHED
+      // -------------------------
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
+
         final dest = state.uri.toString();
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // --- AUTHED ---
-      // If we just became authed and we are still on login/register, don't hang on auth pages
-      // while emailVerifiedProvider is loading. Move to verify-pending (allowed for unverified),
+      // -------------------------
+      // AUTHED
+      // -------------------------
+
+      // If we just became authed and are still on login/register, move to verify-pending
       // carrying redirect if present.
       if (path == '/login' || path == '/register') {
         final redirectTo = state.uri.queryParameters['redirect'];
@@ -163,23 +252,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/me';
       }
 
-      // Allow authed users to view public pages too.
-      // Keep "/" as the member default landing.
-         if (path == '/') return '/home';
-         
+      // Authed users: "/" is member landing. Public pages still accessible via /public etc.
+      if (path == '/') return '/home';
+
       return null;
     },
+
     routes: [
-      // Root redirects to /public (public landing)
-      GoRoute(path: '/', builder: (context, state) => const PublicHomeScreen()),
+      // Boot gate (blank)
+      GoRoute(
+        path: '/boot',
+        builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+      ),
+
+      // Root is public landing (authed users get redirected to /home in redirect())
+      GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
+
+      // Legacy alias used by some UI calls
+      GoRoute(path: '/auth', redirect: (_, __) => '/login'),
+
+      // Back-compat alias: older UI navigates to /feed
+      GoRoute(path: '/feed', redirect: (_, __) => '/home'),
 
       // -------------------------
       // Public + Auth (NO AppShell)
       // -------------------------
-      GoRoute(
-        path: '/public',
-        builder: (context, state) => const PublicHomeScreen(),
-      ),
+      GoRoute(path: '/public', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
       GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),

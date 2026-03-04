@@ -16,18 +16,46 @@ import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../../saves/providers.dart';
 
-final draftProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) return Map<String, dynamic>.from(v);
+  return <String, dynamic>{};
+}
+
+/// Unwrap common envelopes:
+/// - { ok:true, data:{...} }
+/// - { ok:true, data:{ data:{...} } }
+Map<String, dynamic> _unwrapMap(dynamic raw) {
+  final root = _asMap(raw);
+  dynamic inner = root['data'];
+
+  if (inner is Map && inner['data'] is Map) {
+    inner = inner['data'];
+  }
+
+  if (inner is Map) return Map<String, dynamic>.from(inner);
+  return root;
+}
+
+final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
-
   final res = await dio.get('/posts/draft');
-  final data = res.data;
+  final raw = res.data;
 
-  if (data is Map) {
-    final map = Map<String, dynamic>.from(data);
-    final draft = map['draft'];
-    if (draft == null) return null;
-    if (draft is Map) return Map<String, dynamic>.from(draft);
+  // If API uses { draft: {...} } at top-level or inside data
+  final root = _asMap(raw);
+  final topDraft = root['draft'];
+  if (topDraft is Map) return Map<String, dynamic>.from(topDraft);
+
+  final m = _unwrapMap(raw);
+
+  final innerDraft = m['draft'];
+  if (innerDraft is Map) return Map<String, dynamic>.from(innerDraft);
+
+  // Otherwise treat returned data itself as the draft
+  // (common if endpoint just returns the draft object inside data)
+  if (m.isNotEmpty && (m['id'] != null || m['title'] != null || m['body'] != null)) {
+    return m;
   }
 
   return null;

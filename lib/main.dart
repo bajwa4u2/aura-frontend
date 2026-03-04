@@ -5,6 +5,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
+import 'core/auth/session_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,21 +31,62 @@ Future<void> main() async {
   );
 }
 
+/// Boot gate:
+/// - prevents "public flash" on refresh by holding UI until auth state is settled
+/// - avoids router redirect thrash while providers are still loading
 class _AuraBoot extends ConsumerWidget {
   const _AuraBoot();
 
+  bool _shouldHoldSplash({
+    required AsyncValue<void> bootstrap,
+    required AuthStatus authStatus,
+    required AsyncValue<bool> verifiedAsync,
+  }) {
+    // While bootstrap is running, always hold.
+    if (bootstrap.isLoading) return true;
+
+    // If bootstrap failed, we still proceed (router can handle unauth).
+    // But we don't want to deadlock on splash.
+    // So: do NOT hold purely because bootstrap has error.
+    // (We log error below.)
+
+    // While auth status is still computing, hold.
+    if (authStatus == AuthStatus.loading) return true;
+
+    // If authed, wait until verified check resolves,
+    // otherwise router will briefly render a public route then jump.
+    if (authStatus == AuthStatus.authed) {
+      if (verifiedAsync.isLoading) return true;
+      // If verified provider errored, don't deadlock. Let router handle.
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final boot = ref.watch(sessionBootstrapProvider);
+    final bootstrap = ref.watch(sessionBootstrapProvider);
 
-    return boot.when(
-      data: (_) => const AuraApp(),
-      loading: () => const _BootSplash(),
-      error: (e, _) {
-        debugPrint('sessionBootstrapProvider error: $e');
-        return const AuraApp();
-      },
+    // These are the two that cause the visible "jump" if we let UI paint early.
+    final authStatus = ref.watch(authStatusProvider);
+    final verifiedAsync = ref.watch(emailVerifiedProvider);
+
+    final hold = _shouldHoldSplash(
+      bootstrap: bootstrap,
+      authStatus: authStatus,
+      verifiedAsync: verifiedAsync,
     );
+
+    if (bootstrap.hasError) {
+      debugPrint('sessionBootstrapProvider error: ${bootstrap.error}');
+    }
+    if (verifiedAsync.hasError) {
+      debugPrint('emailVerifiedProvider error: ${verifiedAsync.error}');
+    }
+
+    if (hold) return const _BootSplash();
+
+    return const AuraApp();
   }
 }
 

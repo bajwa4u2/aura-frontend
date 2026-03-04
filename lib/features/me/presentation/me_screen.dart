@@ -1,3 +1,5 @@
+// lib/features/me/presentation/me_screen.dart
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -199,7 +201,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
-      context.go('/');
+      // Keep user on public landing after logout
+      context.go('/public');
     } finally {
       if (mounted) setState(() => _busyLogout = false);
     }
@@ -263,8 +266,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: kind,
-                            decoration:
-                                const InputDecoration(labelText: 'Kind'),
+                            decoration: const InputDecoration(labelText: 'Kind'),
                             items: const [
                               DropdownMenuItem(
                                   value: 'RELEASE', child: Text('RELEASE')),
@@ -273,8 +275,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               DropdownMenuItem(
                                   value: 'POLICY', child: Text('POLICY')),
                             ],
-                            onChanged: (v) =>
-                                setState(() => kind = v ?? kind),
+                            onChanged: (v) => setState(() => kind = v ?? kind),
                           ),
                         ),
                       ],
@@ -350,7 +351,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     }
   }
 
-  Future<void> _pickAndUploadAvatar() async {
+  Future<void> _pickAndUploadPhoto() async {
     try {
       final picker = ImagePicker();
       final file =
@@ -379,7 +380,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar uploaded')),
+        const SnackBar(content: Text('Photo uploaded')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -416,11 +417,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     runSpacing: 10,
                     children: [
                       FilledButton(
-                        onPressed: () => context.go('/auth'),
+                        // Router uses /login, not /auth
+                        onPressed: () => context.go('/login'),
                         child: const Text('Sign in'),
                       ),
                       OutlinedButton(
-                        onPressed: () => context.go('/'),
+                        onPressed: () => context.go('/public'),
                         child: const Text('Back'),
                       ),
                     ],
@@ -473,7 +475,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               } catch (e) {
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Could not resend: $e')),
+                                  SnackBar(
+                                      content: Text('Could not resend: $e')),
                                 );
                               }
                             },
@@ -518,18 +521,27 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           );
         },
         data: (me) {
+          // IMPORTANT: profile fields likely live under me['profile'].
+          final profile = (me['profile'] is Map)
+              ? Map<String, dynamic>.from(me['profile'] as Map)
+              : <String, dynamic>{};
+
           final id = (me['id'] ?? '').toString();
-          final displayName = (me['displayName'] ?? '').toString();
           final handle = (me['handle'] ?? '').toString();
           final email = (me['email'] ?? '').toString();
-          final bio = (me['bio'] ?? '').toString();
-          final avatarUrl = (me['avatarUrl'] ?? '').toString();
+
+          final displayName = (profile['displayName'] ?? me['displayName'] ?? '')
+              .toString();
+          final bio = (profile['bio'] ?? me['bio'] ?? '').toString();
+          final avatarUrl =
+              (profile['avatarUrl'] ?? me['avatarUrl'] ?? '').toString();
 
           final isAdmin = _isAdmin(me);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
+              // Profile + Tools (top)
               LayoutBuilder(
                 builder: (context, constraints) {
                   final wide = constraints.maxWidth >= 960;
@@ -587,21 +599,19 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                       child: const Text('Edit profile'),
                                     ),
                                     OutlinedButton(
-                                      onPressed:
-                                          _busyLogout ? null : _logout,
-                                      child: Text(_busyLogout
-                                          ? 'Signing out…'
-                                          : 'Sign out'),
+                                      onPressed: _busyLogout ? null : _logout,
+                                      child: Text(
+                                          _busyLogout ? 'Signing out…' : 'Sign out'),
                                     ),
                                     OutlinedButton(
-                                      onPressed: _pickAndUploadAvatar,
-                                      child: const Text('Upload avatar'),
+                                      onPressed: _pickAndUploadPhoto,
+                                      child: const Text('Upload photo'),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  'Tip: tap your avatar to edit and upload a new photo.',
+                                  'Tip: tap your photo to edit your details.',
                                   style: AuraText.small,
                                 ),
                                 if (kDebugMode && id.isNotEmpty) ...[
@@ -683,6 +693,53 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
+              // About Aura (public hubs, still reachable while logged in)
+              ui.AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('About Aura', style: AuraText.title),
+                      const SizedBox(height: 10),
+                      Text(
+                        'These are public hubs. You can read them whether you are signed in or not.',
+                        style: AuraText.small,
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => context.go('/mission'),
+                            child: const Text('Mission'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/white-paper'),
+                            child: const Text('White paper'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/founder'),
+                            child: const Text('Founder'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/investors'),
+                            child: const Text('Investors'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/institutions'),
+                            child: const Text('Institutions'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s14),
+
               // Draft
               ref.watch(_meDraftProvider).when(
                     loading: () => ui.AuraCard(
@@ -703,8 +760,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child:
-                            Text('Draft load failed: $err', style: AuraText.small),
+                        child: Text('Draft load failed: $err',
+                            style: AuraText.small),
                       ),
                     ),
                     data: (draft) {
@@ -791,8 +848,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child:
-                            Text('Posts load failed: $err', style: AuraText.small),
+                        child: Text('Posts load failed: $err',
+                            style: AuraText.small),
                       ),
                     ),
                     data: (items) {
@@ -820,11 +877,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                     child: const Text('Compose'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => context.go('/feed'),
-                                    child: const Text('Browse feed'),
+                                    // Use member home as the feed (avoid /feed 404)
+                                    onPressed: () => context.go('/home'),
+                                    child: const Text('Member feed'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => ref.invalidate(_mePostsProvider),
+                                    onPressed: () =>
+                                        ref.invalidate(_mePostsProvider),
                                     child: const Text('Refresh'),
                                   ),
                                 ],
@@ -858,8 +917,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child:
-                            Text('Saved load failed: $err', style: AuraText.small),
+                        child: Text('Saved load failed: $err',
+                            style: AuraText.small),
                       ),
                     ),
                     data: (items) {
@@ -887,7 +946,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                     child: const Text('View saved'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meSavedProvider),
+                                    onPressed: () =>
+                                        ref.invalidate(_meSavedProvider),
                                     child: const Text('Refresh'),
                                   ),
                                 ],
@@ -946,11 +1006,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 runSpacing: 10,
                                 children: [
                                   OutlinedButton(
-                                    onPressed: () => context.go('/feed'),
-                                    child: const Text('Browse feed'),
+                                    onPressed: () => context.go('/home'),
+                                    child: const Text('Member feed'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meRepliesProvider),
+                                    onPressed: () =>
+                                        ref.invalidate(_meRepliesProvider),
                                     child: const Text('Refresh'),
                                   ),
                                 ],
