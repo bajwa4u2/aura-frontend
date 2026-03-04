@@ -18,7 +18,7 @@ class AuraScaffold extends StatefulWidget {
     this.maxWidth,
     this.padding,
     this.showHomeAction = false,
-    this.homePath = '/public',
+    this.homePath = '/',
     this.showHeader = true,
   })  : assert(body != null || child != null, 'AuraScaffold requires either body: or child:'),
         assert(body == null || child == null, 'AuraScaffold: provide only one of body: or child:'),
@@ -36,7 +36,12 @@ class AuraScaffold extends StatefulWidget {
   final double? maxWidth;
   final EdgeInsetsGeometry? padding;
   final bool showHomeAction;
+
+  /// Where the brand mark + Home button should navigate.
+  /// Default is "/" so the router can redirect authed users to member home,
+  /// and guests to public home.
   final String homePath;
+
   final bool showHeader;
 
   @override

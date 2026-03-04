@@ -49,7 +49,6 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
       final repo = ref.read(aiRepoProvider);
       final out = await repo.claimAudit(text: text);
 
-      // Ensure we store a map for rendering (some repos might return dynamic).
       final m = _asMap(out);
 
       setState(() {
@@ -79,21 +78,6 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
     if (d is Map<String, dynamic>) return d;
     if (d is Map) return d.map((k, val) => MapEntry(k.toString(), val));
     return payload; // already looks like {claims: ...}
-  }
-
-  List<Map<String, dynamic>> _claims(Map<String, dynamic> data) {
-    final c = data['claims'];
-    if (c is List) {
-      return c.map((e) => _asMap(e)).toList();
-    }
-    return const [];
-  }
-
-  List<String> _stringList(dynamic v) {
-    if (v is List) {
-      return v.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList();
-    }
-    return const [];
   }
 
   @override
@@ -157,9 +141,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: AuraSpace.s12),
-
           if (_error != null)
             AuraCard(
               child: Column(
@@ -171,7 +153,6 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                 ],
               ),
             ),
-
           if (data != null) ...[
             AuraCard(
               child: _ResultView(
@@ -202,6 +183,11 @@ class _ResultView extends StatefulWidget {
 class _ResultViewState extends State<_ResultView> {
   bool _showRaw = false;
 
+  TextStyle get _metaStyle {
+    // Safe “meta” style without relying on AuraText.meta existing.
+    return Theme.of(context).textTheme.bodySmall ?? AuraText.body;
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
@@ -231,7 +217,7 @@ class _ResultViewState extends State<_ResultView> {
               if (contextStr != null && contextStr.trim().isNotEmpty) 'Context: $contextStr',
               if (modeStr != null && modeStr.trim().isNotEmpty) 'Mode: $modeStr',
             ].join(' • '),
-            style: AuraText.meta,
+            style: _metaStyle,
           ),
 
         if (contextStr != null || modeStr != null) const SizedBox(height: AuraSpace.s10),
@@ -269,7 +255,7 @@ class _ResultViewState extends State<_ResultView> {
                   Text(text.isEmpty ? '—' : text, style: AuraText.body),
                   if (tail.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(tail, style: AuraText.meta),
+                    Text(tail, style: _metaStyle),
                   ],
                 ],
               ),
