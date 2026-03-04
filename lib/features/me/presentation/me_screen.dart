@@ -48,29 +48,44 @@ Map<String, dynamic> _unwrapMap(dynamic raw) {
 
 List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
   if (raw is List) {
-    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   final m = _unwrapMap(raw);
 
   final a = m['items'];
   if (a is List) {
-    return a.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return a
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   final b = m['data'];
   if (b is List) {
-    return b.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return b
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   if (b is Map && b['items'] is List) {
     final l = b['items'] as List;
-    return l.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return l
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   if (b is Map && b['data'] is List) {
     final l = b['data'] as List;
-    return l.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return l
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   return <Map<String, dynamic>>[];
@@ -125,7 +140,8 @@ final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
   return <Map<String, dynamic>>[];
 });
 
-final _meRepliesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _meRepliesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/replies?limit=12');
   final raw = res.data;
@@ -229,26 +245,36 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: audience,
-                            decoration: const InputDecoration(labelText: 'Audience'),
+                            decoration:
+                                const InputDecoration(labelText: 'Audience'),
                             items: const [
-                              DropdownMenuItem(value: 'PUBLIC', child: Text('PUBLIC')),
-                              DropdownMenuItem(value: 'MEMBERS', child: Text('MEMBERS')),
-                              DropdownMenuItem(value: 'ADMINS', child: Text('ADMINS')),
+                              DropdownMenuItem(
+                                  value: 'PUBLIC', child: Text('PUBLIC')),
+                              DropdownMenuItem(
+                                  value: 'MEMBERS', child: Text('MEMBERS')),
+                              DropdownMenuItem(
+                                  value: 'ADMINS', child: Text('ADMINS')),
                             ],
-                            onChanged: (v) => setState(() => audience = v ?? audience),
+                            onChanged: (v) =>
+                                setState(() => audience = v ?? audience),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: kind,
-                            decoration: const InputDecoration(labelText: 'Kind'),
+                            decoration:
+                                const InputDecoration(labelText: 'Kind'),
                             items: const [
-                              DropdownMenuItem(value: 'RELEASE', child: Text('RELEASE')),
-                              DropdownMenuItem(value: 'NOTICE', child: Text('NOTICE')),
-                              DropdownMenuItem(value: 'POLICY', child: Text('POLICY')),
+                              DropdownMenuItem(
+                                  value: 'RELEASE', child: Text('RELEASE')),
+                              DropdownMenuItem(
+                                  value: 'NOTICE', child: Text('NOTICE')),
+                              DropdownMenuItem(
+                                  value: 'POLICY', child: Text('POLICY')),
                             ],
-                            onChanged: (v) => setState(() => kind = v ?? kind),
+                            onChanged: (v) =>
+                                setState(() => kind = v ?? kind),
                           ),
                         ),
                       ],
@@ -258,7 +284,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       value: status,
                       decoration: const InputDecoration(labelText: 'Status'),
                       items: const [
-                        DropdownMenuItem(value: 'PUBLISHED', child: Text('PUBLISHED')),
+                        DropdownMenuItem(
+                            value: 'PUBLISHED', child: Text('PUBLISHED')),
                         DropdownMenuItem(value: 'DRAFT', child: Text('DRAFT')),
                       ],
                       onChanged: (v) => setState(() => status = v ?? status),
@@ -326,28 +353,24 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Future<void> _pickAndUploadAvatar() async {
     try {
       final picker = ImagePicker();
-      final file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024);
+      final file =
+          await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024);
       if (file == null) return;
 
       final dio = ref.read(dioProvider);
 
-      // Web does not support dart:io file paths. Use bytes.
       MultipartFile part;
       if (kIsWeb) {
-          part = MultipartFile.fromBytes(
-              await file.readAsBytes(),
-              filename: file.name,
-            )
-          : await MultipartFile.fromFile(
-              file.path,
-              filename: file.name,
-            );
-          } else {
-            part = await MultipartFile.fromFile(
-             file.path,
-             filename: file.name,
-           );
-         }
+        part = MultipartFile.fromBytes(
+          await file.readAsBytes(),
+          filename: file.name,
+        );
+      } else {
+        part = await MultipartFile.fromFile(
+          file.path,
+          filename: file.name,
+        );
+      }
 
       final form = FormData.fromMap({'file': part});
 
@@ -444,7 +467,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 await dio.post('/auth/resend-verification');
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Verification email sent')),
+                                  const SnackBar(
+                                      content: Text('Verification email sent')),
                                 );
                               } catch (e) {
                                 if (!mounted) return;
@@ -520,8 +544,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           },
                           child: CircleAvatar(
                             radius: 28,
-                            backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                            child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+                            backgroundImage: avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
+                                : null,
+                            child: avatarUrl.isEmpty
+                                ? const Icon(Icons.person)
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -531,11 +559,20 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
+                                Text(
+                                  displayName.isNotEmpty ? displayName : '—',
+                                  style: AuraText.title,
+                                ),
                                 const SizedBox(height: 6),
-                                Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
+                                Text(
+                                  handle.isNotEmpty ? '@$handle' : '—',
+                                  style: AuraText.small,
+                                ),
                                 const SizedBox(height: 6),
-                                Text(email.isNotEmpty ? email : '—', style: AuraText.small),
+                                Text(
+                                  email.isNotEmpty ? email : '—',
+                                  style: AuraText.small,
+                                ),
                                 if (bio.trim().isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   Text(bio, style: AuraText.body),
@@ -550,8 +587,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                       child: const Text('Edit profile'),
                                     ),
                                     OutlinedButton(
-                                      onPressed: _busyLogout ? null : _logout,
-                                      child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                                      onPressed:
+                                          _busyLogout ? null : _logout,
+                                      child: Text(_busyLogout
+                                          ? 'Signing out…'
+                                          : 'Sign out'),
                                     ),
                                     OutlinedButton(
                                       onPressed: _pickAndUploadAvatar,
@@ -566,7 +606,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 ),
                                 if (kDebugMode && id.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  SelectableText('User ID: $id', style: AuraText.small),
+                                  SelectableText('User ID: $id',
+                                      style: AuraText.small),
                                 ],
                               ],
                             ),
@@ -644,258 +685,282 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               // Draft
               ref.watch(_meDraftProvider).when(
-                loading: () => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: const [
-                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                        SizedBox(width: 12),
-                        Text('Loading draft…'),
-                      ],
-                    ),
-                  ),
-                ),
-                error: (err, st) => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Draft load failed: $err', style: AuraText.small),
-                  ),
-                ),
-                data: (draft) {
-                  final title = (draft['title'] ?? '').toString().trim();
-                  final hasDraft = draft.isNotEmpty && (draft['id'] != null);
-
-                  if (!hasDraft) {
-                    return ui.AuraCard(
+                    loading: () => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Draft', style: AuraText.title),
-                            const SizedBox(height: 10),
-                            Text('No draft yet.', style: AuraText.small),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: () => context.go('/compose'),
-                              child: const Text('Compose'),
-                            ),
+                        child: Row(
+                          children: const [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2)),
+                            SizedBox(width: 12),
+                            Text('Loading draft…'),
                           ],
                         ),
                       ),
-                    );
-                  }
+                    ),
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child:
+                            Text('Draft load failed: $err', style: AuraText.small),
+                      ),
+                    ),
+                    data: (draft) {
+                      final title = (draft['title'] ?? '').toString().trim();
+                      final hasDraft = draft.isNotEmpty && (draft['id'] != null);
 
-                  final id = (draft['id'] ?? '').toString();
-                  return ui.AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Draft', style: AuraText.title),
-                          const SizedBox(height: 10),
-                          Text(
-                            title.isEmpty ? '(untitled)' : title,
-                            style: AuraText.body,
+                      if (!hasDraft) {
+                        return ui.AuraCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Draft', style: AuraText.title),
+                                const SizedBox(height: 10),
+                                Text('No draft yet.', style: AuraText.small),
+                                const SizedBox(height: 12),
+                                OutlinedButton(
+                                  onPressed: () => context.go('/compose'),
+                                  child: const Text('Compose'),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                        );
+                      }
+
+                      final did = (draft['id'] ?? '').toString();
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              FilledButton(
-                                onPressed: () => context.go('/compose'),
-                                child: const Text('Continue drafting'),
+                              Text('Draft', style: AuraText.title),
+                              const SizedBox(height: 10),
+                              Text(
+                                title.isEmpty ? '(untitled)' : title,
+                                style: AuraText.body,
                               ),
-                              OutlinedButton(
-                                onPressed: id.isEmpty ? null : () => context.go('/posts/$id'),
-                                child: const Text('Open'),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  FilledButton(
+                                    onPressed: () => context.go('/compose'),
+                                    child: const Text('Continue drafting'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: did.isEmpty
+                                        ? null
+                                        : () => context.go('/posts/$did'),
+                                    child: const Text('Open'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Posts
               ref.watch(_mePostsProvider).when(
-                loading: () => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: const [
-                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                        SizedBox(width: 12),
-                        Text('Loading posts…'),
-                      ],
+                    loading: () => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: const [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2)),
+                            SizedBox(width: 12),
+                            Text('Loading posts…'),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                error: (err, st) => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Posts load failed: $err', style: AuraText.small),
-                  ),
-                ),
-                data: (items) {
-                  return ui.AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Posts', style: AuraText.title),
-                          const SizedBox(height: 10),
-                          Text(
-                            items.isEmpty ? 'No posts yet.' : 'You have ${items.length} post(s).',
-                            style: AuraText.small,
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child:
+                            Text('Posts load failed: $err', style: AuraText.small),
+                      ),
+                    ),
+                    data: (items) {
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              FilledButton(
-                                onPressed: () => context.go('/compose'),
-                                child: const Text('Compose'),
+                              Text('Posts', style: AuraText.title),
+                              const SizedBox(height: 10),
+                              Text(
+                                items.isEmpty
+                                    ? 'No posts yet.'
+                                    : 'You have ${items.length} post(s).',
+                                style: AuraText.small,
                               ),
-                              OutlinedButton(
-                                onPressed: () => context.go('/feed'),
-                                child: const Text('Browse feed'),
-                              ),
-                              OutlinedButton(
-                                onPressed: () => ref.invalidate(_mePostsProvider),
-                                child: const Text('Refresh'),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  FilledButton(
+                                    onPressed: () => context.go('/compose'),
+                                    child: const Text('Compose'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => context.go('/feed'),
+                                    child: const Text('Browse feed'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => ref.invalidate(_mePostsProvider),
+                                    child: const Text('Refresh'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Saved
               ref.watch(_meSavedProvider).when(
-                loading: () => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: const [
-                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                        SizedBox(width: 12),
-                        Text('Loading saved…'),
-                      ],
+                    loading: () => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: const [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2)),
+                            SizedBox(width: 12),
+                            Text('Loading saved…'),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                error: (err, st) => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Saved load failed: $err', style: AuraText.small),
-                  ),
-                ),
-                data: (items) {
-                  return ui.AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Saved', style: AuraText.title),
-                          const SizedBox(height: 10),
-                          Text(
-                            items.isEmpty ? 'No saved posts yet.' : 'You have ${items.length} saved item(s).',
-                            style: AuraText.small,
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child:
+                            Text('Saved load failed: $err', style: AuraText.small),
+                      ),
+                    ),
+                    data: (items) {
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              OutlinedButton(
-                                onPressed: () => context.go('/saved'),
-                                child: const Text('View saved'),
+                              Text('Saved', style: AuraText.title),
+                              const SizedBox(height: 10),
+                              Text(
+                                items.isEmpty
+                                    ? 'No saved posts yet.'
+                                    : 'You have ${items.length} saved item(s).',
+                                style: AuraText.small,
                               ),
-                              OutlinedButton(
-                                onPressed: () => ref.invalidate(_meSavedProvider),
-                                child: const Text('Refresh'),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  OutlinedButton(
+                                    onPressed: () => context.go('/saved'),
+                                    child: const Text('View saved'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => ref.invalidate(_meSavedProvider),
+                                    child: const Text('Refresh'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Replies
               ref.watch(_meRepliesProvider).when(
-                loading: () => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: const [
-                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                        SizedBox(width: 12),
-                        Text('Loading replies…'),
-                      ],
+                    loading: () => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: const [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2)),
+                            SizedBox(width: 12),
+                            Text('Loading replies…'),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                error: (err, st) => ui.AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Replies load failed: $err', style: AuraText.small),
-                  ),
-                ),
-                data: (items) {
-                  return ui.AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Replies', style: AuraText.title),
-                          const SizedBox(height: 10),
-                          Text(
-                            items.isEmpty ? 'No replies yet.' : 'You have ${items.length} reply/replies.',
-                            style: AuraText.small,
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                    error: (err, st) => ui.AuraCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text('Replies load failed: $err',
+                            style: AuraText.small),
+                      ),
+                    ),
+                    data: (items) {
+                      return ui.AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              OutlinedButton(
-                                onPressed: () => context.go('/feed'),
-                                child: const Text('Browse feed'),
+                              Text('Replies', style: AuraText.title),
+                              const SizedBox(height: 10),
+                              Text(
+                                items.isEmpty
+                                    ? 'No replies yet.'
+                                    : 'You have ${items.length} reply/replies.',
+                                style: AuraText.small,
                               ),
-                              OutlinedButton(
-                                onPressed: () => ref.invalidate(_meRepliesProvider),
-                                child: const Text('Refresh'),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  OutlinedButton(
+                                    onPressed: () => context.go('/feed'),
+                                    child: const Text('Browse feed'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => ref.invalidate(_meRepliesProvider),
+                                    child: const Text('Refresh'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
             ],
           );
         },
