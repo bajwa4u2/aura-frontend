@@ -8,20 +8,30 @@ import '../core/ui/document_scaffold.dart';
 ///
 /// Override any of these at build time:
 /// flutter build web --dart-define=AURA_EMAIL_SUPPORT=support@yourdomain.com ...
-const String _emailGeneral =
-    String.fromEnvironment('AURA_EMAIL_GENERAL', defaultValue: 'contact@auraplatform.org');
+const String _emailGeneral = String.fromEnvironment(
+  'AURA_EMAIL_GENERAL',
+  defaultValue: 'contact@auraplatform.org',
+);
 
-const String _emailSupport =
-    String.fromEnvironment('AURA_EMAIL_SUPPORT', defaultValue: 'support@auraplatform.org');
+const String _emailSupport = String.fromEnvironment(
+  'AURA_EMAIL_SUPPORT',
+  defaultValue: 'support@auraplatform.org',
+);
 
-const String _emailInstitutions =
-    String.fromEnvironment('AURA_EMAIL_INSTITUTIONS', defaultValue: 'institutions@auraplatform.org');
+const String _emailInstitutions = String.fromEnvironment(
+  'AURA_EMAIL_INSTITUTIONS',
+  defaultValue: 'institutions@auraplatform.org',
+);
 
-const String _emailInvestors =
-    String.fromEnvironment('AURA_EMAIL_INVESTORS', defaultValue: 'investors@auraplatform.org');
+const String _emailInvestors = String.fromEnvironment(
+  'AURA_EMAIL_INVESTORS',
+  defaultValue: 'investors@auraplatform.org',
+);
 
-const String _emailPrivacy =
-    String.fromEnvironment('AURA_EMAIL_PRIVACY', defaultValue: 'privacy@auraplatform.org');
+const String _emailPrivacy = String.fromEnvironment(
+  'AURA_EMAIL_PRIVACY',
+  defaultValue: 'privacy@auraplatform.org',
+);
 
 enum ContactTopic {
   support,
@@ -118,8 +128,11 @@ class _ContactBodyState extends State<_ContactBody> {
     setState(() => _submitting = true);
 
     try {
+      // Routing stays internal. Nothing is shown on the UI.
       final to = _topicEmail(_topic);
+
       final subject = 'Aura contact: ${_topicLabel(_topic)}';
+
       final body = [
         'Topic: ${_topicLabel(_topic)}',
         'Name: ${name.isEmpty ? '—' : name}',
@@ -128,16 +141,17 @@ class _ContactBodyState extends State<_ContactBody> {
         msg,
       ].join('\n');
 
-      // No extra deps: copy a ready-to-send email payload to clipboard.
+      // Dependency-free for now: copy a ready-to-send email payload to clipboard.
+      // The page never displays addresses; this only prepares the message.
       final payload = 'To: $to\nSubject: $subject\n\n$body';
       await Clipboard.setData(ClipboardData(text: payload));
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Copied. Send this to: $to'),
-          duration: const Duration(seconds: 4),
+        const SnackBar(
+          content: Text('Copied. Paste into your email and send.'),
+          duration: Duration(seconds: 4),
         ),
       );
     } finally {
@@ -147,37 +161,27 @@ class _ContactBodyState extends State<_ContactBody> {
 
   @override
   Widget build(BuildContext context) {
-    final to = _topicEmail(_topic);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Doc.title('Contact'),
         const SizedBox(height: 10),
-        Doc.meta('Support, institutions, investors, privacy requests.'),
-        Doc.lede(
-          'Use this form to prepare a message. Aura routes each topic to its own inbox.',
-        ),
 
-        Doc.h('Where messages go'),
-        Doc.bullets([
-          'Support → $_emailSupport',
-          'Institutions → $_emailInstitutions',
-          'Investors → $_emailInvestors',
-          'Privacy → $_emailPrivacy',
-          'Other → $_emailGeneral',
-        ]),
+        Doc.meta('Support, institutions, investors, privacy requests.'),
+        const SizedBox(height: 8),
+
+        Doc.p(
+          'Send a message and we will route it to the right place.',
+        ),
 
         const SizedBox(height: 14),
 
-        Doc.h('Send a message'),
         Doc.p(
           'We will never ask for your password. Avoid sharing sensitive personal data in the message body.',
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
-        // Form (simple + clean, matches “document” tone)
         TextField(
           controller: _nameCtrl,
           decoration: const InputDecoration(
@@ -229,23 +233,12 @@ class _ContactBodyState extends State<_ContactBody> {
 
         const SizedBox(height: 12),
 
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: _submitting ? null : () => _submit(context),
-                child: Text(_submitting ? 'Preparing…' : 'Copy message'),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
-        Doc.callout(
-          'Current destination for this topic: $to\n\n'
-          'After pressing “Copy message”, paste it into your email client and send. '
-          'This keeps the app dependency-free today, and later we can wire a real /support/contact endpoint without changing the UI.',
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _submitting ? null : () => _submit(context),
+            child: Text(_submitting ? 'Preparing…' : 'Copy message'),
+          ),
         ),
       ],
     );
