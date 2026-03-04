@@ -332,8 +332,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final dio = ref.read(dioProvider);
 
       // Web does not support dart:io file paths. Use bytes.
-      final MultipartFile part = kIsWeb
-          ? MultipartFile.fromBytes(
+      MultipartFile part;
+      if (kIsWeb) {
+          part = MultipartFile.fromBytes(
               await file.readAsBytes(),
               filename: file.name,
             )
@@ -341,6 +342,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               file.path,
               filename: file.name,
             );
+          } else {
+            part = await MultipartFile.fromFile(
+             file.path,
+             filename: file.name,
+           );
+         }
 
       final form = FormData.fromMap({'file': part});
 
