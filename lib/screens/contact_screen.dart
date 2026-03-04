@@ -1,37 +1,9 @@
 // lib/screens/contact_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/net/dio_provider.dart';
 import '../core/ui/document_scaffold.dart';
-
-/// Contact routing (topic -> inbox).
-///
-/// Override any of these at build time:
-/// flutter build web --dart-define=AURA_EMAIL_SUPPORT=support@yourdomain.com ...
-const String _emailGeneral = String.fromEnvironment(
-  'AURA_EMAIL_GENERAL',
-  defaultValue: 'contact@auraplatform.org',
-);
-
-const String _emailSupport = String.fromEnvironment(
-  'AURA_EMAIL_SUPPORT',
-  defaultValue: 'support@auraplatform.org',
-);
-
-const String _emailInstitutions = String.fromEnvironment(
-  'AURA_EMAIL_INSTITUTIONS',
-  defaultValue: 'institutions@auraplatform.org',
-);
-
-const String _emailInvestors = String.fromEnvironment(
-  'AURA_EMAIL_INVESTORS',
-  defaultValue: 'investors@auraplatform.org',
-);
-
-const String _emailPrivacy = String.fromEnvironment(
-  'AURA_EMAIL_PRIVACY',
-  defaultValue: 'privacy@auraplatform.org',
-);
 
 enum ContactTopic {
   support,
@@ -59,20 +31,20 @@ String _topicLabel(ContactTopic t) {
   }
 }
 
-String _topicEmail(ContactTopic t) {
+String _topicValue(ContactTopic t) {
   switch (t) {
     case ContactTopic.support:
-      return _emailSupport;
+      return 'support';
     case ContactTopic.bug:
-      return _emailSupport; // bugs go to support by default
+      return 'bug';
     case ContactTopic.institutions:
-      return _emailInstitutions;
+      return 'institutions';
     case ContactTopic.investors:
-      return _emailInvestors;
+      return 'investors';
     case ContactTopic.privacy:
-      return _emailPrivacy;
+      return 'privacy';
     case ContactTopic.other:
-      return _emailGeneral;
+      return 'other';
   }
 }
 
@@ -88,20 +60,21 @@ class ContactScreen extends StatelessWidget {
   }
 }
 
-class _ContactBody extends StatefulWidget {
+class _ContactBody extends ConsumerStatefulWidget {
   const _ContactBody();
 
   @override
-  State<_ContactBody> createState() => _ContactBodyState();
+  ConsumerState<_ContactBody> createState() => _ContactBodyState();
 }
 
-class _ContactBodyState extends State<_ContactBody> {
+class _ContactBodyState extends ConsumerState<_ContactBody> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
 
   ContactTopic _topic = ContactTopic.support;
   bool _submitting = false;
+  bool _sent = false;
 
   @override
   void dispose() {
@@ -111,7 +84,7 @@ class _ContactBodyState extends State<_ContactBody> {
     super.dispose();
   }
 
-  Future<void> _submit(BuildContext context) async {
+  Future<void> _submit() async {
     if (_submitting) return;
 
     final name = _nameCtrl.text.trim();
@@ -128,34 +101,43 @@ class _ContactBodyState extends State<_ContactBody> {
     setState(() => _submitting = true);
 
     try {
-      // Routing stays internal. Nothing is shown on the UI.
-      final to = _topicEmail(_topic);
+      final dio = ref.read(dioProvider);
 
-      final subject = 'Aura contact: ${_topicLabel(_topic)}';
-
-      final body = [
-        'Topic: ${_topicLabel(_topic)}',
-        'Name: ${name.isEmpty ? '—' : name}',
-        'Email: $email',
-        '',
-        msg,
-      ].join('\n');
-
-      // Dependency-free for now: copy a ready-to-send email payload to clipboard.
-      // The page never displays addresses; this only prepares the message.
-      final payload = 'To: $to\nSubject: $subject\n\n$body';
-      await Clipboard.setData(ClipboardData(text: payload));
+      await dio.post(
+        '/v1/contact',
+        data: {
+          'topic': _topicValue(_topic),
+          'name': name.isEmpty ? null : name,
+          'email': email,
+          'message': msg,
+        },
+      );
 
       if (!mounted) return;
 
+      setState(() {
+        _sent = true;
+        _submitting = false;
+      });
+
+      _messageCtrl.clear();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Copied. Paste into your email and send.'),
-          duration: Duration(seconds: 4),
+          content: Text('Sent. Thank you.'),
+          duration: Duration(seconds: 3),
         ),
       );
-    } finally {
-      if (mounted) setState(() => _submitting = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not send. Please try again.'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -167,19 +149,33 @@ class _ContactBodyState extends State<_ContactBody> {
         Doc.title('Contact'),
         const SizedBox(height: 10),
 
-        Doc.meta('Support, institutions, investors, privacy requests.'),
-        const SizedBox(height: 8),
+        Doc.p('Send a message. We will route it to the right place.'),
+        const SizedBox(height: 10),
 
-        Doc.p(
-          'Send a message and we will route it to the right place.',
-        ),
-
+        Doc.p('We will never ask for your password. Avoid sharing sensitive personal data in the message body.'),
         const SizedBox(height: 14),
 
-        Doc.p(
-          'We will never ask for your password. Avoid sharing sensitive personal data in the message body.',
-        ),
+        if (_sent) ...[
+          Doc.callout('Message received. If a reply is needed, you will hear back by email.'),
+          const SizedBox(height: 14),
+        ],
 
+        DropdownButtonFormField<ContactTopic>(
+          value: _topic,
+          decoration: const InputDecoration(
+            labelText: 'Topic',
+            border: OutlineInputBorder(),
+          ),
+          items: ContactTopic.values
+              .map(
+                (t) => DropdownMenuItem(
+                  value: t,
+                  child: Text(_topicLabel(t)),
+                ),
+              )
+              .toList(),
+          onChanged: (v) => setState(() => _topic = v ?? _topic),
+        ),
         const SizedBox(height: 12),
 
         TextField(
@@ -203,24 +199,6 @@ class _ContactBodyState extends State<_ContactBody> {
         ),
         const SizedBox(height: 12),
 
-        DropdownButtonFormField<ContactTopic>(
-          value: _topic,
-          decoration: const InputDecoration(
-            labelText: 'Topic',
-            border: OutlineInputBorder(),
-          ),
-          items: ContactTopic.values
-              .map(
-                (t) => DropdownMenuItem(
-                  value: t,
-                  child: Text(_topicLabel(t)),
-                ),
-              )
-              .toList(),
-          onChanged: (v) => setState(() => _topic = v ?? _topic),
-        ),
-        const SizedBox(height: 12),
-
         TextField(
           controller: _messageCtrl,
           decoration: const InputDecoration(
@@ -230,14 +208,13 @@ class _ContactBodyState extends State<_ContactBody> {
           ),
           maxLines: 8,
         ),
-
         const SizedBox(height: 12),
 
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            onPressed: _submitting ? null : () => _submit(context),
-            child: Text(_submitting ? 'Preparing…' : 'Copy message'),
+            onPressed: _submitting ? null : _submit,
+            child: Text(_submitting ? 'Sending…' : 'Send'),
           ),
         ),
       ],
