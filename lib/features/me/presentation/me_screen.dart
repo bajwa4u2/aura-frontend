@@ -156,7 +156,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Future<void> _openEditProfile() async {
-    final me = ref.read(meProfileProvider).valueOrNull ?? <String, dynamic>{};
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const EditProfileScreen(),
@@ -331,9 +330,19 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (file == null) return;
 
       final dio = ref.read(dioProvider);
-      final form = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path),
-      });
+
+      // Web does not support dart:io file paths. Use bytes.
+      final MultipartFile part = kIsWeb
+          ? MultipartFile.fromBytes(
+              await file.readAsBytes(),
+              filename: file.name,
+            )
+          : await MultipartFile.fromFile(
+              file.path,
+              filename: file.name,
+            );
+
+      final form = FormData.fromMap({'file': part});
 
       await dio.post('/uploads/avatar', data: form);
       ref.invalidate(meProfileProvider);
@@ -490,123 +499,118 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              // Profile + Tools (top)
               LayoutBuilder(
                 builder: (context, constraints) {
                   final wide = constraints.maxWidth >= 960;
 
-                  final profileCard =
-                      ui.AuraCard(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              onTap: () async {
-                                await _openEditProfile();
-                              },
-                              child: CircleAvatar(
-                                radius: 28,
-                                backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                                child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                  final profileCard = ui.AuraCard(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            await _openEditProfile();
+                          },
+                          child: CircleAvatar(
+                            radius: 28,
+                            backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                            child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
+                                const SizedBox(height: 6),
+                                Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
+                                const SizedBox(height: 6),
+                                Text(email.isNotEmpty ? email : '—', style: AuraText.small),
+                                if (bio.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  Text(bio, style: AuraText.body),
+                                ],
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
                                   children: [
-                                    Text(displayName.isNotEmpty ? displayName : '—', style: AuraText.title),
-                                    const SizedBox(height: 6),
-                                    Text(handle.isNotEmpty ? '@$handle' : '—', style: AuraText.small),
-                                    const SizedBox(height: 6),
-                                    Text(email.isNotEmpty ? email : '—', style: AuraText.small),
-                                    if (bio.trim().isNotEmpty) ...[
-                                      const SizedBox(height: 10),
-                                      Text(bio, style: AuraText.body),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    Wrap(
-                                      spacing: 10,
-                                      runSpacing: 10,
-                                      children: [
-                                        FilledButton(
-                                          onPressed: _openEditProfile,
-                                          child: const Text('Edit profile'),
-                                        ),
-                                        OutlinedButton(
-                                          onPressed: _busyLogout ? null : _logout,
-                                          child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
-                                        ),
-                                        OutlinedButton(
-                                          onPressed: _pickAndUploadAvatar,
-                                          child: const Text('Upload avatar'),
-                                        ),
-                                      ],
+                                    FilledButton(
+                                      onPressed: _openEditProfile,
+                                      child: const Text('Edit profile'),
                                     ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Tip: tap your avatar to edit and upload a new photo.',
-                                      style: AuraText.small,
+                                    OutlinedButton(
+                                      onPressed: _busyLogout ? null : _logout,
+                                      child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
                                     ),
-                                    if (kDebugMode && id.isNotEmpty) ...[
-                                      const SizedBox(height: 10),
-                                      SelectableText('User ID: $id', style: AuraText.small),
-                                    ],
+                                    OutlinedButton(
+                                      onPressed: _pickAndUploadAvatar,
+                                      child: const Text('Upload avatar'),
+                                    ),
                                   ],
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                      ;
-
-                  final toolsCard =
-                      ui.AuraCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Tools', style: AuraText.title),
-                            const SizedBox(height: AuraSpace.s10),
-                            Wrap(
-                              spacing: AuraSpace.s10,
-                              runSpacing: AuraSpace.s10,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () => context.go('/announcements'),
-                                  child: const Text('Announcements'),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Tip: tap your avatar to edit and upload a new photo.',
+                                  style: AuraText.small,
                                 ),
-                                if (isAdmin)
-                                  FilledButton(
-                                    onPressed: _adminCreateAnnouncementDialog,
-                                    child: const Text('New announcement'),
-                                  ),
-                                OutlinedButton(
-                                  onPressed: () => context.go('/ai/claim-audit'),
-                                  child: const Text('Claim audit'),
-                                ),
+                                if (kDebugMode && id.isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  SelectableText('User ID: $id', style: AuraText.small),
+                                ],
                               ],
                             ),
-                            const SizedBox(height: AuraSpace.s10),
-                            Text(
-                              isAdmin
-                                  ? 'Announcements are official notes. Admins can publish announcements directly from here.'
-                                  : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
-                              style: AuraText.small,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  final toolsCard = ui.AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tools', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.s10),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () => context.go('/announcements'),
+                              child: const Text('Announcements'),
                             ),
-                            if (!isAdmin && _adminUserIds.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                'Admin mode is configured, but your account is not the admin user.',
-                                style: AuraText.small,
+                            if (isAdmin)
+                              FilledButton(
+                                onPressed: _adminCreateAnnouncementDialog,
+                                child: const Text('New announcement'),
                               ),
-                            ],
+                            OutlinedButton(
+                              onPressed: () => context.go('/ai/claim-audit'),
+                              child: const Text('Claim audit'),
+                            ),
                           ],
                         ),
-                      )
-                      ;
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(
+                          isAdmin
+                              ? 'Announcements are official notes. Admins can publish announcements directly from here.'
+                              : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
+                          style: AuraText.small,
+                        ),
+                        if (!isAdmin && _adminUserIds.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Admin mode is configured, but your account is not the admin user.',
+                            style: AuraText.small,
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
 
                   if (!wide) {
                     return Column(
@@ -633,258 +637,258 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               // Draft
               ref.watch(_meDraftProvider).when(
-                    loading: () => ui.AuraCard(
+                loading: () => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: const [
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        SizedBox(width: 12),
+                        Text('Loading draft…'),
+                      ],
+                    ),
+                  ),
+                ),
+                error: (err, st) => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Draft load failed: $err', style: AuraText.small),
+                  ),
+                ),
+                data: (draft) {
+                  final title = (draft['title'] ?? '').toString().trim();
+                  final hasDraft = draft.isNotEmpty && (draft['id'] != null);
+
+                  if (!hasDraft) {
+                    return ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 12),
-                            Text('Loading draft…'),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Draft', style: AuraText.title),
+                            const SizedBox(height: 10),
+                            Text('No draft yet.', style: AuraText.small),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () => context.go('/compose'),
+                              child: const Text('Compose'),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('Draft load failed: $err', style: AuraText.small),
-                      ),
-                    ),
-                    data: (draft) {
-                      final title = (draft['title'] ?? '').toString().trim();
-                      final hasDraft = draft.isNotEmpty && (draft['id'] != null);
+                    );
+                  }
 
-                      if (!hasDraft) {
-                        return ui.AuraCard(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Draft', style: AuraText.title),
-                                const SizedBox(height: 10),
-                                Text('No draft yet.', style: AuraText.small),
-                                const SizedBox(height: 12),
-                                OutlinedButton(
-                                  onPressed: () => context.go('/compose'),
-                                  child: const Text('Compose'),
-                                ),
-                              ],
-                            ),
+                  final id = (draft['id'] ?? '').toString();
+                  return ui.AuraCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Draft', style: AuraText.title),
+                          const SizedBox(height: 10),
+                          Text(
+                            title.isEmpty ? '(untitled)' : title,
+                            style: AuraText.body,
                           ),
-                        );
-                      }
-
-                      final id = (draft['id'] ?? '').toString();
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
-                              Text('Draft', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                title.isEmpty ? '(untitled)' : title,
-                                style: AuraText.body,
+                              FilledButton(
+                                onPressed: () => context.go('/compose'),
+                                child: const Text('Continue drafting'),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  FilledButton(
-                                    onPressed: () => context.go('/compose'),
-                                    child: const Text('Continue drafting'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: id.isEmpty ? null : () => context.go('/posts/$id'),
-                                    child: const Text('Open'),
-                                  ),
-                                ],
+                              OutlinedButton(
+                                onPressed: id.isEmpty ? null : () => context.go('/posts/$id'),
+                                child: const Text('Open'),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Posts
               ref.watch(_mePostsProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 12),
-                            Text('Loading posts…'),
-                          ],
-                        ),
-                      ),
+                loading: () => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: const [
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        SizedBox(width: 12),
+                        Text('Loading posts…'),
+                      ],
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('Posts load failed: $err', style: AuraText.small),
-                      ),
-                    ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                error: (err, st) => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Posts load failed: $err', style: AuraText.small),
+                  ),
+                ),
+                data: (items) {
+                  return ui.AuraCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Posts', style: AuraText.title),
+                          const SizedBox(height: 10),
+                          Text(
+                            items.isEmpty ? 'No posts yet.' : 'You have ${items.length} post(s).',
+                            style: AuraText.small,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
-                              Text('Posts', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty ? 'No posts yet.' : 'You have ${items.length} post(s).',
-                                style: AuraText.small,
+                              FilledButton(
+                                onPressed: () => context.go('/compose'),
+                                child: const Text('Compose'),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  FilledButton(
-                                    onPressed: () => context.go('/compose'),
-                                    child: const Text('Compose'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/feed'),
-                                    child: const Text('Browse feed'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () => ref.invalidate(_mePostsProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
+                              OutlinedButton(
+                                onPressed: () => context.go('/feed'),
+                                child: const Text('Browse feed'),
+                              ),
+                              OutlinedButton(
+                                onPressed: () => ref.invalidate(_mePostsProvider),
+                                child: const Text('Refresh'),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Saved
               ref.watch(_meSavedProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 12),
-                            Text('Loading saved…'),
-                          ],
-                        ),
-                      ),
+                loading: () => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: const [
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        SizedBox(width: 12),
+                        Text('Loading saved…'),
+                      ],
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('Saved load failed: $err', style: AuraText.small),
-                      ),
-                    ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                error: (err, st) => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Saved load failed: $err', style: AuraText.small),
+                  ),
+                ),
+                data: (items) {
+                  return ui.AuraCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Saved', style: AuraText.title),
+                          const SizedBox(height: 10),
+                          Text(
+                            items.isEmpty ? 'No saved posts yet.' : 'You have ${items.length} saved item(s).',
+                            style: AuraText.small,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
-                              Text('Saved', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty ? 'No saved posts yet.' : 'You have ${items.length} saved item(s).',
-                                style: AuraText.small,
+                              OutlinedButton(
+                                onPressed: () => context.go('/saved'),
+                                child: const Text('View saved'),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/saved'),
-                                    child: const Text('View saved'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meSavedProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
+                              OutlinedButton(
+                                onPressed: () => ref.invalidate(_meSavedProvider),
+                                child: const Text('Refresh'),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               const SizedBox(height: AuraSpace.s14),
 
               // Replies
               ref.watch(_meRepliesProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 12),
-                            Text('Loading replies…'),
-                          ],
-                        ),
-                      ),
+                loading: () => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: const [
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        SizedBox(width: 12),
+                        Text('Loading replies…'),
+                      ],
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('Replies load failed: $err', style: AuraText.small),
-                      ),
-                    ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                error: (err, st) => ui.AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Replies load failed: $err', style: AuraText.small),
+                  ),
+                ),
+                data: (items) {
+                  return ui.AuraCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Replies', style: AuraText.title),
+                          const SizedBox(height: 10),
+                          Text(
+                            items.isEmpty ? 'No replies yet.' : 'You have ${items.length} reply/replies.',
+                            style: AuraText.small,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
-                              Text('Replies', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty ? 'No replies yet.' : 'You have ${items.length} reply/replies.',
-                                style: AuraText.small,
+                              OutlinedButton(
+                                onPressed: () => context.go('/feed'),
+                                child: const Text('Browse feed'),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/feed'),
-                                    child: const Text('Browse feed'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () => ref.invalidate(_meRepliesProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
+                              OutlinedButton(
+                                onPressed: () => ref.invalidate(_meRepliesProvider),
+                                child: const Text('Refresh'),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           );
         },
