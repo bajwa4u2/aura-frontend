@@ -35,6 +35,7 @@ class AppShell extends ConsumerWidget {
     const publicPrefixes = <String>[
       '/public',
       '/privacy',
+      '/contact', // ✅ added (legal/public)
       '/mission',
       '/founder',
       '/investors',
@@ -106,6 +107,7 @@ class AppShell extends ConsumerWidget {
               runSpacing: AuraSpace.xs,
               children: const [
                 _LegalLink(label: 'Privacy', path: '/privacy'),
+                _LegalLink(label: 'Contact', path: '/contact'), // ✅ added
               ],
             ),
           ),

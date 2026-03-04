@@ -44,6 +44,7 @@ import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
+import 'screens/contact_screen.dart';
 
 bool _isTransientUnauthed(Ref ref) {
   final boot = ref.read(sessionBootstrapProvider);
@@ -66,6 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 
+  // NOTE: keep this minimal. We only want route refresh when auth/verify state changes.
   ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
 
@@ -76,6 +78,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/white-paper' ||
         path == '/founder' ||
         path == '/privacy' ||
+        path == '/contact' ||
         path == '/investors' ||
         path == '/institutions' ||
         path == '/institution/sign-in' ||
@@ -282,6 +285,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
+      GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
       GoRoute(path: '/institution/sign-in', builder: (_, __) => const InstitutionSignInScreen()),
