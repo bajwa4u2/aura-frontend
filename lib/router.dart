@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
+import 'core/auth/auth_providers.dart';
+import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
 
 import 'features/auth/presentation/auth_screen.dart';
@@ -26,7 +28,6 @@ import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
-
 import 'features/saves/presentation/saved_screen.dart';
 
 import 'screens/support_fallback_screen.dart';
@@ -41,24 +42,26 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 
-/// Tracks the last time we were in a stable AUThed state.
-/// Used to prevent route thrash when auth briefly flips to unauthed during refresh/me checks.
-final _lastAuthedAtProvider = StateProvider<DateTime?>((ref) => null);
+bool _isTransientUnauthed(Ref ref) {
+  // If bootstrap still loading OR token store not loaded yet, treat as transient.
+  final boot = ref.read(sessionBootstrapProvider);
+  if (boot.isLoading) return true;
+
+  final store = ref.read(tokenStoreProvider);
+  if (!store.isLoaded) return true;
+
+  return false;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 
-  // Update refresh + lastAuthed timestamp when auth changes.
-  ref.listen<AuthStatus>(authStatusProvider, (prev, next) {
-    if (next == AuthStatus.authed) {
-      ref.read(_lastAuthedAtProvider.notifier).state = DateTime.now();
-    }
-    refresh.value++;
-  });
-
-  // Email verification changes can affect routing decisions.
-  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
+  ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<bool>>(
+    emailVerifiedProvider,
+    (_, __) => refresh.value++,
+  );
 
   const publicRoutes = <String>{
     '/announcements',
@@ -96,45 +99,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     return trimmed;
   }
 
-  bool _isTransientUnauthed(WidgetRef ref) {
-    // Grace window to prevent login-screen thrash while refresh/me checks are stabilizing.
-    const grace = Duration(milliseconds: 2500);
-    final lastAuthedAt = ref.read(_lastAuthedAtProvider);
-    if (lastAuthedAt == null) return false;
-    final elapsed = DateTime.now().difference(lastAuthedAt);
-    return elapsed >= Duration.zero && elapsed <= grace;
-  }
-
   return GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) async {
       final loc = state.uri.path;
       final authStatus = ref.read(authStatusProvider);
 
+      // If we’re in the transient window, don’t redirect (prevents thrash).
+      if (_isTransientUnauthed(ref)) return null;
+
+      if (authStatus == AuthStatus.loading) return null;
+
       final isPublic = isPublicPath(loc);
       final isAuth = isAuthPath(loc);
 
-      // 1) While auth is still loading/booting, never redirect.
-      // This prevents /login overlay while session restore is in-flight.
-      if (authStatus == AuthStatus.loading) return null;
-
-      // 2) UNAUTHED handling (with transient stabilization).
+      // --- UNAUTHED ---
       if (authStatus == AuthStatus.unauthed) {
-        // If we were just authed a moment ago, do not redirect to login yet.
-        // This prevents route thrash during refresh storms or provider rebuilds.
-        if (_isTransientUnauthed(ref)) return null;
-
         if (isPublic || isAuth) return null;
 
         final dest = state.uri.toString();
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // 3) AUTHED handling
+      // --- AUTHED ---
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
       // If verification state is not known yet (loading OR error), don't redirect.
-      // Let the app settle and retry /auth/me.
       if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
 
       final verified = verifiedAsync.value ?? false;
@@ -154,10 +144,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If verified, never keep them stuck on verify screens.
       if (loc == '/verify-pending' || loc == '/verify-email') return '/home';
 
-      // If verified and they visit /public, send them to /home.
       if (loc == '/public') return '/home';
 
-      // If authed + verified, don't keep them on auth pages.
       if (isAuth) {
         final redirectTo = state.uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) {
