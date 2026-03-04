@@ -15,6 +15,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../ai/providers.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
@@ -35,7 +36,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _posting = false;
   bool _saving = false;
 
-  // Option 2: enforce text always
+  // Enforce text always
   bool _showTextError = false;
 
   _ComposeMode _mode = _ComposeMode.text;
@@ -49,8 +50,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String? _existingMediaUrl;
 
   DateTime? _lastSavedAt;
-
   Timer? _autosaveDebounce;
+
+  // Aura Editor (A) state (limited + calm)
+  bool _auditBusy = false;
+  DateTime? _lastAuditAt;
+  Map<String, dynamic>? _auditResult;
+  String? _auditError;
 
   bool get _isReply => widget.replyToPostId != null;
 
@@ -66,7 +72,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool get _hasAnyMedia => _hasPickedMedia || _hasExistingMedia;
 
-  // Option 2: text is required in ALL modes.
+  // Text is required in ALL modes.
   bool get _canPublish {
     if (!_hasText) return false;
     if (_textTooLong) return false;
@@ -190,7 +196,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           _existingMediaUrl = null;
         }
 
-        // preserve dimensions if present (helps re-save draft without losing metadata)
+        // preserve dimensions if present
         final w = draft['mediaWidth'];
         final h = draft['mediaHeight'];
         _imgW = (w is int) ? w : int.tryParse((w ?? '').toString());
@@ -198,26 +204,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
         _lastSavedAt = savedAt;
 
-        // reset error state on restore if valid
         if (_hasText) _showTextError = false;
       });
     } catch (_) {
-      // ignore: draft restore is best-effort
+      // best-effort
     }
   }
 
   void _scheduleAutosave() {
-    // Keep it calm: autosave quietly after short pause.
     _autosaveDebounce?.cancel();
     _autosaveDebounce = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       if (_posting) return;
 
-      // Option 2: do not autosave empty text (backend enforces text required)
+      // do not autosave empty text
       if (!_hasText) return;
 
-      // For media modes, autosave is meaningful even if media isn't picked yet
-      // (it saves the text), but we must avoid writing IMAGE/VIDEO type with no media.
       _saveDraft(silent: true);
     });
   }
@@ -229,14 +231,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       _mode = next;
 
-      // Enforce one-primary-medium: switching modes clears the other payload.
+      // Switching modes clears media payload.
       _pickedFile = null;
       _pickedBytes = null;
       _imgW = null;
       _imgH = null;
       _existingMediaUrl = null;
 
-      // Keep text across modes (context only matters for media).
       if (_mode == _ComposeMode.text) {
         _contextController.clear();
       }
@@ -303,7 +304,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   String _mediaTypeForMode() {
-    // Foolproof: never claim IMAGE/VIDEO in draft unless media actually exists.
     switch (_mode) {
       case _ComposeMode.text:
         return 'NONE';
@@ -324,7 +324,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _saveDraft({bool silent = false, String? mediaUrlOverride}) async {
     if (_saving || _posting) return;
 
-    // Option 2: enforce text always (stop backend 400s before they happen)
     if (!_hasText) {
       if (!silent && mounted) {
         setState(() => _showTextError = true);
@@ -345,7 +344,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         'mediaType': _mediaTypeForMode(),
       };
 
-      // Media payload
       if (_mode == _ComposeMode.image && _hasAnyMedia) {
         final url = (mediaUrlOverride ?? _existingMediaUrl ?? '').trim();
         if (url.isNotEmpty) payload['mediaUrl'] = url;
@@ -383,7 +381,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _publish() async {
     if (_posting) return;
 
-    // Option 2: enforce text always (UI + function guard)
     if (!_hasText) {
       setState(() => _showTextError = true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -408,11 +405,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       String? uploadedPublicUrl;
 
-      // If draft already has media and user didn't pick a new file, we keep it.
       final hasFreshUpload =
           _pickedFile != null && (_mode == _ComposeMode.image || _mode == _ComposeMode.video);
 
-      // 1) If IMAGE/VIDEO picked now, presign + upload to R2
       if (hasFreshUpload) {
         final mime = _inferMime(_pickedFile!.name);
         final bytes = await _pickedFile!.readAsBytes();
@@ -451,7 +446,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           throw Exception('publicUrl missing from presign response.');
         }
 
-        // ✅ use clean Dio for presigned URL (no auth interceptors)
         final uploadDio = _cleanUploadDio();
 
         final uploadHeaders = <String, String>{};
@@ -460,7 +454,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           uploadHeaders[k.toString()] = v.toString();
         });
 
-        // ensure Content-Type matches what backend signed
         if (!uploadHeaders.containsKey('Content-Type')) {
           uploadHeaders['Content-Type'] = mime;
         }
@@ -478,7 +471,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         );
       }
 
-      // 2) Save draft (final)
+      // Save final draft (best-effort)
       if (_mode == _ComposeMode.image || _mode == _ComposeMode.video) {
         final finalUrl = (uploadedPublicUrl ?? _existingMediaUrl ?? '').trim();
         if (finalUrl.isNotEmpty) {
@@ -490,7 +483,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         await _saveDraft(silent: true);
       }
 
-      // 3) Publish
       await dio.post('/posts/draft/publish');
 
       if (!mounted) return;
@@ -505,6 +497,252 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  // ---------------- Aura Editor (A) ----------------
+
+  bool get _auditCooldownActive {
+    final t = _lastAuditAt;
+    if (t == null) return false;
+    return DateTime.now().difference(t) < const Duration(seconds: 15);
+  }
+
+  Future<void> _runAuraEditor() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty) {
+      setState(() {
+        _auditError = 'Write something first.';
+        _auditResult = null;
+      });
+      return;
+    }
+
+    // Calm cost-control: don’t run on tiny text
+    if (text.length < 40) {
+      setState(() {
+        _auditError = 'Add a little more context (at least a few lines).';
+        _auditResult = null;
+      });
+      return;
+    }
+
+    if (_auditBusy || _auditCooldownActive) return;
+
+    setState(() {
+      _auditBusy = true;
+      _auditError = null;
+      _auditResult = null;
+      _lastAuditAt = DateTime.now();
+    });
+
+    try {
+      final repo = ref.read(aiRepoProvider);
+
+      // Prefer Aura Editor endpoint, but fall back safely
+      Map<String, dynamic> out;
+      try {
+        out = await repo.editorReview(text: text);
+      } on DioException catch (e) {
+        final code = e.response?.statusCode;
+        if (code == 404) {
+          out = await repo.claimAudit(text: text);
+        } else {
+          rethrow;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _auditResult = out;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _auditError = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _auditBusy = false);
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _listOfMap(dynamic v) {
+    if (v is List) {
+      final out = <Map<String, dynamic>>[];
+      for (final x in v) {
+        if (x is Map) out.add(Map<String, dynamic>.from(x.cast<String, dynamic>()));
+      }
+      return out;
+    }
+    return const [];
+  }
+
+  String _str(dynamic v) => (v ?? '').toString().trim();
+
+  List<String> _takeSignals(Map<String, dynamic> r) {
+    // Works with current heuristic output (claims / assumptions / clarity_issues / tone_flags)
+    final assumptions = _listOfMap(r['assumptions']).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+    final clarity = _listOfMap(r['clarity_issues']).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+    final tone = _listOfMap(r['tone_flags']).take(2).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+
+    final combined = <String>[
+      ...clarity,
+      ...assumptions,
+      ...tone,
+    ];
+
+    // Dedup
+    final seen = <String>{};
+    final out = <String>[];
+    for (final s in combined) {
+      final k = s.toLowerCase();
+      if (k.isEmpty || seen.contains(k)) continue;
+      seen.add(k);
+      out.add(s);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }
+
+  String _suggestRefinement(Map<String, dynamic> r, String original) {
+    // Keep it minimal: one short suggestion line + one example rewrite.
+    final signals = _takeSignals(r);
+    final firstLine = signals.isNotEmpty ? signals.first : '';
+
+    final text = original.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (text.isEmpty) return '';
+
+    // Remove some absolute words as a gentle rewrite
+    final softened = text
+        .replaceAll(RegExp(r'\b(always|never|everyone|no one|obviously|clearly|completely|totally)\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    final example = softened.isEmpty ? text : softened;
+
+    if (firstLine.isEmpty) {
+      return 'Try tightening one sentence for clarity.\nExample: $example';
+    }
+    return '$firstLine\nExample: $example';
+  }
+
+  Future<void> _openAuraEditorSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AuraSurface.page,
+      builder: (ctx) {
+        final pad = MediaQuery.of(ctx).viewInsets.bottom;
+        final r = _auditResult;
+
+        final signals = r == null ? const <String>[] : _takeSignals(r);
+        final refinement = r == null ? '' : _suggestRefinement(r, _textController.text);
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s16, AuraSpace.s16, AuraSpace.s16 + pad),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aura Editor', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  'A quiet review for civic clarity and responsibility. Limited output by design.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+
+                Row(
+                  children: [
+                    FilledButton(
+                      onPressed: (_auditBusy || _auditCooldownActive) ? null : _runAuraEditor,
+                      child: Text(_auditBusy ? 'Reviewing…' : (_auditCooldownActive ? 'Wait a moment…' : 'Run review')),
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    OutlinedButton(
+                      onPressed: _auditBusy
+                          ? null
+                          : () {
+                              setState(() {
+                                _auditResult = null;
+                                _auditError = null;
+                              });
+                              Navigator.of(ctx).pop();
+                            },
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AuraSpace.s12),
+
+                if (_auditError != null)
+                  AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Note', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: AuraSpace.s8),
+                        Text(_auditError!, style: AuraText.body),
+                      ],
+                    ),
+                  ),
+
+                if (r != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Signals', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: AuraSpace.s10),
+                        if (signals.isEmpty)
+                          Text('No obvious issues detected.', style: AuraText.small.copyWith(color: AuraSurface.muted))
+                        else
+                          for (final s in signals)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                              child: Text('• $s', style: AuraText.body),
+                            ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Refinement (limited)', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(refinement, style: AuraText.body),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  AuraCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Hard line', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(
+                          'No nudity, pornography, sexual scenes, or explicit sexual content. If you are unsure, do not publish.',
+                          style: AuraText.body,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------- UI ----------------
+
   Widget _modeChip({required String label, required bool selected, required VoidCallback onTap}) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
@@ -513,7 +751,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Text(
           label,
-          style: (selected ? AuraText.body.copyWith(fontWeight: FontWeight.w700) : AuraText.muted),
+          style: selected
+              ? AuraText.body.copyWith(fontWeight: FontWeight.w700)
+              : AuraText.small.copyWith(color: AuraSurface.muted),
         ),
       ),
     );
@@ -532,6 +772,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         onPressed: () => context.pop(),
       ),
       actions: [
+        TextButton(
+          onPressed: _posting ? null : _openAuraEditorSheet,
+          child: const Text('Aura Editor'),
+        ),
         TextButton(
           onPressed: _posting
               ? null
@@ -552,12 +796,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             children: [
               Text('Composing', style: AuraText.title),
               const SizedBox(height: AuraSpace.s6),
-              Text(_savedLine(), style: AuraText.small),
+              Text(_savedLine(), style: AuraText.small.copyWith(color: AuraSurface.muted)),
               const SizedBox(height: AuraSpace.s12),
               _divider(),
               const SizedBox(height: AuraSpace.s8),
 
-              // Mode selector (quiet)
               Row(
                 children: [
                   _modeChip(
@@ -581,7 +824,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _divider(),
               const SizedBox(height: AuraSpace.s12),
 
-              // Writing surface (always shown; text required for all modes)
+              // Writing surface (always shown; text required)
               Container(
                 decoration: BoxDecoration(
                   color: AuraSurface.page,
@@ -603,14 +846,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   style: AuraText.body,
                   decoration: InputDecoration(
                     hintText: _isReply ? 'Write a reply…' : 'Add to the record… (required)',
-                    hintStyle: AuraText.muted,
+                    hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
                     border: InputBorder.none,
                     errorText: _showTextError ? 'Text is required' : null,
                   ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s8),
-              Text('${_textController.text.trim().length}/$_limit', style: AuraText.small),
+              Text('${_textController.text.trim().length}/$_limit', style: AuraText.small.copyWith(color: AuraSurface.muted)),
 
               if (_mode == _ComposeMode.image) ...[
                 const SizedBox(height: AuraSpace.s12),
@@ -641,7 +884,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Text(
                             'Preview unavailable. The image is still attached.',
-                            style: AuraText.muted,
+                            style: AuraText.small.copyWith(color: AuraSurface.muted),
                           ),
                         ),
                       );
@@ -676,7 +919,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       return Text(_pickedFile!.name, style: AuraText.body);
                     }
                     if (_hasExistingMedia) {
-                      return Text('Preview is available after publish.', style: AuraText.muted);
+                      return Text('Preview is available after publish.', style: AuraText.small.copyWith(color: AuraSurface.muted));
                     }
                     return null;
                   }(),
@@ -693,7 +936,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _divider(),
               const SizedBox(height: AuraSpace.s12),
 
-              // Publish bar (calm)
               Row(
                 children: [
                   TextButton(
@@ -759,7 +1001,7 @@ class _ContextField extends StatelessWidget {
         style: AuraText.body,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: AuraText.muted,
+          hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
           border: InputBorder.none,
         ),
       ),
@@ -805,7 +1047,7 @@ class _MediaZone extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s6),
-          Text(sublabel, style: AuraText.small),
+          Text(sublabel, style: AuraText.small.copyWith(color: AuraSurface.muted)),
           const SizedBox(height: AuraSpace.s12),
           if (child != null) ...[
             child!,
