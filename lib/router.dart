@@ -163,8 +163,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/me';
       }
 
-      // If authed user hits /public, take them home
-      if (path == '/public' || path == '/') return '/home';
+      // Allow authed users to view public pages too.
+      // Keep "/" as the member default landing.
+         if (path == '/') return '/home';
 
       return null;
     },
