@@ -166,12 +166,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Allow authed users to view public pages too.
       // Keep "/" as the member default landing.
          if (path == '/') return '/home';
-
+         
       return null;
     },
     routes: [
       // Root redirects to /public (public landing)
-      GoRoute(path: '/', redirect: (_, __) => '/public'),
+      GoRoute(path: '/', builder: (context, state) => const PublicHomeScreen()),
 
       // -------------------------
       // Public + Auth (NO AppShell)
