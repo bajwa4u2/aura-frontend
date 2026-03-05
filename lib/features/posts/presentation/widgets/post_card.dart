@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
@@ -50,32 +51,60 @@ String _linkedInShareUrl(String postUrl) {
   return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
 }
 
+bool _extractBool(dynamic data, List<String> keys) {
+  if (data is! Map) return false;
+  for (final k in keys) {
+    final v = data[k];
+    if (v is bool) return v;
+  }
+  // tolerate nested "data" wrappers if older servers are hit
+  final inner = data['data'];
+  if (inner is Map) {
+    for (final k in keys) {
+      final v = inner[k];
+      if (v is bool) return v;
+    }
+  }
+  return false;
+}
+
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/reactions/$postId');
-  final data = res.data;
+  final pid = (postId).trim();
+  if (pid.isEmpty) return false;
 
-  if (data is Map && data['ok'] == true) {
-    final inner = data['data'];
-    if (inner is Map && inner['liked'] is bool) return inner['liked'] as bool;
-    if (inner is Map && inner['isLiked'] is bool) return inner['isLiked'] as bool;
+  try {
+    final res = await dio.get('/reactions/$pid');
+    final data = res.data;
+    // New contract: { liked: true/false }
+    // Back-compat: { ok:true, data:{ liked/isLiked } }
+    return _extractBool(data, const ['liked', 'isLiked']);
+  } on DioException catch (e) {
+    // Visibility contract: non-visible post returns 404; treat as not liked
+    if (e.response?.statusCode == 404) return false;
+    return false;
+  } catch (_) {
+    return false;
   }
-
-  return false;
 });
 
 final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/saves/$postId');
-  final data = res.data;
+  final pid = (postId).trim();
+  if (pid.isEmpty) return false;
 
-  if (data is Map && data['ok'] == true) {
-    final inner = data['data'];
-    if (inner is Map && inner['saved'] is bool) return inner['saved'] as bool;
-    if (inner is Map && inner['isSaved'] is bool) return inner['isSaved'] as bool;
+  try {
+    final res = await dio.get('/saves/$pid');
+    final data = res.data;
+    // Expected: { saved: true/false } or { isSaved: true/false } depending on backend version
+    // Back-compat: { ok:true, data:{ saved/isSaved } }
+    return _extractBool(data, const ['saved', 'isSaved']);
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 404) return false;
+    return false;
+  } catch (_) {
+    return false;
   }
-
-  return false;
 });
 
 class PostCard extends ConsumerStatefulWidget {
@@ -98,36 +127,36 @@ class _PostCardState extends ConsumerState<PostCard> {
   bool _expanded = false;
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
-   
+
   String? _resolveMediaUrl(WidgetRef ref, String? raw) {
-  if (raw == null) return null;
-  final s = raw.trim();
-  if (s.isEmpty) return null;
+    if (raw == null) return null;
+    final s = raw.trim();
+    if (s.isEmpty) return null;
 
-  // Already absolute
-  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    // Already absolute
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
 
-  // Protocol-relative
-  if (s.startsWith('//')) return 'https:$s';
+    // Protocol-relative
+    if (s.startsWith('//')) return 'https:$s';
 
-  // Build absolute from API_BASE_URL origin (strip /v1 etc)
-  final apiBase = const String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  if (apiBase.isNotEmpty) {
-    final uri = Uri.tryParse(apiBase);
-    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
-      final origin = uri.origin;
+    // Build absolute from API_BASE_URL origin (strip /v1 etc)
+    final apiBase = const String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (apiBase.isNotEmpty) {
+      final uri = Uri.tryParse(apiBase);
+      if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+        final origin = uri.origin;
 
-      // If backend returns "/uploads/..." or "/media/..." etc.
-      if (s.startsWith('/')) return '$origin$s';
+        // If backend returns "/uploads/..." or "/media/..." etc.
+        if (s.startsWith('/')) return '$origin$s';
 
-      // If backend returns "uploads/..." (rare but happens)
-      return '$origin/$s';
+        // If backend returns "uploads/..." (rare but happens)
+        return '$origin/$s';
+      }
     }
-  }
 
-  // Fallback: if we cannot determine origin, return as-is
-  return s;
-}
+    // Fallback: if we cannot determine origin, return as-is
+    return s;
+  }
 
   double _mediaMaxHeight(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
@@ -305,7 +334,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
 
     // Intentionally not used for UI: Aura rule is no public counts.
-    // We keep the reads to avoid breaking any upstream logic, but we never display them.
     int? _asInt(Object? v) {
       if (v == null) return null;
       if (v is int) return v;
@@ -429,9 +457,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     maxLines: collapsedLines,
                   );
 
-                  final maxLines = _expanded
-                      ? null
-                      : (showToggle ? collapsedLines : collapsedLines);
+                  final maxLines = _expanded ? null : collapsedLines;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

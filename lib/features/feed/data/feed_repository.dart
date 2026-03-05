@@ -70,19 +70,35 @@ class FeedRepository {
   final Dio dio;
   FeedRepository(this.dio);
 
+  int _clampLimit(int limit) {
+    final n = limit;
+    if (n <= 0) return 20;
+    if (n > 50) return 50;
+    return n;
+  }
+
+  bool _isSoftFailure(DioException e) {
+    final code = e.response?.statusCode;
+    // 401: not logged in
+    // 403: logged in but blocked (future followers/private feed rules)
+    // 404: visibility contract may hide rows as not-found
+    return code == 401 || code == 403 || code == 404;
+  }
+
   Future<FeedPage> fetchFeed({String? cursor, int limit = 20}) async {
+    final take = _clampLimit(limit);
+
     try {
       final res = await dio.get(
         '/posts/feed',
         queryParameters: {
-          'limit': limit,
+          'limit': take,
           if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
         },
       );
       return FeedPage.fromResponse(res.data);
     } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 401) {
+      if (_isSoftFailure(e)) {
         return const FeedPage(items: <Post>[], nextCursor: null);
       }
       rethrow;

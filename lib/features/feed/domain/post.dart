@@ -95,6 +95,19 @@ class Post {
 
   static int? _asInt(dynamic v) {
     if (v is num) return v.toInt();
+    final s = _asString(v);
+    if (s == null) return null;
+    return int.tryParse(s);
+  }
+
+  static Map<String, dynamic>? _pickPrimaryMediaMap(dynamic mediaField) {
+    // New backend shape: media is List<Media>
+    if (mediaField is List && mediaField.isNotEmpty) {
+      final first = mediaField.first;
+      if (first is Map) return Map<String, dynamic>.from(first);
+    }
+    // Legacy shape: media is object
+    if (mediaField is Map) return Map<String, dynamic>.from(mediaField);
     return null;
   }
 
@@ -104,22 +117,29 @@ class Post {
 
     final authorId = (j['authorId'] ?? a?.id ?? '').toString();
 
-    // Support both flat media fields and nested media object (future-proof)
-    final media = _asMap(j['media']);
+    // Support:
+    // - flat media fields
+    // - legacy media object
+    // - NEW media array (primary = first)
+    final primaryMedia = _pickPrimaryMediaMap(j['media']);
 
-    final mediaType = _asString(j['mediaType']) ?? _asString(media?['type']) ?? 'NONE';
+    final mediaType = _asString(j['mediaType']) ??
+        _asString(primaryMedia?['type']) ??
+        _asString(primaryMedia?['mediaType']) ??
+        'NONE';
 
     final mediaUrl = _asString(j['mediaUrl']) ??
-        _asString(media?['url']) ??
-        _asString(media?['publicUrl']);
+        _asString(primaryMedia?['url']) ??
+        _asString(primaryMedia?['publicUrl']);
 
     final mediaThumbUrl = _asString(j['mediaThumbUrl']) ??
-        _asString(media?['thumbUrl']) ??
-        _asString(media?['thumbnailUrl']);
+        _asString(primaryMedia?['thumbUrl']) ??
+        _asString(primaryMedia?['thumbnailUrl']) ??
+        _asString(primaryMedia?['thumb']);
 
-    final mediaWidth = _asInt(j['mediaWidth']) ?? _asInt(media?['width']);
-    final mediaHeight = _asInt(j['mediaHeight']) ?? _asInt(media?['height']);
-    final mediaDuration = _asInt(j['mediaDuration']) ?? _asInt(media?['duration']);
+    final mediaWidth = _asInt(j['mediaWidth']) ?? _asInt(primaryMedia?['width']);
+    final mediaHeight = _asInt(j['mediaHeight']) ?? _asInt(primaryMedia?['height']);
+    final mediaDuration = _asInt(j['mediaDuration']) ?? _asInt(primaryMedia?['duration']);
 
     return Post(
       id: (j['id'] ?? '').toString(),
@@ -137,7 +157,7 @@ class Post {
       mediaWidth: mediaWidth,
       mediaHeight: mediaHeight,
       mediaDuration: mediaDuration,
-      caption: j['caption'] as String?,
+      caption: (j['caption'] as String?) ?? _asString(primaryMedia?['caption']),
 
       linkTitle: j['linkTitle'] as String?,
       linkDescription: j['linkDescription'] as String?,
