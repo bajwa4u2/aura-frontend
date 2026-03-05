@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_card.dart';
@@ -14,151 +11,24 @@ class AnnouncementDetailScreen extends ConsumerWidget {
   const AnnouncementDetailScreen({super.key, required this.slug});
   final String slug;
 
-  // Keep stable and simple. If you later want a dynamic base, we can wire it to AppConfig.
-  String _publicAnnouncementUrl(String slug) {
-    final s = slug.trim();
-    return 'https://auraplatform.org/announcements/$s';
+  String _fmtDate(DateTime dt) {
+    final d = dt.toLocal();
+    // Simple, stable format (no intl dependency)
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')} '
+        '${d.hour.toString().padLeft(2, '0')}:'
+        '${d.minute.toString().padLeft(2, '0')}';
   }
 
-  String _linkedInShareUrl(String targetUrl) {
-    final u = Uri.encodeComponent(targetUrl);
-    return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
+  bool _isImage(Map<String, dynamic> m) {
+    final t = (m['type'] ?? '').toString().toUpperCase();
+    return t == 'IMAGE' || t == 'SVG';
   }
 
-  Future<void> _copy(BuildContext context, String label, String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied')),
-    );
-  }
-
-  void _openShareSheet(BuildContext context, {required String publicUrl}) {
-    final linkedInShare = _linkedInShareUrl(publicUrl);
-
-    // Your backend OAuth start (user said integration already exists)
-    // This is the "connect" start endpoint (not callback).
-    const linkedInConnectUrl = 'https://api.auraplatform.org/v1/auth/linkedin';
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, AuraSpace.s16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Share', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-
-                AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Announcement link', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: AuraSpace.s8),
-                      SelectableText(publicUrl, style: AuraText.body),
-                      const SizedBox(height: AuraSpace.s10),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => _copy(context, 'Link', publicUrl),
-                            child: const Text('Copy link'),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AuraSpace.s10),
-
-                AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('LinkedIn share URL', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: AuraSpace.s8),
-                      SelectableText(linkedInShare, style: AuraText.body),
-                      const SizedBox(height: AuraSpace.s10),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => _copy(context, 'LinkedIn share URL', linkedInShare),
-                            child: const Text('Copy LinkedIn share URL'),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AuraSpace.s10),
-
-                AuraCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('LinkedIn connect URL', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: AuraSpace.s8),
-                      SelectableText(linkedInConnectUrl, style: AuraText.body),
-                      const SizedBox(height: AuraSpace.s10),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => _copy(context, 'LinkedIn connect URL', linkedInConnectUrl),
-                            child: const Text('Copy LinkedIn connect URL'),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AuraSpace.s6),
-                Text(
-                  'Next: we’ll replace this with “Post to Aura LinkedIn Page” (direct posting) using your backend flow.',
-                  style: AuraText.small,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _prettyPublished(DateTime dt) {
-    final local = dt.toLocal();
-    final y = local.year.toString().padLeft(4, '0');
-    final m = local.month.toString().padLeft(2, '0');
-    final d = local.day.toString().padLeft(2, '0');
-    final hh = local.hour.toString().padLeft(2, '0');
-    final mm = local.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $hh:$mm';
-  }
-
-  String _tryDecodeBody(String body) {
-    final s = body.trim();
-    if (s.isEmpty) return s;
-
-    // If backend ever returns JSON string accidentally, try to unwrap gracefully.
-    if (s.startsWith('{') && s.endsWith('}')) {
-      try {
-        final decoded = jsonDecode(s);
-        if (decoded is Map) {
-          final maybe = decoded['body'] ?? decoded['content'] ?? decoded['text'];
-          if (maybe is String) return maybe;
-        }
-      } catch (_) {}
-    }
-    return body;
+  bool _isVideo(Map<String, dynamic> m) {
+    final t = (m['type'] ?? '').toString().toUpperCase();
+    return t == 'VIDEO';
   }
 
   @override
@@ -205,8 +75,8 @@ class AnnouncementDetailScreen extends ConsumerWidget {
           }
 
           final title = a.title.isEmpty ? a.slug : a.title;
-          final publicUrl = _publicAnnouncementUrl(a.slug);
-          final body = _tryDecodeBody(a.body);
+          final body = a.bodyMarkdown.trim();
+          final summary = a.summary.trim();
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
@@ -215,22 +85,25 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: Text(title, style: AuraText.h1)),
-                        IconButton(
-                          tooltip: 'Share',
-                          onPressed: () => _openShareSheet(context, publicUrl: publicUrl),
-                          icon: const Icon(Icons.ios_share),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AuraSpace.s8),
+                    Text(title, style: AuraText.h1),
+                    const SizedBox(height: AuraSpace.s10),
                     if (a.publishedAt != null)
-                      Text('Published: ${_prettyPublished(a.publishedAt!)}', style: AuraText.small),
-                    const SizedBox(height: AuraSpace.s14),
-                    Text(body, style: AuraText.body),
+                      Text('Published: ${_fmtDate(a.publishedAt!)}', style: AuraText.small),
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      Text(summary, style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
+                    ],
+                    if (a.media.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      for (final m in a.media) ...[
+                        _AnnouncementMediaBlock(m: m, isImage: _isImage, isVideo: _isVideo),
+                        const SizedBox(height: AuraSpace.s10),
+                      ],
+                    ],
+                    if (body.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      Text(body, style: AuraText.body),
+                    ],
                   ],
                 ),
               ),
@@ -238,6 +111,85 @@ class AnnouncementDetailScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _AnnouncementMediaBlock extends StatelessWidget {
+  const _AnnouncementMediaBlock({
+    required this.m,
+    required this.isImage,
+    required this.isVideo,
+  });
+
+  final Map<String, dynamic> m;
+  final bool Function(Map<String, dynamic>) isImage;
+  final bool Function(Map<String, dynamic>) isVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = (m['url'] ?? '').toString();
+    final thumb = (m['thumbUrl'] ?? '').toString();
+    final caption = (m['caption'] ?? '').toString().trim();
+
+    if (url.isEmpty) return const SizedBox.shrink();
+
+    if (isImage(m)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox(height: 120, child: Center(child: Icon(Icons.broken_image))),
+            ),
+          ),
+          if (caption.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(caption, style: AuraText.small),
+          ],
+        ],
+      );
+    }
+
+    if (isVideo(m)) {
+      // Phase 1: show thumb (or fallback), don’t introduce a full video player yet.
+      final show = thumb.isNotEmpty ? thumb : url;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.network(
+                  show,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const SizedBox(height: 120, child: Center(child: Icon(Icons.video_file_outlined))),
+                ),
+                const Icon(Icons.play_circle_outline, size: 44),
+              ],
+            ),
+          ),
+          if (caption.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(caption, style: AuraText.small),
+          ],
+        ],
+      );
+    }
+
+    // Unknown media type
+    return Row(
+      children: [
+        const Icon(Icons.attach_file, size: 18),
+        const SizedBox(width: 8),
+        Expanded(child: Text(url, style: AuraText.small)),
+      ],
     );
   }
 }

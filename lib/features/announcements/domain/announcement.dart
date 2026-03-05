@@ -3,21 +3,25 @@ class Announcement {
     required this.id,
     required this.slug,
     required this.title,
-    required this.body,
+    required this.summary,
+    required this.excerpt,
+    required this.bodyMarkdown,
     required this.pinned,
     required this.publishedAt,
-    this.media = const [],
+    required this.media,
   });
 
   final String id;
   final String slug;
   final String title;
-  final String body;
+  final String summary;
+  final String excerpt;
+  final String bodyMarkdown;
   final bool pinned;
   final DateTime? publishedAt;
 
-  // NEW
-  final List<AnnouncementMedia> media;
+  /// Backend-ready: [{ id, type, url, thumbUrl, width, height, duration, caption }]
+  final List<Map<String, dynamic>> media;
 
   factory Announcement.fromJson(Map<String, dynamic> j) {
     final publishedRaw = j['publishedAt']?.toString();
@@ -26,48 +30,24 @@ class Announcement {
       published = DateTime.tryParse(publishedRaw);
     }
 
-    final mediaList = (j['media'] as List?)
-            ?.map((m) => AnnouncementMedia.fromJson(m))
-            .toList() ??
-        const <AnnouncementMedia>[];
+    final rawMedia = j['media'];
+    final media = <Map<String, dynamic>>[];
+    if (rawMedia is List) {
+      for (final it in rawMedia) {
+        if (it is Map) media.add(Map<String, dynamic>.from(it.cast()));
+      }
+    }
 
     return Announcement(
       id: (j['id'] ?? '').toString(),
       slug: (j['slug'] ?? '').toString(),
       title: (j['title'] ?? '').toString(),
-      body: (j['body'] ?? j['content'] ?? '').toString(),
+      summary: (j['summary'] ?? '').toString(),
+      excerpt: (j['excerpt'] ?? '').toString(),
+      bodyMarkdown: (j['bodyMarkdown'] ?? j['bodyMd'] ?? '').toString(),
       pinned: (j['pinned'] == true),
       publishedAt: published,
-      media: mediaList,
-    );
-  }
-}
-
-class AnnouncementMedia {
-  AnnouncementMedia({
-    required this.url,
-    required this.type,
-    this.thumbUrl,
-    this.width,
-    this.height,
-    this.duration,
-  });
-
-  final String url;
-  final String type;
-  final String? thumbUrl;
-  final int? width;
-  final int? height;
-  final int? duration;
-
-  factory AnnouncementMedia.fromJson(Map<String, dynamic> j) {
-    return AnnouncementMedia(
-      url: (j['url'] ?? '').toString(),
-      type: (j['type'] ?? '').toString(),
-      thumbUrl: j['thumbUrl']?.toString(),
-      width: j['width'] is int ? j['width'] : null,
-      height: j['height'] is int ? j['height'] : null,
-      duration: j['duration'] is int ? j['duration'] : null,
+      media: media,
     );
   }
 }
