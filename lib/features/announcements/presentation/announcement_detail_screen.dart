@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -13,12 +14,19 @@ class AnnouncementDetailScreen extends ConsumerWidget {
 
   String _fmtDate(DateTime dt) {
     final d = dt.toLocal();
-    // Simple, stable format (no intl dependency)
     return '${d.year.toString().padLeft(4, '0')}-'
         '${d.month.toString().padLeft(2, '0')}-'
         '${d.day.toString().padLeft(2, '0')} '
         '${d.hour.toString().padLeft(2, '0')}:'
         '${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  bool _isSvg(Map<String, dynamic> m) {
+    final t = (m['type'] ?? '').toString().toUpperCase();
+    if (t == 'SVG') return true;
+
+    final url = (m['url'] ?? '').toString().toLowerCase();
+    return url.endsWith('.svg');
   }
 
   bool _isImage(Map<String, dynamic> m) {
@@ -79,32 +87,53 @@ class AnnouncementDetailScreen extends ConsumerWidget {
           final summary = a.summary.trim();
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s12,
+              AuraSpace.s16,
+              AuraSpace.s24,
+            ),
             children: [
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: AuraText.h1),
-                    const SizedBox(height: AuraSpace.s10),
-                    if (a.publishedAt != null)
-                      Text('Published: ${_fmtDate(a.publishedAt!)}', style: AuraText.small),
-                    if (summary.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Text(summary, style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
-                    ],
-                    if (a.media.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      for (final m in a.media) ...[
-                        _AnnouncementMediaBlock(m: m, isImage: _isImage, isVideo: _isVideo),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 860),
+                child: AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AuraText.h1),
+                      const SizedBox(height: AuraSpace.s10),
+                      if (a.publishedAt != null)
+                        Text('Published: ${_fmtDate(a.publishedAt!)}', style: AuraText.small),
+
+                      if (summary.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        Text(
+                          summary,
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+
+                      if (a.media.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s16),
+                        Text('Attachments', style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: AuraSpace.s10),
+                        for (final m in a.media) ...[
+                          _AnnouncementMediaBlock(
+                            m: m,
+                            isImage: _isImage,
+                            isVideo: _isVideo,
+                            isSvg: _isSvg,
+                          ),
+                          const SizedBox(height: AuraSpace.s10),
+                        ],
+                      ],
+
+                      if (body.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        Text(body, style: AuraText.body),
                       ],
                     ],
-                    if (body.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Text(body, style: AuraText.body),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -120,11 +149,13 @@ class _AnnouncementMediaBlock extends StatelessWidget {
     required this.m,
     required this.isImage,
     required this.isVideo,
+    required this.isSvg,
   });
 
   final Map<String, dynamic> m;
   final bool Function(Map<String, dynamic>) isImage;
   final bool Function(Map<String, dynamic>) isVideo;
+  final bool Function(Map<String, dynamic>) isSvg;
 
   @override
   Widget build(BuildContext context) {
@@ -134,16 +165,44 @@ class _AnnouncementMediaBlock extends StatelessWidget {
 
     if (url.isEmpty) return const SizedBox.shrink();
 
+    Widget media;
+
     if (isImage(m)) {
+      if (isSvg(m)) {
+        media = SvgPicture.network(
+          url,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => const SizedBox(
+            height: 140,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+        );
+      } else {
+        media = Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox(
+            height: 140,
+            child: Center(child: Icon(Icons.broken_image)),
+          ),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const SizedBox(
+              height: 140,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          },
+        );
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 120, child: Center(child: Icon(Icons.broken_image))),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 420),
+              child: media,
             ),
           ),
           if (caption.isNotEmpty) ...[
@@ -157,22 +216,35 @@ class _AnnouncementMediaBlock extends StatelessWidget {
     if (isVideo(m)) {
       // Phase 1: show thumb (or fallback), don’t introduce a full video player yet.
       final show = thumb.isNotEmpty ? thumb : url;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Image.network(
-                  show,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      const SizedBox(height: 120, child: Center(child: Icon(Icons.video_file_outlined))),
-                ),
-                const Icon(Icons.play_circle_outline, size: 44),
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 420),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.network(
+                    show,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(
+                      height: 140,
+                      child: Center(child: Icon(Icons.video_file_outlined)),
+                    ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const SizedBox(
+                        height: 140,
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      );
+                    },
+                  ),
+                  const Icon(Icons.play_circle_outline, size: 44),
+                ],
+              ),
             ),
           ),
           if (caption.isNotEmpty) ...[

@@ -37,7 +37,112 @@ Map<String, dynamic> _unwrapMap(dynamic raw) {
   return root;
 }
 
-final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+class _PinnedAnnouncement {
+  const _PinnedAnnouncement({
+    required this.slug,
+    required this.title,
+    required this.summary,
+    required this.publishedAt,
+  });
+
+  final String slug;
+  final String title;
+  final String summary;
+  final DateTime? publishedAt;
+
+  static _PinnedAnnouncement? tryFrom(dynamic raw) {
+    final m = _asMap(raw);
+    if (m.isEmpty) return null;
+
+    final slug = (m['slug'] ?? '').toString().trim();
+    if (slug.isEmpty) return null;
+
+    final title = (m['title'] ?? slug).toString().trim();
+    final summary = (m['summary'] ?? m['excerpt'] ?? '').toString().trim();
+
+    DateTime? publishedAt;
+    final p = m['publishedAt'];
+    if (p is String && p.trim().isNotEmpty) {
+      publishedAt = DateTime.tryParse(p.trim());
+    }
+
+    return _PinnedAnnouncement(
+      slug: slug,
+      title: title.isEmpty ? slug : title,
+      summary: summary,
+      publishedAt: publishedAt,
+    );
+  }
+}
+
+_PinnedAnnouncement? _unwrapPinned(dynamic raw) {
+  // Accept shapes like:
+  // { ok:true, data:{ item:{...} } }
+  // { ok:true, data:{ items:[...] } }
+  // { item:{...} }
+  // { items:[...] }
+  // { ...announcement... }
+  final root = _asMap(raw);
+
+  // direct item
+  final directItem = root['item'];
+  if (directItem is Map) {
+    return _PinnedAnnouncement.tryFrom(directItem);
+  }
+
+  // direct items list
+  final directItems = root['items'];
+  if (directItems is List) {
+    for (final it in directItems) {
+      final a = _PinnedAnnouncement.tryFrom(it);
+      if (a != null) return a;
+    }
+  }
+
+  final data = root['data'];
+  if (data is Map) {
+    final item = data['item'];
+    if (item is Map) return _PinnedAnnouncement.tryFrom(item);
+
+    final items = data['items'];
+    if (items is List) {
+      for (final it in items) {
+        final a = _PinnedAnnouncement.tryFrom(it);
+        if (a != null) return a;
+      }
+    }
+
+    // sometimes: { data: { data: { item } } }
+    final inner = data['data'];
+    if (inner is Map) {
+      final innerItem = inner['item'];
+      if (innerItem is Map) return _PinnedAnnouncement.tryFrom(innerItem);
+
+      final innerItems = inner['items'];
+      if (innerItems is List) {
+        for (final it in innerItems) {
+          final a = _PinnedAnnouncement.tryFrom(it);
+          if (a != null) return a;
+        }
+      }
+    }
+  }
+
+  // last resort: treat unwrapped map as announcement
+  final m = _unwrapMap(raw);
+  final fallback = _PinnedAnnouncement.tryFrom(m);
+  return fallback;
+}
+
+final pinnedAnnouncementProvider =
+    FutureProvider.autoDispose<_PinnedAnnouncement?>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/announcements/pinned');
+  return _unwrapPinned(res.data);
+});
+
+final draftProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/draft');
   final raw = res.data;
@@ -54,7 +159,8 @@ final draftProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) as
 
   // Otherwise treat returned data itself as the draft
   // (common if endpoint just returns the draft object inside data)
-  if (m.isNotEmpty && (m['id'] != null || m['title'] != null || m['body'] != null)) {
+  if (m.isNotEmpty &&
+      (m['id'] != null || m['title'] != null || m['body'] != null)) {
     return m;
   }
 
@@ -136,6 +242,9 @@ class MemberHomeScreen extends ConsumerWidget {
         children: [
           const _HeroCard(),
 
+          SizedBox(height: AuraSpace.s12),
+          const _PinnedAnnouncementBanner(),
+
           SizedBox(height: AuraSpace.s18),
 
           draftAsync.when(
@@ -178,7 +287,8 @@ class MemberHomeScreen extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         'Saved posts',
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        style:
+                            AuraText.body.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                     const Icon(Icons.chevron_right),
@@ -218,8 +328,9 @@ class MemberHomeScreen extends ConsumerWidget {
               );
             },
             loading: () => const _LoadingCard(),
-            error: (e, _) =>
-                AuraCard(child: Text('Could not load saved: $e', style: AuraText.body)),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load saved: $e', style: AuraText.body),
+            ),
           ),
 
           SizedBox(height: AuraSpace.s18),
@@ -231,7 +342,9 @@ class MemberHomeScreen extends ConsumerWidget {
             data: (posts) {
               final top = posts.take(6).toList();
               if (top.isEmpty) {
-                return AuraCard(child: Text('No posts yet.', style: AuraText.body));
+                return AuraCard(
+                  child: Text('No posts yet.', style: AuraText.body),
+                );
               }
               return Column(
                 children: top
@@ -245,8 +358,9 @@ class MemberHomeScreen extends ConsumerWidget {
               );
             },
             loading: () => const _LoadingCard(),
-            error: (e, _) =>
-                AuraCard(child: Text('Could not load feed: $e', style: AuraText.body)),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load feed: $e', style: AuraText.body),
+            ),
           ),
 
           SizedBox(height: AuraSpace.s18),
@@ -255,6 +369,67 @@ class MemberHomeScreen extends ConsumerWidget {
           const _ToolsRow(),
         ],
       ),
+    );
+  }
+}
+
+class _PinnedAnnouncementBanner extends ConsumerWidget {
+  const _PinnedAnnouncementBanner();
+
+  String _fmt(DateTime dt) {
+    final d = dt.toLocal();
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(pinnedAnnouncementProvider);
+
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (a) {
+        if (a == null) return const SizedBox.shrink();
+
+        final title = a.title.trim().isEmpty ? a.slug : a.title.trim();
+        final summary = a.summary.trim();
+
+        return AuraCard(
+          onTap: () => context.push('/announcements/${a.slug}'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.campaign_outlined, size: 18),
+                  SizedBox(width: AuraSpace.s8),
+                  Expanded(
+                    child: Text(
+                      'Pinned announcement',
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              SizedBox(height: AuraSpace.s10),
+              Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
+              if (a.publishedAt != null) ...[
+                SizedBox(height: AuraSpace.s6),
+                Text('Published: ${_fmt(a.publishedAt!)}', style: AuraText.small),
+              ],
+              if (summary.isNotEmpty) ...[
+                SizedBox(height: AuraSpace.s10),
+                Text(summary, style: AuraText.body),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
