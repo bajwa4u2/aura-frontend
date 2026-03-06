@@ -10,6 +10,16 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/post.dart';
 import 'widgets/post_card.dart';
 
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map) return Map<String, dynamic>.from(v);
+  return <String, dynamic>{};
+}
+
+List<dynamic> _asList(dynamic v) {
+  if (v is List) return v;
+  return const <dynamic>[];
+}
+
 Post _postFromAny(dynamic body) {
   if (body is Map) {
     final map = Map<String, dynamic>.from(body);
@@ -22,6 +32,72 @@ Post _postFromAny(dynamic body) {
   throw StateError('Unexpected post response');
 }
 
+List<Post> _repliesFromAny(dynamic body) {
+  if (body is List) {
+    return body
+        .whereType<Map>()
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  if (body is! Map) return const <Post>[];
+
+  final root = _asMap(body);
+
+  // Supported shapes:
+  // 1) { items: [...] }
+  // 2) { data: [...] }
+  // 3) { data: { items: [...] } }
+  // 4) { replies: [...] }
+  // 5) { data: { replies: [...] } }
+  final directItems = _asList(root['items']);
+  if (directItems.isNotEmpty) {
+    return directItems
+        .whereType<Map>()
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  final directReplies = _asList(root['replies']);
+  if (directReplies.isNotEmpty) {
+    return directReplies
+        .whereType<Map>()
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  final data = root['data'];
+
+  if (data is List) {
+    return data
+        .whereType<Map>()
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  if (data is Map) {
+    final dataMap = _asMap(data);
+
+    final nestedItems = _asList(dataMap['items']);
+    if (nestedItems.isNotEmpty) {
+      return nestedItems
+          .whereType<Map>()
+          .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    final nestedReplies = _asList(dataMap['replies']);
+    if (nestedReplies.isNotEmpty) {
+      return nestedReplies
+          .whereType<Map>()
+          .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+  }
+
+  return const <Post>[];
+}
+
 final postProvider = FutureProvider.family<Post, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/$id');
@@ -31,19 +107,7 @@ final postProvider = FutureProvider.family<Post, String>((ref, id) async {
 final repliesProvider = FutureProvider.family<List<Post>, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/$id/replies');
-  final raw = res.data;
-
-  final List items;
-  if (raw is Map) {
-    final m = Map<String, dynamic>.from(raw);
-    items = (m['data'] as List?) ?? (m['items'] as List?) ?? const <dynamic>[];
-  } else if (raw is List) {
-    items = raw;
-  } else {
-    items = const <dynamic>[];
-  }
-
-  return items.whereType<Map>().map((e) => Post.fromJson(Map<String, dynamic>.from(e))).toList();
+  return _repliesFromAny(res.data);
 });
 
 class PostDetailScreen extends ConsumerWidget {
@@ -65,7 +129,12 @@ class PostDetailScreen extends ConsumerWidget {
         )
       ],
       body: ListView(
-        padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+        padding: EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s12,
+          AuraSpace.s16,
+          AuraSpace.s24,
+        ),
         children: [
           postAsync.when(
             data: (p) => PostCard(post: p, compact: false),
@@ -73,7 +142,9 @@ class PostDetailScreen extends ConsumerWidget {
               padding: EdgeInsets.all(AuraSpace.s12),
               child: const Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => AuraCard(child: Text('Could not load post: $e', style: AuraText.body)),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load post: $e', style: AuraText.body),
+            ),
           ),
           SizedBox(height: AuraSpace.s18),
           Text('Replies', style: AuraText.title),
@@ -98,7 +169,9 @@ class PostDetailScreen extends ConsumerWidget {
               padding: EdgeInsets.all(AuraSpace.s12),
               child: const Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => AuraCard(child: Text('Could not load replies: $e', style: AuraText.body)),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load replies: $e', style: AuraText.body),
+            ),
           ),
         ],
       ),
