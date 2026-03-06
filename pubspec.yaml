@@ -34,7 +34,7 @@ dependencies:
   # Render white paper markdown in-app
   flutter_markdown: ^0.7.3
 
-  # PDF viewer for Investor documents (mobile/desktop)
+  # PDF viewer for mobile/desktop only
   syncfusion_flutter_pdfviewer: ^24.2.9
 
 dev_dependencies:
@@ -44,8 +44,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/investor/Aura_Business_Model_Framework_v1.0_Mar2026.pdf
-    - assets/investor/Aura_Governance_Framework_v1.0_Mar2026.pdf
-    - assets/investor/Aura_Seed_Investment_Round_Mar2026.pdf
