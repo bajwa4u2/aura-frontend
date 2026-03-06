@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyPendingScreen extends ConsumerStatefulWidget {
-  const VerifyPendingScreen({super.key, this.email, this.redirectTo});
+  const VerifyPendingScreen({
+    super.key,
+    this.email,
+    this.redirectTo,
+  });
 
   final String? email;
   final String? redirectTo;
@@ -48,7 +53,6 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
     final dio = ref.read(dioProvider);
 
-    // Try a few candidates so UI survives backend naming changes.
     final candidates = <String>[
       '/auth/resend-verification',
       '/auth/resend-verify-email',
@@ -60,6 +64,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
       for (final path in candidates) {
         try {
           await dio.post(path, data: {'email': email});
+          if (!mounted) return;
           setState(() => _msg = 'Verification email sent. Check inbox and spam.');
           return;
         } on DioException catch (e) {
@@ -70,12 +75,16 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
       }
 
       debugPrint('resend verify failed: ${last?.response?.statusCode} ${last?.response?.data}');
+      if (!mounted) return;
       setState(() => _msg = 'Could not resend right now.');
     } catch (e) {
       debugPrint('resend verify failed: $e');
+      if (!mounted) return;
       setState(() => _msg = 'Could not resend right now.');
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -88,6 +97,15 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   @override
   Widget build(BuildContext context) {
     final redirect = _safeRedirect(widget.redirectTo);
+    final verifiedAsync = ref.watch(emailVerifiedProvider);
+    final isAuthed = ref.watch(isAuthedProvider);
+
+    if (isAuthed && verifiedAsync.value == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.go(redirect);
+      });
+    }
 
     return AuraScaffold(
       title: 'Verify your email',
@@ -109,7 +127,9 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(labelText: 'Email (for resend)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Email (for resend)',
+                  ),
                 ),
                 const SizedBox(height: AuraSpace.s14),
                 if (_busy) ...[
@@ -125,7 +145,8 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       child: Text(_busy ? 'Sending…' : 'Resend verification'),
                     ),
                     TextButton(
-                      onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                      onPressed: () =>
+                          context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                       child: const Text('Back to login'),
                     ),
                   ],
@@ -133,6 +154,10 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                 if (_msg != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Text(_msg!, style: AuraText.body),
+                ],
+                if (verifiedAsync.isLoading) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Text('Checking verification status…', style: AuraText.body),
                 ],
               ],
             ),

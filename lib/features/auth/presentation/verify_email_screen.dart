@@ -6,13 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
-  const VerifyEmailScreen({super.key, this.token, this.email, this.redirectTo});
+  const VerifyEmailScreen({
+    super.key,
+    this.token,
+    this.email,
+    this.redirectTo,
+  });
 
   final String? token;
   final String? email;
@@ -32,6 +38,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     if (v.isEmpty) return '/home';
     if (!v.startsWith('/')) return '/home';
     return v;
+  }
+
+  Future<void> _refreshAuthState() async {
+    try {
+      ref.invalidate(emailVerifiedProvider);
+      ref.invalidate(authStatusProvider);
+      ref.invalidate(isAuthedProvider);
+      await ref.read(emailVerifiedProvider.future);
+    } catch (_) {
+      // stay quiet, router can still converge on next frame
+    }
   }
 
   @override
@@ -55,20 +72,39 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     try {
       await dio.post('/auth/verify-email', data: {'token': token});
+
+      await _refreshAuthState();
+
+      if (!mounted) return;
+
       setState(() {
         _busy = false;
         _ok = true;
-        _msg = 'Email verified.';
+        _msg = 'Your email has been verified successfully.';
       });
     } on DioException catch (e) {
-      debugPrint('verify-email failed: ${e.response?.statusCode} ${e.response?.data}');
+      final code = e.response?.statusCode;
+      debugPrint('verify-email failed: $code ${e.response?.data}');
+
+      String msg = 'Verification failed.';
+      if (code == 400 || code == 404 || code == 410) {
+        msg = 'This verification link is invalid or expired.';
+      } else if (code == 409) {
+        msg = 'This email appears to be already verified.';
+      }
+
+      if (!mounted) return;
+
       setState(() {
         _busy = false;
         _ok = false;
-        _msg = 'Verification failed. The link may be expired.';
+        _msg = msg;
       });
     } catch (e) {
       debugPrint('verify-email failed: $e');
+
+      if (!mounted) return;
+
       setState(() {
         _busy = false;
         _ok = false;
@@ -80,6 +116,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final redirect = _safeRedirect(widget.redirectTo);
+    final email = (widget.email ?? '').trim();
 
     return AuraScaffold(
       title: 'Verify email',
@@ -93,7 +130,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 Text('Email verification', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 if (_busy) ...[
-                  Text('Verifying…', style: AuraText.body),
+                  Text('Verifying your email…', style: AuraText.body),
                   const SizedBox(height: AuraSpace.s12),
                   const LinearProgressIndicator(),
                 ] else ...[
@@ -105,12 +142,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       runSpacing: AuraSpace.s10,
                       children: [
                         FilledButton(
-                          onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
-                          child: const Text('Continue to login'),
+                          onPressed: () =>
+                              context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                          child: const Text('Continue'),
                         ),
                         TextButton(
                           onPressed: () => context.go('/public'),
-                          child: const Text('Back to home'),
+                          child: const Text('Back to public home'),
                         ),
                       ],
                     )
@@ -121,12 +159,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       children: [
                         FilledButton(
                           onPressed: () => context.go(
-                            '/verify-pending?email=${Uri.encodeComponent((widget.email ?? '').trim())}&redirect=${Uri.encodeComponent(redirect)}',
+                            '/verify-pending?email=${Uri.encodeComponent(email)}&redirect=${Uri.encodeComponent(redirect)}',
                           ),
                           child: const Text('Resend verification'),
                         ),
                         TextButton(
-                          onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                          onPressed: () =>
+                              context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
                           child: const Text('Back to login'),
                         ),
                       ],
