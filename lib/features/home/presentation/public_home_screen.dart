@@ -379,8 +379,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => context.go(
-                '/register?redirect=${Uri.encodeComponent(redirect)}',
+              onPressed: () => context.go('/register?redirect=%2Fhome'),
               ),
               child: const Text('Create account'),
             ),
@@ -389,8 +388,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go(
-                '/login?redirect=${Uri.encodeComponent(redirect)}',
+              onPressed: () => context.go('/login?redirect=%2Fhome'),
               ),
               child: const Text('Sign in'),
             ),
