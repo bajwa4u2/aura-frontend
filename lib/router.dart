@@ -54,12 +54,6 @@ String _normalizeRedirectDest(String? dest) {
   return trimmed;
 }
 
-String _encodeBootFrom(Uri uri) {
-  final s = uri.toString().trim();
-  if (s.isEmpty) return Uri.encodeComponent('/public');
-  return Uri.encodeComponent(s);
-}
-
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
@@ -124,7 +118,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   }
 
   return GoRouter(
-    initialLocation: '/boot',
     refreshListenable: refresh,
     errorBuilder: (context, state) {
       final path = state.uri.toString();
@@ -186,47 +179,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthAction = isAuthActionPath(path);
       final isAuth = isAnyAuthPath(path);
 
-      // Hold exact destination while bootstrap settles.
+      // Critical rule:
+      // While startup auth resolution is still settling, DO NOT change the URL.
+      // This preserves exact same-page refresh behavior.
       if (boot.isLoading || authStatus == AuthStatus.loading) {
-        if (path == '/boot') return null;
-        return '/boot?from=${_encodeBootFrom(uri)}';
-      }
-
-      // Boot exits to the exact intended route, not a default public/member page.
-      if (path == '/boot') {
-        final from = uri.queryParameters['from'];
-        final target = _normalizeRedirectDest(
-          from == null || from.isEmpty ? '/public' : Uri.decodeComponent(from),
-        );
-        final targetPath = Uri.parse(target).path;
-
-        if (authStatus == AuthStatus.unauthed) {
-          if (isPublicPath(targetPath) || isAnyAuthPath(targetPath)) {
-            return target;
-          }
-          return '/login?redirect=${Uri.encodeComponent(target)}';
-        }
-
-        final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading) return null;
-
-        final verified = verifiedAsync.value ?? false;
-
-        if (!verified) {
-          if (isPublicPath(targetPath) || isAuthActionPath(targetPath)) {
-            return target;
-          }
-          return '/verify-pending?redirect=${Uri.encodeComponent(target)}';
-        }
-
-        if (targetPath == '/verify-pending' || targetPath == '/verify-email') {
-          final redirectTo = Uri.parse(target).queryParameters['redirect'];
-          return _normalizeRedirectDest(redirectTo);
-        }
-
-        if (targetPath == '/boot') return '/home';
-        if (targetPath == '/') return '/home';
-        return target;
+        return null;
       }
 
       // Legacy alias.
@@ -238,7 +195,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // Neutral root entry.
+      // Neutral root entry only.
       if (path == '/') {
         if (authStatus == AuthStatus.unauthed) return '/public';
 
@@ -249,7 +206,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return verified ? '/home' : '/verify-pending';
       }
 
-      // Unauthenticated users.
+      // Unauthenticated users may stay on public/auth pages only.
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -275,12 +232,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (redirectTo != null && redirectTo.startsWith('/')) {
           return _normalizeRedirectDest(redirectTo);
         }
+
         return '/home';
       }
 
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
-      // Preserve exact route while verification state resolves.
+      // Hold exact URL while verification state resolves.
       if (verifiedAsync.isLoading) {
         return null;
       }
@@ -316,11 +274,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/boot',
-        builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
-      ),
-
       GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/auth', redirect: (_, __) => '/login'),
       GoRoute(path: '/feed', redirect: (_, __) => '/home'),
