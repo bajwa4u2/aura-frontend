@@ -26,14 +26,17 @@ class InstitutionSignInScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton(
-                  onPressed: () => context.go('/login?redirect=%2Fhome'),
+                  onPressed: () => context.go('/login?redirect=%2Finstitutions'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AuraSpace.s14,
                       vertical: AuraSpace.s12,
                     ),
                   ),
-                  child: Text('Sign in', style: AuraText.body.copyWith(color: Colors.white)),
+                  child: Text(
+                    'Sign in',
+                    style: AuraText.body.copyWith(color: Colors.white),
+                  ),
                 ),
               ),
               const SizedBox(width: AuraSpace.s10),
