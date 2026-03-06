@@ -429,155 +429,36 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _publish() async {
-    if (_posting) return;
-
-    if (!_hasText) {
-      setState(() => _showTextError = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Text is required.')),
-      );
-      return;
-    }
-
-    if (_textTooLong) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Too long. Please shorten your post.')),
-      );
-      return;
-    }
-
-    if (!_canPublish) return;
-
-    setState(() => _posting = true);
-
-    try {
-      final dio = ref.read(dioProvider);
-
-      String? uploadedPublicUrl;
-
-      final hasFreshUpload =
-          _pickedFile != null && (_mode == _ComposeMode.image || _mode == _ComposeMode.video);
-
-      if (hasFreshUpload) {
-        final mime = _inferMime(_pickedFile!.name);
-        final bytes = await _pickedFile!.readAsBytes();
-
-        if (_mode == _ComposeMode.image && bytes.length > 10 * 1024 * 1024) {
-          throw Exception('Image too large (max 10MB)');
-        }
-        if (_mode == _ComposeMode.video && bytes.length > 50 * 1024 * 1024) {
-          throw Exception('Video too large (max 50MB)');
-        }
-
-        final pres = await dio.post('/media/presign', data: {
-          'fileName': _pickedFile!.name,
-          'mimeType': mime,
-          'bytes': bytes.length,
-          'kind': _mode == _ComposeMode.image ? 'IMAGE' : 'VIDEO',
-          if (_mode == _ComposeMode.image) 'width': _imgW,
-          if (_mode == _ComposeMode.image) 'height': _imgH,
-        });
-
-        final presigned = _unwrapDataMap(pres.data);
-
-        uploadedPublicUrl = (presigned['publicUrl'] ??
-                presigned['url'] ??
-                ((presigned['media'] is Map) ? _asMap(presigned['media'])['url'] : null))
-            ?.toString();
-
-        final upload = _asMap(presigned['upload']);
-        final uploadUrl = (upload['url'] ?? '').toString();
-        final headers = _asMap(upload['headers']);
-
-        if (uploadUrl.isEmpty) {
-          throw Exception('Upload URL missing from presign response.');
-        }
-        if (uploadedPublicUrl == null || uploadedPublicUrl.trim().isEmpty) {
-          throw Exception('publicUrl missing from presign response.');
-        }
-
-        final uploadDio = _cleanUploadDio();
-
-        final uploadHeaders = <String, String>{};
-        headers.forEach((k, v) {
-          if (v == null) return;
-          uploadHeaders[k.toString()] = v.toString();
-        });
-
-        if (!uploadHeaders.containsKey('Content-Type')) {
-          uploadHeaders['Content-Type'] = mime;
-        }
-
-        await uploadDio.put(
-          uploadUrl,
-          data: bytes,
-          options: Options(
-            headers: uploadHeaders,
-            contentType: uploadHeaders['Content-Type'],
-            responseType: ResponseType.plain,
-            followRedirects: true,
-            validateStatus: (code) => code != null && code >= 200 && code < 300,
-          ),
-        );
-      }
-
-      if (_mode == _ComposeMode.image || _mode == _ComposeMode.video) {
-        final finalUrl = (uploadedPublicUrl ?? _existingMediaUrl ?? '').trim();
-        if (finalUrl.isNotEmpty) {
-          await _saveDraft(silent: true, mediaUrlOverride: finalUrl);
-        } else {
-          await _saveDraft(silent: true);
-        }
-      } else {
-        await _saveDraft(silent: true);
-      }
-
-      await dio.post('/posts/draft/publish');
-
-      if (!mounted) return;
-      context.pop(true);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not publish: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _posting = false);
-    }
-  }
-
   bool get _auditCooldownActive {
     final t = _lastAuditAt;
     if (t == null) return false;
     return DateTime.now().difference(t) < const Duration(seconds: 15);
   }
 
-  Future<void> _runAuraEditor() async {
+  Future<Map<String, dynamic>?> _runAuraEditor({bool fromPublish = false}) async {
     final text = _textController.text.trim();
     if (text.isEmpty) {
       setState(() {
-        _auditError = 'Write something first.';
+        _auditError = 'Text is required.';
         _auditResult = null;
       });
-      return;
+      if (!fromPublish && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Text is required.')),
+        );
+      }
+      return null;
     }
 
-    if (text.length < 40) {
-      setState(() {
-        _auditError = 'Add a little more context (at least a few lines).';
-        _auditResult = null;
-      });
-      return;
-    }
-
-    if (_auditBusy || _auditCooldownActive) return;
+    if (_auditBusy) return _auditResult;
 
     setState(() {
       _auditBusy = true;
       _auditError = null;
-      _auditResult = null;
       _lastAuditAt = DateTime.now();
+      if (!fromPublish) {
+        _auditResult = null;
+      }
     });
 
     try {
@@ -595,15 +476,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         }
       }
 
-      if (!mounted) return;
+      if (!mounted) return null;
       setState(() {
         _auditResult = out;
       });
+      return out;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return null;
       setState(() {
         _auditError = e.toString();
       });
+      if (!fromPublish) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Aura Editor could not run: $e')),
+        );
+      }
+      return null;
     } finally {
       if (mounted) {
         setState(() => _auditBusy = false);
@@ -624,7 +512,55 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   String _str(dynamic v) => (v ?? '').toString().trim();
 
-  List<String> _takeSignals(Map<String, dynamic> r) {
+  List<String> _listOfString(dynamic v, {int take = 3}) {
+    if (v is! List) return const [];
+    final out = <String>[];
+    final seen = <String>{};
+    for (final item in v) {
+      final s = _str(item);
+      if (s.isEmpty) continue;
+      final k = s.toLowerCase();
+      if (seen.contains(k)) continue;
+      seen.add(k);
+      out.add(s);
+      if (out.length >= take) break;
+    }
+    return out;
+  }
+
+  List<Map<String, String>> _spellingItems(Map<String, dynamic> r) {
+    final raw = r['spelling'];
+    if (raw is! List) return const [];
+    final out = <Map<String, String>>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final original = _str(m['original']);
+      final suggestion = _str(m['suggestion']);
+      if (original.isEmpty || suggestion.isEmpty) continue;
+      out.add({'original': original, 'suggestion': suggestion});
+      if (out.length >= 5) break;
+    }
+    return out;
+  }
+
+  List<Map<String, String>> _grammarItems(Map<String, dynamic> r) {
+    final raw = r['grammar'];
+    if (raw is! List) return const [];
+    final out = <Map<String, String>>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final issue = _str(m['issue']);
+      final suggestion = _str(m['suggestion']);
+      if (issue.isEmpty || suggestion.isEmpty) continue;
+      out.add({'issue': issue, 'suggestion': suggestion});
+      if (out.length >= 5) break;
+    }
+    return out;
+  }
+
+  List<String> _legacySignals(Map<String, dynamic> r) {
     final assumptions = _listOfMap(r['assumptions'])
         .take(3)
         .map((x) => _str(x['reason']))
@@ -638,11 +574,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         .map((x) => _str(x['reason']))
         .where((s) => s.isNotEmpty);
 
-    final combined = <String>[
-      ...clarity,
-      ...assumptions,
-      ...tone,
-    ];
+    final combined = <String>[...clarity, ...assumptions, ...tone];
 
     final seen = <String>{};
     final out = <String>[];
@@ -656,8 +588,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return out;
   }
 
-  String _suggestRefinement(Map<String, dynamic> r, String original) {
-    final signals = _takeSignals(r);
+  String _legacyRefinement(Map<String, dynamic> r, String original) {
+    final signals = _legacySignals(r);
     final firstLine = signals.isNotEmpty ? signals.first : '';
 
     final text = original.trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -682,137 +614,449 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return '$firstLine\nExample: $example';
   }
 
-  Future<void> _openAuraEditorSheet() async {
-    await showModalBottomSheet<void>(
+  Future<void> _publishNow() async {
+    final dio = ref.read(dioProvider);
+
+    String? uploadedPublicUrl;
+
+    final hasFreshUpload =
+        _pickedFile != null && (_mode == _ComposeMode.image || _mode == _ComposeMode.video);
+
+    if (hasFreshUpload) {
+      final mime = _inferMime(_pickedFile!.name);
+      final bytes = await _pickedFile!.readAsBytes();
+
+      if (_mode == _ComposeMode.image && bytes.length > 10 * 1024 * 1024) {
+        throw Exception('Image too large (max 10MB)');
+      }
+      if (_mode == _ComposeMode.video && bytes.length > 50 * 1024 * 1024) {
+        throw Exception('Video too large (max 50MB)');
+      }
+
+      final pres = await dio.post('/media/presign', data: {
+        'fileName': _pickedFile!.name,
+        'mimeType': mime,
+        'bytes': bytes.length,
+        'kind': _mode == _ComposeMode.image ? 'IMAGE' : 'VIDEO',
+        if (_mode == _ComposeMode.image) 'width': _imgW,
+        if (_mode == _ComposeMode.image) 'height': _imgH,
+      });
+
+      final presigned = _unwrapDataMap(pres.data);
+
+      uploadedPublicUrl = (presigned['publicUrl'] ??
+              presigned['url'] ??
+              ((presigned['media'] is Map) ? _asMap(presigned['media'])['url'] : null))
+          ?.toString();
+
+      final upload = _asMap(presigned['upload']);
+      final uploadUrl = (upload['url'] ?? '').toString();
+      final headers = _asMap(upload['headers']);
+
+      if (uploadUrl.isEmpty) {
+        throw Exception('Upload URL missing from presign response.');
+      }
+      if (uploadedPublicUrl == null || uploadedPublicUrl.trim().isEmpty) {
+        throw Exception('publicUrl missing from presign response.');
+      }
+
+      final uploadDio = _cleanUploadDio();
+
+      final uploadHeaders = <String, String>{};
+      headers.forEach((k, v) {
+        if (v == null) return;
+        uploadHeaders[k.toString()] = v.toString();
+      });
+
+      if (!uploadHeaders.containsKey('Content-Type')) {
+        uploadHeaders['Content-Type'] = mime;
+      }
+
+      await uploadDio.put(
+        uploadUrl,
+        data: bytes,
+        options: Options(
+          headers: uploadHeaders,
+          contentType: uploadHeaders['Content-Type'],
+          responseType: ResponseType.plain,
+          followRedirects: true,
+          validateStatus: (code) => code != null && code >= 200 && code < 300,
+        ),
+      );
+    }
+
+    if (_mode == _ComposeMode.image || _mode == _ComposeMode.video) {
+      final finalUrl = (uploadedPublicUrl ?? _existingMediaUrl ?? '').trim();
+      if (finalUrl.isNotEmpty) {
+        await _saveDraft(silent: true, mediaUrlOverride: finalUrl);
+      } else {
+        await _saveDraft(silent: true);
+      }
+    } else {
+      await _saveDraft(silent: true);
+    }
+
+    await dio.post('/posts/draft/publish');
+  }
+
+  Future<void> _publish() async {
+    if (_posting) return;
+
+    if (!_hasText) {
+      setState(() => _showTextError = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Text is required.')),
+      );
+      return;
+    }
+
+    if (_textTooLong) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Too long. Please shorten your post.')),
+      );
+      return;
+    }
+
+    if (!_canPublish) return;
+
+    final review = await _runAuraEditor(fromPublish: true);
+    if (!mounted) return;
+
+    final proceed = await _openAuraEditorSheet(
+      reviewResult: review,
+      publishMode: true,
+    );
+    if (proceed != true || !mounted) return;
+
+    setState(() => _posting = true);
+
+    try {
+      await _publishNow();
+      if (!mounted) return;
+      context.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not publish: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  Future<bool?> _openAuraEditorSheet({
+    Map<String, dynamic>? reviewResult,
+    bool publishMode = false,
+  }) async {
+    if (reviewResult != null && mounted) {
+      setState(() {
+        _auditResult = reviewResult;
+        _auditError = null;
+      });
+    }
+
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) {
         final pad = MediaQuery.of(ctx).viewInsets.bottom;
-        final r = _auditResult;
+        final r = reviewResult ?? _auditResult;
 
-        final signals = r == null ? const <String>[] : _takeSignals(r);
-        final refinement = r == null ? '' : _suggestRefinement(r, _textController.text);
+        final what = r == null ? '' : _str(r['what_this_is_doing']);
+        final consider = r == null ? const <String>[] : _listOfString(r['things_to_consider'], take: 3);
+        final strengthen = r == null ? const <String>[] : _listOfString(r['ways_to_strengthen'], take: 3);
+        final civic = r == null ? '' : _str(r['civic_awareness']);
+        final refinement = r == null
+            ? ''
+            : (_str(r['suggested_refinement']).isNotEmpty
+                ? _str(r['suggested_refinement'])
+                : _legacyRefinement(r, _textController.text));
+        final spelling = r == null ? const <Map<String, String>>[] : _spellingItems(r);
+        final grammar = r == null ? const <Map<String, String>>[] : _grammarItems(r);
+        final legacySignals = r == null ? const <String>[] : _legacySignals(r);
 
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16 + pad,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Aura Editor', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                Text(
-                  'A quiet review for civic clarity and responsibility. Limited output by design.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+        final hasAnyContent = what.isNotEmpty ||
+            consider.isNotEmpty ||
+            strengthen.isNotEmpty ||
+            civic.isNotEmpty ||
+            refinement.isNotEmpty ||
+            spelling.isNotEmpty ||
+            grammar.isNotEmpty ||
+            legacySignals.isNotEmpty;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> rerun() async {
+              setModalState(() {});
+              final out = await _runAuraEditor(fromPublish: publishMode);
+              if (!ctx.mounted) return;
+              Navigator.of(ctx).pop(false);
+              if (!mounted) return;
+              await _openAuraEditorSheet(
+                reviewResult: out,
+                publishMode: publishMode,
+              );
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  AuraSpace.s16 + pad,
                 ),
-                const SizedBox(height: AuraSpace.s12),
-                Row(
-                  children: [
-                    FilledButton(
-                      onPressed: (_auditBusy || _auditCooldownActive) ? null : _runAuraEditor,
-                      child: Text(
-                        _auditBusy
-                            ? 'Reviewing…'
-                            : (_auditCooldownActive ? 'Wait a moment…' : 'Run review'),
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s10),
-                    OutlinedButton(
-                      onPressed: _auditBusy
-                          ? null
-                          : () {
-                              setState(() {
-                                _auditResult = null;
-                                _auditError = null;
-                              });
-                              Navigator.of(ctx).pop();
-                            },
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                if (_auditError != null)
-                  AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Note',
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Aura Editor', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s8),
+
+                      if (_auditError != null && _auditError!.trim().isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Note',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s8),
+                              Text(_auditError!, style: AuraText.body),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(_auditError!, style: AuraText.body),
+                        const SizedBox(height: AuraSpace.s12),
                       ],
-                    ),
-                  ),
-                if (r != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Signals',
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+
+                      if (_auditBusy && !hasAnyContent) ...[
+                        AuraCard(
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              const SizedBox(width: AuraSpace.s10),
+                              Expanded(
+                                child: Text(
+                                  'Reviewing…',
+                                  style: AuraText.body,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: AuraSpace.s10),
-                        if (signals.isEmpty)
-                          Text(
-                            'No obvious issues detected.',
-                            style: AuraText.small.copyWith(color: AuraSurface.muted),
-                          )
-                        else
-                          for (final s in signals)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                              child: Text('• $s', style: AuraText.body),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (!_auditBusy && !hasAnyContent && (_auditError ?? '').trim().isEmpty) ...[
+                        AuraCard(
+                          child: Text(
+                            'No review available yet.',
+                            style: AuraText.body,
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (what.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'What this is doing',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(what, style: AuraText.body),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (spelling.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Spelling',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final item in spelling)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                                  child: Text(
+                                    '• ${item['original']} → ${item['suggestion']}',
+                                    style: AuraText.body,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (grammar.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Grammar',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final item in grammar)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                                  child: Text(
+                                    '• ${item['issue']}\n  ${item['suggestion']}',
+                                    style: AuraText.body,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (consider.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Things to consider',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final item in consider)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                                  child: Text('• $item', style: AuraText.body),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (strengthen.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Ways to strengthen',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final item in strengthen)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                                  child: Text('• $item', style: AuraText.body),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (civic.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Civic awareness',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(civic, style: AuraText.body),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (refinement.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Suggested refinement',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              Text(refinement, style: AuraText.body),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      if (consider.isEmpty &&
+                          strengthen.isEmpty &&
+                          civic.isEmpty &&
+                          refinement.isEmpty &&
+                          spelling.isEmpty &&
+                          grammar.isEmpty &&
+                          legacySignals.isNotEmpty) ...[
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Signals',
+                                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: AuraSpace.s10),
+                              for (final s in legacySignals)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                                  child: Text('• $s', style: AuraText.body),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+
+                      Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: _auditBusy ? null : () => Navigator.of(ctx).pop(false),
+                            child: Text(publishMode ? 'Edit' : 'Close'),
+                          ),
+                          const SizedBox(width: AuraSpace.s10),
+                          OutlinedButton(
+                            onPressed: _auditBusy ? null : rerun,
+                            child: const Text('Run again'),
+                          ),
+                          const Spacer(),
+                          if (publishMode)
+                            FilledButton(
+                              onPressed: _auditBusy ? null : () => Navigator.of(ctx).pop(true),
+                              child: const Text('Publish'),
                             ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Refinement (limited)',
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                        Text(refinement, style: AuraText.body),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hard line',
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                        Text(
-                          'No nudity, pornography, sexual scenes, or explicit sexual content. If you are unsure, do not publish.',
-                          style: AuraText.body,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -852,7 +1096,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       ),
       actions: [
         TextButton(
-          onPressed: _posting ? null : _openAuraEditorSheet,
+          onPressed: (_posting || _auditBusy)
+              ? null
+              : () async {
+                  final result = await _runAuraEditor();
+                  if (!mounted) return;
+                  await _openAuraEditorSheet(reviewResult: result);
+                },
           child: const Text('Aura Editor'),
         ),
         TextButton(
@@ -1066,7 +1316,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   ),
                   const Spacer(),
                   FilledButton(
-                    onPressed: (_posting || !_canPublish)
+                    onPressed: (_posting || _auditBusy || !_canPublish)
                         ? null
                         : () {
                             if (!_hasText) {
@@ -1075,7 +1325,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             }
                             _publish();
                           },
-                    child: Text(_posting ? 'Publishing…' : 'Publish to record'),
+                    child: Text(
+                      _posting
+                          ? 'Publishing…'
+                          : (_auditBusy ? 'Reviewing…' : 'Publish to record'),
+                    ),
                   ),
                 ],
               ),
