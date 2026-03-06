@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
 import '../auth/auth_providers.dart';
+import '../auth/session_bootstrap.dart';
 import 'platform_http_adapter.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -75,87 +76,136 @@ final dioProvider = Provider<Dio>((ref) {
 
   bool isAuthEndpoint(RequestOptions o) {
     final path = o.path;
-
-    // Any auth path should NOT trigger interceptor refresh.
     if (path.startsWith('/auth')) return true;
     if (path.startsWith('/v1/auth')) return true;
-
     return false;
+  }
+
+  bool canAttemptRefreshNow() {
+    final store = ref.read(tokenStoreProvider);
+
+    if (!store.isLoaded) return false;
+
+    final boot = ref.read(sessionBootstrapProvider);
+
+    // Bootstrap owns the first refresh attempt on app start.
+    // Interceptor must stay out while bootstrap is still loading.
+    if (boot.isLoading) return false;
+
+    return true;
   }
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
     if (error is DioException) {
       final s = error.response?.statusCode;
+
+      // On web, do NOT aggressively clear tokens on refresh failure.
+      // The web model is cookie-restored and timing can race during startup.
+      if (kIsWeb) return false;
+
       return s == 401 || s == 403;
     }
     return false;
   }
 
-  /// Avoid refresh storms:
-  /// - If token store isn’t loaded yet, don’t attempt refresh via interceptor.
-  /// - Router/bootstrap owns “first refresh attempt” on app start.
-  bool canAttemptRefreshNow() {
-    final store = ref.read(tokenStoreProvider);
-    return store.isLoaded;
+  Dio buildRefreshDio() {
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+        headers: const {
+          'Accept': 'application/json',
+        },
+        validateStatus: (code) => code != null && code >= 200 && code < 500,
+      ),
+    );
+
+    configureDioForPlatform(refreshDio);
+    ensureWebCredentials(refreshDio);
+
+    return refreshDio;
   }
 
   Future<void> performRefresh() async {
-    final refreshDio = dio;
+    final refreshDio = buildRefreshDio();
 
-    if (kIsWeb) {
-      // Web refresh: cookie-based, NO JSON body.
+    try {
+      if (kIsWeb) {
+        final res = await refreshDio.post(
+          '/auth/refresh',
+          data: null,
+          options: Options(
+            contentType: Headers.textPlainContentType,
+            headers: const {
+              'Content-Type': 'text/plain',
+              'Accept': 'application/json',
+            },
+          ),
+        );
+
+        if (res.statusCode == 204) return;
+
+        if (res.statusCode == 401 || res.statusCode == 403) {
+          throw DioException(
+            requestOptions: res.requestOptions,
+            response: res,
+            type: DioExceptionType.badResponse,
+            message: 'Web refresh unauthorized',
+          );
+        }
+
+        final outer = _asMap(res.data);
+        final access = _readAccessToken(outer);
+
+        if (access.isEmpty) {
+          throw Exception('No access token returned');
+        }
+
+        await ref.read(tokenStoreProvider).setSession(accessToken: access);
+        return;
+      }
+
+      final store = ref.read(tokenStoreProvider);
+      await store.waitUntilLoaded();
+
+      final refreshToken = store.refreshToken;
+      if (refreshToken == null || refreshToken.trim().isEmpty) {
+        throw Exception('Missing refresh token');
+      }
+
       final res = await refreshDio.post(
         '/auth/refresh',
-        data: null,
-        options: Options(
-          contentType: Headers.textPlainContentType,
-          headers: const {
-            'Content-Type': 'text/plain',
-            'Accept': 'application/json',
-          },
-        ),
+        data: {'refreshToken': refreshToken},
+        options: Options(headers: const {'x-token-transport': 'body'}),
       );
 
-      if (res.statusCode == 204) return;
+      if (res.statusCode == 401 || res.statusCode == 403) {
+        throw DioException(
+          requestOptions: res.requestOptions,
+          response: res,
+          type: DioExceptionType.badResponse,
+          message: 'Native refresh unauthorized',
+        );
+      }
 
       final outer = _asMap(res.data);
       final access = _readAccessToken(outer);
+      final newRefresh = _readRefreshToken(outer);
 
       if (access.isEmpty) {
         throw Exception('No access token returned');
       }
 
-      await ref.read(tokenStoreProvider).setSession(accessToken: access);
-      return;
+      await store.setSession(
+        accessToken: access,
+        refreshToken:
+            (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+      );
+    } finally {
+      refreshDio.close(force: true);
     }
-
-    final store = ref.read(tokenStoreProvider);
-    await store.waitUntilLoaded();
-
-    final refreshToken = store.refreshToken;
-    if (refreshToken == null || refreshToken.trim().isEmpty) {
-      throw Exception('Missing refresh token');
-    }
-
-    final res = await refreshDio.post(
-      '/auth/refresh',
-      data: {'refreshToken': refreshToken},
-      options: Options(headers: const {'x-token-transport': 'body'}),
-    );
-
-    final outer = _asMap(res.data);
-    final access = _readAccessToken(outer);
-    final newRefresh = _readRefreshToken(outer);
-
-    if (access.isEmpty) {
-      throw Exception('No access token returned');
-    }
-
-    await store.setSession(
-      accessToken: access,
-      refreshToken:
-          (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
-    );
   }
 
   Future<Response<T>> retryRequest<T>(
