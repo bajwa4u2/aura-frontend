@@ -24,7 +24,7 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
 
   static const String _rawBase = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.bajwadynesty.us',
+    defaultValue: 'https://api.auraplatform.org',
   );
 
   late final String _base = _rawBase.endsWith('/v1') ? _rawBase : '$_rawBase/v1';
