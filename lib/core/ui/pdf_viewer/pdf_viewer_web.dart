@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'dart:html' as html;
-import 'dart:ui' as ui;
+import 'dart:ui_web' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -33,10 +33,8 @@ class _PdfViewerWebState extends State<PdfViewer> {
   void _register() {
     if (_registered) return;
 
-    // IMPORTANT:
-    // Flutter web serves bundled assets at /assets/...
-    // Our assetPath is "assets/investor/....pdf"
-    // So the URL we want is "/assets/investor/....pdf"
+    // Flutter web serves assets under /assets/.
+    // If assetPath is "assets/investor/FILE.pdf", the URL becomes "/assets/investor/FILE.pdf".
     final src = '/${widget.assetPath}';
 
     ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
@@ -45,7 +43,6 @@ class _PdfViewerWebState extends State<PdfViewer> {
         ..style.border = '0'
         ..style.width = '100%'
         ..style.height = '100%'
-        ..style.backgroundColor = 'transparent'
         ..allowFullscreen = true;
 
       return iframe;
