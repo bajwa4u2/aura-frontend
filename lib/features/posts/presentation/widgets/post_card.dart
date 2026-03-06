@@ -17,10 +17,8 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   final url = (raw ?? '').trim();
   if (url.isEmpty) return null;
 
-  // Already absolute
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
-  // Serve relative paths from uploads domain
   const uploadsBase = String.fromEnvironment(
     'UPLOADS_BASE_URL',
     defaultValue: 'https://uploads.auraplatform.org',
@@ -57,7 +55,6 @@ bool _extractBool(dynamic data, List<String> keys) {
     final v = data[k];
     if (v is bool) return v;
   }
-  // tolerate nested "data" wrappers if older servers are hit
   final inner = data['data'];
   if (inner is Map) {
     for (final k in keys) {
@@ -68,6 +65,33 @@ bool _extractBool(dynamic data, List<String> keys) {
   return false;
 }
 
+String _normalizeVisibilityLabel(String? raw) {
+  final v = (raw ?? '').trim().toUpperCase();
+  switch (v) {
+    case 'FOLLOWERS':
+      return 'Followers';
+    case 'PRIVATE':
+      return 'Private';
+    case 'PUBLIC':
+      return 'Public';
+    default:
+      return '';
+  }
+}
+
+IconData _visibilityIcon(String? raw) {
+  final v = (raw ?? '').trim().toUpperCase();
+  switch (v) {
+    case 'FOLLOWERS':
+      return Icons.group_outlined;
+    case 'PRIVATE':
+      return Icons.lock_outline;
+    case 'PUBLIC':
+    default:
+      return Icons.public_outlined;
+  }
+}
+
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.watch(dioProvider);
   final pid = (postId).trim();
@@ -76,11 +100,8 @@ final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async 
   try {
     final res = await dio.get('/reactions/$pid');
     final data = res.data;
-    // New contract: { liked: true/false }
-    // Back-compat: { ok:true, data:{ liked/isLiked } }
     return _extractBool(data, const ['liked', 'isLiked']);
   } on DioException catch (e) {
-    // Visibility contract: non-visible post returns 404; treat as not liked
     if (e.response?.statusCode == 404) return false;
     return false;
   } catch (_) {
@@ -96,8 +117,6 @@ final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async 
   try {
     final res = await dio.get('/saves/$pid');
     final data = res.data;
-    // Expected: { saved: true/false } or { isSaved: true/false } depending on backend version
-    // Back-compat: { ok:true, data:{ saved/isSaved } }
     return _extractBool(data, const ['saved', 'isSaved']);
   } on DioException catch (e) {
     if (e.response?.statusCode == 404) return false;
@@ -133,28 +152,20 @@ class _PostCardState extends ConsumerState<PostCard> {
     final s = raw.trim();
     if (s.isEmpty) return null;
 
-    // Already absolute
     if (s.startsWith('http://') || s.startsWith('https://')) return s;
 
-    // Protocol-relative
     if (s.startsWith('//')) return 'https:$s';
 
-    // Build absolute from API_BASE_URL origin (strip /v1 etc)
     final apiBase = const String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (apiBase.isNotEmpty) {
       final uri = Uri.tryParse(apiBase);
       if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
         final origin = uri.origin;
-
-        // If backend returns "/uploads/..." or "/media/..." etc.
         if (s.startsWith('/')) return '$origin$s';
-
-        // If backend returns "uploads/..." (rare but happens)
         return '$origin/$s';
       }
     }
 
-    // Fallback: if we cannot determine origin, return as-is
     return s;
   }
 
@@ -193,7 +204,6 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
 
-    // Optional fields (do NOT assume they exist in the model).
     final dyn = post as dynamic;
 
     String? status;
@@ -240,8 +250,6 @@ class _PostCardState extends ConsumerState<PostCard> {
       } catch (_) {}
     }
 
-    // Fallback: if the backend returns a media array instead of flattened fields,
-    // use the first item as the primary medium.
     try {
       if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
         final list = (dyn.media as Object?);
@@ -267,7 +275,6 @@ class _PostCardState extends ConsumerState<PostCard> {
       }
     } catch (_) {}
 
-    // Also tolerate other common field names: mediaItems, mediaAttachments.
     try {
       if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
         final list = (dyn.mediaItems as Object?);
@@ -293,7 +300,6 @@ class _PostCardState extends ConsumerState<PostCard> {
       }
     } catch (_) {}
 
-    // Optional link attachment (treated as its own primary medium when present)
     String? linkUrl;
     String? linkTitle;
     String? linkSubtitle;
@@ -333,7 +339,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
     final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
 
-    // Intentionally not used for UI: Aura rule is no public counts.
     int? _asInt(Object? v) {
       if (v == null) return null;
       if (v is int) return v;
@@ -369,6 +374,9 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     final headerName = displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : '—');
     final headerSub = handle.isNotEmpty ? '@$handle' : '';
+
+    final visibilityLabel = _normalizeVisibilityLabel(visibility);
+    final visibilityIcon = _visibilityIcon(visibility);
 
     final bodyTextStyle = AuraText.body.copyWith(height: 1.42);
 
@@ -408,6 +416,14 @@ class _PostCardState extends ConsumerState<PostCard> {
                             style: AuraText.small.copyWith(color: AuraSurface.muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      if (visibilityLabel.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _VisibilityMeta(
+                            icon: visibilityIcon,
+                            label: visibilityLabel,
                           ),
                         ),
                     ],
@@ -538,7 +554,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     required String? linkSubtitle,
     required String? linkThumbUrl,
   }) {
-    // Primary medium priority: MEDIA first, then LINK.
     final mUrl = (mediaUrl ?? '').trim();
     final lUrl = (linkUrl ?? '').trim();
 
@@ -557,19 +572,17 @@ class _PostCardState extends ConsumerState<PostCard> {
           lower.endsWith('.webm') ||
           lower.endsWith('.mov');
 
-      // Use media dimensions when available to avoid awkward crops.
       double? ratio;
       if (mediaWidth != null &&
           mediaHeight != null &&
-          mediaWidth! > 0 &&
-          mediaHeight! > 0) {
-        ratio = mediaWidth! / mediaHeight!;
+          mediaWidth > 0 &&
+          mediaHeight > 0) {
+        ratio = mediaWidth / mediaHeight;
       }
 
-      // Clamp extreme ratios (keeps layout stable across devices).
       if (ratio != null) {
-        if (ratio! < 0.6) ratio = 0.6;
-        if (ratio! > 1.9) ratio = 1.9;
+        if (ratio < 0.6) ratio = 0.6;
+        if (ratio > 1.9) ratio = 1.9;
       }
 
       final maxH = _mediaMaxHeight(context);
@@ -586,7 +599,6 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
         );
       } else {
-        // Video: show a thumbnail if available, else show an image placeholder.
         final thumb = (mediaThumbUrl ?? '').trim();
         final show = (isVideo && thumb.isNotEmpty) ? thumb : mUrl;
 
@@ -632,7 +644,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   child: inner,
                 )
               : AspectRatio(
-                  aspectRatio: ratio!,
+                  aspectRatio: ratio,
                   child: inner,
                 ),
         ),
@@ -643,7 +655,6 @@ class _PostCardState extends ConsumerState<PostCard> {
         child: InkWell(
           borderRadius: r,
           onTap: () {
-            // Open post detail (media can be expanded there later)
             context.push('/posts/$postId');
           },
           child: content,
@@ -651,7 +662,6 @@ class _PostCardState extends ConsumerState<PostCard> {
       );
     }
 
-    // LINK attachment (primary medium when present and no mediaUrl).
     final uri = Uri.tryParse(lUrl);
     final host = (uri != null && (uri.host).trim().isNotEmpty) ? uri.host : lUrl;
 
@@ -678,7 +688,6 @@ class _PostCardState extends ConsumerState<PostCard> {
       child: InkWell(
         borderRadius: r,
         onTap: () async {
-          // No url_launcher dependency. Tap copies the link.
           await Clipboard.setData(ClipboardData(text: lUrl));
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -745,6 +754,36 @@ class _PostCardState extends ConsumerState<PostCard> {
   }
 }
 
+class _VisibilityMeta extends StatelessWidget {
+  const _VisibilityMeta({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AuraSurface.muted),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
 class _ActionRow extends ConsumerWidget {
   const _ActionRow({
     required this.postId,
@@ -755,8 +794,6 @@ class _ActionRow extends ConsumerWidget {
   });
 
   final String postId;
-
-  // Kept for compatibility, but never displayed (Aura rule: no public counts)
   final int? likeCount;
   final int? repostCount;
   final int? saveCount;
@@ -831,7 +868,6 @@ class _ActionRow extends ConsumerWidget {
       final postUrl = _canonicalPostUrl(postId);
       final linkedInUrl = _linkedInShareUrl(postUrl);
 
-      // No url_launcher dependency (keeps builds stable). We copy links instead.
       await Clipboard.setData(ClipboardData(text: postUrl));
 
       if (!context.mounted) return;
