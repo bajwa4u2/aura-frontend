@@ -27,6 +27,8 @@ class ComposeScreen extends ConsumerStatefulWidget {
 
 enum _ComposeMode { text, image, video }
 
+enum _PostVisibility { public, followers, private }
+
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   static const int _limit = 2000;
 
@@ -36,23 +38,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _posting = false;
   bool _saving = false;
 
-  // Enforce text always
   bool _showTextError = false;
 
   _ComposeMode _mode = _ComposeMode.text;
+  _PostVisibility _visibility = _PostVisibility.public;
 
   XFile? _pickedFile;
-  Uint8List? _pickedBytes; // web preview for images
+  Uint8List? _pickedBytes;
   int? _imgW;
   int? _imgH;
 
-  // When continuing a draft that already has media attached.
   String? _existingMediaUrl;
 
   DateTime? _lastSavedAt;
   Timer? _autosaveDebounce;
 
-  // Aura Editor (A) state (limited + calm)
   bool _auditBusy = false;
   DateTime? _lastAuditAt;
   Map<String, dynamic>? _auditResult;
@@ -72,7 +72,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool get _hasAnyMedia => _hasPickedMedia || _hasExistingMedia;
 
-  // Text is required in ALL modes.
   bool get _canPublish {
     if (!_hasText) return false;
     if (_textTooLong) return false;
@@ -103,7 +102,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Map<String, dynamic> _unwrapDataMap(dynamic v) {
-    // Unwrap nested { ok:true, data:{ ok:true, data:{...} } } style envelopes
     Map<String, dynamic> cur = _asMap(v);
     while (cur.containsKey('ok') && cur.containsKey('data') && cur['data'] is Map) {
       cur = Map<String, dynamic>.from(cur['data'] as Map);
@@ -123,8 +121,53 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 'application/octet-stream';
   }
 
+  String _visibilityApiValue(_PostVisibility value) {
+    switch (value) {
+      case _PostVisibility.public:
+        return 'PUBLIC';
+      case _PostVisibility.followers:
+        return 'FOLLOWERS';
+      case _PostVisibility.private:
+        return 'PRIVATE';
+    }
+  }
+
+  _PostVisibility _visibilityFromApi(dynamic value) {
+    final raw = (value ?? '').toString().trim().toUpperCase();
+    switch (raw) {
+      case 'FOLLOWERS':
+        return _PostVisibility.followers;
+      case 'PRIVATE':
+        return _PostVisibility.private;
+      case 'PUBLIC':
+      default:
+        return _PostVisibility.public;
+    }
+  }
+
+  String _visibilityLabel(_PostVisibility value) {
+    switch (value) {
+      case _PostVisibility.public:
+        return 'Public';
+      case _PostVisibility.followers:
+        return 'Followers';
+      case _PostVisibility.private:
+        return 'Private';
+    }
+  }
+
+  String _visibilityHelp(_PostVisibility value) {
+    switch (value) {
+      case _PostVisibility.public:
+        return 'Visible to everyone, including visitors.';
+      case _PostVisibility.followers:
+        return 'Visible only to followers and approved member surfaces.';
+      case _PostVisibility.private:
+        return 'Visible only to you.';
+    }
+  }
+
   Dio _cleanUploadDio() {
-    // Critical: presigned PUT must NOT include your API auth interceptors.
     return Dio(
       BaseOptions(
         responseType: ResponseType.plain,
@@ -166,15 +209,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final dio = ref.read(dioProvider);
       final res = await dio.get('/posts/draft');
       final data = _asMap(res.data);
-      final draftRaw = data['draft'];
-      if (draftRaw is! Map) return;
+      final draftSource = data['draft'] ?? data;
+      if (draftSource is! Map) return;
 
-      final draft = Map<String, dynamic>.from(draftRaw);
+      final draft = Map<String, dynamic>.from(draftSource);
 
       final text = (draft['text'] ?? '').toString();
       final mediaType = (draft['mediaType'] ?? 'NONE').toString().toUpperCase();
       final mediaUrl = (draft['mediaUrl'] ?? '').toString();
       final caption = (draft['caption'] ?? '').toString();
+      final visibility = _visibilityFromApi(draft['visibility']);
 
       final updatedAtRaw = (draft['updatedAt'] ?? '').toString();
       final savedAt = DateTime.tryParse(updatedAtRaw)?.toLocal();
@@ -184,6 +228,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       setState(() {
         _textController.text = text;
         _contextController.text = caption;
+        _visibility = visibility;
 
         if (mediaType == 'IMAGE') {
           _mode = _ComposeMode.image;
@@ -196,7 +241,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           _existingMediaUrl = null;
         }
 
-        // preserve dimensions if present
         final w = draft['mediaWidth'];
         final h = draft['mediaHeight'];
         _imgW = (w is int) ? w : int.tryParse((w ?? '').toString());
@@ -216,10 +260,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _autosaveDebounce = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       if (_posting) return;
-
-      // do not autosave empty text
       if (!_hasText) return;
-
       _saveDraft(silent: true);
     });
   }
@@ -230,8 +271,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     setState(() {
       _mode = next;
-
-      // Switching modes clears media payload.
       _pickedFile = null;
       _pickedBytes = null;
       _imgW = null;
@@ -241,6 +280,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (_mode == _ComposeMode.text) {
         _contextController.clear();
       }
+    });
+
+    _scheduleAutosave();
+  }
+
+  void _setVisibility(_PostVisibility next) {
+    if (_posting) return;
+    if (_visibility == next) return;
+
+    setState(() {
+      _visibility = next;
     });
 
     _scheduleAutosave();
@@ -341,6 +391,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       final payload = <String, dynamic>{
         'text': _textController.text,
+        'visibility': _visibilityApiValue(_visibility),
         'mediaType': _mediaTypeForMode(),
       };
 
@@ -442,7 +493,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         if (uploadUrl.isEmpty) {
           throw Exception('Upload URL missing from presign response.');
         }
-        if (uploadedPublicUrl == null || uploadedPublicUrl!.trim().isEmpty) {
+        if (uploadedPublicUrl == null || uploadedPublicUrl.trim().isEmpty) {
           throw Exception('publicUrl missing from presign response.');
         }
 
@@ -471,7 +522,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         );
       }
 
-      // Save final draft (best-effort)
       if (_mode == _ComposeMode.image || _mode == _ComposeMode.video) {
         final finalUrl = (uploadedPublicUrl ?? _existingMediaUrl ?? '').trim();
         if (finalUrl.isNotEmpty) {
@@ -497,8 +547,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  // ---------------- Aura Editor (A) ----------------
-
   bool get _auditCooldownActive {
     final t = _lastAuditAt;
     if (t == null) return false;
@@ -515,7 +563,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    // Calm cost-control: don’t run on tiny text
     if (text.length < 40) {
       setState(() {
         _auditError = 'Add a little more context (at least a few lines).';
@@ -536,7 +583,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     try {
       final repo = ref.read(aiRepoProvider);
 
-      // Prefer Aura Editor endpoint, but fall back safely
       Map<String, dynamic> out;
       try {
         out = await repo.editorReview(text: text);
@@ -579,10 +625,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String _str(dynamic v) => (v ?? '').toString().trim();
 
   List<String> _takeSignals(Map<String, dynamic> r) {
-    // Works with current heuristic output (claims / assumptions / clarity_issues / tone_flags)
-    final assumptions = _listOfMap(r['assumptions']).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
-    final clarity = _listOfMap(r['clarity_issues']).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
-    final tone = _listOfMap(r['tone_flags']).take(2).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+    final assumptions = _listOfMap(r['assumptions'])
+        .take(3)
+        .map((x) => _str(x['reason']))
+        .where((s) => s.isNotEmpty);
+    final clarity = _listOfMap(r['clarity_issues'])
+        .take(3)
+        .map((x) => _str(x['reason']))
+        .where((s) => s.isNotEmpty);
+    final tone = _listOfMap(r['tone_flags'])
+        .take(2)
+        .map((x) => _str(x['reason']))
+        .where((s) => s.isNotEmpty);
 
     final combined = <String>[
       ...clarity,
@@ -590,7 +644,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       ...tone,
     ];
 
-    // Dedup
     final seen = <String>{};
     final out = <String>[];
     for (final s in combined) {
@@ -604,16 +657,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   String _suggestRefinement(Map<String, dynamic> r, String original) {
-    // Keep it minimal: one short suggestion line + one example rewrite.
     final signals = _takeSignals(r);
     final firstLine = signals.isNotEmpty ? signals.first : '';
 
     final text = original.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (text.isEmpty) return '';
 
-    // Remove some absolute words as a gentle rewrite
     final softened = text
-        .replaceAll(RegExp(r'\b(always|never|everyone|no one|obviously|clearly|completely|totally)\b', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(
+            r'\b(always|never|everyone|no one|obviously|clearly|completely|totally)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 
@@ -639,7 +696,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
         return SafeArea(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s16, AuraSpace.s16, AuraSpace.s16 + pad),
+            padding: EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s16 + pad,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,12 +713,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
                 const SizedBox(height: AuraSpace.s12),
-
                 Row(
                   children: [
                     FilledButton(
                       onPressed: (_auditBusy || _auditCooldownActive) ? null : _runAuraEditor,
-                      child: Text(_auditBusy ? 'Reviewing…' : (_auditCooldownActive ? 'Wait a moment…' : 'Run review')),
+                      child: Text(
+                        _auditBusy
+                            ? 'Reviewing…'
+                            : (_auditCooldownActive ? 'Wait a moment…' : 'Run review'),
+                      ),
                     ),
                     const SizedBox(width: AuraSpace.s10),
                     OutlinedButton(
@@ -673,31 +738,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: AuraSpace.s12),
-
                 if (_auditError != null)
                   AuraCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Note', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          'Note',
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: AuraSpace.s8),
                         Text(_auditError!, style: AuraText.body),
                       ],
                     ),
                   ),
-
                 if (r != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   AuraCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Signals', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          'Signals',
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: AuraSpace.s10),
                         if (signals.isEmpty)
-                          Text('No obvious issues detected.', style: AuraText.small.copyWith(color: AuraSurface.muted))
+                          Text(
+                            'No obvious issues detected.',
+                            style: AuraText.small.copyWith(color: AuraSurface.muted),
+                          )
                         else
                           for (final s in signals)
                             Padding(
@@ -712,7 +783,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Refinement (limited)', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          'Refinement (limited)',
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: AuraSpace.s10),
                         Text(refinement, style: AuraText.body),
                       ],
@@ -723,7 +797,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Hard line', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          'Hard line',
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: AuraSpace.s10),
                         Text(
                           'No nudity, pornography, sexual scenes, or explicit sexual content. If you are unsure, do not publish.',
@@ -741,9 +818,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
-  // ---------------- UI ----------------
-
-  Widget _modeChip({required String label, required bool selected, required VoidCallback onTap}) {
+  Widget _modeChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
@@ -796,11 +875,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             children: [
               Text('Composing', style: AuraText.title),
               const SizedBox(height: AuraSpace.s6),
-              Text(_savedLine(), style: AuraText.small.copyWith(color: AuraSurface.muted)),
+              Text(
+                _savedLine(),
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
               const SizedBox(height: AuraSpace.s12),
               _divider(),
               const SizedBox(height: AuraSpace.s8),
-
               Row(
                 children: [
                   _modeChip(
@@ -824,14 +905,41 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _divider(),
               const SizedBox(height: AuraSpace.s12),
 
-              // Writing surface (always shown; text required)
+              Text('Audience', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: AuraSpace.s8),
+              Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                children: _PostVisibility.values
+                    .map(
+                      (v) => _VisibilityChip(
+                        label: _visibilityLabel(v),
+                        selected: _visibility == v,
+                        onTap: _posting ? null : () => _setVisibility(v),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                _visibilityHelp(_visibility),
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+
+              const SizedBox(height: AuraSpace.s12),
+              _divider(),
+              const SizedBox(height: AuraSpace.s12),
+
               Container(
                 decoration: BoxDecoration(
                   color: AuraSurface.page,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AuraSurface.divider),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s12,
+                  vertical: AuraSpace.s10,
+                ),
                 child: TextField(
                   controller: _textController,
                   maxLines: null,
@@ -853,7 +961,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
               const SizedBox(height: AuraSpace.s8),
-              Text('${_textController.text.trim().length}/$_limit', style: AuraText.small.copyWith(color: AuraSurface.muted)),
+              Text(
+                '${_textController.text.trim().length}/$_limit',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
 
               if (_mode == _ComposeMode.image) ...[
                 const SizedBox(height: AuraSpace.s12),
@@ -919,7 +1030,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       return Text(_pickedFile!.name, style: AuraText.body);
                     }
                     if (_hasExistingMedia) {
-                      return Text('Preview is available after publish.', style: AuraText.small.copyWith(color: AuraSurface.muted));
+                      return Text(
+                        'Preview is available after publish.',
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      );
                     }
                     return null;
                   }(),
@@ -973,6 +1087,40 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 }
 
+class _VisibilityChip extends StatelessWidget {
+  const _VisibilityChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.card : AuraSurface.page,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Text(
+          label,
+          style: selected
+              ? AuraText.body.copyWith(fontWeight: FontWeight.w700)
+              : AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ),
+    );
+  }
+}
+
 class _ContextField extends StatelessWidget {
   const _ContextField({
     required this.controller,
@@ -992,7 +1140,10 @@ class _ContextField extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AuraSurface.divider),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
       child: TextField(
         controller: controller,
         enabled: enabled,
@@ -1042,7 +1193,12 @@ class _MediaZone extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: AuraText.body.copyWith(fontWeight: FontWeight.w700))),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
               if (trailing != null) trailing!,
             ],
           ),
