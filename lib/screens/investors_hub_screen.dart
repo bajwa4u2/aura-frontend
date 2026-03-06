@@ -11,7 +11,7 @@ class InvestorsHubScreen extends StatelessWidget {
     required String title,
     required String assetPath,
   }) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => PdfViewerScreen(
           title: title,
@@ -37,7 +37,6 @@ class InvestorsHubScreen extends StatelessWidget {
           Doc.p(
             'The objective is structural trust: identity integrity, visible correction, chronological record, and constrained AI assistance.',
           ),
-
           Doc.h('What we optimize for'),
           Doc.bullets([
             'Integrity of identity (who is speaking)',
@@ -46,18 +45,15 @@ class InvestorsHubScreen extends StatelessWidget {
             'Privacy by default (counts remain private)',
             'AI as structural assistance, not amplification',
           ]),
-
           Doc.h('What we do not optimize for'),
           Doc.bullets([
             'Viral velocity',
             'Engagement extraction',
             'Algorithmic amplification as a growth engine',
           ]),
-
           const SizedBox(height: 8),
           Doc.h('Investor documents'),
           const SizedBox(height: 8),
-
           _DocCard(
             title: 'Seed Investment Round',
             meta: 'March 2026',
@@ -66,11 +62,11 @@ class InvestorsHubScreen extends StatelessWidget {
             onTap: () => _openPdf(
               context,
               title: 'Seed Investment Round',
-              assetPath: 'assets/investor/Aura_Seed_Investment_Round_Mar2026.pdf',
+              assetPath:
+                  'assets/investor/Aura_Seed_Investment_Round_Mar2026.pdf',
             ),
           ),
           const SizedBox(height: 10),
-
           _DocCard(
             title: 'Business Model Framework',
             meta: 'Version 1.0 • March 2026',
@@ -84,7 +80,6 @@ class InvestorsHubScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-
           _DocCard(
             title: 'Governance Framework',
             meta: 'Version 1.0 • March 2026',
@@ -97,7 +92,6 @@ class InvestorsHubScreen extends StatelessWidget {
                   'assets/investor/Aura_Governance_Framework_v1.0_Mar2026.pdf',
             ),
           ),
-
           const SizedBox(height: 16),
           Doc.callout(
             'We seek alignment with partners who understand that durability matters more than acceleration.',
