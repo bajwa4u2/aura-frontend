@@ -33,9 +33,8 @@ class _PdfViewerWebState extends State<PdfViewer> {
   void _register() {
     if (_registered) return;
 
-    // Flutter web serves assets under /assets/.
-    // If assetPath is "assets/investor/FILE.pdf", the URL becomes "/assets/investor/FILE.pdf".
-    final src = '/${widget.assetPath}';
+    final fileName = widget.assetPath.split('/').last;
+    final src = '/$fileName';
 
     ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
       final iframe = html.IFrameElement()
