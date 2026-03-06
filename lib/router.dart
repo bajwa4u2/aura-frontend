@@ -193,60 +193,52 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthAction = isAuthActionPath(path);
       final isAuth = isAnyAuthPath(path);
 
-      // ------------------------------------------------------------
-      // BOOT GATE
-      // Preserve exact destination while session/bootstrap settles.
-      // ------------------------------------------------------------
+      // Hold exact destination while bootstrap settles.
       if (_isTransientUnauthed(ref) || authStatus == AuthStatus.loading) {
         if (path == '/boot') return null;
         return '/boot?from=${_encodeBootFrom(uri)}';
       }
 
-      // Once stable, /boot should return to the exact intended route.
+      // Boot exits to the exact intended route, not a default home.
       if (path == '/boot') {
         final from = uri.queryParameters['from'];
         final target = _normalizeRedirectDest(
           from == null || from.isEmpty ? '/public' : Uri.decodeComponent(from),
         );
+        final targetPath = Uri.parse(target).path;
 
         if (authStatus == AuthStatus.unauthed) {
-          // Signed out users may access public and auth-action routes directly.
-          final targetPath = Uri.parse(target).path;
           if (isPublicPath(targetPath) || isAnyAuthPath(targetPath)) {
             return target;
           }
           return '/login?redirect=${Uri.encodeComponent(target)}';
         }
 
-        // Authed users: preserve route if possible.
         final verifiedAsync = ref.read(emailVerifiedProvider);
         if (verifiedAsync.isLoading || verifiedAsync.hasError) {
           return target;
         }
 
         final verified = verifiedAsync.value ?? false;
-        final targetPath = Uri.parse(target).path;
 
         if (!verified) {
-          // Unverified users may still access public pages and auth action pages.
           if (isPublicPath(targetPath) || isAuthActionPath(targetPath)) {
             return target;
           }
           return '/verify-pending?redirect=${Uri.encodeComponent(target)}';
         }
 
-        // Verified users: auth action pages generally should not remain open,
-        // except reset-password if intentionally visited.
         if (targetPath == '/verify-pending' || targetPath == '/verify-email') {
           final redirectTo = Uri.parse(target).queryParameters['redirect'];
           return _normalizeRedirectDest(redirectTo);
         }
 
-        if (targetPath == '/' || targetPath == '/boot') return '/home';
+        if (targetPath == '/boot') return '/home';
+        if (targetPath == '/') return '/home';
         return target;
       }
 
-      // Legacy alias
+      // Legacy alias.
       if (path == '/auth') {
         final dest = uri.queryParameters['redirect'];
         if (dest != null && dest.trim().isNotEmpty) {
@@ -255,22 +247,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // ------------------------------------------------------------
-      // UNAUTHED
-      // ------------------------------------------------------------
+      // Root path is neutral home entry:
+      // authed+verified => /home
+      // unauthed => /public
+      // authed+unverified => /verify-pending
+      if (path == '/') {
+        if (authStatus == AuthStatus.unauthed) return '/public';
+
+        final verifiedAsync = ref.read(emailVerifiedProvider);
+        if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
+
+        final verified = verifiedAsync.value ?? false;
+        return verified ? '/home' : '/verify-pending';
+      }
+
+      // Unauthenticated users
       if (authStatus == AuthStatus.unauthed) {
-        // Public and auth/action routes are allowed.
         if (isPublic || isAuth) return null;
 
         final dest = uri.toString();
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // ------------------------------------------------------------
-      // AUTHED
-      // ------------------------------------------------------------
-
-      // Only plain login/register pages should redirect authed users away.
+      // Authenticated users visiting login/register
       if (path == '/login' || path == '/register') {
         final verifiedAsync = ref.read(emailVerifiedProvider);
         if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
@@ -293,7 +292,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
-      // While verification state is still resolving, preserve exact route.
+      // Preserve exact route while verification state resolves.
       if (verifiedAsync.isLoading || verifiedAsync.hasError) {
         return null;
       }
@@ -301,15 +300,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final verified = verifiedAsync.value ?? false;
 
       if (!verified) {
-        // Unverified users are allowed on public routes and auth action routes.
         if (isPublic || isAuthAction) return null;
 
-        // Member area and plain auth pages should go to verify pending.
         final current = uri.toString();
         return '/verify-pending?redirect=${Uri.encodeComponent(current)}';
       }
 
-      // Verified users should not remain on verification waiting/action screens.
       if (path == '/verify-email') {
         final redirectTo = uri.queryParameters['redirect'];
         return _normalizeRedirectDest(redirectTo);
@@ -320,14 +316,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return _normalizeRedirectDest(redirectTo);
       }
 
-      // Verified users visiting plain auth pages go to their redirect or home.
       if (isPlainAuth) {
         final redirectTo = uri.queryParameters['redirect'];
         return _normalizeRedirectDest(redirectTo);
       }
-
-      // Preserve public routes and member routes exactly as visited.
-      if (path == '/') return '/public';
 
       if (isPublic || isMember || isAuthAction) {
         return null;
@@ -354,7 +346,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
-      GoRoute(path: '/institution/sign-in', builder: (_, __) => const InstitutionSignInScreen()),
+      GoRoute(
+        path: '/institution/sign-in',
+        builder: (_, __) => const InstitutionSignInScreen(),
+      ),
       GoRoute(
         path: '/institution/request-verification',
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
@@ -376,8 +371,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => RegisterScreen(
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
       GoRoute(
         path: '/reset-password',
         builder: (context, state) => ResetPasswordScreen(
@@ -396,7 +399,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/verify-pending',
-        builder: (_, __) => const VerifyPendingScreen(),
+        builder: (context, state) => VerifyPendingScreen(
+          email: state.uri.queryParameters['email'],
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
       ),
 
       // Member area

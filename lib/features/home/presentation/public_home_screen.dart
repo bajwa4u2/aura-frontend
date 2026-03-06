@@ -72,12 +72,6 @@ class _PinnedAnnouncement {
 }
 
 _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
-  // Accept shapes like:
-  // { ok:true, data:{ item:{...} } }
-  // { ok:true, data:{ items:[...] } }
-  // { item:{...} }
-  // { items:[...] }
-  // { ...announcement... }
   final root = _asMap(raw);
 
   final directItem = root['item'];
@@ -166,12 +160,10 @@ class PublicHomeScreen extends ConsumerWidget {
               AuraSpace.s24,
             ),
             children: [
-              // ---------- TOP STAGE (stable posture) ----------
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: hero + pinned + about
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +179,6 @@ class PublicHomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s16),
-                    // Right: auth panel stays visible and does NOT sink under feed
                     const SizedBox(
                       width: 360,
                       child: _PublicAuthPanel(),
@@ -205,10 +196,7 @@ class PublicHomeScreen extends ConsumerWidget {
                   onTap: (path) => context.go(path),
                 ),
               ],
-
               const SizedBox(height: AuraSpace.s20),
-
-              // ---------- FEED SECTION ----------
               _SectionHeader(
                 title: 'Public record',
                 subtitle:
@@ -217,7 +205,6 @@ class PublicHomeScreen extends ConsumerWidget {
                 onAction: () => context.go('/search'),
               ),
               const SizedBox(height: AuraSpace.s12),
-
               feedAsync.when(
                 data: (posts) {
                   if (posts.isEmpty) {
@@ -256,7 +243,6 @@ class PublicHomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: AuraSpace.s24),
             ],
           );
@@ -384,7 +370,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => context.go('/register'),
+              onPressed: () => context.go('/register?redirect=%2Fhome'),
               child: const Text('Create account'),
             ),
           ),
@@ -392,7 +378,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go('/login'),
+              onPressed: () => context.go('/login?redirect=%2Fhome'),
               child: const Text('Sign in'),
             ),
           ),
