@@ -6,46 +6,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
-import '../auth/auth_providers.dart';
-
-bool _isPublicLikeStartupPath(String path) {
-  if (path.isEmpty || path == '/' || path == '/public') return true;
-
-  const exact = <String>{
-    '/mission',
-    '/white-paper',
-    '/founder',
-    '/privacy',
-    '/contact',
-    '/investors',
-    '/institutions',
-    '/institution/sign-in',
-    '/institution/request-verification',
-    '/patrons',
-    '/supporters',
-    '/login',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-email',
-    '/verify-pending',
-    '/auth',
-  };
-
-  if (exact.contains(path)) return true;
-
-  if (path == '/announcements' || path.startsWith('/announcements/')) return true;
-
-  return false;
-}
+import 'auth_providers.dart';
 
 /// Bootstraps session at app start:
-/// - Web: attempts /auth/refresh using httpOnly cookie, BUT only for protected/member routes.
-/// - Non-web: uses stored refreshToken if accessToken missing.
+/// - Web: always attempts /auth/refresh once using the HttpOnly cookie.
+/// - Non-web: uses stored refreshToken if accessToken is missing.
 ///
 /// Goal:
-/// - avoid "logged out on hard refresh" on protected routes
-/// - avoid noisy /auth/refresh 401 calls on clearly public startup routes
+/// - make startup auth resolution consistent across all routes
+/// - avoid route-dependent session restoration
+/// - settle once, then let router trust the result
 ///
 /// IMPORTANT:
 /// - Runs at most once per app load.
@@ -75,16 +45,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     // If already authed, nothing to do.
     if (store.isAuthed) return;
 
-    // WEB-SPECIFIC EARLY EXIT:
-    // If the user opens a clearly public/auth route, do not fire refresh on startup.
-    // This removes the ugly "Missing refresh token" noise on /public and other public pages.
-    if (kIsWeb) {
-      final startupPath = Uri.base.path.trim();
-      if (_isPublicLikeStartupPath(startupPath)) {
-        return;
-      }
-    }
-
     final bootstrapDio = Dio(
       BaseOptions(
         baseUrl: AppConfig.apiBaseUrl,
@@ -100,9 +60,9 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
     try {
       if (kIsWeb) {
-        final a = bootstrapDio.httpClientAdapter;
-        if (a is BrowserHttpClientAdapter) {
-          a.withCredentials = true;
+        final adapter = bootstrapDio.httpClientAdapter;
+        if (adapter is BrowserHttpClientAdapter) {
+          adapter.withCredentials = true;
         } else {
           bootstrapDio.httpClientAdapter = BrowserHttpClientAdapter()
             ..withCredentials = true;

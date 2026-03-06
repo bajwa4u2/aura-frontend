@@ -46,16 +46,6 @@ import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 import 'screens/contact_screen.dart';
 
-bool _isTransientUnauthed(Ref ref) {
-  final boot = ref.read(sessionBootstrapProvider);
-  if (boot.isLoading) return true;
-
-  final store = ref.read(tokenStoreProvider);
-  if (!store.isLoaded) return true;
-
-  return false;
-}
-
 String _normalizeRedirectDest(String? dest) {
   final trimmed = (dest ?? '').trim();
   if (trimmed.isEmpty) return '/home';
@@ -76,6 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<void>>(sessionBootstrapProvider, (_, __) => refresh.value++);
 
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
@@ -185,6 +176,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) async {
       final uri = state.uri;
       final path = uri.path;
+
+      final boot = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);
 
       final isPublic = isPublicPath(path);
@@ -194,12 +187,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuth = isAnyAuthPath(path);
 
       // Hold exact destination while bootstrap settles.
-      if (_isTransientUnauthed(ref) || authStatus == AuthStatus.loading) {
+      if (boot.isLoading || authStatus == AuthStatus.loading) {
         if (path == '/boot') return null;
         return '/boot?from=${_encodeBootFrom(uri)}';
       }
 
-      // Boot exits to the exact intended route, not a default home.
+      // Boot exits to the exact intended route, not a default public/member page.
       if (path == '/boot') {
         final from = uri.queryParameters['from'];
         final target = _normalizeRedirectDest(
@@ -215,9 +208,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading || verifiedAsync.hasError) {
-          return target;
-        }
+        if (verifiedAsync.isLoading) return null;
 
         final verified = verifiedAsync.value ?? false;
 
@@ -247,21 +238,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // Root path is neutral home entry:
-      // authed+verified => /home
-      // unauthed => /public
-      // authed+unverified => /verify-pending
+      // Neutral root entry.
       if (path == '/') {
         if (authStatus == AuthStatus.unauthed) return '/public';
 
         final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
+        if (verifiedAsync.isLoading) return null;
 
         final verified = verifiedAsync.value ?? false;
         return verified ? '/home' : '/verify-pending';
       }
 
-      // Unauthenticated users
+      // Unauthenticated users.
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -269,10 +257,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // Authenticated users visiting login/register
+      // Authenticated users visiting login/register.
       if (path == '/login' || path == '/register') {
         final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading || verifiedAsync.hasError) return null;
+        if (verifiedAsync.isLoading) return null;
 
         final verified = verifiedAsync.value ?? false;
         final redirectTo = uri.queryParameters['redirect'];
@@ -293,7 +281,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
       // Preserve exact route while verification state resolves.
-      if (verifiedAsync.isLoading || verifiedAsync.hasError) {
+      if (verifiedAsync.isLoading) {
         return null;
       }
 
