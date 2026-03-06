@@ -8,31 +8,52 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config.dart';
 import '../auth/auth_providers.dart';
 
+bool _isPublicLikeStartupPath(String path) {
+  if (path.isEmpty || path == '/' || path == '/public') return true;
+
+  const exact = <String>{
+    '/mission',
+    '/white-paper',
+    '/founder',
+    '/privacy',
+    '/contact',
+    '/investors',
+    '/institutions',
+    '/institution/sign-in',
+    '/institution/request-verification',
+    '/patrons',
+    '/supporters',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/verify-pending',
+    '/auth',
+  };
+
+  if (exact.contains(path)) return true;
+
+  if (path == '/announcements' || path.startsWith('/announcements/')) return true;
+
+  return false;
+}
+
 /// Bootstraps session at app start:
-/// - Web: attempts /auth/refresh using httpOnly cookie.
+/// - Web: attempts /auth/refresh using httpOnly cookie, BUT only for protected/member routes.
 /// - Non-web: uses stored refreshToken if accessToken missing.
 ///
-/// Goal: avoid "logged out on hard refresh" without creating refresh storms.
+/// Goal:
+/// - avoid "logged out on hard refresh" on protected routes
+/// - avoid noisy /auth/refresh 401 calls on clearly public startup routes
 ///
-/// IMPORTANT (permanent behavior):
-/// - This bootstrap MUST run at most once per app load.
-/// - Even if the provider is evaluated multiple times due to rebuilds,
-///   it will coalesce into a single attempt and then become a no-op.
-/// - To run again, user must hard refresh the page / restart app (or you
-///   can explicitly invalidate it if you add a reset hook later).
-///
-/// ALSO IMPORTANT:
+/// IMPORTANT:
+/// - Runs at most once per app load.
 /// - Uses a dedicated Dio instance with NO interceptors.
 /// - Never throws; settles quickly.
-/// - On web, a 401 is normal on first visit (no cookie). We just return.
 final sessionBootstrapProvider = FutureProvider<void>((ref) async {
-  // ---- One-shot gate (prevents refresh storms) ----
-  //
-  // Why global? Because if the provider gets re-created or re-listened to,
-  // this still guarantees "one attempt per app load".
   if (_bootstrapDone) return;
 
-  // If a bootstrap is already running, await it.
   final inflight = _bootstrapInFlight;
   if (inflight != null) {
     await inflight.future;
@@ -54,7 +75,16 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     // If already authed, nothing to do.
     if (store.isAuthed) return;
 
-    // Dedicated Dio (no interceptors) to avoid recursion/thrash.
+    // WEB-SPECIFIC EARLY EXIT:
+    // If the user opens a clearly public/auth route, do not fire refresh on startup.
+    // This removes the ugly "Missing refresh token" noise on /public and other public pages.
+    if (kIsWeb) {
+      final startupPath = Uri.base.path.trim();
+      if (_isPublicLikeStartupPath(startupPath)) {
+        return;
+      }
+    }
+
     final bootstrapDio = Dio(
       BaseOptions(
         baseUrl: AppConfig.apiBaseUrl,
@@ -64,9 +94,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
         headers: const {
           'Accept': 'application/json',
         },
-        // IMPORTANT:
-        // Allow non-2xx through without throwing so we can "return quietly"
-        // on 401 (no cookie) instead of generating exceptions repeatedly.
         validateStatus: (code) => code != null && code >= 200 && code < 500,
       ),
     );
@@ -123,7 +150,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       }
 
       if (kIsWeb) {
-        // Cookie-based refresh, minimal request.
         final res = await bootstrapDio.post(
           '/auth/refresh',
           data: null,
@@ -136,10 +162,7 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
           ),
         );
 
-        // 204 = nothing to do
         if (res.statusCode == 204) return;
-
-        // 401/403 is normal when no cookie exists (logged out / first visit).
         if (res.statusCode == 401 || res.statusCode == 403) return;
 
         final access = readAccess(res.data);
@@ -149,7 +172,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
         return;
       }
 
-      // Non-web: body-based refresh token
       final rt = store.refreshToken;
       if (rt == null || rt.trim().isEmpty) return;
 
@@ -175,20 +197,15 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       bootstrapDio.close(force: true);
     }
   } catch (_) {
-    // Never throw from bootstrap
     return;
   } finally {
-    // Mark done regardless of outcome: prevents repeated storms.
     _bootstrapDone = true;
 
-    // Release anyone awaiting the in-flight attempt.
     final c = _bootstrapInFlight;
     _bootstrapInFlight = null;
     if (c != null && !c.isCompleted) c.complete();
   }
 });
 
-/// Global one-shot guard to prevent refresh storms.
-/// (Intentionally survives provider re-evaluation / rebuild churn.)
 bool _bootstrapDone = false;
 Completer<void>? _bootstrapInFlight;
