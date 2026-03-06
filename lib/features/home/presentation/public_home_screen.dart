@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/net/dio_provider.dart';
-
-import '../../feed/providers.dart';
 import '../../feed/domain/post.dart';
+import '../../feed/providers.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -353,17 +352,8 @@ class _PublicHero extends StatelessWidget {
 class _PublicAuthPanel extends StatelessWidget {
   const _PublicAuthPanel();
 
-  String _currentSafeRedirect(BuildContext context) {
-    final current = GoRouterState.of(context).uri.toString().trim();
-    if (current.isEmpty) return '/public';
-    if (!current.startsWith('/')) return '/public';
-    return current;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final redirect = _currentSafeRedirect(context);
-
     return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: Column(
@@ -380,7 +370,6 @@ class _PublicAuthPanel extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               onPressed: () => context.go('/register?redirect=%2Fhome'),
-              ),
               child: const Text('Create account'),
             ),
           ),
@@ -389,7 +378,6 @@ class _PublicAuthPanel extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () => context.go('/login?redirect=%2Fhome'),
-              ),
               child: const Text('Sign in'),
             ),
           ),
