@@ -21,7 +21,7 @@ class DocumentScaffold extends StatelessWidget {
     this.maxWidth = 780,
     this.actions,
     this.footer,
-    this.homePath = '/public',
+    this.homePath = '/',
   });
 
   final String title;

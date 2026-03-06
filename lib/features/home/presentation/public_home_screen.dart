@@ -353,8 +353,17 @@ class _PublicHero extends StatelessWidget {
 class _PublicAuthPanel extends StatelessWidget {
   const _PublicAuthPanel();
 
+  String _currentSafeRedirect(BuildContext context) {
+    final current = GoRouterState.of(context).uri.toString().trim();
+    if (current.isEmpty) return '/public';
+    if (!current.startsWith('/')) return '/public';
+    return current;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final redirect = _currentSafeRedirect(context);
+
     return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: Column(
@@ -370,7 +379,9 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => context.go('/register?redirect=%2Fhome'),
+              onPressed: () => context.go(
+                '/register?redirect=${Uri.encodeComponent(redirect)}',
+              ),
               child: const Text('Create account'),
             ),
           ),
@@ -378,7 +389,9 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go('/login?redirect=%2Fhome'),
+              onPressed: () => context.go(
+                '/login?redirect=${Uri.encodeComponent(redirect)}',
+              ),
               child: const Text('Sign in'),
             ),
           ),
