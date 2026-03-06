@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_card.dart';
@@ -8,16 +9,16 @@ import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
-class InstitutionRequestVerificationScreen extends StatefulWidget {
+class InstitutionRequestVerificationScreen extends ConsumerStatefulWidget {
   const InstitutionRequestVerificationScreen({super.key});
 
   @override
-  State<InstitutionRequestVerificationScreen> createState() =>
+  ConsumerState<InstitutionRequestVerificationScreen> createState() =>
       _InstitutionRequestVerificationScreenState();
 }
 
 class _InstitutionRequestVerificationScreenState
-    extends State<InstitutionRequestVerificationScreen> {
+    extends ConsumerState<InstitutionRequestVerificationScreen> {
   final _orgName = TextEditingController();
   final _website = TextEditingController();
   final _workEmail = TextEditingController();
@@ -60,7 +61,7 @@ class _InstitutionRequestVerificationScreenState
     });
 
     try {
-      final dio = createDio();
+      final dio = ref.read(dioProvider);
 
       final res = await dio.post(
         '/institutions/verification-request',
@@ -102,8 +103,10 @@ class _InstitutionRequestVerificationScreenState
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
         message = data['message'] as String;
-      } else if (data is Map && data['message'] is List && data['message'].isNotEmpty) {
-        message = data['message'].first.toString();
+      } else if (data is Map &&
+          data['message'] is List &&
+          (data['message'] as List).isNotEmpty) {
+        message = (data['message'] as List).first.toString();
       } else if (e.response?.statusCode == 401) {
         message = 'Please sign in before submitting a verification request.';
       }

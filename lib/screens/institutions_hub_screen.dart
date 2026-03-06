@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/net/dio_provider.dart';
@@ -8,14 +9,15 @@ import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
-class InstitutionsHubScreen extends StatefulWidget {
+class InstitutionsHubScreen extends ConsumerStatefulWidget {
   const InstitutionsHubScreen({super.key});
 
   @override
-  State<InstitutionsHubScreen> createState() => _InstitutionsHubScreenState();
+  ConsumerState<InstitutionsHubScreen> createState() =>
+      _InstitutionsHubScreenState();
 }
 
-class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
+class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
   bool _loading = true;
   bool _signedIn = false;
   String _state = 'PUBLIC';
@@ -36,7 +38,7 @@ class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
     });
 
     try {
-      final dio = createDio();
+      final dio = ref.read(dioProvider);
       final res = await dio.get('/institutions/me');
 
       final data = (res.data is Map<String, dynamic>)
@@ -134,7 +136,10 @@ class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AuraSpace.s8),
           Text(text, style: AuraText.body),
         ],
@@ -156,9 +161,13 @@ class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Request details', style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Request details',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AuraSpace.s10),
-          if (organizationName.isNotEmpty) Text('Organization: $organizationName', style: AuraText.body),
+          if (organizationName.isNotEmpty)
+            Text('Organization: $organizationName', style: AuraText.body),
           if (workEmail.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text('Work email: $workEmail', style: AuraText.body),
@@ -203,9 +212,13 @@ class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Institutional standing', style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Institutional standing',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: AuraSpace.s10),
-          if (institutionName.isNotEmpty) Text('Institution: $institutionName', style: AuraText.body),
+          if (institutionName.isNotEmpty)
+            Text('Institution: $institutionName', style: AuraText.body),
           if (institutionStatus.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text('Institution status: $institutionStatus', style: AuraText.body),
@@ -329,7 +342,10 @@ class _InstitutionsHubScreenState extends State<InstitutionsHubScreen> {
                         vertical: AuraSpace.s12,
                       ),
                     ),
-                    child: Text('Issue institutional post', style: AuraText.body),
+                    child: Text(
+                      'Issue institutional post',
+                      style: AuraText.body,
+                    ),
                   ),
                 ),
               ],
