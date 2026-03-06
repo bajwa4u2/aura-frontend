@@ -33,10 +33,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   bool _ok = false;
   String? _msg;
 
-  String _safeRedirect(String? r) {
+  String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
-    if (v.isEmpty) return '/home';
-    if (!v.startsWith('/')) return '/home';
+    if (v.isEmpty) return null;
+    if (!v.startsWith('/')) return null;
     return v;
   }
 
@@ -115,7 +115,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final redirect = _safeRedirect(widget.redirectTo);
+    final redirect = _safeRedirectOrNull(widget.redirectTo);
     final email = (widget.email ?? '').trim();
 
     return AuraScaffold(
@@ -142,8 +142,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       runSpacing: AuraSpace.s10,
                       children: [
                         FilledButton(
-                          onPressed: () =>
-                              context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                          onPressed: () {
+                            if (redirect != null) {
+                              context.go(
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              );
+                            } else {
+                              context.go('/login');
+                            }
+                          },
                           child: const Text('Continue'),
                         ),
                         TextButton(
@@ -158,14 +165,33 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       runSpacing: AuraSpace.s10,
                       children: [
                         FilledButton(
-                          onPressed: () => context.go(
-                            '/verify-pending?email=${Uri.encodeComponent(email)}&redirect=${Uri.encodeComponent(redirect)}',
-                          ),
+                          onPressed: () {
+                            final qp = <String, String>{};
+                            if (email.isNotEmpty) {
+                              qp['email'] = email;
+                            }
+                            if (redirect != null) {
+                              qp['redirect'] = redirect;
+                            }
+
+                            final uri = Uri(
+                              path: '/verify-pending',
+                              queryParameters: qp.isEmpty ? null : qp,
+                            );
+                            context.go(uri.toString());
+                          },
                           child: const Text('Resend verification'),
                         ),
                         TextButton(
-                          onPressed: () =>
-                              context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                          onPressed: () {
+                            if (redirect != null) {
+                              context.go(
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              );
+                            } else {
+                              context.go('/login');
+                            }
+                          },
                           child: const Text('Back to login'),
                         ),
                       ],

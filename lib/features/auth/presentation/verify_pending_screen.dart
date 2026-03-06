@@ -30,10 +30,10 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   bool _busy = false;
   String? _msg;
 
-  String _safeRedirect(String? r) {
+  String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
-    if (v.isEmpty) return '/home';
-    if (!v.startsWith('/')) return '/home';
+    if (v.isEmpty) return null;
+    if (!v.startsWith('/')) return null;
     return v;
   }
 
@@ -74,7 +74,9 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
         }
       }
 
-      debugPrint('resend verify failed: ${last?.response?.statusCode} ${last?.response?.data}');
+      debugPrint(
+        'resend verify failed: ${last?.response?.statusCode} ${last?.response?.data}',
+      );
       if (!mounted) return;
       setState(() => _msg = 'Could not resend right now.');
     } catch (e) {
@@ -96,11 +98,11 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final redirect = _safeRedirect(widget.redirectTo);
+    final redirect = _safeRedirectOrNull(widget.redirectTo);
     final verifiedAsync = ref.watch(emailVerifiedProvider);
     final isAuthed = ref.watch(isAuthedProvider);
 
-    if (isAuthed && verifiedAsync.value == true) {
+    if (isAuthed && verifiedAsync.value == true && redirect != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.go(redirect);
@@ -145,8 +147,15 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       child: Text(_busy ? 'Sending…' : 'Resend verification'),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                      onPressed: () {
+                        if (redirect != null) {
+                          context.go(
+                            '/login?redirect=${Uri.encodeComponent(redirect)}',
+                          );
+                        } else {
+                          context.go('/login');
+                        }
+                      },
                       child: const Text('Back to login'),
                     ),
                   ],
