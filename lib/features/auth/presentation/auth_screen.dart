@@ -25,11 +25,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _busy = false;
   String? _error;
 
-  String _safeRedirect(String? r) {
+  String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
-    if (v.isEmpty) return '/home';
-    if (!v.startsWith('/')) return '/home';
+    if (v.isEmpty) return null;
+    if (!v.startsWith('/')) return null;
     return v;
+  }
+
+  String _withRedirect(String path) {
+    final redirect = _safeRedirectOrNull(widget.redirectTo);
+    if (redirect == null) return path;
+    return '$path?redirect=${Uri.encodeComponent(redirect)}';
   }
 
   Future<void> _login() async {
@@ -45,16 +51,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final email = _emailCtrl.text.trim();
       final pass = _passwordCtrl.text;
 
-      // Post-unification: use named args
       await AuthController(ref).login(email: email, password: pass);
 
-      final redirect = _safeRedirect(widget.redirectTo);
-      if (!mounted) return;
-      context.go(redirect);
+      // IMPORTANT:
+      // Do not navigate here.
+      // Router must be the single authority after auth state changes.
+      // It will send:
+      // - verified users to redirect/home
+      // - unverified users to verify-pending
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -81,12 +92,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 children: [
                   Text('Welcome back', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
-
                   if (_error != null) ...[
-                    Text(_error!, style: AuraText.body.copyWith(height: 1.3)),
+                    Text(
+                      _error!,
+                      style: AuraText.body.copyWith(height: 1.3),
+                    ),
                     const SizedBox(height: AuraSpace.s10),
                   ],
-
                   TextFormField(
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
@@ -99,7 +111,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     },
                   ),
                   const SizedBox(height: AuraSpace.s10),
-
                   TextFormField(
                     controller: _passwordCtrl,
                     obscureText: true,
@@ -111,7 +122,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     },
                   ),
                   const SizedBox(height: AuraSpace.s14),
-
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -119,17 +129,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       child: Text(_busy ? 'Signing in…' : 'Sign in'),
                     ),
                   ),
-
                   const SizedBox(height: AuraSpace.s10),
                   Row(
                     children: [
                       TextButton(
-                        onPressed: _busy ? null : () => context.push('/forgot-password'),
+                        onPressed: _busy
+                            ? null
+                            : () => context.push(_withRedirect('/forgot-password')),
                         child: const Text('Forgot password'),
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: _busy ? null : () => context.push('/register'),
+                        onPressed: _busy
+                            ? null
+                            : () => context.push(_withRedirect('/register')),
                         child: const Text('Create account'),
                       ),
                     ],
