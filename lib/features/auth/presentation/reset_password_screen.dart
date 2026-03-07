@@ -72,6 +72,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       return;
     }
 
+    if (pass.length > 72) {
+      setState(() {
+        _msg = 'Password must be 72 characters or fewer.';
+      });
+      return;
+    }
+
     if (pass != confirm) {
       setState(() {
         _msg = 'Password and confirm password do not match.';
@@ -89,7 +96,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     try {
       await dio.post('/auth/reset-password', data: {
         'token': token,
-        'newPassword': pass,
+        'password': pass,
       });
 
       if (!mounted) return;
