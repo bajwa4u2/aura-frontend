@@ -47,6 +47,8 @@ import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 import 'screens/contact_screen.dart';
 
+const String kInstitutionDashboardRoute = '/institution/dashboard';
+
 String _normalizeRedirectDest(String? dest) {
   final trimmed = (dest ?? '').trim();
   if (trimmed.isEmpty) return '/home';
@@ -98,6 +100,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/me' ||
         path == '/me/edit' ||
         path == '/me/correspondence' ||
+        path == kInstitutionDashboardRoute ||
         path == '/compose' ||
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
@@ -210,11 +213,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      if (path == '/login' || path == '/register') {
-        final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading) return null;
+      final verifiedAsync = ref.read(emailVerifiedProvider);
 
-        final verified = verifiedAsync.value ?? false;
+      if (verifiedAsync.isLoading) {
+        return null;
+      }
+
+      final verified = verifiedAsync.value ?? false;
+
+      if (path == '/login' || path == '/register') {
         final redirectTo = uri.queryParameters['redirect'];
 
         if (!verified) {
@@ -230,14 +237,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         return '/home';
       }
-
-      final verifiedAsync = ref.read(emailVerifiedProvider);
-
-      if (verifiedAsync.isLoading) {
-        return null;
-      }
-
-      final verified = verifiedAsync.value ?? false;
 
       if (!verified) {
         if (isPublic || isAuthAction) return null;
@@ -259,6 +258,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isPlainAuth) {
         final redirectTo = uri.queryParameters['redirect'];
         return _normalizeRedirectDest(redirectTo);
+      }
+
+      // Institution entry handoff:
+      // once a user is authenticated + email-verified, do not leave them
+      // circling on the institution sign-in page. Give the flow a stable,
+      // internal destination.
+      if (path == '/institution/sign-in') {
+        return kInstitutionDashboardRoute;
       }
 
       if (isPublic || isMember || isAuthAction) {
@@ -353,6 +360,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/me/edit', builder: (_, __) => const EditProfileScreen()),
           GoRoute(
             path: '/me/correspondence',
+            builder: (_, __) => const CorrespondenceHubScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionDashboardRoute,
             builder: (_, __) => const CorrespondenceHubScreen(),
           ),
           GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
