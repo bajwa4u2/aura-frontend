@@ -17,12 +17,8 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
     this.redirectTo,
   });
 
-  /// Token from deep link: /reset-password?token=...
   final String? token;
-
-  /// Optional email (nice UX if your email includes it).
   final String? email;
-
   final String? redirectTo;
 
   @override
@@ -35,6 +31,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   bool _busy = false;
   bool _done = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   String? _msg;
 
   String _safeRedirect(String? r) {
@@ -45,23 +43,39 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   }
 
   Future<void> _submit() async {
-    if (_busy) return;
+    FocusScope.of(context).unfocus();
+
+    if (_busy || _done) return;
 
     final token = (widget.token ?? '').trim();
     if (token.isEmpty) {
-      setState(() => _msg = 'This reset link is missing a token. Please request a new link.');
+      setState(() {
+        _msg = 'This reset link is missing a token. Please request a new link.';
+      });
       return;
     }
 
     final pass = _password.text;
     final confirm = _confirm.text;
 
-    if (pass.length < 8) {
-      setState(() => _msg = 'Password must be at least 8 characters.');
+    if (pass.isEmpty || confirm.isEmpty) {
+      setState(() {
+        _msg = 'New password and confirm password are required.';
+      });
       return;
     }
+
+    if (pass.length < 8) {
+      setState(() {
+        _msg = 'Password must be at least 8 characters.';
+      });
+      return;
+    }
+
     if (pass != confirm) {
-      setState(() => _msg = 'Passwords do not match.');
+      setState(() {
+        _msg = 'Password and confirm password do not match.';
+      });
       return;
     }
 
@@ -78,15 +92,31 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         'newPassword': pass,
       });
 
+      if (!mounted) return;
+
       setState(() {
         _done = true;
         _msg = 'Password updated. You can log in now.';
       });
     } on DioException catch (e) {
       debugPrint('reset-password failed: ${e.response?.statusCode} ${e.response?.data}');
-      setState(() => _msg = 'Reset failed. The link may be expired. Please request a new link.');
+      if (!mounted) return;
+
+      setState(() {
+        _msg = 'Reset failed. The link may be expired. Please request a new link.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _msg = 'Something went wrong. Please try again.';
+      });
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
     }
   }
 
@@ -97,10 +127,26 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     super.dispose();
   }
 
+  InputDecoration _decoration({
+    required String label,
+    String? hint,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      suffixIcon: suffixIcon,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final redirect = _safeRedirect(widget.redirectTo);
     final hasToken = (widget.token ?? '').trim().isNotEmpty;
+    final enabled = !_busy && !_done;
+    final accountLabel = ((widget.email ?? '').trim().isEmpty)
+        ? 'your account'
+        : widget.email!.trim();
 
     return AuraScaffold(
       title: 'Reset password',
@@ -115,43 +161,81 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 const SizedBox(height: AuraSpace.s10),
                 Text(
                   hasToken
-                      ? 'Choose a new password for ${((widget.email ?? '').trim().isEmpty) ? 'your account' : widget.email!.trim()}.'
+                      ? 'Choose a new password for $accountLabel.'
                       : 'This reset link looks incomplete. Please request a new one.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
-
                 if (hasToken) ...[
                   TextField(
                     controller: _password,
-                    obscureText: true,
+                    enabled: enabled,
+                    obscureText: _obscurePassword,
                     autofillHints: const [AutofillHints.newPassword],
-                    decoration: const InputDecoration(labelText: 'New password'),
-                    onSubmitted: (_) => _submit(),
+                    textInputAction: TextInputAction.next,
+                    decoration: _decoration(
+                      label: 'New password',
+                      hint: 'At least 8 characters',
+                      suffixIcon: IconButton(
+                        onPressed: enabled
+                            ? () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              }
+                            : null,
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _confirm,
-                    obscureText: true,
+                    enabled: enabled,
+                    obscureText: _obscureConfirm,
                     autofillHints: const [AutofillHints.newPassword],
-                    decoration: const InputDecoration(labelText: 'Confirm password'),
+                    textInputAction: TextInputAction.done,
+                    decoration: _decoration(
+                      label: 'Confirm password',
+                      hint: 'Re-enter your password',
+                      suffixIcon: IconButton(
+                        onPressed: enabled
+                            ? () {
+                                setState(() {
+                                  _obscureConfirm = !_obscureConfirm;
+                                });
+                              }
+                            : null,
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
+                    ),
                     onSubmitted: (_) => _submit(),
                   ),
                   const SizedBox(height: AuraSpace.s14),
-                  if (_busy) ...[
-                    const LinearProgressIndicator(),
-                    const SizedBox(height: AuraSpace.s12),
-                  ],
                   Wrap(
                     spacing: AuraSpace.s10,
                     runSpacing: AuraSpace.s10,
                     children: [
                       FilledButton(
-                        onPressed: (_busy || _done) ? null : _submit,
-                        child: Text(_done ? 'Done' : (_busy ? 'Updating…' : 'Update password')),
+                        onPressed: enabled ? _submit : null,
+                        child: Text(
+                          _done
+                              ? 'Done'
+                              : (_busy ? 'Updating…' : 'Update password'),
+                        ),
                       ),
                       TextButton(
-                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        onPressed: () => context.go(
+                          '/login?redirect=${Uri.encodeComponent(redirect)}',
+                        ),
                         child: const Text('Back to login'),
                       ),
                     ],
@@ -162,17 +246,20 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     runSpacing: AuraSpace.s10,
                     children: [
                       FilledButton(
-                        onPressed: () => context.go('/forgot-password?redirect=${Uri.encodeComponent(redirect)}'),
+                        onPressed: () => context.go(
+                          '/forgot-password?redirect=${Uri.encodeComponent(redirect)}',
+                        ),
                         child: const Text('Request new reset link'),
                       ),
                       TextButton(
-                        onPressed: () => context.go('/login?redirect=${Uri.encodeComponent(redirect)}'),
+                        onPressed: () => context.go(
+                          '/login?redirect=${Uri.encodeComponent(redirect)}',
+                        ),
                         child: const Text('Back to login'),
                       ),
                     ],
                   ),
                 ],
-
                 if (_msg != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Text(_msg!, style: AuraText.body),

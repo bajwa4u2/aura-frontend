@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/net/dio_provider.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -47,7 +47,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       ref.invalidate(isAuthedProvider);
       await ref.read(emailVerifiedProvider.future);
     } catch (_) {
-      // stay quiet, router can still converge on next frame
+      // Let router state settle naturally if refresh is not immediately available.
     }
   }
 
@@ -59,6 +59,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   Future<void> _verify() async {
     final token = (widget.token ?? '').trim();
+
     if (token.isEmpty) {
       setState(() {
         _busy = false;
@@ -129,74 +130,73 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               children: [
                 Text('Email verification', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
-                if (_busy) ...[
-                  Text('Verifying your email…', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s12),
-                  const LinearProgressIndicator(),
-                ] else ...[
-                  Text(_msg ?? '', style: AuraText.body),
-                  const SizedBox(height: AuraSpace.s14),
-                  if (_ok)
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        FilledButton(
-                          onPressed: () {
-                            if (redirect != null) {
-                              context.go(
-                                '/login?redirect=${Uri.encodeComponent(redirect)}',
-                              );
-                            } else {
-                              context.go('/login');
-                            }
-                          },
-                          child: const Text('Continue'),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/public'),
-                          child: const Text('Back to public home'),
-                        ),
-                      ],
-                    )
-                  else
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        FilledButton(
-                          onPressed: () {
-                            final qp = <String, String>{};
-                            if (email.isNotEmpty) {
-                              qp['email'] = email;
-                            }
-                            if (redirect != null) {
-                              qp['redirect'] = redirect;
-                            }
-
-                            final uri = Uri(
-                              path: '/verify-pending',
-                              queryParameters: qp.isEmpty ? null : qp,
+                Text(
+                  _busy ? 'Verifying your email…' : (_msg ?? ''),
+                  style: AuraText.body,
+                ),
+                const SizedBox(height: AuraSpace.s14),
+                if (_busy)
+                  const SizedBox.shrink()
+                else if (_ok)
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      FilledButton(
+                        onPressed: () {
+                          if (redirect != null) {
+                            context.go(
+                              '/login?redirect=${Uri.encodeComponent(redirect)}',
                             );
-                            context.go(uri.toString());
-                          },
-                          child: const Text('Resend verification'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            if (redirect != null) {
-                              context.go(
-                                '/login?redirect=${Uri.encodeComponent(redirect)}',
-                              );
-                            } else {
-                              context.go('/login');
-                            }
-                          },
-                          child: const Text('Back to login'),
-                        ),
-                      ],
-                    ),
-                ],
+                          } else {
+                            context.go('/login');
+                          }
+                        },
+                        child: const Text('Continue'),
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/public'),
+                        child: const Text('Back to public home'),
+                      ),
+                    ],
+                  )
+                else
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      FilledButton(
+                        onPressed: () {
+                          final qp = <String, String>{};
+                          if (email.isNotEmpty) {
+                            qp['email'] = email;
+                          }
+                          if (redirect != null) {
+                            qp['redirect'] = redirect;
+                          }
+
+                          final uri = Uri(
+                            path: '/verify-pending',
+                            queryParameters: qp.isEmpty ? null : qp,
+                          );
+                          context.go(uri.toString());
+                        },
+                        child: const Text('Resend verification'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (redirect != null) {
+                            context.go(
+                              '/login?redirect=${Uri.encodeComponent(redirect)}',
+                            );
+                          } else {
+                            context.go('/login');
+                          }
+                        },
+                        child: const Text('Back to login'),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
