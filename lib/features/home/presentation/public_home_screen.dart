@@ -17,9 +17,6 @@ Map<String, dynamic> _asMap(dynamic v) {
   return <String, dynamic>{};
 }
 
-/// Unwrap common envelopes:
-/// - { ok:true, data:{...} }
-/// - { ok:true, data:{ data:{...} } }
 Map<String, dynamic> _unwrapMap(dynamic raw) {
   final root = _asMap(raw);
   dynamic inner = root['data'];
@@ -137,18 +134,13 @@ class PublicHomeScreen extends ConsumerWidget {
       actions: const [],
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          final isWide = w >= 980;
+          final isWide = constraints.maxWidth >= 980;
 
           final pinnedAsync = ref.watch(pinnedAnnouncementProvider);
-
           final pinnedBanner = pinnedAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (a) {
-              if (a == null) return const SizedBox.shrink();
-              return _PinnedAnnouncementBanner(a: a);
-            },
+            data: (a) => a == null ? const SizedBox.shrink() : _PinnedAnnouncementBanner(a: a),
           );
 
           return ListView(
@@ -174,9 +166,11 @@ class PublicHomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s16),
-                    const SizedBox(
-                      width: 380,
-                      child: _EntryArchitectureStack(),
+                    const Flexible(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 380),
+                        child: _EntryStack(),
+                      ),
                     ),
                   ],
                 )
@@ -185,15 +179,12 @@ class PublicHomeScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
                 pinnedBanner,
                 const SizedBox(height: AuraSpace.s14),
-                const _EntryArchitectureStack(),
+                const _EntryStack(),
               ],
-              const SizedBox(height: AuraSpace.s20),
-              const _ParticipationSplitCard(),
               const SizedBox(height: AuraSpace.s20),
               _SectionHeader(
                 title: 'Public record',
-                subtitle:
-                    'Approved public posts. Read them in full. This is a record, not a rush.',
+                subtitle: 'Approved public posts.',
                 actionLabel: 'Explore',
                 onAction: () => context.go('/search'),
               ),
@@ -203,7 +194,7 @@ class PublicHomeScreen extends ConsumerWidget {
                   if (posts.isEmpty) {
                     return const AuraCard(
                       child: Text(
-                        'No public posts yet. This space opens as moderation and publishing settle.',
+                        'No public posts yet.',
                         style: AuraText.body,
                       ),
                     );
@@ -311,8 +302,7 @@ class _PublicHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Aura is structured for two kinds of presence: public members and verified institutions. '
-            'The public lane remains simple. The institutional lane remains governed, distinct, and answerable.',
+            'For members and institutions.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -358,12 +348,13 @@ class _PublicHero extends StatelessWidget {
   }
 }
 
-class _EntryArchitectureStack extends StatelessWidget {
-  const _EntryArchitectureStack();
+class _EntryStack extends StatelessWidget {
+  const _EntryStack();
 
   @override
   Widget build(BuildContext context) {
     return const Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _PublicAuthPanel(),
         SizedBox(height: AuraSpace.s14),
@@ -382,14 +373,10 @@ class _PublicAuthPanel extends StatelessWidget {
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text('Enter as member', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
-          Text(
-            'This is the public lane for reading, writing, saving, and participating as a person.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s16),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -403,20 +390,6 @@ class _PublicAuthPanel extends StatelessWidget {
             child: OutlinedButton(
               onPressed: () => context.go('/login?redirect=%2Fhome'),
               child: const Text('Member sign in'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.elevated,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: const Text(
-              'Public membership is intentionally simple.\n'
-              'It is for citizens, readers, and writers entering in their own name.',
-              style: AuraText.muted,
             ),
           ),
         ],
@@ -434,15 +407,18 @@ class _InstitutionEntryCard extends StatelessWidget {
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text('Enter as institution', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
-          Text(
-            'Institution participation uses its own private entry, separate from public member sign in. '
-            'This lane is for verified institutional accounts and governed presence.',
-            style: AuraText.body,
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.go('/institution/request-verification'),
+              child: const Text('Create institution account'),
+            ),
           ),
-          const SizedBox(height: AuraSpace.s16),
+          const SizedBox(height: AuraSpace.s10),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
@@ -450,126 +426,6 @@ class _InstitutionEntryCard extends StatelessWidget {
               child: const Text('Institution sign in'),
             ),
           ),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => context.go('/institution/request-verification'),
-              child: const Text('Request institution verification'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.elevated,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: const Text(
-              'Institutions are not treated as upgraded public accounts.\n'
-              'They enter through a separate governed door.',
-              style: AuraText.muted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ParticipationSplitCard extends StatelessWidget {
-  const _ParticipationSplitCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Two distinct lanes', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 760;
-
-              final publicBlock = _LaneBlock(
-                title: 'Public membership',
-                body:
-                    'For people entering in their own name. Read, write, respond, save, and participate without institutional burden.',
-                icon: Icons.person_outline,
-              );
-
-              final institutionBlock = _LaneBlock(
-                title: 'Institutional participation',
-                body:
-                    'For verified organizations entering through domain-backed institutional credentials and accountable institutional standing.',
-                icon: Icons.apartment_outlined,
-              );
-
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: publicBlock),
-                    const SizedBox(width: AuraSpace.s14),
-                    Expanded(child: institutionBlock),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  publicBlock,
-                  const SizedBox(height: AuraSpace.s12),
-                  institutionBlock,
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Text(
-            'Aura is clearer and safer when public identity and institutional identity are not mixed at the point of entry.',
-            style: AuraText.muted,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LaneBlock extends StatelessWidget {
-  const _LaneBlock({
-    required this.title,
-    required this.body,
-    required this.icon,
-  });
-
-  final String title;
-  final String body;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AuraSurface.muted),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            title,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(body, style: AuraText.body),
         ],
       ),
     );

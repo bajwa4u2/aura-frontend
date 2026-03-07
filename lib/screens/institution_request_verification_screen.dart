@@ -28,6 +28,7 @@ class _InstitutionRequestVerificationScreenState
 
   bool _submitting = false;
   bool _submitted = false;
+  String? _statusMessage;
 
   @override
   void dispose() {
@@ -41,16 +42,22 @@ class _InstitutionRequestVerificationScreenState
   }
 
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+
     final org = _orgName.text.trim();
-    final email = _workEmail.text.trim();
+    final email = _workEmail.text.trim().toLowerCase();
 
     if (org.isEmpty || email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Organization name and work email are required.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() {
+        _statusMessage = 'Institution name and institution email are required.';
+      });
+      return;
+    }
+
+    if (!email.contains('@')) {
+      setState(() {
+        _statusMessage = 'Enter a valid institution email.';
+      });
       return;
     }
 
@@ -58,6 +65,7 @@ class _InstitutionRequestVerificationScreenState
 
     setState(() {
       _submitting = true;
+      _statusMessage = null;
     });
 
     try {
@@ -83,22 +91,16 @@ class _InstitutionRequestVerificationScreenState
       final message =
           (res.data is Map && res.data['message'] is String)
               ? res.data['message'] as String
-              : 'Verification request saved. We will respond by email.';
+              : 'Institution account request submitted.';
 
       setState(() {
         _submitted = true;
+        _statusMessage = message;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } on DioException catch (e) {
       if (!mounted) return;
 
-      String message = 'Could not submit verification request.';
+      String message = 'Could not submit institution request.';
 
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
@@ -108,24 +110,18 @@ class _InstitutionRequestVerificationScreenState
           (data['message'] as List).isNotEmpty) {
         message = (data['message'] as List).first.toString();
       } else if (e.response?.statusCode == 401) {
-        message = 'Please sign in before submitting a verification request.';
+        message = 'Please sign in before creating an institution account.';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() {
+        _statusMessage = message;
+      });
     } catch (_) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() {
+        _statusMessage = 'Something went wrong. Please try again.';
+      });
     } finally {
       if (!mounted) return;
       setState(() {
@@ -134,93 +130,121 @@ class _InstitutionRequestVerificationScreenState
     }
   }
 
+  Widget _statusCard() {
+    if (_statusMessage == null) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        AuraCard(
+          child: Text(_statusMessage!, style: AuraText.body),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+      ],
+    );
+  }
+
+  Widget _identityCard() {
+    return AuraCard(
+      child: Column(
+        children: [
+          TextField(
+            controller: _orgName,
+            enabled: !_submitting && !_submitted,
+            inputFormatters: [LengthLimitingTextInputFormatter(120)],
+            decoration: const InputDecoration(
+              labelText: 'Institution name',
+              hintText: 'Aura Platform LLC',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _website,
+            enabled: !_submitting && !_submitted,
+            inputFormatters: [LengthLimitingTextInputFormatter(180)],
+            decoration: const InputDecoration(
+              labelText: 'Website',
+              hintText: 'https://institution.org',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _workEmail,
+            enabled: !_submitting && !_submitted,
+            keyboardType: TextInputType.emailAddress,
+            inputFormatters: [LengthLimitingTextInputFormatter(190)],
+            decoration: const InputDecoration(
+              labelText: 'Institution email',
+              hintText: 'name@institution.org',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _roleTitle,
+            enabled: !_submitting && !_submitted,
+            inputFormatters: [LengthLimitingTextInputFormatter(120)],
+            decoration: const InputDecoration(
+              labelText: 'Role or title',
+              hintText: 'Founder, Director, Policy Lead',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _jurisdiction,
+            enabled: !_submitting && !_submitted,
+            inputFormatters: [LengthLimitingTextInputFormatter(120)],
+            decoration: const InputDecoration(
+              labelText: 'Jurisdiction or country',
+              hintText: 'United States, UK, Pakistan',
+              border: InputBorder.none,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _purposeCard() {
+    return AuraCard(
+      child: TextField(
+        controller: _purpose,
+        enabled: !_submitting && !_submitted,
+        maxLines: 5,
+        inputFormatters: [LengthLimitingTextInputFormatter(900)],
+        decoration: const InputDecoration(
+          labelText: 'Purpose',
+          hintText: 'Why should this institution participate here?',
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final buttonLabel = _submitted
         ? 'Submitted'
-        : (_submitting ? 'Submitting...' : 'Submit request');
+        : (_submitting ? 'Submitting...' : 'Create institution account');
 
     return DocumentScaffold(
-      title: 'Request verification',
+      title: 'Create institution account',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Request verification'),
+          Doc.title('Create institution account'),
           const SizedBox(height: 10),
-          Doc.meta('For institutions that want to participate as themselves.'),
+          Doc.meta('Institution registration and review.'),
           Doc.lede(
-            'Verification is not a badge. It is a structural commitment to visible correction, continuity of record, and accountable institutional speech.',
+            'Institutions enter through a separate lane.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _orgName,
-                  enabled: !_submitting && !_submitted,
-                  inputFormatters: [LengthLimitingTextInputFormatter(120)],
-                  decoration: const InputDecoration(
-                    labelText: 'Organization name',
-                    border: InputBorder.none,
-                  ),
-                ),
-                Divider(height: AuraSpace.s16),
-                TextField(
-                  controller: _website,
-                  enabled: !_submitting && !_submitted,
-                  inputFormatters: [LengthLimitingTextInputFormatter(180)],
-                  decoration: const InputDecoration(
-                    labelText: 'Website (optional)',
-                    border: InputBorder.none,
-                  ),
-                ),
-                Divider(height: AuraSpace.s16),
-                TextField(
-                  controller: _workEmail,
-                  enabled: !_submitting && !_submitted,
-                  keyboardType: TextInputType.emailAddress,
-                  inputFormatters: [LengthLimitingTextInputFormatter(190)],
-                  decoration: const InputDecoration(
-                    labelText: 'Work email (required)',
-                    border: InputBorder.none,
-                  ),
-                ),
-                Divider(height: AuraSpace.s16),
-                TextField(
-                  controller: _roleTitle,
-                  enabled: !_submitting && !_submitted,
-                  inputFormatters: [LengthLimitingTextInputFormatter(120)],
-                  decoration: const InputDecoration(
-                    labelText: 'Your role/title (optional)',
-                    border: InputBorder.none,
-                  ),
-                ),
-                Divider(height: AuraSpace.s16),
-                TextField(
-                  controller: _jurisdiction,
-                  enabled: !_submitting && !_submitted,
-                  inputFormatters: [LengthLimitingTextInputFormatter(120)],
-                  decoration: const InputDecoration(
-                    labelText: 'Jurisdiction / country (optional)',
-                    border: InputBorder.none,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _statusCard(),
+          _identityCard(),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: TextField(
-              controller: _purpose,
-              enabled: !_submitting && !_submitted,
-              maxLines: 6,
-              inputFormatters: [LengthLimitingTextInputFormatter(900)],
-              decoration: const InputDecoration(
-                labelText: 'What draws you to participate here (optional)',
-                border: InputBorder.none,
-              ),
-            ),
-          ),
+          _purposeCard(),
           const SizedBox(height: AuraSpace.s12),
           Row(
             children: [
@@ -243,7 +267,7 @@ class _InstitutionRequestVerificationScreenState
           ),
           const SizedBox(height: AuraSpace.s12),
           Doc.p(
-            'This is an application lane, not a marketing lane. Verification may take time. Requests that read like PR pitches will not be accepted.',
+            'Submission starts review and verification.',
           ),
         ],
       ),
