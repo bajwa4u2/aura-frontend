@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config.dart';
 import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
+import '../auth/session_providers.dart';
 import 'platform_http_adapter.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -30,9 +31,9 @@ final dioProvider = Provider<Dio>((ref) {
   void ensureWebCredentials(Dio d) {
     if (!kIsWeb) return;
 
-    final a = d.httpClientAdapter;
-    if (a is BrowserHttpClientAdapter) {
-      a.withCredentials = true;
+    final adapter = d.httpClientAdapter;
+    if (adapter is BrowserHttpClientAdapter) {
+      adapter.withCredentials = true;
     } else {
       d.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
     }
@@ -56,6 +57,7 @@ final dioProvider = Provider<Dio>((ref) {
       final t2 = (inner['accessToken'] ?? '').toString().trim();
       if (t2.isNotEmpty) return t2;
     }
+
     return '';
   }
 
@@ -69,6 +71,7 @@ final dioProvider = Provider<Dio>((ref) {
       final r2 = (inner['refreshToken'] ?? '').toString().trim();
       if (r2.isNotEmpty) return r2;
     }
+
     return null;
   }
 
@@ -89,7 +92,7 @@ final dioProvider = Provider<Dio>((ref) {
     final boot = ref.read(sessionBootstrapProvider);
 
     // Bootstrap owns the first refresh attempt on app start.
-    // Interceptor must stay out while bootstrap is still loading.
+    // Interceptor should stay out while bootstrap is still loading.
     if (boot.isLoading) return false;
 
     return true;
@@ -97,14 +100,15 @@ final dioProvider = Provider<Dio>((ref) {
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
     if (error is DioException) {
-      final s = error.response?.statusCode;
+      final status = error.response?.statusCode;
 
-      // On web, do NOT aggressively clear tokens on refresh failure.
-      // The web model is cookie-restored and timing can race during startup.
+      // On web, do not aggressively clear tokens on refresh failure.
+      // Session restoration can race with startup and cookies may still recover.
       if (kIsWeb) return false;
 
-      return s == 401 || s == 403;
+      return status == 401 || status == 403;
     }
+
     return false;
   }
 
@@ -200,12 +204,60 @@ final dioProvider = Provider<Dio>((ref) {
 
       await store.setSession(
         accessToken: access,
-        refreshToken:
-            (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+        refreshToken: (newRefresh != null && newRefresh.isNotEmpty)
+            ? newRefresh
+            : refreshToken,
       );
     } finally {
       refreshDio.close(force: true);
     }
+  }
+
+  Future<void> ensureFreshWebAuthIfNeeded(RequestOptions options) async {
+    if (!kIsWeb) return;
+    if (isAuthEndpoint(options)) return;
+
+    final store = ref.read(tokenStoreProvider);
+
+    try {
+      await store.waitUntilLoaded();
+    } catch (_) {}
+
+    final token = store.accessToken;
+    if (token != null && token.trim().isNotEmpty) {
+      return;
+    }
+
+    if (!canAttemptRefreshNow()) {
+      return;
+    }
+
+    if (options.extra['__web_preflight_refresh_attempted'] == true) {
+      return;
+    }
+
+    options.extra['__web_preflight_refresh_attempted'] = true;
+
+    if (refreshInFlight != null) {
+      await refreshInFlight!;
+      return;
+    }
+
+    final completer = Completer<void>();
+    refreshInFlight = completer.future;
+
+    () async {
+      try {
+        await performRefresh();
+        completer.complete();
+      } catch (e, st) {
+        completer.completeError(e, st);
+      } finally {
+        refreshInFlight = null;
+      }
+    }();
+
+    await completer.future;
   }
 
   Future<Response<T>> retryRequest<T>(
@@ -247,6 +299,12 @@ final dioProvider = Provider<Dio>((ref) {
         try {
           await store.waitUntilLoaded();
         } catch (_) {}
+
+        try {
+          await ensureFreshWebAuthIfNeeded(options);
+        } catch (_) {
+          // Let the request continue. The normal 401 refresh path below still exists.
+        }
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {
