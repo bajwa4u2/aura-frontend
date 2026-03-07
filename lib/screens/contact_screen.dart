@@ -84,6 +84,35 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
     super.dispose();
   }
 
+  String? _validate({
+    required String name,
+    required String email,
+    required String message,
+  }) {
+    if (name.isEmpty) {
+      return 'Name is required.';
+    }
+
+    if (email.isEmpty) {
+      return 'Email is required.';
+    }
+
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(email)) {
+      return 'Enter a valid email address.';
+    }
+
+    if (message.isEmpty) {
+      return 'Message is required.';
+    }
+
+    if (message.length < 10) {
+      return 'Message must be at least 10 characters.';
+    }
+
+    return null;
+  }
+
   Future<void> _submit() async {
     if (_submitting) return;
 
@@ -91,9 +120,15 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
     final email = _emailCtrl.text.trim();
     final msg = _messageCtrl.text.trim();
 
-    if (email.isEmpty || msg.isEmpty) {
+    final validationError = _validate(
+      name: name,
+      email: email,
+      message: msg,
+    );
+
+    if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email and message are required.')),
+        SnackBar(content: Text(validationError)),
       );
       return;
     }
@@ -107,7 +142,7 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
         '/v1/contact',
         data: {
           'topic': _topicValue(_topic),
-          'name': name.isEmpty ? null : name,
+          'name': name,
           'email': email,
           'message': msg,
         },
@@ -115,27 +150,31 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
 
       if (!mounted) return;
 
+      _nameCtrl.clear();
+      _emailCtrl.clear();
+      _messageCtrl.clear();
+
       setState(() {
         _sent = true;
         _submitting = false;
+        _topic = ContactTopic.support;
       });
-
-      _messageCtrl.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sent. Thank you.'),
+          content: Text('Message sent. Thank you.'),
           duration: Duration(seconds: 3),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
+
       setState(() => _submitting = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Could not send. Please try again.'),
-          duration: const Duration(seconds: 4),
+          duration: Duration(seconds: 4),
         ),
       );
     }
@@ -148,18 +187,18 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
       children: [
         Doc.title('Contact'),
         const SizedBox(height: 10),
-
         Doc.p('Send a message. We will route it to the right place.'),
         const SizedBox(height: 10),
-
-        Doc.p('We will never ask for your password. Avoid sharing sensitive personal data in the message body.'),
+        Doc.p(
+          'We will never ask for your password. Avoid sharing sensitive personal data in the message body.',
+        ),
         const SizedBox(height: 14),
-
         if (_sent) ...[
-          Doc.callout('Message received. If a reply is needed, you will hear back by email.'),
+          Doc.callout(
+            'Message received. If a reply is needed, you will hear back by email.',
+          ),
           const SizedBox(height: 14),
         ],
-
         DropdownButtonFormField<ContactTopic>(
           value: _topic,
           decoration: const InputDecoration(
@@ -168,26 +207,27 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
           ),
           items: ContactTopic.values
               .map(
-                (t) => DropdownMenuItem(
+                (t) => DropdownMenuItem<ContactTopic>(
                   value: t,
                   child: Text(_topicLabel(t)),
                 ),
               )
               .toList(),
-          onChanged: (v) => setState(() => _topic = v ?? _topic),
+          onChanged: _submitting
+              ? null
+              : (v) => setState(() => _topic = v ?? _topic),
         ),
         const SizedBox(height: 12),
-
         TextField(
           controller: _nameCtrl,
           decoration: const InputDecoration(
-            labelText: 'Name (optional)',
+            labelText: 'Name',
             border: OutlineInputBorder(),
           ),
           textInputAction: TextInputAction.next,
+          enabled: !_submitting,
         ),
         const SizedBox(height: 12),
-
         TextField(
           controller: _emailCtrl,
           decoration: const InputDecoration(
@@ -196,9 +236,9 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
           ),
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          enabled: !_submitting,
         ),
         const SizedBox(height: 12),
-
         TextField(
           controller: _messageCtrl,
           decoration: const InputDecoration(
@@ -207,9 +247,9 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
             alignLabelWithHint: true,
           ),
           maxLines: 8,
+          enabled: !_submitting,
         ),
         const SizedBox(height: 12),
-
         SizedBox(
           width: double.infinity,
           child: FilledButton(
