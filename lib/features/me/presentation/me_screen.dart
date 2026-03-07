@@ -860,17 +860,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 onPressed: _adminCreateAnnouncementDialog,
                                 child: const Text('New announcement'),
                               ),
-                            OutlinedButton(
-                              onPressed: () => context.go('/ai/claim-audit'),
-                              child: const Text('Claim audit'),
-                            ),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s10),
                         Text(
-                          isAdmin
-                              ? 'Announcements are official notes. Admins can publish announcements directly from here.'
-                              : 'Announcements are official notes. Claim audit is a private tool for testing language before you publish.',
+                          'Announcements are official notes. Admins can publish announcements directly from here.',
                           style: AuraText.small,
                         ),
                         if (!isAdmin && _adminUserIds.isNotEmpty) ...[
@@ -929,10 +923,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             child: const Text('Mission'),
                           ),
                           OutlinedButton(
-                            onPressed: () => context.go('/white-paper'),
-                            child: const Text('White paper'),
-                          ),
-                          OutlinedButton(
                             onPressed: () => context.go('/founder'),
                             child: const Text('Founder'),
                           ),
@@ -943,6 +933,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           OutlinedButton(
                             onPressed: () => context.go('/institutions'),
                             child: const Text('Institutions'),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => context.go('/contact'),
+                            child: const Text('Contact'),
                           ),
                         ],
                       ),
