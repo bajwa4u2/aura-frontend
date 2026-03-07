@@ -409,24 +409,41 @@ class _PublicAboutInline extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Wrap(
-        spacing: AuraSpace.s10,
-        runSpacing: AuraSpace.s10,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Pill(
-            label: 'Investors',
-            icon: Icons.assured_workload_outlined,
-            onTap: () => onTap('/investors'),
+          Text('Public paths', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Learn about Aura, review key public pages, or reach the team directly.',
+            style: AuraText.muted,
           ),
-          _Pill(
-            label: 'Privacy',
-            icon: Icons.privacy_tip_outlined,
-            onTap: () => onTap('/privacy'),
-          ),
-          _Pill(
-            label: 'Search',
-            icon: Icons.search,
-            onTap: () => onTap('/search'),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              _Pill(
+                label: 'Investors',
+                icon: Icons.assured_workload_outlined,
+                onTap: () => onTap('/investors'),
+              ),
+              _Pill(
+                label: 'Contact',
+                icon: Icons.mail_outline,
+                onTap: () => onTap('/contact'),
+              ),
+              _Pill(
+                label: 'Privacy',
+                icon: Icons.privacy_tip_outlined,
+                onTap: () => onTap('/privacy'),
+              ),
+              _Pill(
+                label: 'Search',
+                icon: Icons.search,
+                onTap: () => onTap('/search'),
+              ),
+            ],
           ),
         ],
       ),
