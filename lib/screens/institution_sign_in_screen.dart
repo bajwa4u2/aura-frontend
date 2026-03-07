@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,104 +22,18 @@ class InstitutionSignInScreen extends ConsumerStatefulWidget {
 
 class _InstitutionSignInScreenState
     extends ConsumerState<InstitutionSignInScreen> {
-  bool _checking = true;
-  bool _redirecting = false;
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _submitting = false;
   String? _statusMessage;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkInstitutionAccess();
-    });
-  }
-
-  Future<void> _checkInstitutionAccess() async {
-    if (!mounted) return;
-
-    setState(() {
-      _checking = true;
-      _statusMessage = null;
-    });
-
-    try {
-      final authStatus = ref.read(authStatusProvider);
-
-      if (authStatus == AuthStatus.loading) {
-        if (!mounted) return;
-        setState(() {
-          _checking = false;
-          _statusMessage = 'Checking your session...';
-        });
-        return;
-      }
-
-      if (authStatus == AuthStatus.unauthed) {
-        if (!mounted) return;
-        setState(() {
-          _checking = false;
-          _statusMessage = null;
-        });
-        return;
-      }
-
-      final verifiedAsync = ref.read(emailVerifiedProvider);
-      final verified = verifiedAsync.value ?? false;
-
-      if (!verified) {
-        if (!mounted) return;
-        setState(() {
-          _checking = false;
-          _statusMessage =
-              'Your account is signed in, but email verification is still pending.';
-        });
-        return;
-      }
-
-      final dio = ref.read(dioProvider);
-      final res = await dio.get('/institutions/me');
-      final data = _asMap(res.data);
-
-      final signedIn = data['signedIn'] == true;
-      final state = '${data['state'] ?? ''}'.trim().toUpperCase();
-
-      final institution = _asMap(data['institution']);
-      final membership = _asMap(data['membership']);
-      final request = _asMap(data['request']);
-
-      final hasInstitution = institution.isNotEmpty;
-      final hasMembership = membership.isNotEmpty;
-      final isApprovedRequest =
-          '${request['status'] ?? ''}'.trim().toUpperCase() == 'APPROVED';
-
-      final canEnter = signedIn &&
-          (state == 'AUTHORIZED_SPEAKER' ||
-              state == 'AUTHORIZED' ||
-              hasInstitution ||
-              hasMembership ||
-              isApprovedRequest);
-
-      if (canEnter) {
-        _redirecting = true;
-        if (!mounted) return;
-        context.go(_institutionDashboardRoute);
-        return;
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _checking = false;
-        _statusMessage =
-            'Your account is active, but institution access is not yet available on this profile.';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _checking = false;
-        _statusMessage =
-            'We could not confirm institution access right now. You can still sign in again or request verification.';
-      });
-    }
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -128,14 +43,85 @@ class _InstitutionSignInScreenState
     return <String, dynamic>{};
   }
 
+  String _readAccessToken(Map<String, dynamic> outer) {
+    final direct = (outer['accessToken'] ?? '').toString().trim();
+    if (direct.isNotEmpty) return direct;
+
+    final data = outer['data'];
+    if (data is Map) {
+      final nested = Map<String, dynamic>.from(data);
+      final token = (nested['accessToken'] ?? '').toString().trim();
+      if (token.isNotEmpty) return token;
+    }
+
+    return '';
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) return;
+    if (_submitting) return;
+
+    setState(() {
+      _submitting = true;
+      _statusMessage = null;
+    });
+
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post(
+        '/auth/institution/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+
+      final data = _asMap(res.data);
+      final accessToken = _readAccessToken(data);
+
+      if (accessToken.isEmpty) {
+        throw Exception('Institution access token was not returned.');
+      }
+
+      await ref.read(tokenStoreProvider).setSession(accessToken: accessToken);
+      ref.invalidate(authStatusProvider);
+      ref.invalidate(emailVerifiedProvider);
+
+      if (!mounted) return;
+      context.go(_institutionDashboardRoute);
+    } on DioException catch (e) {
+      String message = 'Institution sign in failed.';
+
+      final data = e.response?.data;
+      if (data is Map && data['message'] is String) {
+        message = data['message'] as String;
+      } else if ((e.message ?? '').trim().isNotEmpty) {
+        message = e.message!.trim();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _statusMessage = message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _statusMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authStatus = ref.watch(authStatusProvider);
-    final verifiedAsync = ref.watch(emailVerifiedProvider);
-    final verified = verifiedAsync.value ?? false;
-
-    final bool isSignedIn = authStatus == AuthStatus.authed;
-    final bool canShowContinue = isSignedIn && verified;
+    final isAlreadySignedIn = authStatus == AuthStatus.authed;
 
     return DocumentScaffold(
       title: 'Institution sign in',
@@ -144,12 +130,12 @@ class _InstitutionSignInScreenState
         children: [
           Doc.title('Institution sign in'),
           const SizedBox(height: 10),
-          Doc.meta('For verified institutional participants.'),
+          Doc.meta('Private institutional entry.'),
           Doc.lede(
-            'Institutions participate under the same visibility rules as citizens, but with a formal correction obligation.',
+            'Use your institution account credentials here. This lane is separate from public member sign in and is reserved for approved institutional access.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          if (_checking || _redirecting) ...[
+          if (isAlreadySignedIn) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AuraSpace.s12),
@@ -158,28 +144,14 @@ class _InstitutionSignInScreenState
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.black.withValues(alpha: 0.03),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    child: Text(
-                      _redirecting
-                          ? 'Institution access confirmed. Entering dashboard...'
-                          : 'Checking institutional access...',
-                      style: AuraText.body,
-                    ),
-                  ),
-                ],
+              child: Text(
+                'A session is already active in this browser. Signing in here will replace it with your institution session if the credentials are valid.',
+                style: AuraText.body,
               ),
             ),
             const SizedBox(height: AuraSpace.s12),
           ],
-          if (!_checking && _statusMessage != null) ...[
+          if (_statusMessage != null) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AuraSpace.s12),
@@ -191,53 +163,90 @@ class _InstitutionSignInScreenState
             ),
             const SizedBox(height: AuraSpace.s12),
           ],
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: _redirecting
-                      ? null
-                      : () {
-                          if (canShowContinue) {
-                            context.go(_institutionDashboardRoute);
-                            return;
-                          }
-                          context.go(
-                            '/login?redirect=${Uri.encodeComponent(_institutionDashboardRoute)}',
-                          );
-                        },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Institution email', style: AuraText.body),
+                const SizedBox(height: AuraSpace.s8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.username],
+                  enabled: !_submitting,
+                  decoration: const InputDecoration(
+                    hintText: 'name@institution.org',
+                    border: OutlineInputBorder(),
                   ),
-                  child: Text(
-                    canShowContinue ? 'Continue' : 'Sign in',
-                    style: AuraText.body.copyWith(color: Colors.white),
-                  ),
+                  validator: (value) {
+                    final v = (value ?? '').trim();
+                    if (v.isEmpty) return 'Institution email is required';
+                    if (!v.contains('@')) return 'Enter a valid institution email';
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _redirecting
-                      ? null
-                      : () => context.go('/institution/request-verification'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
+                const SizedBox(height: AuraSpace.s12),
+                Text('Password', style: AuraText.body),
+                const SizedBox(height: AuraSpace.s8),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  autofillHints: const [AutofillHints.password],
+                  enabled: !_submitting,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter password',
+                    border: OutlineInputBorder(),
                   ),
-                  child: Text('Request verification', style: AuraText.body),
+                  validator: (value) {
+                    final v = value ?? '';
+                    if (v.isEmpty) return 'Password is required';
+                    if (v.length < 8) return 'Password must be at least 8 characters';
+                    return null;
+                  },
+                  onFieldSubmitted: (_) => _submit(),
                 ),
-              ),
-            ],
+                const SizedBox(height: AuraSpace.s12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _submitting ? null : _submit,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AuraSpace.s14,
+                            vertical: AuraSpace.s12,
+                          ),
+                        ),
+                        child: Text(
+                          _submitting ? 'Signing in...' : 'Institution sign in',
+                          style: AuraText.body.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => context.go('/institution/request-verification'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AuraSpace.s14,
+                            vertical: AuraSpace.s12,
+                          ),
+                        ),
+                        child: Text('Request verification', style: AuraText.body),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AuraSpace.s12),
           Doc.p(
-            'If your institution is not yet verified, request verification first. Once approved, you can publish and respond under your institutional identity.',
+            'Institution access requires approved institutional credentials. Public member accounts and institution accounts now enter through separate doors.',
           ),
         ],
       ),

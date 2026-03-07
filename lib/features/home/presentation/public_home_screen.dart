@@ -175,8 +175,8 @@ class PublicHomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: AuraSpace.s16),
                     const SizedBox(
-                      width: 360,
-                      child: _PublicEntranceStack(),
+                      width: 380,
+                      child: _EntryArchitectureStack(),
                     ),
                   ],
                 )
@@ -185,8 +185,10 @@ class PublicHomeScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
                 pinnedBanner,
                 const SizedBox(height: AuraSpace.s14),
-                const _PublicEntranceStack(),
+                const _EntryArchitectureStack(),
               ],
+              const SizedBox(height: AuraSpace.s20),
+              const _ParticipationSplitCard(),
               const SizedBox(height: AuraSpace.s20),
               _SectionHeader(
                 title: 'Public record',
@@ -304,13 +306,13 @@ class _PublicHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'A civic layer for accountability and alignment.',
+            'A civic layer for accountable public writing.',
             style: AuraText.title,
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Aura helps people and institutions speak in a way that can be checked, carried, and returned to.\n'
-            'Not influence. Not spectacle. A durable record and responsible exchange.',
+            'Aura is structured for two kinds of presence: public members and verified institutions. '
+            'The public lane remains simple. The institutional lane remains governed, distinct, and answerable.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -329,6 +331,11 @@ class _PublicHero extends StatelessWidget {
                 onTap: () => context.go('/founder'),
               ),
               _Pill(
+                label: 'Institutions',
+                icon: Icons.apartment_outlined,
+                onTap: () => context.go('/institutions'),
+              ),
+              _Pill(
                 label: 'Investors',
                 icon: Icons.assured_workload_outlined,
                 onTap: () => context.go('/investors'),
@@ -337,11 +344,6 @@ class _PublicHero extends StatelessWidget {
                 label: 'Contact',
                 icon: Icons.mail_outline,
                 onTap: () => context.go('/contact'),
-              ),
-              _Pill(
-                label: 'Privacy',
-                icon: Icons.privacy_tip_outlined,
-                onTap: () => context.go('/privacy'),
               ),
               _Pill(
                 label: 'Search',
@@ -356,17 +358,69 @@ class _PublicHero extends StatelessWidget {
   }
 }
 
-class _PublicEntranceStack extends StatelessWidget {
-  const _PublicEntranceStack();
+class _EntryArchitectureStack extends StatelessWidget {
+  const _EntryArchitectureStack();
 
   @override
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        _InstitutionEntryCard(),
-        SizedBox(height: AuraSpace.s14),
         _PublicAuthPanel(),
+        SizedBox(height: AuraSpace.s14),
+        _InstitutionEntryCard(),
       ],
+    );
+  }
+}
+
+class _PublicAuthPanel extends StatelessWidget {
+  const _PublicAuthPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Enter as member', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'This is the public lane for reading, writing, saving, and participating as a person.',
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.go('/register?redirect=%2Fhome'),
+              child: const Text('Create member account'),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => context.go('/login?redirect=%2Fhome'),
+              child: const Text('Member sign in'),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Container(
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            decoration: BoxDecoration(
+              color: AuraSurface.elevated,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: const Text(
+              'Public membership is intentionally simple.\n'
+              'It is for citizens, readers, and writers entering in their own name.',
+              style: AuraText.muted,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -381,10 +435,11 @@ class _InstitutionEntryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Institutional participation', style: AuraText.title),
+          Text('Enter as institution', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Institutions join Aura as verified participants. Their presence is structured, accountable, and distinct from individual entry.',
+            'Institution participation uses its own private entry, separate from public member sign in. '
+            'This lane is for verified institutional accounts and governed presence.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -400,45 +455,7 @@ class _InstitutionEntryCard extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               onPressed: () => context.go('/institution/request-verification'),
-              child: const Text('Request verification'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PublicAuthPanel extends StatelessWidget {
-  const _PublicAuthPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Enter', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            'Sign in to write, save, and participate.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => context.go('/register?redirect=%2Fhome'),
-              child: const Text('Create account'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.go('/login?redirect=%2Fhome'),
-              child: const Text('Sign in'),
+              child: const Text('Request institution verification'),
             ),
           ),
           const SizedBox(height: AuraSpace.s14),
@@ -450,11 +467,109 @@ class _PublicAuthPanel extends StatelessWidget {
               border: Border.all(color: AuraSurface.divider),
             ),
             child: const Text(
-              'This is not a performance space.\n'
-              'It is a place to speak with responsibility.',
+              'Institutions are not treated as upgraded public accounts.\n'
+              'They enter through a separate governed door.',
               style: AuraText.muted,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParticipationSplitCard extends StatelessWidget {
+  const _ParticipationSplitCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Two distinct lanes', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 760;
+
+              final publicBlock = _LaneBlock(
+                title: 'Public membership',
+                body:
+                    'For people entering in their own name. Read, write, respond, save, and participate without institutional burden.',
+                icon: Icons.person_outline,
+              );
+
+              final institutionBlock = _LaneBlock(
+                title: 'Institutional participation',
+                body:
+                    'For verified organizations entering through domain-backed institutional credentials and accountable institutional standing.',
+                icon: Icons.apartment_outlined,
+              );
+
+              if (isWide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: publicBlock),
+                    const SizedBox(width: AuraSpace.s14),
+                    Expanded(child: institutionBlock),
+                  ],
+                );
+              }
+
+              return Column(
+                children: [
+                  publicBlock,
+                  const SizedBox(height: AuraSpace.s12),
+                  institutionBlock,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text(
+            'Aura is clearer and safer when public identity and institutional identity are not mixed at the point of entry.',
+            style: AuraText.muted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LaneBlock extends StatelessWidget {
+  const _LaneBlock({
+    required this.title,
+    required this.body,
+    required this.icon,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AuraSurface.muted),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            title,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(body, style: AuraText.body),
         ],
       ),
     );
