@@ -45,9 +45,11 @@ import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
+import 'screens/enter_institution_screen.dart';
 import 'screens/contact_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
+const String kEnterInstitutionRoute = '/enter-institution';
 
 String _normalizeRedirectDest(String? dest) {
   final trimmed = (dest ?? '').trim();
@@ -101,6 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/me/edit' ||
         path == '/me/correspondence' ||
         path == kInstitutionDashboardRoute ||
+        path == kEnterInstitutionRoute ||
         path == '/compose' ||
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
@@ -260,12 +263,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return _normalizeRedirectDest(redirectTo);
       }
 
-      // Institution entry handoff:
-      // once a user is authenticated + email-verified, do not leave them
-      // circling on the institution sign-in page. Give the flow a stable,
-      // internal destination.
+      // Institution-aware entry:
+      // once a user is authenticated + verified, the institution sign-in route
+      // should hand off into the institution entry context selector rather than
+      // dropping the user into personal space or looping on the sign-in page.
       if (path == '/institution/sign-in') {
-        return kInstitutionDashboardRoute;
+        return kEnterInstitutionRoute;
       }
 
       if (isPublic || isMember || isAuthAction) {
@@ -363,8 +366,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const CorrespondenceHubScreen(),
           ),
           GoRoute(
+            path: kEnterInstitutionRoute,
+            builder: (_, __) => const EnterInstitutionScreen(),
+          ),
+          GoRoute(
             path: kInstitutionDashboardRoute,
-            builder: (_, __) => const CorrespondenceHubScreen(),
+            builder: (_, __) => const InstitutionsHubScreen(),
           ),
           GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
           GoRoute(
