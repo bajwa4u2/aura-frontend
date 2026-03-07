@@ -19,49 +19,94 @@ class InstitutionRequestVerificationScreen extends ConsumerStatefulWidget {
 
 class _InstitutionRequestVerificationScreenState
     extends ConsumerState<InstitutionRequestVerificationScreen> {
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
   final _orgName = TextEditingController();
   final _website = TextEditingController();
   final _workEmail = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _roleTitle = TextEditingController();
   final _jurisdiction = TextEditingController();
   final _purpose = TextEditingController();
 
   bool _submitting = false;
   bool _submitted = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String? _statusMessage;
 
   @override
   void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
     _orgName.dispose();
     _website.dispose();
     _workEmail.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
     _roleTitle.dispose();
     _jurisdiction.dispose();
     _purpose.dispose();
     super.dispose();
   }
 
+  bool _looksLikeEmail(String value) {
+    final email = value.trim();
+    return email.contains('@') && email.contains('.');
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
     final org = _orgName.text.trim();
+    final website = _website.text.trim();
     final email = _workEmail.text.trim().toLowerCase();
+    final password = _password.text;
+    final confirmPassword = _confirmPassword.text;
+    final roleTitle = _roleTitle.text.trim();
+    final jurisdiction = _jurisdiction.text.trim();
+    final purpose = _purpose.text.trim();
 
-    if (org.isEmpty || email.isEmpty) {
+    if (_submitting || _submitted) return;
+
+    if (firstName.isEmpty || lastName.isEmpty || org.isEmpty || email.isEmpty) {
       setState(() {
-        _statusMessage = 'Institution name and institution email are required.';
+        _statusMessage =
+            'First name, last name, institution name, and institution email are required.';
       });
       return;
     }
 
-    if (!email.contains('@')) {
+    if (!_looksLikeEmail(email)) {
       setState(() {
         _statusMessage = 'Enter a valid institution email.';
       });
       return;
     }
 
-    if (_submitting || _submitted) return;
+    if (password.isEmpty || confirmPassword.isEmpty) {
+      setState(() {
+        _statusMessage = 'Password and confirm password are required.';
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      setState(() {
+        _statusMessage = 'Password must be at least 8 characters.';
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _statusMessage = 'Password and confirm password do not match.';
+      });
+      return;
+    }
 
     setState(() {
       _submitting = true;
@@ -74,24 +119,24 @@ class _InstitutionRequestVerificationScreenState
       final res = await dio.post(
         '/institutions/verification-request',
         data: {
+          'firstName': firstName,
+          'lastName': lastName,
           'organizationName': org,
-          'websiteUrl': _website.text.trim().isEmpty ? null : _website.text.trim(),
+          'websiteUrl': website.isEmpty ? null : website,
           'workEmail': email,
-          'roleTitle':
-              _roleTitle.text.trim().isEmpty ? null : _roleTitle.text.trim(),
-          'jurisdiction': _jurisdiction.text.trim().isEmpty
-              ? null
-              : _jurisdiction.text.trim(),
-          'purpose': _purpose.text.trim().isEmpty ? null : _purpose.text.trim(),
+          'password': password,
+          'confirmPassword': confirmPassword,
+          'roleTitle': roleTitle.isEmpty ? null : roleTitle,
+          'jurisdiction': jurisdiction.isEmpty ? null : jurisdiction,
+          'purpose': purpose.isEmpty ? null : purpose,
         },
       );
 
       if (!mounted) return;
 
-      final message =
-          (res.data is Map && res.data['message'] is String)
-              ? res.data['message'] as String
-              : 'Institution account request submitted.';
+      final message = (res.data is Map && res.data['message'] is String)
+          ? res.data['message'] as String
+          : 'Institution account created and submitted for review.';
 
       setState(() {
         _submitted = true;
@@ -100,7 +145,7 @@ class _InstitutionRequestVerificationScreenState
     } on DioException catch (e) {
       if (!mounted) return;
 
-      String message = 'Could not submit institution request.';
+      String message = 'Could not create institution account.';
 
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
@@ -109,8 +154,6 @@ class _InstitutionRequestVerificationScreenState
           data['message'] is List &&
           (data['message'] as List).isNotEmpty) {
         message = (data['message'] as List).first.toString();
-      } else if (e.response?.statusCode == 401) {
-        message = 'Please sign in before creating an institution account.';
       }
 
       setState(() {
@@ -130,26 +173,52 @@ class _InstitutionRequestVerificationScreenState
     }
   }
 
-  Widget _statusCard() {
+  Widget _statusBlock() {
     if (_statusMessage == null) return const SizedBox.shrink();
 
-    return Column(
-      children: [
-        AuraCard(
-          child: Text(_statusMessage!, style: AuraText.body),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      child: Text(
+        _statusMessage!,
+        style: AuraText.body,
+      ),
     );
   }
 
-  Widget _identityCard() {
+  Widget _formCard() {
+    final enabled = !_submitting && !_submitted;
+
     return AuraCard(
       child: Column(
         children: [
           TextField(
+            controller: _firstName,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [LengthLimitingTextInputFormatter(80)],
+            decoration: const InputDecoration(
+              labelText: 'First name',
+              hintText: 'John',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _lastName,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [LengthLimitingTextInputFormatter(80)],
+            decoration: const InputDecoration(
+              labelText: 'Last name',
+              hintText: 'Smith',
+              border: InputBorder.none,
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
             controller: _orgName,
-            enabled: !_submitting && !_submitted,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
             inputFormatters: [LengthLimitingTextInputFormatter(120)],
             decoration: const InputDecoration(
               labelText: 'Institution name',
@@ -160,7 +229,9 @@ class _InstitutionRequestVerificationScreenState
           const Divider(height: AuraSpace.s16),
           TextField(
             controller: _website,
-            enabled: !_submitting && !_submitted,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
+            keyboardType: TextInputType.url,
             inputFormatters: [LengthLimitingTextInputFormatter(180)],
             decoration: const InputDecoration(
               labelText: 'Website',
@@ -171,7 +242,8 @@ class _InstitutionRequestVerificationScreenState
           const Divider(height: AuraSpace.s16),
           TextField(
             controller: _workEmail,
-            enabled: !_submitting && !_submitted,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
             keyboardType: TextInputType.emailAddress,
             inputFormatters: [LengthLimitingTextInputFormatter(190)],
             decoration: const InputDecoration(
@@ -182,8 +254,61 @@ class _InstitutionRequestVerificationScreenState
           ),
           const Divider(height: AuraSpace.s16),
           TextField(
+            controller: _password,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
+            obscureText: _obscurePassword,
+            inputFormatters: [LengthLimitingTextInputFormatter(120)],
+            decoration: InputDecoration(
+              labelText: 'Password',
+              hintText: 'At least 8 characters',
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                onPressed: enabled
+                    ? () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      }
+                    : null,
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _confirmPassword,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
+            obscureText: _obscureConfirmPassword,
+            inputFormatters: [LengthLimitingTextInputFormatter(120)],
+            decoration: InputDecoration(
+              labelText: 'Confirm password',
+              hintText: 'Re-enter password',
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                onPressed: enabled
+                    ? () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      }
+                    : null,
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
             controller: _roleTitle,
-            enabled: !_submitting && !_submitted,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
             inputFormatters: [LengthLimitingTextInputFormatter(120)],
             decoration: const InputDecoration(
               labelText: 'Role or title',
@@ -194,7 +319,8 @@ class _InstitutionRequestVerificationScreenState
           const Divider(height: AuraSpace.s16),
           TextField(
             controller: _jurisdiction,
-            enabled: !_submitting && !_submitted,
+            enabled: enabled,
+            textInputAction: TextInputAction.next,
             inputFormatters: [LengthLimitingTextInputFormatter(120)],
             decoration: const InputDecoration(
               labelText: 'Jurisdiction or country',
@@ -202,23 +328,19 @@ class _InstitutionRequestVerificationScreenState
               border: InputBorder.none,
             ),
           ),
+          const Divider(height: AuraSpace.s16),
+          TextField(
+            controller: _purpose,
+            enabled: enabled,
+            maxLines: 5,
+            inputFormatters: [LengthLimitingTextInputFormatter(900)],
+            decoration: const InputDecoration(
+              labelText: 'Purpose',
+              hintText: 'Why is this institution joining Aura?',
+              border: InputBorder.none,
+            ),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _purposeCard() {
-    return AuraCard(
-      child: TextField(
-        controller: _purpose,
-        enabled: !_submitting && !_submitted,
-        maxLines: 5,
-        inputFormatters: [LengthLimitingTextInputFormatter(900)],
-        decoration: const InputDecoration(
-          labelText: 'Purpose',
-          hintText: 'Why should this institution participate here?',
-          border: InputBorder.none,
-        ),
       ),
     );
   }
@@ -235,39 +357,25 @@ class _InstitutionRequestVerificationScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Create institution account'),
-          const SizedBox(height: 10),
-          Doc.meta('Institution registration and review.'),
-          Doc.lede(
-            'Institutions enter through a separate lane.',
-          ),
           const SizedBox(height: AuraSpace.s12),
-          _statusCard(),
-          _identityCard(),
+          _statusBlock(),
+          _formCard(),
           const SizedBox(height: AuraSpace.s12),
-          _purposeCard(),
-          const SizedBox(height: AuraSpace.s12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: (_submitting || _submitted) ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
-                  ),
-                  child: Text(
-                    buttonLabel,
-                    style: AuraText.body.copyWith(color: Colors.white),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: (_submitting || _submitted) ? null : _submit,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s14,
+                  vertical: AuraSpace.s12,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Doc.p(
-            'Submission starts review and verification.',
+              child: Text(
+                buttonLabel,
+                style: AuraText.body.copyWith(color: Colors.white),
+              ),
+            ),
           ),
         ],
       ),
