@@ -111,6 +111,11 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
 
   String _value(dynamic value) => (value ?? '').toString().trim();
 
+  TextStyle _headlineStyle(BuildContext context) {
+    return (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
+        .copyWith(fontWeight: FontWeight.w700);
+  }
+
   Widget _statusChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -128,7 +133,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
     );
   }
 
-  Widget _heroCard() {
+  Widget _heroCard(BuildContext context) {
     final institutionName = _value(_institution?['name']);
     final slug = _value(_institution?['slug']);
     final domain = _value(_institution?['domain']);
@@ -145,7 +150,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
           children: [
             Text(
               institutionName,
-              style: AuraText.display.copyWith(fontSize: 28),
+              style: _headlineStyle(context).copyWith(fontSize: 28),
             ),
             const SizedBox(height: AuraSpace.s8),
             Wrap(
@@ -200,7 +205,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
         children: [
           Text(
             'Institutions in Aura',
-            style: AuraText.display.copyWith(fontSize: 28),
+            style: _headlineStyle(context).copyWith(fontSize: 28),
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
@@ -736,7 +741,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
           else ...[
             _errorCard(),
             if (_error != null) const SizedBox(height: AuraSpace.s12),
-            _heroCard(),
+            _heroCard(context),
             const SizedBox(height: AuraSpace.s12),
             _standingCard(),
             const SizedBox(height: AuraSpace.s12),
