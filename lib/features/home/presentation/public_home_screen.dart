@@ -170,17 +170,13 @@ class PublicHomeScreen extends ConsumerWidget {
                           const _PublicHero(),
                           const SizedBox(height: AuraSpace.s12),
                           pinnedBanner,
-                          const SizedBox(height: AuraSpace.s14),
-                          _PublicAboutInline(
-                            onTap: (path) => context.go(path),
-                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s16),
                     const SizedBox(
                       width: 360,
-                      child: _PublicAuthPanel(),
+                      child: _PublicEntranceStack(),
                     ),
                   ],
                 )
@@ -189,11 +185,7 @@ class PublicHomeScreen extends ConsumerWidget {
                 const SizedBox(height: AuraSpace.s12),
                 pinnedBanner,
                 const SizedBox(height: AuraSpace.s14),
-                const _PublicAuthPanel(),
-                const SizedBox(height: AuraSpace.s14),
-                _PublicAboutInline(
-                  onTap: (path) => context.go(path),
-                ),
+                const _PublicEntranceStack(),
               ],
               const SizedBox(height: AuraSpace.s20),
               _SectionHeader(
@@ -337,11 +329,79 @@ class _PublicHero extends StatelessWidget {
                 onTap: () => context.go('/founder'),
               ),
               _Pill(
-                label: 'Institutions',
-                icon: Icons.apartment_outlined,
-                onTap: () => context.go('/institutions'),
+                label: 'Investors',
+                icon: Icons.assured_workload_outlined,
+                onTap: () => context.go('/investors'),
+              ),
+              _Pill(
+                label: 'Contact',
+                icon: Icons.mail_outline,
+                onTap: () => context.go('/contact'),
+              ),
+              _Pill(
+                label: 'Privacy',
+                icon: Icons.privacy_tip_outlined,
+                onTap: () => context.go('/privacy'),
+              ),
+              _Pill(
+                label: 'Search',
+                icon: Icons.search,
+                onTap: () => context.go('/search'),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicEntranceStack extends StatelessWidget {
+  const _PublicEntranceStack();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _InstitutionEntryCard(),
+        SizedBox(height: AuraSpace.s14),
+        _PublicAuthPanel(),
+      ],
+    );
+  }
+}
+
+class _InstitutionEntryCard extends StatelessWidget {
+  const _InstitutionEntryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Institutional participation', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'Institutions join Aura as verified participants. Their presence is structured, accountable, and distinct from individual entry.',
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => context.go('/institution/sign-in'),
+              child: const Text('Institution sign in'),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.go('/institution/request-verification'),
+              child: const Text('Request verification'),
+            ),
           ),
         ],
       ),
@@ -362,7 +422,7 @@ class _PublicAuthPanel extends StatelessWidget {
           Text('Enter', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Sign in to write, save, and participate. Institutions join as verified participants.',
+            'Sign in to write, save, and participate.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -394,56 +454,6 @@ class _PublicAuthPanel extends StatelessWidget {
               'It is a place to speak with responsibility.',
               style: AuraText.muted,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PublicAboutInline extends StatelessWidget {
-  const _PublicAboutInline({required this.onTap});
-  final void Function(String path) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Public paths', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Learn about Aura, review key public pages, or reach the team directly.',
-            style: AuraText.muted,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              _Pill(
-                label: 'Investors',
-                icon: Icons.assured_workload_outlined,
-                onTap: () => onTap('/investors'),
-              ),
-              _Pill(
-                label: 'Contact',
-                icon: Icons.mail_outline,
-                onTap: () => onTap('/contact'),
-              ),
-              _Pill(
-                label: 'Privacy',
-                icon: Icons.privacy_tip_outlined,
-                onTap: () => onTap('/privacy'),
-              ),
-              _Pill(
-                label: 'Search',
-                icon: Icons.search,
-                onTap: () => onTap('/search'),
-              ),
-            ],
           ),
         ],
       ),
