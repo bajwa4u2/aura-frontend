@@ -167,10 +167,10 @@ class PublicHomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s16),
-                    const Flexible(
+                    Flexible(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: 380),
-                        child: _EntryStack(),
+                        child: const _EntryStack(),
                       ),
                     ),
                   ],
