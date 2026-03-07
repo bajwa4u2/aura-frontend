@@ -140,7 +140,8 @@ class PublicHomeScreen extends ConsumerWidget {
           final pinnedBanner = pinnedAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (a) => a == null ? const SizedBox.shrink() : _PinnedAnnouncementBanner(a: a),
+            data: (a) =>
+                a == null ? const SizedBox.shrink() : _PinnedAnnouncementBanner(a: a),
           );
 
           return ListView(
