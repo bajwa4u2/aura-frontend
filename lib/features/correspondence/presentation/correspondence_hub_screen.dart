@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institutions_repository.dart';
 
 class CorrespondenceHubScreen extends StatefulWidget {
   const CorrespondenceHubScreen({super.key});
@@ -208,26 +210,10 @@ class _InstitutionsPanelState extends State<_InstitutionsPanel>
           child: TabBarView(
             controller: _tabs,
             children: const [
-              _InstitutionStatePanel(
-                title: 'Pending institution requests',
-                body:
-                    'Verification requests awaiting review will appear here. This is where approval and rejection actions belong.',
-              ),
-              _InstitutionStatePanel(
-                title: 'Verified institutions',
-                body:
-                    'Approved institutions will appear here as active records inside the system.',
-              ),
-              _InstitutionStatePanel(
-                title: 'Suspended institutions',
-                body:
-                    'Institutions whose standing is temporarily restricted will appear here.',
-              ),
-              _InstitutionStatePanel(
-                title: 'Rejected institutions',
-                body:
-                    'Rejected requests and rejected institution records will appear here for reference.',
-              ),
+              _PendingInstitutionPanel(),
+              _VerifiedInstitutionsPanel(),
+              _SuspendedInstitutionsPanel(),
+              _RejectedInstitutionsPanel(),
             ],
           ),
         ),
@@ -236,31 +222,253 @@ class _InstitutionsPanelState extends State<_InstitutionsPanel>
   }
 }
 
-class _InstitutionStatePanel extends StatelessWidget {
-  const _InstitutionStatePanel({
-    required this.title,
-    required this.body,
-  });
-
-  final String title;
-  final String body;
+class _PendingInstitutionPanel extends ConsumerWidget {
+  const _PendingInstitutionPanel();
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AuraText.title),
-        const SizedBox(height: AuraSpace.s10),
-        Text(body, style: AuraText.body),
-        const SizedBox(height: AuraSpace.s14),
-        const AuraCard(
-          child: Text(
-            'Live institution request and approval data will be connected here next.',
-            style: AuraText.body,
-          ),
-        ),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingAsync = ref.watch(pendingInstitutionRequestsProvider);
+
+    return pendingAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e', style: AuraText.body),
+      data: (items) {
+        if (items.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Pending institution requests', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                'There are no pending institution verification requests right now.',
+                style: AuraText.body,
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+          itemBuilder: (context, i) {
+            final r = items[i];
+            final id = (r['id'] ?? '').toString();
+            final organizationName =
+                (r['organizationName'] ?? 'Unnamed institution').toString();
+            final workEmail = (r['workEmail'] ?? '').toString();
+            final websiteUrl = (r['websiteUrl'] ?? '').toString();
+            final roleTitle = (r['roleTitle'] ?? '').toString();
+            final jurisdiction = (r['jurisdiction'] ?? '').toString();
+            final purpose = (r['purpose'] ?? '').toString();
+
+            return AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(organizationName, style: AuraText.title),
+                  if (workEmail.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text(workEmail, style: AuraText.small),
+                  ],
+                  if (websiteUrl.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Website: $websiteUrl', style: AuraText.small),
+                  ],
+                  if (roleTitle.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Role: $roleTitle', style: AuraText.small),
+                  ],
+                  if (jurisdiction.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
+                  ],
+                  if (purpose.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s10),
+                    Text(purpose, style: AuraText.body),
+                  ],
+                  const SizedBox(height: AuraSpace.s12),
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      FilledButton(
+                        onPressed: id.isEmpty
+                            ? null
+                            : () async {
+                                await ref.read(
+                                  approveInstitutionRequestProvider(id).future,
+                                );
+                                ref.invalidate(pendingInstitutionRequestsProvider);
+                                ref.invalidate(verifiedInstitutionsProvider);
+                              },
+                        child: const Text('Approve'),
+                      ),
+                      OutlinedButton(
+                        onPressed: id.isEmpty
+                            ? null
+                            : () async {
+                                await ref.read(
+                                  rejectInstitutionRequestProvider(id).future,
+                                );
+                                ref.invalidate(pendingInstitutionRequestsProvider);
+                                ref.invalidate(rejectedInstitutionsProvider);
+                              },
+                        child: const Text('Reject'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _VerifiedInstitutionsPanel extends ConsumerWidget {
+  const _VerifiedInstitutionsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final verifiedAsync = ref.watch(verifiedInstitutionsProvider);
+
+    return verifiedAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e', style: AuraText.body),
+      data: (items) {
+        if (items.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Verified institutions', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                'No verified institutions yet.',
+                style: AuraText.body,
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+          itemBuilder: (context, i) {
+            final item = items[i];
+            final name = (item['name'] ?? 'Unnamed institution').toString();
+            final websiteUrl = (item['websiteUrl'] ?? '').toString();
+            final domain = (item['domain'] ?? '').toString();
+            final jurisdiction = (item['jurisdiction'] ?? '').toString();
+
+            return AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: AuraText.title),
+                  if (websiteUrl.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Website: $websiteUrl', style: AuraText.small),
+                  ],
+                  if (domain.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Domain: $domain', style: AuraText.small),
+                  ],
+                  if (jurisdiction.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _SuspendedInstitutionsPanel extends ConsumerWidget {
+  const _SuspendedInstitutionsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suspendedAsync = ref.watch(suspendedInstitutionsProvider);
+
+    return suspendedAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e', style: AuraText.body),
+      data: (items) {
+        if (items.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Suspended institutions', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                'No suspended institutions.',
+                style: AuraText.body,
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+          itemBuilder: (context, i) {
+            final item = items[i];
+            final name = (item['name'] ?? 'Unnamed institution').toString();
+
+            return AuraCard(
+              child: Text(name, style: AuraText.body),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _RejectedInstitutionsPanel extends ConsumerWidget {
+  const _RejectedInstitutionsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rejectedAsync = ref.watch(rejectedInstitutionsProvider);
+
+    return rejectedAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e', style: AuraText.body),
+      data: (items) {
+        if (items.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Rejected institutions', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                'No rejected institutions.',
+                style: AuraText.body,
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+          itemBuilder: (context, i) {
+            final item = items[i];
+            final name = (item['name'] ?? 'Unnamed institution').toString();
+
+            return AuraCard(
+              child: Text(name, style: AuraText.body),
+            );
+          },
+        );
+      },
     );
   }
 }
