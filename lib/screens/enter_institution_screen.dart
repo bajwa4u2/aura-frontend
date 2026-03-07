@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_providers.dart';
+import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_card.dart';
 import '../core/ui/aura_space.dart';
@@ -44,6 +45,7 @@ class _EnterInstitutionScreenState
 
     try {
       final authStatus = ref.read(authStatusProvider);
+
       if (authStatus == AuthStatus.unauthed) {
         if (!mounted) return;
         context.go('/login?redirect=${Uri.encodeComponent('/enter-institution')}');
