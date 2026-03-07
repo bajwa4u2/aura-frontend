@@ -31,6 +31,7 @@ import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
+import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -96,6 +97,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/ai/claim-audit' ||
         path == '/me' ||
         path == '/me/edit' ||
+        path == '/me/correspondence' ||
         path == '/compose' ||
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
@@ -179,14 +181,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthAction = isAuthActionPath(path);
       final isAuth = isAnyAuthPath(path);
 
-      // Critical rule:
-      // While startup auth resolution is still settling, DO NOT change the URL.
-      // This preserves exact same-page refresh behavior.
       if (boot.isLoading || authStatus == AuthStatus.loading) {
         return null;
       }
 
-      // Legacy alias.
       if (path == '/auth') {
         final dest = uri.queryParameters['redirect'];
         if (dest != null && dest.trim().isNotEmpty) {
@@ -195,7 +193,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // Neutral root entry only.
       if (path == '/') {
         if (authStatus == AuthStatus.unauthed) return '/public';
 
@@ -206,7 +203,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return verified ? '/home' : '/verify-pending';
       }
 
-      // Unauthenticated users may stay on public/auth pages only.
       if (authStatus == AuthStatus.unauthed) {
         if (isPublic || isAuth) return null;
 
@@ -214,7 +210,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${Uri.encodeComponent(dest)}';
       }
 
-      // Authenticated users visiting login/register.
       if (path == '/login' || path == '/register') {
         final verifiedAsync = ref.read(emailVerifiedProvider);
         if (verifiedAsync.isLoading) return null;
@@ -238,7 +233,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final verifiedAsync = ref.read(emailVerifiedProvider);
 
-      // Hold exact URL while verification state resolves.
       if (verifiedAsync.isLoading) {
         return null;
       }
@@ -357,6 +351,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/ai/claim-audit', builder: (_, __) => const ClaimAuditScreen()),
           GoRoute(path: '/me', builder: (_, __) => const MeScreen()),
           GoRoute(path: '/me/edit', builder: (_, __) => const EditProfileScreen()),
+          GoRoute(
+            path: '/me/correspondence',
+            builder: (_, __) => const CorrespondenceHubScreen(),
+          ),
           GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
           GoRoute(
             path: '/posts/:id',

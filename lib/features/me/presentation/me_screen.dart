@@ -856,15 +856,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                               child: const Text('Announcements'),
                             ),
                             if (isAdmin)
-                              FilledButton(
-                                onPressed: _adminCreateAnnouncementDialog,
-                                child: const Text('New announcement'),
+                              OutlinedButton(
+                                onPressed: () => context.go('/me/correspondence'),
+                                child: const Text('Correspondence Hub'),
                               ),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s10),
                         Text(
-                          'Announcements are official notes. Admins can publish announcements directly from here.',
+                          isAdmin
+                              ? 'Announcements and correspondence are managed from here.'
+                              : 'Announcements are official public notes from the platform.',
                           style: AuraText.small,
                         ),
                         if (!isAdmin && _adminUserIds.isNotEmpty) ...[
