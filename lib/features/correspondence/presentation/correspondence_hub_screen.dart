@@ -222,6 +222,23 @@ class _InstitutionsPanelState extends State<_InstitutionsPanel>
   }
 }
 
+String _readValue(Map<String, dynamic> map, String key) {
+  return (map[key] ?? '').toString().trim();
+}
+
+String _readInstitutionSlug(Map<String, dynamic> map) {
+  return _readValue(map, 'slug');
+}
+
+Widget _institutionOpenProfileButton(BuildContext context, String slug) {
+  if (slug.isEmpty) return const SizedBox.shrink();
+
+  return OutlinedButton(
+    onPressed: () => context.go('/institutions/$slug'),
+    child: const Text('Open public profile'),
+  );
+}
+
 class _PendingInstitutionPanel extends ConsumerWidget {
   const _PendingInstitutionPanel();
 
@@ -252,14 +269,16 @@ class _PendingInstitutionPanel extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
           itemBuilder: (context, i) {
             final r = items[i];
-            final id = (r['id'] ?? '').toString();
+            final id = _readValue(r, 'id');
             final organizationName =
-                (r['organizationName'] ?? 'Unnamed institution').toString();
-            final workEmail = (r['workEmail'] ?? '').toString();
-            final websiteUrl = (r['websiteUrl'] ?? '').toString();
-            final roleTitle = (r['roleTitle'] ?? '').toString();
-            final jurisdiction = (r['jurisdiction'] ?? '').toString();
-            final purpose = (r['purpose'] ?? '').toString();
+                _readValue(r, 'organizationName').isEmpty
+                    ? 'Unnamed institution'
+                    : _readValue(r, 'organizationName');
+            final workEmail = _readValue(r, 'workEmail');
+            final websiteUrl = _readValue(r, 'websiteUrl');
+            final roleTitle = _readValue(r, 'roleTitle');
+            final jurisdiction = _readValue(r, 'jurisdiction');
+            final purpose = _readValue(r, 'purpose');
 
             return AuraCard(
               child: Column(
@@ -357,16 +376,23 @@ class _VerifiedInstitutionsPanel extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
           itemBuilder: (context, i) {
             final item = items[i];
-            final name = (item['name'] ?? 'Unnamed institution').toString();
-            final websiteUrl = (item['websiteUrl'] ?? '').toString();
-            final domain = (item['domain'] ?? '').toString();
-            final jurisdiction = (item['jurisdiction'] ?? '').toString();
+            final name = _readValue(item, 'name').isEmpty
+                ? 'Unnamed institution'
+                : _readValue(item, 'name');
+            final slug = _readInstitutionSlug(item);
+            final websiteUrl = _readValue(item, 'websiteUrl');
+            final domain = _readValue(item, 'domain');
+            final jurisdiction = _readValue(item, 'jurisdiction');
 
             return AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: AuraText.title),
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Slug: $slug', style: AuraText.small),
+                  ],
                   if (websiteUrl.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s6),
                     Text('Website: $websiteUrl', style: AuraText.small),
@@ -378,6 +404,10 @@ class _VerifiedInstitutionsPanel extends ConsumerWidget {
                   if (jurisdiction.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s6),
                     Text('Jurisdiction: $jurisdiction', style: AuraText.small),
+                  ],
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    _institutionOpenProfileButton(context, slug),
                   ],
                 ],
               ),
@@ -419,10 +449,36 @@ class _SuspendedInstitutionsPanel extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
           itemBuilder: (context, i) {
             final item = items[i];
-            final name = (item['name'] ?? 'Unnamed institution').toString();
+            final name = _readValue(item, 'name').isEmpty
+                ? 'Unnamed institution'
+                : _readValue(item, 'name');
+            final slug = _readInstitutionSlug(item);
+            final domain = _readValue(item, 'domain');
+            final jurisdiction = _readValue(item, 'jurisdiction');
 
             return AuraCard(
-              child: Text(name, style: AuraText.body),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: AuraText.title),
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Slug: $slug', style: AuraText.small),
+                  ],
+                  if (domain.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Domain: $domain', style: AuraText.small),
+                  ],
+                  if (jurisdiction.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
+                  ],
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    _institutionOpenProfileButton(context, slug),
+                  ],
+                ],
+              ),
             );
           },
         );
@@ -461,10 +517,36 @@ class _RejectedInstitutionsPanel extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
           itemBuilder: (context, i) {
             final item = items[i];
-            final name = (item['name'] ?? 'Unnamed institution').toString();
+            final name = _readValue(item, 'name').isEmpty
+                ? 'Unnamed institution'
+                : _readValue(item, 'name');
+            final slug = _readInstitutionSlug(item);
+            final domain = _readValue(item, 'domain');
+            final jurisdiction = _readValue(item, 'jurisdiction');
 
             return AuraCard(
-              child: Text(name, style: AuraText.body),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: AuraText.title),
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Slug: $slug', style: AuraText.small),
+                  ],
+                  if (domain.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Domain: $domain', style: AuraText.small),
+                  ],
+                  if (jurisdiction.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
+                  ],
+                  if (slug.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    _institutionOpenProfileButton(context, slug),
+                  ],
+                ],
+              ),
             );
           },
         );
