@@ -560,7 +560,7 @@ class _LoadingBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s18),
-      child: Center(
+      child: const Center(
         child: SizedBox(
           width: 18,
           height: 18,
