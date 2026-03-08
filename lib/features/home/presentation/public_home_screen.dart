@@ -414,8 +414,16 @@ class _InstitutionEntryCard extends StatelessWidget {
           const SizedBox(height: AuraSpace.s10),
           SizedBox(
             width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.go('/institution/create'),
+              child: const Text('Create institutional account'),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          SizedBox(
+            width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go('/enter-institution'),
+              onPressed: () => context.go('/institution/sign-in'),
               child: const Text('Institution sign in'),
             ),
           ),
