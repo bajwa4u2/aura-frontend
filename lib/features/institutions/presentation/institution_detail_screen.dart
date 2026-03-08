@@ -5,6 +5,14 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institutions_repository.dart';
+import '../domain/institution.dart';
+
+final institutionDetailProvider =
+    FutureProvider.family<Institution, String>((ref, slug) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.getBySlug(slug);
+});
 
 class InstitutionDetailScreen extends ConsumerWidget {
   const InstitutionDetailScreen({
@@ -17,62 +25,180 @@ class InstitutionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cleanSlug = slug.trim();
+    final institutionAsync = ref.watch(institutionDetailProvider(cleanSlug));
 
     return AuraScaffold(
       title: 'Institution',
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s12,
-          AuraSpace.s16,
-          AuraSpace.s24,
+      body: institutionAsync.when(
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(),
+          ),
         ),
-        children: [
-          AuraCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Color(0x332E2A26),
-                  child: Icon(Icons.apartment_outlined),
+        error: (e, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AuraSpace.s16,
+            AuraSpace.s12,
+            AuraSpace.s16,
+            AuraSpace.s24,
+          ),
+          children: [
+            AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Institution could not be loaded.',
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    '$e',
+                    style: AuraText.body,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        data: (institution) {
+          final title =
+              institution.name.trim().isNotEmpty ? institution.name.trim() : 'Institution';
+
+          final subtitleParts = <String>[
+            if (institution.slug.trim().isNotEmpty) institution.slug.trim(),
+            if (institution.domain.trim().isNotEmpty) institution.domain.trim(),
+          ];
+
+          final metaParts = <String>[
+            if (institution.jurisdiction.trim().isNotEmpty)
+              institution.jurisdiction.trim(),
+            institution.isVerified ? 'Verified' : 'Unverified',
+          ];
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s12,
+              AuraSpace.s16,
+              AuraSpace.s24,
+            ),
+            children: [
+              AuraCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Color(0x332E2A26),
+                      child: Icon(Icons.apartment_outlined),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: AuraText.title),
+                          if (subtitleParts.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s6),
+                            Text(
+                              subtitleParts.join(' • '),
+                              style: AuraText.muted,
+                            ),
+                          ],
+                          const SizedBox(height: AuraSpace.s8),
+                          Text(
+                            metaParts.join(' • '),
+                            style: AuraText.small,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              if (institution.description.trim().isNotEmpty)
+                AuraCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        cleanSlug.isEmpty ? 'Institution' : cleanSlug,
-                        style: AuraText.title,
+                        'About',
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                       ),
-                      const SizedBox(height: AuraSpace.s6),
+                      const SizedBox(height: AuraSpace.s10),
                       Text(
-                        cleanSlug.isEmpty ? 'No institution selected.' : cleanSlug,
-                        style: AuraText.muted,
+                        institution.description.trim(),
+                        style: AuraText.body,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              if (institution.description.trim().isNotEmpty)
+                const SizedBox(height: AuraSpace.s14),
+              AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Institution details',
+                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    _DetailRow(label: 'Name', value: institution.name),
+                    _DetailRow(label: 'Slug', value: institution.slug),
+                    _DetailRow(label: 'Domain', value: institution.domain),
+                    _DetailRow(
+                      label: 'Jurisdiction',
+                      value: institution.jurisdiction,
+                    ),
+                    _DetailRow(label: 'Website', value: institution.website),
+                    _DetailRow(
+                      label: 'Verification',
+                      value: institution.isVerified ? 'Verified' : 'Unverified',
+                      isLast: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleanValue = value.trim().isEmpty ? '—' : value.trim();
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Institution profiles are being prepared.',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'This route is now in place so institution search results can open into a dedicated detail page. The full institution profile, activity, and verification context can be connected next.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
+          const SizedBox(height: AuraSpace.s4),
+          Text(
+            cleanValue,
+            style: AuraText.body,
           ),
         ],
       ),
