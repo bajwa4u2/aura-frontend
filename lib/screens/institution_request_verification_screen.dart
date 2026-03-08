@@ -2,12 +2,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_card.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
+
+const String _institutionSignInRoute = '/institution/sign-in';
 
 class InstitutionRequestVerificationScreen extends ConsumerStatefulWidget {
   const InstitutionRequestVerificationScreen({super.key});
@@ -199,16 +202,20 @@ class _InstitutionRequestVerificationScreenState
 
       final message = (res.data is Map && res.data['message'] is String)
           ? res.data['message'] as String
-          : 'Request received. Verification is reviewed offline. Updates will be sent by email.';
+          : 'Account submitted. Institutional review will proceed offline. Updates will be sent by email.';
 
       setState(() {
         _submitted = true;
         _statusMessage = message;
       });
+
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+      context.go(_institutionSignInRoute);
     } on DioException catch (e) {
       if (!mounted) return;
 
-      String message = 'Could not submit verification request.';
+      String message = 'Could not create institutional account.';
 
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
@@ -246,25 +253,6 @@ class _InstitutionRequestVerificationScreenState
           _statusMessage!,
           style: AuraText.body,
         ),
-      ),
-    );
-  }
-
-  Widget _introCard() {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Verification requests are reviewed before approval.',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Institution access in Aura is not activated instantly. Submit the institution details, representative information, and official email. Updates will be sent by email after review.',
-            style: AuraText.body,
-          ),
-        ],
       ),
     );
   }
@@ -487,22 +475,17 @@ class _InstitutionRequestVerificationScreenState
   @override
   Widget build(BuildContext context) {
     final buttonLabel = _submitted
-        ? 'Request submitted'
-        : (_submitting ? 'Submitting...' : 'Submit verification request');
+        ? 'Account submitted'
+        : (_submitting ? 'Submitting...' : 'Create institutional account');
 
     return DocumentScaffold(
-      title: 'Request institutional verification',
+      title: 'Create institutional account',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Request institutional verification'),
+          Doc.title('Create institutional account'),
           const SizedBox(height: AuraSpace.s10),
-          Doc.meta('Reviewed institutional entry and bounded standing.'),
-          Doc.lede(
-            'Submit the institution and representative details for review. Institutional standing is activated only after approval.',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          _introCard(),
+          Doc.meta('Institutional entry reviewed before activation.'),
           const SizedBox(height: AuraSpace.s12),
           _statusBlock(),
           _formCard(),

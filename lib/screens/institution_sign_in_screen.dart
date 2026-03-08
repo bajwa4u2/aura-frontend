@@ -11,6 +11,7 @@ import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
 const String _institutionDashboardRoute = '/institution/dashboard';
+const String _institutionCreateRoute = '/institution/create';
 
 class InstitutionSignInScreen extends ConsumerStatefulWidget {
   const InstitutionSignInScreen({super.key});
@@ -100,8 +101,6 @@ class _InstitutionSignInScreenState
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
         message = data['message'] as String;
-      } else if ((e.message ?? '').trim().isNotEmpty) {
-        message = e.message!.trim();
       }
 
       if (!mounted) return;
@@ -120,9 +119,6 @@ class _InstitutionSignInScreenState
 
   @override
   Widget build(BuildContext context) {
-    final authStatus = ref.watch(authStatusProvider);
-    final isAlreadySignedIn = authStatus == AuthStatus.authed;
-
     return DocumentScaffold(
       title: 'Institution sign in',
       child: Column(
@@ -130,27 +126,8 @@ class _InstitutionSignInScreenState
         children: [
           Doc.title('Institution sign in'),
           const SizedBox(height: 10),
-          Doc.meta('Private institutional entry.'),
-          Doc.lede(
-            'Use your institution account credentials here. This lane is separate from public member sign in and is reserved for approved institutional access.',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          if (isAlreadySignedIn) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AuraSpace.s12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black12),
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.black.withValues(alpha: 0.03),
-              ),
-              child: Text(
-                'A session is already active in this browser. Signing in here will replace it with your institution session if the credentials are valid.',
-                style: AuraText.body,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-          ],
+          Doc.meta('Private institutional access.'),
+          const SizedBox(height: AuraSpace.s16),
           if (_statusMessage != null) ...[
             Container(
               width: double.infinity,
@@ -173,7 +150,6 @@ class _InstitutionSignInScreenState
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.username],
                   enabled: !_submitting,
                   decoration: const InputDecoration(
                     hintText: 'name@institution.org',
@@ -182,7 +158,7 @@ class _InstitutionSignInScreenState
                   validator: (value) {
                     final v = (value ?? '').trim();
                     if (v.isEmpty) return 'Institution email is required';
-                    if (!v.contains('@')) return 'Enter a valid institution email';
+                    if (!v.contains('@')) return 'Enter a valid email';
                     return null;
                   },
                 ),
@@ -192,7 +168,6 @@ class _InstitutionSignInScreenState
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  autofillHints: const [AutofillHints.password],
                   enabled: !_submitting,
                   decoration: const InputDecoration(
                     hintText: 'Enter password',
@@ -201,23 +176,17 @@ class _InstitutionSignInScreenState
                   validator: (value) {
                     final v = value ?? '';
                     if (v.isEmpty) return 'Password is required';
-                    if (v.length < 8) return 'Password must be at least 8 characters';
+                    if (v.length < 8) return 'Minimum 8 characters';
                     return null;
                   },
                   onFieldSubmitted: (_) => _submit(),
                 ),
-                const SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s16),
                 Row(
                   children: [
                     Expanded(
                       child: FilledButton(
                         onPressed: _submitting ? null : _submit,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s14,
-                            vertical: AuraSpace.s12,
-                          ),
-                        ),
                         child: Text(
                           _submitting ? 'Signing in...' : 'Institution sign in',
                           style: AuraText.body.copyWith(color: Colors.white),
@@ -229,24 +198,17 @@ class _InstitutionSignInScreenState
                       child: OutlinedButton(
                         onPressed: _submitting
                             ? null
-                            : () => context.go('/institution/request-verification'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s14,
-                            vertical: AuraSpace.s12,
-                          ),
+                            : () => context.go(_institutionCreateRoute),
+                        child: Text(
+                          'Create institutional account',
+                          style: AuraText.body,
                         ),
-                        child: Text('Request verification', style: AuraText.body),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Doc.p(
-            'Institution access requires approved institutional credentials. Public member accounts and institution accounts now enter through separate doors.',
           ),
         ],
       ),

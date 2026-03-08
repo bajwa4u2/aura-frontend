@@ -51,6 +51,7 @@ import 'screens/institution_dashboard_screen.dart';
 import 'screens/contact_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
+const String kInstitutionCreateRoute = '/institution/create';
 const String kEnterInstitutionRoute = '/enter-institution';
 
 String _normalizeRedirectDest(String? dest) {
@@ -81,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/institutions' ||
         path.startsWith('/institutions/') ||
         path == '/institution/sign-in' ||
-        path == '/institution/request-verification' ||
+        path == kInstitutionCreateRoute ||
         path == '/patrons' ||
         path == '/supporters') {
       return true;
@@ -301,7 +302,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const InstitutionSignInScreen(),
       ),
       GoRoute(
-        path: '/institution/request-verification',
+        path: kInstitutionCreateRoute,
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
       ),
       GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),

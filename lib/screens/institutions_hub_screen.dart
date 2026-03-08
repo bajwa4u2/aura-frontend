@@ -14,19 +14,21 @@ class InstitutionsHubScreen extends StatelessWidget {
         .copyWith(fontWeight: FontWeight.w700);
   }
 
-  Widget _statusChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+  Widget _benefitCard({
+    required String title,
+    required String text,
+  }) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(text, style: AuraText.body),
+        ],
       ),
     );
   }
@@ -37,26 +39,46 @@ class InstitutionsHubScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Institutions in Aura',
-            style: _headlineStyle(context).copyWith(fontSize: 28),
+            'For institutions',
+            style: _headlineStyle(context).copyWith(fontSize: 30),
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Institutional participation exists through a distinct lane with separate credentials, governed verification, and accountable standing.',
+            'Aura offers institutions a quieter kind of public presence: one built for continuity, accountability, and readable record rather than noise.',
             style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              _statusChip('Separate institution entry'),
-              _statusChip('Governed verification'),
-              _statusChip('Continuity of record'),
-            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _whyAura() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Why institutions enter here',
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        _benefitCard(
+          title: 'A lasting public record',
+          text:
+              'Institutional statements, clarifications, and responses remain readable over time instead of dissolving into feed churn.',
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        _benefitCard(
+          title: 'Clear institutional voice',
+          text:
+              'Aura distinguishes between a person speaking personally and a person speaking while carrying institutional authority.',
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        _benefitCard(
+          title: 'A calmer environment',
+          text:
+              'This space is designed for continuity, responsibility, and serious communication rather than volume, reach, and reaction loops.',
+        ),
+      ],
     );
   }
 
@@ -66,13 +88,12 @@ class InstitutionsHubScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Institution entry',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+            'Institution access',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s8),
           Text(
-            'Institutions enter Aura through their own credential lane. '
-            'Verification establishes bounded identity and accountable participation.',
+            'Institutions may sign in with approved institutional credentials or begin by creating an institutional account.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -87,10 +108,9 @@ class InstitutionsHubScreen extends StatelessWidget {
               const SizedBox(width: AuraSpace.s10),
               Expanded(
                 child: FilledButton(
-                  onPressed: () =>
-                      context.go('/institution/request-verification'),
+                  onPressed: () => context.go('/institution/create'),
                   child: Text(
-                    'Request verification',
+                    'Create institutional account',
                     style: AuraText.body.copyWith(color: Colors.white),
                   ),
                 ),
@@ -102,28 +122,22 @@ class InstitutionsHubScreen extends StatelessWidget {
     );
   }
 
-  Widget _principles() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Doc.h('What institutions can do here'),
-        Doc.bullets([
-          'Maintain verified institutional identity',
-          'Enter through a governed credential lane',
-          'Issue institutional statements under accountable standing',
-          'Preserve institutional speech as public memory',
-        ]),
-        Doc.h('What institutions cannot do here'),
-        Doc.bullets([
-          'Use public member entry as a substitute for institution access',
-          'Purchase reach or algorithmic visibility',
-          'Hide responsibility behind anonymous brand voice',
-          'Convert institutional presence into promotional volume',
-        ]),
-        Doc.callout(
-          'Institution participation is governed presence. It is not a branding shortcut.',
-        ),
-      ],
+  Widget _differenceCard() {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What makes Aura different',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Aura is not built around velocity, promotion, or algorithmic attention. It gives institutions a place to speak with continuity, maintain public memory, and act under visible responsibility.',
+            style: AuraText.body,
+          ),
+        ],
+      ),
     );
   }
 
@@ -136,21 +150,18 @@ class InstitutionsHubScreen extends StatelessWidget {
         children: [
           Doc.title('Institutions'),
           const SizedBox(height: 10),
-          Doc.meta('Separate institutional entry and governed participation.'),
+          Doc.meta('Institutional presence with continuity and accountable voice.'),
           Doc.lede(
-            'Institutions participate in Aura through a distinct lane with verification, bounded identity, and accountable presence.',
+            'Aura gives institutions a distinct place to stand, speak, and remain legible over time.',
           ),
           const SizedBox(height: AuraSpace.s12),
           _hero(context),
           const SizedBox(height: AuraSpace.s12),
-          _entryCard(context),
+          _whyAura(),
           const SizedBox(height: AuraSpace.s12),
-          Doc.p(
-            'Institutions need their own bounded place to stand. '
-            'This lane exists so institutional presence stays legible, verified, '
-            'and distinct from ordinary public member entry.',
-          ),
-          _principles(),
+          _differenceCard(),
+          const SizedBox(height: AuraSpace.s12),
+          _entryCard(context),
         ],
       ),
     );
