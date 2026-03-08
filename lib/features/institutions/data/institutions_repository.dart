@@ -22,14 +22,38 @@ class InstitutionsRepository {
     final res = await _dio.get('/institutions/$cleanSlug');
     final body = res.data;
 
-    if (body is Map<String, dynamic>) {
-      final nested = body['institution'] ?? body['data'] ?? body['item'];
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
 
-      if (nested is Map) {
-        return Institution.fromJson(Map<String, dynamic>.from(nested));
+      final directInstitution = root['institution'];
+      if (directInstitution is Map) {
+        return Institution.fromJson(
+          Map<String, dynamic>.from(directInstitution),
+        );
       }
 
-      return Institution.fromJson(body);
+      final data = root['data'];
+      if (data is Map) {
+        final dataMap = Map<String, dynamic>.from(data);
+
+        final nestedInstitution = dataMap['institution'];
+        if (nestedInstitution is Map) {
+          return Institution.fromJson(
+            Map<String, dynamic>.from(nestedInstitution),
+          );
+        }
+
+        return Institution.fromJson(dataMap);
+      }
+
+      final item = root['item'];
+      if (item is Map) {
+        return Institution.fromJson(
+          Map<String, dynamic>.from(item),
+        );
+      }
+
+      return Institution.fromJson(root);
     }
 
     throw Exception('Unexpected institution response.');

@@ -40,12 +40,12 @@ class Institution {
 
     return Institution(
       id: readString(['id']),
-      name: readString(['name', 'displayName', 'title']),
+      name: readString(['name', 'displayName', 'title', 'organizationName']),
       slug: readString(['slug', 'handle']),
       domain: readString(['domain']),
       jurisdiction: readString(['jurisdiction', 'country', 'region']),
-      description: readString(['description', 'bio', 'summary']),
-      website: readString(['website', 'url']),
+      description: readString(['description', 'bio', 'summary', 'purpose']),
+      website: readString(['website', 'websiteUrl', 'url']),
       isVerified: parseBool(
         json['isVerified'] ?? json['verified'] ?? json['isApproved'],
       ),
