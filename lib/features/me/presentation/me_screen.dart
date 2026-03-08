@@ -796,7 +796,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  email.isNotEmpty ? email : '—',
                                   style: AuraText.small,
                                 ),
                                 if (bio.trim().isNotEmpty) ...[

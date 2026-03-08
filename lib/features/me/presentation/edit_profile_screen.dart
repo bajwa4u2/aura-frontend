@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,16 +7,24 @@ import 'package:aura/core/ui/aura_scaffold.dart';
 import 'package:aura/core/ui/aura_space.dart';
 import 'package:aura/core/ui/aura_text.dart';
 
-final meProfileRawProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+final meProfileRawProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
   final raw = res.data;
-  if (raw is! Map) throw Exception('Unexpected response');
-  final ok = raw['ok'] == true;
-  if (!ok) throw Exception((raw['error']?['message'] ?? 'Request failed').toString());
-  final data = raw['data'];
-  if (data is! Map) throw Exception('Unexpected response: ok=true but data is not a map');
-  return Map<String, dynamic>.from(data as Map);
+
+  if (raw is Map<String, dynamic>) {
+    if (raw['ok'] == true && raw['data'] is Map) {
+      return Map<String, dynamic>.from(raw['data'] as Map);
+    }
+    return raw;
+  }
+
+  if (raw is Map) {
+    return Map<String, dynamic>.from(raw);
+  }
+
+  throw Exception('Unexpected response');
 });
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -29,39 +35,30 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  // Identity
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
   final _displayNameCtrl = TextEditingController();
   final _websiteCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
-
-  // Location
   final _cityCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
-
-  // Avatar
   final _avatarUrlCtrl = TextEditingController();
 
-  // Links + publications as JSON-ish
   final List<TextEditingController> _links = [];
   final List<TextEditingController> _pubTitles = [];
   final List<TextEditingController> _pubUrls = [];
 
   bool _saving = false;
-  String? _saveError;
   bool _loaded = false;
+  String? _saveError;
 
   @override
   void dispose() {
-    _firstNameCtrl.dispose();
-    _lastNameCtrl.dispose();
     _displayNameCtrl.dispose();
     _websiteCtrl.dispose();
     _bioCtrl.dispose();
     _cityCtrl.dispose();
     _countryCtrl.dispose();
     _avatarUrlCtrl.dispose();
+
     for (final c in _links) {
       c.dispose();
     }
@@ -71,42 +68,56 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     for (final c in _pubUrls) {
       c.dispose();
     }
+
     super.dispose();
   }
 
   void _loadFromProfile(Map<String, dynamic> me) {
-    final profile = (me['profile'] is Map) ? Map<String, dynamic>.from(me['profile'] as Map) : <String, dynamic>{};
-    _firstNameCtrl.text = (profile['firstName'] ?? '').toString();
-    _lastNameCtrl.text = (profile['lastName'] ?? '').toString();
-    _displayNameCtrl.text = (profile['displayName'] ?? '').toString();
-    _websiteCtrl.text = (profile['website'] ?? '').toString();
-    _bioCtrl.text = (profile['bio'] ?? '').toString();
+    final profile = me['profile'] is Map
+        ? Map<String, dynamic>.from(me['profile'] as Map)
+        : <String, dynamic>{};
 
+    _displayNameCtrl.text = (profile['displayName'] ?? '').toString();
+    _websiteCtrl.text = (profile['websiteUrl'] ?? profile['website'] ?? '')
+        .toString();
+    _bioCtrl.text = (profile['bio'] ?? '').toString();
     _cityCtrl.text = (profile['city'] ?? '').toString();
     _countryCtrl.text = (profile['country'] ?? '').toString();
-
     _avatarUrlCtrl.text = (profile['avatarUrl'] ?? '').toString();
 
-    // Links
     _links.clear();
     final links = profile['links'];
     if (links is List) {
       for (final v in links) {
-        final c = TextEditingController(text: (v ?? '').toString());
-        _links.add(c);
+        if (v is Map) {
+          final url = (v['url'] ?? '').toString().trim();
+          if (url.isNotEmpty) {
+            _links.add(TextEditingController(text: url));
+          }
+        } else {
+          final value = (v ?? '').toString().trim();
+          if (value.isNotEmpty) {
+            _links.add(TextEditingController(text: value));
+          }
+        }
       }
     }
-    if (_links.isEmpty) _links.add(TextEditingController());
+    if (_links.isEmpty) {
+      _links.add(TextEditingController());
+    }
 
-    // Publications
     _pubTitles.clear();
     _pubUrls.clear();
     final pubs = profile['publications'];
     if (pubs is List) {
       for (final v in pubs) {
         if (v is Map) {
-          _pubTitles.add(TextEditingController(text: (v['title'] ?? '').toString()));
-          _pubUrls.add(TextEditingController(text: (v['url'] ?? '').toString()));
+          _pubTitles.add(
+            TextEditingController(text: (v['title'] ?? '').toString()),
+          );
+          _pubUrls.add(
+            TextEditingController(text: (v['url'] ?? '').toString()),
+          );
         }
       }
     }
@@ -118,11 +129,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _loaded = true;
   }
 
-  List<String> _cleanStringList(List<TextEditingController> ctrls) {
-    final out = <String>[];
-    for (final c in ctrls) {
-      final v = c.text.trim();
-      if (v.isNotEmpty) out.add(v);
+  List<Map<String, dynamic>> _cleanLinks() {
+    final out = <Map<String, dynamic>>[];
+    for (final c in _links) {
+      final url = c.text.trim();
+      if (url.isEmpty) continue;
+      out.add({'url': url});
     }
     return out;
   }
@@ -130,15 +142,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   List<Map<String, dynamic>> _cleanPublications() {
     final out = <Map<String, dynamic>>[];
     for (var i = 0; i < _pubTitles.length; i++) {
-      final t = _pubTitles[i].text.trim();
-      final u = _pubUrls[i].text.trim();
-      if (t.isEmpty && u.isEmpty) continue;
-      out.add({'title': t, 'url': u});
+      final title = _pubTitles[i].text.trim();
+      final url = _pubUrls[i].text.trim();
+      if (title.isEmpty && url.isEmpty) continue;
+      out.add({
+        'title': title,
+        if (url.isNotEmpty) 'url': url,
+      });
     }
     return out;
   }
 
   Future<void> _save() async {
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _saving = true;
       _saveError = null;
@@ -148,24 +165,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final dio = ref.read(dioProvider);
 
       final body = <String, dynamic>{
-        'profile': {
-          'firstName': _firstNameCtrl.text.trim(),
-          'lastName': _lastNameCtrl.text.trim(),
-          'displayName': _displayNameCtrl.text.trim(),
-          'website': _websiteCtrl.text.trim(),
-          'bio': _bioCtrl.text.trim(),
-          'city': _cityCtrl.text.trim(),
-          'country': _countryCtrl.text.trim(),
-          'avatarUrl': _avatarUrlCtrl.text.trim(),
-          'links': _cleanStringList(_links),
-          'publications': _cleanPublications(),
-        }
+        'displayName': _displayNameCtrl.text.trim(),
+        'websiteUrl': _websiteCtrl.text.trim(),
+        'bio': _bioCtrl.text.trim(),
+        'city': _cityCtrl.text.trim(),
+        'country': _countryCtrl.text.trim(),
+        'avatarUrl': _avatarUrlCtrl.text.trim(),
+        'links': _cleanLinks(),
+        'publications': _cleanPublications(),
       };
 
-      final res = await dio.put('/users/me', data: body);
+      final res = await dio.patch('/users/me', data: body);
       final raw = res.data;
-      if (raw is! Map) throw Exception('Unexpected response');
-      if (raw['ok'] != true) {
+
+      if (raw is Map && raw['ok'] == false) {
         final msg = (raw['error']?['message'] ?? 'Save failed').toString();
         throw Exception(msg);
       }
@@ -173,9 +186,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
-      setState(() => _saveError = e.toString());
+      setState(() {
+        _saveError = e.toString().replaceFirst('Exception: ', '');
+      });
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
     }
   }
 
@@ -191,7 +210,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       title: 'Edit profile',
       child: meAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, st) => Padding(
+        error: (err, _) => Padding(
           padding: const EdgeInsets.all(AuraSpace.s16),
           child: AuraCard(
             padding: const EdgeInsets.all(AuraSpace.s16),
@@ -206,7 +225,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
         ),
         data: (me) {
-          if (!_loaded) _loadFromProfile(me);
+          if (!_loaded) {
+            _loadFromProfile(me);
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AuraSpace.s16),
@@ -221,41 +242,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   const SizedBox(height: AuraSpace.s12),
                 ],
 
-                // Avatar
-                AuraCard(
-                  padding: const EdgeInsets.all(AuraSpace.s16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionTitle('Avatar'),
-                      const SizedBox(height: AuraSpace.s12),
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 340,
-                            child: TextField(
-                              controller: _avatarUrlCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Avatar URL',
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'Upload is preferred. URL is available for debugging or advanced use.',
-                            style: AuraText.small,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AuraSpace.s14),
-
-                // Identity
                 AuraCard(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Column(
@@ -264,30 +250,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       _sectionTitle('Identity'),
                       const SizedBox(height: AuraSpace.s12),
                       TextField(
-                        controller: _firstNameCtrl,
-                        decoration: const InputDecoration(labelText: 'First name (private)'),
-                      ),
-                      const SizedBox(height: AuraSpace.s8),
-                      TextField(
-                        controller: _lastNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Last name (private)'),
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      TextField(
                         controller: _displayNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Display name'),
+                        decoration: const InputDecoration(
+                          labelText: 'Display name',
+                        ),
                       ),
                       const SizedBox(height: AuraSpace.s8),
                       TextField(
                         controller: _websiteCtrl,
-                        decoration: const InputDecoration(labelText: 'Website'),
+                        decoration: const InputDecoration(
+                          labelText: 'Website',
+                        ),
                       ),
                       const SizedBox(height: AuraSpace.s8),
                       TextField(
                         controller: _bioCtrl,
                         minLines: 3,
                         maxLines: 8,
-                        decoration: const InputDecoration(labelText: 'Bio'),
+                        decoration: const InputDecoration(
+                          labelText: 'Bio',
+                        ),
                       ),
                     ],
                   ),
@@ -295,7 +277,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                // Location
                 AuraCard(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Column(
@@ -308,14 +289,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           Expanded(
                             child: TextField(
                               controller: _cityCtrl,
-                              decoration: const InputDecoration(labelText: 'City'),
+                              decoration: const InputDecoration(
+                                labelText: 'City',
+                              ),
                             ),
                           ),
                           const SizedBox(width: AuraSpace.s12),
                           Expanded(
                             child: TextField(
                               controller: _countryCtrl,
-                              decoration: const InputDecoration(labelText: 'Country'),
+                              decoration: const InputDecoration(
+                                labelText: 'Country',
+                              ),
                             ),
                           ),
                         ],
@@ -326,37 +311,53 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                // Links
+                AuraCard(
+                  padding: const EdgeInsets.all(AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionTitle('Avatar'),
+                      const SizedBox(height: AuraSpace.s12),
+                      TextField(
+                        controller: _avatarUrlCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Avatar URL',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: AuraSpace.s14),
+
                 AuraCard(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _sectionTitle('Links'),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(
-                        'Examples: personal site, author page, organization profile.',
-                        style: AuraText.small,
-                      ),
                       const SizedBox(height: AuraSpace.s12),
-                      for (var i = 0; i < _links.length; i++) _LinkRow(
-                        index: i,
-                        controller: _links[i],
-                        onRemove: _links.length <= 1
-                            ? null
-                            : () {
-                                setState(() {
-                                  final c = _links.removeAt(i);
-                                  c.dispose();
-                                });
-                              },
-                      ),
+                      for (var i = 0; i < _links.length; i++)
+                        _LinkRow(
+                          index: i,
+                          controller: _links[i],
+                          onRemove: _links.length <= 1
+                              ? null
+                              : () {
+                                  setState(() {
+                                    final c = _links.removeAt(i);
+                                    c.dispose();
+                                  });
+                                },
+                        ),
                       const SizedBox(height: AuraSpace.s10),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton(
                           onPressed: () {
-                            setState(() => _links.add(TextEditingController()));
+                            setState(() {
+                              _links.add(TextEditingController());
+                            });
                           },
                           child: const Text('Add link'),
                         ),
@@ -367,34 +368,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                // Publications
                 AuraCard(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _sectionTitle('Publications'),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(
-                        'Add books, essays, or notable work. Keep it minimal and factual.',
-                        style: AuraText.small,
-                      ),
                       const SizedBox(height: AuraSpace.s12),
-                      for (var i = 0; i < _pubTitles.length; i++) _PublicationRow(
-                        index: i,
-                        titleCtrl: _pubTitles[i],
-                        urlCtrl: _pubUrls[i],
-                        onRemove: _pubTitles.length <= 1
-                            ? null
-                            : () {
-                                setState(() {
-                                  final t = _pubTitles.removeAt(i);
-                                  final u = _pubUrls.removeAt(i);
-                                  t.dispose();
-                                  u.dispose();
-                                });
-                              },
-                      ),
+                      for (var i = 0; i < _pubTitles.length; i++)
+                        _PublicationRow(
+                          index: i,
+                          titleCtrl: _pubTitles[i],
+                          urlCtrl: _pubUrls[i],
+                          onRemove: _pubTitles.length <= 1
+                              ? null
+                              : () {
+                                  setState(() {
+                                    final t = _pubTitles.removeAt(i);
+                                    final u = _pubUrls.removeAt(i);
+                                    t.dispose();
+                                    u.dispose();
+                                  });
+                                },
+                        ),
                       const SizedBox(height: AuraSpace.s10),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -414,7 +410,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                // Save
                 AuraCard(
                   padding: const EdgeInsets.all(AuraSpace.s16),
                   child: Row(
@@ -422,12 +417,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _saving ? null : _save,
-                          child: _saving ? const Text('Saving…') : const Text('Save changes'),
+                          child: Text(_saving ? 'Saving…' : 'Save changes'),
                         ),
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       TextButton(
-                        onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.of(context).pop(false),
                         child: const Text('Cancel'),
                       ),
                     ],
