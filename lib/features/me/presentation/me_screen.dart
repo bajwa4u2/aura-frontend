@@ -1,5 +1,3 @@
-// lib/features/me/presentation/me_screen.dart
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/auth/auth_providers.dart'; // tokenStoreProvider
-import '../../../core/auth/session_providers.dart'; // authStatusProvider, emailVerifiedProvider, isAuthedProvider
+import '../../../core/auth/auth_providers.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart' as ui;
 import '../../../core/ui/aura_scaffold.dart';
@@ -19,8 +17,6 @@ import 'edit_profile_screen.dart';
 const String _adminUserIds =
     String.fromEnvironment('AURA_ADMIN_USER_IDS', defaultValue: '');
 
-// Generic media upload endpoint for announcement attachments (returns media.id).
-// Backend: POST /v1/uploads/media (Dio base already includes /v1)
 const String _uploadEndpointForAnnouncementMedia = '/uploads/media';
 
 List<String> _adminUserIdList() {
@@ -37,9 +33,6 @@ Map<String, dynamic> _asMap(dynamic v) {
   return <String, dynamic>{};
 }
 
-/// Unwrap common envelopes:
-/// - { ok:true, data:{...} }
-/// - { ok:true, data:{ data:{...} } }
 Map<String, dynamic> _unwrapMap(dynamic raw) {
   final root = _asMap(raw);
   dynamic inner = root['data'];
@@ -205,7 +198,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ref.invalidate(meProfileProvider);
 
       if (!mounted) return;
-      // Keep user on public landing after logout
       context.go('/public');
     } finally {
       if (mounted) setState(() => _busyLogout = false);
@@ -219,12 +211,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   String? _extractMediaId(dynamic raw) {
-    // Tries common shapes:
-    // { ok:true, data:{ id } }
-    // { ok:true, data:{ media:{ id } } }
-    // { ok:true, data:{ mediaId } }
-    // { id }
-    // { mediaId }
     final m = _asMap(raw);
     if (m.isEmpty) return null;
 
@@ -287,13 +273,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final summaryCtrl = TextEditingController();
     final bodyCtrl = TextEditingController();
 
-    String audience = 'PUBLIC'; // backend: PUBLIC/MEMBERS/INTERNAL
-    String kind = 'RELEASE'; // backend: GENERAL/RELEASE/SAFETY/GOVERNANCE
-    String status = 'PUBLISHED'; // UI choice; backend create is DRAFT then publish
+    String audience = 'PUBLIC';
+    String kind = 'RELEASE';
+    String status = 'PUBLISHED';
 
     bool pinned = false;
-
-    // Single-image Phase 1
     String? mediaId;
 
     final ok = await showDialog<bool>(
@@ -308,7 +292,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Upload did not return a media id.')),
+                      content: Text('Upload did not return a media id.'),
+                    ),
                   );
                   return;
                 }
@@ -365,15 +350,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: audience,
-                              decoration: const InputDecoration(
-                                  labelText: 'Audience'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Audience'),
                               items: const [
                                 DropdownMenuItem(
-                                    value: 'PUBLIC', child: Text('PUBLIC')),
+                                  value: 'PUBLIC',
+                                  child: Text('PUBLIC'),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'MEMBERS', child: Text('MEMBERS')),
+                                  value: 'MEMBERS',
+                                  child: Text('MEMBERS'),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'INTERNAL', child: Text('INTERNAL')),
+                                  value: 'INTERNAL',
+                                  child: Text('INTERNAL'),
+                                ),
                               ],
                               onChanged: (v) =>
                                   setState(() => audience = v ?? audience),
@@ -387,14 +378,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                   const InputDecoration(labelText: 'Kind'),
                               items: const [
                                 DropdownMenuItem(
-                                    value: 'GENERAL', child: Text('GENERAL')),
+                                  value: 'GENERAL',
+                                  child: Text('GENERAL'),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'RELEASE', child: Text('RELEASE')),
+                                  value: 'RELEASE',
+                                  child: Text('RELEASE'),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'SAFETY', child: Text('SAFETY')),
+                                  value: 'SAFETY',
+                                  child: Text('SAFETY'),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'GOVERNANCE',
-                                    child: Text('GOVERNANCE')),
+                                  value: 'GOVERNANCE',
+                                  child: Text('GOVERNANCE'),
+                                ),
                               ],
                               onChanged: (v) =>
                                   setState(() => kind = v ?? kind),
@@ -409,12 +407,15 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             const InputDecoration(labelText: 'Status'),
                         items: const [
                           DropdownMenuItem(
-                              value: 'PUBLISHED', child: Text('PUBLISHED')),
+                            value: 'PUBLISHED',
+                            child: Text('PUBLISHED'),
+                          ),
                           DropdownMenuItem(
-                              value: 'DRAFT', child: Text('DRAFT')),
+                            value: 'DRAFT',
+                            child: Text('DRAFT'),
+                          ),
                         ],
-                        onChanged: (v) =>
-                            setState(() => status = v ?? status),
+                        onChanged: (v) => setState(() => status = v ?? status),
                       ),
                       const SizedBox(height: 12),
                       SwitchListTile(
@@ -436,8 +437,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_outline,
-                                      size: 18),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
@@ -477,7 +480,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: Text(status == 'PUBLISHED' ? 'Publish' : 'Save draft'),
+                  child: Text(
+                    status == 'PUBLISHED' ? 'Publish' : 'Save draft',
+                  ),
                 ),
               ],
             );
@@ -495,17 +500,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (title.isEmpty || summary.isEmpty || bodyMd.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title, Summary, and Body are required.')),
+        const SnackBar(
+          content: Text('Title, Summary, and Body are required.'),
+        ),
       );
       return;
     }
 
     final excerpt = summary;
-
     final dio = ref.read(dioProvider);
 
     try {
-      // 1) Create draft (admin)
       final createRes = await dio.post(
         '/admin/announcements',
         data: {
@@ -528,7 +533,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         throw Exception('Announcement created but no id returned.');
       }
 
-      // 2) Publish if requested
       if (status == 'PUBLISHED') {
         await dio.post('/admin/announcements/$createdId/publish');
       }
@@ -549,7 +553,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Forbidden: your account is not an admin.')),
+            content: Text('Forbidden: your account is not an admin.'),
+          ),
         );
         return;
       }
@@ -573,8 +578,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Future<void> _pickAndUploadPhoto() async {
     try {
       final picker = ImagePicker();
-      final file =
-          await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024);
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+      );
       if (file == null) return;
 
       final dio = ref.read(dioProvider);
@@ -688,13 +695,15 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text('Verification email sent')),
+                                    content: Text('Verification email sent'),
+                                  ),
                                 );
                               } catch (e) {
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                      content: Text('Could not resend: $e')),
+                                    content: Text('Could not resend: $e'),
+                                  ),
                                 );
                               }
                             },
@@ -745,7 +754,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
           final id = (me['id'] ?? '').toString();
           final handle = (me['handle'] ?? '').toString();
-          final email = (me['email'] ?? '').toString();
 
           final displayName =
               (profile['displayName'] ?? me['displayName'] ?? '').toString();
@@ -772,8 +780,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           },
                           child: CircleAvatar(
                             radius: 28,
-                            backgroundImage:
-                                avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                            backgroundImage: avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
+                                : null,
                             child:
                                 avatarUrl.isEmpty ? const Icon(Icons.person) : null,
                           ),
@@ -810,7 +819,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                     OutlinedButton(
                                       onPressed: _busyLogout ? null : _logout,
                                       child: Text(
-                                          _busyLogout ? 'Signing out…' : 'Sign out'),
+                                        _busyLogout ? 'Signing out…' : 'Sign out',
+                                      ),
                                     ),
                                     OutlinedButton(
                                       onPressed: _pickAndUploadPhoto,
@@ -825,8 +835,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 ),
                                 if (kDebugMode && id.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  SelectableText('User ID: $id',
-                                      style: AuraText.small),
+                                  SelectableText(
+                                    'User ID: $id',
+                                    style: AuraText.small,
+                                  ),
                                 ],
                               ],
                             ),
@@ -944,7 +956,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Draft
               ref.watch(_meDraftProvider).when(
                     loading: () => ui.AuraCard(
                       child: Padding(
@@ -952,9 +963,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         child: Row(
                           children: const [
                             SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                             SizedBox(width: 12),
                             Text('Loading draft…'),
                           ],
@@ -964,8 +976,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Draft load failed: $err',
-                            style: AuraText.small),
+                        child: Text(
+                          'Draft load failed: $err',
+                          style: AuraText.small,
+                        ),
                       ),
                     ),
                     data: (draft) {
@@ -1032,7 +1046,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Posts
               ref.watch(_mePostsProvider).when(
                     loading: () => ui.AuraCard(
                       child: Padding(
@@ -1040,9 +1053,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         child: Row(
                           children: const [
                             SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                             SizedBox(width: 12),
                             Text('Loading posts…'),
                           ],
@@ -1052,8 +1066,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Posts load failed: $err',
-                            style: AuraText.small),
+                        child: Text(
+                          'Posts load failed: $err',
+                          style: AuraText.small,
+                        ),
                       ),
                     ),
                     data: (items) {
@@ -1100,7 +1116,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Saved
               ref.watch(_meSavedProvider).when(
                     loading: () => ui.AuraCard(
                       child: Padding(
@@ -1108,9 +1123,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         child: Row(
                           children: const [
                             SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                             SizedBox(width: 12),
                             Text('Loading saved…'),
                           ],
@@ -1120,8 +1136,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Saved load failed: $err',
-                            style: AuraText.small),
+                        child: Text(
+                          'Saved load failed: $err',
+                          style: AuraText.small,
+                        ),
                       ),
                     ),
                     data: (items) {
@@ -1164,7 +1182,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
               const SizedBox(height: AuraSpace.s14),
 
-              // Replies
               ref.watch(_meRepliesProvider).when(
                     loading: () => ui.AuraCard(
                       child: Padding(
@@ -1172,9 +1189,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         child: Row(
                           children: const [
                             SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2)),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                             SizedBox(width: 12),
                             Text('Loading replies…'),
                           ],
@@ -1184,8 +1202,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     error: (err, st) => ui.AuraCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Replies load failed: $err',
-                            style: AuraText.small),
+                        child: Text(
+                          'Replies load failed: $err',
+                          style: AuraText.small,
+                        ),
                       ),
                     ),
                     data: (items) {
@@ -1201,7 +1221,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                 items.isEmpty
                                     ? 'No replies yet.'
                                     : 'You have ${items.length} reply/replies.',
-                                style: AuraText.small),
+                                style: AuraText.small,
+                              ),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 10,
