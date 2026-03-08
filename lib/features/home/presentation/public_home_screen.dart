@@ -300,19 +300,6 @@ class _InstitutionEntryCard extends StatelessWidget {
         children: [
           Text('Enter as institution', style: AuraText.title),
           const SizedBox(height: AuraSpace.s10),
-
-          /// All institutional access flows must pass through
-          /// the institutional gateway so the system can determine
-          /// the correct state (public / no standing / verified / speaker).
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => context.go('/enter-institution'),
-              child: const Text('Create institution account'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
