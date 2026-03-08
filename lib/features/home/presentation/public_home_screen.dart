@@ -415,7 +415,7 @@ class _InstitutionEntryCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go('/institution/sign-in'),
+              onPressed: () => context.go('/enter-institution'),
               child: const Text('Institution sign in'),
             ),
           ),
