@@ -237,6 +237,118 @@ class PublicHomeScreen extends ConsumerWidget {
   }
 }
 
+class _PinnedAnnouncementBanner extends StatelessWidget {
+  const _PinnedAnnouncementBanner({required this.a});
+  final _PinnedAnnouncement a;
+
+  String _fmt(DateTime dt) {
+    final d = dt.toLocal();
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = a.title.trim().isEmpty ? a.slug : a.title.trim();
+    final summary = a.summary.trim();
+
+    return AuraCard(
+      onTap: () => context.push('/announcements/${a.slug}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.campaign_outlined, size: 18),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  'Pinned announcement',
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: AuraSurface.muted),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
+          if (a.publishedAt != null) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text('Published: ${_fmt(a.publishedAt!)}', style: AuraText.small),
+          ],
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(summary, style: AuraText.body),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicHero extends StatelessWidget {
+  const _PublicHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'A civic layer for accountable public writing.',
+            style: AuraText.title,
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'For members and institutions.',
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              _Pill(
+                label: 'Mission',
+                icon: Icons.flag_outlined,
+                onTap: () => context.go('/mission'),
+              ),
+              _Pill(
+                label: 'Founder',
+                icon: Icons.person_outline,
+                onTap: () => context.go('/founder'),
+              ),
+              _Pill(
+                label: 'Institutions',
+                icon: Icons.apartment_outlined,
+                onTap: () => context.go('/institutions'),
+              ),
+              _Pill(
+                label: 'Investors',
+                icon: Icons.assured_workload_outlined,
+                onTap: () => context.go('/investors'),
+              ),
+              _Pill(
+                label: 'Contact',
+                icon: Icons.mail_outline,
+                onTap: () => context.go('/contact'),
+              ),
+              _Pill(
+                label: 'Search',
+                icon: Icons.search,
+                onTap: () => context.go('/search'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EntryStack extends StatelessWidget {
   const _EntryStack();
 
@@ -303,11 +415,157 @@ class _InstitutionEntryCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.go('/enter-institution'),
+              onPressed: () => context.go('/institution/sign-in'),
               child: const Text('Institution sign in'),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AuraText.title),
+              const SizedBox(height: AuraSpace.s8),
+              Text(subtitle, style: AuraText.muted),
+            ],
+          ),
+        ),
+        if (actionLabel != null && onAction != null) ...[
+          const SizedBox(width: AuraSpace.s12),
+          OutlinedButton(
+            onPressed: onAction,
+            child: Text(actionLabel!),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PublicPostPreview extends StatelessWidget {
+  const _PublicPostPreview({required this.post});
+  final Post post;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = post.author;
+    final name = (a?.displayName ?? '').trim();
+    final handle = (a?.handle ?? '').trim();
+    final byline =
+        handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
+
+    final text = (post.text ?? '').trim();
+    final preview = text.length <= 240 ? text : '${text.substring(0, 240)}…';
+
+    return AuraCard(
+      onTap: () => context.push('/posts/${post.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Text(
+                  byline.isEmpty ? 'Public entry' : byline,
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: AuraSurface.muted),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            preview.isEmpty ? '—' : preview,
+            style: AuraText.body.copyWith(height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.icon, required this.onTap});
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AuraSurface.muted),
+            const SizedBox(width: AuraSpace.s8),
+            Text(label, style: AuraText.small),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingBlock extends StatelessWidget {
+  const _LoadingBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s18),
+      child: Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       ),
     );
   }
