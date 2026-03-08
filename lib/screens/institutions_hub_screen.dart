@@ -111,6 +111,8 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
 
   String _value(dynamic value) => (value ?? '').toString().trim();
 
+  String get _institutionSlug => _value(_institution?['slug']);
+
   TextStyle _headlineStyle(BuildContext context) {
     return (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
         .copyWith(fontWeight: FontWeight.w700);
@@ -221,6 +223,28 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
               const SizedBox(height: AuraSpace.s6),
               Text('Public slug: $slug', style: AuraText.body),
             ],
+          ],
+          if (slug.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/institutions/$slug'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s14,
+                        vertical: AuraSpace.s12,
+                      ),
+                    ),
+                    child: Text(
+                      'Open public institution profile',
+                      style: AuraText.body,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
       ),
@@ -344,7 +368,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
     );
   }
 
-  Widget _institutionIdentityCard() {
+  Widget _institutionIdentityCard(BuildContext context) {
     if (_institution == null || !_hasInstitutionStanding) {
       return const SizedBox.shrink();
     }
@@ -400,6 +424,28 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
           if (description.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text('Description: $description', style: AuraText.body),
+          ],
+          if (slug.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/institutions/$slug'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s14,
+                        vertical: AuraSpace.s12,
+                      ),
+                    ),
+                    child: Text(
+                      'View public institution page',
+                      style: AuraText.body,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
       ),
@@ -536,6 +582,8 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
   }
 
   Widget _activeToolsCard(BuildContext context) {
+    final slug = _institutionSlug;
+
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,6 +634,28 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
               ),
             ],
           ),
+          if (slug.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/institutions/$slug'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s14,
+                        vertical: AuraSpace.s12,
+                      ),
+                    ),
+                    child: Text(
+                      'Open public institution profile',
+                      style: AuraText.body,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (_isAuthorizedSpeaker) ...[
             const SizedBox(height: AuraSpace.s10),
             Row(
@@ -749,7 +819,7 @@ class _InstitutionsHubScreenState extends ConsumerState<InstitutionsHubScreen> {
               const SizedBox(height: AuraSpace.s12),
             ],
             if (hasStanding) ...[
-              _institutionIdentityCard(),
+              _institutionIdentityCard(context),
               const SizedBox(height: AuraSpace.s12),
             ],
             if (_hasInstitutionStanding && _membership != null) ...[
