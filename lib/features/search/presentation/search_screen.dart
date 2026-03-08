@@ -7,7 +7,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../posts/presentation/widgets/post_card.dart';
+import '../../feed/domain/post.dart';
 import '../providers.dart';
 import '../search_repository.dart';
 
@@ -53,11 +53,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         TextSelection.collapsed(offset: _controller.text.length);
   }
 
-  Widget _personCard(BuildContext context, Map<String, dynamic> u) {
+  Widget _authorCard(BuildContext context, Map<String, dynamic> u) {
     final handle = (u['handle'] ?? '').toString().trim();
-    final name = (u['displayName'] ?? handle).toString().trim();
-    final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
+    final name = (u['displayName'] ?? '').toString().trim();
     final bio = (u['bio'] ?? '').toString().trim();
+    final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
+    final display = name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Author');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
@@ -70,7 +71,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               backgroundColor: const Color(0x332E2A26),
               child: avatarUrl.isEmpty
                   ? Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                      display.isNotEmpty ? display[0].toUpperCase() : 'A',
                       style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                     )
                   : null,
@@ -81,7 +82,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name.isNotEmpty ? name : 'Unknown author',
+                    display,
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   if (handle.isNotEmpty) Text('@$handle', style: AuraText.muted),
@@ -104,16 +105,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _institutionCard(BuildContext context, Map<String, dynamic> i) {
+  Widget _institutionCard(Map<String, dynamic> i) {
     final name = (i['name'] ?? '').toString().trim();
     final slug = (i['slug'] ?? '').toString().trim();
     final domain = (i['domain'] ?? '').toString().trim();
     final jurisdiction = (i['jurisdiction'] ?? '').toString().trim();
+    final description = (i['description'] ?? '').toString().trim();
+
+    final sublineParts = <String>[
+      if (domain.isNotEmpty) domain,
+      if (jurisdiction.isNotEmpty) jurisdiction,
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: AuraCard(
-        onTap: null,
         child: Row(
           children: [
             const CircleAvatar(
@@ -130,21 +136,60 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   if (slug.isNotEmpty) Text(slug, style: AuraText.muted),
-                  if (domain.isNotEmpty || jurisdiction.isNotEmpty) ...[
+                  if (sublineParts.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s4),
                     Text(
-                      [domain, jurisdiction]
-                          .where((e) => e.trim().isNotEmpty)
-                          .join(' • '),
+                      sublineParts.join(' • '),
                       style: AuraText.small,
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      description,
+                      style: AuraText.small,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _postCard(BuildContext context, Post p) {
+    final author = p.author;
+    final handle = (author?.handle ?? '').trim();
+    final name = (author?.displayName ?? '').trim();
+    final byline =
+        handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
+
+    final text = (p.text ?? '').trim();
+    final preview = text.length <= 220 ? text : '${text.substring(0, 220)}…';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: AuraCard(
+        onTap: () => context.push('/posts/${p.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (byline.isNotEmpty)
+              Text(
+                byline,
+                style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+              ),
+            if (byline.isNotEmpty) const SizedBox(height: AuraSpace.s8),
+            Text(
+              preview.isEmpty ? '—' : preview,
+              style: AuraText.body,
+            ),
           ],
         ),
       ),
@@ -254,8 +299,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           else
             results.when(
               data: (r) {
-                final hasAny =
-                    r.users.isNotEmpty || r.institutions.isNotEmpty || r.posts.isNotEmpty;
+                final hasAny = r.users.isNotEmpty ||
+                    r.institutions.isNotEmpty ||
+                    r.posts.isNotEmpty;
 
                 if (!hasAny) {
                   return AuraCard(
@@ -269,7 +315,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     if (r.users.isNotEmpty) ...[
                       Text('Authors', style: AuraText.title),
                       const SizedBox(height: AuraSpace.s10),
-                      ...r.users.take(8).map((u) => _personCard(context, u)),
+                      ...r.users.take(8).map((u) => _authorCard(context, u)),
                       const SizedBox(height: AuraSpace.s18),
                     ],
                     if (r.institutions.isNotEmpty) ...[
@@ -277,22 +323,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const SizedBox(height: AuraSpace.s10),
                       ...r.institutions
                           .take(8)
-                          .map((i) => _institutionCard(context, i)),
+                          .map((i) => _institutionCard(i)),
                       const SizedBox(height: AuraSpace.s18),
                     ],
-                    Text('Work', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    if (r.posts.isEmpty)
-                      AuraCard(
-                        child: Text('No work matches yet.', style: AuraText.body),
-                      )
-                    else
-                      ...r.posts.take(12).map(
-                            (p) => Padding(
-                              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                              child: PostCard(post: p, compact: true),
-                            ),
-                          ),
+                    if (r.posts.isNotEmpty) ...[
+                      Text('Work', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s10),
+                      ...r.posts.take(12).map((p) => _postCard(context, p)),
+                    ],
                   ],
                 );
               },

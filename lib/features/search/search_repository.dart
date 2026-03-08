@@ -17,7 +17,7 @@ class SearchRepository {
   SearchRepository(this._dio);
   final Dio _dio;
 
-  Future<SearchResult> search(String q, {int limit = 20}) async {
+  Future<SearchResult> search(String q, {int limit = 12}) async {
     final query = q.trim();
     if (query.isEmpty) {
       return const SearchResult(
@@ -42,16 +42,28 @@ class SearchRepository {
     List postsRaw = const [];
 
     if (root is Map) {
+      final outerData = root['data'];
+
       if (root['users'] is List) {
-        usersRaw = root['users'];
+        usersRaw = root['users'] as List;
       }
-
       if (root['institutions'] is List) {
-        institutionsRaw = root['institutions'];
+        institutionsRaw = root['institutions'] as List;
+      }
+      if (root['posts'] is List) {
+        postsRaw = root['posts'] as List;
       }
 
-      if (root['posts'] is List) {
-        postsRaw = root['posts'];
+      if (outerData is Map) {
+        if (usersRaw.isEmpty && outerData['users'] is List) {
+          usersRaw = outerData['users'] as List;
+        }
+        if (institutionsRaw.isEmpty && outerData['institutions'] is List) {
+          institutionsRaw = outerData['institutions'] as List;
+        }
+        if (postsRaw.isEmpty && outerData['posts'] is List) {
+          postsRaw = outerData['posts'] as List;
+        }
       }
     }
 
