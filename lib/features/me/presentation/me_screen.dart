@@ -794,10 +794,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                                   handle.isNotEmpty ? '@$handle' : '—',
                                   style: AuraText.small,
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  style: AuraText.small,
-                                ),
                                 if (bio.trim().isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   Text(bio, style: AuraText.body),
