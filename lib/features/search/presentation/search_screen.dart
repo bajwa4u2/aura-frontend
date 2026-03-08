@@ -58,7 +58,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final name = (u['displayName'] ?? '').toString().trim();
     final bio = (u['bio'] ?? '').toString().trim();
     final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
-    final display = name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Author');
+    final display =
+        name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Author');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
@@ -67,12 +68,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+              backgroundImage:
+                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
               backgroundColor: const Color(0x332E2A26),
               child: avatarUrl.isEmpty
                   ? Text(
                       display.isNotEmpty ? display[0].toUpperCase() : 'A',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     )
                   : null,
             ),
@@ -105,7 +109,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _institutionCard(Map<String, dynamic> i) {
+  Widget _institutionCard(BuildContext context, Map<String, dynamic> i) {
     final name = (i['name'] ?? '').toString().trim();
     final slug = (i['slug'] ?? '').toString().trim();
     final domain = (i['domain'] ?? '').toString().trim();
@@ -120,6 +124,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: AuraCard(
+        onTap: slug.isEmpty ? null : () => context.push('/institutions/$slug'),
         child: Row(
           children: [
             const CircleAvatar(
@@ -157,6 +162,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ],
               ),
             ),
+            const Icon(Icons.chevron_right),
           ],
         ),
       ),
@@ -323,7 +329,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const SizedBox(height: AuraSpace.s10),
                       ...r.institutions
                           .take(8)
-                          .map((i) => _institutionCard(i)),
+                          .map((i) => _institutionCard(context, i)),
                       const SizedBox(height: AuraSpace.s18),
                     ],
                     if (r.posts.isNotEmpty) ...[

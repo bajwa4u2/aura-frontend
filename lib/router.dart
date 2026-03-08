@@ -30,6 +30,7 @@ import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
+import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 
@@ -77,6 +78,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/contact' ||
         path == '/investors' ||
         path == '/institutions' ||
+        path.startsWith('/institutions/') ||
         path == '/institution/sign-in' ||
         path == '/institution/request-verification' ||
         path == '/patrons' ||
@@ -263,10 +265,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return _normalizeRedirectDest(redirectTo);
       }
 
-      // Institution-aware entry:
-      // once a user is authenticated + verified, the institution sign-in route
-      // should hand off into the institution entry context selector rather than
-      // dropping the user into personal space or looping on the sign-in page.
       if (path == '/institution/sign-in') {
         return kEnterInstitutionRoute;
       }
@@ -291,6 +289,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
+      GoRoute(
+        path: '/institutions/:slug',
+        builder: (context, state) => InstitutionDetailScreen(
+          slug: state.pathParameters['slug'] ?? '',
+        ),
+      ),
       GoRoute(
         path: '/institution/sign-in',
         builder: (_, __) => const InstitutionSignInScreen(),
