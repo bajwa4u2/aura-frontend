@@ -7,105 +7,68 @@ class ProfileRepository {
   ProfileRepository(this._dio);
   final Dio _dio;
 
-  /// GET /users/:handle
-  Future<Profile> fetchProfile(String handle) async {
-    final res = await _dio.get('/users/$handle');
-
-    // Accept either {data:{...}} or raw {...}
-    final body = res.data;
-    if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
-    }
-    if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body));
-    }
-    throw StateError('Unexpected profile response');
+  Map<String, dynamic> _asMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return <String, dynamic>{};
   }
 
-  /// Backwards-compatible alias for older screens
-  Future<Profile> getUser(String handle) => fetchProfile(handle);
+  Map<String, dynamic> _unwrapMap(dynamic raw) {
+    final root = _asMap(raw);
+    final outerData = root['data'];
 
-  /// GET /users/me
-  Future<Profile> fetchMe() async {
-    final res = await _dio.get('/users/me');
-    final body = res.data;
-    if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
+    if (outerData is Map && outerData['data'] is Map) {
+      return Map<String, dynamic>.from(outerData['data'] as Map);
     }
-    if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body));
+    if (outerData is Map) {
+      return Map<String, dynamic>.from(outerData);
     }
-    throw StateError('Unexpected me response');
+    return root;
   }
 
-  /// PATCH /users/me
-  /// Updates: displayName, bio, avatarUrl
-  Future<Profile> updateMe({
-    String? displayName,
-    String? bio,
-    String? avatarUrl,
-  }) async {
-    final payload = <String, dynamic>{
-      if (displayName != null) 'displayName': displayName,
-      if (bio != null) 'bio': bio,
-      if (avatarUrl != null) 'avatarUrl': avatarUrl,
-    };
+  List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
 
-    final res = await _dio.patch('/users/me', data: payload);
-    final body = res.data;
-    if (body is Map && body['data'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['data']));
+    final root = _asMap(raw);
+
+    if (root['items'] is List) {
+      return (root['items'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
-    if (body is Map && body['user'] is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body['user']));
+
+    final data = root['data'];
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
-    if (body is Map) {
-      return Profile.fromJson(Map<String, dynamic>.from(body));
+
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
-    throw StateError('Unexpected update response');
+
+    if (data is Map && data['data'] is List) {
+      return (data['data'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+
+    return const <Map<String, dynamic>>[];
   }
 
-  /// If your backend has a posts-by-author route, set it here.
-  /// If not, this still compiles and returns empty.
-    /// If your backend has a posts-by-author route, set it here.
-  /// If not, this still compiles and returns empty.
-  Future<List<Post>> getUserPosts(String handle, {int limit = 20, String? cursor}) async {
-    try {
-      final res = await _dio.get(
-        '/users/$handle/posts',
-        queryParameters: {
-          'limit': limit,
-          if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
-        },
-      );
-
-      final body = res.data;
-      final data = (body is Map && body['data'] is Map) ? body['data'] as Map : (body is Map ? body : null);
-      final items = (data?['items'] as List?) ?? const <dynamic>[];
-      return items.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList();
-    } catch (_) {
-      return const <Post>[];
-    }
-  }
-
-/// If your backend exposes follow state, use it. Otherwise return false.
-    /// If your backend exposes follow state, use it. Otherwise return false.
-  Future<bool> isFollowing(String handle) async {
-    try {
-      final res = await _dio.get('/users/$handle/follow/state');
-      final body = res.data;
-      if (body is Map) {
-        final data = (body['data'] is Map) ? body['data'] as Map : body;
-        final state = (data['state'] ?? '').toString();
-        return state == 'following';
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-String _errorMessage(Object e) {
+  String _errorMessage(Object e) {
     if (e is DioException) {
       final d = e.response?.data;
       if (d is Map) {
@@ -118,16 +81,80 @@ String _errorMessage(Object e) {
     return e.toString();
   }
 
-  /// POST /users/:handle/follow/request
-  ///
-  /// Aura follow requires a request (backend contract).
-  /// We also keep a fallback to /follow for compatibility if the backend changes.
+  Future<Profile> fetchProfile(String handle) async {
+    final res = await _dio.get('/users/$handle');
+    final map = _unwrapMap(res.data);
+    return Profile.fromJson(map);
+  }
+
+  Future<Profile> getUser(String handle) => fetchProfile(handle);
+
+  Future<Profile> fetchMe() async {
+    final res = await _dio.get('/users/me');
+    final map = _unwrapMap(res.data);
+    return Profile.fromJson(map);
+  }
+
+  Future<Profile> updateMe({
+    String? displayName,
+    String? bio,
+    String? avatarUrl,
+  }) async {
+    final payload = <String, dynamic>{
+      if (displayName != null) 'displayName': displayName,
+      if (bio != null) 'bio': bio,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+    };
+
+    final res = await _dio.patch('/users/me', data: payload);
+    final map = _unwrapMap(res.data);
+    return Profile.fromJson(map);
+  }
+
+  Future<List<Post>> getUserPosts(
+    String handle, {
+    int limit = 20,
+    String? cursor,
+  }) async {
+    try {
+      final res = await _dio.get(
+        '/users/$handle/posts',
+        queryParameters: {
+          'limit': limit,
+          if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+        },
+      );
+
+      final items = _unwrapItems(res.data);
+
+      return items
+          .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return const <Post>[];
+    }
+  }
+
+  Future<String> getFollowState(String handle) async {
+    try {
+      final res = await _dio.get('/users/$handle/follow/state');
+      final map = _unwrapMap(res.data);
+      return (map['state'] ?? '').toString().trim();
+    } catch (_) {
+      return 'none';
+    }
+  }
+
+  Future<bool> isFollowing(String handle) async {
+    final state = await getFollowState(handle);
+    return state == 'following';
+  }
+
   Future<void> follow(String handle) async {
     try {
       await _dio.post('/users/$handle/follow/request');
       return;
     } catch (e) {
-      // Fallback for older/alternate backend contract
       final msg = _errorMessage(e).toLowerCase();
       if (msg.contains('not found') || msg.contains('cannot post')) {
         await _dio.post('/users/$handle/follow');
@@ -137,36 +164,40 @@ String _errorMessage(Object e) {
     }
   }
 
-  /// DELETE follow / cancel follow request
-  ///
-  /// First try direct unfollow:
-  ///   DELETE /users/:handle/follow
-  /// If backend is request-based, fall back to cancel request:
-  ///   DELETE /users/:handle/follow/request
   Future<void> unfollow(String handle) async {
     try {
       await _dio.post('/users/$handle/follow/cancel');
-      return;
     } catch (e) {
       final msg = _errorMessage(e).toLowerCase();
 
-      // If backend is request-based, cancel request instead
-      if (msg.contains('requires a request') ||
-          msg.contains('follow request') ||
-          msg.contains('/follow/request') ||
+      if (msg.contains('not found') ||
           msg.contains('bad request') ||
-          msg.contains('cannot delete')) {
-        await _dio.post('/users/$handle/follow/cancel');
-        return;
-      }
-
-      // If it’s a hard 404 on /follow, try /follow/request too.
-      if (msg.contains('not found') || msg.contains('cannot delete')) {
+          msg.contains('cannot')) {
         await _dio.post('/users/$handle/follow/cancel');
         return;
       }
 
       rethrow;
+    }
+  }
+
+  Future<List<ProfileListItem>> getFollowers(String handle) async {
+    try {
+      final res = await _dio.get('/users/$handle/followers');
+      final items = _unwrapItems(res.data);
+      return items.map(ProfileListItem.fromJson).toList();
+    } catch (_) {
+      return const <ProfileListItem>[];
+    }
+  }
+
+  Future<List<ProfileListItem>> getFollowing(String handle) async {
+    try {
+      final res = await _dio.get('/users/$handle/following');
+      final items = _unwrapItems(res.data);
+      return items.map(ProfileListItem.fromJson).toList();
+    } catch (_) {
+      return const <ProfileListItem>[];
     }
   }
 }
