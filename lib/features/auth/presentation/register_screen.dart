@@ -94,6 +94,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return v;
   }
 
+  bool _isInstitutionRedirect(String? r) {
+    final v = _safeRedirect(r);
+    return v == '/enter-institution' || v.startsWith('/enter-institution?');
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
@@ -161,7 +166,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final redirect = Uri.encodeComponent(widget.redirectTo ?? '/home');
+    final redirectPath = _safeRedirect(widget.redirectTo);
+    final redirect = Uri.encodeComponent(redirectPath);
+    final isInstitutionEntry = _isInstitutionRedirect(widget.redirectTo);
+
+    final title = isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
+
+    final subtitle = isInstitutionEntry
+        ? 'Create your account first. After sign-in, Aura will continue to the institutional access check.'
+        : 'Create your account. We’ll email you a verification link.';
+
+    final ctaLabel = _loading ? 'Creating…' : 'Create account';
+
+    final loginLabel = isInstitutionEntry
+        ? 'Already have an account? Sign in to continue'
+        : 'Already have an account? Log in';
 
     return Scaffold(
       body: SafeArea(
@@ -176,17 +195,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   shrinkWrap: true,
                   children: [
                     const SizedBox(height: 24),
-                    const Text(
-                      'Join Aura',
-                      style: TextStyle(
+                    if (isInstitutionEntry) ...[
+                      const Text(
+                        'Institutional access',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Text(
+                      title,
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Create your account. We’ll email you a verification link.',
-                    ),
+                    Text(subtitle),
                     const SizedBox(height: 16),
                     if (_error != null) ...[
                       Text(
@@ -306,14 +333,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 18),
                     FilledButton(
                       onPressed: _loading ? null : _submit,
-                      child: Text(_loading ? 'Creating…' : 'Create account'),
+                      child: Text(ctaLabel),
                     ),
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: _loading
                           ? null
                           : () => context.go('/login?redirect=$redirect'),
-                      child: const Text('Already have an account? Log in'),
+                      child: Text(loginLabel),
                     ),
                   ],
                 ),
