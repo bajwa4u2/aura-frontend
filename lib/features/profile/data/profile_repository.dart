@@ -185,7 +185,7 @@ class ProfileRepository {
     try {
       final res = await _dio.get('/users/$handle/followers');
       final items = _unwrapItems(res.data);
-      return items.map(ProfileListItem.fromJson).toList();
+      return items.map((e) => ProfileListItem.fromJson(e)).toList();
     } catch (_) {
       return const <ProfileListItem>[];
     }
@@ -195,7 +195,7 @@ class ProfileRepository {
     try {
       final res = await _dio.get('/users/$handle/following');
       final items = _unwrapItems(res.data);
-      return items.map(ProfileListItem.fromJson).toList();
+      return items.map((e) => ProfileListItem.fromJson(e)).toList();
     } catch (_) {
       return const <ProfileListItem>[];
     }

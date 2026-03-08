@@ -102,8 +102,8 @@ class AuthorProfileScreen extends ConsumerWidget {
           userAsync.when(
             data: (u) {
               final name = u.displayName.isNotEmpty ? u.displayName : handle;
-              final bio = u.bio;
-              final avatar = u.avatarUrl.trim();
+              final bio = u.bio ?? '';
+              final avatar = (u.avatarUrl ?? '').trim();
 
               final isSelf = isAuthed
                   ? (myHandleAsync?.maybeWhen(
@@ -113,10 +113,14 @@ class AuthorProfileScreen extends ConsumerWidget {
                       false)
                   : false;
 
-              final followersCount =
-                  followersAsync.maybeWhen(data: (items) => items.length, orElse: () => u.followersCount);
-              final followingCount =
-                  followingAsync.maybeWhen(data: (items) => items.length, orElse: () => u.followingCount);
+              final followersCount = followersAsync.maybeWhen(
+                data: (items) => items.length,
+                orElse: () => u.followersCount,
+              );
+              final followingCount = followingAsync.maybeWhen(
+                data: (items) => items.length,
+                orElse: () => u.followingCount,
+              );
 
               return AuraCard(
                 padding: const EdgeInsets.all(AuraSpace.s18),
@@ -205,16 +209,16 @@ class AuthorProfileScreen extends ConsumerWidget {
                         Consumer(
                           builder: (context, ref, _) {
                             if (!isAuthed) {
-                              return FilledButton(
+                              return const FilledButton(
                                 onPressed: null,
-                                child: const Text('Login to follow'),
+                                child: Text('Login to follow'),
                               );
                             }
 
                             if (isSelf) {
-                              return FilledButton(
+                              return const FilledButton(
                                 onPressed: null,
-                                child: const Text('This is you'),
+                                child: Text('This is you'),
                               );
                             }
 
@@ -289,7 +293,7 @@ class AuthorProfileScreen extends ConsumerWidget {
 
               return Column(
                 children: items
-                    .map(
+                    .map<Widget>(
                       (p) => Padding(
                         padding: const EdgeInsets.only(bottom: AuraSpace.s10),
                         child: PostCard(post: p, compact: false),
@@ -352,52 +356,54 @@ class _ProfileConnectionsScreen extends ConsumerWidget {
               }
 
               return Column(
-                children: items.map((item) {
-                  final name = item.displayName.isNotEmpty
-                      ? item.displayName
-                      : (item.handle.isNotEmpty ? item.handle : 'Author');
-                  final avatar = item.avatarUrl.trim();
+                children: items
+                    .map<Widget>((item) {
+                      final name = item.displayName.isNotEmpty
+                          ? item.displayName
+                          : (item.handle.isNotEmpty ? item.handle : 'Author');
+                      final avatar = (item.avatarUrl ?? '').trim();
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                    child: AuraCard(
-                      onTap: item.handle.isEmpty
-                          ? null
-                          : () => context.push('/u/${item.handle}'),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: const Color(0x332E2A26),
-                            backgroundImage:
-                                avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                            child: avatar.isEmpty
-                                ? Text(
-                                    name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: AuraSpace.s12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: AuraText.body.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                        child: AuraCard(
+                          onTap: item.handle.isEmpty
+                              ? null
+                              : () => context.push('/u/${item.handle}'),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0x332E2A26),
+                                backgroundImage:
+                                    avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                                child: avatar.isEmpty
+                                    ? Text(
+                                        name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: AuraSpace.s12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: AuraText.body.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    if (item.handle.isNotEmpty)
+                                      Text('@${item.handle}', style: AuraText.muted),
+                                  ],
                                 ),
-                                if (item.handle.isNotEmpty)
-                                  Text('@${item.handle}', style: AuraText.muted),
-                              ],
-                            ),
+                              ),
+                              const Icon(Icons.chevron_right),
+                            ],
                           ),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                        ),
+                      );
+                    })
+                    .toList(),
               );
             },
             loading: () => const Center(
