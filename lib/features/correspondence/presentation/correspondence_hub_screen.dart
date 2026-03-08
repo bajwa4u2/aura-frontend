@@ -6,7 +6,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../data/institutions_repository.dart';
+import '../../institutions/data/institutions_repository.dart';
 
 class CorrespondenceHubScreen extends StatefulWidget {
   const CorrespondenceHubScreen({super.key});
@@ -270,10 +270,9 @@ class _PendingInstitutionPanel extends ConsumerWidget {
           itemBuilder: (context, i) {
             final r = items[i];
             final id = _readValue(r, 'id');
-            final organizationName =
-                _readValue(r, 'organizationName').isEmpty
-                    ? 'Unnamed institution'
-                    : _readValue(r, 'organizationName');
+            final organizationName = _readValue(r, 'organizationName').isEmpty
+                ? 'Unnamed institution'
+                : _readValue(r, 'organizationName');
             final workEmail = _readValue(r, 'workEmail');
             final websiteUrl = _readValue(r, 'websiteUrl');
             final roleTitle = _readValue(r, 'roleTitle');
