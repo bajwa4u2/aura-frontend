@@ -28,95 +28,196 @@ class SavesRepository {
     return code == 401 || code == 403;
   }
 
-  bool _isNotFound(DioException e) => e.response?.statusCode == 404;
-
   bool _extractSaved(dynamic data) {
     if (data is bool) return data;
+
     if (data is Map) {
       final v1 = data['saved'];
       if (v1 is bool) return v1;
+
       final v2 = data['isSaved'];
       if (v2 is bool) return v2;
 
-      // tolerate nested wrappers
       final inner = data['data'];
       if (inner is Map) {
         final a = inner['saved'];
         if (a is bool) return a;
+
         final b = inner['isSaved'];
         if (b is bool) return b;
       }
     }
+
     return false;
   }
 
-  /// GET /v1/saves?limit=24&cursor=...
-  Future<List<Post>> listSaved({int limit = 24, String? cursor}) async {
-    // Hard gate: never call protected endpoints when not authed.
-    if (!_isAuthed()) return <Post>[];
+  List<Map<String, dynamic>> _extractItems(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+
+    if (data is Map<String, dynamic>) {
+      final items = data['items'];
+      if (items is List) {
+        return items
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      final directData = data['data'];
+      if (directData is List) {
+        return directData
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      if (directData is Map) {
+        final nestedItems = directData['items'];
+        if (nestedItems is List) {
+          return nestedItems
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+
+        final nestedData = directData['data'];
+        if (nestedData is List) {
+          return nestedData
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+      }
+    }
+
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+
+      final items = map['items'];
+      if (items is List) {
+        return items
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      final directData = map['data'];
+      if (directData is List) {
+        return directData
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      if (directData is Map) {
+        final nested = Map<String, dynamic>.from(directData);
+
+        final nestedItems = nested['items'];
+        if (nestedItems is List) {
+          return nestedItems
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+
+        final nestedData = nested['data'];
+        if (nestedData is List) {
+          return nestedData
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+      }
+    }
+
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchSavedRaw({
+    int limit = 100,
+    String? cursor,
+  }) async {
+    if (!_isAuthed()) return <Map<String, dynamic>>[];
 
     try {
       final res = await _dio.get(
-        '/saves',
+        '/saves/me',
         queryParameters: {
           'limit': limit,
           if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
         },
       );
 
-      final data = res.data;
-      if (data is List) {
-        return data.map((e) => Post.fromJson(e as Map<String, dynamic>)).toList();
-      }
+      return _extractItems(res.data);
+    } on DioException catch (e) {
+      if (_isAuthFailure(e)) return <Map<String, dynamic>>[];
 
-      // If backend returns { items: [...] }, support that too.
-      if (data is Map<String, dynamic>) {
-        final items = data['items'];
-        if (items is List) {
-          return items.map((e) => Post.fromJson(e as Map<String, dynamic>)).toList();
+      // Back-compat fallback if some environment still serves /saves
+      if (e.response?.statusCode == 404) {
+        try {
+          final res2 = await _dio.get(
+            '/saves',
+            queryParameters: {
+              'limit': limit,
+              if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+            },
+          );
+          return _extractItems(res2.data);
+        } on DioException catch (e2) {
+          if (_isAuthFailure(e2)) return <Map<String, dynamic>>[];
+          rethrow;
         }
       }
 
-      return <Post>[];
-    } on DioException catch (e) {
-      // If auth failed mid-flight (token expired, session revoked), fail soft.
-      if (_isAuthFailure(e)) return <Post>[];
       rethrow;
     }
   }
 
-  /// Canonical (new) contract:
-  /// GET /v1/saves/:postId  -> { saved: bool }
+  /// Canonical saved-list read.
+  /// Prefers /v1/saves/me and falls back to /v1/saves if needed.
+  Future<List<Post>> listSaved({int limit = 24, String? cursor}) async {
+    final items = await _fetchSavedRaw(limit: limit, cursor: cursor);
+
+    return items
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Quiet saved-state check with no noisy 404 probe.
   ///
-  /// Back-compat (old) contract:
-  /// GET /v1/saves/for/:postId -> bool | { saved: bool }
+  /// Instead of calling a potentially missing item route like /saves/:postId,
+  /// read the current user's saved list and see whether the target post is in it.
   Future<bool> isSaved(String postId) async {
     if (!_isAuthed()) return false;
 
     final pid = postId.trim();
     if (pid.isEmpty) return false;
 
-    // 1) New endpoint
     try {
-      final res = await _dio.get('/saves/$pid');
-      return _extractSaved(res.data);
-    } on DioException catch (e) {
-      if (_isAuthFailure(e)) return false;
+      final items = await _fetchSavedRaw(limit: 200);
 
-      // Visibility contract or route mismatch: treat 404 as not saved,
-      // but also try legacy route if this is just an API version mismatch.
-      if (_isNotFound(e)) {
-        // Try legacy route once (safe back-compat).
-        try {
-          final res2 = await _dio.get('/saves/for/$pid');
-          return _extractSaved(res2.data);
-        } on DioException catch (e2) {
-          if (_isAuthFailure(e2)) return false;
-          if (_isNotFound(e2)) return false;
-          rethrow;
+      for (final item in items) {
+        final itemId = (item['id'] ?? '').toString().trim();
+        if (itemId == pid) return true;
+
+        final postIdValue = (item['postId'] ?? '').toString().trim();
+        if (postIdValue == pid) return true;
+
+        final nestedPost = item['post'];
+        if (nestedPost is Map) {
+          final nestedPostId = (nestedPost['id'] ?? '').toString().trim();
+          if (nestedPostId == pid) return true;
         }
       }
 
+      return false;
+    } on DioException catch (e) {
+      if (_isAuthFailure(e)) return false;
       rethrow;
     }
   }
@@ -132,21 +233,27 @@ class SavesRepository {
     final pid = postId.trim();
     if (pid.isEmpty) return false;
 
-    // 1) New endpoint
     try {
       final res = await _dio.post('/saves/$pid/toggle');
-      return _extractSaved(res.data) ? true : _extractSaved(res.data) == false ? false : true;
+      return _extractSaved(res.data)
+          ? true
+          : _extractSaved(res.data) == false
+              ? false
+              : true;
     } on DioException catch (e) {
       if (_isAuthFailure(e)) return false;
 
-      // If the new route isn't available on some env, try legacy.
-      if (_isNotFound(e)) {
+      if (e.response?.statusCode == 404) {
         try {
           final res2 = await _dio.post('/saves/toggle/$pid');
-          return _extractSaved(res2.data) ? true : _extractSaved(res2.data) == false ? false : true;
+          return _extractSaved(res2.data)
+              ? true
+              : _extractSaved(res2.data) == false
+                  ? false
+                  : true;
         } on DioException catch (e2) {
           if (_isAuthFailure(e2)) return false;
-          if (_isNotFound(e2)) return false;
+          if (e2.response?.statusCode == 404) return false;
           rethrow;
         }
       }
