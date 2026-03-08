@@ -47,6 +47,7 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
 import 'screens/enter_institution_screen.dart';
+import 'screens/institution_dashboard_screen.dart';
 import 'screens/contact_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
@@ -375,7 +376,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kInstitutionDashboardRoute,
-            builder: (_, __) => const InstitutionsHubScreen(),
+            builder: (_, __) => const InstitutionDashboardScreen(),
           ),
           GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
           GoRoute(

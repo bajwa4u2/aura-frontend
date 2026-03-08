@@ -34,10 +34,10 @@ class _EnterInstitutionScreenState
   @override
   void initState() {
     super.initState();
-    _loadContextOptions();
+    _loadContext();
   }
 
-  Future<void> _loadContextOptions() async {
+  Future<void> _loadContext() async {
     setState(() {
       _loading = true;
       _error = null;
@@ -58,10 +58,10 @@ class _EnterInstitutionScreenState
       final data = _asMap(res.data);
       final membership = _asMap(data['membership']);
 
-      final topInstitution = _asMap(data['institution']);
-      final membershipInstitution = _asMap(membership['institution']);
       final institution =
-          topInstitution.isNotEmpty ? topInstitution : membershipInstitution;
+          _asMap(data['institution']).isNotEmpty
+              ? _asMap(data['institution'])
+              : _asMap(membership['institution']);
 
       if (!mounted) return;
 
@@ -80,30 +80,23 @@ class _EnterInstitutionScreenState
         return;
       }
 
-      String message = 'Could not load your institution entry options.';
-      final data = e.response?.data;
-      if (data is Map && data['message'] is String) {
-        message = data['message'] as String;
-      }
-
       setState(() {
-        _error = message;
+        _error = 'Could not load institution context.';
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
+
       setState(() {
-        _error = 'Could not load your institution entry options.';
+        _error = 'Could not load institution context.';
         _loading = false;
       });
     }
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map) {
-      return Map<String, dynamic>.from(value);
-    }
-    return <String, dynamic>{};
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return {};
   }
 
   bool get _hasInstitutionStanding =>
@@ -119,34 +112,6 @@ class _EnterInstitutionScreenState
         .copyWith(fontWeight: FontWeight.w700);
   }
 
-  Widget _statusChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  Future<void> _enterPersonal() async {
-    if (_redirecting) return;
-
-    setState(() {
-      _redirecting = true;
-    });
-
-    if (!mounted) return;
-    context.go('/home');
-  }
-
   Future<void> _enterInstitution() async {
     if (_redirecting) return;
 
@@ -155,7 +120,7 @@ class _EnterInstitutionScreenState
     });
 
     if (!mounted) return;
-    context.go('/institutions');
+    context.go('/institution/dashboard');
   }
 
   Widget _loadingView() {
@@ -173,61 +138,19 @@ class _EnterInstitutionScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Could not load your institution entry options.',
+            'Could not load institution entry.',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(_error ?? 'Unknown error.', style: AuraText.body),
+          Text(_error ?? '', style: AuraText.body),
           const SizedBox(height: AuraSpace.s12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _loadContextOptions,
-                  child: Text('Try again', style: AuraText.body),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _personalCard() {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Continue as yourself',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Enter Aura in your personal capacity. Your writing, correspondence, and profile remain your own.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: _redirecting ? null : _enterPersonal,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
-                  ),
-                  child: Text(
-                    'Enter personal space',
-                    style: AuraText.body.copyWith(color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          FilledButton(
+            onPressed: _loadContext,
+            child: Text(
+              'Try again',
+              style: AuraText.body.copyWith(color: Colors.white),
+            ),
+          )
         ],
       ),
     );
@@ -245,8 +168,18 @@ class _EnterInstitutionScreenState
             ),
             const SizedBox(height: AuraSpace.s8),
             Text(
-              'No active institutional context is attached to this account right now.',
+              'No institutional standing is attached to this account.',
               style: AuraText.body,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            FilledButton(
+              onPressed: () {
+                context.go('/institution/request-verification');
+              },
+              child: Text(
+                'Request institutional verification',
+                style: AuraText.body.copyWith(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -254,8 +187,6 @@ class _EnterInstitutionScreenState
     }
 
     final institutionName = _value(_institution?['name']);
-    final institutionStatus = _value(_institution?['status']);
-    final slug = _value(_institution?['slug']);
     final role = _value(_membership?['role']);
     final title = _value(_membership?['title']);
     final canSpeakOfficially = _membership?['canSpeakOfficially'] == true;
@@ -276,51 +207,28 @@ class _EnterInstitutionScreenState
           const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
             children: [
-              if (institutionStatus.isNotEmpty)
-                _statusChip('Status: $institutionStatus'),
-              if (role.isNotEmpty) _statusChip('Role: $role'),
-              _statusChip(
-                canSpeakOfficially
-                    ? 'Official speech: Authorized'
-                    : 'Official speech: Not authorized',
-              ),
-            ],
-          ),
-          if (title.isNotEmpty || slug.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            if (title.isNotEmpty)
-              Text('Your institutional title: $title', style: AuraText.body),
-            if (slug.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Institution slug: $slug', style: AuraText.body),
-            ],
-          ],
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            'Enter Aura in institutional capacity. Your actions remain personally attributable while being carried under institutional standing.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: _redirecting ? null : _enterInstitution,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
-                  ),
-                  child: Text(
-                    'Enter institutional space',
-                    style: AuraText.body.copyWith(color: Colors.white),
-                  ),
+              if (role.isNotEmpty) Chip(label: Text('Role: $role')),
+              Chip(
+                label: Text(
+                  canSpeakOfficially
+                      ? 'Official speech: Authorized'
+                      : 'Official speech: Not authorized',
                 ),
               ),
             ],
+          ),
+          if (title.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text('Your institutional title: $title', style: AuraText.body),
+          ],
+          const SizedBox(height: AuraSpace.s12),
+          FilledButton(
+            onPressed: _redirecting ? null : _enterInstitution,
+            child: Text(
+              'Enter institutional space',
+              style: AuraText.body.copyWith(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -339,25 +247,19 @@ class _EnterInstitutionScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Choose how you want to enter Aura',
+                'Institution access',
                 style: _headlineStyle(context),
               ),
               const SizedBox(height: AuraSpace.s8),
               Text(
-                'A person signs in once. Aura then makes visible the role or standing that person carries.',
+                'Enter Aura carrying institutional standing.',
                 style: AuraText.body,
               ),
             ],
           ),
         ),
         const SizedBox(height: AuraSpace.s12),
-        _personalCard(),
-        const SizedBox(height: AuraSpace.s12),
         _institutionCard(context),
-        const SizedBox(height: AuraSpace.s12),
-        Doc.p(
-          'Institutions do not speak on their own. People speak while carrying institutional responsibility. This entry point keeps that distinction clear.',
-        ),
       ],
     );
   }
@@ -365,15 +267,15 @@ class _EnterInstitutionScreenState
   @override
   Widget build(BuildContext context) {
     return DocumentScaffold(
-      title: 'Enter institution',
+      title: 'Institution access',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Enter institution'),
+          Doc.title('Institution access'),
           const SizedBox(height: 10),
-          Doc.meta('One identity, distinct accountable contexts.'),
+          Doc.meta('Verified institutional participation.'),
           Doc.lede(
-            'Sign in as a person, then enter Aura in the role you are carrying right now.',
+            'Institutional presence in Aura requires verified standing.',
           ),
           const SizedBox(height: AuraSpace.s12),
           _body(context),

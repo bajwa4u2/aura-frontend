@@ -30,11 +30,24 @@ class _InstitutionRequestVerificationScreenState
   final _jurisdiction = TextEditingController();
   final _purpose = TextEditingController();
 
+  String? _institutionType;
+
   bool _submitting = false;
   bool _submitted = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _statusMessage;
+
+  static const _institutionTypes = <String>[
+    'Government',
+    'University or school',
+    'Nonprofit or foundation',
+    'Company',
+    'Media organization',
+    'Research institute',
+    'Faith institution',
+    'Other',
+  ];
 
   @override
   void dispose() {
@@ -56,6 +69,27 @@ class _InstitutionRequestVerificationScreenState
     return email.contains('@') && email.contains('.');
   }
 
+  String _normalizeDomain(String value) {
+    final raw = value.trim().toLowerCase();
+    if (raw.isEmpty) return '';
+
+    var cleaned = raw;
+    cleaned = cleaned.replaceFirst(RegExp(r'^https?://'), '');
+    cleaned = cleaned.replaceFirst(RegExp(r'^www\.'), '');
+    final slashIndex = cleaned.indexOf('/');
+    if (slashIndex >= 0) {
+      cleaned = cleaned.substring(0, slashIndex);
+    }
+    return cleaned.trim();
+  }
+
+  String _emailDomain(String email) {
+    final clean = email.trim().toLowerCase();
+    final at = clean.lastIndexOf('@');
+    if (at < 0 || at == clean.length - 1) return '';
+    return clean.substring(at + 1).trim();
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
@@ -69,13 +103,21 @@ class _InstitutionRequestVerificationScreenState
     final roleTitle = _roleTitle.text.trim();
     final jurisdiction = _jurisdiction.text.trim();
     final purpose = _purpose.text.trim();
+    final institutionType = (_institutionType ?? '').trim();
 
     if (_submitting || _submitted) return;
 
     if (firstName.isEmpty || lastName.isEmpty || org.isEmpty || email.isEmpty) {
       setState(() {
         _statusMessage =
-            'First name, last name, institution name, and institution email are required.';
+            'Representative first name, last name, institution name, and institution email are required.';
+      });
+      return;
+    }
+
+    if (institutionType.isEmpty) {
+      setState(() {
+        _statusMessage = 'Select an institution type.';
       });
       return;
     }
@@ -85,6 +127,26 @@ class _InstitutionRequestVerificationScreenState
         _statusMessage = 'Enter a valid institution email.';
       });
       return;
+    }
+
+    if (website.isNotEmpty) {
+      final websiteDomain = _normalizeDomain(website);
+      final emailDomain = _emailDomain(email);
+
+      if (websiteDomain.isEmpty) {
+        setState(() {
+          _statusMessage = 'Enter a valid official website.';
+        });
+        return;
+      }
+
+      if (emailDomain.isNotEmpty && websiteDomain != emailDomain) {
+        setState(() {
+          _statusMessage =
+              'Institution email domain should match the official website domain.';
+        });
+        return;
+      }
     }
 
     if (password.isEmpty || confirmPassword.isEmpty) {
@@ -122,6 +184,7 @@ class _InstitutionRequestVerificationScreenState
           'firstName': firstName,
           'lastName': lastName,
           'organizationName': org,
+          'institutionType': institutionType,
           'websiteUrl': website.isEmpty ? null : website,
           'workEmail': email,
           'password': password,
@@ -136,7 +199,7 @@ class _InstitutionRequestVerificationScreenState
 
       final message = (res.data is Map && res.data['message'] is String)
           ? res.data['message'] as String
-          : 'Institution account created and submitted for review.';
+          : 'Request received. Verification is reviewed offline. Updates will be sent by email.';
 
       setState(() {
         _submitted = true;
@@ -145,7 +208,7 @@ class _InstitutionRequestVerificationScreenState
     } on DioException catch (e) {
       if (!mounted) return;
 
-      String message = 'Could not create institution account.';
+      String message = 'Could not submit verification request.';
 
       final data = e.response?.data;
       if (data is Map && data['message'] is String) {
@@ -178,9 +241,40 @@ class _InstitutionRequestVerificationScreenState
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      child: AuraCard(
+        child: Text(
+          _statusMessage!,
+          style: AuraText.body,
+        ),
+      ),
+    );
+  }
+
+  Widget _introCard() {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Verification requests are reviewed before approval.',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Institution access in Aura is not activated instantly. Submit the institution details, representative information, and official email. Updates will be sent by email after review.',
+            style: AuraText.body,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: Text(
-        _statusMessage!,
-        style: AuraText.body,
+        title,
+        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -188,175 +282,227 @@ class _InstitutionRequestVerificationScreenState
   Widget _formCard() {
     final enabled = !_submitting && !_submitted;
 
-    return AuraCard(
-      child: Column(
-        children: [
-          TextField(
-            controller: _firstName,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [LengthLimitingTextInputFormatter(80)],
-            decoration: const InputDecoration(
-              labelText: 'First name',
-              hintText: 'John',
-              border: InputBorder.none,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Representative'),
+        AuraCard(
+          child: Column(
+            children: [
+              TextField(
+                controller: _firstName,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [LengthLimitingTextInputFormatter(80)],
+                decoration: const InputDecoration(
+                  labelText: 'First name',
+                  hintText: 'John',
+                  border: InputBorder.none,
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _lastName,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [LengthLimitingTextInputFormatter(80)],
+                decoration: const InputDecoration(
+                  labelText: 'Last name',
+                  hintText: 'Smith',
+                  border: InputBorder.none,
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _roleTitle,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [LengthLimitingTextInputFormatter(120)],
+                decoration: const InputDecoration(
+                  labelText: 'Role or title',
+                  hintText: 'Founder, Director, Policy Lead',
+                  border: InputBorder.none,
+                ),
+              ),
+            ],
           ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _lastName,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [LengthLimitingTextInputFormatter(80)],
-            decoration: const InputDecoration(
-              labelText: 'Last name',
-              hintText: 'Smith',
-              border: InputBorder.none,
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _orgName,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [LengthLimitingTextInputFormatter(120)],
-            decoration: const InputDecoration(
-              labelText: 'Institution name',
-              hintText: 'Aura Platform LLC',
-              border: InputBorder.none,
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _website,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            keyboardType: TextInputType.url,
-            inputFormatters: [LengthLimitingTextInputFormatter(180)],
-            decoration: const InputDecoration(
-              labelText: 'Website',
-              hintText: 'https://institution.org',
-              border: InputBorder.none,
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _workEmail,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            keyboardType: TextInputType.emailAddress,
-            inputFormatters: [LengthLimitingTextInputFormatter(190)],
-            decoration: const InputDecoration(
-              labelText: 'Institution email',
-              hintText: 'name@institution.org',
-              border: InputBorder.none,
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _password,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            obscureText: _obscurePassword,
-            inputFormatters: [LengthLimitingTextInputFormatter(120)],
-            decoration: InputDecoration(
-              labelText: 'Password',
-              hintText: 'At least 8 characters',
-              border: InputBorder.none,
-              suffixIcon: IconButton(
-                onPressed: enabled
-                    ? () {
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _sectionTitle('Institution'),
+        AuraCard(
+          child: Column(
+            children: [
+              TextField(
+                controller: _orgName,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [LengthLimitingTextInputFormatter(120)],
+                decoration: const InputDecoration(
+                  labelText: 'Institution name',
+                  hintText: 'Aura Platform LLC',
+                  border: InputBorder.none,
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              DropdownButtonFormField<String>(
+                value: _institutionType,
+                items: _institutionTypes
+                    .map(
+                      (item) => DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(item),
+                      ),
+                    )
+                    .toList(),
+                onChanged: enabled
+                    ? (value) {
                         setState(() {
-                          _obscurePassword = !_obscurePassword;
+                          _institutionType = value;
                         });
                       }
                     : null,
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                decoration: const InputDecoration(
+                  labelText: 'Institution type',
+                  border: InputBorder.none,
                 ),
               ),
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _confirmPassword,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            obscureText: _obscureConfirmPassword,
-            inputFormatters: [LengthLimitingTextInputFormatter(120)],
-            decoration: InputDecoration(
-              labelText: 'Confirm password',
-              hintText: 'Re-enter password',
-              border: InputBorder.none,
-              suffixIcon: IconButton(
-                onPressed: enabled
-                    ? () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      }
-                    : null,
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _website,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.url,
+                inputFormatters: [LengthLimitingTextInputFormatter(180)],
+                decoration: const InputDecoration(
+                  labelText: 'Official website',
+                  hintText: 'https://institution.org',
+                  border: InputBorder.none,
                 ),
               ),
-            ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _workEmail,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.emailAddress,
+                inputFormatters: [LengthLimitingTextInputFormatter(190)],
+                decoration: const InputDecoration(
+                  labelText: 'Official institution email',
+                  hintText: 'name@institution.org',
+                  border: InputBorder.none,
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _jurisdiction,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [LengthLimitingTextInputFormatter(120)],
+                decoration: const InputDecoration(
+                  labelText: 'Jurisdiction or country',
+                  hintText: 'United States, UK, Pakistan',
+                  border: InputBorder.none,
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _purpose,
+                enabled: enabled,
+                maxLines: 5,
+                inputFormatters: [LengthLimitingTextInputFormatter(900)],
+                decoration: const InputDecoration(
+                  labelText: 'Purpose',
+                  hintText:
+                      'Why is this institution seeking presence inside Aura?',
+                  border: InputBorder.none,
+                ),
+              ),
+            ],
           ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _roleTitle,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [LengthLimitingTextInputFormatter(120)],
-            decoration: const InputDecoration(
-              labelText: 'Role or title',
-              hintText: 'Founder, Director, Policy Lead',
-              border: InputBorder.none,
-            ),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _sectionTitle('Institution credentials'),
+        AuraCard(
+          child: Column(
+            children: [
+              TextField(
+                controller: _password,
+                enabled: enabled,
+                textInputAction: TextInputAction.next,
+                obscureText: _obscurePassword,
+                inputFormatters: [LengthLimitingTextInputFormatter(120)],
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'At least 8 characters',
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    onPressed: enabled
+                        ? () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          }
+                        : null,
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                  ),
+                ),
+              ),
+              const Divider(height: AuraSpace.s16),
+              TextField(
+                controller: _confirmPassword,
+                enabled: enabled,
+                textInputAction: TextInputAction.done,
+                obscureText: _obscureConfirmPassword,
+                inputFormatters: [LengthLimitingTextInputFormatter(120)],
+                decoration: InputDecoration(
+                  labelText: 'Confirm password',
+                  hintText: 'Re-enter password',
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    onPressed: enabled
+                        ? () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          }
+                        : null,
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _jurisdiction,
-            enabled: enabled,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [LengthLimitingTextInputFormatter(120)],
-            decoration: const InputDecoration(
-              labelText: 'Jurisdiction or country',
-              hintText: 'United States, UK, Pakistan',
-              border: InputBorder.none,
-            ),
-          ),
-          const Divider(height: AuraSpace.s16),
-          TextField(
-            controller: _purpose,
-            enabled: enabled,
-            maxLines: 5,
-            inputFormatters: [LengthLimitingTextInputFormatter(900)],
-            decoration: const InputDecoration(
-              labelText: 'Purpose',
-              hintText: 'Why is this institution joining Aura?',
-              border: InputBorder.none,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final buttonLabel = _submitted
-        ? 'Submitted'
-        : (_submitting ? 'Submitting...' : 'Create institution account');
+        ? 'Request submitted'
+        : (_submitting ? 'Submitting...' : 'Submit verification request');
 
     return DocumentScaffold(
-      title: 'Create institution account',
+      title: 'Request institutional verification',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Create institution account'),
+          Doc.title('Request institutional verification'),
+          const SizedBox(height: AuraSpace.s10),
+          Doc.meta('Reviewed institutional entry and bounded standing.'),
+          Doc.lede(
+            'Submit the institution and representative details for review. Institutional standing is activated only after approval.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _introCard(),
           const SizedBox(height: AuraSpace.s12),
           _statusBlock(),
           _formCard(),
