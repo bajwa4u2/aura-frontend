@@ -227,7 +227,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             : 'Official speech: Locked';
 
     final summary = hasInstitutionStanding
-        ? 'This dashboard is the institution surface. Open a dedicated tool below to manage one specific institutional function.'
+        ? 'This dashboard is the institution surface. Open a dedicated institutional tool below to manage one specific institutional function.'
         : 'This dashboard is the institution surface. Institutional tools will open here as standing becomes active.';
 
     return AuraCard(
@@ -288,48 +288,6 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _memberToolsCard(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle('Member tools'),
-          SizedBox(height: AuraSpace.s12),
-          _toolGrid([
-            _toolTile(
-              title: 'My account',
-              detail:
-                  'Open the member account surface for profile, session, and account controls.',
-              status: 'Available now',
-              onTap: () => context.go('/me'),
-            ),
-            _toolTile(
-              title: 'Edit profile',
-              detail:
-                  'Update the signed-in user profile carried by this institutional member account.',
-              status: 'Available now',
-              onTap: () => context.go('/me/edit'),
-            ),
-            _toolTile(
-              title: 'Correspondence',
-              detail:
-                  'Open the member correspondence surface available to the signed-in account.',
-              status: 'Available now',
-              onTap: () => context.go('/me/correspondence'),
-            ),
-            _toolTile(
-              title: 'Announcements',
-              detail:
-                  'Review announcements from inside the member workspace.',
-              status: 'Available now',
-              onTap: () => context.go('/announcements'),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
-
   Widget _institutionToolsCard(
     BuildContext context, {
     required bool hasInstitutionStanding,
@@ -348,6 +306,14 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         ? 'Dedicated institutional tool'
         : 'Reserved for institutional setup';
 
+    final announcementsStatus = hasInstitutionStanding
+        ? 'Available now'
+        : 'Reserved for institutional standing';
+
+    final correspondenceStatus = hasInstitutionStanding
+        ? 'Available now'
+        : 'Reserved for institutional standing';
+
     final officialPostsStatus = isAuthorizedSpeaker
         ? 'Reserved for institution publishing'
         : hasInstitutionStanding
@@ -364,16 +330,20 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             _toolTile(
               title: 'Institution profile',
               detail:
-                  'Open the public institution-facing surface attached to this account.',
+                  'Open the institution-facing profile surface attached to this account.',
               status: profileStatus,
-              onTap: slug.isNotEmpty ? () => context.go('/institution/profile') : null,
+              onTap: slug.isNotEmpty
+                  ? () => context.go('/institution/profile')
+                  : null,
             ),
             _toolTile(
               title: 'Domains',
               detail:
-                  'Manage institutional domains and run DNS proof workflows from a dedicated screen.',
+                  'Manage institutional domains and run DNS proof workflows from a dedicated institution screen.',
               status: domainsStatus,
-              onTap: () => context.go('/institution/domains'),
+              onTap: hasInstitutionStanding
+                  ? () => context.go('/institution/domains')
+                  : null,
             ),
             _toolTile(
               title: 'Verification',
@@ -383,9 +353,27 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               onTap: () => context.go('/institution/request-verification'),
             ),
             _toolTile(
+              title: 'Announcements',
+              detail:
+                  'Open the institution announcements workspace, separate from the public member announcements flow.',
+              status: announcementsStatus,
+              onTap: hasInstitutionStanding
+                  ? () => context.go('/institution/announcements')
+                  : null,
+            ),
+            _toolTile(
+              title: 'Correspondence',
+              detail:
+                  'Open the institution correspondence workspace, separate from the signed-in member mailbox.',
+              status: correspondenceStatus,
+              onTap: hasInstitutionStanding
+                  ? () => context.go('/institution/correspondence')
+                  : null,
+            ),
+            _toolTile(
               title: 'Official posts',
               detail:
-                  'Institution publishing should live on its own screen, separate from member compose flow.',
+                  'Institution publishing should live on its own institutional screen, separate from member compose flow.',
               status: officialPostsStatus,
               onTap: null,
             ),
@@ -516,8 +504,6 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               request: requestMap,
             ),
             SizedBox(height: AuraSpace.s12),
-            _memberToolsCard(context),
-            SizedBox(height: AuraSpace.s12),
             _institutionToolsCard(
               context,
               hasInstitutionStanding: hasInstitutionStanding,
@@ -541,7 +527,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
           SizedBox(height: AuraSpace.s10),
           Doc.meta('Institution account, standing, and tool access.'),
           Doc.lede(
-            'This dashboard acts as the institution-facing surface. Open a dedicated tool below to manage a specific part of the institution workspace.',
+            'This dashboard acts as the institution-facing surface. Open a dedicated institution tool below to manage a specific part of the institution workspace.',
           ),
           SizedBox(height: AuraSpace.s12),
           _body(context, ref),

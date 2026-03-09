@@ -6,8 +6,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/document_scaffold.dart';
 
-class InstitutionProfileScreen extends StatelessWidget {
-  const InstitutionProfileScreen({super.key});
+class InstitutionCorrespondenceScreen extends StatelessWidget {
+  const InstitutionCorrespondenceScreen({super.key});
 
   Widget _sectionTitle(String text) {
     return Text(
@@ -95,7 +95,7 @@ class InstitutionProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Institution profile',
+            'Institution correspondence',
             style: (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
                 .copyWith(
               fontWeight: FontWeight.w700,
@@ -104,7 +104,7 @@ class InstitutionProfileScreen extends StatelessWidget {
           ),
           SizedBox(height: AuraSpace.s10),
           Text(
-            'This is the institution-facing profile workspace. Public institution identity, profile presentation, and institution-specific settings should be managed here, separate from member profile screens.',
+            'This is the institutional correspondence workspace. Official institutional exchange should be handled here, separate from the signed-in member correspondence flow.',
             style: AuraText.body,
           ),
         ],
@@ -120,9 +120,9 @@ class InstitutionProfileScreen extends StatelessWidget {
           _sectionTitle('Workspace status'),
           SizedBox(height: AuraSpace.s12),
           _infoRow('Surface', 'Institution-only'),
-          _infoRow('Public identity', 'Dedicated institution profile route'),
-          _infoRow('Member profile flow', 'Separated'),
-          _infoRow('Editing workflow', 'Placeholder until institution profile editing is connected'),
+          _infoRow('Member mailbox', 'Separated'),
+          _infoRow('Official communication', 'Reserved for institution routes'),
+          _infoRow('Record posture', 'Continuity, traceability, and institutional memory'),
         ],
       ),
     );
@@ -133,30 +133,35 @@ class InstitutionProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Institution profile actions'),
+          _sectionTitle('Institution correspondence actions'),
           SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s12,
             runSpacing: AuraSpace.s12,
             children: [
               _actionTile(
-                title: 'Identity settings',
+                title: 'Inbox',
                 detail:
-                    'Institution name, description, visual identity, and public-facing profile details should be managed here.',
+                    'Institution-level incoming correspondence should appear here once the dedicated routing and backend flow are connected.',
                 status: 'Placeholder',
               ),
               _actionTile(
-                title: 'Public profile controls',
+                title: 'Outbox',
                 detail:
-                    'Controls for how the institution appears publicly should remain attached to the institution branch, not the member profile branch.',
+                    'Official institution messages, statements, and outgoing correspondence should be tracked here.',
                 status: 'Placeholder',
               ),
               _actionTile(
-                title: 'Domain alignment',
+                title: 'Drafts',
                 detail:
-                    'Domain-linked identity and public institutional trust signals should connect here with the institution domain workflow.',
-                status: 'Go to domains',
-                onTap: () => context.go('/institution/domains'),
+                    'Institution drafts should remain separate from personal member drafts and private author writing.',
+                status: 'Placeholder',
+              ),
+              _actionTile(
+                title: 'Records',
+                detail:
+                    'Important institutional exchanges should be preserved in a durable record layer tied to the institution branch.',
+                status: 'Placeholder',
               ),
               _actionTile(
                 title: 'Back to dashboard',
@@ -180,7 +185,7 @@ class InstitutionProfileScreen extends StatelessWidget {
           _sectionTitle('Why this screen exists'),
           SizedBox(height: AuraSpace.s12),
           Text(
-            'Institution identity should not be edited through personal member profile surfaces. This route protects that separation now, so future institution profile tools can be built on the correct branch without leakage.',
+            'Institution correspondence should not inherit the member mailbox by accident. This screen keeps the route and future workflow institution-specific, so official exchange can later be built with the right permissions, records, and continuity.',
             style: AuraText.body,
           ),
         ],
@@ -191,15 +196,15 @@ class InstitutionProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DocumentScaffold(
-      title: 'Institution profile',
+      title: 'Institution correspondence',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Institution profile'),
+          Doc.title('Institution correspondence'),
           SizedBox(height: AuraSpace.s10),
-          Doc.meta('Dedicated profile workspace for institutional accounts.'),
+          Doc.meta('Dedicated correspondence workspace for institutional accounts.'),
           Doc.lede(
-            'This route is reserved for institution identity, public profile presentation, and profile-specific controls.',
+            'This route is reserved for official institutional exchange and should remain separate from member correspondence screens.',
           ),
           SizedBox(height: AuraSpace.s12),
           _heroCard(context),

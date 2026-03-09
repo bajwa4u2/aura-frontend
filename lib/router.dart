@@ -35,6 +35,8 @@ import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
+import 'features/institutions/announcements/institution_announcements_screen.dart';
+import 'features/institutions/correspondence/institution_correspondence_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 
@@ -56,6 +58,8 @@ const String kInstitutionCreateRoute = '/institution/create';
 const String kInstitutionDomainsRoute = '/institution/domains';
 const String kInstitutionProfileRoute = '/institution/profile';
 const String kInstitutionVerificationRoute = '/institution/request-verification';
+const String kInstitutionAnnouncementsRoute = '/institution/announcements';
+const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
 
 String _normalizeRedirectDest(String? dest) {
@@ -114,6 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == kInstitutionDomainsRoute ||
         path == kInstitutionProfileRoute ||
         path == kInstitutionVerificationRoute ||
+        path == kInstitutionAnnouncementsRoute ||
+        path == kInstitutionCorrespondenceRoute ||
         path == kEnterInstitutionRoute ||
         path == '/compose' ||
         path.startsWith('/posts/') ||
@@ -408,6 +414,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionVerificationRoute,
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionAnnouncementsRoute,
+            builder: (_, __) => const InstitutionAnnouncementsScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionCorrespondenceRoute,
+            builder: (_, __) => const InstitutionCorrespondenceScreen(),
           ),
           GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
           GoRoute(
