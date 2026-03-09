@@ -616,6 +616,437 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     }
   }
 
+  Widget _workspaceTile({
+    required String title,
+    required String detail,
+    required String status,
+    VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 126),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(detail, style: AuraText.body),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  status,
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: enabled ? Colors.black87 : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tileGrid(List<Widget> children) {
+    return Wrap(
+      spacing: AuraSpace.s12,
+      runSpacing: AuraSpace.s12,
+      children: children
+          .map((child) => SizedBox(width: 320, child: child))
+          .toList(),
+    );
+  }
+
+  Widget _sectionCard({
+    required String title,
+    required String intro,
+    required List<Widget> children,
+  }) {
+    return ui.AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AuraText.title),
+            const SizedBox(height: 10),
+            Text(intro, style: AuraText.small),
+            const SizedBox(height: 12),
+            _tileGrid(children),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileCard({
+    required BuildContext context,
+    required String displayName,
+    required String handle,
+    required String bio,
+    required String avatarUrl,
+    required String id,
+    required bool isAdmin,
+  }) {
+    return ui.AuraCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: _openEditProfile,
+            child: CircleAvatar(
+              radius: 28,
+              backgroundImage:
+                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName.isNotEmpty ? displayName : '—',
+                    style: AuraText.title,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    handle.isNotEmpty ? '@$handle' : '—',
+                    style: AuraText.small,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      isAdmin ? 'App admin account' : 'Member account',
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (bio.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(bio, style: AuraText.body),
+                  ],
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      FilledButton(
+                        onPressed: _openEditProfile,
+                        child: const Text('Edit profile'),
+                      ),
+                      OutlinedButton(
+                        onPressed: _busyLogout ? null : _logout,
+                        child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                      ),
+                      OutlinedButton(
+                        onPressed: _pickAndUploadPhoto,
+                        child: const Text('Upload photo'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    isAdmin
+                        ? 'This account carries platform administration as well as member access.'
+                        : 'This space is for your personal member account and writing activity.',
+                    style: AuraText.small,
+                  ),
+                  if (kDebugMode && id.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    SelectableText(
+                      'User ID: $id',
+                      style: AuraText.small,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _adminWorkspaceCard(BuildContext context) {
+    return _sectionCard(
+      title: 'Admin workspace',
+      intro:
+          'These controls belong only to the platform administrator. They should not appear for regular members or institution accounts.',
+      children: [
+        _workspaceTile(
+          title: 'Publish announcement',
+          detail:
+              'Create and publish official platform announcements through the admin announcement flow.',
+          status: 'Admin only',
+          onTap: _adminCreateAnnouncementDialog,
+        ),
+        _workspaceTile(
+          title: 'Correspondence hub',
+          detail:
+              'Open the current platform correspondence surface used for admin-level handling.',
+          status: 'Admin only',
+          onTap: () => context.go('/me/correspondence'),
+        ),
+        _workspaceTile(
+          title: 'Public announcements',
+          detail:
+              'Review the live announcements surface as it appears inside the platform.',
+          status: 'Available now',
+          onTap: () => context.go('/announcements'),
+        ),
+        _workspaceTile(
+          title: 'Institution dashboard',
+          detail:
+              'Open the institution-facing workspace separately from the admin account surface.',
+          status: 'Separate surface',
+          onTap: () => context.go('/institution/dashboard'),
+        ),
+      ],
+    );
+  }
+
+  Widget _memberWorkspaceCard(BuildContext context) {
+    return _sectionCard(
+      title: 'Member workspace',
+      intro:
+          'This is your personal account surface. It carries member activity only, not admin or institution-only controls.',
+      children: [
+        _workspaceTile(
+          title: 'Compose',
+          detail:
+              'Write a new post from your member account and continue your normal writing flow.',
+          status: 'Available now',
+          onTap: () => context.go('/compose'),
+        ),
+        _workspaceTile(
+          title: 'Saved',
+          detail:
+              'Open the posts and items you have saved from the member feed.',
+          status: 'Available now',
+          onTap: () => context.go('/saved'),
+        ),
+        _workspaceTile(
+          title: 'Announcements',
+          detail:
+              'Read official platform announcements from the public announcements surface.',
+          status: 'Available now',
+          onTap: () => context.go('/announcements'),
+        ),
+        _workspaceTile(
+          title: 'Institution account',
+          detail:
+              'Institution-related tools live in a separate dashboard so member and institution roles do not blur together.',
+          status: 'Separate surface',
+          onTap: () => context.go('/institution/dashboard'),
+        ),
+      ],
+    );
+  }
+
+  Widget _publicHubsCard(BuildContext context) {
+    return ui.AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Public hubs', style: AuraText.title),
+            const SizedBox(height: 10),
+            Text(
+              'These are public-facing pages. They are not role-specific.',
+              style: AuraText.small,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton(
+                  onPressed: () => context.go('/mission'),
+                  child: const Text('Mission'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.go('/founder'),
+                  child: const Text('Founder'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.go('/investors'),
+                  child: const Text('Investors'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.go('/institutions'),
+                  child: const Text('Institutions'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.go('/contact'),
+                  child: const Text('Contact'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _asyncStatusCard({
+    required String title,
+    required AsyncValue<dynamic> asyncValue,
+    required Widget Function(dynamic data) dataBuilder,
+    required String loadingLabel,
+    required String errorLabel,
+  }) {
+    return asyncValue.when(
+      loading: () => ui.AuraCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(loadingLabel),
+            ],
+          ),
+        ),
+      ),
+      error: (err, st) => ui.AuraCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            '$errorLabel: $err',
+            style: AuraText.small,
+          ),
+        ),
+      ),
+      data: dataBuilder,
+    );
+  }
+
+  Widget _draftCard(BuildContext context, Map<String, dynamic> draft) {
+    final title = (draft['title'] ?? '').toString().trim();
+    final hasDraft = draft.isNotEmpty && (draft['id'] != null);
+    final did = (draft['id'] ?? '').toString();
+
+    if (!hasDraft) {
+      return ui.AuraCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Draft', style: AuraText.title),
+              const SizedBox(height: 10),
+              Text('No draft yet.', style: AuraText.small),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () => context.go('/compose'),
+                child: const Text('Compose'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ui.AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Draft', style: AuraText.title),
+            const SizedBox(height: 10),
+            Text(
+              title.isEmpty ? '(untitled)' : title,
+              style: AuraText.body,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton(
+                  onPressed: () => context.go('/compose'),
+                  child: const Text('Continue drafting'),
+                ),
+                OutlinedButton(
+                  onPressed: did.isEmpty ? null : () => context.go('/posts/$did'),
+                  child: const Text('Open'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _countCard({
+    required String title,
+    required String emptyLabel,
+    required String countLabel,
+    required List<Map<String, dynamic>> items,
+    required List<Widget> actions,
+  }) {
+    return ui.AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AuraText.title),
+            const SizedBox(height: 10),
+            Text(
+              items.isEmpty ? emptyLabel : countLabel,
+              style: AuraText.small,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: actions,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authed = ref.watch(isAuthedProvider);
@@ -754,497 +1185,121 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
           final id = (me['id'] ?? '').toString();
           final handle = (me['handle'] ?? '').toString();
-
           final displayName =
               (profile['displayName'] ?? me['displayName'] ?? '').toString();
           final bio = (profile['bio'] ?? me['bio'] ?? '').toString();
           final avatarUrl =
               (profile['avatarUrl'] ?? me['avatarUrl'] ?? '').toString();
-
           final isAdmin = _isAdmin(me);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 960;
-
-                  final profileCard = ui.AuraCard(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            await _openEditProfile();
-                          },
-                          child: CircleAvatar(
-                            radius: 28,
-                            backgroundImage: avatarUrl.isNotEmpty
-                                ? NetworkImage(avatarUrl)
-                                : null,
-                            child:
-                                avatarUrl.isEmpty ? const Icon(Icons.person) : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  displayName.isNotEmpty ? displayName : '—',
-                                  style: AuraText.title,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  handle.isNotEmpty ? '@$handle' : '—',
-                                  style: AuraText.small,
-                                ),
-                                if (bio.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Text(bio, style: AuraText.body),
-                                ],
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: [
-                                    FilledButton(
-                                      onPressed: _openEditProfile,
-                                      child: const Text('Edit profile'),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: _busyLogout ? null : _logout,
-                                      child: Text(
-                                        _busyLogout ? 'Signing out…' : 'Sign out',
-                                      ),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: _pickAndUploadPhoto,
-                                      child: const Text('Upload photo'),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  'Tip: tap your photo to edit your details.',
-                                  style: AuraText.small,
-                                ),
-                                if (kDebugMode && id.isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  SelectableText(
-                                    'User ID: $id',
-                                    style: AuraText.small,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  final toolsCard = ui.AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Tools', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s10),
-                        Wrap(
-                          spacing: AuraSpace.s10,
-                          runSpacing: AuraSpace.s10,
-                          children: [
-                            OutlinedButton(
-                              onPressed: () => context.go('/announcements'),
-                              child: const Text('Announcements'),
-                            ),
-                            if (isAdmin)
-                              OutlinedButton(
-                                onPressed: () => context.go('/me/correspondence'),
-                                child: const Text('Correspondence Hub'),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                        Text(
-                          isAdmin
-                              ? 'Announcements and correspondence are managed from here.'
-                              : 'Announcements are official public notes from the platform.',
-                          style: AuraText.small,
-                        ),
-                        if (!isAdmin && _adminUserIds.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'Admin mode is configured, but your account is not the admin user.',
-                            style: AuraText.small,
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-
-                  if (!wide) {
-                    return Column(
-                      children: [
-                        profileCard,
-                        const SizedBox(height: AuraSpace.s14),
-                        toolsCard,
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: profileCard),
-                      const SizedBox(width: AuraSpace.s14),
-                      Expanded(child: toolsCard),
-                    ],
-                  );
-                },
+              _profileCard(
+                context: context,
+                displayName: displayName,
+                handle: handle,
+                bio: bio,
+                avatarUrl: avatarUrl,
+                id: id,
+                isAdmin: isAdmin,
               ),
-
               const SizedBox(height: AuraSpace.s14),
-
-              ui.AuraCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('About Aura', style: AuraText.title),
-                      const SizedBox(height: 10),
-                      Text(
-                        'These are public hubs. You can read them whether you are signed in or not.',
-                        style: AuraText.small,
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => context.go('/mission'),
-                            child: const Text('Mission'),
-                          ),
-                          OutlinedButton(
-                            onPressed: () => context.go('/founder'),
-                            child: const Text('Founder'),
-                          ),
-                          OutlinedButton(
-                            onPressed: () => context.go('/investors'),
-                            child: const Text('Investors'),
-                          ),
-                          OutlinedButton(
-                            onPressed: () => context.go('/institutions'),
-                            child: const Text('Institutions'),
-                          ),
-                          OutlinedButton(
-                            onPressed: () => context.go('/contact'),
-                            child: const Text('Contact'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              if (isAdmin) ...[
+                _adminWorkspaceCard(context),
+                const SizedBox(height: AuraSpace.s14),
+              ] else ...[
+                _memberWorkspaceCard(context),
+                const SizedBox(height: AuraSpace.s14),
+              ],
+              _publicHubsCard(context),
+              const SizedBox(height: AuraSpace.s14),
+              _asyncStatusCard(
+                title: 'Draft',
+                asyncValue: ref.watch(_meDraftProvider),
+                loadingLabel: 'Loading draft…',
+                errorLabel: 'Draft load failed',
+                dataBuilder: (draft) => _draftCard(
+                  context,
+                  Map<String, dynamic>.from(draft as Map),
                 ),
               ),
-
               const SizedBox(height: AuraSpace.s14),
-
-              ref.watch(_meDraftProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Loading draft…'),
-                          ],
-                        ),
-                      ),
+              _asyncStatusCard(
+                title: 'Posts',
+                asyncValue: ref.watch(_mePostsProvider),
+                loadingLabel: 'Loading posts…',
+                errorLabel: 'Posts load failed',
+                dataBuilder: (items) => _countCard(
+                  title: 'Posts',
+                  emptyLabel: 'No posts yet.',
+                  countLabel:
+                      'You have ${(items as List<Map<String, dynamic>>).length} post(s).',
+                  items: items,
+                  actions: [
+                    FilledButton(
+                      onPressed: () => context.go('/compose'),
+                      child: const Text('Compose'),
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Draft load failed: $err',
-                          style: AuraText.small,
-                        ),
-                      ),
+                    OutlinedButton(
+                      onPressed: () => context.go('/home'),
+                      child: const Text('Member feed'),
                     ),
-                    data: (draft) {
-                      final title = (draft['title'] ?? '').toString().trim();
-                      final hasDraft = draft.isNotEmpty && (draft['id'] != null);
-
-                      if (!hasDraft) {
-                        return ui.AuraCard(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Draft', style: AuraText.title),
-                                const SizedBox(height: 10),
-                                Text('No draft yet.', style: AuraText.small),
-                                const SizedBox(height: 12),
-                                OutlinedButton(
-                                  onPressed: () => context.go('/compose'),
-                                  child: const Text('Compose'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      final did = (draft['id'] ?? '').toString();
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Draft', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                title.isEmpty ? '(untitled)' : title,
-                                style: AuraText.body,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  FilledButton(
-                                    onPressed: () => context.go('/compose'),
-                                    child: const Text('Continue drafting'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: did.isEmpty
-                                        ? null
-                                        : () => context.go('/posts/$did'),
-                                    child: const Text('Open'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(_mePostsProvider),
+                      child: const Text('Refresh'),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: AuraSpace.s14),
-
-              ref.watch(_mePostsProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Loading posts…'),
-                          ],
-                        ),
-                      ),
+              _asyncStatusCard(
+                title: 'Saved',
+                asyncValue: ref.watch(_meSavedProvider),
+                loadingLabel: 'Loading saved…',
+                errorLabel: 'Saved load failed',
+                dataBuilder: (items) => _countCard(
+                  title: 'Saved',
+                  emptyLabel: 'No saved posts yet.',
+                  countLabel:
+                      'You have ${(items as List<Map<String, dynamic>>).length} saved item(s).',
+                  items: items,
+                  actions: [
+                    OutlinedButton(
+                      onPressed: () => context.go('/saved'),
+                      child: const Text('View saved'),
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Posts load failed: $err',
-                          style: AuraText.small,
-                        ),
-                      ),
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(_meSavedProvider),
+                      child: const Text('Refresh'),
                     ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Posts', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty
-                                    ? 'No posts yet.'
-                                    : 'You have ${items.length} post(s).',
-                                style: AuraText.small,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  FilledButton(
-                                    onPressed: () => context.go('/compose'),
-                                    child: const Text('Compose'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/home'),
-                                    child: const Text('Member feed'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () =>
-                                        ref.invalidate(_mePostsProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
+                  ],
+                ),
+              ),
               const SizedBox(height: AuraSpace.s14),
-
-              ref.watch(_meSavedProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Loading saved…'),
-                          ],
-                        ),
-                      ),
+              _asyncStatusCard(
+                title: 'Replies',
+                asyncValue: ref.watch(_meRepliesProvider),
+                loadingLabel: 'Loading replies…',
+                errorLabel: 'Replies load failed',
+                dataBuilder: (items) => _countCard(
+                  title: 'Replies',
+                  emptyLabel: 'No replies yet.',
+                  countLabel:
+                      'You have ${(items as List<Map<String, dynamic>>).length} reply/replies.',
+                  items: items,
+                  actions: [
+                    OutlinedButton(
+                      onPressed: () => context.go('/home'),
+                      child: const Text('Member feed'),
                     ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Saved load failed: $err',
-                          style: AuraText.small,
-                        ),
-                      ),
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(_meRepliesProvider),
+                      child: const Text('Refresh'),
                     ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Saved', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty
-                                    ? 'No saved posts yet.'
-                                    : 'You have ${items.length} saved item(s).',
-                                style: AuraText.small,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/saved'),
-                                    child: const Text('View saved'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () =>
-                                        ref.invalidate(_meSavedProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-              const SizedBox(height: AuraSpace.s14),
-
-              ref.watch(_meRepliesProvider).when(
-                    loading: () => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Loading replies…'),
-                          ],
-                        ),
-                      ),
-                    ),
-                    error: (err, st) => ui.AuraCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Replies load failed: $err',
-                          style: AuraText.small,
-                        ),
-                      ),
-                    ),
-                    data: (items) {
-                      return ui.AuraCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Replies', style: AuraText.title),
-                              const SizedBox(height: 10),
-                              Text(
-                                items.isEmpty
-                                    ? 'No replies yet.'
-                                    : 'You have ${items.length} reply/replies.',
-                                style: AuraText.small,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: () => context.go('/home'),
-                                    child: const Text('Member feed'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () =>
-                                        ref.invalidate(_meRepliesProvider),
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  ],
+                ),
+              ),
             ],
           );
         },
