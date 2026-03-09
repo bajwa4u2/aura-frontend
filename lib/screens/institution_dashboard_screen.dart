@@ -185,14 +185,14 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         : isPendingRequest
             ? 'Official speech: Pending standing'
             : hasInstitutionStanding
-                ? 'Official speech: Not authorized'
+                ? 'Official speech: Not enabled'
                 : 'Official speech: Locked';
 
     final summary = hasInstitutionStanding
         ? isPendingRequest
             ? 'Institution account active. Standing is pending review.'
             : 'Institution account active with approved standing.'
-        : 'Institution account active. Complete institution setup to unlock institutional tools.';
+        : 'Institution account active. Institutional tools will expand as setup and proof are completed.';
 
     return AuraCard(
       child: Column(
@@ -364,7 +364,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             done: hasInstitutionClaim,
             detail: hasInstitutionClaim
                 ? 'An institution identity is attached to this account.'
-                : 'Create or attach an institution identity to begin.',
+                : 'Institution identity has not been attached yet.',
           ),
           const SizedBox(height: AuraSpace.s8),
           _checkpoint(
@@ -391,8 +391,8 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             detail: isAuthorizedSpeaker
                 ? 'This account can issue official institutional posts.'
                 : isVerifiedMember
-                    ? 'Institution standing is active, but official speech is not yet enabled for this account.'
-                    : 'Official speech remains locked until higher institutional standing is reached.',
+                    ? 'Standing is active, but official speech is not yet enabled for this account.'
+                    : 'Official speech remains locked until institutional standing is active.',
           ),
           const SizedBox(height: AuraSpace.s12),
           Container(
@@ -403,7 +403,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
-              'Domain self-verification should live here as a direct institution tool. For now, this card shows the structural path and current readiness.',
+              'Domain self-verification should become a dedicated institution tool here. For now, this area shows readiness only.',
               style: AuraText.body,
             ),
           ),
@@ -530,21 +530,21 @@ class InstitutionDashboardScreen extends ConsumerWidget {
   }) {
     final profileStatus = slug.isNotEmpty
         ? 'Available now'
-        : 'Will open when public institution path is present';
+        : 'Available when public institution profile exists';
 
-    final postingStatus = isAuthorizedSpeaker
-        ? 'Available now'
+    final officialPostsStatus = isAuthorizedSpeaker
+        ? 'Path reserved for institution publishing'
         : isPendingRequest
             ? 'Locked while standing is pending'
             : isVerifiedMember
-                ? 'Locked until official speech is granted'
+                ? 'Waiting for institution publishing workflow'
                 : 'Locked until institutional standing is active';
 
-    final managementStatus = hasInstitutionStanding
+    final correspondenceStatus = hasInstitutionStanding
         ? isPendingRequest
-            ? 'Visible in restricted mode'
-            : 'Available now'
-        : 'Waiting for institution standing';
+            ? 'Reserved for institution workflow'
+            : 'Reserved for institution workflow'
+        : 'Waiting for institutional standing';
 
     return AuraCard(
       child: Column(
@@ -565,22 +565,36 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             _toolTile(
               title: 'Official posts',
               detail:
-                  'Issue posts as an institutional voice when official speech is enabled.',
-              status: postingStatus,
-              onTap: isAuthorizedSpeaker ? () => context.go('/compose') : null,
+                  'Institution publishing should live on its own dedicated path, separate from member and admin compose flows.',
+              status: officialPostsStatus,
+              onTap: null,
             ),
             _toolTile(
               title: 'Institution correspondence',
               detail:
-                  'Carry institution-related correspondence from the account workspace.',
-              status: managementStatus,
-              onTap: isVerifiedMember ? () => context.go('/me/correspondence') : null,
+                  'Institution-specific correspondence should open through a dedicated institution path when that workflow is built.',
+              status: correspondenceStatus,
+              onTap: null,
             ),
             _toolTile(
               title: 'Domain self-verification',
               detail:
                   'This should become the direct self-service proof tool for institutional approval rather than depending only on back-office handling.',
               status: 'Next structural tool',
+              onTap: null,
+            ),
+            _toolTile(
+              title: 'Representative management',
+              detail:
+                  'Institution representatives, roles, and speech authority should be managed in a dedicated institution tool.',
+              status: 'Placeholder',
+              onTap: null,
+            ),
+            _toolTile(
+              title: 'Institution record',
+              detail:
+                  'Official institutional archive, actions, and public record should live here once institution workflows are separated properly.',
+              status: 'Placeholder',
               onTap: null,
             ),
           ]),
