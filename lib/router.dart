@@ -254,12 +254,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (path == '/verify-email') {
         final redirectTo = uri.queryParameters['redirect'];
-        return _normalizeRedirectDest(redirectTo);
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return _normalizeRedirectDest(redirectTo);
+        }
+        return kInstitutionDashboardRoute;
       }
 
       if (path == '/verify-pending') {
         final redirectTo = uri.queryParameters['redirect'];
-        return _normalizeRedirectDest(redirectTo);
+        if (redirectTo != null && redirectTo.startsWith('/')) {
+          return _normalizeRedirectDest(redirectTo);
+        }
+        return kInstitutionDashboardRoute;
       }
 
       if (isPlainAuth) {
@@ -268,7 +274,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (path == '/institution/sign-in') {
-        return kEnterInstitutionRoute;
+        return kInstitutionDashboardRoute;
       }
 
       if (isPublic || isMember || isAuthAction) {
