@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/net/dio_provider.dart';
-import '../core/ui/aura_card.dart';
-import '../core/ui/aura_space.dart';
-import '../core/ui/aura_text.dart';
-import '../core/ui/document_scaffold.dart';
+import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/document_scaffold.dart';
 
 const String _institutionSignInRoute = '/institution/sign-in';
 
@@ -247,7 +247,7 @@ class _InstitutionRequestVerificationScreenState
     if (_statusMessage == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      padding: EdgeInsets.only(bottom: AuraSpace.s12),
       child: AuraCard(
         child: Text(
           _statusMessage!,
@@ -259,7 +259,7 @@ class _InstitutionRequestVerificationScreenState
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      padding: EdgeInsets.only(bottom: AuraSpace.s10),
       child: Text(
         title,
         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
@@ -288,7 +288,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _lastName,
                 enabled: enabled,
@@ -300,7 +300,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _roleTitle,
                 enabled: enabled,
@@ -315,7 +315,7 @@ class _InstitutionRequestVerificationScreenState
             ],
           ),
         ),
-        const SizedBox(height: AuraSpace.s12),
+        SizedBox(height: AuraSpace.s12),
         _sectionTitle('Institution'),
         AuraCard(
           child: Column(
@@ -331,7 +331,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               DropdownButtonFormField<String>(
                 value: _institutionType,
                 items: _institutionTypes
@@ -354,7 +354,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _website,
                 enabled: enabled,
@@ -367,7 +367,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _workEmail,
                 enabled: enabled,
@@ -380,7 +380,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _jurisdiction,
                 enabled: enabled,
@@ -392,7 +392,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _purpose,
                 enabled: enabled,
@@ -408,7 +408,7 @@ class _InstitutionRequestVerificationScreenState
             ],
           ),
         ),
-        const SizedBox(height: AuraSpace.s12),
+        SizedBox(height: AuraSpace.s12),
         _sectionTitle('Institution credentials'),
         AuraCard(
           child: Column(
@@ -437,7 +437,7 @@ class _InstitutionRequestVerificationScreenState
                   ),
                 ),
               ),
-              const Divider(height: AuraSpace.s16),
+              Divider(height: AuraSpace.s16),
               TextField(
                 controller: _confirmPassword,
                 enabled: enabled,
@@ -484,18 +484,18 @@ class _InstitutionRequestVerificationScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Create institutional account'),
-          const SizedBox(height: AuraSpace.s10),
+          SizedBox(height: AuraSpace.s10),
           Doc.meta('Institutional entry reviewed before activation.'),
-          const SizedBox(height: AuraSpace.s12),
+          SizedBox(height: AuraSpace.s12),
           _statusBlock(),
           _formCard(),
-          const SizedBox(height: AuraSpace.s12),
+          SizedBox(height: AuraSpace.s12),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
               onPressed: (_submitting || _submitted) ? null : _submit,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: AuraSpace.s14,
                   vertical: AuraSpace.s12,
                 ),

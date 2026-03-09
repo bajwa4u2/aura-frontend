@@ -305,19 +305,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
       GoRoute(
         path: '/institutions/:slug',
-        builder: (context, state) =>
-            InstitutionDetailScreen(slug: state.pathParameters['slug']!),
-      ),
-      GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
-      GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
-      GoRoute(
-        path: '/announcements',
-        builder: (_, __) => const AnnouncementsScreen(),
-      ),
-      GoRoute(
-        path: '/announcements/:id',
-        builder: (context, state) =>
-            AnnouncementDetailScreen(id: state.pathParameters['id']!),
+        builder: (context, state) => InstitutionDetailScreen(
+          slug: state.pathParameters['slug'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/institution/sign-in',
@@ -327,8 +317,58 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: kInstitutionCreateRoute,
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
       ),
+      GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
+      GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
+      GoRoute(path: '/announcements', builder: (_, __) => const AnnouncementsScreen()),
+      GoRoute(
+        path: '/announcements/:slug',
+        builder: (context, state) => AnnouncementDetailScreen(
+          slug: state.pathParameters['slug'] ?? '',
+        ),
+      ),
 
-      // Member app shell
+      // Auth
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => AuthScreen(
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => RegisterScreen(
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => ResetPasswordScreen(
+          token: state.uri.queryParameters['token'],
+          email: state.uri.queryParameters['email'],
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => VerifyEmailScreen(
+          token: state.uri.queryParameters['token'],
+          email: state.uri.queryParameters['email'],
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+      GoRoute(
+        path: '/verify-pending',
+        builder: (context, state) => VerifyPendingScreen(
+          email: state.uri.queryParameters['email'],
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
+      ),
+
+      // Member area
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
@@ -350,6 +390,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const CorrespondenceHubScreen(),
           ),
           GoRoute(
+            path: kEnterInstitutionRoute,
+            redirect: (_, __) => kInstitutionDashboardRoute,
+          ),
+          GoRoute(
             path: kInstitutionDashboardRoute,
             builder: (_, __) => const InstitutionDashboardScreen(),
           ),
@@ -365,27 +409,41 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionVerificationRoute,
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
-          GoRoute(
-            path: '/compose',
-            builder: (_, __) => const ComposeScreen(),
-          ),
+          GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) =>
-                PostDetailScreen(postId: state.pathParameters['id']!),
+            builder: (context, state) => PostDetailScreen(
+              postId: state.pathParameters['id'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) =>
-                AuthorProfileScreen(handle: state.pathParameters['handle']!),
+            builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
           ),
           GoRoute(
-            path: '/support/:slug',
-            builder: (context, state) =>
-                SupportFallbackScreen(slug: state.pathParameters['slug']!),
+            path: '/support/:handle',
+            builder: (context, state) => SupportFallbackScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
           ),
         ],
       ),
     ],
   );
 });
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _sub = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}

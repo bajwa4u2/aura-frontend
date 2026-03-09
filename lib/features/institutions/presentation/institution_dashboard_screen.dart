@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/institutions/institution_access_provider.dart';
-import '../../core/ui/aura_card.dart';
-import '../../core/ui/aura_space.dart';
-import '../../core/ui/aura_text.dart';
-import '../../core/ui/document_scaffold.dart';
+import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/document_scaffold.dart';
 
 class InstitutionDashboardScreen extends ConsumerWidget {
   const InstitutionDashboardScreen({super.key});
@@ -20,12 +20,25 @@ class InstitutionDashboardScreen extends ConsumerWidget {
 
   String _value(dynamic value) => (value ?? '').toString().trim();
 
+  String _institutionDisplayName({
+    required Map<String, dynamic>? institution,
+    required Map<String, dynamic>? request,
+  }) {
+    final byInstitution = _value(institution?['name']);
+    if (byInstitution.isNotEmpty) return byInstitution;
+
+    final byRequest = _value(request?['organizationName']);
+    if (byRequest.isNotEmpty) return byRequest;
+
+    return 'Institution account';
+  }
+
   String _institutionSlug({
     required Map<String, dynamic>? institution,
     required Map<String, dynamic>? request,
   }) {
-    final institutionSlug = _value(institution?['slug']);
-    if (institutionSlug.isNotEmpty) return institutionSlug;
+    final byInstitution = _value(institution?['slug']);
+    if (byInstitution.isNotEmpty) return byInstitution;
 
     final requestName = _value(request?['organizationName']);
     if (requestName.isEmpty) return '';
@@ -36,19 +49,6 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
         .replaceAll(RegExp(r'^-+|-+$'), '')
         .replaceAll(RegExp(r'-{2,}'), '-');
-  }
-
-  String _institutionDisplayName({
-    required Map<String, dynamic>? institution,
-    required Map<String, dynamic>? request,
-  }) {
-    final fromInstitution = _value(institution?['name']);
-    if (fromInstitution.isNotEmpty) return fromInstitution;
-
-    final fromRequest = _value(request?['organizationName']);
-    if (fromRequest.isNotEmpty) return fromRequest;
-
-    return 'Institution account';
   }
 
   String _institutionDomain({
@@ -78,7 +78,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     return _value(request?['jurisdiction']);
   }
 
-  String _institutionRole({
+  String _role({
     required Map<String, dynamic>? membership,
     required Map<String, dynamic>? request,
   }) {
@@ -91,7 +91,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     return '';
   }
 
-  String _institutionTitle({
+  String _title({
     required Map<String, dynamic>? membership,
     required Map<String, dynamic>? request,
   }) {
@@ -100,14 +100,19 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     return _value(request?['roleTitle']);
   }
 
-  TextStyle _headlineStyle(BuildContext context) {
-    return (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
-        .copyWith(fontWeight: FontWeight.w700);
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: AuraText.body.copyWith(
+        fontWeight: FontWeight.w700,
+        fontSize: 16,
+      ),
+    );
   }
 
   Widget _statusChip(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: AuraSpace.s10,
         vertical: AuraSpace.s6,
       ),
@@ -122,103 +127,11 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sectionTitle(String text) {
-    return Text(
-      text,
-      style: AuraText.body.copyWith(
-        fontWeight: FontWeight.w700,
-        fontSize: 16,
-      ),
-    );
-  }
-
-  Widget _loadingView() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  Widget _errorView(WidgetRef ref) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Could not load institution account.',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Please try again.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => ref.invalidate(institutionAccessProvider),
-                  child: Text('Try again', style: AuraText.body),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _heroCard(
-    BuildContext context, {
-    required String institutionName,
-    required String standingLabel,
-    required String role,
-    required bool isAuthorizedSpeaker,
-    required bool hasInstitutionStanding,
-  }) {
-    final speechLabel = isAuthorizedSpeaker
-        ? 'Official speech: Authorized'
-        : hasInstitutionStanding
-            ? 'Official speech: Not enabled'
-            : 'Official speech: Locked';
-
-    final summary = hasInstitutionStanding
-        ? 'This dashboard is the institutional surface. Open a tool below to manage a specific part of the institution workspace.'
-        : 'This dashboard is the institutional surface. As standing becomes active, institution-specific tools will open here.';
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            institutionName,
-            style: _headlineStyle(context).copyWith(fontSize: 30),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              _statusChip(standingLabel),
-              if (role.isNotEmpty) _statusChip('Role: $role'),
-              _statusChip(speechLabel),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(summary, style: AuraText.body),
-        ],
-      ),
-    );
-  }
-
   Widget _infoRow(String label, String value) {
     if (value.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+      padding: EdgeInsets.only(bottom: AuraSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -235,39 +148,6 @@ class InstitutionDashboardScreen extends ConsumerWidget {
           Expanded(
             child: Text(value, style: AuraText.body),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _identityCard({
-    required Map<String, dynamic>? institution,
-    required Map<String, dynamic>? membership,
-    required Map<String, dynamic>? request,
-  }) {
-    final slug = _institutionSlug(institution: institution, request: request);
-    final domain = _institutionDomain(institution: institution, request: request);
-    final website =
-        _institutionWebsite(institution: institution, request: request);
-    final jurisdiction =
-        _institutionJurisdiction(institution: institution, request: request);
-    final role = _institutionRole(membership: membership, request: request);
-    final title = _institutionTitle(membership: membership, request: request);
-    final verifiedAt = _value(institution?['verifiedAt']);
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle('Institution summary'),
-          const SizedBox(height: AuraSpace.s12),
-          _infoRow('Title', title),
-          _infoRow('Role', role),
-          _infoRow('Domain', domain),
-          _infoRow('Website', website),
-          _infoRow('Jurisdiction', jurisdiction),
-          _infoRow('Public slug', slug),
-          _infoRow('Verified at', verifiedAt),
         ],
       ),
     );
@@ -294,7 +174,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               border: Border.all(color: Colors.black12),
               borderRadius: BorderRadius.circular(18),
             ),
-            padding: const EdgeInsets.all(AuraSpace.s14),
+            padding: EdgeInsets.all(AuraSpace.s14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -302,11 +182,11 @@ class InstitutionDashboardScreen extends ConsumerWidget {
                   title,
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: AuraSpace.s8),
+                SizedBox(height: AuraSpace.s8),
                 Expanded(
                   child: Text(detail, style: AuraText.body),
                 ),
-                const SizedBox(height: AuraSpace.s10),
+                SizedBox(height: AuraSpace.s10),
                 Text(
                   status,
                   style: AuraText.body.copyWith(
@@ -327,13 +207,84 @@ class InstitutionDashboardScreen extends ConsumerWidget {
       spacing: AuraSpace.s12,
       runSpacing: AuraSpace.s12,
       children: children
-          .map(
-            (child) => SizedBox(
-              width: 320,
-              child: child,
-            ),
-          )
+          .map((child) => SizedBox(width: 320, child: child))
           .toList(),
+    );
+  }
+
+  Widget _heroCard(
+    BuildContext context, {
+    required String institutionName,
+    required String standingLabel,
+    required String role,
+    required bool isAuthorizedSpeaker,
+    required bool hasInstitutionStanding,
+  }) {
+    final speechLabel = isAuthorizedSpeaker
+        ? 'Official speech: Authorized'
+        : hasInstitutionStanding
+            ? 'Official speech: Not enabled'
+            : 'Official speech: Locked';
+
+    final summary = hasInstitutionStanding
+        ? 'This dashboard is the institution surface. Open a dedicated tool below to manage one specific institutional function.'
+        : 'This dashboard is the institution surface. Institutional tools will open here as standing becomes active.';
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            institutionName,
+            style: (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
+                .copyWith(fontWeight: FontWeight.w700, fontSize: 30),
+          ),
+          SizedBox(height: AuraSpace.s10),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              _statusChip(standingLabel),
+              if (role.isNotEmpty) _statusChip('Role: $role'),
+              _statusChip(speechLabel),
+            ],
+          ),
+          SizedBox(height: AuraSpace.s12),
+          Text(summary, style: AuraText.body),
+        ],
+      ),
+    );
+  }
+
+  Widget _identityCard({
+    required Map<String, dynamic>? institution,
+    required Map<String, dynamic>? membership,
+    required Map<String, dynamic>? request,
+  }) {
+    final slug = _institutionSlug(institution: institution, request: request);
+    final domain = _institutionDomain(institution: institution, request: request);
+    final website = _institutionWebsite(institution: institution, request: request);
+    final jurisdiction =
+        _institutionJurisdiction(institution: institution, request: request);
+    final role = _role(membership: membership, request: request);
+    final title = _title(membership: membership, request: request);
+    final verifiedAt = _value(institution?['verifiedAt']);
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Institution summary'),
+          SizedBox(height: AuraSpace.s12),
+          _infoRow('Title', title),
+          _infoRow('Role', role),
+          _infoRow('Domain', domain),
+          _infoRow('Website', website),
+          _infoRow('Jurisdiction', jurisdiction),
+          _infoRow('Public slug', slug),
+          _infoRow('Verified at', verifiedAt),
+        ],
+      ),
     );
   }
 
@@ -343,12 +294,12 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Member tools'),
-          const SizedBox(height: AuraSpace.s12),
+          SizedBox(height: AuraSpace.s12),
           _toolGrid([
             _toolTile(
               title: 'My account',
               detail:
-                  'Open the member account surface for personal profile, session, and account controls.',
+                  'Open the member account surface for profile, session, and account controls.',
               status: 'Available now',
               onTap: () => context.go('/me'),
             ),
@@ -391,7 +342,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
 
     final domainsStatus = hasInstitutionStanding
         ? 'Available now'
-        : 'Prepare this tool as standing becomes active';
+        : 'Reserved for institutional standing';
 
     final verificationStatus = hasInstitutionStanding
         ? 'Dedicated institutional tool'
@@ -408,51 +359,87 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Institution tools'),
-          const SizedBox(height: AuraSpace.s12),
+          SizedBox(height: AuraSpace.s12),
           _toolGrid([
             _toolTile(
               title: 'Institution profile',
               detail:
                   'Open the public institution-facing surface attached to this account.',
               status: profileStatus,
-              onTap: slug.isNotEmpty ? () => context.go('/institutions/$slug') : null,
+              onTap: slug.isNotEmpty ? () => context.go('/institution/profile') : null,
             ),
             _toolTile(
               title: 'Domains',
               detail:
-                  'Manage institutional domains and run self-service proof workflows from a dedicated domain screen.',
+                  'Manage institutional domains and run DNS proof workflows from a dedicated screen.',
               status: domainsStatus,
               onTap: () => context.go('/institution/domains'),
             ),
             _toolTile(
               title: 'Verification',
               detail:
-                  'Open the institution verification screen rather than carrying verification logic inside this dashboard.',
+                  'Open the institutional account request and verification surface from its own dedicated screen.',
               status: verificationStatus,
               onTap: () => context.go('/institution/request-verification'),
             ),
             _toolTile(
               title: 'Official posts',
               detail:
-                  'Institution publishing should live on its own dedicated screen, separate from member and admin compose flows.',
+                  'Institution publishing should live on its own screen, separate from member compose flow.',
               status: officialPostsStatus,
               onTap: null,
             ),
             _toolTile(
               title: 'Representatives',
               detail:
-                  'Representative roles, permissions, and speech authority should be managed in a dedicated institution tool.',
+                  'Representative roles, permissions, and official speech authority should live in a dedicated institution tool.',
               status: 'Placeholder',
               onTap: null,
             ),
             _toolTile(
               title: 'Institution record',
               detail:
-                  'Official institutional archive, actions, and records should live in a dedicated institutional record screen.',
+                  'Official institutional archive, actions, and records should live in a dedicated institution record screen.',
               status: 'Placeholder',
               onTap: null,
             ),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingView() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _errorView(WidgetRef ref) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Could not load institution account.',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: AuraSpace.s8),
+          Text('Please try again.', style: AuraText.body),
+          SizedBox(height: AuraSpace.s12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => ref.invalidate(institutionAccessProvider),
+                  child: Text('Try again', style: AuraText.body),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -473,6 +460,10 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         final institution =
             topInstitution.isNotEmpty ? topInstitution : membershipInstitution;
 
+        final institutionMap = institution.isNotEmpty ? institution : null;
+        final membershipMap = membership.isNotEmpty ? membership : null;
+        final requestMap = request.isNotEmpty ? request : null;
+
         final isPendingRequest =
             access.state == InstitutionAccessState.pending;
         final isVerifiedMember =
@@ -486,18 +477,16 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             access.state == InstitutionAccessState.verifiedMember ||
             access.state == InstitutionAccessState.authorizedSpeaker;
 
-        final institutionMap = institution.isNotEmpty ? institution : null;
-        final membershipMap = membership.isNotEmpty ? membership : null;
-        final requestMap = request.isNotEmpty ? request : null;
-
         final institutionName = _institutionDisplayName(
           institution: institutionMap,
           request: requestMap,
         );
-        final role = _institutionRole(
+
+        final role = _role(
           membership: membershipMap,
           request: requestMap,
         );
+
         final slug = _institutionSlug(
           institution: institutionMap,
           request: requestMap,
@@ -520,15 +509,15 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               isAuthorizedSpeaker: isAuthorizedSpeaker,
               hasInstitutionStanding: hasInstitutionStanding,
             ),
-            const SizedBox(height: AuraSpace.s12),
+            SizedBox(height: AuraSpace.s12),
             _identityCard(
               institution: institutionMap,
               membership: membershipMap,
               request: requestMap,
             ),
-            const SizedBox(height: AuraSpace.s12),
+            SizedBox(height: AuraSpace.s12),
             _memberToolsCard(context),
-            const SizedBox(height: AuraSpace.s12),
+            SizedBox(height: AuraSpace.s12),
             _institutionToolsCard(
               context,
               hasInstitutionStanding: hasInstitutionStanding,
@@ -549,12 +538,12 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Institution dashboard'),
-          const SizedBox(height: 10),
+          SizedBox(height: AuraSpace.s10),
           Doc.meta('Institution account, standing, and tool access.'),
           Doc.lede(
             'This dashboard acts as the institution-facing surface. Open a dedicated tool below to manage a specific part of the institution workspace.',
           ),
-          const SizedBox(height: AuraSpace.s12),
+          SizedBox(height: AuraSpace.s12),
           _body(context, ref),
         ],
       ),
