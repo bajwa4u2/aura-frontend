@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:html' as html;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,18 +24,22 @@ class InstitutionDomainsScreen extends ConsumerStatefulWidget {
 class _InstitutionDomainsScreenState
     extends ConsumerState<InstitutionDomainsScreen> {
   bool loading = true;
-  List<Map<String, dynamic>> domains = <Map<String, dynamic>>[];
-  Map<String, dynamic>? institution;
-
-  final TextEditingController domainController = TextEditingController();
-
-  Timer? verifyTimer;
   bool _submitting = false;
 
-  String get institutionId => institution?['id']?.toString() ?? '';
+  List<Map<String, dynamic>> domains = <Map<String, dynamic>>[];
+  Map<String, dynamic>? institution;
+  String? institutionState;
+  String? loadError;
+
+  final TextEditingController domainController = TextEditingController();
+  Timer? verifyTimer;
 
   InstitutionDomainsRepository get repo =>
       ref.read(institutionDomainsRepositoryProvider);
+
+  String get institutionId => institution?['id']?.toString() ?? '';
+
+  bool get canManageDomains => institutionId.isNotEmpty;
 
   void _showSnack(String message) {
     if (!mounted) return;
@@ -43,37 +48,94 @@ class _InstitutionDomainsScreenState
     );
   }
 
-  Future<void> loadDomains() async {
-    try {
-      final inst = await repo.getMyInstitution();
+  String _dioMessage(Object error, String fallback) {
+    if (error is DioException) {
+      final data = error.response?.data;
 
-      if (inst == null) {
+      if (data is Map && data['message'] != null) {
+        final message = data['message'].toString().trim();
+        if (message.isNotEmpty) return message;
+      }
+
+      if (data is Map && data['error'] is Map && data['error']['message'] != null) {
+        final message = data['error']['message'].toString().trim();
+        if (message.isNotEmpty) return message;
+      }
+
+      if (error.message != null && error.message!.trim().isNotEmpty) {
+        return error.message!.trim();
+      }
+    }
+
+    return fallback;
+  }
+
+  Future<void> loadDomains({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        loading = true;
+        loadError = null;
+      });
+    }
+
+    try {
+      final stateData = await repo.getMyInstitutionState();
+      final stateName = stateData['state']?.toString();
+      final membership = stateData['membership'];
+
+      Map<String, dynamic>? resolvedInstitution;
+      if (membership is Map && membership['institution'] is Map) {
+        resolvedInstitution =
+            Map<String, dynamic>.from(membership['institution'] as Map);
+      }
+
+      if (resolvedInstitution == null ||
+          (resolvedInstitution['id']?.toString().isEmpty ?? true)) {
         setState(() {
           institution = null;
-          domains = [];
+          institutionState = stateName;
+          domains = <Map<String, dynamic>>[];
           loading = false;
+          loadError = null;
         });
         return;
       }
 
-      final id = inst['id'].toString();
+      final id = resolvedInstitution['id'].toString();
       final domainList = await repo.getDomains(id);
 
       setState(() {
-        institution = inst;
+        institution = resolvedInstitution;
+        institutionState = stateName;
         domains = domainList;
         loading = false;
+        loadError = null;
       });
     } catch (e) {
-      loading = false;
-      _showSnack('Could not load institution domains.');
-      setState(() {});
+      setState(() {
+        loading = false;
+        loadError = _dioMessage(e, 'Could not load institution domains.');
+      });
+      _showSnack(loadError!);
     }
   }
 
   Future<void> addDomain() async {
     final domain = domainController.text.trim();
-    if (domain.isEmpty || institutionId.isEmpty || _submitting) return;
+
+    if (domain.isEmpty) {
+      _showSnack('Enter a domain first.');
+      return;
+    }
+
+    if (!canManageDomains) {
+      _showSnack(
+        'No verified institutional membership is active for this account yet.',
+      );
+      return;
+    }
+
+    if (_submitting) return;
 
     try {
       setState(() => _submitting = true);
@@ -82,9 +144,9 @@ class _InstitutionDomainsScreenState
 
       domainController.clear();
       _showSnack('Domain added.');
-      await loadDomains();
+      await loadDomains(silent: true);
     } catch (e) {
-      _showSnack('Could not add domain.');
+      _showSnack(_dioMessage(e, 'Could not add domain.'));
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -93,16 +155,26 @@ class _InstitutionDomainsScreenState
   }
 
   Future<void> removeDomain(String domainId) async {
+    if (!canManageDomains) {
+      _showSnack('No active institution found for domain management.');
+      return;
+    }
+
     try {
       await repo.removeDomain(institutionId, domainId);
       _showSnack('Domain removed.');
-      await loadDomains();
+      await loadDomains(silent: true);
     } catch (e) {
-      _showSnack('Could not remove domain.');
+      _showSnack(_dioMessage(e, 'Could not remove domain.'));
     }
   }
 
   Future<void> issueChallenge(String domainId) async {
+    if (!canManageDomains) {
+      _showSnack('No active institution found for domain management.');
+      return;
+    }
+
     try {
       final verification = await repo.issueDnsChallenge(institutionId, domainId);
 
@@ -119,42 +191,80 @@ class _InstitutionDomainsScreenState
               children: [
                 const Text('Create the following TXT record in your DNS:'),
                 SizedBox(height: AuraSpace.s10),
-                _copyRow('Record name', verification['recordName'] ?? ''),
-                _copyRow('Record type', verification['recordType'] ?? 'TXT'),
-                _copyRow('Record value', verification['value'] ?? ''),
+                _copyRow('Record name', verification['recordName']?.toString() ?? ''),
+                _copyRow('Record type', verification['recordType']?.toString() ?? 'TXT'),
+                _copyRow('Record value', verification['value']?.toString() ?? ''),
                 SizedBox(height: AuraSpace.s12),
                 const Text(
-                    'After adding the record, click Verify. DNS propagation may take a few minutes.'),
+                  'After adding the record, click Verify. DNS propagation may take a few minutes.',
+                ),
                 SizedBox(height: AuraSpace.s12),
                 Wrap(
                   spacing: 8,
                   children: [
                     TextButton(
-                        onPressed: () => _openDnsProvider('cloudflare'),
-                        child: const Text('Cloudflare')),
+                      onPressed: () => _openDnsProvider('cloudflare'),
+                      child: const Text('Cloudflare'),
+                    ),
                     TextButton(
-                        onPressed: () => _openDnsProvider('godaddy'),
-                        child: const Text('GoDaddy')),
+                      onPressed: () => _openDnsProvider('godaddy'),
+                      child: const Text('GoDaddy'),
+                    ),
                     TextButton(
-                        onPressed: () => _openDnsProvider('namecheap'),
-                        child: const Text('Namecheap')),
+                      onPressed: () => _openDnsProvider('namecheap'),
+                      child: const Text('Namecheap'),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close')),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
             ],
           );
         },
       );
 
-      await loadDomains();
+      await loadDomains(silent: true);
     } catch (e) {
-      _showSnack('Could not issue DNS challenge.');
+      _showSnack(_dioMessage(e, 'Could not issue DNS challenge.'));
     }
+  }
+
+  Future<void> verifyDomain(String domainId) async {
+    if (!canManageDomains) {
+      _showSnack('No active institution found for domain management.');
+      return;
+    }
+
+    try {
+      final verified = await repo.verifyDomain(institutionId, domainId);
+
+      _showSnack(
+        verified ? 'Domain verified successfully.' : 'DNS record not found.',
+      );
+
+      await loadDomains(silent: true);
+
+      if (verified) {
+        verifyTimer?.cancel();
+      }
+    } catch (e) {
+      _showSnack(_dioMessage(e, 'Could not verify domain.'));
+    }
+  }
+
+  void startAutoVerify(String domainId) {
+    verifyTimer?.cancel();
+    _showSnack('Auto verify started. Checking every 30 seconds.');
+
+    verifyTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => verifyDomain(domainId),
+    );
   }
 
   Widget _copyRow(String label, String value) {
@@ -171,7 +281,7 @@ class _InstitutionDomainsScreenState
                     Clipboard.setData(ClipboardData(text: value));
                     _showSnack('$label copied.');
                   },
-          )
+          ),
         ],
       ),
     );
@@ -186,43 +296,108 @@ class _InstitutionDomainsScreenState
         html.window.open('https://dcc.godaddy.com/manage', '_blank');
         break;
       case 'namecheap':
-        html.window.open(
-            'https://ap.www.namecheap.com/domains/list/', '_blank');
+        html.window.open('https://ap.www.namecheap.com/domains/list/', '_blank');
         break;
     }
   }
 
-  Future<void> verifyDomain(String domainId) async {
-    try {
-      final verified = await repo.verifyDomain(institutionId, domainId);
+  Widget buildDomainCard(Map<String, dynamic> d) {
+    final id = d['id']?.toString() ?? '';
+    final domain = d['domain']?.toString() ?? '';
+    final status = d['status']?.toString() ?? 'UNKNOWN';
+    final trustLevel = d['trustLevel']?.toString() ?? '';
+    final verifiedAt = d['verifiedAt']?.toString() ?? '';
+    final isPrimary = d['isPrimary'] == true;
 
-      _showSnack(
-          verified ? 'Domain verified successfully.' : 'DNS record not found.');
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            domain,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: AuraSpace.s8),
+          Text('Status: $status'),
+          if (isPrimary) const Text('Primary domain'),
+          if (trustLevel.isNotEmpty) Text('Trust: $trustLevel'),
+          if (verifiedAt.isNotEmpty) Text('Verified at: $verifiedAt'),
+          SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              ElevatedButton(
+                onPressed: () => issueChallenge(id),
+                child: const Text('DNS challenge'),
+              ),
+              ElevatedButton(
+                onPressed: () => verifyDomain(id),
+                child: const Text('Verify'),
+              ),
+              ElevatedButton(
+                onPressed: () => startAutoVerify(id),
+                child: const Text('Auto verify'),
+              ),
+              OutlinedButton(
+                onPressed: () => removeDomain(id),
+                child: const Text('Remove'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-      await loadDomains();
+  Widget _statusCard() {
+    final name = institution?['name']?.toString() ?? 'Institution';
+    final slug = institution?['slug']?.toString() ?? '';
 
-      if (verified) {
-        verifyTimer?.cancel();
-      }
-    } catch (e) {
-      _showSnack('Could not verify domain.');
+    if (canManageDomains) {
+      return AuraCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            ),
+            SizedBox(height: AuraSpace.s8),
+            if (slug.isNotEmpty) Text('Slug: $slug'),
+            if (institutionState != null && institutionState!.isNotEmpty)
+              Text('Standing: $institutionState'),
+          ],
+        ),
+      );
     }
+
+    String message =
+        'No verified institutional membership is active for this account yet.';
+
+    if (institutionState == 'PENDING_REQUEST') {
+      message =
+          'Your institutional request is still in progress. Domains can be managed after membership becomes active.';
+    } else if (institutionState == 'SIGNED_IN_NO_STANDING') {
+      message =
+          'This account is signed in, but it does not currently hold institutional standing.';
+    } else if (institutionState == 'REJECTED') {
+      message =
+          'This institutional request was rejected. Domain management is not available on this account.';
+    } else if (institutionState == 'SUSPENDED') {
+      message =
+          'This institutional standing is suspended. Domain management is temporarily unavailable.';
+    }
+
+    return AuraCard(
+      child: Text(message),
+    );
   }
 
-  void startAutoVerify(String domainId) {
-    verifyTimer?.cancel();
-
-    _showSnack('Auto verify started. Checking every 30 seconds.');
-
-    verifyTimer =
-        Timer.periodic(const Duration(seconds: 30), (_) => verifyDomain(domainId));
-  }
-
-  @override
-  void dispose() {
-    verifyTimer?.cancel();
-    domainController.dispose();
-    super.dispose();
+  Widget _emptyState() {
+    return const AuraCard(
+      child: Text('No domains added yet.'),
+    );
   }
 
   @override
@@ -231,48 +406,11 @@ class _InstitutionDomainsScreenState
     loadDomains();
   }
 
-  Widget buildDomainCard(Map<String, dynamic> d) {
-    final id = d['id']?.toString() ?? '';
-    final domain = d['domain'] ?? '';
-    final status = d['status'] ?? 'UNKNOWN';
-    final trustLevel = d['trustLevel'] ?? '';
-    final verifiedAt = d['verifiedAt'] ?? '';
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(domain,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-          SizedBox(height: AuraSpace.s8),
-          Text('Status: $status'),
-          if (trustLevel.isNotEmpty) Text('Trust: $trustLevel'),
-          if (verifiedAt.isNotEmpty) Text('Verified at: $verifiedAt'),
-          SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            children: [
-              ElevatedButton(
-                  onPressed: () => issueChallenge(id),
-                  child: const Text('DNS challenge')),
-              ElevatedButton(
-                  onPressed: () => verifyDomain(id),
-                  child: const Text('Verify')),
-              ElevatedButton(
-                  onPressed: () => startAutoVerify(id),
-                  child: const Text('Auto verify')),
-              OutlinedButton(
-                  onPressed: () => removeDomain(id),
-                  child: const Text('Remove')),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyState() {
-    return const AuraCard(child: Text('No domains added yet.'));
+  @override
+  void dispose() {
+    verifyTimer?.cancel();
+    domainController.dispose();
+    super.dispose();
   }
 
   @override
@@ -288,22 +426,38 @@ class _InstitutionDomainsScreenState
           Doc.lede('Attach and verify domains owned by the institution.'),
           SizedBox(height: AuraSpace.s12),
 
+          _statusCard(),
+          SizedBox(height: AuraSpace.s12),
+
           AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Add domain',
-                    style:
-                        AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Add domain',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
                 SizedBox(height: AuraSpace.s10),
                 TextField(
                   controller: domainController,
-                  decoration: const InputDecoration(hintText: 'example.org'),
+                  enabled: canManageDomains && !_submitting,
+                  decoration: InputDecoration(
+                    hintText: 'example.org',
+                    helperText: canManageDomains
+                        ? 'Enter only the domain name.'
+                        : 'Domain management becomes active once institutional membership is active.',
+                  ),
+                  onSubmitted: (_) {
+                    if (canManageDomains && !_submitting) {
+                      addDomain();
+                    }
+                  },
                 ),
                 SizedBox(height: AuraSpace.s10),
                 ElevatedButton(
-                    onPressed: _submitting ? null : addDomain,
-                    child: Text(_submitting ? 'Adding...' : 'Add domain')),
+                  onPressed: _submitting ? null : addDomain,
+                  child: Text(_submitting ? 'Adding...' : 'Add domain'),
+                ),
               ],
             ),
           ),
@@ -312,10 +466,14 @@ class _InstitutionDomainsScreenState
 
           if (loading)
             const Center(child: CircularProgressIndicator())
+          else if (loadError != null)
+            AuraCard(child: Text(loadError!))
+          else if (!canManageDomains)
+            const SizedBox.shrink()
           else if (domains.isEmpty)
             _emptyState()
           else
-            ...domains.map(buildDomainCard)
+            ...domains.map(buildDomainCard),
         ],
       ),
     );

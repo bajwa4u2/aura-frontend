@@ -22,30 +22,49 @@ class InstitutionDomainsRepository {
     return <Map<String, dynamic>>[];
   }
 
-  Future<Map<String, dynamic>?> getMyInstitution() async {
+  Future<Map<String, dynamic>> getMyInstitutionState() async {
     final res = await _dio.get('/institutions/me');
-    final data = _asMap(res.data) ?? <String, dynamic>{};
+    return _asMap(res.data) ?? <String, dynamic>{};
+  }
 
-    final topInstitution = _asMap(data['institution']);
+  Future<Map<String, dynamic>?> getMyInstitution() async {
+    final data = await getMyInstitutionState();
+
     final membership = _asMap(data['membership']);
     final membershipInstitution = _asMap(membership?['institution']);
-    final request = _asMap(data['request']);
 
-    return topInstitution ?? membershipInstitution ?? request;
+    if (membershipInstitution != null &&
+        (membershipInstitution['id']?.toString().isNotEmpty ?? false)) {
+      return membershipInstitution;
+    }
+
+    return null;
+  }
+
+  Future<String?> getMyInstitutionStateName() async {
+    final data = await getMyInstitutionState();
+    final state = data['state']?.toString().trim();
+    if (state == null || state.isEmpty) return null;
+    return state;
   }
 
   Future<List<Map<String, dynamic>>> getDomains(String institutionId) async {
     final res = await _dio.get('/institutions/$institutionId/domains');
     final data = _asMap(res.data) ?? <String, dynamic>{};
-
     return _asMapList(data['domains']);
   }
 
-  Future<void> addDomain(String institutionId, String domain) async {
-    await _dio.post(
+  Future<Map<String, dynamic>> addDomain(
+    String institutionId,
+    String domain,
+  ) async {
+    final res = await _dio.post(
       '/institutions/$institutionId/domains',
       data: {'domain': domain},
     );
+
+    final data = _asMap(res.data) ?? <String, dynamic>{};
+    return _asMap(data['domain']) ?? <String, dynamic>{};
   }
 
   Future<void> removeDomain(String institutionId, String domainId) async {
@@ -53,7 +72,9 @@ class InstitutionDomainsRepository {
   }
 
   Future<Map<String, dynamic>> issueDnsChallenge(
-      String institutionId, String domainId) async {
+    String institutionId,
+    String domainId,
+  ) async {
     final res = await _dio.post(
       '/institutions/$institutionId/domains/$domainId/verify/dns',
     );
