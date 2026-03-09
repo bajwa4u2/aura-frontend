@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
+import '../auth/session_providers.dart';
 import '../net/dio_provider.dart';
 
 enum InstitutionAccessState {
