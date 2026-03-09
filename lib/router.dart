@@ -8,6 +8,7 @@ import 'app/app_shell.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
+import 'core/institutions/institution_access_provider.dart';
 
 // Auth
 import 'features/auth/presentation/auth_screen.dart';
@@ -19,7 +20,6 @@ import 'features/auth/presentation/reset_password_screen.dart';
 
 // Public / Member
 import 'features/home/presentation/public_home_screen.dart';
-import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
@@ -46,8 +46,10 @@ import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
+import 'screens/enter_institution_screen.dart';
 import 'screens/institution_dashboard_screen.dart';
 import 'screens/contact_screen.dart';
+import 'features/home/presentation/member_home_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -68,6 +70,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<void>>(sessionBootstrapProvider, (_, __) => refresh.value++);
+  ref.listen<AsyncValue<InstitutionAccess>>(
+    institutionAccessProvider,
+    (_, __) => refresh.value++,
+  );
 
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
@@ -126,6 +132,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isAnyAuthPath(String path) {
     return isPlainAuthPage(path) || isAuthActionPath(path);
+  }
+
+  String _resolveInstitutionRoute(InstitutionAccess access) {
+    return access.hasAccess ? kInstitutionDashboardRoute : kEnterInstitutionRoute;
   }
 
   return GoRouter(
@@ -220,7 +230,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       final verifiedAsync = ref.read(emailVerifiedProvider);
-
       if (verifiedAsync.isLoading) {
         return null;
       }
@@ -251,20 +260,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending?redirect=${Uri.encodeComponent(current)}';
       }
 
-      if (path == '/verify-email') {
+      if (path == '/verify-email' || path == '/verify-pending') {
         final redirectTo = uri.queryParameters['redirect'];
         if (redirectTo != null && redirectTo.startsWith('/')) {
           return _normalizeRedirectDest(redirectTo);
         }
-        return kInstitutionDashboardRoute;
-      }
 
-      if (path == '/verify-pending') {
-        final redirectTo = uri.queryParameters['redirect'];
-        if (redirectTo != null && redirectTo.startsWith('/')) {
-          return _normalizeRedirectDest(redirectTo);
-        }
-        return kInstitutionDashboardRoute;
+        final institutionAccessAsync = ref.read(institutionAccessProvider);
+        if (institutionAccessAsync.isLoading) return null;
+
+        final access = institutionAccessAsync.valueOrNull ??
+            const InstitutionAccess(state: InstitutionAccessState.none);
+
+        return _resolveInstitutionRoute(access);
       }
 
       if (isPlainAuth) {
@@ -272,12 +280,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         return _normalizeRedirectDest(redirectTo);
       }
 
-      if (path == '/institution/sign-in') {
-        return kInstitutionDashboardRoute;
-      }
+      if (path == '/institution/sign-in' || path == kEnterInstitutionRoute) {
+        final institutionAccessAsync = ref.read(institutionAccessProvider);
+        if (institutionAccessAsync.isLoading) return null;
 
-      if (path == kEnterInstitutionRoute) {
-        return kInstitutionDashboardRoute;
+        final access = institutionAccessAsync.valueOrNull ??
+            const InstitutionAccess(state: InstitutionAccessState.none);
+
+        final target = _resolveInstitutionRoute(access);
+        if (target != path) return target;
+        return null;
       }
 
       if (isPublic || isMember || isAuthAction) {
@@ -382,7 +394,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kEnterInstitutionRoute,
-            redirect: (_, __) => kInstitutionDashboardRoute,
+            builder: (_, __) => const EnterInstitutionScreen(),
           ),
           GoRoute(
             path: kInstitutionDashboardRoute,
