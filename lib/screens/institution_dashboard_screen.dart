@@ -48,7 +48,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     final fromRequest = _value(request?['organizationName']);
     if (fromRequest.isNotEmpty) return fromRequest;
 
-    return 'Institution dashboard';
+    return 'Institution account';
   }
 
   String _institutionDomain({
@@ -122,6 +122,16 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: AuraText.body.copyWith(
+        fontWeight: FontWeight.w700,
+        fontSize: 16,
+      ),
+    );
+  }
+
   Widget _loadingView() {
     return const Center(
       child: Padding(
@@ -137,7 +147,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Could not load institutional dashboard.',
+            'Could not load institution account.',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -150,8 +160,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () =>
-                      ref.invalidate(institutionAccessProvider),
+                  onPressed: () => ref.invalidate(institutionAccessProvider),
                   child: Text('Try again', style: AuraText.body),
                 ),
               ),
@@ -162,203 +171,28 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _requestStatusCard({
-    required Map<String, dynamic>? request,
-    required bool isPendingRequest,
-  }) {
-    final status = _value(request?['status']);
-    final organizationName = _value(request?['organizationName']);
-    final workEmail = _value(request?['workEmail']);
-    final createdAt = _value(request?['createdAt']);
-    final reviewedAt = _value(request?['reviewedAt']);
-    final roleTitle = _value(request?['roleTitle']);
-    final jurisdiction = _value(request?['jurisdiction']);
-    final domain = _value(request?['domain']);
-    final websiteUrl = _value(request?['websiteUrl']);
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Institution request',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            isPendingRequest
-                ? 'Your institution is inside Aura and awaiting back-office review. Institutional tools remain visible here and will unlock once standing is approved.'
-                : 'Your request is handled as a back-office review process. Updates are sent by email.',
-            style: AuraText.body,
-          ),
-          if (organizationName.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text('Institution: $organizationName', style: AuraText.body),
-          ],
-          if (workEmail.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Institution email: $workEmail', style: AuraText.body),
-          ],
-          if (roleTitle.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Representative title: $roleTitle', style: AuraText.body),
-          ],
-          if (jurisdiction.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Jurisdiction: $jurisdiction', style: AuraText.body),
-          ],
-          if (domain.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Domain: $domain', style: AuraText.body),
-          ],
-          if (websiteUrl.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Website: $websiteUrl', style: AuraText.body),
-          ],
-          if (status.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Status: $status', style: AuraText.body),
-          ],
-          if (createdAt.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Submitted: $createdAt', style: AuraText.body),
-          ],
-          if (reviewedAt.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Reviewed: $reviewedAt', style: AuraText.body),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _pendingStandingBanner() {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Institution standing pending',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            'Your institution has entered the dashboard and is awaiting approval. The institutional workspace is visible now, but publishing and operating tools stay locked until review is complete.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: const [
-              _PendingTag(label: 'Dashboard visible'),
-              _PendingTag(label: 'Tools locked'),
-              _PendingTag(label: 'Review pending'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _noStandingView(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'No active institutional standing',
-                style: _headlineStyle(context),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                'This account does not currently carry active institutional operating standing inside Aura.',
-                style: AuraText.body,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'What to do next',
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'If no institutional standing exists yet, begin from the institutions page and create an institutional account.',
-                style: AuraText.body,
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => context.go('/institutions'),
-                      child: Text('Go to institutions', style: AuraText.body),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _identityCard(
+  Widget _heroCard(
     BuildContext context, {
-    required Map<String, dynamic>? institution,
-    required Map<String, dynamic>? membership,
-    required Map<String, dynamic>? request,
+    required String institutionName,
+    required String standingLabel,
+    required String role,
     required bool isPendingRequest,
     required bool isAuthorizedSpeaker,
+    required bool hasInstitutionStanding,
   }) {
-    final institutionName = _institutionDisplayName(
-      institution: institution,
-      request: request,
-    );
-    final status = _value(institution?['status']);
-    final slug = _institutionSlug(
-      institution: institution,
-      request: request,
-    );
-    final domain = _institutionDomain(
-      institution: institution,
-      request: request,
-    );
-    final jurisdiction = _institutionJurisdiction(
-      institution: institution,
-      request: request,
-    );
-    final websiteUrl = _institutionWebsite(
-      institution: institution,
-      request: request,
-    );
-    final verifiedAt = _value(institution?['verifiedAt']);
+    final speechLabel = isAuthorizedSpeaker
+        ? 'Official speech: Authorized'
+        : isPendingRequest
+            ? 'Official speech: Pending standing'
+            : hasInstitutionStanding
+                ? 'Official speech: Not authorized'
+                : 'Official speech: Locked';
 
-    final role = _institutionRole(
-      membership: membership,
-      request: request,
-    );
-    final title = _institutionTitle(
-      membership: membership,
-      request: request,
-    );
-    final canSpeakOfficially = membership?['canSpeakOfficially'] == true;
-
-    final standingLabel = isPendingRequest
-        ? 'Standing: Pending review'
-        : status.isNotEmpty
-            ? 'Standing: $status'
-            : 'Standing: Active';
+    final summary = hasInstitutionStanding
+        ? isPendingRequest
+            ? 'Institution account active. Standing is pending review.'
+            : 'Institution account active with approved standing.'
+        : 'Institution account active. Complete institution setup to unlock institutional tools.';
 
     return AuraCard(
       child: Column(
@@ -366,7 +200,7 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         children: [
           Text(
             institutionName,
-            style: _headlineStyle(context).copyWith(fontSize: 28),
+            style: _headlineStyle(context).copyWith(fontSize: 30),
           ),
           const SizedBox(height: AuraSpace.s10),
           Wrap(
@@ -375,199 +209,420 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             children: [
               _statusChip(standingLabel),
               if (role.isNotEmpty) _statusChip('Role: $role'),
-              _statusChip(
-                canSpeakOfficially || isAuthorizedSpeaker
-                    ? 'Official speech: Authorized'
-                    : isPendingRequest
-                        ? 'Official speech: Locked pending review'
-                        : 'Official speech: Not authorized',
-              ),
+              _statusChip(speechLabel),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
-          Text(
-            isPendingRequest
-                ? 'This institutional account is present inside Aura and awaiting approval.'
-                : 'This account carries verified institutional standing inside Aura.',
-            style: AuraText.body,
-          ),
-          if (title.isNotEmpty ||
-              slug.isNotEmpty ||
-              domain.isNotEmpty ||
-              jurisdiction.isNotEmpty ||
-              websiteUrl.isNotEmpty ||
-              verifiedAt.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            const Divider(height: 1),
-            const SizedBox(height: AuraSpace.s12),
-            if (title.isNotEmpty)
-              Text('Institutional title: $title', style: AuraText.body),
-            if (slug.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Public slug: $slug', style: AuraText.body),
-            ],
-            if (domain.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Domain: $domain', style: AuraText.body),
-            ],
-            if (jurisdiction.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Jurisdiction: $jurisdiction', style: AuraText.body),
-            ],
-            if (websiteUrl.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Website: $websiteUrl', style: AuraText.body),
-            ],
-            if (verifiedAt.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s6),
-              Text('Verified at: $verifiedAt', style: AuraText.body),
-            ],
-          ],
+          Text(summary, style: AuraText.body),
         ],
       ),
     );
   }
 
-  Widget _disabledActionTile({
+  Widget _infoRow(String label, String value) {
+    if (value.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 132,
+            child: Text(
+              label,
+              style: AuraText.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: AuraText.body),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _identityCard({
+    required Map<String, dynamic>? institution,
+    required Map<String, dynamic>? membership,
+    required Map<String, dynamic>? request,
+  }) {
+    final slug = _institutionSlug(institution: institution, request: request);
+    final domain = _institutionDomain(institution: institution, request: request);
+    final website =
+        _institutionWebsite(institution: institution, request: request);
+    final jurisdiction =
+        _institutionJurisdiction(institution: institution, request: request);
+    final role = _institutionRole(membership: membership, request: request);
+    final title = _institutionTitle(membership: membership, request: request);
+    final verifiedAt = _value(institution?['verifiedAt']);
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Institution identity'),
+          const SizedBox(height: AuraSpace.s12),
+          _infoRow('Title', title),
+          _infoRow('Role', role),
+          _infoRow('Domain', domain),
+          _infoRow('Website', website),
+          _infoRow('Jurisdiction', jurisdiction),
+          _infoRow('Public slug', slug),
+          _infoRow('Verified at', verifiedAt),
+        ],
+      ),
+    );
+  }
+
+  Widget _checkpoint({
     required String title,
-    required String detail,
+    required bool done,
+    String? detail,
   }) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: AuraSpace.s6),
-          Text(detail, style: AuraText.body),
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black26),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              done ? '✓' : '•',
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                if (detail != null && detail.trim().isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(detail.trim(), style: AuraText.body),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _actionsCard(
+  Widget _readinessCard({
+    required bool hasInstitutionStanding,
+    required bool isPendingRequest,
+    required bool isVerifiedMember,
+    required bool isAuthorizedSpeaker,
+    required String domain,
+    required String website,
+    required Map<String, dynamic>? request,
+    required Map<String, dynamic>? institution,
+  }) {
+    final hasInstitutionClaim =
+        (request != null && request.isNotEmpty) ||
+        (institution != null && institution.isNotEmpty);
+
+    final hasDomain = domain.isNotEmpty || website.isNotEmpty;
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Verification path'),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'This account already carries member access. Institutional standing expands through institution setup and proof.',
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _checkpoint(
+            title: 'Email verified',
+            done: true,
+            detail: 'This account is already inside the institution workspace.',
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          _checkpoint(
+            title: 'Institution account claimed',
+            done: hasInstitutionClaim,
+            detail: hasInstitutionClaim
+                ? 'An institution identity is attached to this account.'
+                : 'Create or attach an institution identity to begin.',
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          _checkpoint(
+            title: 'Domain present',
+            done: hasDomain,
+            detail: hasDomain
+                ? 'A domain or website is present for institutional proof.'
+                : 'Add a domain or website to prepare for institutional proof.',
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          _checkpoint(
+            title: 'Standing approved',
+            done: hasInstitutionStanding && !isPendingRequest,
+            detail: isPendingRequest
+                ? 'Standing is pending review.'
+                : hasInstitutionStanding
+                    ? 'Institution standing is active.'
+                    : 'Standing is not active yet.',
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          _checkpoint(
+            title: 'Official speech enabled',
+            done: isAuthorizedSpeaker,
+            detail: isAuthorizedSpeaker
+                ? 'This account can issue official institutional posts.'
+                : isVerifiedMember
+                    ? 'Institution standing is active, but official speech is not yet enabled for this account.'
+                    : 'Official speech remains locked until higher institutional standing is reached.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              'Domain self-verification should live here as a direct institution tool. For now, this card shows the structural path and current readiness.',
+              style: AuraText.body,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toolTile({
+    required String title,
+    required String detail,
+    String? status,
+    VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 132),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            padding: const EdgeInsets.all(AuraSpace.s14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                Expanded(
+                  child: Text(detail, style: AuraText.body),
+                ),
+                if (status != null && status.trim().isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    status.trim(),
+                    style: AuraText.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: enabled ? Colors.black87 : Colors.black54,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _toolGrid(List<Widget> children) {
+    return Wrap(
+      spacing: AuraSpace.s12,
+      runSpacing: AuraSpace.s12,
+      children: children
+          .map(
+            (child) => SizedBox(
+              width: 320,
+              child: child,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _memberToolsCard(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Member tools'),
+          const SizedBox(height: AuraSpace.s12),
+          _toolGrid([
+            _toolTile(
+              title: 'My account',
+              detail:
+                  'Open the member account surface for profile, session, and personal account controls.',
+              status: 'Available now',
+              onTap: () => context.go('/me'),
+            ),
+            _toolTile(
+              title: 'Edit profile',
+              detail:
+                  'Update account-facing profile details carried by this signed-in user.',
+              status: 'Available now',
+              onTap: () => context.go('/me/edit'),
+            ),
+            _toolTile(
+              title: 'Correspondence',
+              detail:
+                  'Open the correspondence space available to the signed-in member account.',
+              status: 'Available now',
+              onTap: () => context.go('/me/correspondence'),
+            ),
+            _toolTile(
+              title: 'Announcements',
+              detail:
+                  'Review public and institutional announcements from inside the member workspace.',
+              status: 'Available now',
+              onTap: () => context.go('/announcements'),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _institutionToolsCard(
     BuildContext context, {
+    required bool hasInstitutionStanding,
+    required bool isPendingRequest,
+    required bool isVerifiedMember,
+    required bool isAuthorizedSpeaker,
     required String slug,
-    required bool canUseInstitutionTools,
-    required bool canIssueInstitutionalPost,
+  }) {
+    final profileStatus = slug.isNotEmpty
+        ? 'Available now'
+        : 'Will open when public institution path is present';
+
+    final postingStatus = isAuthorizedSpeaker
+        ? 'Available now'
+        : isPendingRequest
+            ? 'Locked while standing is pending'
+            : isVerifiedMember
+                ? 'Locked until official speech is granted'
+                : 'Locked until institutional standing is active';
+
+    final managementStatus = hasInstitutionStanding
+        ? isPendingRequest
+            ? 'Visible in restricted mode'
+            : 'Available now'
+        : 'Waiting for institution standing';
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Institution tools'),
+          const SizedBox(height: AuraSpace.s12),
+          _toolGrid([
+            _toolTile(
+              title: 'Institution profile',
+              detail:
+                  'Open the public institution surface attached to this account.',
+              status: profileStatus,
+              onTap: slug.isNotEmpty
+                  ? () => context.go('/institutions/$slug')
+                  : null,
+            ),
+            _toolTile(
+              title: 'Official posts',
+              detail:
+                  'Issue posts as an institutional voice when official speech is enabled.',
+              status: postingStatus,
+              onTap: isAuthorizedSpeaker ? () => context.go('/compose') : null,
+            ),
+            _toolTile(
+              title: 'Institution correspondence',
+              detail:
+                  'Carry institution-related correspondence from the account workspace.',
+              status: managementStatus,
+              onTap: isVerifiedMember ? () => context.go('/me/correspondence') : null,
+            ),
+            _toolTile(
+              title: 'Domain self-verification',
+              detail:
+                  'This should become the direct self-service proof tool for institutional approval rather than depending only on back-office handling.',
+              status: 'Next structural tool',
+              onTap: null,
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _requestCard({
+    required Map<String, dynamic>? request,
     required bool isPendingRequest,
   }) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Institution actions',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            isPendingRequest
-                ? 'This operating surface is visible now. Publishing and institutional tools will unlock after standing is approved.'
-                : 'Institutional work inside Aura is carried from this operating surface.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          if (canUseInstitutionTools) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => context.go('/me/correspondence'),
-                    child: Text(
-                      'Open correspondence',
-                      style: AuraText.body.copyWith(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            _disabledActionTile(
-              title: 'Correspondence locked',
-              detail:
-                  'Institutional correspondence becomes available once review is complete.',
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.go('/announcements'),
-                  child: Text('View announcements', style: AuraText.body),
-                ),
-              ),
-            ],
-          ),
-          if (slug.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/institutions/$slug'),
-                    child: Text(
-                      'Open public institution profile',
-                      style: AuraText.body,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s10),
-          if (canIssueInstitutionalPost) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/compose'),
-                    child: Text('Issue institutional post', style: AuraText.body),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            _disabledActionTile(
-              title: 'Institutional posting locked',
-              detail: isPendingRequest
-                  ? 'Official posting will unlock after standing is approved and speech authority is granted.'
-                  : 'This account is not currently authorized for official institutional speech.',
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+    if (request == null || request.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-  Widget _recordCard({required bool isPendingRequest}) {
+    final status = _value(request['status']);
+    final organizationName = _value(request['organizationName']);
+    final workEmail = _value(request['workEmail']);
+    final roleTitle = _value(request['roleTitle']);
+    final reviewedAt = _value(request['reviewedAt']);
+    final createdAt = _value(request['createdAt']);
+
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Institution record',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
+          _sectionTitle('Institution request record'),
           const SizedBox(height: AuraSpace.s10),
           Text(
             isPendingRequest
-                ? 'This institutional record space is prepared and will begin filling as approved institutional activity starts inside Aura.'
-                : 'Recent institutional activity will appear here as Aura’s institutional record grows.',
+                ? 'This account already holds an institution request in progress.'
+                : 'This account has an institution request record attached.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
-          Text('• Statements and official posts', style: AuraText.body),
-          const SizedBox(height: AuraSpace.s6),
-          Text('• Correspondence and responses', style: AuraText.body),
-          const SizedBox(height: AuraSpace.s6),
-          Text('• Announcements and public record', style: AuraText.body),
+          _infoRow('Institution', organizationName),
+          _infoRow('Work email', workEmail),
+          _infoRow('Role title', roleTitle),
+          _infoRow('Status', status),
+          _infoRow('Submitted', createdAt),
+          _infoRow('Reviewed', reviewedAt),
         ],
       ),
     );
@@ -601,71 +656,84 @@ class InstitutionDashboardScreen extends ConsumerWidget {
             access.state == InstitutionAccessState.verifiedMember ||
             access.state == InstitutionAccessState.authorizedSpeaker;
 
-        final canUseInstitutionTools = isVerifiedMember;
-        final canIssueInstitutionalPost = isAuthorizedSpeaker;
+        final institutionMap = institution.isNotEmpty ? institution : null;
+        final membershipMap = membership.isNotEmpty ? membership : null;
+        final requestMap = request.isNotEmpty ? request : null;
 
+        final institutionName = _institutionDisplayName(
+          institution: institutionMap,
+          request: requestMap,
+        );
+        final role = _institutionRole(
+          membership: membershipMap,
+          request: requestMap,
+        );
+        final domain = _institutionDomain(
+          institution: institutionMap,
+          request: requestMap,
+        );
+        final website = _institutionWebsite(
+          institution: institutionMap,
+          request: requestMap,
+        );
         final slug = _institutionSlug(
-          institution: institution.isNotEmpty ? institution : null,
-          request: request.isNotEmpty ? request : null,
+          institution: institutionMap,
+          request: requestMap,
         );
 
-        final headline = _institutionDisplayName(
-          institution: institution.isNotEmpty ? institution : null,
-          request: request.isNotEmpty ? request : null,
-        );
-
-        if (!hasInstitutionStanding) {
-          return _noStandingView(context);
-        }
+        final standingLabel = isPendingRequest
+            ? 'Standing: Pending review'
+            : isVerifiedMember
+                ? 'Standing: Active'
+                : 'Standing: Not active';
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(headline, style: _headlineStyle(context)),
-                  const SizedBox(height: AuraSpace.s8),
-                  Text(
-                    isPendingRequest
-                        ? 'This institution has entered the dashboard. Access is restricted until review is completed.'
-                        : 'This account carries verified institutional standing inside Aura.',
-                    style: AuraText.body,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            if (isPendingRequest) ...[
-              _pendingStandingBanner(),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            _identityCard(
+            _heroCard(
               context,
-              institution: institution.isNotEmpty ? institution : null,
-              membership: membership.isNotEmpty ? membership : null,
-              request: request.isNotEmpty ? request : null,
+              institutionName: institutionName,
+              standingLabel: standingLabel,
+              role: role,
               isPendingRequest: isPendingRequest,
               isAuthorizedSpeaker: isAuthorizedSpeaker,
+              hasInstitutionStanding: hasInstitutionStanding,
             ),
             const SizedBox(height: AuraSpace.s12),
-            if (request.isNotEmpty) ...[
-              _requestStatusCard(
-                request: request,
+            _memberToolsCard(context),
+            const SizedBox(height: AuraSpace.s12),
+            _institutionToolsCard(
+              context,
+              hasInstitutionStanding: hasInstitutionStanding,
+              isPendingRequest: isPendingRequest,
+              isVerifiedMember: isVerifiedMember,
+              isAuthorizedSpeaker: isAuthorizedSpeaker,
+              slug: slug,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            _readinessCard(
+              hasInstitutionStanding: hasInstitutionStanding,
+              isPendingRequest: isPendingRequest,
+              isVerifiedMember: isVerifiedMember,
+              isAuthorizedSpeaker: isAuthorizedSpeaker,
+              domain: domain,
+              website: website,
+              request: requestMap,
+              institution: institutionMap,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            _identityCard(
+              institution: institutionMap,
+              membership: membershipMap,
+              request: requestMap,
+            ),
+            if (requestMap != null) ...[
+              const SizedBox(height: AuraSpace.s12),
+              _requestCard(
+                request: requestMap,
                 isPendingRequest: isPendingRequest,
               ),
-              const SizedBox(height: AuraSpace.s12),
             ],
-            _actionsCard(
-              context,
-              slug: slug,
-              canUseInstitutionTools: canUseInstitutionTools,
-              canIssueInstitutionalPost: canIssueInstitutionalPost,
-              isPendingRequest: isPendingRequest,
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            _recordCard(isPendingRequest: isPendingRequest),
           ],
         );
       },
@@ -674,20 +742,6 @@ class InstitutionDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accessAsync = ref.watch(institutionAccessProvider);
-
-    final isPendingRequest = accessAsync.maybeWhen(
-      data: (access) => access.state == InstitutionAccessState.pending,
-      orElse: () => false,
-    );
-
-    final meta = isPendingRequest
-        ? 'Institutional dashboard with restricted access pending approval.'
-        : 'Verified institutional standing and operating tools.';
-    final lede = isPendingRequest
-        ? 'This space is now open to the institution in a restricted mode while review is completed.'
-        : 'This space is reserved for institutional presence carried under approved standing.';
-
     return DocumentScaffold(
       title: 'Institution dashboard',
       child: Column(
@@ -695,35 +749,13 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         children: [
           Doc.title('Institution dashboard'),
           const SizedBox(height: 10),
-          Doc.meta(meta),
-          Doc.lede(lede),
+          Doc.meta('Institution account, standing, tools, and verification path.'),
+          Doc.lede(
+            'This space carries the institution-facing account surface for signed-in institutional users.',
+          ),
           const SizedBox(height: AuraSpace.s12),
           _body(context, ref),
         ],
-      ),
-    );
-  }
-}
-
-class _PendingTag extends StatelessWidget {
-  const _PendingTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
