@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_providers.dart';
-import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_card.dart';
 import '../core/ui/aura_space.dart';
@@ -32,6 +31,7 @@ class _EnterInstitutionScreenState
   bool _signedIn = false;
   String _state = 'PUBLIC';
 
+  Map<String, dynamic>? _request;
   Map<String, dynamic>? _institution;
   Map<String, dynamic>? _membership;
 
@@ -60,6 +60,7 @@ class _EnterInstitutionScreenState
       final res = await dio.get('/institutions/me');
 
       final data = _asMap(res.data);
+      final request = _asMap(data['request']);
       final membership = _asMap(data['membership']);
 
       final topInstitution = _asMap(data['institution']);
@@ -72,10 +73,15 @@ class _EnterInstitutionScreenState
       setState(() {
         _signedIn = data['signedIn'] == true;
         _state = (data['state'] ?? 'SIGNED_IN_NO_STANDING').toString();
+        _request = request.isNotEmpty ? request : null;
         _membership = membership.isNotEmpty ? membership : null;
         _institution = institution.isNotEmpty ? institution : null;
         _loading = false;
       });
+
+      if (_canEnterInstitutionSpace && mounted) {
+        context.go(_institutionDashboardRoute);
+      }
     } on DioException catch (e) {
       if (!mounted) return;
 
@@ -110,13 +116,15 @@ class _EnterInstitutionScreenState
     return <String, dynamic>{};
   }
 
-  bool get _hasInstitutionStanding =>
-      _signedIn &&
-      (_state == 'VERIFIED_MEMBER' || _state == 'AUTHORIZED_SPEAKER') &&
-      _institution != null &&
-      _membership != null;
-
   String _value(dynamic value) => (value ?? '').toString().trim();
+
+  bool get _canEnterInstitutionSpace =>
+      _signedIn &&
+      (_state == 'PENDING_REQUEST' ||
+          _state == 'VERIFIED_MEMBER' ||
+          _state == 'AUTHORIZED_SPEAKER');
+
+  bool get _isPendingRequest => _state == 'PENDING_REQUEST';
 
   TextStyle _headlineStyle(BuildContext context) {
     return (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
@@ -232,14 +240,22 @@ class _EnterInstitutionScreenState
   }
 
   Widget _institutionCard(BuildContext context) {
-    if (!_hasInstitutionStanding) {
+    if (!_canEnterInstitutionSpace) {
       return _noStandingCard(context);
     }
 
-    final institutionName = _value(_institution?['name']);
+    final institutionName = _value(_institution?['name']).isNotEmpty
+        ? _value(_institution?['name'])
+        : _value(_request?['organizationName']).isNotEmpty
+            ? _value(_request?['organizationName'])
+            : 'Institution account';
+
     final institutionStatus = _value(_institution?['status']);
+    final requestStatus = _value(_request?['status']);
     final role = _value(_membership?['role']);
-    final title = _value(_membership?['title']);
+    final title = _value(_membership?['title']).isNotEmpty
+        ? _value(_membership?['title'])
+        : _value(_request?['roleTitle']);
     final canSpeakOfficially = _membership?['canSpeakOfficially'] == true;
 
     return AuraCard(
@@ -252,7 +268,7 @@ class _EnterInstitutionScreenState
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            institutionName.isNotEmpty ? institutionName : 'Verified institution',
+            institutionName,
             style: _headlineStyle(context).copyWith(fontSize: 26),
           ),
           const SizedBox(height: AuraSpace.s10),
@@ -260,20 +276,34 @@ class _EnterInstitutionScreenState
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              if (institutionStatus.isNotEmpty)
+              if (_isPendingRequest)
+                _statusChip('Standing: Pending review')
+              else if (institutionStatus.isNotEmpty)
                 _statusChip('Standing: $institutionStatus'),
+              if (requestStatus.isNotEmpty && _isPendingRequest)
+                _statusChip('Request: $requestStatus'),
               if (role.isNotEmpty) _statusChip('Role: $role'),
-              _statusChip(
-                canSpeakOfficially
-                    ? 'Official speech: Authorized'
-                    : 'Official speech: Not authorized',
-              ),
+              if (_isPendingRequest)
+                _statusChip('Tools: Restricted')
+              else
+                _statusChip(
+                  canSpeakOfficially
+                      ? 'Official speech: Authorized'
+                      : 'Official speech: Not authorized',
+                ),
             ],
           ),
           if (title.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
             Text('Institutional title: $title', style: AuraText.body),
           ],
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            _isPendingRequest
+                ? 'Your institution is inside Aura and awaiting review. You can enter the institutional dashboard now. Publishing and operational tools remain restricted until standing is approved.'
+                : 'This account carries institutional standing inside Aura and may enter the institutional dashboard.',
+            style: AuraText.body,
+          ),
           const SizedBox(height: AuraSpace.s12),
           Row(
             children: [
