@@ -31,6 +31,10 @@ import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
+import 'features/institutions/presentation/institution_dashboard_screen.dart';
+import 'features/institutions/domain/institution_domains_screen.dart';
+import 'features/institutions/profile/institution_profile_screen.dart';
+import 'features/institutions/verification/institution_request_verification_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 
@@ -45,12 +49,13 @@ import 'screens/institutions_hub_screen.dart';
 import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
-import 'screens/institution_request_verification_screen.dart';
-import 'screens/institution_dashboard_screen.dart';
 import 'screens/contact_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
+const String kInstitutionDomainsRoute = '/institution/domains';
+const String kInstitutionProfileRoute = '/institution/profile';
+const String kInstitutionVerificationRoute = '/institution/request-verification';
 const String kEnterInstitutionRoute = '/enter-institution';
 
 String _normalizeRedirectDest(String? dest) {
@@ -106,6 +111,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/me/edit' ||
         path == '/me/correspondence' ||
         path == kInstitutionDashboardRoute ||
+        path == kInstitutionDomainsRoute ||
+        path == kInstitutionProfileRoute ||
+        path == kInstitutionVerificationRoute ||
         path == kEnterInstitutionRoute ||
         path == '/compose' ||
         path.startsWith('/posts/') ||
@@ -157,16 +165,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                     runSpacing: 10,
                     children: [
                       FilledButton(
-                        onPressed: () => context.go('/home'),
-                        child: const Text('Go to Home'),
-                      ),
-                      OutlinedButton(
                         onPressed: () => context.go('/public'),
                         child: const Text('Public home'),
                       ),
                       OutlinedButton(
-                        onPressed: () => context.go('/login'),
-                        child: const Text('Sign in'),
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Member home'),
                       ),
                     ],
                   ),
@@ -301,9 +305,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
       GoRoute(
         path: '/institutions/:slug',
-        builder: (context, state) => InstitutionDetailScreen(
-          slug: state.pathParameters['slug'] ?? '',
-        ),
+        builder: (context, state) =>
+            InstitutionDetailScreen(slug: state.pathParameters['slug']!),
+      ),
+      GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
+      GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
+      GoRoute(
+        path: '/announcements',
+        builder: (_, __) => const AnnouncementsScreen(),
+      ),
+      GoRoute(
+        path: '/announcements/:id',
+        builder: (context, state) =>
+            AnnouncementDetailScreen(id: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/institution/sign-in',
@@ -313,58 +327,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: kInstitutionCreateRoute,
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
       ),
-      GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
-      GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
-      GoRoute(path: '/announcements', builder: (_, __) => const AnnouncementsScreen()),
-      GoRoute(
-        path: '/announcements/:slug',
-        builder: (context, state) => AnnouncementDetailScreen(
-          slug: state.pathParameters['slug'] ?? '',
-        ),
-      ),
 
-      // Auth
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => AuthScreen(
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => RegisterScreen(
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/reset-password',
-        builder: (context, state) => ResetPasswordScreen(
-          token: state.uri.queryParameters['token'],
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/verify-email',
-        builder: (context, state) => VerifyEmailScreen(
-          token: state.uri.queryParameters['token'],
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/verify-pending',
-        builder: (context, state) => VerifyPendingScreen(
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-
-      // Member area
+      // Member app shell
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
@@ -372,56 +336,56 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
-          GoRoute(path: '/ai/claim-audit', builder: (_, __) => const ClaimAuditScreen()),
+          GoRoute(
+            path: '/ai/claim-audit',
+            builder: (_, __) => const ClaimAuditScreen(),
+          ),
           GoRoute(path: '/me', builder: (_, __) => const MeScreen()),
-          GoRoute(path: '/me/edit', builder: (_, __) => const EditProfileScreen()),
+          GoRoute(
+            path: '/me/edit',
+            builder: (_, __) => const EditProfileScreen(),
+          ),
           GoRoute(
             path: '/me/correspondence',
             builder: (_, __) => const CorrespondenceHubScreen(),
           ),
           GoRoute(
-            path: kEnterInstitutionRoute,
-            redirect: (_, __) => kInstitutionDashboardRoute,
-          ),
-          GoRoute(
             path: kInstitutionDashboardRoute,
             builder: (_, __) => const InstitutionDashboardScreen(),
           ),
-          GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
+          GoRoute(
+            path: kInstitutionDomainsRoute,
+            builder: (_, __) => const InstitutionDomainsScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionProfileRoute,
+            builder: (_, __) => const InstitutionProfileScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionVerificationRoute,
+            builder: (_, __) => const InstitutionRequestVerificationScreen(),
+          ),
+          GoRoute(
+            path: '/compose',
+            builder: (_, __) => const ComposeScreen(),
+          ),
           GoRoute(
             path: '/posts/:id',
-            builder: (context, state) => PostDetailScreen(
-              postId: state.pathParameters['id'] ?? '',
-            ),
+            builder: (context, state) =>
+                PostDetailScreen(postId: state.pathParameters['id']!),
           ),
           GoRoute(
             path: '/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            builder: (context, state) =>
+                AuthorProfileScreen(handle: state.pathParameters['handle']!),
           ),
           GoRoute(
-            path: '/support/:handle',
-            builder: (context, state) => SupportFallbackScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
+            path: '/support/:slug',
+            builder: (context, state) =>
+                SupportFallbackScreen(slug: state.pathParameters['slug']!),
           ),
         ],
       ),
     ],
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    _sub = stream.listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _sub;
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
-  }
-}
