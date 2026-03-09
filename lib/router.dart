@@ -46,7 +46,6 @@ import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/institution_request_verification_screen.dart';
-import 'screens/enter_institution_screen.dart';
 import 'screens/institution_dashboard_screen.dart';
 import 'screens/contact_screen.dart';
 
@@ -277,6 +276,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return kInstitutionDashboardRoute;
       }
 
+      if (path == kEnterInstitutionRoute) {
+        return kInstitutionDashboardRoute;
+      }
+
       if (isPublic || isMember || isAuthAction) {
         return null;
       }
@@ -379,7 +382,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kEnterInstitutionRoute,
-            builder: (_, __) => const EnterInstitutionScreen(),
+            redirect: (_, __) => kInstitutionDashboardRoute,
           ),
           GoRoute(
             path: kInstitutionDashboardRoute,
