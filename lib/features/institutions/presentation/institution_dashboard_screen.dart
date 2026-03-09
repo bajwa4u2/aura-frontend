@@ -28,13 +28,9 @@ class _InstitutionDashboardScreenState
   Map<String, dynamic>? _request;
   String _state = 'SIGNED_IN_NO_STANDING';
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
   Dio get _dio => ref.read(dioProvider);
+
+  Map<String, dynamic> get _requestData => _request ?? <String, dynamic>{};
 
   bool get _hasInstitution =>
       _institution != null &&
@@ -57,6 +53,19 @@ class _InstitutionDashboardScreenState
 
   bool get _isSuspended => _state == 'SUSPENDED';
 
+  bool get _hasRequest => _requestData.isNotEmpty;
+
+  bool get _domainVerified {
+    final verifiedAt = _institution?['domainVerifiedAt']?.toString().trim() ?? '';
+    return verifiedAt.isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -67,9 +76,9 @@ class _InstitutionDashboardScreenState
       final res = await _dio.get('/institutions/me');
       final data = _map(res.data);
 
-      final membership = _map(data['membership']);
-      final institution = _map(membership?['institution']);
-      final request = _map(data['request']);
+      final membership = _mapOrNull(data['membership']);
+      final institution = _mapOrNull(membership?['institution']);
+      final request = _mapOrNull(data['request']);
       final state = (data['state']?.toString().trim().isNotEmpty ?? false)
           ? data['state'].toString().trim()
           : 'SIGNED_IN_NO_STANDING';
@@ -95,6 +104,13 @@ class _InstitutionDashboardScreenState
       return Map<String, dynamic>.from(value);
     }
     return <String, dynamic>{};
+  }
+
+  Map<String, dynamic>? _mapOrNull(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
   }
 
   String _dioMessage(Object error, String fallback) {
@@ -151,8 +167,7 @@ class _InstitutionDashboardScreenState
   String _nextStepTitle() {
     if (_isPending) return 'Request under review';
     if (_canManageDomains) {
-      final verifiedAt = _institution?['domainVerifiedAt']?.toString() ?? '';
-      if (verifiedAt.isNotEmpty) return 'Institution active';
+      if (_domainVerified) return 'Institution active';
       return 'Next step: verify domain ownership';
     }
     if (_isRejected) return 'Request outcome';
@@ -162,7 +177,7 @@ class _InstitutionDashboardScreenState
 
   String _nextStepBody() {
     if (_isPending) {
-      final org = _request?['organizationName']?.toString().trim() ?? '';
+      final org = _requestData['organizationName']?.toString().trim() ?? '';
       if (org.isNotEmpty) {
         return 'Your institutional account request for $org is under review. No further action is required right now.';
       }
@@ -170,8 +185,7 @@ class _InstitutionDashboardScreenState
     }
 
     if (_canManageDomains) {
-      final verifiedAt = _institution?['domainVerifiedAt']?.toString() ?? '';
-      if (verifiedAt.isNotEmpty) {
+      if (_domainVerified) {
         return 'Institutional standing is active. You can now use the institutional surfaces below.';
       }
       return 'Your institution exists and your membership is active. Verify domain ownership next so institutional trust can be completed.';
@@ -191,8 +205,7 @@ class _InstitutionDashboardScreenState
   String? _primaryActionLabel() {
     if (_isPending) return null;
     if (_canManageDomains) {
-      final verifiedAt = _institution?['domainVerifiedAt']?.toString() ?? '';
-      if (verifiedAt.isNotEmpty) return null;
+      if (_domainVerified) return null;
       return 'Verify domain';
     }
     if (_isRejected) return 'Create institutional account';
@@ -203,8 +216,7 @@ class _InstitutionDashboardScreenState
   VoidCallback? _primaryAction() {
     if (_isPending) return null;
     if (_canManageDomains) {
-      final verifiedAt = _institution?['domainVerifiedAt']?.toString() ?? '';
-      if (verifiedAt.isNotEmpty) return null;
+      if (_domainVerified) return null;
       return () => _go('/institution/domains');
     }
     if (_isRejected) return () => _go('/institution/create');
@@ -212,11 +224,18 @@ class _InstitutionDashboardScreenState
     return () => _go('/institution/create');
   }
 
+  TextStyle _sectionTitleStyle() {
+    return AuraText.body.copyWith(
+      fontWeight: FontWeight.w700,
+      fontSize: 20,
+    );
+  }
+
   Widget _buildStatusCard() {
     final name = _institution?['name']?.toString().trim() ?? '';
     final slug = _institution?['slug']?.toString().trim() ?? '';
     final domain = _institution?['domain']?.toString().trim() ?? '';
-    final requestOrg = _request?['organizationName']?.toString().trim() ?? '';
+    final requestOrg = _requestData['organizationName']?.toString().trim() ?? '';
     final displayName = name.isNotEmpty
         ? name
         : (requestOrg.isNotEmpty ? requestOrg : 'Institution');
@@ -232,7 +251,7 @@ class _InstitutionDashboardScreenState
           const SizedBox(height: AuraSpace.s10),
           Text(
             displayName,
-            style: AuraText.title3,
+            style: _sectionTitleStyle(),
           ),
           const SizedBox(height: AuraSpace.s8),
           Text('Standing: ${_standingLabel()}'),
@@ -284,13 +303,10 @@ class _InstitutionDashboardScreenState
   }
 
   Widget _buildPipelineCard() {
-    final step1Done =
-        _request.isNotEmpty || _hasInstitution || _canUseInstitutionTools;
+    final step1Done = _hasRequest || _hasInstitution || _canUseInstitutionTools;
     final step2Done = _isPending || _canUseInstitutionTools || _isSuspended;
     final step3Done = _hasInstitution || _canUseInstitutionTools || _isSuspended;
-    final step4Done =
-        (_institution?['domainVerifiedAt']?.toString().trim().isNotEmpty ??
-            false);
+    final step4Done = _domainVerified;
     final step5Done = step4Done && _canUseInstitutionTools;
 
     return AuraCard(
@@ -318,7 +334,7 @@ class _InstitutionDashboardScreenState
             title: 'Institution created',
             subtitle: 'Institution and membership are created after approval.',
             isDone: step3Done,
-            isCurrent: _hasInstitution && !_canDomainBeConsideredVerified(),
+            isCurrent: _hasInstitution && !step4Done,
           ),
           _pipelineRow(
             title: 'Domain verification',
@@ -336,11 +352,6 @@ class _InstitutionDashboardScreenState
         ],
       ),
     );
-  }
-
-  bool _canDomainBeConsideredVerified() {
-    final verifiedAt = _institution?['domainVerifiedAt']?.toString().trim() ?? '';
-    return verifiedAt.isNotEmpty;
   }
 
   Widget _pipelineRow({
@@ -383,16 +394,16 @@ class _InstitutionDashboardScreenState
   }
 
   Widget _buildRequestDetailsCard() {
-    if (_request.isEmpty) return const SizedBox.shrink();
+    if (!_hasRequest) return const SizedBox.shrink();
 
-    final org = _request?['organizationName']?.toString().trim() ?? '';
-    final workEmail = _request?['workEmail']?.toString().trim() ?? '';
-    final website = _request?['websiteUrl']?.toString().trim() ?? '';
-    final domain = _request?['domain']?.toString().trim() ?? '';
-    final roleTitle = _request?['roleTitle']?.toString().trim() ?? '';
-    final jurisdiction = _request?['jurisdiction']?.toString().trim() ?? '';
-    final status = _request?['status']?.toString().trim() ?? '';
-    final reviewedAt = _request?['reviewedAt']?.toString().trim() ?? '';
+    final org = _requestData['organizationName']?.toString().trim() ?? '';
+    final workEmail = _requestData['workEmail']?.toString().trim() ?? '';
+    final website = _requestData['websiteUrl']?.toString().trim() ?? '';
+    final domain = _requestData['domain']?.toString().trim() ?? '';
+    final roleTitle = _requestData['roleTitle']?.toString().trim() ?? '';
+    final jurisdiction = _requestData['jurisdiction']?.toString().trim() ?? '';
+    final status = _requestData['status']?.toString().trim() ?? '';
+    final reviewedAt = _requestData['reviewedAt']?.toString().trim() ?? '';
 
     return AuraCard(
       child: Column(
@@ -469,7 +480,7 @@ class _InstitutionDashboardScreenState
       children: [
         Text(
           'Institution tools',
-          style: AuraText.title3,
+          style: _sectionTitleStyle(),
         ),
         const SizedBox(height: AuraSpace.s10),
         _buildToolCard(
@@ -543,21 +554,16 @@ class _InstitutionDashboardScreenState
           'A clear view of institutional status, verification progress, and available institutional tools.',
         ),
         const SizedBox(height: AuraSpace.s12),
-
         _buildStatusCard(),
         const SizedBox(height: AuraSpace.s12),
-
         _buildNextStepCard(),
         const SizedBox(height: AuraSpace.s12),
-
         _buildPipelineCard(),
         const SizedBox(height: AuraSpace.s12),
-
-        if (_request.isNotEmpty) ...[
+        if (_hasRequest) ...[
           _buildRequestDetailsCard(),
           const SizedBox(height: AuraSpace.s12),
         ],
-
         _buildToolsSection(),
       ],
     );
