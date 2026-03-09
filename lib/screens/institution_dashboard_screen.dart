@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/auth/institution_access_provider.dart';
+import '../core/institutions/institution_access_provider.dart';
 import '../core/ui/aura_card.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
