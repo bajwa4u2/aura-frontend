@@ -224,11 +224,11 @@ class InstitutionDashboardScreen extends ConsumerWidget {
         ? 'Speech: Authorized'
         : hasInstitutionStanding
             ? 'Speech: Not enabled'
-            : 'Speech: Locked';
+            : 'Speech: Pending';
 
     final summary = hasInstitutionStanding
         ? 'This is the institution-facing workspace for the account.'
-        : 'This is the institution-facing workspace. Tools will become available as standing becomes active.';
+        : 'This is the institution-facing workspace. Some governance tools may unlock later, but core institution tools are already available.';
 
     return AuraCard(
       child: Column(
@@ -294,9 +294,8 @@ class InstitutionDashboardScreen extends ConsumerWidget {
     required bool hasInstitutionStanding,
   }) {
     final profileStatus =
-        hasInstitutionStanding ? 'Open profile workspace' : 'Available later';
-    final domainsStatus =
-        hasInstitutionStanding ? 'Manage domains' : 'Available later';
+        hasInstitutionStanding ? 'Open profile workspace' : 'Profile workspace';
+    final domainsStatus = 'Manage domains';
     final announcementsStatus =
         hasInstitutionStanding ? 'Open announcements' : 'Available later';
     final correspondenceStatus =
@@ -314,18 +313,14 @@ class InstitutionDashboardScreen extends ConsumerWidget {
               detail:
                   'Profile, public identity, and institution-facing presentation.',
               status: profileStatus,
-              onTap: hasInstitutionStanding
-                  ? () => context.go('/institution/profile')
-                  : null,
+              onTap: () => context.go('/institution/profile'),
             ),
             _toolTile(
               title: 'Domains',
               detail:
                   'Manage institutional domains and verification records.',
               status: domainsStatus,
-              onTap: hasInstitutionStanding
-                  ? () => context.go('/institution/domains')
-                  : null,
+              onTap: () => context.go('/institution/domains'),
             ),
             _toolTile(
               title: 'Announcements',
