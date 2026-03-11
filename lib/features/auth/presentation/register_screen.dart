@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,14 +51,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
+  String? _nameValidator(String? v, String label) {
+    final required = _req(v, label);
+    if (required != null) return required;
+
+    final t = (v ?? '').trim();
+    if (t.length < 2) return '$label looks too short';
+    return null;
+  }
+
+  String? _handleValidator(String? v) {
+    final t = (v ?? '').trim();
+    if (t.isEmpty) return null;
+
+    final ok = RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(t);
+    if (!ok) {
+      return 'Handle can use letters, numbers, underscores, and dots only';
+    }
+
+    if (t.length < 3) return 'Handle must be at least 3 characters';
+    if (t.length > 30) return 'Handle is too long';
+    return null;
+  }
+
   String? _emailValidator(String? v) {
     final required = _req(v, 'Email');
     if (required != null) return required;
 
     final t = (v ?? '').trim();
-    if (!t.contains('@') || !t.contains('.')) {
-      return 'Enter a valid email';
-    }
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(t);
+    if (!ok) return 'Enter a valid email';
     return null;
   }
 
@@ -97,6 +120,77 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isInstitutionRedirect(String? r) {
     final v = _safeRedirect(r);
     return v == '/enter-institution' || v.startsWith('/enter-institution?');
+  }
+
+  String _humanizeRegisterError(Object error) {
+    final raw = error.toString().trim();
+    final msg = raw.toLowerCase();
+
+    if (msg.isEmpty) {
+      return 'We could not create your account right now. Please try again.';
+    }
+
+    if (msg.contains('email already') ||
+        msg.contains('email is already') ||
+        msg.contains('already exists') && msg.contains('email') ||
+        msg.contains('duplicate') && msg.contains('email') ||
+        msg.contains('unique') && msg.contains('email')) {
+      return 'That email is already in use. Try signing in instead.';
+    }
+
+    if (msg.contains('handle already') ||
+        msg.contains('username already') ||
+        msg.contains('duplicate') && msg.contains('handle') ||
+        msg.contains('unique') && msg.contains('handle') ||
+        msg.contains('unique') && msg.contains('username')) {
+      return 'That handle is already taken. Please choose another one.';
+    }
+
+    if (msg.contains('invalid email') ||
+        msg.contains('email is invalid') ||
+        msg.contains('must be a valid email')) {
+      return 'Please enter a valid email address.';
+    }
+
+    if (msg.contains('password') && msg.contains('weak')) {
+      return 'Please choose a stronger password.';
+    }
+
+    if (msg.contains('password') && msg.contains('at least 8')) {
+      return 'Password must be at least 8 characters.';
+    }
+
+    if (msg.contains('network error') ||
+        msg.contains('socketexception') ||
+        msg.contains('connection error') ||
+        msg.contains('connection refused') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('timed out') ||
+        msg.contains('timeoutexception')) {
+      return 'We could not reach the server. Check your connection and try again.';
+    }
+
+    if (msg.contains('500') ||
+        msg.contains('internal server error') ||
+        msg.contains('server error')) {
+      return 'Something went wrong on our side. Please try again in a moment.';
+    }
+
+    if (msg.contains('400') ||
+        msg.contains('bad request') ||
+        msg.contains('validation')) {
+      return 'Some details need another look. Please review the form and try again.';
+    }
+
+    if (msg.contains('403') || msg.contains('forbidden')) {
+      return 'This request could not be completed right now.';
+    }
+
+    if (msg.contains('429') || msg.contains('too many requests')) {
+      return 'Too many attempts in a short time. Please wait a little and try again.';
+    }
+
+    return 'We could not create your account right now. Please try again.';
   }
 
   Future<void> _submit() async {
@@ -146,7 +240,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         '/verify-pending?email=${Uri.encodeComponent(email)}&redirect=${Uri.encodeComponent(redirect)}',
       );
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (!mounted) return;
+      setState(() => _error = _humanizeRegisterError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -161,6 +256,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       labelText: label,
       hintText: hint,
       suffixIcon: suffixIcon,
+      border: const OutlineInputBorder(),
     );
   }
 
@@ -170,7 +266,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final redirect = Uri.encodeComponent(redirectPath);
     final isInstitutionEntry = _isInstitutionRedirect(widget.redirectTo);
 
-    final title = isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
+    final title =
+        isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
 
     final subtitle = isInstitutionEntry
         ? 'Create your account first. After sign-in, Aura will continue to the institutional access check.'
@@ -216,9 +313,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Text(subtitle),
                     const SizedBox(height: 16),
                     if (_error != null) ...[
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -229,8 +336,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         label: 'First name',
                         hint: 'Private',
                       ),
-                      validator: (v) => _req(v, 'First name'),
+                      validator: (v) => _nameValidator(v, 'First name'),
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.givenName],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -240,8 +348,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         label: 'Last name',
                         hint: 'Private',
                       ),
-                      validator: (v) => _req(v, 'Last name'),
+                      validator: (v) => _nameValidator(v, 'Last name'),
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.familyName],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -252,6 +361,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         hint: 'Public name shown on Aura',
                       ),
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.nickname],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -261,7 +371,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         label: 'Handle',
                         hint: 'Your public identity handle',
                       ),
+                      validator: _handleValidator,
                       textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[a-zA-Z0-9_.]'),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -275,6 +392,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autocorrect: false,
+                      autofillHints: const [AutofillHints.email],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -301,6 +419,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       validator: _passwordValidator,
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -328,6 +447,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       validator: (v) => _req(v, 'Confirm password'),
                       obscureText: _obscureConfirmPassword,
                       textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.newPassword],
                       onFieldSubmitted: (_) => _loading ? null : _submit(),
                     ),
                     const SizedBox(height: 18),

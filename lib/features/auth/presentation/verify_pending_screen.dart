@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/net/dio_provider.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -21,7 +22,8 @@ class VerifyPendingScreen extends ConsumerStatefulWidget {
   final String? redirectTo;
 
   @override
-  ConsumerState<VerifyPendingScreen> createState() => _VerifyPendingScreenState();
+  ConsumerState<VerifyPendingScreen> createState() =>
+      _VerifyPendingScreenState();
 }
 
 class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
@@ -29,6 +31,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
   bool _busy = false;
   String? _msg;
+  bool _msgIsError = false;
 
   String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
@@ -37,18 +40,64 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     return v;
   }
 
+  bool _isValidEmail(String value) {
+    final s = value.trim();
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
+  }
+
+  String _humanizeResendError(DioException? e) {
+    final code = e?.response?.statusCode;
+    final raw = e?.response?.data?.toString().toLowerCase() ?? '';
+    final msg = (e?.message ?? '').toLowerCase();
+
+    if (code == 400 && raw.contains('already verified')) {
+      return 'This email is already verified. You can sign in now.';
+    }
+
+    if (code == 404 && raw.contains('not found')) {
+      return 'We could not find an account with that email.';
+    }
+
+    if (code == 429 || raw.contains('too many requests')) {
+      return 'Too many attempts in a short time. Please wait a little and try again.';
+    }
+
+    if (msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('connection refused') ||
+        msg.contains('network') ||
+        e?.type == DioExceptionType.connectionError ||
+        e?.type == DioExceptionType.connectionTimeout ||
+        e?.type == DioExceptionType.sendTimeout ||
+        e?.type == DioExceptionType.receiveTimeout) {
+      return 'We could not reach the server. Check your connection and try again.';
+    }
+
+    if (code != null && code >= 500) {
+      return 'Something went wrong on our side. Please try again in a moment.';
+    }
+
+    return 'We could not resend the verification email right now. Please try again.';
+  }
+
   Future<void> _resend() async {
     if (_busy) return;
 
+    FocusScope.of(context).unfocus();
+
     final email = _email.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      setState(() => _msg = 'Enter a valid email to resend verification.');
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _msg = 'Please enter a valid email address to resend verification.';
+        _msgIsError = true;
+      });
       return;
     }
 
     setState(() {
       _busy = true;
       _msg = null;
+      _msgIsError = false;
     });
 
     final dio = ref.read(dioProvider);
@@ -61,11 +110,17 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
     try {
       DioException? last;
+
       for (final path in candidates) {
         try {
           await dio.post(path, data: {'email': email});
+
           if (!mounted) return;
-          setState(() => _msg = 'Verification email sent. Check inbox and spam.');
+          setState(() {
+            _msg =
+                'Verification email sent. Please check your inbox and spam folder.';
+            _msgIsError = false;
+          });
           return;
         } on DioException catch (e) {
           last = e;
@@ -77,12 +132,31 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
       debugPrint(
         'resend verify failed: ${last?.response?.statusCode} ${last?.response?.data}',
       );
+
       if (!mounted) return;
-      setState(() => _msg = 'Could not resend right now.');
+      setState(() {
+        _msg = _humanizeResendError(last);
+        _msgIsError = true;
+      });
+    } on DioException catch (e) {
+      debugPrint(
+        'resend verify failed: ${e.response?.statusCode} ${e.response?.data}',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _msg = _humanizeResendError(e);
+        _msgIsError = true;
+      });
     } catch (e) {
       debugPrint('resend verify failed: $e');
+
       if (!mounted) return;
-      setState(() => _msg = 'Could not resend right now.');
+      setState(() {
+        _msg =
+            'We could not resend the verification email right now. Please try again.';
+        _msgIsError = true;
+      });
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -111,64 +185,103 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
     return AuraScaffold(
       title: 'Verify your email',
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Almost there', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'We need to verify your email before you can continue. Open the email we sent and click the link.',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email (for resend)',
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Almost there', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    'We need to verify your email before you can continue. Open the email we sent and click the link.',
+                    style: AuraText.body,
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                if (_busy) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: AuraSpace.s12),
-                ],
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    FilledButton(
-                      onPressed: _busy ? null : _resend,
-                      child: Text(_busy ? 'Sending…' : 'Resend verification'),
+                  const SizedBox(height: AuraSpace.s14),
+                  TextField(
+                    controller: _email,
+                    enabled: !_busy,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.email],
+                    autocorrect: false,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Email (for resend)',
+                      hintText: 'name@example.com',
+                      border: OutlineInputBorder(),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        if (redirect != null) {
-                          context.go(
-                            '/login?redirect=${Uri.encodeComponent(redirect)}',
-                          );
-                        } else {
-                          context.go('/login');
-                        }
-                      },
-                      child: const Text('Back to login'),
+                    onSubmitted: (_) => _busy ? null : _resend(),
+                  ),
+                  const SizedBox(height: AuraSpace.s14),
+                  if (_busy) ...[
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: AuraSpace.s12),
+                  ],
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      FilledButton(
+                        onPressed: _busy ? null : _resend,
+                        child: Text(
+                          _busy ? 'Sending…' : 'Resend verification',
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () {
+                                if (redirect != null) {
+                                  context.go(
+                                    '/login?redirect=${Uri.encodeComponent(redirect)}',
+                                  );
+                                } else {
+                                  context.go('/login');
+                                }
+                              },
+                        child: const Text('Back to login'),
+                      ),
+                    ],
+                  ),
+                  if (_msg != null) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _msgIsError
+                            ? Colors.red.withValues(alpha: 0.08)
+                            : Colors.blue.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _msgIsError
+                              ? Colors.red.withValues(alpha: 0.22)
+                              : Colors.blue.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        _msg!,
+                        style: AuraText.body.copyWith(
+                          color: _msgIsError ? Colors.red : Colors.blue,
+                          height: 1.35,
+                        ),
+                      ),
                     ),
                   ],
-                ),
-                if (_msg != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(_msg!, style: AuraText.body),
+                  if (verifiedAsync.isLoading) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Text(
+                      'Checking verification status…',
+                      style: AuraText.body,
+                    ),
+                  ],
                 ],
-                if (verifiedAsync.isLoading) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text('Checking verification status…', style: AuraText.body),
-                ],
-              ],
+              ),
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -42,7 +43,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String? _emailValidator(String? v) {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Email is required';
-    if (!s.contains('@') || !s.contains('.')) return 'Enter a valid email';
+
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
+    if (!ok) return 'Enter a valid email';
+
     return null;
   }
 
@@ -50,6 +54,68 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Password is required';
     return null;
+  }
+
+  String _humanizeLoginError(Object error) {
+    final raw = error.toString().trim();
+    final msg = raw.toLowerCase();
+
+    if (msg.isEmpty) {
+      return 'We could not sign you in right now. Please try again.';
+    }
+
+    if (msg.contains('invalid credentials') ||
+        msg.contains('invalid login') ||
+        msg.contains('wrong password') ||
+        msg.contains('incorrect password') ||
+        msg.contains('incorrect email') ||
+        msg.contains('incorrect email or password') ||
+        msg.contains('wrong email or password') ||
+        msg.contains('email or password is incorrect') ||
+        msg.contains('invalid email or password') ||
+        msg.contains('unauthorized') ||
+        msg.contains('401')) {
+      return 'The email or password does not look right.';
+    }
+
+    if (msg.contains('email not verified') ||
+        msg.contains('verify your email') ||
+        msg.contains('email verification required') ||
+        msg.contains('unverified')) {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
+    if (msg.contains('account disabled') ||
+        msg.contains('account locked') ||
+        msg.contains('account suspended')) {
+      return 'This account is not available right now. Please contact support if needed.';
+    }
+
+    if (msg.contains('network error') ||
+        msg.contains('socketexception') ||
+        msg.contains('connection error') ||
+        msg.contains('connection refused') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('timed out') ||
+        msg.contains('timeoutexception')) {
+      return 'We could not reach the server. Check your connection and try again.';
+    }
+
+    if (msg.contains('500') ||
+        msg.contains('internal server error') ||
+        msg.contains('server error')) {
+      return 'Something went wrong on our side. Please try again in a moment.';
+    }
+
+    if (msg.contains('429') || msg.contains('too many requests')) {
+      return 'Too many attempts in a short time. Please wait a little and try again.';
+    }
+
+    if (msg.contains('403') || msg.contains('forbidden')) {
+      return 'This sign-in request could not be completed right now.';
+    }
+
+    return 'We could not sign you in right now. Please try again.';
   }
 
   Future<void> _login() async {
@@ -73,7 +139,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = _humanizeLoginError(e);
       });
     } finally {
       if (mounted) {
@@ -100,6 +166,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       labelText: label,
       hintText: hint,
       suffixIcon: suffixIcon,
+      border: const OutlineInputBorder(),
     );
   }
 
@@ -114,89 +181,110 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             child: AuraCard(
               child: Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Welcome back', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(
-                      'Sign in to continue.',
-                      style: AuraText.body,
-                    ),
-                    const SizedBox(height: AuraSpace.s14),
-                    if (_error != null) ...[
-                      Text(
-                        _error!,
-                        style: AuraText.body.copyWith(height: 1.3),
-                      ),
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Welcome back', style: AuraText.title),
                       const SizedBox(height: AuraSpace.s10),
-                    ],
-                    TextFormField(
-                      controller: _emailCtrl,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: _decoration(
-                        label: 'Email',
-                        hint: 'name@example.com',
+                      Text(
+                        'Sign in to continue.',
+                        style: AuraText.body,
                       ),
-                      validator: _emailValidator,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      enabled: !_busy,
-                      obscureText: _obscurePassword,
-                      decoration: _decoration(
-                        label: 'Password',
-                        suffixIcon: IconButton(
-                          onPressed: _busy
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                      const SizedBox(height: AuraSpace.s14),
+                      if (_error != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.22),
+                            ),
+                          ),
+                          child: Text(
+                            _error!,
+                            style: AuraText.body.copyWith(
+                              color: Colors.red,
+                              height: 1.3,
+                            ),
                           ),
                         ),
-                      ),
-                      validator: _passwordValidator,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _busy ? null : _login(),
-                    ),
-                    const SizedBox(height: AuraSpace.s14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _busy ? null : _login,
-                        child: Text(_busy ? 'Signing in…' : 'Sign in'),
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => context.push(_withRedirect('/forgot-password')),
-                          child: const Text('Forgot password'),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => context.push(_withRedirect('/register')),
-                          child: const Text('Create account'),
-                        ),
+                        const SizedBox(height: AuraSpace.s10),
                       ],
-                    ),
-                  ],
+                      TextFormField(
+                        controller: _emailCtrl,
+                        enabled: !_busy,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _decoration(
+                          label: 'Email',
+                          hint: 'name@example.com',
+                        ),
+                        validator: _emailValidator,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        autofillHints: const [AutofillHints.username, AutofillHints.email],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        enabled: !_busy,
+                        obscureText: _obscurePassword,
+                        decoration: _decoration(
+                          label: 'Password',
+                          suffixIcon: IconButton(
+                            onPressed: _busy
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                          ),
+                        ),
+                        validator: _passwordValidator,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.password],
+                        onFieldSubmitted: (_) => _busy ? null : _login(),
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: _busy ? null : _login,
+                          child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: _busy
+                                ? null
+                                : () => context.push(_withRedirect('/forgot-password')),
+                            child: const Text('Forgot password'),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: _busy
+                                ? null
+                                : () => context.push(_withRedirect('/register')),
+                            child: const Text('Create account'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
