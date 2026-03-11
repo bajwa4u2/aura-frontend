@@ -1,1 +1,1 @@
-configure_url_strategy_stub.dart
+void configureUrlStrategy() {}

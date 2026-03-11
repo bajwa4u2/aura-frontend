@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,19 +27,6 @@ final dioProvider = Provider<Dio>((ref) {
 
   configureDioForPlatform(dio);
 
-  void ensureWebCredentials(Dio d) {
-    if (!kIsWeb) return;
-
-    final adapter = d.httpClientAdapter;
-    if (adapter is BrowserHttpClientAdapter) {
-      adapter.withCredentials = true;
-    } else {
-      d.httpClientAdapter = BrowserHttpClientAdapter()..withCredentials = true;
-    }
-  }
-
-  ensureWebCredentials(dio);
-
   Map<String, dynamic> _asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
     if (v is Map) return Map<String, dynamic>.from(v);
@@ -53,7 +39,7 @@ final dioProvider = Provider<Dio>((ref) {
 
     final data = outer['data'];
     if (data is Map) {
-      final inner = Map<String, dynamic>.from(data as Map);
+      final inner = Map<String, dynamic>.from(data);
       final t2 = (inner['accessToken'] ?? '').toString().trim();
       if (t2.isNotEmpty) return t2;
     }
@@ -67,7 +53,7 @@ final dioProvider = Provider<Dio>((ref) {
 
     final data = outer['data'];
     if (data is Map) {
-      final inner = Map<String, dynamic>.from(data as Map);
+      final inner = Map<String, dynamic>.from(data);
       final r2 = (inner['refreshToken'] ?? '').toString().trim();
       if (r2.isNotEmpty) return r2;
     }
@@ -91,8 +77,6 @@ final dioProvider = Provider<Dio>((ref) {
 
     final boot = ref.read(sessionBootstrapProvider);
 
-    // Bootstrap owns the first refresh attempt on app start.
-    // Interceptor should stay out while bootstrap is still loading.
     if (boot.isLoading) return false;
 
     return true;
@@ -102,8 +86,6 @@ final dioProvider = Provider<Dio>((ref) {
     if (error is DioException) {
       final status = error.response?.statusCode;
 
-      // On web, do not aggressively clear tokens on refresh failure.
-      // Session restoration can race with startup and cookies may still recover.
       if (kIsWeb) return false;
 
       return status == 401 || status == 403;
@@ -127,7 +109,6 @@ final dioProvider = Provider<Dio>((ref) {
     );
 
     configureDioForPlatform(refreshDio);
-    ensureWebCredentials(refreshDio);
 
     return refreshDio;
   }
@@ -302,9 +283,7 @@ final dioProvider = Provider<Dio>((ref) {
 
         try {
           await ensureFreshWebAuthIfNeeded(options);
-        } catch (_) {
-          // Let the request continue. The normal 401 refresh path below still exists.
-        }
+        } catch (_) {}
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {

@@ -35,7 +35,7 @@ dependencies:
   flutter_markdown: ^0.7.3
 
   # PDF viewer for mobile/desktop only
-  syncfusion_flutter_pdfviewer: ^24.2.9
+  syncfusion_flutter_pdfviewer: ^29.2.11
 
 dev_dependencies:
   flutter_test:

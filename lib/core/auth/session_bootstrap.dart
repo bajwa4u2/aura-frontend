@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:dio/browser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
+import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
 
 /// Bootstraps session at app start:
@@ -38,11 +38,8 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
     try {
       await store.waitUntilLoaded();
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
 
-    // If already authed, nothing to do.
     if (store.isAuthed) return;
 
     final bootstrapDio = Dio(
@@ -58,17 +55,9 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       ),
     );
 
-    try {
-      if (kIsWeb) {
-        final adapter = bootstrapDio.httpClientAdapter;
-        if (adapter is BrowserHttpClientAdapter) {
-          adapter.withCredentials = true;
-        } else {
-          bootstrapDio.httpClientAdapter = BrowserHttpClientAdapter()
-            ..withCredentials = true;
-        }
-      }
+    configureDioForPlatform(bootstrapDio);
 
+    try {
       Map<String, dynamic> asMap(dynamic v) {
         if (v is Map<String, dynamic>) return v;
         if (v is Map) return Map<String, dynamic>.from(v);
