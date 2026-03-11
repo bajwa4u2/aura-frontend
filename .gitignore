@@ -1,26 +1,59 @@
+# -----------------------------
 # Flutter / Dart
+# -----------------------------
 .dart_tool/
-.buildlog/
 .packages
 .pub/
 .pub-cache/
 .flutter-plugins
 .flutter-plugins-dependencies
+.metadata
 build/
 
-# Backend
+# Flutter IDE / project files
+.idea/
+*.iml
+
+# Logs
+*.log
+.buildlog/
+
+# -----------------------------
+# Android / Gradle
+# -----------------------------
+android/.gradle/
+android/app/build/
+
+# -----------------------------
+# iOS / macOS
+# -----------------------------
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Pods/
+ios/.symlinks/
+
+# -----------------------------
+# Backend (Node/NestJS)
+# -----------------------------
 backend/node_modules/
 backend/dist/
+
+# Backend environment
 backend/.env
 
+# -----------------------------
 # Environment files
+# -----------------------------
 .env
 **/.env
 
+# -----------------------------
+# Temporary / debug files
+# -----------------------------
+deps.txt
+
+# -----------------------------
 # OS junk
+# -----------------------------
 .DS_Store
 Thumbs.db
-
-# Experimental folders
-frontend-clean/
-backend/
