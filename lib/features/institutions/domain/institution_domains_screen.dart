@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:html' as html;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_space.dart';
@@ -57,7 +57,9 @@ class _InstitutionDomainsScreenState
         if (message.isNotEmpty) return message;
       }
 
-      if (data is Map && data['error'] is Map && data['error']['message'] != null) {
+      if (data is Map &&
+          data['error'] is Map &&
+          data['error']['message'] != null) {
         final message = data['error']['message'].toString().trim();
         if (message.isNotEmpty) return message;
       }
@@ -191,9 +193,18 @@ class _InstitutionDomainsScreenState
               children: [
                 const Text('Create the following TXT record in your DNS:'),
                 SizedBox(height: AuraSpace.s10),
-                _copyRow('Record name', verification['recordName']?.toString() ?? ''),
-                _copyRow('Record type', verification['recordType']?.toString() ?? 'TXT'),
-                _copyRow('Record value', verification['value']?.toString() ?? ''),
+                _copyRow(
+                  'Record name',
+                  verification['recordName']?.toString() ?? '',
+                ),
+                _copyRow(
+                  'Record type',
+                  verification['recordType']?.toString() ?? 'TXT',
+                ),
+                _copyRow(
+                  'Record value',
+                  verification['value']?.toString() ?? '',
+                ),
                 SizedBox(height: AuraSpace.s12),
                 const Text(
                   'After adding the record, click Verify. DNS propagation may take a few minutes.',
@@ -287,17 +298,33 @@ class _InstitutionDomainsScreenState
     );
   }
 
-  void _openDnsProvider(String provider) {
+  Future<void> _openDnsProvider(String provider) async {
+    String? url;
+
     switch (provider) {
       case 'cloudflare':
-        html.window.open('https://dash.cloudflare.com', '_blank');
+        url = 'https://dash.cloudflare.com';
         break;
       case 'godaddy':
-        html.window.open('https://dcc.godaddy.com/manage', '_blank');
+        url = 'https://dcc.godaddy.com/manage';
         break;
       case 'namecheap':
-        html.window.open('https://ap.www.namecheap.com/domains/list/', '_blank');
+        url = 'https://ap.www.namecheap.com/domains/list/';
         break;
+    }
+
+    if (url == null) return;
+
+    final uri = Uri.parse(url);
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.platformDefault,
+      webOnlyWindowName: '_blank',
+    );
+
+    if (!opened) {
+      await Clipboard.setData(ClipboardData(text: url));
+      _showSnack('Link copied. Open it in your browser.');
     }
   }
 

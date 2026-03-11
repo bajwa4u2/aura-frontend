@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
+import 'core/utils/configure_url_strategy.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Clean URLs (no #)
-  setUrlStrategy(PathUrlStrategy());
+  configureUrlStrategy();
 
   final store = TokenStore();
 
