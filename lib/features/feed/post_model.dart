@@ -30,18 +30,29 @@ class PostAuthor {
 
   factory PostAuthor.fromJson(dynamic json) {
     final m = _asMap(json) ?? const <String, dynamic>{};
+
+    final handle = _asStringReq(
+      m['handle'] ?? m['username'] ?? m['authorHandle'],
+    );
+
+    final displayName = _asStringReq(
+      m['displayName'] ?? m['name'] ?? handle,
+    );
+
     return PostAuthor(
       id: _asStringReq(m['id']),
-      handle: _asStringReq(m['handle']),
-      displayName: _asStringReq(m['displayName']),
-      avatarUrl: _asStringOpt(m['avatarUrl']),
+      handle: handle,
+      displayName: displayName,
+      avatarUrl: _asStringOpt(
+        m['avatarUrl'] ?? m['avatar'] ?? m['imageUrl'],
+      ),
     );
   }
 }
 
 class PostMedia {
   final String id;
-  final String type; // IMAGE | VIDEO | SVG | OTHER (backend enum)
+  final String type; // IMAGE | VIDEO | SVG | OTHER
   final String url;
   final String? thumbUrl;
   final int? width;
@@ -86,11 +97,23 @@ class PostMedia {
 
   factory PostMedia.fromJson(dynamic json) {
     final m = _asMap(json) ?? const <String, dynamic>{};
+
+    final type = _asStringReq(
+      m['type'] ?? m['kind'] ?? m['mediaType'],
+      fallback: 'OTHER',
+    );
+
+    final url = _asStringReq(
+      m['url'] ?? m['publicUrl'] ?? m['src'],
+    );
+
     return PostMedia(
       id: _asStringReq(m['id']),
-      type: _asStringReq(m['type'], fallback: 'OTHER'),
-      url: _asStringReq(m['url']),
-      thumbUrl: _asStringOpt(m['thumbUrl']),
+      type: type,
+      url: url,
+      thumbUrl: _asStringOpt(
+        m['thumbUrl'] ?? m['thumbnailUrl'] ?? m['thumb'],
+      ),
       width: _asInt(m['width']),
       height: _asInt(m['height']),
       duration: _asInt(m['duration']),
@@ -104,21 +127,18 @@ class Post {
   final String text;
   final DateTime createdAt;
 
-  // Author (new)
   final PostAuthor? author;
 
-  // Back-compat (kept)
+  // Back-compat
   final String authorHandle;
 
-  // Visibility contract fields (new)
   final String? status; // DRAFT | PUBLISHED
   final String? visibility; // PUBLIC | FOLLOWERS | PRIVATE
   final String? replyToPostId;
   final String? repostOfPostId;
 
-  // Media (back-compat + new)
-  // mediaType: keep older UI assumptions: NONE | IMAGE | VIDEO | LINK
-  final String mediaType;
+  // Flat media fields for older UI
+  final String mediaType; // NONE | IMAGE | VIDEO | LINK | OTHER
   final String? mediaUrl;
   final String? mediaThumbUrl;
   final int? mediaWidth;
@@ -126,15 +146,13 @@ class Post {
   final int? mediaDuration;
   final String? caption;
 
-  // Full media list (new, optional use)
   final List<PostMedia> media;
 
-  // Link preview (optional)
   final String? linkTitle;
   final String? linkDescription;
   final String? linkImageUrl;
 
-  Post({
+  const Post({
     required this.id,
     required this.text,
     required this.createdAt,
@@ -168,6 +186,11 @@ class Post {
     return s.isEmpty ? null : s;
   }
 
+  static String _asStringReq(dynamic v, {String fallback = ''}) {
+    final s = _asString(v);
+    return s ?? fallback;
+  }
+
   static int? _asInt(dynamic v) {
     if (v is num) return v.toInt();
     final s = _asString(v);
@@ -178,25 +201,51 @@ class Post {
   static DateTime _asDate(dynamic v) {
     if (v is DateTime) return v;
     final s = _asString(v);
-    if (s == null) return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-    return DateTime.tryParse(s) ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    if (s == null) {
+      return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    }
+    return DateTime.tryParse(s) ??
+        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   }
 
   static List<PostMedia> _parseMediaList(dynamic v) {
     if (v is List) {
       return v
-          .map((e) => PostMedia.fromJson(e))
+          .map(PostMedia.fromJson)
           .where((m) => m.url.trim().isNotEmpty)
           .toList();
     }
+
+    if (v is Map) {
+      final one = PostMedia.fromJson(v);
+      if (one.url.trim().isNotEmpty) return <PostMedia>[one];
+    }
+
     return const <PostMedia>[];
   }
 
   static String _deriveMediaTypeFromPrimary(PostMedia? m) {
     if (m == null) return 'NONE';
+
     final t = m.type.toUpperCase();
+
     if (t.contains('VIDEO')) return 'VIDEO';
     if (t.contains('IMAGE') || t.contains('SVG')) return 'IMAGE';
+    if (t.contains('LINK')) return 'LINK';
+
+    final url = m.url.toLowerCase();
+    if (url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm')) {
+      return 'VIDEO';
+    }
+    if (url.endsWith('.png') ||
+        url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.webp') ||
+        url.endsWith('.gif') ||
+        url.endsWith('.svg')) {
+      return 'IMAGE';
+    }
+
     return 'OTHER';
   }
 
@@ -204,42 +253,39 @@ class Post {
     final authorMap = _asMap(json['author']);
     final author = authorMap != null ? PostAuthor.fromJson(authorMap) : null;
 
-    // New backend: media is a list
-    final mediaList = _parseMediaList(json['media']);
+    final mediaList = _parseMediaList(
+      json['media'] ?? json['mediaItems'],
+    );
+    final primary = mediaList.isNotEmpty ? mediaList.first : null;
 
-    // Support older shapes too:
-    final mediaMap = _asMap(json['media']); // legacy if media was an object
-    PostMedia? primaryFromLegacyMap;
-    if (mediaMap != null && mediaList.isEmpty) {
-      // tolerate: { url, type, ... }
-      primaryFromLegacyMap = PostMedia.fromJson(mediaMap);
-    }
-
-    final primary = mediaList.isNotEmpty ? mediaList.first : primaryFromLegacyMap;
-
-    // Back-compat: flat media fields
     final flatMediaType = _asString(json['mediaType']);
     final derivedType = _deriveMediaTypeFromPrimary(primary);
 
-    final mediaType = (flatMediaType ?? derivedType).trim().isEmpty
-        ? 'NONE'
-        : (flatMediaType ?? derivedType);
+    final mediaType = (() {
+      final raw = (flatMediaType ?? derivedType).trim();
+      return raw.isEmpty ? 'NONE' : raw.toUpperCase();
+    })();
 
     final mediaUrl = _asString(json['mediaUrl']) ?? _asString(primary?.url);
-    final mediaThumbUrl = _asString(json['mediaThumbUrl']) ?? _asString(primary?.thumbUrl);
+    final mediaThumbUrl =
+        _asString(json['mediaThumbUrl']) ?? _asString(primary?.thumbUrl);
 
     final mediaWidth = _asInt(json['mediaWidth']) ?? _asInt(primary?.width);
     final mediaHeight = _asInt(json['mediaHeight']) ?? _asInt(primary?.height);
-    final mediaDuration = _asInt(json['mediaDuration']) ?? _asInt(primary?.duration);
+    final mediaDuration =
+        _asInt(json['mediaDuration']) ?? _asInt(primary?.duration);
 
     final caption = _asString(json['caption']) ?? _asString(primary?.caption);
 
-    final handle = author?.handle ?? _asString(authorMap?['handle']) ?? '';
+    final handle = author?.handle ??
+        _asString(authorMap?['handle']) ??
+        _asString(json['authorHandle']) ??
+        '';
     final authorHandle = handle;
 
     return Post(
-      id: (json['id'] ?? '').toString(),
-      text: (json['text'] ?? '').toString(),
+      id: _asStringReq(json['id']),
+      text: _asStringReq(json['text']),
       createdAt: _asDate(json['createdAt']),
       author: author,
       authorHandle: authorHandle,
@@ -255,9 +301,13 @@ class Post {
       mediaDuration: mediaDuration,
       caption: caption,
       media: mediaList,
-      linkTitle: _asString(json['linkTitle']),
-      linkDescription: _asString(json['linkDescription']),
-      linkImageUrl: _asString(json['linkImageUrl']),
+      linkTitle: _asString(json['linkTitle'] ?? json['title']),
+      linkDescription: _asString(
+        json['linkDescription'] ?? json['linkSubtitle'] ?? json['description'],
+      ),
+      linkImageUrl: _asString(
+        json['linkImageUrl'] ?? json['linkThumbUrl'] ?? json['image'],
+      ),
     );
   }
 }

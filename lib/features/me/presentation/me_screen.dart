@@ -1091,16 +1091,48 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _cardList(List<Widget> children) {
     final items = <Widget>[];
+
     for (var i = 0; i < children.length; i++) {
       items.add(children[i]);
+
       if (i != children.length - 1) {
         items.add(const SizedBox(height: AuraSpace.s14));
       }
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: items,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        double horizontalPadding;
+        double maxWidth;
+
+        if (width < 600) {
+          horizontalPadding = 12;
+          maxWidth = double.infinity;
+        } else if (width < 980) {
+          horizontalPadding = 24;
+          maxWidth = 760;
+        } else {
+          horizontalPadding = 32;
+          maxWidth = 820;
+        }
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                16,
+                horizontalPadding,
+                28,
+              ),
+              children: items,
+            ),
+          ),
+        );
+      },
     );
   }
 

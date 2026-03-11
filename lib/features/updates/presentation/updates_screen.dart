@@ -112,25 +112,19 @@ class _PublicUpdatesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s16,
-        AuraSpace.s16,
-        AuraSpace.s24,
-      ),
+    return _CenteredUpdatesList(
       children: [
         AuraCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Updates are personal.', style: AuraText.title),
-              SizedBox(height: AuraSpace.s10),
+              const SizedBox(height: AuraSpace.s10),
               Text(
                 'When you join, this page becomes your private record of replies, follows, and acknowledgements.',
                 style: AuraText.body,
               ),
-              SizedBox(height: AuraSpace.s16),
+              const SizedBox(height: AuraSpace.s16),
               Wrap(
                 spacing: AuraSpace.s10,
                 runSpacing: AuraSpace.s10,
@@ -149,13 +143,13 @@ class _PublicUpdatesBody extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: AuraSpace.s16),
+        const SizedBox(height: AuraSpace.s16),
         AuraCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Why this is gated', style: AuraText.title),
-              SizedBox(height: AuraSpace.s10),
+              const SizedBox(height: AuraSpace.s10),
               const _Bullet('Updates can reveal reading and writing patterns.'),
               const _Bullet(
                 'They also include personal context from other people.',
@@ -185,13 +179,7 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
         final safeItems = items;
 
         if (safeItems.isEmpty) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s24,
-            ),
+          return const _CenteredUpdatesList(
             children: [
               AuraCard(
                 child: Text(
@@ -203,15 +191,9 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
           );
         }
 
-        return ListView.separated(
-          padding: EdgeInsets.fromLTRB(
-            AuraSpace.s16,
-            AuraSpace.s12,
-            AuraSpace.s16,
-            AuraSpace.s24,
-          ),
+        return _CenteredUpdatesSeparatedList(
           itemCount: safeItems.length,
-          separatorBuilder: (_, __) => SizedBox(height: AuraSpace.s10),
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
           itemBuilder: (context, i) {
             final raw = safeItems[i];
             final n = Map<String, dynamic>.from(raw);
@@ -246,6 +228,7 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
+                    radius: 20,
                     backgroundColor: const Color(0x332E2A26),
                     child: Text(
                       name.isNotEmpty
@@ -256,7 +239,7 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: AuraSpace.s12),
+                  const SizedBox(width: AuraSpace.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,7 +254,7 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
                                 isRead ? FontWeight.w600 : FontWeight.w800,
                           ),
                         ),
-                        SizedBox(height: AuraSpace.s6),
+                        const SizedBox(height: AuraSpace.s6),
                         Text(
                           labelFor(n),
                           maxLines: 2,
@@ -282,10 +265,10 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
                     ),
                   ),
                   if (!isRead) ...[
-                    SizedBox(width: AuraSpace.s8),
-                    Padding(
+                    const SizedBox(width: AuraSpace.s8),
+                    const Padding(
                       padding: EdgeInsets.only(top: AuraSpace.s4),
-                      child: const Icon(Icons.circle, size: 10),
+                      child: Icon(Icons.circle, size: 10),
                     ),
                   ],
                 ],
@@ -295,21 +278,14 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
         );
       },
       loading: () {
-        return ListView(
-          padding: EdgeInsets.fromLTRB(
-            AuraSpace.s16,
-            AuraSpace.s16,
-            AuraSpace.s16,
-            AuraSpace.s24,
-          ),
-          children: const [
+        return const _CenteredUpdatesList(
+          children: [
             Center(child: CircularProgressIndicator()),
           ],
         );
       },
       error: (e, _) {
-        return ListView(
-          padding: EdgeInsets.all(AuraSpace.s16),
+        return _CenteredUpdatesList(
           children: [
             AuraCard(
               child: Text(
@@ -317,14 +293,110 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
                 style: AuraText.body,
               ),
             ),
-            SizedBox(height: AuraSpace.s12),
-            AuraCard(
+            const SizedBox(height: AuraSpace.s12),
+            const AuraCard(
               child: Text(
                 'If your backend was running before, restart it so the Notifications module is registered.',
                 style: AuraText.body,
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _CenteredUpdatesList extends StatelessWidget {
+  const _CenteredUpdatesList({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        double horizontalPadding;
+        double maxWidth;
+
+        if (width < 600) {
+          horizontalPadding = AuraSpace.s12;
+          maxWidth = double.infinity;
+        } else if (width < 980) {
+          horizontalPadding = AuraSpace.s24;
+          maxWidth = 760;
+        } else {
+          horizontalPadding = AuraSpace.s32;
+          maxWidth = 820;
+        }
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                AuraSpace.s16,
+                horizontalPadding,
+                AuraSpace.s24,
+              ),
+              children: children,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CenteredUpdatesSeparatedList extends StatelessWidget {
+  const _CenteredUpdatesSeparatedList({
+    required this.itemCount,
+    required this.itemBuilder,
+    required this.separatorBuilder,
+  });
+
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder separatorBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        double horizontalPadding;
+        double maxWidth;
+
+        if (width < 600) {
+          horizontalPadding = AuraSpace.s12;
+          maxWidth = double.infinity;
+        } else if (width < 980) {
+          horizontalPadding = AuraSpace.s24;
+          maxWidth = 760;
+        } else {
+          horizontalPadding = AuraSpace.s32;
+          maxWidth = 820;
+        }
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: ListView.separated(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                AuraSpace.s12,
+                horizontalPadding,
+                AuraSpace.s24,
+              ),
+              itemCount: itemCount,
+              separatorBuilder: separatorBuilder,
+              itemBuilder: itemBuilder,
+            ),
+          ),
         );
       },
     );
@@ -339,15 +411,15 @@ class _Bullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s10),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(top: AuraSpace.s4),
-            child: const Icon(Icons.circle, size: 6),
+            child: Icon(Icons.circle, size: 6),
           ),
-          SizedBox(width: AuraSpace.s10),
+          const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
               text,
