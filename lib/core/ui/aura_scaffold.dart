@@ -6,7 +6,6 @@ import 'aura_surface.dart';
 import 'aura_text.dart';
 
 class AuraScaffold extends StatefulWidget {
-  // NOTE: Not const because we normalize `body` vs `child` at runtime.
   AuraScaffold({
     super.key,
     this.title = 'Aura',
@@ -25,23 +24,14 @@ class AuraScaffold extends StatefulWidget {
         body = body ?? child!;
 
   final String title;
-
-  /// Primary content area for the page.
-  /// Prefer `body:` going forward; `child:` is supported as an alias.
   final Widget body;
-
   final List<Widget>? actions;
   final Widget? leading;
   final bool centerTitle;
   final double? maxWidth;
   final EdgeInsetsGeometry? padding;
   final bool showHomeAction;
-
-  /// Where the brand mark + Home button should navigate.
-  /// Default is "/" so the router can redirect authed users to member home,
-  /// and guests to public home.
   final String homePath;
-
   final bool showHeader;
 
   @override
@@ -67,13 +57,25 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     }
   }
 
-  Widget _wrapCentered(Widget child) {
+  Widget _wrapInline(Widget child) {
     final width = widget.maxWidth ?? _defaultMaxWidth;
-    return Align(
-      alignment: Alignment.topCenter,
+    return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width),
         child: child,
+      ),
+    );
+  }
+
+  Widget _wrapBody(Widget child) {
+    final width = widget.maxWidth ?? _defaultMaxWidth;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: width),
+        child: SizedBox(
+          width: double.infinity,
+          child: child,
+        ),
       ),
     );
   }
@@ -166,7 +168,8 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     final resolvedLeading = _buildLeading(context);
 
     final normalizedTitle = widget.title.trim();
-    final showPageTitle = normalizedTitle.isNotEmpty && normalizedTitle.toLowerCase() != 'aura';
+    final showPageTitle =
+        normalizedTitle.isNotEmpty && normalizedTitle.toLowerCase() != 'aura';
 
     final headerActions = <Widget>[
       ...(widget.actions ?? const <Widget>[]),
@@ -189,7 +192,7 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     if (widget.padding != null) {
       content = Padding(padding: widget.padding!, child: content);
     }
-    content = _wrapCentered(content);
+    content = _wrapBody(content);
 
     final header = widget.showHeader
         ? Container(
@@ -199,7 +202,7 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
                 bottom: BorderSide(color: AuraSurface.divider),
               ),
             ),
-            child: _wrapCentered(
+            child: _wrapInline(
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AuraSpace.s16,
@@ -260,16 +263,13 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
 class _BrandMark extends StatelessWidget {
   const _BrandMark();
 
-  // Original SVG colors
-  static const Color _ringColor = Color(0xFFA0916E); // #A0916E
-  static const Color _wordColor = Color(0xFFE8EAED); // align with dark theme ink
+  static const Color _ringColor = Color(0xFFA0916E);
+  static const Color _wordColor = Color(0xFFE8EAED);
 
-  // Keep ring intentional + proportional to wordmark
   static const double _wordmarkSize = 38;
   static const double _ringSize = 44;
   static const double _ringStroke = 2.7;
 
-  // Responsive fallback for narrow screens
   static const double _wordmarkSizeSmall = 29;
   static const double _ringSizeSmall = 36;
   static const double _ringStrokeSmall = 2.25;

@@ -624,9 +624,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }) {
     final enabled = onTap != null;
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 126),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -639,6 +638,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             ),
             padding: const EdgeInsets.all(14),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -646,8 +646,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
-                Expanded(
-                  child: Text(detail, style: AuraText.body),
+                Text(
+                  detail,
+                  style: AuraText.body,
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -666,12 +667,31 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Widget _tileGrid(List<Widget> children) {
-    return Wrap(
-      spacing: AuraSpace.s12,
-      runSpacing: AuraSpace.s12,
-      children: children
-          .map((child) => SizedBox(width: 320, child: child))
-          .toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 900.0;
+
+        double tileWidth;
+        if (maxWidth >= 1100) {
+          tileWidth = (maxWidth - AuraSpace.s12 * 2) / 3;
+        } else if (maxWidth >= 720) {
+          tileWidth = (maxWidth - AuraSpace.s12) / 2;
+        } else {
+          tileWidth = maxWidth;
+        }
+
+        tileWidth = tileWidth.clamp(0.0, 360.0);
+
+        return Wrap(
+          spacing: AuraSpace.s12,
+          runSpacing: AuraSpace.s12,
+          children: children
+              .map((child) => SizedBox(width: tileWidth, child: child))
+              .toList(),
+        );
+      },
     );
   }
 
@@ -706,94 +726,112 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     required String id,
     required bool isAdmin,
   }) {
+    final identityText = handle.isNotEmpty ? '@$handle' : '—';
+
     return ui.AuraCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: _openEditProfile,
-            child: CircleAvatar(
-              radius: 28,
-              backgroundImage:
-                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
-              child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 640;
+
+            final avatar = GestureDetector(
+              onTap: _openEditProfile,
+              child: CircleAvatar(
+                radius: 28,
+                backgroundImage:
+                    avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+              ),
+            );
+
+            final content = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName.isNotEmpty ? displayName : '—',
+                  style: AuraText.title,
+                ),
+                const SizedBox(height: 6),
+                Text(identityText, style: AuraText.small),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    isAdmin ? 'App admin account' : 'Member account',
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (bio.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(bio, style: AuraText.body),
+                ],
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    FilledButton(
+                      onPressed: _openEditProfile,
+                      child: const Text('Edit profile'),
+                    ),
+                    OutlinedButton(
+                      onPressed: _busyLogout ? null : _logout,
+                      child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                    ),
+                    OutlinedButton(
+                      onPressed: _pickAndUploadPhoto,
+                      child: const Text('Upload photo'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  isAdmin
+                      ? 'This account carries platform administration as well as member access.'
+                      : 'This space is for your personal member account and writing activity.',
+                  style: AuraText.small,
+                ),
+                if (kDebugMode && id.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  SelectableText(
+                    'User ID: $id',
+                    style: AuraText.small,
+                  ),
+                ],
+              ],
+            );
+
+            if (isNarrow) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    displayName.isNotEmpty ? displayName : '—',
-                    style: AuraText.title,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    handle.isNotEmpty ? '@$handle' : '—',
-                    style: AuraText.small,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      isAdmin ? 'App admin account' : 'Member account',
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  if (bio.trim().isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(bio, style: AuraText.body),
-                  ],
+                  avatar,
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton(
-                        onPressed: _openEditProfile,
-                        child: const Text('Edit profile'),
-                      ),
-                      OutlinedButton(
-                        onPressed: _busyLogout ? null : _logout,
-                        child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
-                      ),
-                      OutlinedButton(
-                        onPressed: _pickAndUploadPhoto,
-                        child: const Text('Upload photo'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    isAdmin
-                        ? 'This account carries platform administration as well as member access.'
-                        : 'This space is for your personal member account and writing activity.',
-                    style: AuraText.small,
-                  ),
-                  if (kDebugMode && id.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    SelectableText(
-                      'User ID: $id',
-                      style: AuraText.small,
-                    ),
-                  ],
+                  content,
                 ],
-              ),
-            ),
-          ),
-        ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                avatar,
+                const SizedBox(width: 12),
+                Expanded(child: content),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -921,7 +959,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Widget _asyncStatusCard({
-    required String title,
     required AsyncValue<dynamic> asyncValue,
     required Widget Function(dynamic data) dataBuilder,
     required String loadingLabel,
@@ -939,7 +976,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               const SizedBox(width: 12),
-              Text(loadingLabel),
+              Expanded(
+                child: Text(
+                  loadingLabel,
+                  style: AuraText.body,
+                ),
+              ),
             ],
           ),
         ),
@@ -1047,6 +1089,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
+  Widget _cardList(List<Widget> children) {
+    final items = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      items.add(children[i]);
+      if (i != children.length - 1) {
+        items.add(const SizedBox(height: AuraSpace.s14));
+      }
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: items,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authed = ref.watch(isAuthedProvider);
@@ -1054,9 +1111,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (!authed) {
       return AuraScaffold(
         title: 'Account',
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ui.AuraCard(
+        body: _cardList([
+          ui.AuraCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1087,7 +1143,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               ),
             ),
           ),
-        ),
+        ]),
       );
     }
 
@@ -1096,12 +1152,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     return AuraScaffold(
       title: 'Account',
       body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => _cardList(const [
+          ui.AuraCard(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ]),
         error: (err, st) {
           if (_isEmailNotVerifiedError(err)) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: ui.AuraCard(
+            return _cardList([
+              ui.AuraCard(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1153,12 +1215,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ),
                 ),
               ),
-            );
+            ]);
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: ui.AuraCard(
+          return _cardList([
+            ui.AuraCard(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1176,7 +1237,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
               ),
             ),
-          );
+          ]);
         },
         data: (me) {
           final profile = (me['profile'] is Map)
@@ -1192,116 +1253,98 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               (profile['avatarUrl'] ?? me['avatarUrl'] ?? '').toString();
           final isAdmin = _isAdmin(me);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              _profileCard(
-                context: context,
-                displayName: displayName,
-                handle: handle,
-                bio: bio,
-                avatarUrl: avatarUrl,
-                id: id,
-                isAdmin: isAdmin,
+          return _cardList([
+            _profileCard(
+              context: context,
+              displayName: displayName,
+              handle: handle,
+              bio: bio,
+              avatarUrl: avatarUrl,
+              id: id,
+              isAdmin: isAdmin,
+            ),
+            if (isAdmin) _adminWorkspaceCard(context) else _memberWorkspaceCard(context),
+            _publicHubsCard(context),
+            _asyncStatusCard(
+              asyncValue: ref.watch(_meDraftProvider),
+              loadingLabel: 'Loading draft…',
+              errorLabel: 'Draft load failed',
+              dataBuilder: (draft) => _draftCard(
+                context,
+                Map<String, dynamic>.from(draft as Map),
               ),
-              const SizedBox(height: AuraSpace.s14),
-              if (isAdmin) ...[
-                _adminWorkspaceCard(context),
-                const SizedBox(height: AuraSpace.s14),
-              ] else ...[
-                _memberWorkspaceCard(context),
-                const SizedBox(height: AuraSpace.s14),
-              ],
-              _publicHubsCard(context),
-              const SizedBox(height: AuraSpace.s14),
-              _asyncStatusCard(
-                title: 'Draft',
-                asyncValue: ref.watch(_meDraftProvider),
-                loadingLabel: 'Loading draft…',
-                errorLabel: 'Draft load failed',
-                dataBuilder: (draft) => _draftCard(
-                  context,
-                  Map<String, dynamic>.from(draft as Map),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s14),
-              _asyncStatusCard(
+            ),
+            _asyncStatusCard(
+              asyncValue: ref.watch(_mePostsProvider),
+              loadingLabel: 'Loading posts…',
+              errorLabel: 'Posts load failed',
+              dataBuilder: (items) => _countCard(
                 title: 'Posts',
-                asyncValue: ref.watch(_mePostsProvider),
-                loadingLabel: 'Loading posts…',
-                errorLabel: 'Posts load failed',
-                dataBuilder: (items) => _countCard(
-                  title: 'Posts',
-                  emptyLabel: 'No posts yet.',
-                  countLabel:
-                      'You have ${(items as List<Map<String, dynamic>>).length} post(s).',
-                  items: items,
-                  actions: [
-                    FilledButton(
-                      onPressed: () => context.go('/compose'),
-                      child: const Text('Compose'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => context.go('/home'),
-                      child: const Text('Member feed'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => ref.invalidate(_mePostsProvider),
-                      child: const Text('Refresh'),
-                    ),
-                  ],
-                ),
+                emptyLabel: 'No posts yet.',
+                countLabel:
+                    'You have ${(items as List<Map<String, dynamic>>).length} post(s).',
+                items: items,
+                actions: [
+                  FilledButton(
+                    onPressed: () => context.go('/compose'),
+                    child: const Text('Compose'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Member feed'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => ref.invalidate(_mePostsProvider),
+                    child: const Text('Refresh'),
+                  ),
+                ],
               ),
-              const SizedBox(height: AuraSpace.s14),
-              _asyncStatusCard(
+            ),
+            _asyncStatusCard(
+              asyncValue: ref.watch(_meSavedProvider),
+              loadingLabel: 'Loading saved…',
+              errorLabel: 'Saved load failed',
+              dataBuilder: (items) => _countCard(
                 title: 'Saved',
-                asyncValue: ref.watch(_meSavedProvider),
-                loadingLabel: 'Loading saved…',
-                errorLabel: 'Saved load failed',
-                dataBuilder: (items) => _countCard(
-                  title: 'Saved',
-                  emptyLabel: 'No saved posts yet.',
-                  countLabel:
-                      'You have ${(items as List<Map<String, dynamic>>).length} saved item(s).',
-                  items: items,
-                  actions: [
-                    OutlinedButton(
-                      onPressed: () => context.go('/saved'),
-                      child: const Text('View saved'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => ref.invalidate(_meSavedProvider),
-                      child: const Text('Refresh'),
-                    ),
-                  ],
-                ),
+                emptyLabel: 'No saved posts yet.',
+                countLabel:
+                    'You have ${(items as List<Map<String, dynamic>>).length} saved item(s).',
+                items: items,
+                actions: [
+                  OutlinedButton(
+                    onPressed: () => context.go('/saved'),
+                    child: const Text('View saved'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => ref.invalidate(_meSavedProvider),
+                    child: const Text('Refresh'),
+                  ),
+                ],
               ),
-              const SizedBox(height: AuraSpace.s14),
-              _asyncStatusCard(
+            ),
+            _asyncStatusCard(
+              asyncValue: ref.watch(_meRepliesProvider),
+              loadingLabel: 'Loading replies…',
+              errorLabel: 'Replies load failed',
+              dataBuilder: (items) => _countCard(
                 title: 'Replies',
-                asyncValue: ref.watch(_meRepliesProvider),
-                loadingLabel: 'Loading replies…',
-                errorLabel: 'Replies load failed',
-                dataBuilder: (items) => _countCard(
-                  title: 'Replies',
-                  emptyLabel: 'No replies yet.',
-                  countLabel:
-                      'You have ${(items as List<Map<String, dynamic>>).length} reply/replies.',
-                  items: items,
-                  actions: [
-                    OutlinedButton(
-                      onPressed: () => context.go('/home'),
-                      child: const Text('Member feed'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => ref.invalidate(_meRepliesProvider),
-                      child: const Text('Refresh'),
-                    ),
-                  ],
-                ),
+                emptyLabel: 'No replies yet.',
+                countLabel:
+                    'You have ${(items as List<Map<String, dynamic>>).length} reply/replies.',
+                items: items,
+                actions: [
+                  OutlinedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Member feed'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => ref.invalidate(_meRepliesProvider),
+                    child: const Text('Refresh'),
+                  ),
+                ],
               ),
-            ],
-          );
+            ),
+          ]);
         },
       ),
     );

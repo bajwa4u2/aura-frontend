@@ -34,8 +34,11 @@ dependencies:
   # Render white paper markdown in-app
   flutter_markdown: ^0.7.3
 
-  # PDF viewer for mobile/desktop only
+  # PDF viewer
   syncfusion_flutter_pdfviewer: ^29.2.11
+
+  # App icon generator
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -44,3 +47,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/investor/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/aura_icon.png"
