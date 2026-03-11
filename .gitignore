@@ -13,6 +13,7 @@ build/
 # Flutter IDE / project files
 .idea/
 *.iml
+.vscode/
 
 # Logs
 *.log
@@ -23,17 +24,34 @@ build/
 # -----------------------------
 android/.gradle/
 android/app/build/
+android/local.properties
 
 # -----------------------------
-# iOS / macOS
+# iOS
 # -----------------------------
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Pods/
 ios/.symlinks/
+ios/Runner.xcworkspace
 
 # -----------------------------
-# Backend (Node/NestJS)
+# macOS
+# -----------------------------
+macos/Flutter/ephemeral/
+
+# -----------------------------
+# Linux
+# -----------------------------
+linux/flutter/ephemeral/
+
+# -----------------------------
+# Windows
+# -----------------------------
+windows/flutter/ephemeral/
+
+# -----------------------------
+# Backend (Node / NestJS)
 # -----------------------------
 backend/node_modules/
 backend/dist/
