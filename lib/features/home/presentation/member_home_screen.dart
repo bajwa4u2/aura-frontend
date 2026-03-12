@@ -84,13 +84,11 @@ _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
   // { ...announcement... }
   final root = _asMap(raw);
 
-  // direct item
   final directItem = root['item'];
   if (directItem is Map) {
     return _PinnedAnnouncement.tryFrom(directItem);
   }
 
-  // direct items list
   final directItems = root['items'];
   if (directItems is List) {
     for (final it in directItems) {
@@ -112,7 +110,6 @@ _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
       }
     }
 
-    // sometimes: { data: { data: { item } } }
     final inner = data['data'];
     if (inner is Map) {
       final innerItem = inner['item'];
@@ -128,7 +125,6 @@ _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
     }
   }
 
-  // last resort: treat unwrapped map as announcement
   final m = _unwrapMap(raw);
   final fallback = _PinnedAnnouncement.tryFrom(m);
   return fallback;
@@ -147,7 +143,6 @@ final draftProvider =
   final res = await dio.get('/posts/draft');
   final raw = res.data;
 
-  // If API uses { draft: {...} } at top-level or inside data
   final root = _asMap(raw);
   final topDraft = root['draft'];
   if (topDraft is Map) return Map<String, dynamic>.from(topDraft);
@@ -157,8 +152,6 @@ final draftProvider =
   final innerDraft = m['draft'];
   if (innerDraft is Map) return Map<String, dynamic>.from(innerDraft);
 
-  // Otherwise treat returned data itself as the draft
-  // (common if endpoint just returns the draft object inside data)
   if (m.isNotEmpty &&
       (m['id'] != null || m['title'] != null || m['body'] != null)) {
     return m;
@@ -241,41 +234,38 @@ class MemberHomeScreen extends ConsumerWidget {
         ),
         children: [
           const _HeroCard(),
-
           SizedBox(height: AuraSpace.s12),
           const _PinnedAnnouncementBanner(),
-
-          SizedBox(height: AuraSpace.s18),
-
-          draftAsync.when(
-            data: (draft) {
-              if (!isAuthed) return const SizedBox.shrink();
-              if (draft == null) return const SizedBox.shrink();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SectionTitle(title: 'Draft'),
-                  SizedBox(height: AuraSpace.s10),
-                  AuraCard(
-                    onTap: () => context.push('/compose'),
-                    child: Text(
-                      'Continue your draft.',
-                      style: AuraText.body,
-                    ),
-                  ),
-                ],
+          SizedBox(height: AuraSpace.s22),
+          const _SectionTitle(title: 'Latest'),
+          SizedBox(height: AuraSpace.s12),
+          feedAsync.when(
+            data: (posts) {
+              final top = posts.take(6).toList();
+              if (top.isEmpty) {
+                return AuraCard(
+                  child: Text('No posts yet.', style: AuraText.body),
+                );
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: top.length,
+                separatorBuilder: (_, __) =>
+                    SizedBox(height: AuraSpace.s16),
+                itemBuilder: (context, i) {
+                  return PostCard(post: top[i]);
+                },
               );
             },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            loading: () => const _LoadingCard(),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load feed: $e', style: AuraText.body),
+            ),
           ),
-
           SizedBox(height: AuraSpace.s18),
-
           _SectionTitle(title: 'Saved'),
           SizedBox(height: AuraSpace.s10),
-
           savedAsync.when(
             data: (raw) {
               final posts = _coercePosts(raw);
@@ -320,7 +310,7 @@ class MemberHomeScreen extends ConsumerWidget {
                   SizedBox(height: AuraSpace.s10),
                   ...posts.take(2).map(
                         (p) => Padding(
-                          padding: EdgeInsets.only(bottom: AuraSpace.s10),
+                          padding: EdgeInsets.only(bottom: AuraSpace.s12),
                           child: PostCard(post: p, compact: true),
                         ),
                       ),
@@ -332,39 +322,32 @@ class MemberHomeScreen extends ConsumerWidget {
               child: Text('Could not load saved: $e', style: AuraText.body),
             ),
           ),
-
           SizedBox(height: AuraSpace.s18),
+          draftAsync.when(
+            data: (draft) {
+              if (!isAuthed) return const SizedBox.shrink();
+              if (draft == null) return const SizedBox.shrink();
 
-          _SectionTitle(title: 'Latest'),
-          SizedBox(height: AuraSpace.s10),
-
-          feedAsync.when(
-            data: (posts) {
-              final top = posts.take(6).toList();
-              if (top.isEmpty) {
-                return AuraCard(
-                  child: Text('No posts yet.', style: AuraText.body),
-                );
-              }
               return Column(
-                children: top
-                    .map(
-                      (p) => Padding(
-                        padding: EdgeInsets.only(bottom: AuraSpace.s18),
-                        child: PostCard(post: p),
-                      ),
-                    )
-                    .toList(),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _SectionTitle(title: 'Draft'),
+                  SizedBox(height: AuraSpace.s10),
+                  AuraCard(
+                    onTap: () => context.push('/compose'),
+                    child: Text(
+                      'Continue your draft.',
+                      style: AuraText.body,
+                    ),
+                  ),
+                ],
               );
             },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text('Could not load feed: $e', style: AuraText.body),
-            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
           ),
-
           SizedBox(height: AuraSpace.s18),
-          _SectionTitle(title: 'Quiet tools'),
+          const _SectionTitle(title: 'Quiet tools'),
           SizedBox(height: AuraSpace.s10),
           const _ToolsRow(),
         ],
@@ -417,7 +400,10 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                 ],
               ),
               SizedBox(height: AuraSpace.s10),
-              Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                title,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+              ),
               if (a.publishedAt != null) ...[
                 SizedBox(height: AuraSpace.s6),
                 Text('Published: ${_fmt(a.publishedAt!)}', style: AuraText.small),
@@ -461,7 +447,10 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800));
+    return Text(
+      title,
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+    );
   }
 }
 
@@ -474,8 +463,8 @@ class _ToolsRow extends StatelessWidget {
       children: [
         Expanded(
           child: AuraCard(
-            onTap: () => context.push('/updates'),
-            child: Text('Updates', style: AuraText.body),
+            onTap: () => context.push('/me'),
+            child: Text('Me', style: AuraText.body),
           ),
         ),
         SizedBox(width: AuraSpace.s10),
@@ -488,8 +477,8 @@ class _ToolsRow extends StatelessWidget {
         SizedBox(width: AuraSpace.s10),
         Expanded(
           child: AuraCard(
-            onTap: () => context.push('/me'),
-            child: Text('Me', style: AuraText.body),
+            onTap: () => context.push('/updates'),
+            child: Text('Updates', style: AuraText.body),
           ),
         ),
       ],
