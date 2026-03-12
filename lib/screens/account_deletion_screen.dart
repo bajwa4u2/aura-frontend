@@ -33,7 +33,10 @@ class AccountDeletionScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 10),
-              Text('• Full name', style: TextStyle(fontSize: 16, height: 1.5)),
+              Text(
+                '• Full name',
+                style: TextStyle(fontSize: 16, height: 1.5),
+              ),
               Text(
                 '• Email address linked to your Aura account',
                 style: TextStyle(fontSize: 16, height: 1.5),
