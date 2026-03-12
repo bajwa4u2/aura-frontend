@@ -18,6 +18,8 @@ class SavesRepository {
   final Ref _ref;
   final Dio _dio;
 
+  Set<String>? _savedPostIdsCache;
+
   bool _isAuthed() {
     final status = _ref.read(authStatusProvider);
     return status == AuthStatus.authed;
@@ -26,6 +28,10 @@ class SavesRepository {
   bool _isAuthFailure(DioException e) {
     final code = e.response?.statusCode;
     return code == 401 || code == 403;
+  }
+
+  void _clearSavedCache() {
+    _savedPostIdsCache = null;
   }
 
   bool _extractSaved(dynamic data) {
@@ -138,6 +144,35 @@ class SavesRepository {
     return <Map<String, dynamic>>[];
   }
 
+  String? _extractSavedPostId(Map<String, dynamic> item) {
+    final postId = (item['postId'] ?? '').toString().trim();
+    if (postId.isNotEmpty) return postId;
+
+    final nestedPost = item['post'];
+    if (nestedPost is Map) {
+      final nestedPostId = (nestedPost['id'] ?? '').toString().trim();
+      if (nestedPostId.isNotEmpty) return nestedPostId;
+    }
+
+    final directId = (item['id'] ?? '').toString().trim();
+    if (directId.isNotEmpty) return directId;
+
+    return null;
+  }
+
+  Set<String> _buildSavedPostIdsCache(List<Map<String, dynamic>> items) {
+    final ids = <String>{};
+
+    for (final item in items) {
+      final id = _extractSavedPostId(item);
+      if (id != null && id.isNotEmpty) {
+        ids.add(id);
+      }
+    }
+
+    return ids;
+  }
+
   Future<List<Map<String, dynamic>>> _fetchSavedRaw({
     int limit = 100,
     String? cursor,
@@ -178,10 +213,20 @@ class SavesRepository {
     }
   }
 
+  Future<void> _ensureSavedCacheLoaded() async {
+    if (_savedPostIdsCache != null) return;
+
+    final items = await _fetchSavedRaw(limit: 200);
+    _savedPostIdsCache = _buildSavedPostIdsCache(items);
+  }
+
   /// Canonical saved-list read.
   /// Prefers /v1/saves/me and falls back to /v1/saves if needed.
   Future<List<Post>> listSaved({int limit = 24, String? cursor}) async {
     final items = await _fetchSavedRaw(limit: limit, cursor: cursor);
+
+    // Refresh cache from the list we just loaded.
+    _savedPostIdsCache = _buildSavedPostIdsCache(items);
 
     return items
         .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
@@ -199,25 +244,13 @@ class SavesRepository {
     if (pid.isEmpty) return false;
 
     try {
-      final items = await _fetchSavedRaw(limit: 200);
-
-      for (final item in items) {
-        final itemId = (item['id'] ?? '').toString().trim();
-        if (itemId == pid) return true;
-
-        final postIdValue = (item['postId'] ?? '').toString().trim();
-        if (postIdValue == pid) return true;
-
-        final nestedPost = item['post'];
-        if (nestedPost is Map) {
-          final nestedPostId = (nestedPost['id'] ?? '').toString().trim();
-          if (nestedPostId == pid) return true;
-        }
-      }
-
-      return false;
+      await _ensureSavedCacheLoaded();
+      return _savedPostIdsCache?.contains(pid) ?? false;
     } on DioException catch (e) {
-      if (_isAuthFailure(e)) return false;
+      if (_isAuthFailure(e)) {
+        _clearSavedCache();
+        return false;
+      }
       rethrow;
     }
   }
@@ -235,24 +268,40 @@ class SavesRepository {
 
     try {
       final res = await _dio.post('/saves/$pid/toggle');
-      return _extractSaved(res.data)
-          ? true
-          : _extractSaved(res.data) == false
-              ? false
-              : true;
+      final saved = _extractSaved(res.data);
+
+      _savedPostIdsCache ??= <String>{};
+      if (saved) {
+        _savedPostIdsCache!.add(pid);
+      } else {
+        _savedPostIdsCache!.remove(pid);
+      }
+
+      return saved;
     } on DioException catch (e) {
-      if (_isAuthFailure(e)) return false;
+      if (_isAuthFailure(e)) {
+        _clearSavedCache();
+        return false;
+      }
 
       if (e.response?.statusCode == 404) {
         try {
           final res2 = await _dio.post('/saves/toggle/$pid');
-          return _extractSaved(res2.data)
-              ? true
-              : _extractSaved(res2.data) == false
-                  ? false
-                  : true;
+          final saved = _extractSaved(res2.data);
+
+          _savedPostIdsCache ??= <String>{};
+          if (saved) {
+            _savedPostIdsCache!.add(pid);
+          } else {
+            _savedPostIdsCache!.remove(pid);
+          }
+
+          return saved;
         } on DioException catch (e2) {
-          if (_isAuthFailure(e2)) return false;
+          if (_isAuthFailure(e2)) {
+            _clearSavedCache();
+            return false;
+          }
           if (e2.response?.statusCode == 404) return false;
           rethrow;
         }

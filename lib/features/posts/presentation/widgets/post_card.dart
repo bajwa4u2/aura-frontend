@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
@@ -91,6 +92,71 @@ IconData _visibilityIcon(String? raw) {
     case 'PUBLIC':
     default:
       return Icons.public_outlined;
+  }
+}
+
+Future<void> _copyToClipboard(
+  BuildContext context,
+  String value, {
+  required String message,
+}) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
+
+Future<void> _openExternalUrl(
+  BuildContext context,
+  String rawUrl, {
+  String fallbackCopyMessage = 'Link copied',
+}) async {
+  final trimmed = rawUrl.trim();
+  if (trimmed.isEmpty) return;
+
+  Uri? uri = Uri.tryParse(trimmed);
+  if (uri == null) {
+    await _copyToClipboard(
+      context,
+      trimmed,
+      message: fallbackCopyMessage,
+    );
+    return;
+  }
+
+  if (!uri.hasScheme) {
+    uri = Uri.tryParse('https://$trimmed');
+  }
+
+  if (uri == null) {
+    await _copyToClipboard(
+      context,
+      trimmed,
+      message: fallbackCopyMessage,
+    );
+    return;
+  }
+
+  try {
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.platformDefault,
+    );
+
+    if (!launched) {
+      await _copyToClipboard(
+        context,
+        trimmed,
+        message: fallbackCopyMessage,
+      );
+    }
+  } catch (_) {
+    await _copyToClipboard(
+      context,
+      trimmed,
+      message: fallbackCopyMessage,
+    );
   }
 }
 
@@ -300,12 +366,12 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     try {
       mediaUrl = (dyn.mediaUrl as String?)?.trim();
-      if (mediaUrl != null && mediaUrl!.isEmpty) mediaUrl = null;
+      if (mediaUrl != null && mediaUrl.isEmpty) mediaUrl = null;
     } catch (_) {}
 
     try {
       mediaThumbUrl = (dyn.mediaThumbUrl as String?)?.trim();
-      if (mediaThumbUrl != null && mediaThumbUrl!.isEmpty) mediaThumbUrl = null;
+      if (mediaThumbUrl != null && mediaThumbUrl.isEmpty) mediaThumbUrl = null;
     } catch (_) {}
 
     try {
@@ -338,13 +404,14 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     try {
       caption = (dyn.caption as String?)?.trim();
-      if (caption != null && caption!.isEmpty) caption = null;
+      if (caption != null && caption.isEmpty) caption = null;
     } catch (_) {}
 
     final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
     final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
 
-    if ((resolvedMediaUrl ?? '').isEmpty && (resolvedMediaThumbUrl ?? '').isEmpty) {
+    if ((resolvedMediaUrl ?? '').isEmpty &&
+        (resolvedMediaThumbUrl ?? '').isEmpty) {
       return out;
     }
 
@@ -394,26 +461,26 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     try {
       linkUrl = (dyn.linkUrl as String?)?.trim();
-      if (linkUrl != null && linkUrl!.isEmpty) linkUrl = null;
+      if (linkUrl != null && linkUrl.isEmpty) linkUrl = null;
     } catch (_) {
       try {
         linkUrl = (dyn.url as String?)?.trim();
-        if (linkUrl != null && linkUrl!.isEmpty) linkUrl = null;
+        if (linkUrl != null && linkUrl.isEmpty) linkUrl = null;
       } catch (_) {}
     }
 
     try {
       linkTitle = (dyn.linkTitle as String?)?.trim();
-      if (linkTitle != null && linkTitle!.isEmpty) linkTitle = null;
+      if (linkTitle != null && linkTitle.isEmpty) linkTitle = null;
     } catch (_) {}
 
     try {
       linkSubtitle = (dyn.linkSubtitle as String?)?.trim();
-      if (linkSubtitle != null && linkSubtitle!.isEmpty) linkSubtitle = null;
+      if (linkSubtitle != null && linkSubtitle.isEmpty) linkSubtitle = null;
     } catch (_) {
       try {
         linkSubtitle = (dyn.linkDescription as String?)?.trim();
-        if (linkSubtitle != null && linkSubtitle!.isEmpty) {
+        if (linkSubtitle != null && linkSubtitle.isEmpty) {
           linkSubtitle = null;
         }
       } catch (_) {}
@@ -421,11 +488,11 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     try {
       linkThumbUrl = (dyn.linkThumbUrl as String?)?.trim();
-      if (linkThumbUrl != null && linkThumbUrl!.isEmpty) linkThumbUrl = null;
+      if (linkThumbUrl != null && linkThumbUrl.isEmpty) linkThumbUrl = null;
     } catch (_) {
       try {
         linkThumbUrl = (dyn.linkImageUrl as String?)?.trim();
-        if (linkThumbUrl != null && linkThumbUrl!.isEmpty) {
+        if (linkThumbUrl != null && linkThumbUrl.isEmpty) {
           linkThumbUrl = null;
         }
       } catch (_) {}
@@ -647,13 +714,16 @@ class _PostCardState extends ConsumerState<PostCard> {
       padding: const EdgeInsets.only(top: AuraSpace.s14),
       child: InkWell(
         borderRadius: radius,
-        onTap: () async {
-          await Clipboard.setData(ClipboardData(text: lUrl));
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Link copied')),
-          );
-        },
+        onTap: () => _openExternalUrl(
+          context,
+          lUrl,
+          fallbackCopyMessage: 'Could not open link. Link copied instead.',
+        ),
+        onLongPress: () => _copyToClipboard(
+          context,
+          lUrl,
+          message: 'Link copied',
+        ),
         child: ClipRRect(
           borderRadius: radius,
           child: Container(
@@ -697,9 +767,23 @@ class _PostCardState extends ConsumerState<PostCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: AuraSpace.s6),
-                      Text(
-                        'Tap to copy link',
-                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.open_in_new,
+                            size: 14,
+                            color: AuraSurface.muted,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Tap to open · Hold to copy',
+                              style: AuraText.small.copyWith(
+                                color: AuraSurface.muted,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
