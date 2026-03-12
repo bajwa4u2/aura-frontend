@@ -65,8 +65,7 @@ const String kEnterInstitutionRoute = '/enter-institution';
 
 String _normalizeRedirectDest(String? dest) {
   final trimmed = (dest ?? '').trim();
-  if (trimmed.isEmpty) return '/home';
-  if (trimmed == '/') return '/home';
+  if (trimmed.isEmpty || trimmed == '/') return '/home';
   if (!trimmed.startsWith('/')) return '/home';
   return trimmed;
 }
@@ -160,12 +159,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 children: [
                   const Text(
                     'Page not found',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     'Route: $path',
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Wrap(
@@ -262,12 +267,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-pending?redirect=${Uri.encodeComponent(current)}';
       }
 
-      if (path == '/verify-email') {
-        final redirectTo = uri.queryParameters['redirect'];
-        return _normalizeRedirectDest(redirectTo);
-      }
-
-      if (path == '/verify-pending') {
+      if (path == '/verify-email' || path == '/verify-pending') {
         final redirectTo = uri.queryParameters['redirect'];
         return _normalizeRedirectDest(redirectTo);
       }
@@ -275,10 +275,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isPlainAuth) {
         final redirectTo = uri.queryParameters['redirect'];
         return _normalizeRedirectDest(redirectTo);
-      }
-
-      if (path == '/institution/sign-in') {
-        return kInstitutionDashboardRoute;
       }
 
       if (path == kEnterInstitutionRoute) {
@@ -308,7 +304,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const AccountDeletionScreen(),
       ),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
-      GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
+      GoRoute(
+        path: '/institutions',
+        builder: (_, __) => const InstitutionsHubScreen(),
+      ),
       GoRoute(
         path: '/institutions/:slug',
         builder: (context, state) => InstitutionDetailScreen(
@@ -325,7 +324,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
       GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
-      GoRoute(path: '/announcements', builder: (_, __) => const AnnouncementsScreen()),
+      GoRoute(
+        path: '/announcements',
+        builder: (_, __) => const AnnouncementsScreen(),
+      ),
       GoRoute(
         path: '/announcements/:slug',
         builder: (context, state) => AnnouncementDetailScreen(
