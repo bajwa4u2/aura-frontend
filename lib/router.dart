@@ -52,6 +52,7 @@ import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/contact_screen.dart';
+import 'screens/account_deletion_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -86,6 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/founder' ||
         path == '/privacy' ||
         path == '/contact' ||
+        path == '/account-deletion' ||
         path == '/investors' ||
         path == '/institutions' ||
         path.startsWith('/institutions/') ||
@@ -301,6 +303,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
+      GoRoute(
+        path: '/account-deletion',
+        builder: (_, __) => const AccountDeletionScreen(),
+      ),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
       GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
       GoRoute(
