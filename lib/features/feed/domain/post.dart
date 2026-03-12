@@ -13,7 +13,8 @@ class PostAuthor {
 
   factory PostAuthor.fromJson(Map<String, dynamic> j) {
     final rawAvatar = j['avatarUrl'] as String?;
-    final avatar = (rawAvatar == null || rawAvatar.trim().isEmpty) ? null : rawAvatar;
+    final avatar =
+        (rawAvatar == null || rawAvatar.trim().isEmpty) ? null : rawAvatar;
 
     return PostAuthor(
       id: (j['id'] ?? '').toString(),
@@ -31,6 +32,159 @@ class PostAuthor {
       };
 }
 
+class PostMediaItem {
+  const PostMediaItem({
+    required this.id,
+    required this.type,
+    this.source,
+    this.status,
+    this.url,
+    this.originalUrl,
+    this.displayUrl,
+    this.playbackUrl,
+    this.thumbUrl,
+    this.thumbnailUrl,
+    this.caption,
+    this.altText,
+    this.transcript,
+    this.width,
+    this.height,
+    this.duration,
+    this.position,
+    this.editDisclosure = false,
+    this.mimeType,
+    this.fileName,
+    this.fileSizeBytes,
+  });
+
+  final String id;
+  final String type;
+  final String? source;
+  final String? status;
+
+  final String? url;
+  final String? originalUrl;
+  final String? displayUrl;
+  final String? playbackUrl;
+  final String? thumbUrl;
+  final String? thumbnailUrl;
+
+  final String? caption;
+  final String? altText;
+  final String? transcript;
+
+  final int? width;
+  final int? height;
+  final int? duration;
+  final int? position;
+
+  final bool editDisclosure;
+
+  final String? mimeType;
+  final String? fileName;
+  final int? fileSizeBytes;
+
+  bool get isVideo => type.toUpperCase().contains('VIDEO');
+  bool get isImage => type.toUpperCase().contains('IMAGE');
+  bool get isAudio => type.toUpperCase().contains('AUDIO');
+
+  String? get bestUrl {
+    final candidates = [
+      displayUrl,
+      playbackUrl,
+      url,
+      originalUrl,
+    ];
+    for (final c in candidates) {
+      if (c != null && c.trim().isNotEmpty) return c;
+    }
+    return null;
+  }
+
+  String? get bestThumbUrl {
+    final candidates = [
+      thumbnailUrl,
+      thumbUrl,
+      isVideo ? null : bestUrl,
+    ];
+    for (final c in candidates) {
+      if (c != null && c.trim().isNotEmpty) return c;
+    }
+    return null;
+  }
+
+  static String? _asString(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  static int? _asInt(dynamic v) {
+    if (v is num) return v.toInt();
+    final s = _asString(v);
+    if (s == null) return null;
+    return int.tryParse(s);
+  }
+
+  static bool _asBool(dynamic v) {
+    if (v is bool) return v;
+    final s = _asString(v)?.toLowerCase();
+    if (s == 'true') return true;
+    if (s == 'false') return false;
+    return false;
+  }
+
+  factory PostMediaItem.fromJson(Map<String, dynamic> j) {
+    return PostMediaItem(
+      id: (j['id'] ?? '').toString(),
+      type: _asString(j['type']) ?? 'IMAGE',
+      source: _asString(j['source']),
+      status: _asString(j['status']),
+      url: _asString(j['url']) ?? _asString(j['publicUrl']),
+      originalUrl: _asString(j['originalUrl']),
+      displayUrl: _asString(j['displayUrl']),
+      playbackUrl: _asString(j['playbackUrl']),
+      thumbUrl: _asString(j['thumbUrl']) ?? _asString(j['thumb']),
+      thumbnailUrl: _asString(j['thumbnailUrl']),
+      caption: _asString(j['caption']),
+      altText: _asString(j['altText']),
+      transcript: _asString(j['transcript']),
+      width: _asInt(j['width']),
+      height: _asInt(j['height']),
+      duration: _asInt(j['duration']),
+      position: _asInt(j['position']),
+      editDisclosure: _asBool(j['editDisclosure']),
+      mimeType: _asString(j['mimeType']),
+      fileName: _asString(j['fileName']),
+      fileSizeBytes: _asInt(j['fileSizeBytes']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'type': type,
+        'source': source,
+        'status': status,
+        'url': url,
+        'originalUrl': originalUrl,
+        'displayUrl': displayUrl,
+        'playbackUrl': playbackUrl,
+        'thumbUrl': thumbUrl,
+        'thumbnailUrl': thumbnailUrl,
+        'caption': caption,
+        'altText': altText,
+        'transcript': transcript,
+        'width': width,
+        'height': height,
+        'duration': duration,
+        'position': position,
+        'editDisclosure': editDisclosure,
+        'mimeType': mimeType,
+        'fileName': fileName,
+        'fileSizeBytes': fileSizeBytes,
+      };
+}
+
 class Post {
   Post({
     required this.id,
@@ -42,8 +196,11 @@ class Post {
     this.visibility = 'public',
     this.author,
 
-    // Media
-    this.mediaType = 'NONE', // NONE | IMAGE | VIDEO | LINK
+    // New structured media contract.
+    this.media = const <PostMediaItem>[],
+
+    // Compatibility bridge fields.
+    this.mediaType = 'NONE',
     this.mediaUrl,
     this.mediaThumbUrl,
     this.mediaWidth,
@@ -51,7 +208,7 @@ class Post {
     this.mediaDuration,
     this.caption,
 
-    // Link preview (optional)
+    // Link preview
     this.linkTitle,
     this.linkDescription,
     this.linkImageUrl,
@@ -68,7 +225,10 @@ class Post {
 
   final PostAuthor? author;
 
-  // Media
+  // New structured media
+  final List<PostMediaItem> media;
+
+  // Compatibility bridge
   final String mediaType;
   final String? mediaUrl;
   final String? mediaThumbUrl;
@@ -89,8 +249,8 @@ class Post {
 
   static String? _asString(dynamic v) {
     if (v == null) return null;
-    final s = v.toString();
-    return s.trim().isEmpty ? null : s;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
   }
 
   static int? _asInt(dynamic v) {
@@ -100,56 +260,64 @@ class Post {
     return int.tryParse(s);
   }
 
-  static Map<String, dynamic>? _pickPrimaryMediaMap(dynamic mediaField) {
-    // New backend shape: media is List<Media>
-    if (mediaField is List && mediaField.isNotEmpty) {
-      final first = mediaField.first;
-      if (first is Map) return Map<String, dynamic>.from(first);
+  static List<PostMediaItem> _mediaListFromAny(dynamic mediaField) {
+    if (mediaField is List) {
+      return mediaField
+          .whereType<Map>()
+          .map((e) => PostMediaItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
-    // Legacy shape: media is object
-    if (mediaField is Map) return Map<String, dynamic>.from(mediaField);
-    return null;
+
+    if (mediaField is Map) {
+      return [
+        PostMediaItem.fromJson(Map<String, dynamic>.from(mediaField)),
+      ];
+    }
+
+    return const <PostMediaItem>[];
+  }
+
+  static PostMediaItem? _pickPrimaryMediaItem(List<PostMediaItem> media) {
+    if (media.isEmpty) return null;
+    return media.first;
   }
 
   factory Post.fromJson(Map<String, dynamic> j) {
     final authorJson = j['author'];
-    final a = (authorJson is Map) ? PostAuthor.fromJson(Map<String, dynamic>.from(authorJson)) : null;
+    final a = (authorJson is Map)
+        ? PostAuthor.fromJson(Map<String, dynamic>.from(authorJson))
+        : null;
 
     final authorId = (j['authorId'] ?? a?.id ?? '').toString();
 
-    // Support:
-    // - flat media fields
-    // - legacy media object
-    // - NEW media array (primary = first)
-    final primaryMedia = _pickPrimaryMediaMap(j['media']);
+    final media = _mediaListFromAny(j['media']);
+    final primaryMedia = _pickPrimaryMediaItem(media);
 
     final mediaType = _asString(j['mediaType']) ??
-        _asString(primaryMedia?['type']) ??
-        _asString(primaryMedia?['mediaType']) ??
+        primaryMedia?.type ??
         'NONE';
 
-    final mediaUrl = _asString(j['mediaUrl']) ??
-        _asString(primaryMedia?['url']) ??
-        _asString(primaryMedia?['publicUrl']);
-
-    final mediaThumbUrl = _asString(j['mediaThumbUrl']) ??
-        _asString(primaryMedia?['thumbUrl']) ??
-        _asString(primaryMedia?['thumbnailUrl']) ??
-        _asString(primaryMedia?['thumb']);
-
-    final mediaWidth = _asInt(j['mediaWidth']) ?? _asInt(primaryMedia?['width']);
-    final mediaHeight = _asInt(j['mediaHeight']) ?? _asInt(primaryMedia?['height']);
-    final mediaDuration = _asInt(j['mediaDuration']) ?? _asInt(primaryMedia?['duration']);
+    final mediaUrl = _asString(j['mediaUrl']) ?? primaryMedia?.bestUrl;
+    final mediaThumbUrl =
+        _asString(j['mediaThumbUrl']) ?? primaryMedia?.bestThumbUrl;
+    final mediaWidth = _asInt(j['mediaWidth']) ?? primaryMedia?.width;
+    final mediaHeight = _asInt(j['mediaHeight']) ?? primaryMedia?.height;
+    final mediaDuration =
+        _asInt(j['mediaDuration']) ?? primaryMedia?.duration;
+    final caption = _asString(j['caption']) ?? primaryMedia?.caption;
 
     return Post(
       id: (j['id'] ?? '').toString(),
       authorId: authorId,
       text: (j['text'] ?? '').toString(),
-      createdAt: DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0),
-      replyToPostId: j['replyToPostId'] as String?,
-      repostOfPostId: j['repostOfPostId'] as String?,
+      createdAt: DateTime.tryParse((j['createdAt'] ?? '').toString()) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      replyToPostId: _asString(j['replyToPostId']),
+      repostOfPostId: _asString(j['repostOfPostId']),
       visibility: (j['visibility'] ?? 'public').toString(),
       author: a,
+
+      media: media,
 
       mediaType: mediaType,
       mediaUrl: mediaUrl,
@@ -157,11 +325,13 @@ class Post {
       mediaWidth: mediaWidth,
       mediaHeight: mediaHeight,
       mediaDuration: mediaDuration,
-      caption: (j['caption'] as String?) ?? _asString(primaryMedia?['caption']),
+      caption: caption,
 
-      linkTitle: j['linkTitle'] as String?,
-      linkDescription: j['linkDescription'] as String?,
-      linkImageUrl: j['linkImageUrl'] as String?,
+      linkTitle: _asString(j['linkTitle']),
+      linkDescription:
+          _asString(j['linkDescription']) ?? _asString(j['linkSubtitle']),
+      linkImageUrl:
+          _asString(j['linkImageUrl']) ?? _asString(j['linkThumbUrl']),
     );
   }
 
@@ -174,6 +344,9 @@ class Post {
         'repostOfPostId': repostOfPostId,
         'visibility': visibility,
         'author': author?.toJson(),
+
+        'media': media.map((e) => e.toJson()).toList(),
+
         'mediaType': mediaType,
         'mediaUrl': mediaUrl,
         'mediaThumbUrl': mediaThumbUrl,
@@ -181,6 +354,7 @@ class Post {
         'mediaHeight': mediaHeight,
         'mediaDuration': mediaDuration,
         'caption': caption,
+
         'linkTitle': linkTitle,
         'linkDescription': linkDescription,
         'linkImageUrl': linkImageUrl,

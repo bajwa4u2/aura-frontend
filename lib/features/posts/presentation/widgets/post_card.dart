@@ -126,6 +126,35 @@ final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async 
   }
 });
 
+class _ResolvedMediaItem {
+  const _ResolvedMediaItem({
+    required this.id,
+    required this.type,
+    required this.url,
+    required this.thumbUrl,
+    required this.caption,
+    required this.width,
+    required this.height,
+    required this.duration,
+    required this.editDisclosure,
+  });
+
+  final String id;
+  final String type;
+  final String? url;
+  final String? thumbUrl;
+  final String? caption;
+  final int? width;
+  final int? height;
+  final int? duration;
+  final bool editDisclosure;
+
+  bool get isVideo => type.toUpperCase().contains('VIDEO');
+  bool get isSvg =>
+      type.toUpperCase().contains('SVG') ||
+      ((url ?? '').toLowerCase().endsWith('.svg'));
+}
+
 class PostCard extends ConsumerStatefulWidget {
   const PostCard({
     super.key,
@@ -193,6 +222,149 @@ class _PostCardState extends ConsumerState<PostCard> {
     return tp.didExceedMaxLines;
   }
 
+  List<_ResolvedMediaItem> _extractStructuredMedia(dynamic dyn) {
+    final out = <_ResolvedMediaItem>[];
+
+    List<dynamic> rawList = const [];
+    try {
+      final media = dyn.media;
+      if (media is List) rawList = media;
+    } catch (_) {}
+
+    if (rawList.isEmpty) {
+      try {
+        final mediaItems = dyn.mediaItems;
+        if (mediaItems is List) rawList = mediaItems;
+      } catch (_) {}
+    }
+
+    for (final item in rawList) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+
+      final id = (m['id'] ?? '').toString().trim();
+      final type = (m['type'] ?? m['kind'] ?? m['mediaType'] ?? 'IMAGE')
+          .toString()
+          .trim()
+          .toUpperCase();
+
+      final url = _resolveMediaUrl(
+        ref,
+        (m['displayUrl'] ?? m['playbackUrl'] ?? m['url'] ?? m['publicUrl'])
+            ?.toString(),
+      );
+
+      final thumbUrl = _resolveMediaUrl(
+        ref,
+        (m['thumbnailUrl'] ?? m['thumbUrl'] ?? m['thumb'])?.toString(),
+      );
+
+      final caption = (m['caption'] ?? '').toString().trim();
+      final width = m['width'] is int
+          ? m['width'] as int
+          : int.tryParse('${m['width'] ?? ''}');
+      final height = m['height'] is int
+          ? m['height'] as int
+          : int.tryParse('${m['height'] ?? ''}');
+      final duration = m['duration'] is int
+          ? m['duration'] as int
+          : int.tryParse('${m['duration'] ?? ''}');
+      final editDisclosure = m['editDisclosure'] == true;
+
+      if ((url ?? '').isEmpty && (thumbUrl ?? '').isEmpty) continue;
+
+      out.add(
+        _ResolvedMediaItem(
+          id: id.isEmpty ? '${out.length}' : id,
+          type: type,
+          url: url,
+          thumbUrl: thumbUrl,
+          caption: caption.isEmpty ? null : caption,
+          width: width,
+          height: height,
+          duration: duration,
+          editDisclosure: editDisclosure,
+        ),
+      );
+    }
+
+    if (out.isNotEmpty) return out;
+
+    String? mediaUrl;
+    String? mediaThumbUrl;
+    String? mediaType;
+    int? mediaWidth;
+    int? mediaHeight;
+    int? mediaDuration;
+    String? caption;
+
+    try {
+      mediaUrl = (dyn.mediaUrl as String?)?.trim();
+      if (mediaUrl != null && mediaUrl!.isEmpty) mediaUrl = null;
+    } catch (_) {}
+
+    try {
+      mediaThumbUrl = (dyn.mediaThumbUrl as String?)?.trim();
+      if (mediaThumbUrl != null && mediaThumbUrl!.isEmpty) mediaThumbUrl = null;
+    } catch (_) {}
+
+    try {
+      mediaType = (dyn.mediaType as Object?)?.toString();
+    } catch (_) {}
+
+    try {
+      mediaWidth = dyn.mediaWidth as int?;
+    } catch (_) {
+      try {
+        mediaWidth = int.tryParse((dyn.mediaWidth ?? '').toString());
+      } catch (_) {}
+    }
+
+    try {
+      mediaHeight = dyn.mediaHeight as int?;
+    } catch (_) {
+      try {
+        mediaHeight = int.tryParse((dyn.mediaHeight ?? '').toString());
+      } catch (_) {}
+    }
+
+    try {
+      mediaDuration = dyn.mediaDuration as int?;
+    } catch (_) {
+      try {
+        mediaDuration = int.tryParse((dyn.mediaDuration ?? '').toString());
+      } catch (_) {}
+    }
+
+    try {
+      caption = (dyn.caption as String?)?.trim();
+      if (caption != null && caption!.isEmpty) caption = null;
+    } catch (_) {}
+
+    final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
+    final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
+
+    if ((resolvedMediaUrl ?? '').isEmpty && (resolvedMediaThumbUrl ?? '').isEmpty) {
+      return out;
+    }
+
+    out.add(
+      _ResolvedMediaItem(
+        id: 'legacy',
+        type: (mediaType ?? 'IMAGE').toUpperCase(),
+        url: resolvedMediaUrl,
+        thumbUrl: resolvedMediaThumbUrl,
+        caption: caption,
+        width: mediaWidth,
+        height: mediaHeight,
+        duration: mediaDuration,
+        editDisclosure: false,
+      ),
+    );
+
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -213,116 +385,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     String? visibility;
     try {
       visibility = (dyn.visibility as Object?)?.toString();
-    } catch (_) {}
-
-    String? mediaUrl;
-    try {
-      mediaUrl = (dyn.mediaUrl as String?)?.trim();
-      if (mediaUrl != null && mediaUrl!.isEmpty) mediaUrl = null;
-    } catch (_) {}
-
-    String? mediaThumbUrl;
-    try {
-      mediaThumbUrl = (dyn.mediaThumbUrl as String?)?.trim();
-      if (mediaThumbUrl != null && mediaThumbUrl!.isEmpty) {
-        mediaThumbUrl = null;
-      }
-    } catch (_) {}
-
-    String? mediaType;
-    try {
-      mediaType = (dyn.mediaType as Object?)?.toString();
-    } catch (_) {}
-
-    int? mediaWidth;
-    int? mediaHeight;
-    try {
-      mediaWidth = dyn.mediaWidth as int?;
-    } catch (_) {
-      try {
-        mediaWidth = int.tryParse((dyn.mediaWidth ?? '').toString());
-      } catch (_) {}
-    }
-    try {
-      mediaHeight = dyn.mediaHeight as int?;
-    } catch (_) {
-      try {
-        mediaHeight = int.tryParse((dyn.mediaHeight ?? '').toString());
-      } catch (_) {}
-    }
-
-    try {
-      if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
-        final list = dyn.media as Object?;
-        if (list is List && list.isNotEmpty) {
-          final first = list.first;
-          if (first is Map) {
-            final fm = Map<String, dynamic>.from(first);
-            final u = (fm['url'] ?? fm['publicUrl'] ?? '').toString().trim();
-            if (u.isNotEmpty) mediaUrl = u;
-
-            final tu = (fm['thumbUrl'] ??
-                    fm['thumbnailUrl'] ??
-                    fm['thumb'] ??
-                    '')
-                .toString()
-                .trim();
-            if (tu.isNotEmpty) mediaThumbUrl ??= tu;
-
-            final t = fm['type'] ?? fm['kind'] ?? fm['mediaType'];
-            if (t != null && t.toString().trim().isNotEmpty) {
-              mediaType ??= t.toString();
-            }
-
-            final w = fm['width'];
-            final h = fm['height'];
-            if (mediaWidth == null) {
-              mediaWidth = (w is int) ? w : int.tryParse((w ?? '').toString());
-            }
-            if (mediaHeight == null) {
-              mediaHeight =
-                  (h is int) ? h : int.tryParse((h ?? '').toString());
-            }
-          }
-        }
-      }
-    } catch (_) {}
-
-    try {
-      if (mediaUrl == null || mediaUrl!.trim().isEmpty) {
-        final list = dyn.mediaItems as Object?;
-        if (list is List && list.isNotEmpty) {
-          final first = list.first;
-          if (first is Map) {
-            final fm = Map<String, dynamic>.from(first);
-            final u = (fm['url'] ?? fm['publicUrl'] ?? '').toString().trim();
-            if (u.isNotEmpty) mediaUrl = u;
-
-            final tu = (fm['thumbUrl'] ??
-                    fm['thumbnailUrl'] ??
-                    fm['thumb'] ??
-                    '')
-                .toString()
-                .trim();
-            if (tu.isNotEmpty) mediaThumbUrl ??= tu;
-
-            final t = fm['type'] ?? fm['kind'] ?? fm['mediaType'];
-            if (t != null && t.toString().trim().isNotEmpty) {
-              mediaType ??= t.toString();
-            }
-
-            final w = fm['width'];
-            final h = fm['height'];
-            if (mediaWidth == null) {
-              mediaWidth = (w is int) ? w : int.tryParse((w ?? '').toString());
-            }
-            if (mediaHeight == null) {
-              mediaHeight =
-                  (h is int) ? h : int.tryParse((h ?? '').toString());
-            }
-          }
-        }
-      }
     } catch (_) {}
 
     String? linkUrl;
@@ -369,16 +431,13 @@ class _PostCardState extends ConsumerState<PostCard> {
       } catch (_) {}
     }
 
-    final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
-    final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
-
     final createdAt = post.createdAt;
     final createdLabel = (createdAt == null)
         ? ''
         : '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
 
     final postId = post.id;
-    final text = (post.text ?? '').trim();
+    final text = (post.text).trim();
 
     final headerName = displayName.isNotEmpty
         ? displayName
@@ -386,10 +445,12 @@ class _PostCardState extends ConsumerState<PostCard> {
     final headerSub = handle.isNotEmpty ? '@$handle' : '';
 
     final visibilityLabel = _normalizeVisibilityLabel(visibility);
-    final visibilityIcon = _visibilityIcon(visibility);
+    final visibilityMetaIcon = _visibilityIcon(visibility);
 
     final bodyTextStyle = AuraText.body.copyWith(height: 1.42);
     final collapsedLines = compact ? 4 : 7;
+
+    final mediaItems = _extractStructuredMedia(dyn);
 
     return AuraCard(
       child: Padding(
@@ -411,8 +472,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     children: [
                       Text(
                         headerName,
-                        style: AuraText.body
-                            .copyWith(fontWeight: FontWeight.w800),
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -423,8 +483,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                             [headerSub, createdLabel]
                                 .where((e) => e.trim().isNotEmpty)
                                 .join(' · '),
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
+                            style: AuraText.small.copyWith(color: AuraSurface.muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -433,7 +492,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: _VisibilityMeta(
-                            icon: visibilityIcon,
+                            icon: visibilityMetaIcon,
                             label: visibilityLabel,
                           ),
                         ),
@@ -449,7 +508,6 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               ],
             ),
-
             if (widget.showAdminBadges) ...[
               const SizedBox(height: AuraSpace.s10),
               Wrap(
@@ -459,9 +517,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                   if ((status ?? '').trim().isNotEmpty)
                     _Badge(
                       text: (status ?? '').toUpperCase(),
-                      tone: (status ?? '')
-                              .toLowerCase()
-                              .contains('published')
+                      tone: (status ?? '').toLowerCase().contains('published')
                           ? _BadgeTone.good
                           : _BadgeTone.warn,
                     ),
@@ -473,7 +529,6 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ],
               ),
             ],
-
             if (text.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s12),
               LayoutBuilder(
@@ -523,23 +578,16 @@ class _PostCardState extends ConsumerState<PostCard> {
                 },
               ),
             ],
-
             _finalAttachmentBlock(
               context,
               postId: post.id,
-              mediaUrl: resolvedMediaUrl,
-              mediaThumbUrl: resolvedMediaThumbUrl,
-              mediaType: mediaType,
-              mediaWidth: mediaWidth,
-              mediaHeight: mediaHeight,
+              mediaItems: mediaItems,
               linkUrl: linkUrl,
               linkTitle: linkTitle,
               linkSubtitle: linkSubtitle,
               linkThumbUrl: linkThumbUrl,
             ),
-
             const SizedBox(height: AuraSpace.s12),
-
             _ActionRow(postId: post.id),
           ],
         ),
@@ -550,128 +598,32 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget _finalAttachmentBlock(
     BuildContext context, {
     required String postId,
-    required String? mediaUrl,
-    required String? mediaThumbUrl,
-    required String? mediaType,
-    required int? mediaWidth,
-    required int? mediaHeight,
+    required List<_ResolvedMediaItem> mediaItems,
     required String? linkUrl,
     required String? linkTitle,
     required String? linkSubtitle,
     required String? linkThumbUrl,
   }) {
-    final mUrl = (mediaUrl ?? '').trim();
     final lUrl = (linkUrl ?? '').trim();
 
-    if (mUrl.isEmpty && lUrl.isEmpty) return const SizedBox.shrink();
+    if (mediaItems.isEmpty && lUrl.isEmpty) return const SizedBox.shrink();
 
-    final border = Border.all(color: AuraSurface.divider);
-    final radius = BorderRadius.circular(16);
-
-    if (mUrl.isNotEmpty) {
-      final lower = mUrl.toLowerCase();
-      final mt = (mediaType ?? '').toLowerCase();
-
-      final isSvg = lower.endsWith('.svg') || mt.contains('svg');
-      final isVideo = mt.contains('video') ||
-          lower.endsWith('.mp4') ||
-          lower.endsWith('.webm') ||
-          lower.endsWith('.mov');
-
-      double? ratio;
-      if (mediaWidth != null &&
-          mediaHeight != null &&
-          mediaWidth > 0 &&
-          mediaHeight > 0) {
-        ratio = mediaWidth / mediaHeight;
-      }
-
-      if (ratio != null) {
-        if (ratio < 0.6) ratio = 0.6;
-        if (ratio > 1.9) ratio = 1.9;
-      }
-
-      final maxH = _mediaMaxHeight(context);
-
-      Widget inner;
-      if (isSvg) {
-        inner = SvgPicture.network(
-          mUrl,
-          fit: BoxFit.cover,
-          placeholderBuilder: (_) => const SizedBox(
-            height: 140,
-            child: Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        );
-      } else {
-        final thumb = (mediaThumbUrl ?? '').trim();
-        final show = (isVideo && thumb.isNotEmpty) ? thumb : mUrl;
-
-        inner = Image.network(
-          show,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            constraints: const BoxConstraints(minHeight: 180),
-            alignment: Alignment.center,
-            child: Text(
-              isVideo ? 'Video attached' : 'Media unavailable',
-              style: AuraText.small,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          loadingBuilder: (c, child, p) {
-            if (p == null) return child;
-            return SizedBox(
-              height: 220,
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: (p.expectedTotalBytes != null)
-                      ? (p.cumulativeBytesLoaded /
-                          (p.expectedTotalBytes ?? 1))
-                      : null,
-                  strokeWidth: 2,
-                ),
-              ),
-            );
-          },
-        );
-      }
-
-      final content = ClipRRect(
-        borderRadius: radius,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: border,
-            color: AuraSurface.elevated,
-          ),
-          child: ratio == null
-              ? ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxH),
-                  child: inner,
-                )
-              : AspectRatio(
-                  aspectRatio: ratio,
-                  child: inner,
-                ),
-        ),
-      );
-
+    if (mediaItems.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: AuraSpace.s14),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: () => context.push('/posts/$postId'),
-          child: content,
+        child: _PostMediaBlock(
+          items: mediaItems,
+          postId: postId,
+          maxHeight: _mediaMaxHeight(context),
         ),
       );
     }
 
+    final border = Border.all(color: AuraSurface.divider);
+    final radius = BorderRadius.circular(16);
+
     final uri = Uri.tryParse(lUrl);
-    final host =
-        (uri != null && uri.host.trim().isNotEmpty) ? uri.host : lUrl;
+    final host = (uri != null && uri.host.trim().isNotEmpty) ? uri.host : lUrl;
 
     Widget? thumb;
     final t = (linkThumbUrl ?? '').trim();
@@ -688,8 +640,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       );
     }
 
-    final title =
-        (linkTitle ?? '').trim().isNotEmpty ? linkTitle!.trim() : host;
+    final title = (linkTitle ?? '').trim().isNotEmpty ? linkTitle!.trim() : host;
     final subtitle = (linkSubtitle ?? '').trim();
 
     return Padding(
@@ -725,8 +676,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     children: [
                       Text(
                         title,
-                        style: AuraText.body
-                            .copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -742,16 +692,14 @@ class _PostCardState extends ConsumerState<PostCard> {
                       const SizedBox(height: AuraSpace.s8),
                       Text(
                         host,
-                        style: AuraText.small
-                            .copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: AuraSpace.s6),
                       Text(
                         'Tap to copy link',
-                        style: AuraText.small
-                            .copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
                       ),
                     ],
                   ),
@@ -761,6 +709,238 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PostMediaBlock extends StatelessWidget {
+  const _PostMediaBlock({
+    required this.items,
+    required this.postId,
+    required this.maxHeight,
+  });
+
+  final List<_ResolvedMediaItem> items;
+  final String postId;
+  final double maxHeight;
+
+  void _openPost(BuildContext context) {
+    context.push('/posts/$postId');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.length == 1) {
+      return _SingleMediaCard(
+        item: items.first,
+        maxHeight: maxHeight,
+        onTap: () => _openPost(context),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spacing = AuraSpace.s12;
+        final totalWidth = constraints.maxWidth;
+        final columns = totalWidth >= 760 ? 2 : 1;
+        final cardWidth = columns == 1
+            ? totalWidth
+            : (totalWidth - spacing) / 2;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: items.map((item) {
+            return SizedBox(
+              width: cardWidth,
+              child: _SingleMediaCard(
+                item: item,
+                maxHeight: columns == 1 ? maxHeight : 260,
+                onTap: () => _openPost(context),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+class _SingleMediaCard extends StatelessWidget {
+  const _SingleMediaCard({
+    required this.item,
+    required this.maxHeight,
+    required this.onTap,
+  });
+
+  final _ResolvedMediaItem item;
+  final double maxHeight;
+  final VoidCallback onTap;
+
+  double? _ratio() {
+    final w = item.width;
+    final h = item.height;
+    if (w != null && h != null && w > 0 && h > 0) {
+      var ratio = w / h;
+      if (ratio < 0.6) ratio = 0.6;
+      if (ratio > 1.9) ratio = 1.9;
+      return ratio;
+    }
+    return item.isVideo ? (16 / 9) : null;
+  }
+
+  String _durationLabel() {
+    final ms = item.duration;
+    if (ms == null || ms <= 0) return '';
+    final totalSeconds = (ms / 1000).round();
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final border = Border.all(color: AuraSurface.divider);
+    final radius = BorderRadius.circular(16);
+    final ratio = _ratio();
+
+    final imageUrl = item.isVideo
+        ? ((item.thumbUrl ?? '').trim().isNotEmpty ? item.thumbUrl : item.url)
+        : item.url;
+
+    Widget mediaWidget;
+
+    if (item.isSvg && (imageUrl ?? '').isNotEmpty) {
+      mediaWidget = SvgPicture.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        placeholderBuilder: (_) => const SizedBox(
+          height: 140,
+          child: Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    } else if ((imageUrl ?? '').isNotEmpty) {
+      mediaWidget = Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          constraints: const BoxConstraints(minHeight: 180),
+          alignment: Alignment.center,
+          child: Text(
+            item.isVideo ? 'Video attached' : 'Media unavailable',
+            style: AuraText.small,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        loadingBuilder: (c, child, p) {
+          if (p == null) return child;
+          return SizedBox(
+            height: 220,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: (p.expectedTotalBytes != null)
+                    ? (p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 1))
+                    : null,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      mediaWidget = Container(
+        constraints: const BoxConstraints(minHeight: 180),
+        alignment: Alignment.center,
+        child: Text(
+          item.isVideo ? 'Video attached' : 'Media unavailable',
+          style: AuraText.small,
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    Widget content = Stack(
+      children: [
+        Positioned.fill(child: mediaWidget),
+        if (item.isVideo)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.play_arrow, size: 14, color: Colors.white),
+                  if (_durationLabel().isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      _durationLabel(),
+                      style: AuraText.small.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+
+    Widget mediaBox = ClipRRect(
+      borderRadius: radius,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: border,
+          color: AuraSurface.elevated,
+        ),
+        child: ratio == null
+            ? ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: content,
+              )
+            : AspectRatio(
+                aspectRatio: ratio,
+                child: content,
+              ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: mediaBox,
+        ),
+        if ((item.caption ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            item.caption!.trim(),
+            style: AuraText.small.copyWith(height: 1.35),
+          ),
+        ],
+        if (item.editDisclosure) ...[
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            'Edited for clarity or privacy',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -1039,8 +1219,7 @@ class _ActionRow extends ConsumerWidget {
                                     ),
                                   );
                                 },
-                                child:
-                                    const Text('Copy LinkedIn share URL'),
+                                child: const Text('Copy LinkedIn share URL'),
                               ),
                             ],
                           ),

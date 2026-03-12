@@ -262,18 +262,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (path == '/verify-email') {
         final redirectTo = uri.queryParameters['redirect'];
-        if (redirectTo != null && redirectTo.startsWith('/')) {
-          return _normalizeRedirectDest(redirectTo);
-        }
-        return kInstitutionDashboardRoute;
+        return _normalizeRedirectDest(redirectTo);
       }
 
       if (path == '/verify-pending') {
         final redirectTo = uri.queryParameters['redirect'];
-        if (redirectTo != null && redirectTo.startsWith('/')) {
-          return _normalizeRedirectDest(redirectTo);
-        }
-        return kInstitutionDashboardRoute;
+        return _normalizeRedirectDest(redirectTo);
       }
 
       if (isPlainAuth) {
@@ -423,7 +417,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kInstitutionCorrespondenceRoute,
             builder: (_, __) => const InstitutionCorrespondenceScreen(),
           ),
-          GoRoute(path: '/compose', builder: (_, __) => const ComposeScreen()),
+          GoRoute(
+            path: '/compose',
+            builder: (context, state) => ComposeScreen(
+              replyToPostId: state.uri.queryParameters['replyTo'],
+            ),
+          ),
           GoRoute(
             path: '/posts/:id',
             builder: (context, state) => PostDetailScreen(
