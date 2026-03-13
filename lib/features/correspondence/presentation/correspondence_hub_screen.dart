@@ -2,128 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/institutions/institution_access_provider.dart';
-import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../institutions/data/institutions_repository.dart';
+import '../../institutions/access/institution_access_provider.dart';
+import '../data/spaces_repository.dart';
 
-const String _adminUserIds =
-    String.fromEnvironment('AURA_ADMIN_USER_IDS', defaultValue: '');
-
-List<String> _adminUserIdList() {
-  return _adminUserIds
-      .split(',')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-}
-
-Map<String, dynamic> _asMap(dynamic v) {
-  if (v is Map<String, dynamic>) return v;
-  if (v is Map) return Map<String, dynamic>.from(v);
-  return <String, dynamic>{};
-}
-
-Map<String, dynamic> _unwrapMap(dynamic raw) {
-  final root = _asMap(raw);
-  final data = root['data'];
-
-  if (data is Map<String, dynamic>) return data;
-  if (data is Map) return Map<String, dynamic>.from(data);
-
-  return root;
-}
-
-final _correspondenceMeProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/users/me');
-  return _unwrapMap(res.data);
-});
-
-enum _CorrespondenceMode {
+enum _WorkspaceKind {
   admin,
   institution,
   member,
 }
 
+final _correspondenceSpacesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final repo = ref.watch(spacesRepositoryProvider);
+  return repo.listMySpaces();
+});
+
 class CorrespondenceHubScreen extends ConsumerWidget {
   const CorrespondenceHubScreen({super.key});
 
-  bool _isAdmin(Map<String, dynamic> me) {
-    final role = (me['role'] ?? '').toString().toLowerCase();
-    if (role == 'admin') return true;
-
-    final id = (me['id'] ?? '').toString().trim();
-    if (id.isEmpty) return false;
-
-    return _adminUserIdList().contains(id);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final meAsync = ref.watch(_correspondenceMeProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
 
-    return meAsync.when(
-      loading: () => AuraScaffold(
-        title: 'Correspondence',
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => AuraScaffold(
-        title: 'Correspondence',
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Could not load correspondence workspace.',
-                  style: AuraText.title,
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                Text('$e', style: AuraText.body),
-              ],
-            ),
-          ),
-        ),
-      ),
-      data: (me) {
-        final isAdmin = _isAdmin(me);
+    return institutionAsync.when(
+      loading: () => const _MemberCorrespondenceScreen(),
+      error: (_, __) => const _MemberCorrespondenceScreen(),
+      data: (access) {
+        final workspace = _resolveWorkspace(access);
 
-        if (isAdmin) {
-          return const _AdminCorrespondenceScreen();
-        }
-
-        return institutionAsync.when(
-          loading: () => AuraScaffold(
-            title: 'Correspondence',
-            body: const Center(child: CircularProgressIndicator()),
-          ),
-          error: (_, __) => const _MemberCorrespondenceScreen(),
-          data: (institutionAccess) {
-            final hasInstitutionStanding =
-                institutionAccess.state == InstitutionAccessState.pending ||
-                    institutionAccess.state ==
-                        InstitutionAccessState.verifiedMember ||
-                    institutionAccess.state ==
-                        InstitutionAccessState.authorizedSpeaker;
-
-            if (hasInstitutionStanding) {
-              return _InstitutionCorrespondenceScreen(
-                access: institutionAccess,
-              );
-            }
-
+        switch (workspace) {
+          case _WorkspaceKind.admin:
+            return const _AdminCorrespondenceScreen();
+          case _WorkspaceKind.institution:
+            return _InstitutionCorrespondenceScreen(access: access);
+          case _WorkspaceKind.member:
             return const _MemberCorrespondenceScreen();
-          },
-        );
+        }
       },
     );
+  }
+
+  _WorkspaceKind _resolveWorkspace(InstitutionAccess access) {
+    final state = access.state;
+
+    if (state == InstitutionAccessState.verifiedMember ||
+        state == InstitutionAccessState.authorizedSpeaker ||
+        state == InstitutionAccessState.pending) {
+      return _WorkspaceKind.institution;
+    }
+
+    return _WorkspaceKind.member;
   }
 }
 
@@ -160,157 +92,312 @@ class _SectionIntroCard extends StatelessWidget {
   }
 }
 
-class _ToolTile extends StatelessWidget {
-  const _ToolTile({
-    required this.title,
-    required this.detail,
-    required this.status,
-    this.onTap,
-  });
-
-  final String title;
-  final String detail;
-  final String status;
-  final VoidCallback? onTap;
+class _MemberCorrespondenceScreen extends ConsumerWidget {
+  const _MemberCorrespondenceScreen();
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spacesAsync = ref.watch(_correspondenceSpacesProvider);
 
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 132),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Ink(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(18),
+    return AuraScaffold(
+      title: 'Correspondence',
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(_correspondenceSpacesProvider);
+          await ref.read(_correspondenceSpacesProvider.future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            const _SectionIntroCard(
+              title: 'Member Correspondence',
+              body:
+                  'This space belongs to the signed-in member account. It stays separate from institution workflows and other account surfaces.',
             ),
-            padding: const EdgeInsets.all(AuraSpace.s14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Expanded(
-                  child: Text(detail, style: AuraText.body),
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  status,
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: enabled ? Colors.black87 : Colors.black54,
+            const SizedBox(height: AuraSpace.s14),
+            AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Your spaces', style: AuraText.title),
+                            const SizedBox(height: AuraSpace.s8),
+                            Text(
+                              'These are the correspondence spaces currently available to your account.',
+                              style: AuraText.body,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AuraSpace.s12),
+                      FilledButton(
+                        onPressed: () =>
+                            _showCreateSpaceDialog(context, ref),
+                        child: const Text('New space'),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: AuraSpace.s14),
+                  spacesAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (error, _) => _InlineStateCard(
+                      title: 'Could not load spaces',
+                      body: '$error',
+                      actionLabel: 'Try again',
+                      onAction: () => ref.invalidate(
+                        _correspondenceSpacesProvider,
+                      ),
+                    ),
+                    data: (spaces) {
+                      if (spaces.isEmpty) {
+                        return _InlineStateCard(
+                          title: 'No spaces yet',
+                          body:
+                              'Create your first correspondence space to begin organizing private conversations.',
+                          actionLabel: 'Create space',
+                          onAction: () =>
+                              _showCreateSpaceDialog(context, ref),
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          for (var i = 0; i < spaces.length; i++) ...[
+                            _SpaceTile(space: spaces[i]),
+                            if (i != spaces.length - 1)
+                              const SizedBox(height: AuraSpace.s10),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+
+  Future<void> _showCreateSpaceDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _CreateSpaceDialog(),
+    );
+
+    if (created == true) {
+      ref.invalidate(_correspondenceSpacesProvider);
+    }
+  }
 }
 
-class _ToolGrid extends StatelessWidget {
-  const _ToolGrid({required this.children});
+class _CreateSpaceDialog extends ConsumerStatefulWidget {
+  const _CreateSpaceDialog();
 
-  final List<Widget> children;
+  @override
+  ConsumerState<_CreateSpaceDialog> createState() => _CreateSpaceDialogState();
+}
+
+class _CreateSpaceDialogState extends ConsumerState<_CreateSpaceDialog> {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  String _visibility = 'PRIVATE';
+  bool _submitting = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    if (name.isEmpty) {
+      setState(() {
+        _errorText = 'Please enter a space name.';
+      });
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _errorText = null;
+    });
+
+    try {
+      final repo = ref.read(spacesRepositoryProvider);
+      await repo.createSpace(
+        name: name,
+        description: description.isEmpty ? null : description,
+        visibility: _visibility,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() {
+        _errorText = '$e';
+        _submitting = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AuraSpace.s12,
-      runSpacing: AuraSpace.s12,
-      children: children
-          .map((child) => SizedBox(width: 320, child: child))
-          .toList(),
+    return AlertDialog(
+      title: const Text('Create space'),
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: 460,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Space name',
+                  hintText: 'Family, Research, Outreach',
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              TextField(
+                controller: _descriptionController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Optional context for this space',
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              DropdownButtonFormField<String>(
+                value: _visibility,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'PRIVATE',
+                    child: Text('Private'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'SHARED',
+                    child: Text('Shared'),
+                  ),
+                ],
+                onChanged: _submitting
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() => _visibility = value);
+                      },
+                decoration: const InputDecoration(
+                  labelText: 'Visibility',
+                ),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _errorText!,
+                    style: AuraText.small.copyWith(
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: Text(_submitting ? 'Creating...' : 'Create'),
+        ),
+      ],
     );
   }
 }
 
-class _AdminCorrespondenceScreen extends StatefulWidget {
-  const _AdminCorrespondenceScreen();
+class _SpaceTile extends StatelessWidget {
+  const _SpaceTile({required this.space});
 
-  @override
-  State<_AdminCorrespondenceScreen> createState() =>
-      _AdminCorrespondenceScreenState();
-}
-
-class _AdminCorrespondenceScreenState extends State<_AdminCorrespondenceScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
-
-  static const _tabTitles = <String>[
-    'Inbox',
-    'Contacts',
-    'Institutions',
-    'Templates',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs = TabController(length: _tabTitles.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
+  final Map<String, dynamic> space;
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      title: 'Admin Correspondence',
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          const _SectionIntroCard(
-            title: 'Admin Correspondence Hub',
-            body:
-                'This workspace belongs to the platform administrator. Inbox handling, contacts, institution review, and templates are managed here as one operational system.',
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final id = _pickString(space, const ['id', '_id', 'spaceId']);
+    final name = _pickString(space, const ['name', 'title']);
+    final description = _pickString(space, const ['description', 'summary']);
+    final visibility = _pickString(space, const ['visibility', 'type']);
+    final memberCount = _pickInt(space, const ['memberCount', 'membersCount']);
+    final threadCount = _pickInt(space, const ['threadCount', 'threadsCount']);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: id.isEmpty ? null : () => context.go('/me/correspondence/$id'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                TabBar(
-                  controller: _tabs,
-                  isScrollable: true,
-                  tabs: const [
-                    Tab(text: 'Inbox'),
-                    Tab(text: 'Contacts'),
-                    Tab(text: 'Institutions'),
-                    Tab(text: 'Templates'),
-                  ],
+                Text(
+                  name.isEmpty ? 'Untitled space' : name,
+                  style: AuraText.title,
                 ),
-                const SizedBox(height: AuraSpace.s14),
-                SizedBox(
-                  height: 540,
-                  child: TabBarView(
-                    controller: _tabs,
-                    children: const [
-                      _InboxPanel(),
-                      _ContactsPanel(),
-                      _InstitutionsPanel(),
-                      _TemplatesPanel(),
-                    ],
+                if (visibility.isNotEmpty)
+                  _Pill(
+                    label: visibility.replaceAll('_', ' '),
                   ),
-                ),
               ],
             ),
-          ),
-        ],
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Text(description, style: AuraText.body),
+            ],
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                _MetaChip(label: 'Members', value: '$memberCount'),
+                _MetaChip(label: 'Threads', value: '$threadCount'),
+                if (id.isNotEmpty) _MetaChip(label: 'ID', value: id),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -371,7 +458,7 @@ class _InstitutionCorrespondenceScreen extends StatelessWidget {
                 Text(institutionName, style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'This workspace belongs to the institution-facing account surface. It should remain separate from app-admin correspondence handling.',
+                  'This workspace belongs to the institution-facing account surface. It remains separate from member correspondence.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s12),
@@ -379,22 +466,7 @@ class _InstitutionCorrespondenceScreen extends StatelessWidget {
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AuraSpace.s10,
-                        vertical: AuraSpace.s6,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        standing,
-                        style: AuraText.small.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    _Pill(label: standing),
                     OutlinedButton(
                       onPressed: () => context.go('/institution/dashboard'),
                       child: const Text('Back to institution dashboard'),
@@ -405,44 +477,15 @@ class _InstitutionCorrespondenceScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s14),
-          AuraCard(
+          const AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Institution correspondence tools', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
+                SizedBox(height: AuraSpace.s10),
                 Text(
-                  'These tools should be institution-specific. Until their routes and workflows are built, they remain placeholders instead of borrowing admin paths.',
+                  'Institution-specific correspondence tools remain separate and can be connected once institutional routes and workflows are ready.',
                   style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                const _ToolGrid(
-                  children: [
-                    _ToolTile(
-                      title: 'Institution inbox',
-                      detail:
-                          'Incoming institution-related messages and replies should appear here.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Outbound correspondence',
-                      detail:
-                          'Institution-originated replies, statements, and message history should live here.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Representative directory',
-                      detail:
-                          'Approved institution representatives and correspondence roles should be visible here.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Response templates',
-                      detail:
-                          'Institution-safe reusable responses and templates should live here.',
-                      status: 'Placeholder',
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -453,8 +496,8 @@ class _InstitutionCorrespondenceScreen extends StatelessWidget {
   }
 }
 
-class _MemberCorrespondenceScreen extends StatelessWidget {
-  const _MemberCorrespondenceScreen();
+class _AdminCorrespondenceScreen extends StatelessWidget {
+  const _AdminCorrespondenceScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -462,45 +505,22 @@ class _MemberCorrespondenceScreen extends StatelessWidget {
       title: 'Correspondence',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          const _SectionIntroCard(
-            title: 'Member Correspondence',
+        children: const [
+          _SectionIntroCard(
+            title: 'Admin Correspondence',
             body:
-                'This space belongs to the signed-in member account. Admin correspondence and institution correspondence are handled in separate workspaces.',
+                'This workspace is reserved for app-level correspondence handling. It remains distinct from member and institution correspondence.',
           ),
-          const SizedBox(height: AuraSpace.s14),
+          SizedBox(height: AuraSpace.s14),
           AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Member correspondence tools', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
+                Text('Admin tools', style: AuraText.title),
+                SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Member correspondence is not fully built yet. This surface should stay separate from both app-admin handling and institution workflows.',
+                  'Admin correspondence remains available as its own workspace and can be expanded independently.',
                   style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                const _ToolGrid(
-                  children: [
-                    _ToolTile(
-                      title: 'Inbox',
-                      detail:
-                          'Personal correspondence for the signed-in member account should appear here.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Contacts',
-                      detail:
-                          'Member-facing contact history and conversation records should live here.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Templates',
-                      detail:
-                          'Reusable member-safe replies and drafts should live here later.',
-                      status: 'Placeholder',
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -511,481 +531,108 @@ class _MemberCorrespondenceScreen extends StatelessWidget {
   }
 }
 
-class _InboxPanel extends StatelessWidget {
-  const _InboxPanel();
+class _InlineStateCard extends StatelessWidget {
+  const _InlineStateCard({
+    required this.title,
+    required this.body,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final String title;
+  final String body;
+  final String actionLabel;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Inbox', style: AuraText.title),
-        const SizedBox(height: AuraSpace.s10),
-        Text(
-          'Incoming contact submissions will appear here. This is the first operational layer of the admin hub.',
-          style: AuraText.body,
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        const AuraCard(
-          child: Text(
-            'Inbox will carry live admin message states: New, Open, Waiting, and Closed.',
-            style: AuraText.body,
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text(body, style: AuraText.body),
+          const SizedBox(height: AuraSpace.s12),
+          OutlinedButton(
+            onPressed: onAction,
+            child: Text(actionLabel),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ContactsPanel extends StatelessWidget {
-  const _ContactsPanel();
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Contacts', style: AuraText.title),
-        const SizedBox(height: AuraSpace.s10),
-        Text(
-          'People records created from contact intake and future communication activity will live here.',
-          style: AuraText.body,
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        const AuraCard(
-          child: Text(
-            'Contacts will become the people directory behind communication history.',
-            style: AuraText.body,
-          ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label: $value',
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
-class _InstitutionsPanel extends StatefulWidget {
-  const _InstitutionsPanel();
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label});
 
-  @override
-  State<_InstitutionsPanel> createState() => _InstitutionsPanelState();
-}
-
-class _InstitutionsPanelState extends State<_InstitutionsPanel>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
-
-  static const _statusTabs = <String>[
-    'Pending',
-    'Verified',
-    'Suspended',
-    'Rejected',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs = TabController(length: _statusTabs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Institutions', style: AuraText.title),
-        const SizedBox(height: AuraSpace.s10),
-        Text(
-          'Institution review and institution records are managed here for the app-admin workspace only.',
-          style: AuraText.body,
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        TabBar(
-          controller: _tabs,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Pending'),
-            Tab(text: 'Verified'),
-            Tab(text: 'Suspended'),
-            Tab(text: 'Rejected'),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        Expanded(
-          child: TabBarView(
-            controller: _tabs,
-            children: const [
-              _PendingInstitutionPanel(),
-              _VerifiedInstitutionsPanel(),
-              _SuspendedInstitutionsPanel(),
-              _RejectedInstitutionsPanel(),
-            ],
-          ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
-String _readValue(Map<String, dynamic> map, String key) {
-  return (map[key] ?? '').toString().trim();
-}
-
-String _readInstitutionSlug(Map<String, dynamic> map) {
-  return _readValue(map, 'slug');
-}
-
-Widget _institutionOpenProfileButton(BuildContext context, String slug) {
-  if (slug.isEmpty) return const SizedBox.shrink();
-
-  return OutlinedButton(
-    onPressed: () => context.go('/institutions/$slug'),
-    child: const Text('Open public profile'),
-  );
-}
-
-class _PendingInstitutionPanel extends ConsumerWidget {
-  const _PendingInstitutionPanel();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pendingAsync = ref.watch(pendingInstitutionRequestsProvider);
-
-    return pendingAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error: $e', style: AuraText.body),
-      data: (items) {
-        if (items.isEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pending institution requests', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'There are no pending institution verification requests right now.',
-                style: AuraText.body,
-              ),
-            ],
-          );
-        }
-
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
-          itemBuilder: (context, i) {
-            final r = items[i];
-            final id = _readValue(r, 'id');
-            final organizationName = _readValue(r, 'organizationName').isEmpty
-                ? 'Unnamed institution'
-                : _readValue(r, 'organizationName');
-            final workEmail = _readValue(r, 'workEmail');
-            final websiteUrl = _readValue(r, 'websiteUrl');
-            final roleTitle = _readValue(r, 'roleTitle');
-            final jurisdiction = _readValue(r, 'jurisdiction');
-            final purpose = _readValue(r, 'purpose');
-
-            return AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(organizationName, style: AuraText.title),
-                  if (workEmail.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text(workEmail, style: AuraText.small),
-                  ],
-                  if (websiteUrl.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Website: $websiteUrl', style: AuraText.small),
-                  ],
-                  if (roleTitle.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Role: $roleTitle', style: AuraText.small),
-                  ],
-                  if (jurisdiction.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
-                  ],
-                  if (purpose.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(purpose, style: AuraText.body),
-                  ],
-                  const SizedBox(height: AuraSpace.s12),
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: id.isEmpty
-                            ? null
-                            : () async {
-                                await ref.read(
-                                  approveInstitutionRequestProvider(id).future,
-                                );
-                                ref.invalidate(pendingInstitutionRequestsProvider);
-                                ref.invalidate(verifiedInstitutionsProvider);
-                              },
-                        child: const Text('Approve'),
-                      ),
-                      OutlinedButton(
-                        onPressed: id.isEmpty
-                            ? null
-                            : () async {
-                                await ref.read(
-                                  rejectInstitutionRequestProvider(id).future,
-                                );
-                                ref.invalidate(pendingInstitutionRequestsProvider);
-                                ref.invalidate(rejectedInstitutionsProvider);
-                              },
-                        child: const Text('Reject'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+String _pickString(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = (map[key] ?? '').toString().trim();
+    if (value.isNotEmpty) return value;
   }
+  return '';
 }
 
-class _VerifiedInstitutionsPanel extends ConsumerWidget {
-  const _VerifiedInstitutionsPanel();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final verifiedAsync = ref.watch(verifiedInstitutionsProvider);
-
-    return verifiedAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error: $e', style: AuraText.body),
-      data: (items) {
-        if (items.isEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Verified institutions', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'No verified institutions yet.',
-                style: AuraText.body,
-              ),
-            ],
-          );
-        }
-
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
-          itemBuilder: (context, i) {
-            final item = items[i];
-            final name = _readValue(item, 'name').isEmpty
-                ? 'Unnamed institution'
-                : _readValue(item, 'name');
-            final slug = _readInstitutionSlug(item);
-            final websiteUrl = _readValue(item, 'websiteUrl');
-            final domain = _readValue(item, 'domain');
-            final jurisdiction = _readValue(item, 'jurisdiction');
-
-            return AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: AuraText.title),
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Slug: $slug', style: AuraText.small),
-                  ],
-                  if (websiteUrl.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Website: $websiteUrl', style: AuraText.small),
-                  ],
-                  if (domain.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Domain: $domain', style: AuraText.small),
-                  ],
-                  if (jurisdiction.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
-                  ],
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    _institutionOpenProfileButton(context, slug),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+int _pickInt(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = map[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value.trim());
+      if (parsed != null) return parsed;
+    }
   }
-}
-
-class _SuspendedInstitutionsPanel extends ConsumerWidget {
-  const _SuspendedInstitutionsPanel();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final suspendedAsync = ref.watch(suspendedInstitutionsProvider);
-
-    return suspendedAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error: $e', style: AuraText.body),
-      data: (items) {
-        if (items.isEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Suspended institutions', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'No suspended institutions.',
-                style: AuraText.body,
-              ),
-            ],
-          );
-        }
-
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
-          itemBuilder: (context, i) {
-            final item = items[i];
-            final name = _readValue(item, 'name').isEmpty
-                ? 'Unnamed institution'
-                : _readValue(item, 'name');
-            final slug = _readInstitutionSlug(item);
-            final domain = _readValue(item, 'domain');
-            final jurisdiction = _readValue(item, 'jurisdiction');
-
-            return AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: AuraText.title),
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Slug: $slug', style: AuraText.small),
-                  ],
-                  if (domain.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Domain: $domain', style: AuraText.small),
-                  ],
-                  if (jurisdiction.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
-                  ],
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    _institutionOpenProfileButton(context, slug),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _RejectedInstitutionsPanel extends ConsumerWidget {
-  const _RejectedInstitutionsPanel();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rejectedAsync = ref.watch(rejectedInstitutionsProvider);
-
-    return rejectedAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error: $e', style: AuraText.body),
-      data: (items) {
-        if (items.isEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Rejected institutions', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'No rejected institutions.',
-                style: AuraText.body,
-              ),
-            ],
-          );
-        }
-
-        return ListView.separated(
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
-          itemBuilder: (context, i) {
-            final item = items[i];
-            final name = _readValue(item, 'name').isEmpty
-                ? 'Unnamed institution'
-                : _readValue(item, 'name');
-            final slug = _readInstitutionSlug(item);
-            final domain = _readValue(item, 'domain');
-            final jurisdiction = _readValue(item, 'jurisdiction');
-
-            return AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: AuraText.title),
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Slug: $slug', style: AuraText.small),
-                  ],
-                  if (domain.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Domain: $domain', style: AuraText.small),
-                  ],
-                  if (jurisdiction.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text('Jurisdiction: $jurisdiction', style: AuraText.small),
-                  ],
-                  if (slug.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    _institutionOpenProfileButton(context, slug),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TemplatesPanel extends StatelessWidget {
-  const _TemplatesPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Templates', style: AuraText.title),
-        const SizedBox(height: AuraSpace.s10),
-        Text(
-          'Reusable response patterns for support, institutions, investors, and privacy communication will live here.',
-          style: AuraText.body,
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        const AuraCard(
-          child: Text(
-            'Templates will help keep replies consistent once outbound handling is connected.',
-            style: AuraText.body,
-          ),
-        ),
-      ],
-    );
-  }
+  return 0;
 }

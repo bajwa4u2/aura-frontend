@@ -14,8 +14,8 @@ class AppShell extends ConsumerWidget {
 
   static const _tabs = [
     _TabItem(label: 'Home', icon: Icons.home_outlined, path: '/home'),
-    _TabItem(label: 'Search', icon: Icons.search, path: '/search'),
-    _TabItem(label: 'Updates', icon: Icons.notifications_none, path: '/updates'),
+    _TabItem(label: 'Create', icon: Icons.add_box_outlined, path: '/create'),
+    _TabItem(label: 'Correspondence', icon: Icons.mail_outline, path: '/me/correspondence'),
     _TabItem(label: 'Me', icon: Icons.person_outline, path: '/me'),
   ];
 
@@ -30,12 +30,10 @@ class AppShell extends ConsumerWidget {
   }
 
   bool _isPublicRoutePath(String path) {
-    // IMPORTANT: use PATH ONLY (no query params). Queries broke your logic:
-    // /login?redirect=/home was not matching /login and the bottom nav appeared.
     const publicPrefixes = <String>[
       '/public',
       '/privacy',
-      '/contact', // ✅ added (legal/public)
+      '/contact',
       '/mission',
       '/founder',
       '/investors',
@@ -44,7 +42,6 @@ class AppShell extends ConsumerWidget {
       '/supporters',
       '/announcements',
 
-      // Auth routes (exactly as in router.dart)
       '/login',
       '/register',
       '/forgot-password',
@@ -52,7 +49,6 @@ class AppShell extends ConsumerWidget {
       '/verify-email',
       '/verify-pending',
 
-      // Institution flows
       '/institution/sign-in',
       '/institution/request-verification',
     ];
@@ -66,7 +62,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uri = GoRouterState.of(context).uri;
-    final path = uri.path; // ✅ path only, no query
+    final path = uri.path;
     final currentIndex = _indexForPath(path);
     final showBottomNav = !_isPublicRoutePath(path);
 
@@ -74,7 +70,6 @@ class AppShell extends ConsumerWidget {
       backgroundColor: AuraSurface.page,
       body: Column(
         children: [
-          // Main content region (cinematic centered stage)
           Expanded(
             child: Container(
               color: AuraSurface.page,
@@ -88,7 +83,6 @@ class AppShell extends ConsumerWidget {
             ),
           ),
 
-          // Minimal legal rail (quiet, integrated)
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
@@ -107,12 +101,11 @@ class AppShell extends ConsumerWidget {
               runSpacing: AuraSpace.xs,
               children: const [
                 _LegalLink(label: 'Privacy', path: '/privacy'),
-                _LegalLink(label: 'Contact', path: '/contact'), // ✅ added
+                _LegalLink(label: 'Contact', path: '/contact'),
               ],
             ),
           ),
 
-          // Bottom navigation (member area only)
           if (showBottomNav)
             Container(
               decoration: const BoxDecoration(
@@ -151,14 +144,14 @@ class AppShell extends ConsumerWidget {
                       label: 'Home',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.search),
-                      selectedIcon: Icon(Icons.search),
-                      label: 'Search',
+                      icon: Icon(Icons.add_box_outlined),
+                      selectedIcon: Icon(Icons.add_box),
+                      label: 'Create',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.notifications_none),
-                      selectedIcon: Icon(Icons.notifications),
-                      label: 'Updates',
+                      icon: Icon(Icons.mail_outline),
+                      selectedIcon: Icon(Icons.mail),
+                      label: 'Correspondence',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.person_outline),

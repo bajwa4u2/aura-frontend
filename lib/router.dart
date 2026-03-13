@@ -39,6 +39,9 @@ import 'features/institutions/announcements/institution_announcements_screen.dar
 import 'features/institutions/correspondence/institution_correspondence_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
+import 'features/correspondence/presentation/space_screen.dart';
+import 'features/correspondence/presentation/thread_screen.dart';
+import 'features/create/presentation/create_hub_screen.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -111,10 +114,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/search' ||
         path == '/saved' ||
         path == '/updates' ||
+        path == '/create' ||
         path == '/ai/claim-audit' ||
         path == '/me' ||
         path == '/me/edit' ||
         path == '/me/correspondence' ||
+        path.startsWith('/me/correspondence/') ||
         path == kInstitutionDashboardRoute ||
         path == kInstitutionDomainsRoute ||
         path == kInstitutionProfileRoute ||
@@ -145,189 +150,46 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     refreshListenable: refresh,
-    errorBuilder: (context, state) {
-      final path = state.uri.toString();
-      return Scaffold(
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Page not found',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Route: $path',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton(
-                        onPressed: () => context.go('/public'),
-                        child: const Text('Public home'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () => context.go('/home'),
-                        child: const Text('Member home'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-    redirect: (context, state) async {
-      final uri = state.uri;
-      final path = uri.path;
-
-      final boot = ref.read(sessionBootstrapProvider);
-      final authStatus = ref.read(authStatusProvider);
-
-      final isPublic = isPublicPath(path);
-      final isMember = isMemberPath(path);
-      final isPlainAuth = isPlainAuthPage(path);
-      final isAuthAction = isAuthActionPath(path);
-      final isAuth = isAnyAuthPath(path);
-
-      if (boot.isLoading || authStatus == AuthStatus.loading) {
-        return null;
-      }
-
-      if (path == '/auth') {
-        final dest = uri.queryParameters['redirect'];
-        if (dest != null && dest.trim().isNotEmpty) {
-          return '/login?redirect=${Uri.encodeComponent(dest)}';
-        }
-        return '/login';
-      }
-
-      if (path == '/') {
-        if (authStatus == AuthStatus.unauthed) return '/public';
-
-        final verifiedAsync = ref.read(emailVerifiedProvider);
-        if (verifiedAsync.isLoading) return null;
-
-        final verified = verifiedAsync.value ?? false;
-        return verified ? '/home' : '/verify-pending';
-      }
-
-      if (authStatus == AuthStatus.unauthed) {
-        if (isPublic || isAuth) return null;
-
-        final dest = uri.toString();
-        return '/login?redirect=${Uri.encodeComponent(dest)}';
-      }
-
-      final verifiedAsync = ref.read(emailVerifiedProvider);
-      if (verifiedAsync.isLoading) {
-        return null;
-      }
-
-      final verified = verifiedAsync.value ?? false;
-
-      if (path == '/login' || path == '/register') {
-        final redirectTo = uri.queryParameters['redirect'];
-
-        if (!verified) {
-          if (redirectTo != null && redirectTo.startsWith('/')) {
-            return '/verify-pending?redirect=${Uri.encodeComponent(redirectTo)}';
-          }
-          return '/verify-pending';
-        }
-
-        if (redirectTo != null && redirectTo.startsWith('/')) {
-          return _normalizeRedirectDest(redirectTo);
-        }
-
-        return '/home';
-      }
-
-      if (!verified) {
-        if (isPublic || isAuthAction) return null;
-
-        final current = uri.toString();
-        return '/verify-pending?redirect=${Uri.encodeComponent(current)}';
-      }
-
-      if (path == '/verify-email' || path == '/verify-pending') {
-        final redirectTo = uri.queryParameters['redirect'];
-        return _normalizeRedirectDest(redirectTo);
-      }
-
-      if (isPlainAuth) {
-        final redirectTo = uri.queryParameters['redirect'];
-        return _normalizeRedirectDest(redirectTo);
-      }
-
-      if (path == kEnterInstitutionRoute) {
-        return kInstitutionDashboardRoute;
-      }
-
-      if (isPublic || isMember || isAuthAction) {
-        return null;
-      }
-
-      return null;
-    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/auth', redirect: (_, __) => '/login'),
-      GoRoute(path: '/feed', redirect: (_, __) => '/home'),
 
-      // Public
+      // Public routes
       GoRoute(path: '/public', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
       GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
-      GoRoute(
-        path: '/account-deletion',
-        builder: (_, __) => const AccountDeletionScreen(),
-      ),
+      GoRoute(path: '/account-deletion', builder: (_, __) => const AccountDeletionScreen()),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
-      GoRoute(
-        path: '/institutions',
-        builder: (_, __) => const InstitutionsHubScreen(),
-      ),
+      GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
+
       GoRoute(
         path: '/institutions/:slug',
         builder: (context, state) => InstitutionDetailScreen(
           slug: state.pathParameters['slug'] ?? '',
         ),
       ),
+
       GoRoute(
         path: '/institution/sign-in',
         builder: (_, __) => const InstitutionSignInScreen(),
       ),
+
       GoRoute(
         path: kInstitutionCreateRoute,
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
       ),
+
       GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
       GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
+
       GoRoute(
         path: '/announcements',
         builder: (_, __) => const AnnouncementsScreen(),
       ),
+
       GoRoute(
         path: '/announcements/:slug',
         builder: (context, state) => AnnouncementDetailScreen(
@@ -335,23 +197,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Auth
+      // Auth routes
       GoRoute(
         path: '/login',
         builder: (context, state) => AuthScreen(
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
+
       GoRoute(
         path: '/register',
         builder: (context, state) => RegisterScreen(
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
+
       GoRoute(
         path: '/forgot-password',
         builder: (_, __) => const ForgotPasswordScreen(),
       ),
+
       GoRoute(
         path: '/reset-password',
         builder: (context, state) => ResetPasswordScreen(
@@ -360,6 +225,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
+
       GoRoute(
         path: '/verify-email',
         builder: (context, state) => VerifyEmailScreen(
@@ -368,6 +234,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
+
       GoRoute(
         path: '/verify-pending',
         builder: (context, state) => VerifyPendingScreen(
@@ -376,73 +243,72 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Member area
+      // Member shell
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
+
+          GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
+
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
+
           GoRoute(
             path: '/ai/claim-audit',
             builder: (_, __) => const ClaimAuditScreen(),
           ),
+
           GoRoute(path: '/me', builder: (_, __) => const MeScreen()),
+
           GoRoute(
             path: '/me/edit',
             builder: (_, __) => const EditProfileScreen(),
           ),
+
           GoRoute(
             path: '/me/correspondence',
             builder: (_, __) => const CorrespondenceHubScreen(),
+            routes: [
+              GoRoute(
+                path: ':spaceId',
+                builder: (context, state) => SpaceScreen(
+                  spaceId: state.pathParameters['spaceId'] ?? '',
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'thread/:threadId',
+                    builder: (context, state) => ThreadScreen(
+                      threadId: state.pathParameters['threadId'] ?? '',
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          GoRoute(
-            path: kEnterInstitutionRoute,
-            redirect: (_, __) => kInstitutionDashboardRoute,
-          ),
-          GoRoute(
-            path: kInstitutionDashboardRoute,
-            builder: (_, __) => const InstitutionDashboardScreen(),
-          ),
-          GoRoute(
-            path: kInstitutionDomainsRoute,
-            builder: (_, __) => const InstitutionDomainsScreen(),
-          ),
-          GoRoute(
-            path: kInstitutionProfileRoute,
-            builder: (_, __) => const InstitutionProfileScreen(),
-          ),
-          GoRoute(
-            path: kInstitutionVerificationRoute,
-            builder: (_, __) => const InstitutionRequestVerificationScreen(),
-          ),
-          GoRoute(
-            path: kInstitutionAnnouncementsRoute,
-            builder: (_, __) => const InstitutionAnnouncementsScreen(),
-          ),
-          GoRoute(
-            path: kInstitutionCorrespondenceRoute,
-            builder: (_, __) => const InstitutionCorrespondenceScreen(),
-          ),
+
           GoRoute(
             path: '/compose',
             builder: (context, state) => ComposeScreen(
               replyToPostId: state.uri.queryParameters['replyTo'],
             ),
           ),
+
           GoRoute(
             path: '/posts/:id',
             builder: (context, state) => PostDetailScreen(
               postId: state.pathParameters['id'] ?? '',
             ),
           ),
+
           GoRoute(
             path: '/u/:handle',
             builder: (context, state) => AuthorProfileScreen(
               handle: state.pathParameters['handle'] ?? '',
             ),
           ),
+
           GoRoute(
             path: '/support/:handle',
             builder: (context, state) => SupportFallbackScreen(
