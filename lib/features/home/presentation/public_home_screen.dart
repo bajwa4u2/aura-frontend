@@ -71,8 +71,7 @@ class PublicHomeScreen extends ConsumerWidget {
                     ],
                   );
                 },
-                loading: () =>
-                    const AuraCard(child: _LoadingBlock()),
+                loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(
                   child: Text(
                     'Could not load public feed yet. ($e)',
@@ -91,36 +90,30 @@ class PublicHomeScreen extends ConsumerWidget {
               AuraSpace.s24,
             ),
             children: [
+              hero,
+              const SizedBox(height: AuraSpace.s20),
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          hero,
-                          const SizedBox(height: AuraSpace.s20),
-                          feedSection,
-                        ],
-                      ),
+                      flex: 7,
+                      child: feedSection,
                     ),
                     const SizedBox(width: AuraSpace.s16),
                     Flexible(
+                      flex: 4,
                       child: ConstrainedBox(
-                        constraints:
-                            const BoxConstraints(maxWidth: 380),
+                        constraints: const BoxConstraints(maxWidth: 380),
                         child: entryStack,
                       ),
                     ),
                   ],
                 )
               else ...[
-                hero,
-                const SizedBox(height: AuraSpace.s16),
-                feedSection,
-                const SizedBox(height: AuraSpace.s20),
                 entryStack,
+                const SizedBox(height: AuraSpace.s20),
+                feedSection,
               ],
               const SizedBox(height: AuraSpace.s24),
             ],
@@ -224,8 +217,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () =>
-                  context.go('/register?redirect=%2Fhome'),
+              onPressed: () => context.go('/register?redirect=%2Fhome'),
               child: const Text('Create member account'),
             ),
           ),
@@ -233,8 +225,7 @@ class _PublicAuthPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () =>
-                  context.go('/login?redirect=%2Fhome'),
+              onPressed: () => context.go('/login?redirect=%2Fhome'),
               child: const Text('Member sign in'),
             ),
           ),
@@ -259,8 +250,7 @@ class _InstitutionEntryCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () =>
-                  context.go('/institution/create'),
+              onPressed: () => context.go('/institution/create'),
               child: const Text('Create institutional account'),
             ),
           ),
@@ -268,8 +258,7 @@ class _InstitutionEntryCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () =>
-                  context.go('/institution/sign-in'),
+              onPressed: () => context.go('/institution/sign-in'),
               child: const Text('Institution sign in'),
             ),
           ),
@@ -281,6 +270,7 @@ class _InstitutionEntryCard extends StatelessWidget {
 
 class _PublicPostPreview extends StatelessWidget {
   const _PublicPostPreview({required this.post});
+
   final Post post;
 
   @override
@@ -292,9 +282,7 @@ class _PublicPostPreview extends StatelessWidget {
         handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
 
     final text = (post.text ?? '').trim();
-
-    final previewLength =
-        MediaQuery.of(context).size.width < 600 ? 160 : 240;
+    final previewLength = MediaQuery.of(context).size.width < 600 ? 160 : 240;
 
     final preview = text.length <= previewLength
         ? text
@@ -368,7 +356,11 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.icon, required this.onTap});
+  const _Pill({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   final String label;
   final IconData icon;
@@ -408,8 +400,7 @@ class _LoadingBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(vertical: AuraSpace.s18),
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s18),
       child: const Center(
         child: SizedBox(
           width: 18,
