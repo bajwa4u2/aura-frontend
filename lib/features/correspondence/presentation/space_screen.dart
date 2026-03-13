@@ -211,7 +211,7 @@ class SpaceScreen extends ConsumerWidget {
   Future<void> _showCreateThreadDialog(BuildContext context, WidgetRef ref) async {
     final created = await showDialog<bool>(
       context: context,
-      builder: (_) => const _CreateThreadDialog(),
+      builder: (_) => _CreateThreadDialog(spaceId: spaceId),
     );
 
     if (created == true) {
@@ -222,7 +222,7 @@ class SpaceScreen extends ConsumerWidget {
   Future<void> _showInviteDialog(BuildContext context, WidgetRef ref) async {
     final invited = await showDialog<bool>(
       context: context,
-      builder: (_) => const _InviteMemberDialog(),
+      builder: (_) => _InviteMemberDialog(spaceId: spaceId),
     );
 
     if (invited == true) {
@@ -301,7 +301,9 @@ class _SpaceHeaderCard extends StatelessWidget {
 }
 
 class _CreateThreadDialog extends ConsumerStatefulWidget {
-  const _CreateThreadDialog();
+  const _CreateThreadDialog({required this.spaceId});
+
+  final String spaceId;
 
   @override
   ConsumerState<_CreateThreadDialog> createState() => _CreateThreadDialogState();
@@ -320,11 +322,9 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
   }
 
   Future<void> _submit() async {
-    final route = GoRouterState.of(context).uri.path;
-    final segments = Uri.parse(route).pathSegments;
-    final spaceId = segments.length >= 3 ? segments[2] : '';
-
     final title = _titleController.text.trim();
+    final spaceId = widget.spaceId.trim();
+
     if (spaceId.isEmpty || title.isEmpty) {
       setState(() {
         _errorText = 'Please enter a thread title.';
@@ -417,7 +417,9 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
 }
 
 class _InviteMemberDialog extends ConsumerStatefulWidget {
-  const _InviteMemberDialog();
+  const _InviteMemberDialog({required this.spaceId});
+
+  final String spaceId;
 
   @override
   ConsumerState<_InviteMemberDialog> createState() => _InviteMemberDialogState();
@@ -436,11 +438,9 @@ class _InviteMemberDialogState extends ConsumerState<_InviteMemberDialog> {
   }
 
   Future<void> _submit() async {
-    final route = GoRouterState.of(context).uri.path;
-    final segments = Uri.parse(route).pathSegments;
-    final spaceId = segments.length >= 3 ? segments[2] : '';
-
     final userId = _userIdController.text.trim();
+    final spaceId = widget.spaceId.trim();
+
     if (spaceId.isEmpty || userId.isEmpty) {
       setState(() {
         _errorText = 'Please enter a user ID.';
