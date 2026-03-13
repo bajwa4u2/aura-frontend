@@ -162,7 +162,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isBootstrapping = bootstrap.isLoading;
       if (isBootstrapping) return null;
 
-      final isLoggedIn = authStatus == AuthStatus.authenticated;
+      final isLoggedIn = authStatus == AuthStatus.authed;
       final isPublic = isPublicPath(path);
       final isMember = isMemberPath(path);
       final isPlainAuth = isPlainAuthPage(path);
