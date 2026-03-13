@@ -30,15 +30,12 @@ class SpacesRepository {
       return _cachedSpaces!;
     }
 
-    final cancelToken = CancelToken();
-
     final res = await _dio.get(
       '/spaces',
       queryParameters: {
         'limit': limit,
         if (_hasText(cursor)) 'cursor': cursor,
       },
-      cancelToken: cancelToken,
     );
 
     final payload = _unwrapData(res.data);
@@ -68,10 +65,11 @@ class SpacesRepository {
     List<String> memberIds = const [],
   }) async {
     final body = <String, dynamic>{
-      'name': name.trim(),
+      'type': 'PRIVATE',               // required by backend
+      'title': name.trim(),            // backend uses title not name
       'visibility': visibility.trim(),
       if (_hasText(description)) 'description': description!.trim(),
-      if (memberIds.isNotEmpty) 'memberIds': memberIds,
+      if (memberIds.isNotEmpty) 'participantIds': memberIds,
     };
 
     final res = await _dio.post('/spaces', data: body);
@@ -88,7 +86,7 @@ class SpacesRepository {
     String? visibility,
   }) async {
     final body = <String, dynamic>{
-      if (_hasText(name)) 'name': name!.trim(),
+      if (_hasText(name)) 'title': name!.trim(),
       if (_hasText(description)) 'description': description!.trim(),
       if (_hasText(visibility)) 'visibility': visibility!.trim(),
     };
