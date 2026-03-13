@@ -236,7 +236,7 @@ class MemberHomeScreen extends ConsumerWidget {
           const _HeroCard(),
           SizedBox(height: AuraSpace.s12),
           const _PinnedAnnouncementBanner(),
-          SizedBox(height: AuraSpace.s22),
+          SizedBox(height: AuraSpace.s24),
           const _SectionTitle(title: 'Latest'),
           SizedBox(height: AuraSpace.s12),
           feedAsync.when(
