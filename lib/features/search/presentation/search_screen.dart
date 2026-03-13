@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +15,7 @@ import '../search_repository.dart';
 
 final searchResultProvider = FutureProvider<SearchResult>((ref) async {
   final q = ref.watch(searchQueryProvider);
+
   if (q.trim().isEmpty) {
     return const SearchResult(
       users: [],
@@ -20,6 +23,7 @@ final searchResultProvider = FutureProvider<SearchResult>((ref) async {
       posts: [],
     );
   }
+
   final repo = ref.watch(searchRepositoryProvider);
   return repo.search(q);
 });
@@ -34,6 +38,8 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   late final TextEditingController _controller;
 
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
@@ -42,15 +48,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   void _syncControllerToQuery(String q) {
     if (_controller.text == q) return;
+
     _controller.text = q;
     _controller.selection =
         TextSelection.collapsed(offset: _controller.text.length);
+  }
+
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      ref.read(searchQueryProvider.notifier).state = value;
+    });
   }
 
   Widget _authorCard(BuildContext context, Map<String, dynamic> u) {
@@ -58,6 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final name = (u['displayName'] ?? '').toString().trim();
     final bio = (u['bio'] ?? '').toString().trim();
     final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
+
     final display =
         name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Author');
 
@@ -68,6 +85,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Row(
           children: [
             CircleAvatar(
+              radius: 20,
               backgroundImage:
                   avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
               backgroundColor: const Color(0x332E2A26),
@@ -87,9 +105,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     display,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  if (handle.isNotEmpty) Text('@$handle', style: AuraText.muted),
+                  if (handle.isNotEmpty)
+                    Text(
+                      '@$handle',
+                      style: AuraText.muted,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (bio.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s4),
                     Text(
@@ -128,6 +154,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Row(
           children: [
             const CircleAvatar(
+              radius: 20,
               backgroundColor: Color(0x332E2A26),
               child: Icon(Icons.apartment_outlined),
             ),
@@ -138,9 +165,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     name.isNotEmpty ? name : 'Institution',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  if (slug.isNotEmpty) Text(slug, style: AuraText.muted),
+                  if (slug.isNotEmpty)
+                    Text(
+                      slug,
+                      style: AuraText.muted,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (sublineParts.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s4),
                     Text(
@@ -173,6 +208,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final author = p.author;
     final handle = (author?.handle ?? '').trim();
     final name = (author?.displayName ?? '').trim();
+
     final byline =
         handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
 
@@ -190,6 +226,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Text(
                 byline,
                 style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             if (byline.isNotEmpty) const SizedBox(height: AuraSpace.s8),
             Text(
@@ -206,6 +244,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
     final q = ref.watch(searchQueryProvider);
+
     _syncControllerToQuery(q);
 
     if (!isAuthed) {
@@ -232,8 +271,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   hintText: 'Search authors, institutions, or work…',
                   border: InputBorder.none,
                 ),
-                onChanged: (v) =>
-                    ref.read(searchQueryProvider.notifier).state = v,
+                onChanged: _onQueryChanged,
               ),
             ),
             const SizedBox(height: AuraSpace.s14),
@@ -241,7 +279,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Search becomes real after login.', style: AuraText.title),
+                  Text(
+                    'Search becomes real after login.',
+                    style: AuraText.title,
+                  ),
                   const SizedBox(height: AuraSpace.s10),
                   Text(
                     'Aura keeps discovery tied to identity. This protects writers, institutions, and responsible participation.',
@@ -258,7 +299,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         child: const Text('Create account'),
                       ),
                       OutlinedButton(
-                        onPressed: () => context.go('/login?redirect=%2Fsearch'),
+                        onPressed: () =>
+                            context.go('/login?redirect=%2Fsearch'),
                         child: const Text('Login'),
                       ),
                     ],
@@ -290,8 +332,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 hintText: 'Search authors, institutions, or work…',
                 border: InputBorder.none,
               ),
-              onChanged: (v) =>
-                  ref.read(searchQueryProvider.notifier).state = v,
+              onChanged: _onQueryChanged,
             ),
           ),
           const SizedBox(height: AuraSpace.s14),

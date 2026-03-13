@@ -504,19 +504,19 @@ class _Bullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(top: AuraSpace.s4),
             child: Icon(Icons.circle, size: 6),
           ),
-          SizedBox(width: AuraSpace.s10),
+          const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
-              '',
+              text,
               style: AuraText.body,
             ),
           ),
