@@ -45,7 +45,7 @@ class AuraScaffold extends ConsumerWidget {
 
   static const double _defaultMaxWidth = 920;
   static const double _headerHeight = 64;
-  static const double _logoHeight = 28;
+  static const double _logoHeight = 40;
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
 
   bool _isPublicPath(String path) {
@@ -95,6 +95,11 @@ class AuraScaffold extends ConsumerWidget {
 
   String _resolvedLogoRoute(AuthStatus authStatus) {
     return authStatus == AuthStatus.authed ? '/home' : '/public';
+  }
+
+  bool _isIdentityTitle(String rawTitle) {
+    final normalized = rawTitle.trim().toLowerCase();
+    return normalized == 'aura';
   }
 
   Widget _wrapInline(Widget child) {
@@ -167,7 +172,7 @@ class AuraScaffold extends ConsumerWidget {
   Widget _buildHeaderTitle() {
     final normalizedTitle = title.trim();
 
-    if (normalizedTitle.isEmpty) {
+    if (normalizedTitle.isEmpty || _isIdentityTitle(normalizedTitle)) {
       return const SizedBox.shrink();
     }
 
@@ -179,6 +184,58 @@ class AuraScaffold extends ConsumerWidget {
       style: AuraText.small.copyWith(
         fontWeight: FontWeight.w600,
         color: AuraSurface.ink,
+      ),
+    );
+  }
+
+  Widget _buildHeaderCenter(BuildContext context, Widget? resolvedLeading) {
+    final titleWidget = _buildHeaderTitle();
+    final hasTitle = titleWidget is! SizedBox;
+    final hasLeading = resolvedLeading != null;
+
+    if (!hasLeading && !hasTitle) {
+      return const SizedBox.shrink();
+    }
+
+    if (centerTitle) {
+      return Align(
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasLeading) ...[
+              IconTheme(
+                data: const IconThemeData(
+                  color: AuraSurface.muted,
+                  size: 18,
+                ),
+                child: resolvedLeading!,
+              ),
+              if (hasTitle) const SizedBox(width: AuraSpace.s8),
+            ],
+            if (hasTitle) Flexible(child: titleWidget),
+          ],
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasLeading) ...[
+            IconTheme(
+              data: const IconThemeData(
+                color: AuraSurface.muted,
+                size: 18,
+              ),
+              child: resolvedLeading!,
+            ),
+            if (hasTitle) const SizedBox(width: AuraSpace.s8),
+          ],
+          if (hasTitle) Flexible(child: titleWidget),
+        ],
       ),
     );
   }
@@ -253,27 +310,7 @@ class AuraScaffold extends ConsumerWidget {
                     _buildLogo(context, authStatus),
                     const SizedBox(width: AuraSpace.s12),
                     Expanded(
-                      child: Align(
-                        alignment: centerTitle
-                            ? Alignment.center
-                            : Alignment.centerLeft,
-                        child: resolvedLeading == null
-                            ? _buildHeaderTitle()
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconTheme(
-                                    data: const IconThemeData(
-                                      color: AuraSurface.muted,
-                                      size: 18,
-                                    ),
-                                    child: resolvedLeading,
-                                  ),
-                                  const SizedBox(width: AuraSpace.s8),
-                                  Flexible(child: _buildHeaderTitle()),
-                                ],
-                              ),
-                      ),
+                      child: _buildHeaderCenter(context, resolvedLeading),
                     ),
                     const SizedBox(width: AuraSpace.s12),
                     _buildActions(context),
