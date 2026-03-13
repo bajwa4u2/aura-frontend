@@ -20,6 +20,8 @@ class CreateHubScreen extends StatelessWidget {
           crossAxisSpacing: AuraSpace.md,
           mainAxisSpacing: AuraSpace.md,
           children: [
+
+            /// POST
             _CreateTile(
               title: 'Post',
               icon: Icons.edit_outlined,
@@ -27,6 +29,8 @@ class CreateHubScreen extends StatelessWidget {
                 context.go('/compose');
               },
             ),
+
+            /// MEDIA
             _CreateTile(
               title: 'Media',
               icon: Icons.image_outlined,
@@ -34,6 +38,8 @@ class CreateHubScreen extends StatelessWidget {
                 context.go('/compose');
               },
             ),
+
+            /// CLAIM AUDIT
             _CreateTile(
               title: 'Claim Audit',
               icon: Icons.fact_check_outlined,
@@ -41,11 +47,31 @@ class CreateHubScreen extends StatelessWidget {
                 context.go('/ai/claim-audit');
               },
             ),
+
+            /// ANNOUNCEMENT
             _CreateTile(
               title: 'Announcement',
               icon: Icons.campaign_outlined,
               onTap: () {
                 context.go('/announcements/create');
+              },
+            ),
+
+            /// NEW CONVERSATION
+            _CreateTile(
+              title: 'Conversation',
+              icon: Icons.forum_outlined,
+              onTap: () {
+                context.go('/me/correspondence/create/conversation');
+              },
+            ),
+
+            /// SHARED SPACE
+            _CreateTile(
+              title: 'Shared Space',
+              icon: Icons.groups_outlined,
+              onTap: () {
+                context.go('/me/correspondence/create/space');
               },
             ),
           ],

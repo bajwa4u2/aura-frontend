@@ -149,11 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/verify-pending';
   }
 
-  bool isAnyAuthPath(String path) {
-    return isPlainAuthPage(path) || isAuthActionPath(path);
-  }
-
-  String _bootRedirectFor(String target) {
+  String bootRedirectFor(String target) {
     final encoded = Uri.encodeComponent(_normalizeRedirectDest(target));
     return '$kRouterBootRoute?redirect=$encoded';
   }
@@ -184,24 +180,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => false,
       );
 
-      // Hold protected/member navigation until bootstrap resolves,
-      // so member screens do not mount and fire protected API calls early.
       if (isBootstrapping) {
         if (path == kRouterBootRoute) return null;
 
         if (isMember || isPlainAuth) {
-          return _bootRedirectFor(currentLocation);
+          return bootRedirectFor(currentLocation);
         }
 
         return null;
       }
 
-      // Leave the temporary boot route as soon as bootstrap finishes.
       if (path == kRouterBootRoute) {
         return redirectDest;
       }
 
-      // Prevent "create" from being interpreted as an announcement slug.
       if (path == '/announcements/create') {
         final encoded = Uri.encodeComponent('/create');
 
@@ -388,6 +380,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/me/correspondence',
             builder: (_, __) => const CorrespondenceHubScreen(),
             routes: [
+              GoRoute(
+                path: 'create/conversation',
+                builder: (_, __) => const CreateHubScreen(),
+              ),
+              GoRoute(
+                path: 'create/space',
+                builder: (_, __) => const CreateHubScreen(),
+              ),
               GoRoute(
                 path: ':spaceId',
                 builder: (context, state) => SpaceScreen(

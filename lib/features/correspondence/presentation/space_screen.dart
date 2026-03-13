@@ -58,151 +58,84 @@ class SpaceScreen extends ConsumerWidget {
     final threadsAsync = ref.watch(_threadsProvider(spaceId));
     final invitesAsync = ref.watch(_invitesProvider(spaceId));
 
-    return AuraScaffold(
-      title: 'Space',
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(_spaceDetailProvider(spaceId));
-          ref.invalidate(_threadsProvider(spaceId));
-          ref.invalidate(_invitesProvider(spaceId));
-          await Future.wait([
-            ref.read(_spaceDetailProvider(spaceId).future),
-            ref.read(_threadsProvider(spaceId).future),
-            ref.read(_invitesProvider(spaceId).future),
-          ]);
-        },
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            spaceAsync.when(
-              loading: () => const AuraCard(
-                child: _LoadingBlock(label: 'Loading space...'),
-              ),
-              error: (error, _) => AuraCard(
-                child: _ErrorBlock(
-                  title: 'Could not load space',
-                  body: '$error',
-                  onRetry: () => ref.invalidate(_spaceDetailProvider(spaceId)),
+    return DefaultTabController(
+      length: 4,
+      child: AuraScaffold(
+        title: 'Space',
+        body: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(_spaceDetailProvider(spaceId));
+            ref.invalidate(_threadsProvider(spaceId));
+            ref.invalidate(_invitesProvider(spaceId));
+            await Future.wait([
+              ref.read(_spaceDetailProvider(spaceId).future),
+              ref.read(_threadsProvider(spaceId).future),
+              ref.read(_invitesProvider(spaceId).future),
+            ]);
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              spaceAsync.when(
+                loading: () => const AuraCard(
+                  child: _LoadingBlock(label: 'Loading space...'),
+                ),
+                error: (error, _) => AuraCard(
+                  child: _ErrorBlock(
+                    title: 'Could not load space',
+                    body: '$error',
+                    onRetry: () => ref.invalidate(_spaceDetailProvider(spaceId)),
+                  ),
+                ),
+                data: (space) => _SpaceHeaderCard(
+                  space: space,
+                  onCreateThread: () => _showCreateThreadDialog(context, ref),
+                  onInviteMember: () => _showInviteDialog(context, ref),
                 ),
               ),
-              data: (space) => _SpaceHeaderCard(
-                space: space,
-                onCreateThread: () => _showCreateThreadDialog(context, ref),
-                onInviteMember: () => _showInviteDialog(context, ref),
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            Text('Threads', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s10),
-            threadsAsync.when(
-              loading: () => const AuraCard(
-                child: _LoadingBlock(label: 'Loading threads...'),
-              ),
-              error: (error, _) => AuraCard(
-                child: _ErrorBlock(
-                  title: 'Could not load threads',
-                  body: '$error',
-                  onRetry: () => ref.invalidate(_threadsProvider(spaceId)),
+              const SizedBox(height: AuraSpace.s14),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ),
-              data: (threads) {
-                if (threads.isEmpty) {
-                  return AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('No threads yet', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          'Create the first thread in this space.',
-                          style: AuraText.body,
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                        OutlinedButton(
-                          onPressed: () => _showCreateThreadDialog(context, ref),
-                          child: const Text('Create thread'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: [
-                    for (var i = 0; i < threads.length; i++) ...[
-                      _ThreadTile(
-                        spaceId: spaceId,
-                        thread: threads[i],
-                      ),
-                      if (i != threads.length - 1)
-                        const SizedBox(height: AuraSpace.s10),
-                    ],
+                child: const TabBar(
+                  isScrollable: true,
+                  tabs: [
+                    Tab(text: 'Threads'),
+                    Tab(text: 'Members'),
+                    Tab(text: 'Invites'),
+                    Tab(text: 'Media'),
                   ],
-                );
-              },
-            ),
-            const SizedBox(height: AuraSpace.s18),
-            Text('Invites', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s10),
-            invitesAsync.when(
-              loading: () => const AuraCard(
-                child: _LoadingBlock(label: 'Loading invites...'),
-              ),
-              error: (error, _) => AuraCard(
-                child: _ErrorBlock(
-                  title: 'Could not load invites',
-                  body: '$error',
-                  onRetry: () => ref.invalidate(_invitesProvider(spaceId)),
                 ),
               ),
-              data: (invites) {
-                if (invites.isEmpty) {
-                  return AuraCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('No invites yet', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          'Invite someone into this space by user ID when you are ready.',
-                          style: AuraText.body,
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                        OutlinedButton(
-                          onPressed: () => _showInviteDialog(context, ref),
-                          child: const Text('Invite member'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return Column(
+              const SizedBox(height: AuraSpace.s14),
+              SizedBox(
+                height: 620,
+                child: TabBarView(
                   children: [
-                    for (var i = 0; i < invites.length; i++) ...[
-                      _InviteTile(
-                        invite: invites[i],
-                        onRevoke: () async {
-                          final inviteId = _pickString(
-                            invites[i],
-                            const ['id', 'inviteId'],
-                          );
-                          if (inviteId.isEmpty) return;
-
-                          await ref
-                              .read(spacesRepositoryProvider)
-                              .revokeInvite(inviteId);
-                          ref.invalidate(_invitesProvider(spaceId));
-                        },
-                      ),
-                      if (i != invites.length - 1)
-                        const SizedBox(height: AuraSpace.s10),
-                    ],
+                    _ThreadsTab(
+                      spaceId: spaceId,
+                      threadsAsync: threadsAsync,
+                      onCreateThread: () => _showCreateThreadDialog(context, ref),
+                    ),
+                    _MembersTab(spaceAsync: spaceAsync),
+                    _InvitesTab(
+                      invitesAsync: invitesAsync,
+                      onInviteMember: () => _showInviteDialog(context, ref),
+                      onRevokeInvite: (inviteId) async {
+                        await ref
+                            .read(spacesRepositoryProvider)
+                            .revokeInvite(inviteId);
+                        ref.invalidate(_invitesProvider(spaceId));
+                      },
+                    ),
+                    _MediaTab(spaceAsync: spaceAsync),
                   ],
-                );
-              },
-            ),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,6 +161,329 @@ class SpaceScreen extends ConsumerWidget {
     if (invited == true) {
       ref.invalidate(_invitesProvider(spaceId));
     }
+  }
+}
+
+class _ThreadsTab extends StatelessWidget {
+  const _ThreadsTab({
+    required this.spaceId,
+    required this.threadsAsync,
+    required this.onCreateThread,
+  });
+
+  final String spaceId;
+  final AsyncValue<List<Map<String, dynamic>>> threadsAsync;
+  final VoidCallback onCreateThread;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Text('Threads', style: AuraText.title),
+        const SizedBox(height: AuraSpace.s10),
+        threadsAsync.when(
+          loading: () => const AuraCard(
+            child: _LoadingBlock(label: 'Loading threads...'),
+          ),
+          error: (error, _) => AuraCard(
+            child: _ErrorBlock(
+              title: 'Could not load threads',
+              body: '$error',
+              onRetry: () {},
+            ),
+          ),
+          data: (threads) {
+            if (threads.isEmpty) {
+              return AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('No threads yet', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Create the first thread in this space.',
+                      style: AuraText.body,
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    OutlinedButton(
+                      onPressed: onCreateThread,
+                      child: const Text('Create thread'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < threads.length; i++) ...[
+                  _ThreadTile(
+                    spaceId: spaceId,
+                    thread: threads[i],
+                  ),
+                  if (i != threads.length - 1)
+                    const SizedBox(height: AuraSpace.s10),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MembersTab extends StatelessWidget {
+  const _MembersTab({
+    required this.spaceAsync,
+  });
+
+  final AsyncValue<Map<String, dynamic>> spaceAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Text('Members', style: AuraText.title),
+        const SizedBox(height: AuraSpace.s10),
+        spaceAsync.when(
+          loading: () => const AuraCard(
+            child: _LoadingBlock(label: 'Loading members...'),
+          ),
+          error: (error, _) => AuraCard(
+            child: _ErrorBlock(
+              title: 'Could not load members',
+              body: '$error',
+              onRetry: () {},
+            ),
+          ),
+          data: (space) {
+            final members = _extractMembers(space);
+            final memberCount = _pickInt(
+              space,
+              const ['memberCount', 'membersCount'],
+            );
+
+            if (members.isEmpty) {
+              return AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Members surface ready', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      memberCount > 0
+                          ? 'This space reports $memberCount member${memberCount == 1 ? '' : 's'}, but the member list is not yet exposed in the current response shape.'
+                          : 'No member list is available yet in the current response.',
+                      style: AuraText.body,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < members.length; i++) ...[
+                  _MemberTile(member: members[i]),
+                  if (i != members.length - 1)
+                    const SizedBox(height: AuraSpace.s10),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _InvitesTab extends StatelessWidget {
+  const _InvitesTab({
+    required this.invitesAsync,
+    required this.onInviteMember,
+    required this.onRevokeInvite,
+  });
+
+  final AsyncValue<List<Map<String, dynamic>>> invitesAsync;
+  final VoidCallback onInviteMember;
+  final Future<void> Function(String inviteId) onRevokeInvite;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Text('Invites', style: AuraText.title),
+        const SizedBox(height: AuraSpace.s10),
+        invitesAsync.when(
+          loading: () => const AuraCard(
+            child: _LoadingBlock(label: 'Loading invites...'),
+          ),
+          error: (error, _) => AuraCard(
+            child: _ErrorBlock(
+              title: 'Could not load invites',
+              body: '$error',
+              onRetry: () {},
+            ),
+          ),
+          data: (invites) {
+            if (invites.isEmpty) {
+              return AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('No invites yet', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Invite someone into this space.',
+                      style: AuraText.body,
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    OutlinedButton(
+                      onPressed: onInviteMember,
+                      child: const Text('Invite member'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < invites.length; i++) ...[
+                  _InviteTile(
+                    invite: invites[i],
+                    onRevoke: () async {
+                      final inviteId = _pickString(
+                        invites[i],
+                        const ['id', 'inviteId'],
+                      );
+                      if (inviteId.isEmpty) return;
+                      await onRevokeInvite(inviteId);
+                    },
+                  ),
+                  if (i != invites.length - 1)
+                    const SizedBox(height: AuraSpace.s10),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MediaTab extends StatelessWidget {
+  const _MediaTab({
+    required this.spaceAsync,
+  });
+
+  final AsyncValue<Map<String, dynamic>> spaceAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Text('Media', style: AuraText.title),
+        const SizedBox(height: AuraSpace.s10),
+        spaceAsync.when(
+          loading: () => const AuraCard(
+            child: _LoadingBlock(label: 'Loading media...'),
+          ),
+          error: (error, _) => AuraCard(
+            child: _ErrorBlock(
+              title: 'Could not load media',
+              body: '$error',
+              onRetry: () {},
+            ),
+          ),
+          data: (space) {
+            final summary = _extractMediaSummary(space);
+
+            return Column(
+              children: [
+                _MediaGroupCard(
+                  title: 'Images',
+                  icon: Icons.image_outlined,
+                  count: summary.images,
+                  emptyText:
+                      'No images surfaced in this space yet.',
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                _MediaGroupCard(
+                  title: 'Documents',
+                  icon: Icons.description_outlined,
+                  count: summary.documents,
+                  emptyText:
+                      'No documents surfaced in this space yet.',
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                _MediaGroupCard(
+                  title: 'Audio',
+                  icon: Icons.graphic_eq_outlined,
+                  count: summary.audio,
+                  emptyText:
+                      'No audio surfaced in this space yet.',
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                _MediaGroupCard(
+                  title: 'Files',
+                  icon: Icons.attach_file_outlined,
+                  count: summary.files,
+                  emptyText:
+                      'No other files surfaced in this space yet.',
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MediaGroupCard extends StatelessWidget {
+  const _MediaGroupCard({
+    required this.title,
+    required this.icon,
+    required this.count,
+    required this.emptyText,
+  });
+
+  final String title;
+  final IconData icon;
+  final int count;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasItems = count > 0;
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(title, style: AuraText.title),
+              ),
+              _MetaChip(label: 'Count', value: '$count'),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            hasItems
+                ? '$count item${count == 1 ? '' : 's'} detected in this space.'
+                : emptyText,
+            style: AuraText.body,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -626,6 +882,45 @@ class _InviteTile extends StatelessWidget {
   }
 }
 
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({
+    required this.member,
+  });
+
+  final Map<String, dynamic> member;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _pickString(
+      member,
+      const ['name', 'fullName', 'displayName', 'username', 'handle'],
+    );
+    final role = _pickString(member, const ['role', 'memberRole']);
+    final id = _pickString(member, const ['id', 'userId', 'memberId']);
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name.isEmpty ? 'Member' : name,
+            style: AuraText.title,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              if (role.isNotEmpty) _MetaChip(label: 'Role', value: role),
+              if (id.isNotEmpty) _MetaChip(label: 'ID', value: id),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LoadingBlock extends StatelessWidget {
   const _LoadingBlock({required this.label});
 
@@ -728,6 +1023,20 @@ class _Pill extends StatelessWidget {
   }
 }
 
+class _MediaSummary {
+  const _MediaSummary({
+    required this.images,
+    required this.documents,
+    required this.audio,
+    required this.files,
+  });
+
+  final int images;
+  final int documents;
+  final int audio;
+  final int files;
+}
+
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
     final value = (map[key] ?? '').toString().trim();
@@ -747,4 +1056,66 @@ int _pickInt(Map<String, dynamic> map, List<String> keys) {
     }
   }
   return 0;
+}
+
+List<Map<String, dynamic>> _extractMembers(Map<String, dynamic> space) {
+  const candidateKeys = [
+    'members',
+    'participants',
+    'memberList',
+    'participantList',
+    'users',
+  ];
+
+  for (final key in candidateKeys) {
+    final value = space[key];
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+  }
+
+  return const [];
+}
+
+_MediaSummary _extractMediaSummary(Map<String, dynamic> space) {
+  final nested = _extractNestedMediaMap(space);
+
+  return _MediaSummary(
+    images: _pickInt(
+      nested ?? space,
+      const ['imagesCount', 'imageCount', 'images'],
+    ),
+    documents: _pickInt(
+      nested ?? space,
+      const ['documentsCount', 'documentCount', 'documents', 'docsCount'],
+    ),
+    audio: _pickInt(
+      nested ?? space,
+      const ['audioCount', 'audiosCount', 'audio'],
+    ),
+    files: _pickInt(
+      nested ?? space,
+      const ['filesCount', 'fileCount', 'files'],
+    ),
+  );
+}
+
+Map<String, dynamic>? _extractNestedMediaMap(Map<String, dynamic> space) {
+  const candidateKeys = [
+    'media',
+    'mediaSummary',
+    'assets',
+    'attachmentsSummary',
+  ];
+
+  for (final key in candidateKeys) {
+    final value = space[key];
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+  }
+
+  return null;
 }

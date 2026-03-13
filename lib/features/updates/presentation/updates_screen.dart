@@ -19,21 +19,23 @@ class UpdatesScreen extends ConsumerWidget {
 
     return AuraScaffold(
       title: 'Updates',
-      actions: [
-        _UpdatesMenu(isAuthed: isAuthed),
+      actions: const [
+        _UpdatesMenu(),
       ],
-      body: isAuthed ? const _AuthenticatedUpdatesBody() : const _PublicUpdatesBody(),
+      body: isAuthed
+          ? const _AuthenticatedUpdatesBody()
+          : const _PublicUpdatesBody(),
     );
   }
 }
 
 class _UpdatesMenu extends ConsumerWidget {
-  const _UpdatesMenu({required this.isAuthed});
-
-  final bool isAuthed;
+  const _UpdatesMenu();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthed = ref.watch(isAuthedProvider);
+
     return PopupMenuButton<String>(
       tooltip: 'Updates menu',
       onSelected: (value) async {
@@ -41,12 +43,15 @@ class _UpdatesMenu extends ConsumerWidget {
           case 'announcements':
             context.go('/announcements');
             break;
+
           case 'login':
             context.go('/login?redirect=%2Fupdates');
             break;
+
           case 'register':
             context.go('/register?redirect=%2Fupdates');
             break;
+
           case 'refresh':
             ref.read(notificationsRepoProvider).clearCache();
             ref.invalidate(notificationsProvider);
@@ -95,49 +100,67 @@ class _PublicUpdatesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _CenteredUpdatesList(
+    return const _CenteredUpdatesList(
       children: [
         AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Updates are personal.', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                'When you join, this page becomes your private record of replies, acknowledgements, and activity that matters to you.',
-                style: AuraText.body,
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              Wrap(
-                spacing: AuraSpace.s10,
-                runSpacing: AuraSpace.s10,
-                children: [
-                  FilledButton(
-                    onPressed: () => context.go('/register?redirect=%2Fupdates'),
-                    child: const Text('Create account'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => context.go('/login?redirect=%2Fupdates'),
-                    child: const Text('Login'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: _PublicIntro(),
+        ),
+        SizedBox(height: AuraSpace.s16),
+        AuraCard(
+          child: _PublicExplanation(),
+        ),
+      ],
+    );
+  }
+}
+
+class _PublicIntro extends StatelessWidget {
+  const _PublicIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Updates are personal.', style: AuraText.title),
+        const SizedBox(height: AuraSpace.s10),
+        Text(
+          'When you join, this page becomes your private record of replies, acknowledgements, and activity that matters to you.',
+          style: AuraText.body,
         ),
         const SizedBox(height: AuraSpace.s16),
-        AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('What this page is for', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              const _Bullet('Replies and acknowledgements tied to your writing.'),
-              const _Bullet('Institutional and community changes relevant to you.'),
-              const _Bullet('A private record of movement, not a public feed.'),
-            ],
-          ),
+        Wrap(
+          spacing: AuraSpace.s10,
+          runSpacing: AuraSpace.s10,
+          children: [
+            FilledButton(
+              onPressed: () => context.go('/register?redirect=%2Fupdates'),
+              child: const Text('Create account'),
+            ),
+            OutlinedButton(
+              onPressed: () => context.go('/login?redirect=%2Fupdates'),
+              child: const Text('Login'),
+            ),
+          ],
         ),
+      ],
+    );
+  }
+}
+
+class _PublicExplanation extends StatelessWidget {
+  const _PublicExplanation();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('What this page is for', style: AuraText.title),
+        SizedBox(height: AuraSpace.s10),
+        _Bullet('Replies and acknowledgements tied to your writing.'),
+        _Bullet('Institutional and community changes relevant to you.'),
+        _Bullet('A private record of movement, not a public feed.'),
       ],
     );
   }
@@ -188,81 +211,23 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
               final displayName = actor['displayName']!.trim().isNotEmpty
                   ? actor['displayName']!.trim()
                   : 'Aura';
+
               final handle = actor['handle']!.trim();
 
-              final headline = _nonEmpty(item['headline']) ? item['headline'].toString().trim() : 'Activity on Aura';
+              final headline = _nonEmpty(item['headline'])
+                  ? item['headline'].toString().trim()
+                  : 'Activity on Aura';
+
               final detail = item['detail']?.toString().trim() ?? '';
               final createdAt = item['createdAt']?.toString().trim() ?? '';
 
               return AuraCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: const Color(0x332E2A26),
-                      child: Text(
-                        displayName.characters.first.toUpperCase(),
-                        style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.body.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (handle.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.s4),
-                            Text(
-                              '@$handle',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AuraText.body.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: AuraSpace.s8),
-                          Text(
-                            headline,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.body.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (detail.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.s6),
-                            Text(
-                              detail,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: AuraText.body,
-                            ),
-                          ],
-                          if (createdAt.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.s8),
-                            Text(
-                              _timeAgo(createdAt),
-                              style: AuraText.body.copyWith(
-                                color: Colors.white60,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                child: _UpdateRow(
+                  displayName: displayName,
+                  handle: handle,
+                  headline: headline,
+                  detail: detail,
+                  createdAt: createdAt,
                 ),
               );
             },
@@ -305,15 +270,17 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
 
   static Map<String, String> _actorFrom(Map<String, dynamic> item) {
     final raw = item['actor'];
+
     if (raw is Map) {
       final actor = Map<String, dynamic>.from(raw);
+
       return {
         'displayName': (actor['displayName'] ?? '').toString(),
         'handle': (actor['handle'] ?? '').toString(),
       };
     }
 
-    return {
+    return const {
       'displayName': 'Aura',
       'handle': '',
     };
@@ -325,6 +292,7 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
 
   static String _timeAgo(String raw) {
     final parsed = DateTime.tryParse(raw);
+
     if (parsed == null) return '';
 
     final now = DateTime.now().toUtc();
@@ -337,7 +305,87 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
     if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+
     return '${(diff.inDays / 365).floor()}y ago';
+  }
+}
+
+class _UpdateRow extends StatelessWidget {
+  const _UpdateRow({
+    required this.displayName,
+    required this.handle,
+    required this.headline,
+    required this.detail,
+    required this.createdAt,
+  });
+
+  final String displayName;
+  final String handle;
+  final String headline;
+  final String detail;
+  final String createdAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: const Color(0x332E2A26),
+          child: Text(
+            displayName.characters.first.toUpperCase(),
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+              ),
+              if (handle.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s4),
+                Text(
+                  '@$handle',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(color: Colors.white70),
+                ),
+              ],
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                headline,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (detail.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(
+                  detail,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body,
+                ),
+              ],
+              if (createdAt.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  _AuthenticatedUpdatesBody._timeAgo(createdAt),
+                  style: AuraText.body.copyWith(color: Colors.white60),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -456,19 +504,19 @@ class _Bullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+    return const Padding(
+      padding: EdgeInsets.only(bottom: AuraSpace.s10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: AuraSpace.s4),
             child: Icon(Icons.circle, size: 6),
           ),
-          const SizedBox(width: AuraSpace.s10),
+          SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
-              text,
+              '',
               style: AuraText.body,
             ),
           ),
