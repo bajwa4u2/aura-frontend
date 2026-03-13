@@ -6,14 +6,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../institutions/access/institution_access_provider.dart';
 import '../data/spaces_repository.dart';
-
-enum _WorkspaceKind {
-  admin,
-  institution,
-  member,
-}
 
 final _correspondenceSpacesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -26,36 +19,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final institutionAsync = ref.watch(institutionAccessProvider);
-
-    return institutionAsync.when(
-      loading: () => const _MemberCorrespondenceScreen(),
-      error: (_, __) => const _MemberCorrespondenceScreen(),
-      data: (access) {
-        final workspace = _resolveWorkspace(access);
-
-        switch (workspace) {
-          case _WorkspaceKind.admin:
-            return const _AdminCorrespondenceScreen();
-          case _WorkspaceKind.institution:
-            return _InstitutionCorrespondenceScreen(access: access);
-          case _WorkspaceKind.member:
-            return const _MemberCorrespondenceScreen();
-        }
-      },
-    );
-  }
-
-  _WorkspaceKind _resolveWorkspace(InstitutionAccess access) {
-    final state = access.state;
-
-    if (state == InstitutionAccessState.verifiedMember ||
-        state == InstitutionAccessState.authorizedSpeaker ||
-        state == InstitutionAccessState.pending) {
-      return _WorkspaceKind.institution;
-    }
-
-    return _WorkspaceKind.member;
+    return const _MemberCorrespondenceScreen();
   }
 }
 
@@ -110,9 +74,9 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             const _SectionIntroCard(
-              title: 'Member Correspondence',
+              title: 'Correspondence',
               body:
-                  'This space belongs to the signed-in member account. It stays separate from institution workflows and other account surfaces.',
+                  'This space belongs to the signed-in account and is used for private and small-group conversations.',
             ),
             const SizedBox(height: AuraSpace.s14),
             AuraCard(
@@ -137,8 +101,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       FilledButton(
-                        onPressed: () =>
-                            _showCreateSpaceDialog(context, ref),
+                        onPressed: () => _showCreateSpaceDialog(context, ref),
                         child: const Text('New space'),
                       ),
                     ],
@@ -377,9 +340,7 @@ class _SpaceTile extends StatelessWidget {
                   style: AuraText.title,
                 ),
                 if (visibility.isNotEmpty)
-                  _Pill(
-                    label: visibility.replaceAll('_', ' '),
-                  ),
+                  _Pill(label: visibility.replaceAll('_', ' ')),
               ],
             ),
             if (description.isNotEmpty) ...[
@@ -398,134 +359,6 @@ class _SpaceTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _InstitutionCorrespondenceScreen extends StatelessWidget {
-  const _InstitutionCorrespondenceScreen({required this.access});
-
-  final InstitutionAccess access;
-
-  String _value(dynamic value) => (value ?? '').toString().trim();
-
-  Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return <String, dynamic>{};
-  }
-
-  String _institutionName() {
-    final institution = _asMap(access.institution);
-    final request = _asMap(access.request);
-
-    final fromInstitution = _value(institution['name']);
-    if (fromInstitution.isNotEmpty) return fromInstitution;
-
-    final fromRequest = _value(request['organizationName']);
-    if (fromRequest.isNotEmpty) return fromRequest;
-
-    return 'Institution correspondence';
-  }
-
-  String _standingLabel() {
-    switch (access.state) {
-      case InstitutionAccessState.pending:
-        return 'Standing: Pending review';
-      case InstitutionAccessState.verifiedMember:
-        return 'Standing: Active';
-      case InstitutionAccessState.authorizedSpeaker:
-        return 'Standing: Active with speech authority';
-      case InstitutionAccessState.none:
-        return 'Standing: Not active';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final institutionName = _institutionName();
-    final standing = _standingLabel();
-
-    return AuraScaffold(
-      title: 'Institution Correspondence',
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(institutionName, style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'This workspace belongs to the institution-facing account surface. It remains separate from member correspondence.',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    _Pill(label: standing),
-                    OutlinedButton(
-                      onPressed: () => context.go('/institution/dashboard'),
-                      child: const Text('Back to institution dashboard'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          const AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Institution correspondence tools', style: AuraText.title),
-                SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Institution-specific correspondence tools remain separate and can be connected once institutional routes and workflows are ready.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AdminCorrespondenceScreen extends StatelessWidget {
-  const _AdminCorrespondenceScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraScaffold(
-      title: 'Correspondence',
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: const [
-          _SectionIntroCard(
-            title: 'Admin Correspondence',
-            body:
-                'This workspace is reserved for app-level correspondence handling. It remains distinct from member and institution correspondence.',
-          ),
-          SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Admin tools', style: AuraText.title),
-                SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Admin correspondence remains available as its own workspace and can be expanded independently.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
