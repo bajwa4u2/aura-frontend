@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/ui/aura_scaffold.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -45,6 +45,10 @@ class AppShell extends StatelessWidget {
     ),
   ];
 
+  static const double _headerHeight = 72;
+  static const double _logoHeight = 40;
+  static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
+
   int _indexForPath(String path) {
     if (path == '/home') return 0;
 
@@ -71,13 +75,12 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AuraSurface.page,
       body: SafeArea(
-        top: false,
+        top: true,
         bottom: false,
         child: Column(
           children: [
-            Expanded(
-              child: child,
-            ),
+            const _MemberHeader(),
+            Expanded(child: child),
             Container(
               decoration: const BoxDecoration(
                 color: AuraSurface.card,
@@ -108,6 +111,112 @@ class AppShell extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberHeader extends StatelessWidget {
+  const _MemberHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: AppShell._headerHeight,
+      decoration: const BoxDecoration(
+        color: AuraSurface.page,
+        border: Border(
+          bottom: BorderSide(color: AuraSurface.divider),
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s16,
+              vertical: AuraSpace.s12,
+            ),
+            child: Row(
+              children: [
+                Semantics(
+                  button: true,
+                  label: 'Aura',
+                  child: InkWell(
+                    onTap: () => context.go('/home'),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s4,
+                        vertical: AuraSpace.s4,
+                      ),
+                      child: SvgPicture.asset(
+                        AppShell._logoAsset,
+                        height: AppShell._logoHeight,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                _HeaderIconButton(
+                  tooltip: 'Search',
+                  icon: Icons.search,
+                  onTap: () => context.push('/search'),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                _HeaderIconButton(
+                  tooltip: 'Activity',
+                  icon: Icons.notifications_none,
+                  onTap: () => context.push('/updates'),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                _HeaderIconButton(
+                  tooltip: 'Me',
+                  icon: Icons.person_outline,
+                  onTap: () => context.push('/me'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: AuraSurface.muted,
+          ),
         ),
       ),
     );

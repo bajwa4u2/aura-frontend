@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -28,10 +27,7 @@ class PublicHomeScreen extends ConsumerWidget {
       title: 'Aura',
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 980;
-
           final hero = const _PublicHero();
-          final entryStack = const _EntryStack();
 
           final feedSection = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,29 +88,7 @@ class PublicHomeScreen extends ConsumerWidget {
             children: [
               hero,
               const SizedBox(height: AuraSpace.s20),
-              if (isWide)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: feedSection,
-                    ),
-                    const SizedBox(width: AuraSpace.s16),
-                    Flexible(
-                      flex: 4,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 380),
-                        child: entryStack,
-                      ),
-                    ),
-                  ],
-                )
-              else ...[
-                entryStack,
-                const SizedBox(height: AuraSpace.s20),
-                feedSection,
-              ],
+              feedSection,
               const SizedBox(height: AuraSpace.s24),
             ],
           );
@@ -186,91 +160,8 @@ class _PublicHero extends StatelessWidget {
   }
 }
 
-class _EntryStack extends StatelessWidget {
-  const _EntryStack();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _PublicAuthPanel(),
-        SizedBox(height: AuraSpace.s14),
-        _InstitutionEntryCard(),
-      ],
-    );
-  }
-}
-
-class _PublicAuthPanel extends StatelessWidget {
-  const _PublicAuthPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Enter as member', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => context.go('/register?redirect=%2Fhome'),
-              child: const Text('Create member account'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.go('/login?redirect=%2Fhome'),
-              child: const Text('Member sign in'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InstitutionEntryCard extends StatelessWidget {
-  const _InstitutionEntryCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Enter as institution', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => context.go('/institution/create'),
-              child: const Text('Create institutional account'),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.go('/institution/sign-in'),
-              child: const Text('Institution sign in'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PublicPostPreview extends StatelessWidget {
   const _PublicPostPreview({required this.post});
-
   final Post post;
 
   @override
@@ -282,7 +173,9 @@ class _PublicPostPreview extends StatelessWidget {
         handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
 
     final text = (post.text ?? '').trim();
-    final previewLength = MediaQuery.of(context).size.width < 600 ? 160 : 240;
+
+    final previewLength =
+        MediaQuery.of(context).size.width < 600 ? 160 : 240;
 
     final preview = text.length <= previewLength
         ? text
@@ -356,11 +249,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+  const _Pill({required this.label, required this.icon, required this.onTap});
 
   final String label;
   final IconData icon;

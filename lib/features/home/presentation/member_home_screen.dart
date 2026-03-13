@@ -10,7 +10,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
-import '../../auth/auth_controller.dart';
 import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
@@ -183,10 +182,6 @@ class MemberHomeScreen extends ConsumerWidget {
     ref.invalidate(draftProvider);
   }
 
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    await AuthController(ref).logout(context);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
@@ -198,27 +193,6 @@ class MemberHomeScreen extends ConsumerWidget {
         : const AsyncValue<Map<String, dynamic>?>.data(null);
 
     return AuraScaffold(
-      title: 'Aura',
-      actions: [
-        IconButton(
-          tooltip: 'Compose',
-          onPressed: () => _openCompose(context, ref),
-          icon: const Icon(Icons.edit_outlined),
-        ),
-        if (isAuthed)
-          PopupMenuButton<String>(
-            tooltip: 'Account',
-            onSelected: (v) async {
-              if (v == 'logout') {
-                await _logout(context, ref);
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'logout', child: Text('Logout')),
-            ],
-            icon: const Icon(Icons.more_horiz),
-          ),
-      ],
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
