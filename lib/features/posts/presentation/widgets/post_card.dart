@@ -12,6 +12,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../feed/domain/post.dart';
+import '../../../saves/saves_repository.dart';
 
 String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   final url = (raw ?? '').trim();
@@ -161,7 +162,7 @@ Future<void> _openExternalUrl(
 }
 
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.read(dioProvider);
   final pid = postId.trim();
   if (pid.isEmpty) return false;
 
@@ -177,16 +178,12 @@ final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async 
 });
 
 final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
-  final dio = ref.watch(dioProvider);
+  final repo = ref.read(savesRepositoryProvider);
   final pid = postId.trim();
   if (pid.isEmpty) return false;
 
   try {
-    final res = await dio.get('/saves/$pid');
-    return _extractBool(res.data, const ['saved', 'isSaved']);
-  } on DioException catch (e) {
-    if (e.response?.statusCode == 404) return false;
-    return false;
+    return await repo.isSaved(pid);
   } catch (_) {
     return false;
   }
@@ -1132,8 +1129,8 @@ class _ActionRow extends ConsumerWidget {
 
     Future<void> toggleSave() async {
       try {
-        final dio = ref.read(dioProvider);
-        await dio.post('/saves/$postId/toggle');
+        final repo = ref.read(savesRepositoryProvider);
+        await repo.toggle(postId);
         ref.invalidate(isSavedProvider(postId));
       } catch (_) {
         _showError(context, 'Could not update save');
@@ -1179,9 +1176,6 @@ class _ActionRow extends ConsumerWidget {
         if (text.isNotEmpty) payload['text'] = text;
 
         await dio.post('/posts/$postId/repost', data: payload);
-
-        ref.invalidate(isLikedProvider(postId));
-        ref.invalidate(isSavedProvider(postId));
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
