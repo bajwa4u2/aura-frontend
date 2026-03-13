@@ -256,4 +256,222 @@ class MemberHomeScreen extends ConsumerWidget {
               }
 
               return Column(
-                crossAxisAlignment:
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionTitle(title: 'Latest'),
+                  const SizedBox(height: AuraSpace.s12),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: top.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AuraSpace.s16),
+                    itemBuilder: (context, i) {
+                      return PostCard(post: top[i]);
+                    },
+                  ),
+                ],
+              );
+            },
+            loading: () => const _LoadingCard(),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load feed: $e', style: AuraText.body),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s18),
+          const _PinnedAnnouncementBanner(),
+          const SizedBox(height: AuraSpace.s18),
+          savedAsync.when(
+            data: (raw) {
+              final posts = _coercePosts(raw);
+
+              final header = AuraCard(
+                onTap: () => context.push('/saved'),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Saved posts',
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              );
+
+              if (posts.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _SectionTitle(title: 'Saved'),
+                    const SizedBox(height: AuraSpace.s10),
+                    header,
+                    const SizedBox(height: AuraSpace.s10),
+                    AuraCard(
+                      onTap: () => context.push('/saved'),
+                      child: Text(
+                        'Save something you want to return to. It will live here.',
+                        style: AuraText.body,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _SectionTitle(title: 'Saved'),
+                  const SizedBox(height: AuraSpace.s10),
+                  header,
+                  const SizedBox(height: AuraSpace.s10),
+                  ...posts.take(2).map(
+                        (p) => Padding(
+                          padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                          child: PostCard(post: p, compact: true),
+                        ),
+                      ),
+                ],
+              );
+            },
+            loading: () => const _LoadingCard(),
+            error: (e, _) => AuraCard(
+              child: Text('Could not load saved: $e', style: AuraText.body),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerEntryCard extends StatelessWidget {
+  const _ComposerEntryCard({
+    required this.hasDraft,
+    required this.onTap,
+  });
+
+  final bool hasDraft;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            hasDraft ? 'Continue writing' : 'Write something',
+            style: AuraText.title,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            hasDraft
+                ? 'Your draft is waiting. Return to it with care.'
+                : 'Begin a post, a reflection, or a piece of correspondence.',
+            style: AuraText.body,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PinnedAnnouncementBanner extends ConsumerWidget {
+  const _PinnedAnnouncementBanner();
+
+  String _fmt(DateTime dt) {
+    final d = dt.toLocal();
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(pinnedAnnouncementProvider);
+
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (a) {
+        if (a == null) return const SizedBox.shrink();
+
+        final title = a.title.trim().isEmpty ? a.slug : a.title.trim();
+        final summary = a.summary.trim();
+
+        return AuraCard(
+          onTap: () => context.push('/announcements/${a.slug}'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.campaign_outlined, size: 18),
+                  const SizedBox(width: AuraSpace.s8),
+                  Expanded(
+                    child: Text(
+                      'Pinned announcement',
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                title,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+              ),
+              if (a.publishedAt != null) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(
+                  'Published: ${_fmt(a.publishedAt!)}',
+                  style: AuraText.small,
+                ),
+              ],
+              if (summary.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s10),
+                Text(summary, style: AuraText.body),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
