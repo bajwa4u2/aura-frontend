@@ -63,37 +63,40 @@ class AnnouncementsScreen extends ConsumerWidget {
     final meAsync = ref.watch(_announcementsMeProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
 
+    final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
+    final listAsync = ref.watch(announcementsProvider);
+
     return meAsync.when(
-      loading: () => AuraScaffold(
+      loading: () => const AuraScaffold(
         title: 'Announcements',
         showHomeAction: true,
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator()),
       ),
       error: (_, __) {
         return _PublicAnnouncementsScreen(
-          pinnedAsync: ref.watch(pinnedAnnouncementsProvider),
-          listAsync: ref.watch(announcementsProvider),
+          pinnedAsync: pinnedAsync,
+          listAsync: listAsync,
         );
       },
       data: (me) {
         final isAdmin = _isAdmin(me);
         if (isAdmin) {
           return _AdminAnnouncementsScreen(
-            pinnedAsync: ref.watch(pinnedAnnouncementsProvider),
-            listAsync: ref.watch(announcementsProvider),
+            pinnedAsync: pinnedAsync,
+            listAsync: listAsync,
           );
         }
 
         return institutionAsync.when(
-          loading: () => AuraScaffold(
+          loading: () => const AuraScaffold(
             title: 'Announcements',
             showHomeAction: true,
-            body: const Center(child: CircularProgressIndicator()),
+            body: Center(child: CircularProgressIndicator()),
           ),
           error: (_, __) {
             return _PublicAnnouncementsScreen(
-              pinnedAsync: ref.watch(pinnedAnnouncementsProvider),
-              listAsync: ref.watch(announcementsProvider),
+              pinnedAsync: pinnedAsync,
+              listAsync: listAsync,
             );
           },
           data: (institutionAccess) {
@@ -107,14 +110,14 @@ class AnnouncementsScreen extends ConsumerWidget {
             if (hasInstitutionStanding) {
               return _InstitutionAnnouncementsScreen(
                 access: institutionAccess,
-                pinnedAsync: ref.watch(pinnedAnnouncementsProvider),
-                listAsync: ref.watch(announcementsProvider),
+                pinnedAsync: pinnedAsync,
+                listAsync: listAsync,
               );
             }
 
             return _PublicAnnouncementsScreen(
-              pinnedAsync: ref.watch(pinnedAnnouncementsProvider),
-              listAsync: ref.watch(announcementsProvider),
+              pinnedAsync: pinnedAsync,
+              listAsync: listAsync,
             );
           },
         );

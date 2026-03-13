@@ -13,20 +13,6 @@ import '../providers.dart';
 class UpdatesScreen extends ConsumerWidget {
   const UpdatesScreen({super.key});
 
-  String _label(Map<String, dynamic> n) {
-    final t = (n['type'] ?? '').toString().trim();
-    switch (t) {
-      case 'reply':
-        return 'Replied';
-      case 'like':
-        return 'Appreciated';
-      case 'follow':
-        return 'Followed you';
-      default:
-        return t.isEmpty ? 'Update' : t;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
@@ -36,9 +22,7 @@ class UpdatesScreen extends ConsumerWidget {
       actions: [
         _UpdatesMenu(isAuthed: isAuthed),
       ],
-      body: isAuthed
-          ? _AuthenticatedUpdatesBody(labelFor: _label)
-          : const _PublicUpdatesBody(),
+      body: isAuthed ? const _AuthenticatedUpdatesBody() : const _PublicUpdatesBody(),
     );
   }
 }
@@ -63,9 +47,8 @@ class _UpdatesMenu extends ConsumerWidget {
           case 'register':
             context.go('/register?redirect=%2Fupdates');
             break;
-          case 'mark_all_read':
-            final repo = ref.read(notificationsRepoProvider);
-            await repo.markAllRead();
+          case 'refresh':
+            ref.read(notificationsRepoProvider).clearCache();
             ref.invalidate(notificationsProvider);
             break;
         }
@@ -78,8 +61,8 @@ class _UpdatesMenu extends ConsumerWidget {
               child: Text('Announcements'),
             ),
             PopupMenuItem<String>(
-              value: 'mark_all_read',
-              child: Text('Mark all read'),
+              value: 'refresh',
+              child: Text('Refresh'),
             ),
           ];
         }
@@ -121,7 +104,7 @@ class _PublicUpdatesBody extends StatelessWidget {
               Text('Updates are personal.', style: AuraText.title),
               const SizedBox(height: AuraSpace.s10),
               Text(
-                'When you join, this page becomes your private record of replies, follows, and acknowledgements.',
+                'When you join, this page becomes your private record of replies, acknowledgements, and activity that matters to you.',
                 style: AuraText.body,
               ),
               const SizedBox(height: AuraSpace.s16),
@@ -130,8 +113,7 @@ class _PublicUpdatesBody extends StatelessWidget {
                 runSpacing: AuraSpace.s10,
                 children: [
                   FilledButton(
-                    onPressed: () =>
-                        context.go('/register?redirect=%2Fupdates'),
+                    onPressed: () => context.go('/register?redirect=%2Fupdates'),
                     child: const Text('Create account'),
                   ),
                   OutlinedButton(
@@ -148,15 +130,11 @@ class _PublicUpdatesBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Why this is gated', style: AuraText.title),
+              Text('What this page is for', style: AuraText.title),
               const SizedBox(height: AuraSpace.s10),
-              const _Bullet('Updates can reveal reading and writing patterns.'),
-              const _Bullet(
-                'They also include personal context from other people.',
-              ),
-              const _Bullet(
-                'Aura treats attention as a private ledger, not a public feed.',
-              ),
+              const _Bullet('Replies and acknowledgements tied to your writing.'),
+              const _Bullet('Institutional and community changes relevant to you.'),
+              const _Bullet('A private record of movement, not a public feed.'),
             ],
           ),
         ),
@@ -166,9 +144,13 @@ class _PublicUpdatesBody extends StatelessWidget {
 }
 
 class _AuthenticatedUpdatesBody extends ConsumerWidget {
-  const _AuthenticatedUpdatesBody({required this.labelFor});
+  const _AuthenticatedUpdatesBody();
 
-  final String Function(Map<String, dynamic>) labelFor;
+  Future<void> _refresh(WidgetRef ref) async {
+    ref.read(notificationsRepoProvider).clearCache();
+    ref.invalidate(notificationsProvider);
+    await ref.read(notificationsProvider.future);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -176,141 +158,197 @@ class _AuthenticatedUpdatesBody extends ConsumerWidget {
 
     return async.when(
       data: (items) {
-        final safeItems = items;
-
-        if (safeItems.isEmpty) {
-          return const _CenteredUpdatesList(
-            children: [
-              AuraCard(
-                child: Text(
-                  'No updates.',
-                  style: AuraText.body,
+        if (items.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () => _refresh(ref),
+            child: const _CenteredUpdatesList(
+              alwaysScrollable: true,
+              children: [
+                AuraCard(
+                  child: Text(
+                    'Nothing has been recorded for you yet.',
+                    style: AuraText.body,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }
 
-        return _CenteredUpdatesSeparatedList(
-          itemCount: safeItems.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
-          itemBuilder: (context, i) {
-            final raw = safeItems[i];
-            final n = Map<String, dynamic>.from(raw);
+        return RefreshIndicator(
+          onRefresh: () => _refresh(ref),
+          child: _CenteredUpdatesSeparatedList(
+            alwaysScrollable: true,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+            itemBuilder: (context, i) {
+              final item = Map<String, dynamic>.from(items[i]);
+              final actor = _actorFrom(item);
 
-            final actorRaw = n['actor'];
-            final actor = actorRaw is Map
-                ? Map<String, dynamic>.from(actorRaw)
-                : <String, dynamic>{};
+              final displayName = actor['displayName']!.trim().isNotEmpty
+                  ? actor['displayName']!.trim()
+                  : 'Aura';
+              final handle = actor['handle']!.trim();
 
-            final name =
-                (actor['displayName'] ?? actor['handle'] ?? 'Someone')
-                    .toString()
-                    .trim();
-            final handle = (actor['handle'] ?? '').toString().trim();
-            final readAt = n['readAt'];
-            final isRead = readAt != null;
-            final id = (n['id'] ?? '').toString().trim();
+              final headline = _nonEmpty(item['headline']) ? item['headline'].toString().trim() : 'Activity on Aura';
+              final detail = item['detail']?.toString().trim() ?? '';
+              final createdAt = item['createdAt']?.toString().trim() ?? '';
 
-            final displayLine = handle.isNotEmpty
-                ? '$name (@$handle)'
-                : name;
-
-            return AuraCard(
-              onTap: () async {
-                if (id.isEmpty || isRead) return;
-
-                final repo = ref.read(notificationsRepoProvider);
-                await repo.markRead(id);
-                ref.invalidate(notificationsProvider);
-              },
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: const Color(0x332E2A26),
-                    child: Text(
-                      name.isNotEmpty
-                          ? name.characters.first.toUpperCase()
-                          : 'A',
-                      style: AuraText.body.copyWith(
-                        fontWeight: FontWeight.w700,
+              return AuraCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0x332E2A26),
+                      child: Text(
+                        displayName.characters.first.toUpperCase(),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AuraSpace.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          displayLine,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AuraText.body.copyWith(
-                            fontWeight:
-                                isRead ? FontWeight.w600 : FontWeight.w800,
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AuraSpace.s6),
-                        Text(
-                          labelFor(n),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AuraText.body,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isRead) ...[
-                    const SizedBox(width: AuraSpace.s8),
-                    const Padding(
-                      padding: EdgeInsets.only(top: AuraSpace.s4),
-                      child: Icon(Icons.circle, size: 10),
+                          if (handle.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s4),
+                            Text(
+                              '@$handle',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.body.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: AuraSpace.s8),
+                          Text(
+                            headline,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (detail.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s6),
+                            Text(
+                              detail,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.body,
+                            ),
+                          ],
+                          if (createdAt.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s8),
+                            Text(
+                              _timeAgo(createdAt),
+                              style: AuraText.body.copyWith(
+                                color: Colors.white60,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         );
       },
       loading: () {
         return const _CenteredUpdatesList(
+          alwaysScrollable: true,
           children: [
             Center(child: CircularProgressIndicator()),
           ],
         );
       },
       error: (e, _) {
-        return _CenteredUpdatesList(
-          children: [
-            AuraCard(
-              child: Text(
-                'Could not load updates: $e',
-                style: AuraText.body,
+        return RefreshIndicator(
+          onRefresh: () => _refresh(ref),
+          child: _CenteredUpdatesList(
+            alwaysScrollable: true,
+            children: [
+              AuraCard(
+                child: Text(
+                  'Could not load updates: $e',
+                  style: AuraText.body,
+                ),
               ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            const AuraCard(
-              child: Text(
-                'If your backend was running before, restart it so the Notifications module is registered.',
-                style: AuraText.body,
+              const SizedBox(height: AuraSpace.s12),
+              const AuraCard(
+                child: Text(
+                  'Pull to refresh after the backend settles.',
+                  style: AuraText.body,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
+
+  static Map<String, String> _actorFrom(Map<String, dynamic> item) {
+    final raw = item['actor'];
+    if (raw is Map) {
+      final actor = Map<String, dynamic>.from(raw);
+      return {
+        'displayName': (actor['displayName'] ?? '').toString(),
+        'handle': (actor['handle'] ?? '').toString(),
+      };
+    }
+
+    return {
+      'displayName': 'Aura',
+      'handle': '',
+    };
+  }
+
+  static bool _nonEmpty(dynamic value) {
+    return value != null && value.toString().trim().isNotEmpty;
+  }
+
+  static String _timeAgo(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return '';
+
+    final now = DateTime.now().toUtc();
+    final dt = parsed.toUtc();
+    final diff = now.difference(dt);
+
+    if (diff.inSeconds < 45) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+    return '${(diff.inDays / 365).floor()}y ago';
+  }
 }
 
 class _CenteredUpdatesList extends StatelessWidget {
-  const _CenteredUpdatesList({required this.children});
+  const _CenteredUpdatesList({
+    required this.children,
+    this.alwaysScrollable = false,
+  });
 
   final List<Widget> children;
+  final bool alwaysScrollable;
 
   @override
   Widget build(BuildContext context) {
@@ -336,6 +374,9 @@ class _CenteredUpdatesList extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: ListView(
+              physics: alwaysScrollable
+                  ? const AlwaysScrollableScrollPhysics()
+                  : null,
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
                 AuraSpace.s16,
@@ -356,11 +397,13 @@ class _CenteredUpdatesSeparatedList extends StatelessWidget {
     required this.itemCount,
     required this.itemBuilder,
     required this.separatorBuilder,
+    this.alwaysScrollable = false,
   });
 
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
   final IndexedWidgetBuilder separatorBuilder;
+  final bool alwaysScrollable;
 
   @override
   Widget build(BuildContext context) {
@@ -386,6 +429,9 @@ class _CenteredUpdatesSeparatedList extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: ListView.separated(
+              physics: alwaysScrollable
+                  ? const AlwaysScrollableScrollPhysics()
+                  : null,
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
                 AuraSpace.s12,
