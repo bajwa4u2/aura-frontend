@@ -41,6 +41,7 @@ import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
 import 'features/correspondence/presentation/thread_screen.dart';
+import 'features/create/presentation/new_conversation_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
 
 // Static screens
@@ -85,7 +86,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
-
     if (path == kRouterBootRoute) return true;
 
     if (path == '/mission' ||
@@ -118,6 +118,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/search' ||
         path == '/saved' ||
         path == '/updates' ||
+        path == '/activity' ||
         path == '/create' ||
         path == '/announcements/create' ||
         path == '/ai/claim-audit' ||
@@ -363,6 +364,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
+          GoRoute(path: '/activity', redirect: (_, __) => '/updates'),
 
           GoRoute(
             path: '/ai/claim-audit',
@@ -382,7 +384,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'create/conversation',
-                builder: (_, __) => const CreateHubScreen(),
+                builder: (_, __) => const NewConversationScreen(),
               ),
               GoRoute(
                 path: 'create/space',

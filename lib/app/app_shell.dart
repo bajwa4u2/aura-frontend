@@ -1,112 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/ui/aura_scaffold.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.child});
+
   final Widget child;
 
-  static const double _maxContentWidth = 1080;
-
-  static const _tabs = [
-    _TabItem(label: 'Home', icon: Icons.home_outlined, path: '/home'),
-    _TabItem(label: 'Create', icon: Icons.add_box_outlined, path: '/create'),
-    _TabItem(label: 'Correspondence', icon: Icons.mail_outline, path: '/me/correspondence'),
-    _TabItem(label: 'Me', icon: Icons.person_outline, path: '/me'),
+  static const List<_MemberNavItem> _items = [
+    _MemberNavItem(
+      label: 'Home',
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+      path: '/home',
+    ),
+    _MemberNavItem(
+      label: 'Correspondence',
+      icon: Icons.mail_outline,
+      selectedIcon: Icons.mail,
+      path: '/me/correspondence',
+    ),
+    _MemberNavItem(
+      label: 'Create',
+      icon: Icons.add_box_outlined,
+      selectedIcon: Icons.add_box,
+      path: '/compose',
+      isPrimary: true,
+    ),
+    _MemberNavItem(
+      label: 'Activity',
+      icon: Icons.notifications_none,
+      selectedIcon: Icons.notifications,
+      path: '/updates',
+    ),
+    _MemberNavItem(
+      label: 'Me',
+      icon: Icons.person_outline,
+      selectedIcon: Icons.person,
+      path: '/me',
+    ),
   ];
 
   int _indexForPath(String path) {
-    for (var i = 0; i < _tabs.length; i++) {
-      final tabPath = _tabs[i].path;
-      if (path == tabPath || path.startsWith('$tabPath/')) {
-        return i;
-      }
+    if (path == '/home') return 0;
+
+    if (path == '/me/correspondence' ||
+        path.startsWith('/me/correspondence/')) {
+      return 1;
     }
+
+    if (path == '/compose' || path == '/create') return 2;
+
+    if (path == '/updates') return 3;
+
+    if (path == '/me' || path.startsWith('/me/')) return 4;
+
     return 0;
   }
 
-  bool _isPublicRoutePath(String path) {
-    const publicPrefixes = <String>[
-      '/public',
-      '/privacy',
-      '/contact',
-      '/mission',
-      '/founder',
-      '/investors',
-      '/institutions',
-      '/patrons',
-      '/supporters',
-      '/announcements',
-
-      '/login',
-      '/register',
-      '/forgot-password',
-      '/reset-password',
-      '/verify-email',
-      '/verify-pending',
-
-      '/institution/sign-in',
-      '/institution/request-verification',
-    ];
-
-    for (final p in publicPrefixes) {
-      if (path == p || path.startsWith('$p/')) return true;
-    }
-    return false;
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
-    final currentIndex = _indexForPath(path);
-    final showBottomNav = !_isPublicRoutePath(path);
+    final selectedIndex = _indexForPath(path);
 
     return Scaffold(
       backgroundColor: AuraSurface.page,
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              color: AuraSurface.page,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-                  child: child,
-                ),
-              ),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: child,
             ),
-          ),
-
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AuraSurface.page,
-              border: Border(
-                top: BorderSide(color: AuraSurface.divider),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.md,
-              vertical: AuraSpace.sm,
-            ),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: AuraSpace.sm,
-              runSpacing: AuraSpace.xs,
-              children: const [
-                _LegalLink(label: 'Privacy', path: '/privacy'),
-                _LegalLink(label: 'Contact', path: '/contact'),
-              ],
-            ),
-          ),
-
-          if (showBottomNav)
             Container(
               decoration: const BoxDecoration(
                 color: AuraSurface.card,
@@ -114,91 +85,146 @@ class AppShell extends ConsumerWidget {
                   top: BorderSide(color: AuraSurface.divider),
                 ),
               ),
-              child: NavigationBarTheme(
-                data: NavigationBarThemeData(
-                  backgroundColor: AuraSurface.card,
-                  indicatorColor: AuraSurface.accentSoft,
-                  labelTextStyle: MaterialStatePropertyAll(
-                    AuraText.small.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AuraSurface.muted,
+              padding: const EdgeInsets.only(
+                left: AuraSpace.s8,
+                right: AuraSpace.s8,
+                top: AuraSpace.s6,
+                bottom: AuraSpace.s6,
+              ),
+              child: Row(
+                children: [
+                  for (var i = 0; i < _items.length; i++)
+                    Expanded(
+                      child: _MemberNavButton(
+                        item: _items[i],
+                        selected: i == selectedIndex,
+                        onTap: () {
+                          final target = _items[i].path;
+                          if (target != path) {
+                            context.go(target);
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  iconTheme: const MaterialStatePropertyAll(
-                    IconThemeData(
-                      color: AuraSurface.muted,
-                    ),
-                  ),
-                ),
-                child: NavigationBar(
-                  height: 64,
-                  selectedIndex: currentIndex.clamp(0, _tabs.length - 1),
-                  onDestinationSelected: (i) {
-                    final tab = _tabs[i];
-                    context.go(tab.path);
-                  },
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.home_outlined),
-                      selectedIcon: Icon(Icons.home),
-                      label: 'Home',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.add_box_outlined),
-                      selectedIcon: Icon(Icons.add_box),
-                      label: 'Create',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.mail_outline),
-                      selectedIcon: Icon(Icons.mail),
-                      label: 'Correspondence',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.person_outline),
-                      selectedIcon: Icon(Icons.person),
-                      label: 'Me',
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TabItem {
-  const _TabItem({
+class _MemberNavItem {
+  const _MemberNavItem({
     required this.label,
     required this.icon,
+    required this.selectedIcon,
     required this.path,
+    this.isPrimary = false,
   });
 
   final String label;
   final IconData icon;
+  final IconData selectedIcon;
   final String path;
+  final bool isPrimary;
 }
 
-class _LegalLink extends StatelessWidget {
-  const _LegalLink({required this.label, required this.path});
+class _MemberNavButton extends StatelessWidget {
+  const _MemberNavButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
 
-  final String label;
-  final String path;
+  final _MemberNavItem item;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () => context.go(path),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.sm,
-          vertical: AuraSpace.xs,
+    final iconColor = selected ? AuraSurface.ink : AuraSurface.muted;
+    final textColor = selected ? AuraSurface.ink : AuraSurface.muted;
+    final iconData = selected ? item.selectedIcon : item.icon;
+
+    if (item.isPrimary) {
+      return Center(
+        child: Semantics(
+          button: true,
+          label: item.label,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: AuraSpace.s4,
+                horizontal: AuraSpace.s4,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AuraSurface.accentSoft
+                          : AuraSurface.page,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AuraSurface.divider),
+                    ),
+                    child: Icon(iconData, size: 22, color: iconColor),
+                  ),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        foregroundColor: AuraSurface.muted,
-        textStyle: AuraText.small,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: item.label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: AuraSpace.s6,
+            horizontal: AuraSpace.s4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(iconData, size: 22, color: iconColor),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Text(label),
     );
   }
 }

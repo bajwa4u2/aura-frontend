@@ -91,6 +91,8 @@ class SpaceScreen extends ConsumerWidget {
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
                   onInviteMember: () => _showInviteDialog(context, ref),
+                  onNewConversation: () =>
+                      context.go('/me/correspondence/create/conversation'),
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
@@ -110,28 +112,31 @@ class SpaceScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
-              SizedBox(
-                height: 620,
-                child: TabBarView(
-                  children: [
-                    _ThreadsTab(
-                      spaceId: spaceId,
-                      threadsAsync: threadsAsync,
-                      onCreateThread: () => _showCreateThreadDialog(context, ref),
-                    ),
-                    _MembersTab(spaceAsync: spaceAsync),
-                    _InvitesTab(
-                      invitesAsync: invitesAsync,
-                      onInviteMember: () => _showInviteDialog(context, ref),
-                      onRevokeInvite: (inviteId) async {
-                        await ref
-                            .read(spacesRepositoryProvider)
-                            .revokeInvite(inviteId);
-                        ref.invalidate(_invitesProvider(spaceId));
-                      },
-                    ),
-                    _MediaTab(spaceAsync: spaceAsync),
-                  ],
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 520),
+                child: SizedBox(
+                  height: 620,
+                  child: TabBarView(
+                    children: [
+                      _ThreadsTab(
+                        spaceId: spaceId,
+                        threadsAsync: threadsAsync,
+                        onCreateThread: () => _showCreateThreadDialog(context, ref),
+                      ),
+                      _MembersTab(spaceAsync: spaceAsync),
+                      _InvitesTab(
+                        invitesAsync: invitesAsync,
+                        onInviteMember: () => _showInviteDialog(context, ref),
+                        onRevokeInvite: (inviteId) async {
+                          await ref
+                              .read(spacesRepositoryProvider)
+                              .revokeInvite(inviteId);
+                          ref.invalidate(_invitesProvider(spaceId));
+                        },
+                      ),
+                      _MediaTab(spaceAsync: spaceAsync),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -407,32 +412,28 @@ class _MediaTab extends StatelessWidget {
                   title: 'Images',
                   icon: Icons.image_outlined,
                   count: summary.images,
-                  emptyText:
-                      'No images surfaced in this space yet.',
+                  emptyText: 'No images surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
                   title: 'Documents',
                   icon: Icons.description_outlined,
                   count: summary.documents,
-                  emptyText:
-                      'No documents surfaced in this space yet.',
+                  emptyText: 'No documents surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
                   title: 'Audio',
                   icon: Icons.graphic_eq_outlined,
                   count: summary.audio,
-                  emptyText:
-                      'No audio surfaced in this space yet.',
+                  emptyText: 'No audio surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
                   title: 'Files',
                   icon: Icons.attach_file_outlined,
                   count: summary.files,
-                  emptyText:
-                      'No other files surfaced in this space yet.',
+                  emptyText: 'No other files surfaced in this space yet.',
                 ),
               ],
             );
@@ -492,11 +493,13 @@ class _SpaceHeaderCard extends StatelessWidget {
     required this.space,
     required this.onCreateThread,
     required this.onInviteMember,
+    required this.onNewConversation,
   });
 
   final Map<String, dynamic> space;
   final VoidCallback onCreateThread;
   final VoidCallback onInviteMember;
+  final VoidCallback onNewConversation;
 
   @override
   Widget build(BuildContext context) {
@@ -548,6 +551,10 @@ class _SpaceHeaderCard extends StatelessWidget {
               OutlinedButton(
                 onPressed: onInviteMember,
                 child: const Text('Invite member'),
+              ),
+              OutlinedButton(
+                onPressed: onNewConversation,
+                child: const Text('New conversation'),
               ),
             ],
           ),
@@ -805,29 +812,45 @@ class _ThreadTile extends StatelessWidget {
     final kind = _pickString(thread, const ['kind', 'type']);
     final archived =
         thread['archived'] == true || thread['archivedAt'] != null;
+    final preview = _pickString(
+      thread,
+      const ['lastMessage', 'lastMessageText', 'preview', 'description'],
+    );
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: id.isEmpty
-          ? null
-          : () => context.go('/me/correspondence/$spaceId/thread/$id'),
-      child: AuraCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
+    return AuraCard(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: id.isEmpty
+            ? null
+            : () => context.go('/me/correspondence/$spaceId/thread/$id'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                children: [
+                  Text(
+                    title.isEmpty ? 'Untitled thread' : title,
+                    style: AuraText.title,
+                  ),
+                  if (kind.isNotEmpty) _Pill(label: kind),
+                  if (archived) _Pill(label: 'ARCHIVED'),
+                ],
+              ),
+              if (preview.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s8),
                 Text(
-                  title.isEmpty ? 'Untitled thread' : title,
-                  style: AuraText.title,
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body,
                 ),
-                if (kind.isNotEmpty) _Pill(label: kind),
-                if (archived) _Pill(label: 'ARCHIVED'),
               ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

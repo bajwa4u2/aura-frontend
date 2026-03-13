@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/auth_providers.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
 
-class AuraScaffold extends StatefulWidget {
+class AuraScaffold extends ConsumerWidget {
   AuraScaffold({
     super.key,
-    this.title = 'Aura',
+    this.title = '',
     Widget? body,
     Widget? child,
     this.actions,
@@ -19,8 +22,14 @@ class AuraScaffold extends StatefulWidget {
     this.showHomeAction = false,
     this.homePath = '/',
     this.showHeader = true,
-  })  : assert(body != null || child != null, 'AuraScaffold requires either body: or child:'),
-        assert(body == null || child == null, 'AuraScaffold: provide only one of body: or child:'),
+  })  : assert(
+          body != null || child != null,
+          'AuraScaffold requires either body: or child:',
+        ),
+        assert(
+          body == null || child == null,
+          'AuraScaffold: provide only one of body: or child:',
+        ),
         body = body ?? child!;
 
   final String title;
@@ -34,16 +43,43 @@ class AuraScaffold extends StatefulWidget {
   final String homePath;
   final bool showHeader;
 
-  @override
-  State<AuraScaffold> createState() => _AuraScaffoldState();
-}
+  static const double _defaultMaxWidth = 920;
+  static const double _headerHeight = 64;
+  static const double _logoHeight = 28;
+  static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
 
-class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  bool _isPublicPath(String path) {
+    if (path == '/' || path == '/public') return true;
 
-  static const double _defaultMaxWidth = 1040;
-  static const double _leadingIconSize = 18;
-  static const double _leadingTapSize = 36;
+    const publicPrefixes = <String>[
+      '/mission',
+      '/white-paper',
+      '/founder',
+      '/privacy',
+      '/contact',
+      '/account-deletion',
+      '/investors',
+      '/institutions',
+      '/patrons',
+      '/supporters',
+      '/announcements',
+      '/login',
+      '/register',
+      '/forgot-password',
+      '/reset-password',
+      '/verify-email',
+      '/verify-pending',
+      '/institution/sign-in',
+    ];
+
+    for (final prefix in publicPrefixes) {
+      if (path == prefix || path.startsWith('$prefix/')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   bool _canGoBack(BuildContext context) {
     return Navigator.of(context).canPop() || GoRouter.of(context).canPop();
@@ -53,12 +89,16 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     if (_canGoBack(context)) {
       context.pop();
     } else {
-      context.go(widget.homePath);
+      context.go(homePath);
     }
   }
 
+  String _resolvedLogoRoute(AuthStatus authStatus) {
+    return authStatus == AuthStatus.authed ? '/home' : '/public';
+  }
+
   Widget _wrapInline(Widget child) {
-    final width = widget.maxWidth ?? _defaultMaxWidth;
+    final width = maxWidth ?? _defaultMaxWidth;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width),
@@ -68,7 +108,7 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
   }
 
   Widget _wrapBody(Widget child) {
-    final width = widget.maxWidth ?? _defaultMaxWidth;
+    final width = maxWidth ?? _defaultMaxWidth;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width),
@@ -80,102 +120,75 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _brand(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Aura home',
-      child: InkWell(
-        onTap: () => context.go(widget.homePath),
-        borderRadius: BorderRadius.circular(999),
-        splashColor: AuraSurface.accentSoft,
-        highlightColor: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s10,
-          ),
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) {
-              final t = Curves.easeOutCubic.transform(_controller.value);
-              return Opacity(
-                opacity: t.clamp(0.0, 1.0),
-                child: const _BrandMark(),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _actionsStrip(List<Widget> actions) {
-    if (actions.isEmpty) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < actions.length; i++) ...[
-            if (i != 0) const SizedBox(width: AuraSpace.s12),
-            actions[i],
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget? _buildLeading(BuildContext context) {
-    if (widget.leading != null) return widget.leading;
+    if (leading != null) return leading;
     if (!_canGoBack(context)) return null;
 
     return SizedBox(
-      width: _leadingTapSize,
-      height: _leadingTapSize,
+      width: 36,
+      height: 36,
       child: IconButton(
         tooltip: 'Back',
-        iconSize: _leadingIconSize,
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints.tightFor(
-          width: _leadingTapSize,
-          height: _leadingTapSize,
+          width: 36,
+          height: 36,
         ),
-        icon: const Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back, size: 18),
         onPressed: () => _goBackOrHome(context),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final resolvedLeading = _buildLeading(context);
+  Widget _buildLogo(BuildContext context, AuthStatus authStatus) {
+    final target = _resolvedLogoRoute(authStatus);
 
-    final normalizedTitle = widget.title.trim();
-    final showPageTitle =
-        normalizedTitle.isNotEmpty && normalizedTitle.toLowerCase() != 'aura';
+    return Semantics(
+      button: true,
+      label: 'Aura',
+      child: InkWell(
+        onTap: () => context.go(target),
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s4,
+            vertical: AuraSpace.s4,
+          ),
+          child: SvgPicture.asset(
+            _logoAsset,
+            height: _logoHeight,
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+    );
+  }
 
-    final headerActions = <Widget>[
-      ...(widget.actions ?? const <Widget>[]),
-      if (widget.showHomeAction)
+  Widget _buildHeaderTitle() {
+    final normalizedTitle = title.trim();
+
+    if (normalizedTitle.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Text(
+      normalizedTitle,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+      style: AuraText.small.copyWith(
+        fontWeight: FontWeight.w600,
+        color: AuraSurface.ink,
+      ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context) {
+    final resolvedActions = <Widget>[
+      ...(actions ?? const <Widget>[]),
+      if (showHomeAction)
         TextButton(
-          onPressed: () => context.go(widget.homePath),
+          onPressed: () => context.go(homePath),
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s12,
@@ -188,14 +201,41 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
         ),
     ];
 
-    Widget content = widget.body;
-    if (widget.padding != null) {
-      content = Padding(padding: widget.padding!, child: content);
+    if (resolvedActions.isEmpty) {
+      return const SizedBox(width: 40);
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < resolvedActions.length; i++) ...[
+            if (i != 0) const SizedBox(width: AuraSpace.s8),
+            resolvedActions[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authStatus = ref.watch(authStatusProvider);
+    final path = GoRouterState.of(context).uri.path;
+    final isPublic = _isPublicPath(path);
+    final resolvedLeading = _buildLeading(context);
+
+    Widget content = body;
+    if (padding != null) {
+      content = Padding(padding: padding!, child: content);
     }
     content = _wrapBody(content);
 
-    final header = widget.showHeader
+    final header = showHeader
         ? Container(
+            height: _headerHeight,
             decoration: const BoxDecoration(
               color: AuraSurface.page,
               border: Border(
@@ -206,39 +246,37 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AuraSpace.s16,
-                  vertical: AuraSpace.s16,
+                  vertical: AuraSpace.s12,
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _brand(context),
-                    if (resolvedLeading != null) ...[
-                      const SizedBox(width: AuraSpace.s12),
-                      IconTheme(
-                        data: const IconThemeData(
-                          color: AuraSurface.muted,
-                          size: _leadingIconSize,
-                        ),
-                        child: resolvedLeading,
-                      ),
-                      const SizedBox(width: AuraSpace.s16),
-                    ] else ...[
-                      const SizedBox(width: AuraSpace.s12),
-                    ],
+                    _buildLogo(context, authStatus),
+                    const SizedBox(width: AuraSpace.s12),
                     Expanded(
-                      child: showPageTitle
-                          ? (widget.centerTitle
-                              ? Center(child: _PageTitle(text: normalizedTitle))
-                              : _PageTitle(text: normalizedTitle))
-                          : const SizedBox.shrink(),
-                    ),
-                    if (headerActions.isNotEmpty) ...[
-                      const SizedBox(width: AuraSpace.s16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: _actionsStrip(headerActions),
+                      child: Align(
+                        alignment: centerTitle
+                            ? Alignment.center
+                            : Alignment.centerLeft,
+                        child: resolvedLeading == null
+                            ? _buildHeaderTitle()
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconTheme(
+                                    data: const IconThemeData(
+                                      color: AuraSurface.muted,
+                                      size: 18,
+                                    ),
+                                    child: resolvedLeading,
+                                  ),
+                                  const SizedBox(width: AuraSpace.s8),
+                                  Flexible(child: _buildHeaderTitle()),
+                                ],
+                              ),
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    _buildActions(context),
                   ],
                 ),
               ),
@@ -249,90 +287,14 @@ class _AuraScaffoldState extends State<AuraScaffold> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: AuraSurface.page,
       body: SafeArea(
+        top: true,
+        bottom: !isPublic,
         child: Column(
           children: [
             header,
             Expanded(child: content),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _BrandMark extends StatelessWidget {
-  const _BrandMark();
-
-  static const Color _ringColor = Color(0xFFA0916E);
-  static const Color _wordColor = Color(0xFFE8EAED);
-
-  static const double _wordmarkSize = 38;
-  static const double _ringSize = 44;
-  static const double _ringStroke = 2.7;
-
-  static const double _wordmarkSizeSmall = 29;
-  static const double _ringSizeSmall = 36;
-  static const double _ringStrokeSmall = 2.25;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (ctx, c) {
-        final isTight = c.maxWidth.isFinite && c.maxWidth < 360;
-
-        final fontSize = isTight ? _wordmarkSizeSmall : _wordmarkSize;
-        final ringSize = isTight ? _ringSizeSmall : _ringSize;
-        final stroke = isTight ? _ringStrokeSmall : _ringStroke;
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: ringSize,
-              height: ringSize,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _ringColor,
-                    width: stroke,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s12),
-            Text(
-              'AURA',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AuraText.title.copyWith(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w600,
-                color: _wordColor,
-                letterSpacing: 1.4,
-                height: 1.0,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _PageTitle extends StatelessWidget {
-  const _PageTitle({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: AuraText.small.copyWith(
-        fontWeight: FontWeight.w500,
-        color: AuraSurface.ink,
       ),
     );
   }

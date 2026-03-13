@@ -50,6 +50,7 @@ flutter:
 
   assets:
     - assets/investor/
+    - assets/brand/
 
 flutter_launcher_icons:
   android: true
