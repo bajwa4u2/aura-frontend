@@ -67,10 +67,10 @@ class AnnouncementsScreen extends ConsumerWidget {
     final listAsync = ref.watch(announcementsProvider);
 
     return meAsync.when(
-      loading: () => const AuraScaffold(
+      loading: () => AuraScaffold(
         title: 'Announcements',
         showHomeAction: true,
-        body: Center(child: CircularProgressIndicator()),
+        body: const Center(child: CircularProgressIndicator()),
       ),
       error: (_, __) {
         return _PublicAnnouncementsScreen(
@@ -88,10 +88,10 @@ class AnnouncementsScreen extends ConsumerWidget {
         }
 
         return institutionAsync.when(
-          loading: () => const AuraScaffold(
+          loading: () => AuraScaffold(
             title: 'Announcements',
             showHomeAction: true,
-            body: Center(child: CircularProgressIndicator()),
+            body: const Center(child: CircularProgressIndicator()),
           ),
           error: (_, __) {
             return _PublicAnnouncementsScreen(
