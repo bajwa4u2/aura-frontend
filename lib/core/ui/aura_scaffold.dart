@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../auth/auth_providers.dart';
+import '../auth/session_providers.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
