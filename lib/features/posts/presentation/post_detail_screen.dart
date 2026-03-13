@@ -150,16 +150,13 @@ class PostDetailScreen extends ConsumerWidget {
           AuraSpace.s24,
         ),
         children: [
+          const _SectionLabel(title: 'Original post'),
+          const SizedBox(height: AuraSpace.s10),
           postAsync.when(
             data: (post) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PostCard(
-                    post: post,
-                    compact: false,
-                  ),
-                ],
+              return PostCard(
+                post: post,
+                compact: false,
               );
             },
             loading: () => const _LoadingCard(),
@@ -170,10 +167,10 @@ class PostDetailScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: AuraSpace.s18),
+          const SizedBox(height: AuraSpace.s24),
           Row(
             children: [
-              Text('Replies', style: AuraText.title),
+              const _SectionLabel(title: 'Replies'),
               const SizedBox(width: AuraSpace.s8),
               repliesAsync.when(
                 data: (items) => Text(
@@ -200,18 +197,18 @@ class PostDetailScreen extends ConsumerWidget {
                 );
               }
 
-              return Column(
-                children: items
-                    .map(
-                      (reply) => Padding(
-                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: PostCard(
-                          post: reply,
-                          compact: false,
-                        ),
-                      ),
-                    )
-                    .toList(),
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AuraSpace.s14),
+                itemBuilder: (context, index) {
+                  return PostCard(
+                    post: items[index],
+                    compact: false,
+                  );
+                },
               );
             },
             loading: () => const _LoadingCard(),
@@ -228,6 +225,24 @@ class PostDetailScreen extends ConsumerWidget {
   }
 }
 
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
+    required this.title,
+  });
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: AuraText.body.copyWith(
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
 
@@ -236,14 +251,14 @@ class _LoadingCard extends StatelessWidget {
     return AuraCard(
       child: Padding(
         padding: const EdgeInsets.all(AuraSpace.s12),
-        child: Row(
+        child: const Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            const SizedBox(width: AuraSpace.s10),
+            SizedBox(width: AuraSpace.s10),
             Expanded(
               child: Text(
                 'Loading…',

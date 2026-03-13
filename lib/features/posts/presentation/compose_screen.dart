@@ -121,7 +121,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_hasText) return false;
     if (_textTooLong) return false;
     if (_hasUploadingAttachments) return false;
-    if (_isReply) return true;
     return true;
   }
 
@@ -277,7 +276,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _loadDraft();
     }
 
-    _textController.addListener(_scheduleAutosave);
+    _textController.addListener(() {
+      _scheduleAutosave();
+      if (mounted) {
+        setState(() {
+          if (_showTextError && _hasText) {
+            _showTextError = false;
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -981,7 +989,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     if (_hasUploadingAttachments) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please wait for attachments to finish uploading.')),
+        const SnackBar(
+          content: Text('Please wait for attachments to finish uploading.'),
+        ),
       );
       return;
     }
@@ -1462,9 +1472,249 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Widget _divider() => Container(height: 1, color: AuraSurface.divider);
 
+  int _attachmentColumns(double width) {
+    if (width < 700) return 1;
+    if (width < 1080) return 2;
+    return 3;
+  }
+
+  Widget _buildStatusRow() {
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          _isReply ? 'Composing reply' : 'Composing',
+          style: AuraText.title,
+        ),
+        Text(
+          _savedLine(),
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAudienceBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Audience',
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: _PostVisibility.values
+              .map(
+                (v) => _VisibilityChip(
+                  label: _visibilityLabel(v),
+                  selected: _visibility == v,
+                  onTap: _posting ? null : () => _setVisibility(v),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          _visibilityHelp(_visibility),
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComposerBox() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
+      child: TextField(
+        controller: _textController,
+        maxLines: null,
+        minLines: 12,
+        textCapitalization: TextCapitalization.sentences,
+        keyboardType: TextInputType.multiline,
+        textInputAction: TextInputAction.newline,
+        style: AuraText.body,
+        decoration: InputDecoration(
+          hintText: _isReply ? 'Write a reply…' : 'Add to the record… (required)',
+          hintStyle: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+          ),
+          border: InputBorder.none,
+          errorText: _showTextError ? 'Text is required' : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharacterLine() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        '${_textController.text.trim().length}/$_limit',
+        style: AuraText.small.copyWith(
+          color: _textTooLong ? AuraSurface.warnInk : AuraSurface.muted,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentsBlock() {
+    if (_isReply) {
+      return AuraCard(
+        child: Text(
+          'Reply attachments will be added after the reply endpoint is upgraded. Right now replies are text-only.',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Attachments',
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            Text(
+              '${_attachments.length}/$_maxAttachments',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          'Images and videos upload through the new Aura media system. Each item can have its own caption.',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        Wrap(
+          spacing: AuraSpace.s10,
+          runSpacing: AuraSpace.s10,
+          children: [
+            OutlinedButton.icon(
+              onPressed:
+                  (_posting || !_canAddMoreAttachments) ? null : _showAddAttachmentSheet,
+              icon: const Icon(Icons.add),
+              label: const Text('Add attachment'),
+            ),
+          ],
+        ),
+        if (_attachments.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = _attachmentColumns(constraints.maxWidth);
+              final gap = AuraSpace.s12;
+              final itemWidth =
+                  (constraints.maxWidth - ((columns - 1) * gap)) / columns;
+
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: _attachments.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final attachment = entry.value;
+                  return SizedBox(
+                    width: itemWidth,
+                    child: _AttachmentCard(
+                      attachment: attachment,
+                      index: index,
+                      count: _attachments.length,
+                      busy: _posting,
+                      onRemove: () => _removeAttachment(attachment),
+                      onMoveLeft: index > 0
+                          ? () => _moveAttachmentLeft(index)
+                          : null,
+                      onMoveRight: index < _attachments.length - 1
+                          ? () => _moveAttachmentRight(index)
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s12,
+        AuraSpace.s16,
+        AuraSpace.s12 + bottomPad,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        border: Border(
+          top: BorderSide(color: AuraSurface.divider),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextButton(
+              onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
+                  ? null
+                  : () {
+                      if (!_hasText) {
+                        setState(() => _showTextError = true);
+                        return;
+                      }
+                      _saveDraft(silent: false);
+                    },
+              child: Text(_isReply ? 'Draft disabled for replies' : 'Save draft'),
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          FilledButton(
+            onPressed: (_posting || _auditBusy || !_canPublish)
+                ? null
+                : () {
+                    if (!_hasText) {
+                      setState(() => _showTextError = true);
+                      return;
+                    }
+                    _publish();
+                  },
+            child: Text(
+              _posting
+                  ? (_isReply ? 'Publishing reply…' : 'Publishing…')
+                  : (_auditBusy
+                      ? 'Reviewing…'
+                      : (_isReply ? 'Publish reply' : 'Publish to record')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = _isReply ? 'Reply' : 'Compose';
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     return AuraScaffold(
       title: title,
@@ -1488,223 +1738,52 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           child: const Text('Discard'),
         ),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: AuraSpace.xl),
-        child: AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_isReply ? 'Composing reply' : 'Composing', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s6),
-              Text(
-                _savedLine(),
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              _divider(),
-              const SizedBox(height: AuraSpace.s12),
-
-              Text(
-                'Audience',
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: _PostVisibility.values
-                    .map(
-                      (v) => _VisibilityChip(
-                        label: _visibilityLabel(v),
-                        selected: _visibility == v,
-                        onTap: _posting ? null : () => _setVisibility(v),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                _visibilityHelp(_visibility),
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-
-              const SizedBox(height: AuraSpace.s12),
-              _divider(),
-              const SizedBox(height: AuraSpace.s12),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: AuraSurface.page,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AuraSurface.divider),
+      body: Column(
+        children: [
+          Expanded(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 12 : 0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s12,
+                  AuraSpace.s16,
+                  AuraSpace.s20,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s12,
-                  vertical: AuraSpace.s10,
-                ),
-                child: TextField(
-                  controller: _textController,
-                  maxLines: null,
-                  minLines: 10,
-                  onChanged: (_) {
-                    setState(() {
-                      if (_showTextError && _hasText) {
-                        _showTextError = false;
-                      }
-                    });
-                  },
-                  style: AuraText.body,
-                  decoration: InputDecoration(
-                    hintText: _isReply
-                        ? 'Write a reply…'
-                        : 'Add to the record… (required)',
-                    hintStyle: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                    ),
-                    border: InputBorder.none,
-                    errorText: _showTextError ? 'Text is required' : null,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                '${_textController.text.trim().length}/$_limit',
-                style: AuraText.small.copyWith(
-                  color: _textTooLong ? AuraSurface.warnInk : AuraSurface.muted,
-                ),
-              ),
-
-              if (!_isReply) ...[
-                const SizedBox(height: AuraSpace.s12),
-                _divider(),
-                const SizedBox(height: AuraSpace.s12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Attachments',
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 960),
+                    child: AuraCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStatusRow(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _divider(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _buildAudienceBlock(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _divider(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _buildComposerBox(),
+                          const SizedBox(height: AuraSpace.s8),
+                          _buildCharacterLine(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _divider(),
+                          const SizedBox(height: AuraSpace.s12),
+                          _buildAttachmentsBlock(),
+                        ],
                       ),
                     ),
-                    Text(
-                      '${_attachments.length}/$_maxAttachments',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Text(
-                  'Images and videos upload through the new Aura media system. Each item can have its own caption.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed:
-                          (_posting || !_canAddMoreAttachments) ? null : _showAddAttachmentSheet,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add attachment'),
-                    ),
-                  ],
-                ),
-
-                if (_attachments.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final twoColumns = constraints.maxWidth < 860;
-                      final columns = twoColumns ? 2 : 3;
-                      final itemWidth =
-                          (constraints.maxWidth - ((columns - 1) * AuraSpace.s12)) /
-                              columns;
-
-                      return Wrap(
-                        spacing: AuraSpace.s12,
-                        runSpacing: AuraSpace.s12,
-                        children: _attachments.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final attachment = entry.value;
-                          return SizedBox(
-                            width: itemWidth,
-                            child: _AttachmentCard(
-                              attachment: attachment,
-                              index: index,
-                              count: _attachments.length,
-                              busy: _posting,
-                              onRemove: () => _removeAttachment(attachment),
-                              onMoveLeft: index > 0
-                                  ? () => _moveAttachmentLeft(index)
-                                  : null,
-                              onMoveRight: index < _attachments.length - 1
-                                  ? () => _moveAttachmentRight(index)
-                                  : null,
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ],
-              ] else ...[
-                const SizedBox(height: AuraSpace.s12),
-                AuraCard(
-                  child: Text(
-                    'Reply attachments will be added after the reply endpoint is upgraded. Right now replies are text-only.',
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
                 ),
-              ],
-
-              const SizedBox(height: AuraSpace.s16),
-              _divider(),
-              const SizedBox(height: AuraSpace.s12),
-
-              Wrap(
-                spacing: AuraSpace.s10,
-                runSpacing: AuraSpace.s10,
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
-                        ? null
-                        : () {
-                            if (!_hasText) {
-                              setState(() => _showTextError = true);
-                              return;
-                            }
-                            _saveDraft(silent: false);
-                          },
-                    child: Text(_isReply ? 'Draft disabled for replies' : 'Save draft'),
-                  ),
-                  FilledButton(
-                    onPressed: (_posting || _auditBusy || !_canPublish)
-                        ? null
-                        : () {
-                            if (!_hasText) {
-                              setState(() => _showTextError = true);
-                              return;
-                            }
-                            _publish();
-                          },
-                    child: Text(
-                      _posting
-                          ? (_isReply ? 'Publishing reply…' : 'Publishing…')
-                          : (_auditBusy
-                              ? 'Reviewing…'
-                              : (_isReply ? 'Publish reply' : 'Publish to record')),
-                    ),
-                  ),
-                ],
               ),
-            ],
+            ),
           ),
-        ),
+          _buildBottomBar(context),
+        ],
       ),
     );
   }
@@ -1970,7 +2049,7 @@ class _AttachmentPreview extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
+              color: Colors.black.withOpacity(0.45),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.play_arrow, color: Colors.white),
@@ -1986,7 +2065,10 @@ class _AttachmentPreview extends StatelessWidget {
     final w = attachment.width;
     final h = attachment.height;
     if (w != null && h != null && w > 0 && h > 0) {
-      return w / h;
+      var ratio = w / h;
+      if (ratio < 0.7) ratio = 0.7;
+      if (ratio > 1.8) ratio = 1.8;
+      return ratio;
     }
     return 4 / 3;
   }
