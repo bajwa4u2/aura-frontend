@@ -263,7 +263,8 @@ class _SpaceHeaderCard extends StatelessWidget {
                 name.isEmpty ? 'Untitled space' : name,
                 style: AuraText.title,
               ),
-              if (visibility.isNotEmpty) _Pill(label: visibility),
+              if (visibility.isNotEmpty)
+                _Pill(label: visibility.replaceAll('_', ' ')),
             ],
           ),
           if (description.isNotEmpty) ...[
@@ -546,7 +547,8 @@ class _ThreadTile extends StatelessWidget {
     final id = _pickString(thread, const ['id', 'threadId']);
     final title = _pickString(thread, const ['title', 'name']);
     final kind = _pickString(thread, const ['kind', 'type']);
-    final archived = thread['archived'] == true;
+    final archived =
+        thread['archived'] == true || thread['archivedAt'] != null;
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -588,8 +590,11 @@ class _InviteTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final id = _pickString(invite, const ['id', 'inviteId']);
-    final userId = _pickString(invite, const ['userId', 'recipientUserId']);
-    final role = _pickString(invite, const ['role']);
+    final userId = _pickString(
+      invite,
+      const ['userId', 'recipientUserId', 'invitedUserId'],
+    );
+    final role = _pickString(invite, const ['role', 'roleOffered']);
     final status = _pickString(invite, const ['status']);
 
     return AuraCard(

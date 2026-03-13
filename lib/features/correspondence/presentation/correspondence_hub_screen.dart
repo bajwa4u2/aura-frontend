@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -9,7 +10,13 @@ import '../../../core/ui/aura_text.dart';
 import '../data/spaces_repository.dart';
 
 final _correspondenceSpacesProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final auth = ref.watch(authStatusProvider);
+
+  if (auth != AuthStatus.authed) {
+    return [];
+  }
+
   final repo = ref.watch(spacesRepositoryProvider);
   return repo.listMySpaces();
 });
@@ -61,12 +68,16 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final spacesAsync = ref.watch(_correspondenceSpacesProvider);
+    final auth = ref.watch(authStatusProvider);
+    final spacesAsync = auth == AuthStatus.authed
+        ? ref.watch(_correspondenceSpacesProvider)
+        : const AsyncValue<List<Map<String, dynamic>>>.loading();
 
     return AuraScaffold(
       title: 'Correspondence',
       body: RefreshIndicator(
         onRefresh: () async {
+          if (ref.read(authStatusProvider) != AuthStatus.authed) return;
           ref.invalidate(_correspondenceSpacesProvider);
           await ref.read(_correspondenceSpacesProvider.future);
         },
@@ -101,7 +112,9 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       FilledButton(
-                        onPressed: () => _showCreateSpaceDialog(context, ref),
+                        onPressed: auth == AuthStatus.authed
+                            ? () => _showCreateSpaceDialog(context, ref)
+                            : null,
                         child: const Text('New space'),
                       ),
                     ],
@@ -127,8 +140,9 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
                           body:
                               'Create your first correspondence space to begin organizing private conversations.',
                           actionLabel: 'Create space',
-                          onAction: () =>
-                              _showCreateSpaceDialog(context, ref),
+                          onAction: auth == AuthStatus.authed
+                              ? () => _showCreateSpaceDialog(context, ref)
+                              : () {},
                         );
                       }
 

@@ -165,7 +165,8 @@ class _ThreadHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = _pickString(thread, const ['title', 'name']);
     final kind = _pickString(thread, const ['kind', 'type']);
-    final archived = thread['archived'] == true;
+    final archived =
+        thread['archived'] == true || thread['archivedAt'] != null;
 
     return AuraCard(
       child: Wrap(
@@ -373,16 +374,24 @@ class _MessageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final body = _pickString(message, const ['body', 'text', 'content']);
-    final author = _pickString(message, const ['authorName', 'senderName', 'userName']);
-    final createdAt =
-        _pickString(message, const ['createdAt', 'sentAt', 'timestamp']);
+    final author = _pickString(
+      message,
+      const ['authorName', 'senderName', 'userName'],
+    );
+    final createdAt = _pickString(
+      message,
+      const ['createdAt', 'sentAt', 'timestamp'],
+    );
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (author.isNotEmpty) ...[
-            Text(author, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              author,
+              style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: AuraSpace.s6),
           ],
           Text(
@@ -395,7 +404,8 @@ class _MessageTile extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (createdAt.isNotEmpty) _MetaChip(label: 'Sent', value: createdAt),
+              if (createdAt.isNotEmpty)
+                _MetaChip(label: 'Sent', value: createdAt),
               TextButton(
                 onPressed: onEdit,
                 child: const Text('Edit'),

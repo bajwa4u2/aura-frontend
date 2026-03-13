@@ -26,11 +26,7 @@ class MessagesRepository {
       },
     );
 
-    final payload = _unwrapData(res.data);
-    final items = _readListFromCommonKeys(
-      payload,
-      keys: const ['items', 'messages', 'results', 'data'],
-    );
+    final items = _extractList(res.data);
 
     return items.map(_asMap).toList();
   }
@@ -45,8 +41,12 @@ class MessagesRepository {
       if (attachments.isNotEmpty) 'attachments': attachments,
     };
 
-    final res = await _dio.post('/threads/$threadId/messages', data: payload);
-    return _unwrapData(res.data);
+    final res = await _dio.post(
+      '/threads/$threadId/messages',
+      data: payload,
+    );
+
+    return _unwrapMap(res.data);
   }
 
   Future<Map<String, dynamic>> editMessage({
@@ -57,7 +57,8 @@ class MessagesRepository {
       '/messages/$messageId',
       data: {'body': body.trim()},
     );
-    return _unwrapData(res.data);
+
+    return _unwrapMap(res.data);
   }
 
   Future<void> deleteMessage(String messageId) async {
@@ -65,26 +66,38 @@ class MessagesRepository {
   }
 }
 
-Map<String, dynamic> _unwrapData(dynamic raw) {
-  final root = _asMap(raw);
-  final data = root['data'];
+List<dynamic> _extractList(dynamic raw) {
+  if (raw is List) return raw;
 
-  if (data is Map<String, dynamic>) return data;
-  if (data is Map) return Map<String, dynamic>.from(data);
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
 
-  return root;
-}
+    final data = map['data'];
 
-List<dynamic> _readListFromCommonKeys(
-  Map<String, dynamic> map, {
-  required List<String> keys,
-}) {
-  for (final key in keys) {
-    final value = map[key];
-    if (value is List) return value;
+    if (data is List) return data;
+
+    for (final key in ['items', 'messages', 'results']) {
+      final value = map[key];
+      if (value is List) return value;
+    }
   }
 
   return const [];
+}
+
+Map<String, dynamic> _unwrapMap(dynamic raw) {
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    final data = map['data'];
+
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+
+    return map;
+  }
+
+  return <String, dynamic>{};
 }
 
 Map<String, dynamic> _asMap(dynamic value) {

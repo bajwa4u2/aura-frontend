@@ -17,11 +17,9 @@ class ThreadsRepository {
     required String spaceId,
   }) async {
     final res = await _dio.get('/spaces/$spaceId/threads');
-    final payload = _unwrapData(res.data);
-    final items = _readListFromCommonKeys(
-      payload,
-      keys: const ['items', 'threads', 'results', 'data'],
-    );
+
+    final payload = res.data;
+    final items = _extractList(payload);
 
     return items.map(_asMap).toList();
   }
@@ -43,7 +41,11 @@ class ThreadsRepository {
       if (memberIds.isNotEmpty) 'memberIds': memberIds,
     };
 
-    final res = await _dio.post('/spaces/$spaceId/threads', data: body);
+    final res = await _dio.post(
+      '/spaces/$spaceId/threads',
+      data: body,
+    );
+
     return _unwrapData(res.data);
   }
 
@@ -59,7 +61,11 @@ class ThreadsRepository {
       if (archived != null) 'archived': archived,
     };
 
-    final res = await _dio.patch('/threads/$threadId', data: body);
+    final res = await _dio.patch(
+      '/threads/$threadId',
+      data: body,
+    );
+
     return _unwrapData(res.data);
   }
 
@@ -69,14 +75,37 @@ class ThreadsRepository {
   }
 }
 
+List<dynamic> _extractList(dynamic raw) {
+  if (raw is List) return raw;
+
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    final data = map['data'];
+    if (data is List) return data;
+
+    for (final key in ['items', 'threads', 'results']) {
+      final value = map[key];
+      if (value is List) return value;
+    }
+  }
+
+  return const [];
+}
+
 Map<String, dynamic> _unwrapData(dynamic raw) {
-  final root = _asMap(raw);
-  final data = root['data'];
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
 
-  if (data is Map<String, dynamic>) return data;
-  if (data is Map) return Map<String, dynamic>.from(data);
+    final data = map['data'];
 
-  return root;
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+
+    return map;
+  }
+
+  return <String, dynamic>{};
 }
 
 List<dynamic> _readListFromCommonKeys(

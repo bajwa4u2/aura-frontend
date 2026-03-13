@@ -65,11 +65,13 @@ const String kInstitutionVerificationRoute = '/institution/request-verification'
 const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
+const String kRouterBootRoute = '/_boot';
 
 String _normalizeRedirectDest(String? dest) {
   final trimmed = (dest ?? '').trim();
   if (trimmed.isEmpty || trimmed == '/') return '/home';
   if (!trimmed.startsWith('/')) return '/home';
+  if (trimmed == kRouterBootRoute) return '/home';
   return trimmed;
 }
 
@@ -83,6 +85,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
+
+    if (path == kRouterBootRoute) return true;
 
     if (path == '/mission' ||
         path == '/white-paper' ||
@@ -100,9 +104,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       return true;
     }
 
-    if (path == '/announcements' || path.startsWith('/announcements/')) {
-      return true;
-    }
+    if (path == '/announcements') return true;
+    if (path == '/announcements/create') return false;
+    if (path.startsWith('/announcements/')) return true;
 
     if (path == '/auth') return true;
 
@@ -115,6 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/saved' ||
         path == '/updates' ||
         path == '/create' ||
+        path == '/announcements/create' ||
         path == '/ai/claim-audit' ||
         path == '/me' ||
         path == '/me/edit' ||
@@ -148,10 +153,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     return isPlainAuthPage(path) || isAuthActionPath(path);
   }
 
+  String _bootRedirectFor(String target) {
+    final encoded = Uri.encodeComponent(_normalizeRedirectDest(target));
+    return '$kRouterBootRoute?redirect=$encoded';
+  }
+
   return GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) {
       final path = state.uri.path;
+      final currentLocation = state.uri.toString();
       final redirectDest =
           _normalizeRedirectDest(state.uri.queryParameters['redirect']);
 
@@ -160,8 +171,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
 
       final isBootstrapping = bootstrap.isLoading;
-      if (isBootstrapping) return null;
-
       final isLoggedIn = authStatus == AuthStatus.authed;
       final isPublic = isPublicPath(path);
       final isMember = isMemberPath(path);
@@ -175,10 +184,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => false,
       );
 
+      // Hold protected/member navigation until bootstrap resolves,
+      // so member screens do not mount and fire protected API calls early.
+      if (isBootstrapping) {
+        if (path == kRouterBootRoute) return null;
+
+        if (isMember || isPlainAuth) {
+          return _bootRedirectFor(currentLocation);
+        }
+
+        return null;
+      }
+
+      // Leave the temporary boot route as soon as bootstrap finishes.
+      if (path == kRouterBootRoute) {
+        return redirectDest;
+      }
+
+      // Prevent "create" from being interpreted as an announcement slug.
+      if (path == '/announcements/create') {
+        final encoded = Uri.encodeComponent('/create');
+
+        if (!isLoggedIn) {
+          return '/login?redirect=$encoded';
+        }
+
+        if (!isVerified) {
+          return '/verify-pending?redirect=$encoded';
+        }
+
+        return '/create';
+      }
+
       if (!isLoggedIn) {
         if (isMember) {
-          final intended = state.uri.toString();
-          final encoded = Uri.encodeComponent(_normalizeRedirectDest(intended));
+          final encoded =
+              Uri.encodeComponent(_normalizeRedirectDest(currentLocation));
           return '/login?redirect=$encoded';
         }
 
@@ -211,6 +252,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: kRouterBootRoute,
+        builder: (_, __) => const _RouterBootScreen(),
+      ),
+
       GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/auth', redirect: (_, __) => '/login'),
 
@@ -221,9 +267,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
-      GoRoute(path: '/account-deletion', builder: (_, __) => const AccountDeletionScreen()),
+      GoRoute(
+        path: '/account-deletion',
+        builder: (_, __) => const AccountDeletionScreen(),
+      ),
       GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
-      GoRoute(path: '/institutions', builder: (_, __) => const InstitutionsHubScreen()),
+      GoRoute(
+        path: '/institutions',
+        builder: (_, __) => const InstitutionsHubScreen(),
+      ),
 
       GoRoute(
         path: '/institutions/:slug',
@@ -248,6 +300,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/announcements',
         builder: (_, __) => const AnnouncementsScreen(),
+      ),
+
+      GoRoute(
+        path: '/announcements/create',
+        redirect: (_, __) => '/create',
       ),
 
       GoRoute(
@@ -415,6 +472,23 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _RouterBootScreen extends StatelessWidget {
+  const _RouterBootScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 2.4),
+        ),
+      ),
+    );
+  }
+}
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
