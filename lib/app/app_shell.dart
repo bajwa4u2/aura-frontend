@@ -85,11 +85,9 @@ class AppShell extends StatelessWidget {
                   top: BorderSide(color: AuraSurface.divider),
                 ),
               ),
-              padding: const EdgeInsets.only(
-                left: AuraSpace.s8,
-                right: AuraSpace.s8,
-                top: AuraSpace.s6,
-                bottom: AuraSpace.s6,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s4,
+                vertical: AuraSpace.s6,
               ),
               child: Row(
                 children: [
@@ -166,8 +164,8 @@ class _MemberNavButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
                       color: selected
                           ? AuraSurface.accentSoft

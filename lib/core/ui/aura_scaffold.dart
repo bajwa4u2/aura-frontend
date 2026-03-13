@@ -44,7 +44,7 @@ class AuraScaffold extends ConsumerWidget {
   final bool showHeader;
 
   static const double _defaultMaxWidth = 920;
-  static const double _headerHeight = 64;
+  static const double _headerHeight = 72;
   static const double _logoHeight = 40;
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
 
@@ -188,7 +188,7 @@ class AuraScaffold extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderCenter(BuildContext context, Widget? resolvedLeading) {
+  Widget _buildHeaderCenter(Widget? resolvedLeading) {
     final titleWidget = _buildHeaderTitle();
     final hasTitle = titleWidget is! SizedBox;
     final hasLeading = resolvedLeading != null;
@@ -310,7 +310,7 @@ class AuraScaffold extends ConsumerWidget {
                     _buildLogo(context, authStatus),
                     const SizedBox(width: AuraSpace.s12),
                     Expanded(
-                      child: _buildHeaderCenter(context, resolvedLeading),
+                      child: _buildHeaderCenter(resolvedLeading),
                     ),
                     const SizedBox(width: AuraSpace.s12),
                     _buildActions(context),
