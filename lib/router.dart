@@ -150,6 +150,66 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     refreshListenable: refresh,
+    redirect: (context, state) {
+      final path = state.uri.path;
+      final redirectDest =
+          _normalizeRedirectDest(state.uri.queryParameters['redirect']);
+
+      final bootstrap = ref.read(sessionBootstrapProvider);
+      final authStatus = ref.read(authStatusProvider);
+      final emailVerifiedAsync = ref.read(emailVerifiedProvider);
+
+      final isBootstrapping = bootstrap.isLoading;
+      if (isBootstrapping) return null;
+
+      final isLoggedIn = authStatus == AuthStatus.authenticated;
+      final isPublic = isPublicPath(path);
+      final isMember = isMemberPath(path);
+      final isPlainAuth = isPlainAuthPage(path);
+      final isAuthAction = isAuthActionPath(path);
+      final isVerifyPending = path == '/verify-pending';
+      final isVerifyEmail = path == '/verify-email';
+
+      final bool isVerified = emailVerifiedAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => false,
+      );
+
+      if (!isLoggedIn) {
+        if (isMember) {
+          final intended = state.uri.toString();
+          final encoded = Uri.encodeComponent(_normalizeRedirectDest(intended));
+          return '/login?redirect=$encoded';
+        }
+
+        return null;
+      }
+
+      if (isVerifyEmail) {
+        return null;
+      }
+
+      if (!isVerified) {
+        if (isVerifyPending) return null;
+
+        if (isMember || isPlainAuth) {
+          final encoded = Uri.encodeComponent(redirectDest);
+          return '/verify-pending?redirect=$encoded';
+        }
+
+        if (isPublic || isAuthAction) {
+          return null;
+        }
+      }
+
+      if (isVerified) {
+        if (isPlainAuth || isVerifyPending) {
+          return redirectDest;
+        }
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
       GoRoute(path: '/auth', redirect: (_, __) => '/login'),
@@ -314,6 +374,41 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => SupportFallbackScreen(
               handle: state.pathParameters['handle'] ?? '',
             ),
+          ),
+
+          GoRoute(
+            path: kEnterInstitutionRoute,
+            builder: (_, __) => const InstitutionSignInScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionDashboardRoute,
+            builder: (_, __) => const InstitutionDashboardScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionDomainsRoute,
+            builder: (_, __) => const InstitutionDomainsScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionProfileRoute,
+            builder: (_, __) => const InstitutionProfileScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionVerificationRoute,
+            builder: (_, __) => const InstitutionRequestVerificationScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionAnnouncementsRoute,
+            builder: (_, __) => const InstitutionAnnouncementsScreen(),
+          ),
+
+          GoRoute(
+            path: kInstitutionCorrespondenceRoute,
+            builder: (_, __) => const InstitutionCorrespondenceScreen(),
           ),
         ],
       ),
