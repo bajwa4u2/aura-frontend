@@ -18,7 +18,6 @@ final dioProvider = Provider<Dio>((ref) {
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 30),
       headers: const {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
       validateStatus: (code) => code != null && code >= 200 && code < 300,
@@ -26,6 +25,48 @@ final dioProvider = Provider<Dio>((ref) {
   );
 
   configureDioForPlatform(dio);
+
+  const _bodyMethods = {'POST', 'PUT', 'PATCH'};
+
+  bool _hasMeaningfulBody(dynamic data) {
+    if (data == null) return false;
+    if (data is String) return data.trim().isNotEmpty;
+    if (data is List) return data.isNotEmpty;
+    if (data is Map) return data.isNotEmpty;
+    if (data is FormData) return true;
+    return true;
+  }
+
+  void _normalizeContentTypeForRequest(RequestOptions options) {
+    final method = options.method.toUpperCase();
+    final hasBody = _hasMeaningfulBody(options.data);
+    final hasExplicitContentType =
+        options.contentType != null ||
+        options.headers.keys.any(
+          (key) => key.toString().toLowerCase() == 'content-type',
+        );
+
+    final isMultipart = options.data is FormData;
+
+    if (isMultipart) {
+      options.headers.remove('Content-Type');
+      options.contentType = null;
+      return;
+    }
+
+    if (_bodyMethods.contains(method) && hasBody) {
+      if (!hasExplicitContentType) {
+        options.contentType = Headers.jsonContentType;
+        options.headers['Content-Type'] = Headers.jsonContentType;
+      }
+      return;
+    }
+
+    options.headers.remove('Content-Type');
+    if (!hasExplicitContentType || !hasBody) {
+      options.contentType = null;
+    }
+  }
 
   Map<String, dynamic> _asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
@@ -280,6 +321,8 @@ final dioProvider = Provider<Dio>((ref) {
         try {
           await store.waitUntilLoaded();
         } catch (_) {}
+
+        _normalizeContentTypeForRequest(options);
 
         try {
           await ensureFreshWebAuthIfNeeded(options);
