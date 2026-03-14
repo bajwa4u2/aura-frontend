@@ -25,7 +25,7 @@ class UpdatesScreen extends ConsumerWidget {
     }
 
     return AuraScaffold(
-      
+      title: 'Updates',
       actions: [
         _UpdatesMenu(),
       ],

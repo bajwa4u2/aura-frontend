@@ -249,7 +249,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     if (!isAuthed) {
       return AuraScaffold(
-        
+        title: 'Search',
         actions: [
           TextButton(
             onPressed: () => context.go('/login?redirect=%2Fsearch'),
@@ -316,7 +316,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final results = ref.watch(searchResultProvider);
 
     return AuraScaffold(
-      
+      title: 'Search',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,

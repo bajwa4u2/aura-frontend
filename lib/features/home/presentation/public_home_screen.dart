@@ -38,8 +38,8 @@ class PublicHomeScreen extends ConsumerWidget {
               const _PublicEntryBand(),
               const SizedBox(height: AuraSpace.s24),
               const _SectionHeader(
-                
-                sub
+                title: 'Public record',
+                subtitle: 'Approved public posts.',
               ),
               const SizedBox(height: AuraSpace.s12),
               feedAsync.when(
@@ -209,7 +209,7 @@ class _AccessPanel extends StatelessWidget {
           _AccessPanelHeader(),
           SizedBox(height: AuraSpace.s14),
           _CompactAccessCard(
-            
+            title: 'Members',
             subtitle:
                 'Create a personal account or sign in to continue your work, correspondence, and activity.',
             primaryLabel: 'Register',
@@ -220,7 +220,7 @@ class _AccessPanel extends StatelessWidget {
           ),
           SizedBox(height: AuraSpace.s12),
           _CompactAccessCard(
-            
+            title: 'Institutions',
             subtitle:
                 'Sign in to an existing institutional presence or begin the institutional account flow.',
             primaryLabel: 'Login',

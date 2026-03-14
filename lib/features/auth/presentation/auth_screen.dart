@@ -173,7 +173,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      
+      title: 'Login',
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

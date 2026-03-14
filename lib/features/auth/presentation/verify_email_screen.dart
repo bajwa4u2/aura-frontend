@@ -161,7 +161,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     final email = (widget.email ?? '').trim();
 
     return AuraScaffold(
-      
+      title: 'Verify email',
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

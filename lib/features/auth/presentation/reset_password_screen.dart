@@ -216,7 +216,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         : widget.email!.trim();
 
     return AuraScaffold(
-      
+      title: 'Reset password',
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

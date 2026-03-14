@@ -44,7 +44,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
     final async = ref.watch(announcementBySlugProvider(slug));
 
     return AuraScaffold(
-      
+      title: 'Announcement',
       showHomeAction: true,
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -68,7 +68,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
     return meAsync.when(
       loading: () => AuraScaffold(
-        
+        title: 'Announcements',
         showHomeAction: true,
         body: const Center(child: CircularProgressIndicator()),
       ),
@@ -89,7 +89,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
         return institutionAsync.when(
           loading: () => AuraScaffold(
-            
+            title: 'Announcements',
             showHomeAction: true,
             body: const Center(child: CircularProgressIndicator()),
           ),
@@ -138,7 +138,7 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      
+      title: 'Announcements',
       showHomeAction: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -149,7 +149,7 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
         ),
         children: [
           const _IntroCard(
-            
+            title: 'Announcements',
             body:
                 'This is the public announcements surface for official platform notices.',
           ),
@@ -175,7 +175,7 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      
+      title: 'Announcements',
       showHomeAction: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -186,7 +186,7 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
         ),
         children: [
           const _IntroCard(
-            
+            title: 'Admin Announcement Workspace',
             body:
                 'This space carries platform-level announcements. It belongs to app administration, not institution accounts.',
           ),
@@ -205,19 +205,19 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
                 const _ToolGrid(
                   children: [
                     _ToolTile(
-                      
+                      title: 'Platform announcement publishing',
                       detail:
                           'Use the admin publishing flow for platform-wide notices only.',
                       status: 'Admin-only workflow',
                     ),
                     _ToolTile(
-                      
+                      title: 'Pinned platform notices',
                       detail:
                           'Pinned announcements remain part of the platform-wide public announcements layer.',
                       status: 'Active structure',
                     ),
                     _ToolTile(
-                      
+                      title: 'Institution announcement paths',
                       detail:
                           'Institution-specific announcements should not be published through the platform admin flow.',
                       status: 'Separate institution workflow',
@@ -298,7 +298,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
     final standing = _standingLabel();
 
     return AuraScaffold(
-      
+      title: 'Announcements',
       showHomeAction: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -349,25 +349,25 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
                 const _ToolGrid(
                   children: [
                     _ToolTile(
-                      
+                      title: 'Institution notices',
                       detail:
                           'Institution-owned announcements should appear here under institution identity.',
                       status: 'Placeholder',
                     ),
                     _ToolTile(
-                      
+                      title: 'Domain-linked publishing',
                       detail:
                           'Institution publishing should be tied to verified domain and institutional standing.',
                       status: 'Placeholder',
                     ),
                     _ToolTile(
-                      
+                      title: 'Pinned institution notices',
                       detail:
                           'Pinned notices should be separate from pinned platform announcements.',
                       status: 'Placeholder',
                     ),
                     _ToolTile(
-                      
+                      title: 'Institution announcement archive',
                       detail:
                           'A record of institution-originated notices should live here once institution publishing paths exist.',
                       status: 'Placeholder',

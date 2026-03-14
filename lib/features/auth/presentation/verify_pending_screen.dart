@@ -184,7 +184,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     }
 
     return AuraScaffold(
-      
+      title: 'Verify your email',
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

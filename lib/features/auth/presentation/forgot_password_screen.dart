@@ -111,7 +111,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final redirect = _safeRedirect(widget.redirectTo);
 
     return AuraScaffold(
-      
+      title: 'Forgot password',
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

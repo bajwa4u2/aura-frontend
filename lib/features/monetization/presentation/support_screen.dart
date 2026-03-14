@@ -13,7 +13,7 @@ class SupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      
+      title: 'Support',
       body: ListView(
         padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
         children: [
@@ -34,24 +34,24 @@ class SupportScreen extends StatelessWidget {
           SizedBox(height: AuraSpace.s14),
           AuraCard(
             child: const _Tier(
-              
-              sub
+              title: 'Patron',
+              subtitle: 'Quiet monthly support',
               amount: '\$5 / month',
             ),
           ),
           SizedBox(height: AuraSpace.s12),
           AuraCard(
             child: const _Tier(
-              
-              sub
+              title: 'Sustainer',
+              subtitle: 'Carry the infrastructure',
               amount: '\$20 / month',
             ),
           ),
           SizedBox(height: AuraSpace.s12),
           AuraCard(
             child: const _Tier(
-              
-              sub
+              title: 'Institution',
+              subtitle: 'Ethics + systems partnership',
               amount: 'Request access',
             ),
           ),

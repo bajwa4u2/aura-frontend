@@ -12,7 +12,7 @@ class CreateHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      
+      title: 'Create',
       body: Padding(
         padding: const EdgeInsets.all(AuraSpace.md),
         child: GridView.count(
@@ -23,7 +23,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// POST
             _CreateTile(
-              
+              title: 'Post',
               icon: Icons.edit_outlined,
               onTap: () {
                 context.go('/compose');
@@ -32,7 +32,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// MEDIA
             _CreateTile(
-              
+              title: 'Media',
               icon: Icons.image_outlined,
               onTap: () {
                 context.go('/compose');
@@ -41,7 +41,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// CLAIM AUDIT
             _CreateTile(
-              
+              title: 'Claim Audit',
               icon: Icons.fact_check_outlined,
               onTap: () {
                 context.go('/ai/claim-audit');
@@ -50,7 +50,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// ANNOUNCEMENT
             _CreateTile(
-              
+              title: 'Announcement',
               icon: Icons.campaign_outlined,
               onTap: () {
                 context.go('/announcements/create');
@@ -59,7 +59,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// NEW CONVERSATION
             _CreateTile(
-              
+              title: 'Conversation',
               icon: Icons.forum_outlined,
               onTap: () {
                 context.go('/me/correspondence/create/conversation');
@@ -68,7 +68,7 @@ class CreateHubScreen extends StatelessWidget {
 
             /// SHARED SPACE
             _CreateTile(
-              
+              title: 'Shared Space',
               icon: Icons.groups_outlined,
               onTap: () {
                 context.go('/me/correspondence/create/space');

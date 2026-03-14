@@ -38,7 +38,7 @@ class SavedScreen extends ConsumerWidget {
     final savedAsync = ref.watch(savedPostsProvider);
 
     return AuraScaffold(
-      
+      title: 'Saved',
       actions: [
         IconButton(
           tooltip: 'Refresh',

@@ -61,7 +61,7 @@ class SpaceScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 4,
       child: AuraScaffold(
-        
+        title: 'Space',
         body: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(_spaceDetailProvider(spaceId));
@@ -82,7 +82,7 @@ class SpaceScreen extends ConsumerWidget {
                 ),
                 error: (error, _) => AuraCard(
                   child: _ErrorBlock(
-                    
+                    title: 'Could not load space',
                     body: '$error',
                     onRetry: () => ref.invalidate(_spaceDetailProvider(spaceId)),
                   ),
@@ -192,7 +192,7 @@ class _ThreadsTab extends StatelessWidget {
           ),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
-              
+              title: 'Could not load threads',
               body: '$error',
               onRetry: () {},
             ),
@@ -257,7 +257,7 @@ class _MembersTab extends StatelessWidget {
           ),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
-              
+              title: 'Could not load members',
               body: '$error',
               onRetry: () {},
             ),
@@ -326,7 +326,7 @@ class _InvitesTab extends StatelessWidget {
           ),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
-              
+              title: 'Could not load invites',
               body: '$error',
               onRetry: () {},
             ),
@@ -398,7 +398,7 @@ class _MediaTab extends StatelessWidget {
           ),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
-              
+              title: 'Could not load media',
               body: '$error',
               onRetry: () {},
             ),
@@ -409,28 +409,28 @@ class _MediaTab extends StatelessWidget {
             return Column(
               children: [
                 _MediaGroupCard(
-                  
+                  title: 'Images',
                   icon: Icons.image_outlined,
                   count: summary.images,
                   emptyText: 'No images surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
-                  
+                  title: 'Documents',
                   icon: Icons.description_outlined,
                   count: summary.documents,
                   emptyText: 'No documents surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
-                  
+                  title: 'Audio',
                   icon: Icons.graphic_eq_outlined,
                   count: summary.audio,
                   emptyText: 'No audio surfaced in this space yet.',
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 _MediaGroupCard(
-                  
+                  title: 'Files',
                   icon: Icons.attach_file_outlined,
                   count: summary.files,
                   emptyText: 'No other files surfaced in this space yet.',

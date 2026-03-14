@@ -26,31 +26,31 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
       id: 'u_1',
       name: 'Nimra',
       handle: '@nimra',
-      sub
+      subtitle: 'Follower',
     ),
     _InviteCandidate(
       id: 'u_2',
       name: 'Hamza',
       handle: '@hamza',
-      sub
+      subtitle: 'Follower',
     ),
     _InviteCandidate(
       id: 'u_3',
       name: 'Ali Raza',
       handle: '@aliraza',
-      sub
+      subtitle: 'Follower',
     ),
     _InviteCandidate(
       id: 'u_4',
       name: 'Sara Khan',
       handle: '@sarakhan',
-      sub
+      subtitle: 'Follower',
     ),
     _InviteCandidate(
       id: 'u_5',
       name: 'Ayesha',
       handle: '@ayesha',
-      sub
+      subtitle: 'Follower',
     ),
   ];
 
@@ -120,7 +120,7 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
     final filteredCandidates = _filteredCandidates;
 
     return AuraScaffold(
-      
+      title: 'Invite member',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
