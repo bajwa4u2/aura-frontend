@@ -1648,7 +1648,7 @@ class _ActionRow extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
+          );
         },
       );
     }
