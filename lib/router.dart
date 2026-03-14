@@ -137,6 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/compose' ||
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
+        path.startsWith('/author/') ||
         path.startsWith('/support/');
   }
 
@@ -190,7 +191,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => false,
       );
 
-      // 1) During bootstrap, hold member and guest-only routes behind /_boot.
       if (isBootstrapping) {
         if (isBootPath(path)) return null;
 
@@ -201,7 +201,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // 2) Leaving /_boot must re-check auth and verification before resuming.
       if (isBootPath(path)) {
         if (!isLoggedIn) {
           final encoded = Uri.encodeComponent(redirectDest);
@@ -216,7 +215,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return redirectDest;
       }
 
-      // 3) Logged-out users can stay on public/auth-action pages, but not member pages.
       if (!isLoggedIn) {
         if (requiresAuth(path)) {
           final encoded =
@@ -227,13 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // 4) /verify-email must remain reachable for logged-in users.
       if (isVerifyEmail) {
         return null;
       }
 
-      // 5) Logged-in but unverified users are held at verify-pending for
-      //    verified-only pages and guest-only pages.
       if (!isVerified) {
         if (isVerifyPending) return null;
 
@@ -248,7 +243,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // 6) Verified users should not sit on login/register/verify-pending.
       if (isVerified) {
         if (isGuestOnly(path) || isVerifyPending) {
           return redirectDest;
@@ -282,37 +276,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/institutions',
         builder: (_, __) => const InstitutionsHubScreen(),
       ),
-
       GoRoute(
         path: '/institutions/:slug',
         builder: (context, state) => InstitutionDetailScreen(
           slug: state.pathParameters['slug'] ?? '',
         ),
       ),
-
       GoRoute(
         path: '/institution/sign-in',
         builder: (_, __) => const InstitutionSignInScreen(),
       ),
-
       GoRoute(
         path: kInstitutionCreateRoute,
         builder: (_, __) => const InstitutionRequestVerificationScreen(),
       ),
-
       GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
       GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
-
       GoRoute(
         path: '/announcements',
         builder: (_, __) => const AnnouncementsScreen(),
       ),
-
       GoRoute(
         path: '/announcements/create',
         redirect: (_, __) => '/create',
       ),
-
       GoRoute(
         path: '/announcements/:slug',
         builder: (context, state) => AnnouncementDetailScreen(
@@ -327,19 +314,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
-
       GoRoute(
         path: '/register',
         builder: (context, state) => RegisterScreen(
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
-
       GoRoute(
         path: '/forgot-password',
         builder: (_, __) => const ForgotPasswordScreen(),
       ),
-
       GoRoute(
         path: '/reset-password',
         builder: (context, state) => ResetPasswordScreen(
@@ -348,7 +332,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
-
       GoRoute(
         path: '/verify-email',
         builder: (context, state) => VerifyEmailScreen(
@@ -357,7 +340,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirectTo: state.uri.queryParameters['redirect'],
         ),
       ),
-
       GoRoute(
         path: '/verify-pending',
         builder: (context, state) => VerifyPendingScreen(
@@ -371,26 +353,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
-
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
-
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
           GoRoute(path: '/activity', redirect: (_, __) => '/updates'),
-
           GoRoute(
             path: '/ai/claim-audit',
             builder: (_, __) => const ClaimAuditScreen(),
           ),
-
           GoRoute(path: '/me', builder: (_, __) => const MeScreen()),
-
           GoRoute(
             path: '/me/edit',
             builder: (_, __) => const EditProfileScreen(),
           ),
-
           GoRoute(
             path: '/me/correspondence',
             builder: (_, __) => const CorrespondenceHubScreen(),
@@ -419,19 +395,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-
           GoRoute(
             path: '/compose',
             builder: (context, state) => ComposeScreen(
               replyToPostId: state.uri.queryParameters['replyTo'],
             ),
           ),
-
           GoRoute(
             path: '/posts/:id',
             builder: (context, state) => PostDetailScreen(
               postId: state.pathParameters['id'] ?? '',
             ),
+          ),
+
+          // Backward-compatible alias for older profile links
+          GoRoute(
+            path: '/author/:handle',
+            redirect: (context, state) {
+              final handle = state.pathParameters['handle'] ?? '';
+              return '/u/$handle';
+            },
           ),
 
           GoRoute(
@@ -440,44 +423,36 @@ final routerProvider = Provider<GoRouter>((ref) {
               handle: state.pathParameters['handle'] ?? '',
             ),
           ),
-
           GoRoute(
             path: '/support/:handle',
             builder: (context, state) => SupportFallbackScreen(
               handle: state.pathParameters['handle'] ?? '',
             ),
           ),
-
           GoRoute(
             path: kEnterInstitutionRoute,
             builder: (_, __) => const InstitutionSignInScreen(),
           ),
-
           GoRoute(
             path: kInstitutionDashboardRoute,
             builder: (_, __) => const InstitutionDashboardScreen(),
           ),
-
           GoRoute(
             path: kInstitutionDomainsRoute,
             builder: (_, __) => const InstitutionDomainsScreen(),
           ),
-
           GoRoute(
             path: kInstitutionProfileRoute,
             builder: (_, __) => const InstitutionProfileScreen(),
           ),
-
           GoRoute(
             path: kInstitutionVerificationRoute,
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
-
           GoRoute(
             path: kInstitutionAnnouncementsRoute,
             builder: (_, __) => const InstitutionAnnouncementsScreen(),
           ),
-
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
             builder: (_, __) => const InstitutionCorrespondenceScreen(),

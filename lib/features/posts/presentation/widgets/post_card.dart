@@ -514,7 +514,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         break;
       case 'open_profile':
         if ((handle ?? '').trim().isNotEmpty) {
-          context.push('/author/${handle!.trim()}');
+          context.push('/u/${handle!.trim()}');
         }
         break;
       case 'copy_link':
@@ -672,7 +672,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   void _openProfile(BuildContext context, String handle) {
     final h = handle.trim();
     if (h.isEmpty) return;
-    context.push('/author/$h');
+    context.push('/u/$h');
   }
 
   @override
