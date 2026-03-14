@@ -1,3 +1,17 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/auth/auth_providers.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/profile_header.dart';
+import '../../feed/presentation/widgets/post_card.dart';
+import '../data/profile_repository.dart';
+import '../providers.dart';
+
 class AuthorProfileScreen extends ConsumerWidget {
   const AuthorProfileScreen({
     super.key,
@@ -49,10 +63,10 @@ class AuthorProfileScreen extends ConsumerWidget {
 
               final isSelf = isAuthed
                   ? (myHandleAsync?.maybeWhen(
-                        data: (h) => h == handle,
-                        orElse: () => false,
-                      ) ??
-                      false)
+                            data: (h) => h == handle,
+                            orElse: () => false,
+                          ) ??
+                          false)
                   : false;
 
               final followersCount = followersAsync.maybeWhen(
@@ -65,103 +79,63 @@ class AuthorProfileScreen extends ConsumerWidget {
                 orElse: () => u.followingCount,
               );
 
-              return AuraCard(
-                padding: const EdgeInsets.all(AuraSpace.s20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: const Color(0x332E2A26),
-                          backgroundImage:
-                              avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                          child: avatar.isEmpty
-                              ? Text(name[0].toUpperCase())
-                              : null,
-                        ),
-                        const SizedBox(width: AuraSpace.s14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(name, style: AuraText.title),
-                              const SizedBox(height: AuraSpace.s4),
-                              Text('@$handle', style: AuraText.muted),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+              return Consumer(
+                builder: (context, ref, _) {
+                  List<ProfileHeaderAction> actions = [];
 
-                    if (bio.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Text(bio, style: AuraText.body),
-                    ],
+                  if (!isAuthed) {
+                    actions = const [
+                      ProfileHeaderAction(
+                        label: 'Login to follow',
+                        onTap: null,
+                        primary: true,
+                        icon: Icons.lock_outline,
+                      ),
+                    ];
+                  } else if (!isSelf) {
+                    final stateAsync = ref.watch(followStateProvider(handle));
 
-                    const SizedBox(height: AuraSpace.s16),
+                    return stateAsync.when(
+                      data: (detail) {
+                        final repo = ref.read(profileRepositoryProvider);
+                        final trimmed = detail.state.trim();
 
-                    Wrap(
-                      spacing: AuraSpace.s16,
-                      children: [
-                        InkWell(
-                          onTap: () =>
-                              context.push('/u/$handle/followers'),
-                          child: Text(
-                            '$followersCount followers',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
+                        final label = switch (trimmed) {
+                          'following' => 'Following',
+                          'outgoing_pending' => 'Requested',
+                          _ => 'Follow',
+                        };
+
+                        final canTap =
+                            trimmed == 'none' || trimmed == 'outgoing_pending';
+
+                        return ProfileHeader(
+                          displayName: name,
+                          handle: handle,
+                          bio: bio,
+                          avatarUrl: avatar,
+                          stats: [
+                            ProfileHeaderStat(
+                              label: 'Followers',
+                              value: '$followersCount',
+                              onTap: () => context.push('/u/$handle/followers'),
                             ),
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () =>
-                              context.push('/u/$handle/following'),
-                          child: Text(
-                            '$followingCount following',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
+                            ProfileHeaderStat(
+                              label: 'Following',
+                              value: '$followingCount',
+                              onTap: () => context.push('/u/$handle/following'),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: AuraSpace.s16),
-
-                    Consumer(
-                      builder: (context, ref, _) {
-                        if (!isAuthed) {
-                          return const FilledButton(
-                            onPressed: null,
-                            child: Text('Login to follow'),
-                          );
-                        }
-
-                        if (isSelf) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final stateAsync =
-                            ref.watch(followStateProvider(handle));
-
-                        return stateAsync.when(
-                          data: (detail) {
-                            final repo = ref.read(profileRepositoryProvider);
-                            final trimmed = detail.state.trim();
-
-                            final label = switch (trimmed) {
-                              'following' => 'Following',
-                              'outgoing_pending' => 'Requested',
-                              _ => 'Follow',
-                            };
-
-                            final canTap =
-                                trimmed == 'none' || trimmed == 'outgoing_pending';
-
-                            return FilledButton(
-                              onPressed: !canTap
+                          ],
+                          actions: [
+                            ProfileHeaderAction(
+                              label: label,
+                              primary: true,
+                              icon: trimmed == 'following'
+                                  ? Icons.check
+                                  : trimmed == 'outgoing_pending'
+                                      ? Icons.schedule
+                                      : Icons.person_add_alt_1,
+                              onTap: !canTap
                                   ? null
                                   : () async {
                                       try {
@@ -187,23 +161,85 @@ class AuthorProfileScreen extends ConsumerWidget {
                                         );
                                       }
                                     },
-                              child: Text(label),
-                            );
-                          },
-                          loading: () => const FilledButton(
-                            onPressed: null,
-                            child: Text('…'),
-                          ),
-                          error: (_, __) => FilledButton(
-                            onPressed: () =>
-                                ref.invalidate(followStateProvider(handle)),
-                            child: const Text('Follow'),
-                          ),
+                            ),
+                          ],
                         );
                       },
-                    ),
-                  ],
-                ),
+                      loading: () => ProfileHeader(
+                        displayName: name,
+                        handle: handle,
+                        bio: bio,
+                        avatarUrl: avatar,
+                        stats: [
+                          ProfileHeaderStat(
+                            label: 'Followers',
+                            value: '$followersCount',
+                            onTap: () => context.push('/u/$handle/followers'),
+                          ),
+                          ProfileHeaderStat(
+                            label: 'Following',
+                            value: '$followingCount',
+                            onTap: () => context.push('/u/$handle/following'),
+                          ),
+                        ],
+                        actions: const [
+                          ProfileHeaderAction(
+                            label: '…',
+                            onTap: null,
+                            primary: true,
+                          ),
+                        ],
+                      ),
+                      error: (_, __) => ProfileHeader(
+                        displayName: name,
+                        handle: handle,
+                        bio: bio,
+                        avatarUrl: avatar,
+                        stats: [
+                          ProfileHeaderStat(
+                            label: 'Followers',
+                            value: '$followersCount',
+                            onTap: () => context.push('/u/$handle/followers'),
+                          ),
+                          ProfileHeaderStat(
+                            label: 'Following',
+                            value: '$followingCount',
+                            onTap: () => context.push('/u/$handle/following'),
+                          ),
+                        ],
+                        actions: [
+                          ProfileHeaderAction(
+                            label: 'Follow',
+                            primary: true,
+                            icon: Icons.person_add_alt_1,
+                            onTap: () =>
+                                ref.invalidate(followStateProvider(handle)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ProfileHeader(
+                    displayName: name,
+                    handle: handle,
+                    bio: bio,
+                    avatarUrl: avatar,
+                    stats: [
+                      ProfileHeaderStat(
+                        label: 'Followers',
+                        value: '$followersCount',
+                        onTap: () => context.push('/u/$handle/followers'),
+                      ),
+                      ProfileHeaderStat(
+                        label: 'Following',
+                        value: '$followingCount',
+                        onTap: () => context.push('/u/$handle/following'),
+                      ),
+                    ],
+                    actions: actions,
+                  );
+                },
               );
             },
             loading: () => const Padding(
@@ -214,13 +250,9 @@ class AuthorProfileScreen extends ConsumerWidget {
               child: Text('Could not load profile: $e'),
             ),
           ),
-
           const SizedBox(height: AuraSpace.s18),
-
           Text('Work', style: AuraText.title),
-
           const SizedBox(height: AuraSpace.s10),
-
           postsAsync.when(
             data: (items) {
               if (items.isEmpty) {
@@ -233,8 +265,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                 children: items
                     .map(
                       (p) => Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: AuraSpace.s10),
+                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
                         child: PostCard(post: p),
                       ),
                     )

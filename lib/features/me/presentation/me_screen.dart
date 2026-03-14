@@ -12,6 +12,7 @@ import '../../../core/ui/aura_card.dart' as ui;
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/profile_header.dart';
 import 'edit_profile_screen.dart';
 
 const String _adminUserIds =
@@ -121,7 +122,8 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return <String, dynamic>{};
 });
 
-final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _mePostsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts?limit=12');
   final raw = res.data;
@@ -130,7 +132,8 @@ final _mePostsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
   return <Map<String, dynamic>>[];
 });
 
-final _meSavedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _meSavedProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/saves/me', queryParameters: {'limit': 12});
   final raw = res.data;
@@ -347,8 +350,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: audience,
-                              decoration:
-                                  const InputDecoration(labelText: 'Audience'),
+                              decoration: const InputDecoration(
+                                labelText: 'Audience',
+                              ),
                               items: const [
                                 DropdownMenuItem(
                                   value: 'PUBLIC',
@@ -371,8 +375,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: kind,
-                              decoration:
-                                  const InputDecoration(labelText: 'Kind'),
+                              decoration: const InputDecoration(
+                                labelText: 'Kind',
+                              ),
                               items: const [
                                 DropdownMenuItem(
                                   value: 'GENERAL',
@@ -400,8 +405,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: status,
-                        decoration:
-                            const InputDecoration(labelText: 'Status'),
+                        decoration: const InputDecoration(labelText: 'Status'),
                         items: const [
                           DropdownMenuItem(
                             value: 'PUBLISHED',
@@ -641,28 +645,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _profileActionRow() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        _pillButton(
-          label: 'Edit profile',
-          onTap: _openEditProfile,
-          primary: true,
-        ),
-        _pillButton(
-          label: 'Upload photo',
-          onTap: _pickAndUploadPhoto,
-        ),
-        _pillButton(
-          label: _busyLogout ? 'Signing out…' : 'Sign out',
-          onTap: _busyLogout ? null : _logout,
-        ),
-      ],
-    );
-  }
-
   Widget _groupButton({
     required String title,
     String? trailing,
@@ -720,9 +702,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Widget _buttonGrid(List<Widget> children) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : 900.0;
+        final maxWidth =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 900.0;
 
         final columns = maxWidth >= 900
             ? 3
@@ -731,8 +712,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 : 1;
 
         final spacing = AuraSpace.s10;
-        final width =
-            columns == 1 ? maxWidth : (maxWidth - (spacing * (columns - 1))) / columns;
+        final width = columns == 1
+            ? maxWidth
+            : (maxWidth - (spacing * (columns - 1))) / columns;
 
         return Wrap(
           spacing: spacing,
@@ -745,105 +727,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _profileHeader({
-    required String displayName,
-    required String handle,
-    required String bio,
-    required String avatarUrl,
-    required String id,
-    required bool isAdmin,
-  }) {
-    final identityText = handle.isNotEmpty ? '@$handle' : '—';
-
-    return ui.AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 680;
-
-            final avatar = CircleAvatar(
-              radius: 40,
-              backgroundImage:
-                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 32) : null,
-            );
-
-            final info = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayName.isNotEmpty ? displayName : '—',
-                  style: AuraText.title,
-                ),
-                const SizedBox(height: 6),
-                Text(identityText, style: AuraText.small),
-                const SizedBox(height: 12),
-                Text(
-                  bio.trim().isNotEmpty ? bio : '—',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: 16),
-                _profileActionRow(),
-                if (isAdmin || (kDebugMode && id.isNotEmpty)) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (isAdmin)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'Admin',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      if (kDebugMode && id.isNotEmpty)
-                        SelectableText(
-                          'ID: $id',
-                          style: AuraText.small,
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            );
-
-            if (isNarrow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  avatar,
-                  const SizedBox(height: 16),
-                  info,
-                ],
-              );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                avatar,
-                const SizedBox(width: 18),
-                Expanded(child: info),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -851,7 +734,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _connectionsSection(BuildContext context, String handle) {
+  Widget _connectionsSection(
+    BuildContext context,
+    String handle, {
+    required int followersCount,
+    required int followingCount,
+  }) {
     final hasHandle = handle.trim().isNotEmpty;
 
     return Column(
@@ -861,10 +749,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _buttonGrid([
           _groupButton(
             title: 'Followers',
+            trailing: followersCount > 0 ? '$followersCount' : '',
             onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
           ),
           _groupButton(
             title: 'Following',
+            trailing: followingCount > 0 ? '$followingCount' : '',
             onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
           ),
           _groupButton(
@@ -1144,16 +1034,93 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             orElse: () => 0,
           );
 
+          final followersCount = (me['followersCount'] is num)
+              ? (me['followersCount'] as num).toInt()
+              : (profile['followersCount'] is num)
+                  ? (profile['followersCount'] as num).toInt()
+                  : 0;
+
+          final followingCount = (me['followingCount'] is num)
+              ? (me['followingCount'] as num).toInt()
+              : (profile['followingCount'] is num)
+                  ? (profile['followingCount'] as num).toInt()
+                  : 0;
+
           return _cardList([
-            _profileHeader(
+            ProfileHeader(
               displayName: displayName,
               handle: handle,
               bio: bio,
               avatarUrl: avatarUrl,
-              id: id,
-              isAdmin: isAdmin,
+              stats: [
+                ProfileHeaderStat(
+                  label: 'Followers',
+                  value: '$followersCount',
+                  onTap: handle.trim().isNotEmpty
+                      ? () => context.go('/u/$handle/followers')
+                      : null,
+                ),
+                ProfileHeaderStat(
+                  label: 'Following',
+                  value: '$followingCount',
+                  onTap: handle.trim().isNotEmpty
+                      ? () => context.go('/u/$handle/following')
+                      : null,
+                ),
+                ProfileHeaderStat(
+                  label: 'Posts',
+                  value: '$postsCount',
+                ),
+              ],
+              actions: [
+                ProfileHeaderAction(
+                  label: 'Edit profile',
+                  onTap: _openEditProfile,
+                  primary: true,
+                  icon: Icons.edit_outlined,
+                ),
+                ProfileHeaderAction(
+                  label: 'Upload photo',
+                  onTap: _pickAndUploadPhoto,
+                  icon: Icons.image_outlined,
+                ),
+                ProfileHeaderAction(
+                  label: _busyLogout ? 'Signing out…' : 'Sign out',
+                  onTap: _busyLogout ? null : _logout,
+                  icon: Icons.logout,
+                ),
+              ],
+              trailingMeta: [
+                if (isAdmin)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Admin',
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                if (kDebugMode && id.isNotEmpty)
+                  SelectableText(
+                    'ID: $id',
+                    style: AuraText.small,
+                  ),
+              ],
             ),
-            _connectionsSection(context, handle),
+            _connectionsSection(
+              context,
+              handle,
+              followersCount: followersCount,
+              followingCount: followingCount,
+            ),
             _activitySection(
               context,
               hasDraft: hasDraft,
