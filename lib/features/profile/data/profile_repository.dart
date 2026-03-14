@@ -3,6 +3,18 @@ import 'package:dio/dio.dart';
 import '../domain/profile.dart';
 import '../../feed/domain/post.dart';
 
+class FollowStateDetail {
+  const FollowStateDetail({
+    required this.state,
+    this.requestId,
+    this.cooldownDaysRemaining,
+  });
+
+  final String state;
+  final String? requestId;
+  final int? cooldownDaysRemaining;
+}
+
 class ProfileRepository {
   ProfileRepository(this._dio);
   final Dio _dio;
@@ -73,7 +85,9 @@ class ProfileRepository {
       final d = e.response?.data;
       if (d is Map) {
         final err = d['error'];
-        if (err is Map && err['message'] is String) return err['message'] as String;
+        if (err is Map && err['message'] is String) {
+          return err['message'] as String;
+        }
         if (d['message'] is String) return d['message'] as String;
       }
       if (e.message != null) return e.message!;
@@ -136,12 +150,33 @@ class ProfileRepository {
   }
 
   Future<String> getFollowState(String handle) async {
+    final detail = await getFollowStateDetail(handle);
+    return detail.state;
+  }
+
+  Future<FollowStateDetail> getFollowStateDetail(String handle) async {
     try {
       final res = await _dio.get('/users/$handle/follow/state');
       final map = _unwrapMap(res.data);
-      return (map['state'] ?? '').toString().trim();
+
+      final state = (map['state'] ?? '').toString().trim();
+      final requestId = (map['requestId'] ?? '').toString().trim();
+
+      final cooldownRaw = map['cooldownDaysRemaining'];
+      int? cooldownDaysRemaining;
+      if (cooldownRaw is int) {
+        cooldownDaysRemaining = cooldownRaw;
+      } else if (cooldownRaw != null) {
+        cooldownDaysRemaining = int.tryParse(cooldownRaw.toString());
+      }
+
+      return FollowStateDetail(
+        state: state.isEmpty ? 'none' : state,
+        requestId: requestId.isEmpty ? null : requestId,
+        cooldownDaysRemaining: cooldownDaysRemaining,
+      );
     } catch (_) {
-      return 'none';
+      return const FollowStateDetail(state: 'none');
     }
   }
 

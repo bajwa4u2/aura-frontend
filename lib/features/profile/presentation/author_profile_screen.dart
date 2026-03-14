@@ -14,19 +14,66 @@ import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
 
-final authorProvider = FutureProvider.family<Profile, String>((ref, handle) async {
+final authorProvider =
+    FutureProvider.family<Profile, String>((ref, handle) async {
   final repo = ref.watch(profileRepositoryProvider);
   return repo.getUser(handle);
 });
 
-final authorPostsProvider = FutureProvider.family<List<Post>, String>((ref, handle) async {
+final authorPostsProvider =
+    FutureProvider.family<List<Post>, String>((ref, handle) async {
   final repo = ref.watch(profileRepositoryProvider);
   return repo.getUserPosts(handle, limit: 20);
 });
 
-final followStateProvider = FutureProvider.family<String, String>((ref, handle) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getFollowState(handle);
+class FollowStateDetail {
+  const FollowStateDetail({
+    required this.state,
+    this.requestId,
+    this.cooldownDaysRemaining,
+  });
+
+  final String state;
+  final String? requestId;
+  final int? cooldownDaysRemaining;
+}
+
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return <String, dynamic>{};
+}
+
+FollowStateDetail _parseFollowState(dynamic raw) {
+  final root = _asMap(raw);
+  final inner = root['data'] is Map ? _asMap(root['data']) : root;
+
+  final state = (inner['state'] ?? root['state'] ?? 'none').toString().trim();
+  final requestIdRaw = (inner['requestId'] ?? root['requestId'] ?? '')
+      .toString()
+      .trim();
+
+  int? cooldown;
+  final cooldownRaw =
+      inner['cooldownDaysRemaining'] ?? root['cooldownDaysRemaining'];
+  if (cooldownRaw is int) {
+    cooldown = cooldownRaw;
+  } else if (cooldownRaw != null) {
+    cooldown = int.tryParse(cooldownRaw.toString());
+  }
+
+  return FollowStateDetail(
+    state: state.isEmpty ? 'none' : state,
+    requestId: requestIdRaw.isEmpty ? null : requestIdRaw,
+    cooldownDaysRemaining: cooldown,
+  );
+}
+
+final followStateProvider =
+    FutureProvider.family<FollowStateDetail, String>((ref, handle) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/users/$handle/follow/state');
+  return _parseFollowState(res.data);
 });
 
 final followersProvider =
@@ -175,7 +222,8 @@ class AuthorProfileScreen extends ConsumerWidget {
                                 runSpacing: AuraSpace.s8,
                                 children: [
                                   InkWell(
-                                    onTap: () => context.push('/u/$handle/followers'),
+                                    onTap: () =>
+                                        context.push('/u/$handle/followers'),
                                     child: Text(
                                       '$followersCount followers',
                                       style: AuraText.small.copyWith(
@@ -184,7 +232,8 @@ class AuthorProfileScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   InkWell(
-                                    onTap: () => context.push('/u/$handle/following'),
+                                    onTap: () =>
+                                        context.push('/u/$handle/following'),
                                     child: Text(
                                       '$followingCount following',
                                       style: AuraText.small.copyWith(
@@ -228,10 +277,11 @@ class AuthorProfileScreen extends ConsumerWidget {
                         final stateAsync = ref.watch(followStateProvider(handle));
 
                         return stateAsync.when(
-                          data: (state) {
-                            final trimmed = state.trim();
+                          data: (detail) {
+                            final trimmed = detail.state.trim();
                             final repo = ref.read(profileRepositoryProvider);
                             final dio = ref.read(dioProvider);
+                            final requestId = (detail.requestId ?? '').trim();
 
                             if (trimmed == 'incoming_pending') {
                               return Wrap(
@@ -239,33 +289,47 @@ class AuthorProfileScreen extends ConsumerWidget {
                                 runSpacing: AuraSpace.s10,
                                 children: [
                                   FilledButton(
-                                    onPressed: () async {
-                                      try {
-                                        await dio.post('/users/$handle/follow/accept');
-                                        _invalidateProfileState(ref);
-                                        _showMessage(context, 'Follow request accepted');
-                                      } catch (_) {
-                                        _showMessage(
-                                          context,
-                                          'Could not accept follow request',
-                                        );
-                                      }
-                                    },
+                                    onPressed: requestId.isEmpty
+                                        ? null
+                                        : () async {
+                                            try {
+                                              await dio.post(
+                                                '/users/me/follow/requests/$requestId/accept',
+                                              );
+                                              _invalidateProfileState(ref);
+                                              _showMessage(
+                                                context,
+                                                'Follow request accepted',
+                                              );
+                                            } catch (_) {
+                                              _showMessage(
+                                                context,
+                                                'Could not accept follow request',
+                                              );
+                                            }
+                                          },
                                     child: const Text('Accept'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () async {
-                                      try {
-                                        await dio.post('/users/$handle/follow/deny');
-                                        _invalidateProfileState(ref);
-                                        _showMessage(context, 'Follow request denied');
-                                      } catch (_) {
-                                        _showMessage(
-                                          context,
-                                          'Could not deny follow request',
-                                        );
-                                      }
-                                    },
+                                    onPressed: requestId.isEmpty
+                                        ? null
+                                        : () async {
+                                            try {
+                                              await dio.post(
+                                                '/users/me/follow/requests/$requestId/decline',
+                                              );
+                                              _invalidateProfileState(ref);
+                                              _showMessage(
+                                                context,
+                                                'Follow request denied',
+                                              );
+                                            } catch (_) {
+                                              _showMessage(
+                                                context,
+                                                'Could not deny follow request',
+                                              );
+                                            }
+                                          },
                                     child: const Text('Deny'),
                                   ),
                                 ],
@@ -302,10 +366,18 @@ class AuthorProfileScreen extends ConsumerWidget {
 
                                         _invalidateProfileState(ref);
                                       } catch (_) {
-                                        _showMessage(
-                                          context,
-                                          'Could not update follow state',
-                                        );
+                                        final cooldown = detail.cooldownDaysRemaining;
+                                        if (cooldown != null && cooldown > 0) {
+                                          _showMessage(
+                                            context,
+                                            'You can request again in $cooldown day(s)',
+                                          );
+                                        } else {
+                                          _showMessage(
+                                            context,
+                                            'Could not update follow state',
+                                          );
+                                        }
                                       }
                                     },
                               child: Text(label),
@@ -316,7 +388,8 @@ class AuthorProfileScreen extends ConsumerWidget {
                             child: Text('…'),
                           ),
                           error: (_, __) => FilledButton(
-                            onPressed: () => ref.invalidate(followStateProvider(handle)),
+                            onPressed: () =>
+                                ref.invalidate(followStateProvider(handle)),
                             child: const Text('Follow'),
                           ),
                         );
