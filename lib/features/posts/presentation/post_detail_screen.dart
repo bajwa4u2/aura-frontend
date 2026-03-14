@@ -114,7 +114,8 @@ final postProvider = FutureProvider.family<Post, String>((ref, id) async {
   return _postFromAny(res.data);
 });
 
-final repliesProvider = FutureProvider.family<List<Post>, String>((ref, id) async {
+final repliesProvider =
+    FutureProvider.family<List<Post>, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/$id/replies');
   return _repliesFromAny(res.data);
@@ -134,14 +135,7 @@ class PostDetailScreen extends ConsumerWidget {
     final repliesAsync = ref.watch(repliesProvider(postId));
 
     return AuraScaffold(
-      title: 'Post',
-      actions: [
-        IconButton(
-          onPressed: () => context.push('/compose?replyTo=$postId'),
-          icon: const Icon(Icons.reply_outlined),
-          tooltip: 'Reply',
-        ),
-      ],
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
@@ -150,76 +144,204 @@ class PostDetailScreen extends ConsumerWidget {
           AuraSpace.s24,
         ),
         children: [
-          const _SectionLabel(title: 'Original post'),
-          const SizedBox(height: AuraSpace.s10),
-          postAsync.when(
-            data: (post) {
-              return PostCard(
-                post: post,
-                compact: false,
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text(
-                'Could not load post: $e',
-                style: AuraText.body,
-              ),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s24),
-          Row(
-            children: [
-              const _SectionLabel(title: 'Replies'),
-              const SizedBox(width: AuraSpace.s8),
-              repliesAsync.when(
-                data: (items) => Text(
-                  '${items.length}',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          repliesAsync.when(
-            data: (items) {
-              if (items.isEmpty) {
-                return AuraCard(
-                  child: Text(
-                    'No replies yet.',
-                    style: AuraText.body,
-                  ),
-                );
-              }
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TopBar(postId: postId),
+                  const SizedBox(height: AuraSpace.s16),
 
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: items.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: AuraSpace.s14),
-                itemBuilder: (context, index) {
-                  return PostCard(
-                    post: items[index],
-                    compact: false,
-                  );
-                },
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text(
-                'Could not load replies: $e',
-                style: AuraText.body,
+                  const _PageIntro(),
+                  const SizedBox(height: AuraSpace.s16),
+
+                  const _SectionLabel(title: 'Original post'),
+                  const SizedBox(height: AuraSpace.s10),
+
+                  postAsync.when(
+                    data: (post) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PostCard(
+                            post: post,
+                            compact: false,
+                          ),
+                          const SizedBox(height: AuraSpace.s12),
+                          Wrap(
+                            spacing: AuraSpace.s10,
+                            runSpacing: AuraSpace.s10,
+                            children: [
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.reply_outlined),
+                                label: const Text('Reply'),
+                                onPressed: () =>
+                                    context.push('/compose?replyTo=$postId'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                    loading: () => const _LoadingCard(label: 'Loading post…'),
+                    error: (e, _) => _ErrorCard(
+                      message: 'Could not load post: $e',
+                    ),
+                  ),
+
+                  const SizedBox(height: AuraSpace.s24),
+                  const Divider(height: 1),
+                  const SizedBox(height: AuraSpace.s20),
+
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: _SectionLabel(title: 'Replies'),
+                      ),
+                      repliesAsync.when(
+                        data: (items) => _CountPill(count: items.length),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AuraSpace.s10),
+
+                  Text(
+                    'Responses stay in sequence beneath the original post.',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+
+                  const SizedBox(height: AuraSpace.s14),
+
+                  repliesAsync.when(
+                    data: (items) {
+                      if (items.isEmpty) {
+                        return AuraCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AuraSpace.s14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'No replies yet.',
+                                  style: AuraText.body.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: AuraSpace.s8),
+                                Text(
+                                  'Be the first to respond to this post.',
+                                  style: AuraText.small.copyWith(
+                                    color: AuraSurface.muted,
+                                  ),
+                                ),
+                                const SizedBox(height: AuraSpace.s12),
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.reply_outlined),
+                                  label: const Text('Write a reply'),
+                                  onPressed: () =>
+                                      context.push('/compose?replyTo=$postId'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AuraSpace.s14),
+                        itemBuilder: (context, index) {
+                          return PostCard(
+                            post: items[index],
+                            compact: false,
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const _LoadingCard(label: 'Loading replies…'),
+                    error: (e, _) => _ErrorCard(
+                      message: 'Could not load replies: $e',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.postId,
+  });
+
+  final String postId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+            context.go('/home');
+          },
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Back'),
+        ),
+        Text(
+          'Post record',
+          style: AuraText.title,
+        ),
+      ],
+    );
+  }
+}
+
+class _PageIntro extends StatelessWidget {
+  const _PageIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This page keeps the original post and its replies together.',
+              style: AuraText.body.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              'Read the post first, then follow the response trail beneath it.',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -243,29 +365,84 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
+class _CountPill extends StatelessWidget {
+  const _CountPill({
+    required this.count,
+  });
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        '$count',
+        style: AuraText.small.copyWith(
+          color: AuraSurface.muted,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+  const _LoadingCard({
+    required this.label,
+  });
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return AuraCard(
       child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s12),
-        child: const Row(
+        padding: const EdgeInsets.all(AuraSpace.s14),
+        child: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: AuraSpace.s10),
+            const SizedBox(width: AuraSpace.s10),
             Expanded(
               child: Text(
-                'Loading…',
+                label,
                 style: AuraText.body,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s14),
+        child: Text(
+          message,
+          style: AuraText.body,
         ),
       ),
     );

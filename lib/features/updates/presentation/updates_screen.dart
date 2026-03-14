@@ -17,14 +17,19 @@ class UpdatesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
 
-    return AuraScaffold(
+    if (isAuthed) {
+      return const AuraScaffold(
+        showHeader: false,
+        body: _AuthenticatedUpdatesBody(),
+      );
+    }
+
+    return const AuraScaffold(
       title: 'Updates',
-      actions: const [
+      actions: [
         _UpdatesMenu(),
       ],
-      body: isAuthed
-          ? const _AuthenticatedUpdatesBody()
-          : const _PublicUpdatesBody(),
+      body: _PublicUpdatesBody(),
     );
   }
 }

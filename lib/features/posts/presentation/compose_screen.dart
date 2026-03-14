@@ -1102,7 +1102,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     children: [
                       Text('Aura Editor', style: AuraText.title),
                       const SizedBox(height: AuraSpace.s8),
-
                       if (_auditError != null &&
                           _auditError!.trim().isNotEmpty) ...[
                         AuraCard(
@@ -1122,7 +1121,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (_auditBusy && !hasAnyContent) ...[
                         AuraCard(
                           child: Row(
@@ -1144,7 +1142,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (!_auditBusy &&
                           !hasAnyContent &&
                           (_auditError ?? '').trim().isEmpty) ...[
@@ -1156,7 +1153,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (what.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1175,7 +1171,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (spelling.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1203,7 +1198,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (grammar.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1231,7 +1225,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (consider.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1256,7 +1249,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (strengthen.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1281,7 +1273,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (civic.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1300,7 +1291,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (refinement.isNotEmpty) ...[
                         AuraCard(
                           child: Column(
@@ -1319,7 +1309,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       if (consider.isEmpty &&
                           strengthen.isEmpty &&
                           civic.isEmpty &&
@@ -1350,7 +1339,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s12),
                       ],
-
                       Wrap(
                         spacing: AuraSpace.s10,
                         runSpacing: AuraSpace.s10,
@@ -1478,6 +1466,53 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 3;
   }
 
+  Widget _buildPageTopBar() {
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: _posting ? null : () => context.pop(),
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Back'),
+        ),
+        Text(
+          _isReply ? 'Reply' : 'Compose',
+          style: AuraText.title,
+        ),
+        if (!_isReply)
+          Text(
+            _savedLine(),
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionRow() {
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
+      children: [
+        OutlinedButton(
+          onPressed: (_posting || _auditBusy)
+              ? null
+              : () async {
+                  final result = await _runAuraEditor();
+                  if (!mounted) return;
+                  await _openAuraEditorSheet(reviewResult: result);
+                },
+          child: const Text('Aura Editor'),
+        ),
+        OutlinedButton(
+          onPressed: _posting ? null : _discardAndClose,
+          child: const Text('Discard'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatusRow() {
     return Wrap(
       spacing: AuraSpace.s10,
@@ -1486,7 +1521,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       children: [
         Text(
           _isReply ? 'Composing reply' : 'Composing',
-          style: AuraText.title,
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
         Text(
           _savedLine(),
@@ -1541,7 +1576,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       child: TextField(
         controller: _textController,
         maxLines: null,
-        minLines: 12,
+        minLines: 6,
         textCapitalization: TextCapitalization.sentences,
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
@@ -1713,31 +1748,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isReply ? 'Reply' : 'Compose';
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     return AuraScaffold(
-      title: title,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.pop(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: (_posting || _auditBusy)
-              ? null
-              : () async {
-                  final result = await _runAuraEditor();
-                  if (!mounted) return;
-                  await _openAuraEditorSheet(reviewResult: result);
-                },
-          child: const Text('Aura Editor'),
-        ),
-        TextButton(
-          onPressed: _posting ? null : _discardAndClose,
-          child: const Text('Discard'),
-        ),
-      ],
+      showHeader: false,
       body: Column(
         children: [
           Expanded(
@@ -1754,28 +1768,39 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 960),
-                    child: AuraCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStatusRow(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _divider(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _buildAudienceBlock(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _divider(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _buildComposerBox(),
-                          const SizedBox(height: AuraSpace.s8),
-                          _buildCharacterLine(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _divider(),
-                          const SizedBox(height: AuraSpace.s12),
-                          _buildAttachmentsBlock(),
-                        ],
-                      ),
+                    constraints: const BoxConstraints(maxWidth: 920),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPageTopBar(),
+                        const SizedBox(height: AuraSpace.s12),
+                        _buildActionRow(),
+                        const SizedBox(height: AuraSpace.s16),
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildStatusRow(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _divider(),
+                              const SizedBox(height: AuraSpace.s12),
+                              if (!_isReply) ...[
+                                _buildAudienceBlock(),
+                                const SizedBox(height: AuraSpace.s12),
+                                _divider(),
+                                const SizedBox(height: AuraSpace.s12),
+                              ],
+                              _buildComposerBox(),
+                              const SizedBox(height: AuraSpace.s8),
+                              _buildCharacterLine(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _divider(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _buildAttachmentsBlock(),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

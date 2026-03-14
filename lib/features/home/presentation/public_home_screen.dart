@@ -24,14 +24,19 @@ class PublicHomeScreen extends ConsumerWidget {
     final feedAsync = ref.watch(feedProvider);
 
     return AuraScaffold(
-      title: 'Aura',
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final hero = const _PublicHero();
-
-          final feedSection = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s24,
+            ),
             children: [
+              const _PublicEntryBand(),
+              const SizedBox(height: AuraSpace.s24),
               const _SectionHeader(
                 title: 'Public record',
                 subtitle: 'Approved public posts.',
@@ -76,24 +81,48 @@ class PublicHomeScreen extends ConsumerWidget {
                 ),
               ),
             ],
-          );
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s24,
-            ),
+class _PublicEntryBand extends StatelessWidget {
+  const _PublicEntryBand();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < 820;
+
+        if (stacked) {
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              hero,
-              const SizedBox(height: AuraSpace.s20),
-              feedSection,
-              const SizedBox(height: AuraSpace.s24),
+              _PublicHero(),
+              SizedBox(height: AuraSpace.s16),
+              _AccessPanel(),
             ],
           );
-        },
-      ),
+        }
+
+        return const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 6,
+              child: _PublicHero(),
+            ),
+            SizedBox(width: AuraSpace.s16),
+            Expanded(
+              flex: 4,
+              child: _AccessPanel(),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -114,8 +143,15 @@ class _PublicHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'For members and institutions.',
+            'Aura is a public and member environment for people and institutions that want continuity, accountability, and a quieter form of presence online.',
             style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text(
+            'Read the public record, search the work, or enter through the member and institution paths beside this surface.',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+            ),
           ),
           const SizedBox(height: AuraSpace.s16),
           Wrap(
@@ -160,6 +196,155 @@ class _PublicHero extends StatelessWidget {
   }
 }
 
+class _AccessPanel extends StatelessWidget {
+  const _AccessPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          _AccessPanelHeader(),
+          SizedBox(height: AuraSpace.s14),
+          _CompactAccessCard(
+            title: 'Members',
+            subtitle:
+                'Create a personal account or sign in to continue your work, correspondence, and activity.',
+            primaryLabel: 'Register',
+            primaryRoute: '/register',
+            secondaryLabel: 'Login',
+            secondaryRoute: '/login',
+            icon: Icons.person_outline,
+          ),
+          SizedBox(height: AuraSpace.s12),
+          _CompactAccessCard(
+            title: 'Institutions',
+            subtitle:
+                'Sign in to an existing institutional presence or begin the institutional account flow.',
+            primaryLabel: 'Login',
+            primaryRoute: '/institution/sign-in',
+            secondaryLabel: 'Register',
+            secondaryRoute: '/institution/create',
+            icon: Icons.apartment_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccessPanelHeader extends StatelessWidget {
+  const _AccessPanelHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Enter Aura',
+          style: AuraText.body.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          'Use the right path for members or institutions.',
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompactAccessCard extends StatelessWidget {
+  const _CompactAccessCard({
+    required this.title,
+    required this.subtitle,
+    required this.primaryLabel,
+    required this.primaryRoute,
+    required this.secondaryLabel,
+    required this.secondaryRoute,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final String primaryLabel;
+  final String primaryRoute;
+  final String secondaryLabel;
+  final String secondaryRoute;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: AuraSurface.muted,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            subtitle,
+            style: AuraText.small.copyWith(height: 1.4),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              FilledButton(
+                onPressed: () => context.go(primaryRoute),
+                child: Text(primaryLabel),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go(secondaryRoute),
+                child: Text(secondaryLabel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PublicPostPreview extends StatelessWidget {
   const _PublicPostPreview({required this.post});
   final Post post;
@@ -167,15 +352,18 @@ class _PublicPostPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final a = post.author;
-    final name = (a?.displayName ?? '').trim();
-    final handle = (a?.handle ?? '').trim();
+    final authorMap = _asMap(a);
+    final name = ((authorMap['displayName'] ?? a?.displayName ?? '') as String)
+        .trim();
+    final handle =
+        ((authorMap['handle'] ?? a?.handle ?? '') as String).trim();
+
     final byline =
         handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
 
-    final text = (post.text ?? '').trim();
+    final text = post.text.trim();
 
-    final previewLength =
-        MediaQuery.of(context).size.width < 600 ? 160 : 240;
+    final previewLength = MediaQuery.of(context).size.width < 600 ? 160 : 240;
 
     final preview = text.length <= previewLength
         ? text
