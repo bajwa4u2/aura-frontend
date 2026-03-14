@@ -579,7 +579,7 @@ class _MemberNavButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                vertical: compact ? AuraSpace.s2 : AuraSpace.s4,
+                vertical: compact ? AuraSpace.s4 / 2 : AuraSpace.s4,
                 horizontal: AuraSpace.s4,
               ),
               child: Column(
