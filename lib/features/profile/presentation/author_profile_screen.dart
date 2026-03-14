@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
-import '../../feed/presentation/widgets/post_card.dart';
+import '../../posts/presentation/widgets/post_card.dart';
 import '../data/profile_repository.dart';
 import '../providers.dart';
 
@@ -81,116 +82,73 @@ class AuthorProfileScreen extends ConsumerWidget {
 
               return Consumer(
                 builder: (context, ref, _) {
-                  List<ProfileHeaderAction> actions = [];
-
                   if (!isAuthed) {
-                    actions = const [
-                      ProfileHeaderAction(
-                        label: 'Login to follow',
-                        onTap: null,
-                        primary: true,
-                        icon: Icons.lock_outline,
-                      ),
-                    ];
-                  } else if (!isSelf) {
-                    final stateAsync = ref.watch(followStateProvider(handle));
+                    return ProfileHeader(
+                      displayName: name,
+                      handle: handle,
+                      bio: bio,
+                      avatarUrl: avatar,
+                      stats: [
+                        ProfileHeaderStat(
+                          label: 'Followers',
+                          value: '$followersCount',
+                          onTap: () => context.push('/u/$handle/followers'),
+                        ),
+                        ProfileHeaderStat(
+                          label: 'Following',
+                          value: '$followingCount',
+                          onTap: () => context.push('/u/$handle/following'),
+                        ),
+                      ],
+                      actions: const [
+                        ProfileHeaderAction(
+                          label: 'Login to follow',
+                          onTap: null,
+                          primary: true,
+                          icon: Icons.lock_outline,
+                        ),
+                      ],
+                    );
+                  }
 
-                    return stateAsync.when(
-                      data: (detail) {
-                        final repo = ref.read(profileRepositoryProvider);
-                        final trimmed = detail.state.trim();
+                  if (isSelf) {
+                    return ProfileHeader(
+                      displayName: name,
+                      handle: handle,
+                      bio: bio,
+                      avatarUrl: avatar,
+                      stats: [
+                        ProfileHeaderStat(
+                          label: 'Followers',
+                          value: '$followersCount',
+                          onTap: () => context.push('/u/$handle/followers'),
+                        ),
+                        ProfileHeaderStat(
+                          label: 'Following',
+                          value: '$followingCount',
+                          onTap: () => context.push('/u/$handle/following'),
+                        ),
+                      ],
+                    );
+                  }
 
-                        final label = switch (trimmed) {
-                          'following' => 'Following',
-                          'outgoing_pending' => 'Requested',
-                          _ => 'Follow',
-                        };
+                  final stateAsync = ref.watch(followStateProvider(handle));
 
-                        final canTap =
-                            trimmed == 'none' || trimmed == 'outgoing_pending';
+                  return stateAsync.when(
+                    data: (detail) {
+                      final repo = ref.read(profileRepositoryProvider);
+                      final trimmed = detail.state.trim();
 
-                        return ProfileHeader(
-                          displayName: name,
-                          handle: handle,
-                          bio: bio,
-                          avatarUrl: avatar,
-                          stats: [
-                            ProfileHeaderStat(
-                              label: 'Followers',
-                              value: '$followersCount',
-                              onTap: () => context.push('/u/$handle/followers'),
-                            ),
-                            ProfileHeaderStat(
-                              label: 'Following',
-                              value: '$followingCount',
-                              onTap: () => context.push('/u/$handle/following'),
-                            ),
-                          ],
-                          actions: [
-                            ProfileHeaderAction(
-                              label: label,
-                              primary: true,
-                              icon: trimmed == 'following'
-                                  ? Icons.check
-                                  : trimmed == 'outgoing_pending'
-                                      ? Icons.schedule
-                                      : Icons.person_add_alt_1,
-                              onTap: !canTap
-                                  ? null
-                                  : () async {
-                                      try {
-                                        if (trimmed == 'outgoing_pending') {
-                                          await repo.unfollow(handle);
-                                          _showMessage(
-                                            context,
-                                            'Request canceled',
-                                          );
-                                        } else {
-                                          await repo.follow(handle);
-                                          _showMessage(
-                                            context,
-                                            'Follow request sent',
-                                          );
-                                        }
+                      final label = switch (trimmed) {
+                        'following' => 'Following',
+                        'outgoing_pending' => 'Requested',
+                        _ => 'Follow',
+                      };
 
-                                        _invalidateProfileState(ref);
-                                      } catch (_) {
-                                        _showMessage(
-                                          context,
-                                          'Could not update follow state',
-                                        );
-                                      }
-                                    },
-                            ),
-                          ],
-                        );
-                      },
-                      loading: () => ProfileHeader(
-                        displayName: name,
-                        handle: handle,
-                        bio: bio,
-                        avatarUrl: avatar,
-                        stats: [
-                          ProfileHeaderStat(
-                            label: 'Followers',
-                            value: '$followersCount',
-                            onTap: () => context.push('/u/$handle/followers'),
-                          ),
-                          ProfileHeaderStat(
-                            label: 'Following',
-                            value: '$followingCount',
-                            onTap: () => context.push('/u/$handle/following'),
-                          ),
-                        ],
-                        actions: const [
-                          ProfileHeaderAction(
-                            label: '…',
-                            onTap: null,
-                            primary: true,
-                          ),
-                        ],
-                      ),
-                      error: (_, __) => ProfileHeader(
+                      final canTap =
+                          trimmed == 'none' || trimmed == 'outgoing_pending';
+
+                      return ProfileHeader(
                         displayName: name,
                         handle: handle,
                         bio: bio,
@@ -209,35 +167,94 @@ class AuthorProfileScreen extends ConsumerWidget {
                         ],
                         actions: [
                           ProfileHeaderAction(
-                            label: 'Follow',
+                            label: label,
                             primary: true,
-                            icon: Icons.person_add_alt_1,
-                            onTap: () =>
-                                ref.invalidate(followStateProvider(handle)),
+                            icon: trimmed == 'following'
+                                ? Icons.check
+                                : trimmed == 'outgoing_pending'
+                                    ? Icons.schedule
+                                    : Icons.person_add_alt_1,
+                            onTap: !canTap
+                                ? null
+                                : () async {
+                                    try {
+                                      if (trimmed == 'outgoing_pending') {
+                                        await repo.unfollow(handle);
+                                        _showMessage(
+                                          context,
+                                          'Request canceled',
+                                        );
+                                      } else {
+                                        await repo.follow(handle);
+                                        _showMessage(
+                                          context,
+                                          'Follow request sent',
+                                        );
+                                      }
+
+                                      _invalidateProfileState(ref);
+                                    } catch (_) {
+                                      _showMessage(
+                                        context,
+                                        'Could not update follow state',
+                                      );
+                                    }
+                                  },
                           ),
                         ],
-                      ),
-                    );
-                  }
-
-                  return ProfileHeader(
-                    displayName: name,
-                    handle: handle,
-                    bio: bio,
-                    avatarUrl: avatar,
-                    stats: [
-                      ProfileHeaderStat(
-                        label: 'Followers',
-                        value: '$followersCount',
-                        onTap: () => context.push('/u/$handle/followers'),
-                      ),
-                      ProfileHeaderStat(
-                        label: 'Following',
-                        value: '$followingCount',
-                        onTap: () => context.push('/u/$handle/following'),
-                      ),
-                    ],
-                    actions: actions,
+                      );
+                    },
+                    loading: () => ProfileHeader(
+                      displayName: name,
+                      handle: handle,
+                      bio: bio,
+                      avatarUrl: avatar,
+                      stats: [
+                        ProfileHeaderStat(
+                          label: 'Followers',
+                          value: '$followersCount',
+                          onTap: () => context.push('/u/$handle/followers'),
+                        ),
+                        ProfileHeaderStat(
+                          label: 'Following',
+                          value: '$followingCount',
+                          onTap: () => context.push('/u/$handle/following'),
+                        ),
+                      ],
+                      actions: const [
+                        ProfileHeaderAction(
+                          label: '…',
+                          onTap: null,
+                          primary: true,
+                        ),
+                      ],
+                    ),
+                    error: (_, __) => ProfileHeader(
+                      displayName: name,
+                      handle: handle,
+                      bio: bio,
+                      avatarUrl: avatar,
+                      stats: [
+                        ProfileHeaderStat(
+                          label: 'Followers',
+                          value: '$followersCount',
+                          onTap: () => context.push('/u/$handle/followers'),
+                        ),
+                        ProfileHeaderStat(
+                          label: 'Following',
+                          value: '$followingCount',
+                          onTap: () => context.push('/u/$handle/following'),
+                        ),
+                      ],
+                      actions: [
+                        ProfileHeaderAction(
+                          label: 'Follow',
+                          primary: true,
+                          icon: Icons.person_add_alt_1,
+                          onTap: () => ref.invalidate(followStateProvider(handle)),
+                        ),
+                      ],
+                    ),
                   );
                 },
               );
