@@ -75,7 +75,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
         : const AsyncValue<List<Map<String, dynamic>>>.loading();
 
     return AuraScaffold(
-      title: 'Correspondence',
+      
       body: RefreshIndicator(
         onRefresh: () async {
           if (ref.read(authStatusProvider) != AuthStatus.authed) return;
@@ -87,7 +87,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             const _SectionIntroCard(
-              title: 'Correspondence',
+              
               body:
                   'Private conversations and small group discussions connected to your account.',
             ),
@@ -136,7 +136,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                     error: (error, _) => _InlineStateCard(
-                      title: 'Could not load spaces',
+                      
                       body: '$error',
                       actionLabel: 'Try again',
                       onAction: () =>
@@ -145,7 +145,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
                     data: (spaces) {
                       if (spaces.isEmpty) {
                         return _InlineStateCard(
-                          title: 'No spaces yet',
+                          
                           body:
                               'Create your first space to organize conversations with others.',
                           actionLabel: 'Create space',

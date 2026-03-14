@@ -28,7 +28,7 @@ class InstitutionDetailScreen extends ConsumerWidget {
     final institutionAsync = ref.watch(institutionDetailProvider(cleanSlug));
 
     return AuraScaffold(
-      title: 'Institution',
+      
       body: institutionAsync.when(
         loading: () => const Center(
           child: Padding(

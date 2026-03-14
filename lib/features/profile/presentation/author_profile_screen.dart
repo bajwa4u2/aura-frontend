@@ -76,7 +76,7 @@ class AuthorProfileScreen extends ConsumerWidget {
     final myHandleAsync = isAuthed ? ref.watch(myHandleProvider) : null;
 
     return AuraScaffold(
-      title: 'Author',
+      
       actions: [
         if (isAuthed)
           myHandleAsync?.maybeWhen(
@@ -156,7 +156,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) => _ProfileConnectionsScreen(
-                                            title: 'Followers',
+                                            
                                             handle: handle,
                                             kind: _ConnectionsKind.followers,
                                           ),
@@ -175,7 +175,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) => _ProfileConnectionsScreen(
-                                            title: 'Following',
+                                            
                                             handle: handle,
                                             kind: _ConnectionsKind.following,
                                           ),

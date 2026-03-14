@@ -23,31 +23,31 @@ class _NewConversationScreenState extends State<NewConversationScreen> {
       id: 'u_1',
       name: 'Nimra',
       handle: '@nimra',
-      subtitle: 'Follower',
+      sub
     ),
     _SelectablePerson(
       id: 'u_2',
       name: 'Hamza',
       handle: '@hamza',
-      subtitle: 'Follower',
+      sub
     ),
     _SelectablePerson(
       id: 'u_3',
       name: 'Ali Raza',
       handle: '@aliraza',
-      subtitle: 'Follower',
+      sub
     ),
     _SelectablePerson(
       id: 'u_4',
       name: 'Sara Khan',
       handle: '@sarakhan',
-      subtitle: 'Follower',
+      sub
     ),
     _SelectablePerson(
       id: 'u_5',
       name: 'Ayesha',
       handle: '@ayesha',
-      subtitle: 'Follower',
+      sub
     ),
   ];
 

@@ -32,7 +32,7 @@ class ThreadScreen extends ConsumerWidget {
     final messagesAsync = ref.watch(_messagesProvider(threadId));
 
     return AuraScaffold(
-      title: 'Thread',
+      
       body: Column(
         children: [
           Expanded(
@@ -54,7 +54,7 @@ class ThreadScreen extends ConsumerWidget {
                     ),
                     error: (error, _) => AuraCard(
                       child: _ErrorBlock(
-                        title: 'Could not load thread',
+                        
                         body: '$error',
                         onRetry: () =>
                             ref.invalidate(_threadDetailProvider(threadId)),
@@ -84,7 +84,7 @@ class ThreadScreen extends ConsumerWidget {
                     ),
                     error: (error, _) => AuraCard(
                       child: _ErrorBlock(
-                        title: 'Could not load messages',
+                        
                         body: '$error',
                         onRetry: () =>
                             ref.invalidate(_messagesProvider(threadId)),

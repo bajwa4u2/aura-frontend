@@ -89,7 +89,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
     final data = payload == null ? null : _data(payload);
 
     return AuraScaffold(
-      title: 'Aura Editor',
+      
       showHomeAction: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(

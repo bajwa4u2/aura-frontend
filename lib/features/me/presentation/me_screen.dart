@@ -838,33 +838,33 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _adminWorkspaceCard(BuildContext context) {
     return _sectionCard(
-      title: 'Admin workspace',
+      
       intro:
           'These controls belong only to the platform administrator. They should not appear for regular members or institution accounts.',
       children: [
         _workspaceTile(
-          title: 'Publish announcement',
+          
           detail:
               'Create and publish official platform announcements through the admin announcement flow.',
           status: 'Admin only',
           onTap: _adminCreateAnnouncementDialog,
         ),
         _workspaceTile(
-          title: 'Correspondence hub',
+          
           detail:
               'Open the current platform correspondence surface used for admin-level handling.',
           status: 'Admin only',
           onTap: () => context.go('/me/correspondence'),
         ),
         _workspaceTile(
-          title: 'Public announcements',
+          
           detail:
               'Review the live announcements surface as it appears inside the platform.',
           status: 'Available now',
           onTap: () => context.go('/announcements'),
         ),
         _workspaceTile(
-          title: 'Institution dashboard',
+          
           detail:
               'Open the institution-facing workspace separately from the admin account surface.',
           status: 'Separate surface',
@@ -876,33 +876,33 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _memberWorkspaceCard(BuildContext context) {
     return _sectionCard(
-      title: 'Member workspace',
+      
       intro:
           'This is your personal account surface. It carries member activity only, not admin or institution-only controls.',
       children: [
         _workspaceTile(
-          title: 'Compose',
+          
           detail:
               'Write a new post from your member account and continue your normal writing flow.',
           status: 'Available now',
           onTap: () => context.go('/compose'),
         ),
         _workspaceTile(
-          title: 'Saved',
+          
           detail:
               'Open the posts and items you have saved from the member feed.',
           status: 'Available now',
           onTap: () => context.go('/saved'),
         ),
         _workspaceTile(
-          title: 'Announcements',
+          
           detail:
               'Read official platform announcements from the public announcements surface.',
           status: 'Available now',
           onTap: () => context.go('/announcements'),
         ),
         _workspaceTile(
-          title: 'Institution account',
+          
           detail:
               'Institution-related tools live in a separate dashboard so member and institution roles do not blur together.',
           status: 'Separate surface',
@@ -1314,7 +1314,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               loadingLabel: 'Loading posts…',
               errorLabel: 'Posts load failed',
               dataBuilder: (items) => _countCard(
-                title: 'Posts',
+                
                 emptyLabel: 'No posts yet.',
                 countLabel:
                     'You have ${(items as List<Map<String, dynamic>>).length} post(s).',
@@ -1340,7 +1340,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               loadingLabel: 'Loading saved…',
               errorLabel: 'Saved load failed',
               dataBuilder: (items) => _countCard(
-                title: 'Saved',
+                
                 emptyLabel: 'No saved posts yet.',
                 countLabel:
                     'You have ${(items as List<Map<String, dynamic>>).length} saved item(s).',
@@ -1362,7 +1362,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               loadingLabel: 'Loading replies…',
               errorLabel: 'Replies load failed',
               dataBuilder: (items) => _countCard(
-                title: 'Replies',
+                
                 emptyLabel: 'No replies yet.',
                 countLabel:
                     'You have ${(items as List<Map<String, dynamic>>).length} reply/replies.',

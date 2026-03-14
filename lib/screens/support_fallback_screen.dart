@@ -13,7 +13,7 @@ class SupportFallbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      title: 'Support',
+      
       body: Padding(
         padding: const EdgeInsets.all(AuraSpace.s16),
         child: AuraCard(
