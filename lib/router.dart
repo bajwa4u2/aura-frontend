@@ -30,6 +30,7 @@ import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
+import 'features/profile/presentation/follow_requests_screen.dart';
 import 'features/profile/presentation/followers_screen.dart';
 import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
@@ -127,6 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/ai/claim-audit' ||
         path == '/me' ||
         path == '/me/edit' ||
+        path == '/me/follow-requests' ||
         path == '/me/correspondence' ||
         path.startsWith('/me/correspondence/') ||
         path == kInstitutionDashboardRoute ||
@@ -368,6 +370,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/me/edit',
             builder: (_, __) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: '/me/follow-requests',
+            builder: (_, __) => const FollowRequestsScreen(),
           ),
           GoRoute(
             path: '/me/correspondence',

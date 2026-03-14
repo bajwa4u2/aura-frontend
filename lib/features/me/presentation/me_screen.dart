@@ -874,7 +874,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _memberWorkspaceCard(BuildContext context) {
+  Widget _memberWorkspaceCard(
+    BuildContext context, {
+    required String handle,
+  }) {
     return _sectionCard(
       title: 'Member workspace',
       intro:
@@ -893,6 +896,30 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               'Open the posts and items you have saved from the member feed.',
           status: 'Available now',
           onTap: () => context.go('/saved'),
+        ),
+        _workspaceTile(
+          title: 'Followers',
+          detail: 'Open the people who follow your member profile.',
+          status: handle.trim().isNotEmpty ? 'Available now' : 'Unavailable',
+          onTap: handle.trim().isNotEmpty
+              ? () => context.go('/u/$handle/followers')
+              : null,
+        ),
+        _workspaceTile(
+          title: 'Following',
+          detail:
+              'Open the people your member account currently follows.',
+          status: handle.trim().isNotEmpty ? 'Available now' : 'Unavailable',
+          onTap: handle.trim().isNotEmpty
+              ? () => context.go('/u/$handle/following')
+              : null,
+        ),
+        _workspaceTile(
+          title: 'Follow requests',
+          detail:
+              'Review people requesting to follow your account and accept or deny them.',
+          status: 'Available now',
+          onTap: () => context.go('/me/follow-requests'),
         ),
         _workspaceTile(
           title: 'Announcements',
@@ -1298,7 +1325,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             if (isAdmin)
               _adminWorkspaceCard(context)
             else
-              _memberWorkspaceCard(context),
+              _memberWorkspaceCard(
+                context,
+                handle: handle,
+              ),
             _publicHubsCard(context),
             _asyncStatusCard(
               asyncValue: ref.watch(_meDraftProvider),
