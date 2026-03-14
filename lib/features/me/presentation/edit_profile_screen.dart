@@ -74,7 +74,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       setState(() {
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _error = 'Failed to load profile';
         _loading = false;
@@ -142,8 +142,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         children: [
                           Text(
                             'Edit Profile',
-                           style: AuraText.h2,
-                           ),
+                            style: AuraText.body.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: AuraSpace.s16),
 
                           if (_handle.isNotEmpty)
@@ -151,8 +154,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                           if (_email.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: AuraSpace.s12),
+                              padding:
+                                  const EdgeInsets.only(bottom: AuraSpace.s12),
                               child: Text(_email, style: AuraText.small),
                             ),
 
