@@ -49,8 +49,10 @@ class _SectionIntroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
+          if (title.trim().isNotEmpty) ...[
+            Text(title, style: AuraText.title),
+            const SizedBox(height: AuraSpace.s10),
+          ],
           Text(body, style: AuraText.body),
           const SizedBox(height: AuraSpace.s12),
           OutlinedButton(
@@ -87,7 +89,7 @@ class _MemberCorrespondenceScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             const _SectionIntroCard(
-              title: 'Correspondence',
+              title: 'Private conversations',
               body:
                   'Private conversations and small group discussions connected to your account.',
             ),
