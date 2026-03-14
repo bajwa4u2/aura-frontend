@@ -18,7 +18,7 @@ class UpdatesScreen extends ConsumerWidget {
     final isAuthed = ref.watch(isAuthedProvider);
 
     if (isAuthed) {
-      return const AuraScaffold(
+      return AuraScaffold(
         showHeader: false,
         body: _AuthenticatedUpdatesBody(),
       );
