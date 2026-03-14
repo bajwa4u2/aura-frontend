@@ -140,8 +140,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Edit Profile',
-                              style: AuraText.titleLarge),
+                          Text(
+                            'Edit Profile',
+                           style: AuraText.h2,
+                           ),
                           const SizedBox(height: AuraSpace.s16),
 
                           if (_handle.isNotEmpty)
