@@ -8,9 +8,11 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
-
-import '../../feed/presentation/widgets/post_card.dart';
+import '../../feed/domain/post.dart';
+import '../../posts/presentation/widgets/post_card.dart';
 import '../data/profile_repository.dart';
+import '../domain/profile.dart';
+import '../providers.dart';
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({
@@ -26,7 +28,7 @@ class AuthorProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
-  late Future<ProfileBundle> _bundleFuture;
+  late Future<_ProfileBundle> _bundleFuture;
 
   @override
   void initState() {
@@ -34,14 +36,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     _bundleFuture = _load();
   }
 
-  Future<ProfileBundle> _load() async {
+  Future<_ProfileBundle> _load() async {
     final repo = ref.read(profileRepositoryProvider);
 
     final profile = await repo.fetchProfile(widget.handle);
     final posts = await repo.getUserPosts(widget.handle);
     final followDetail = await repo.getFollowStateDetail(widget.handle);
 
-    return ProfileBundle(
+    return _ProfileBundle(
       profile: profile,
       posts: posts,
       followState: followDetail.state,
@@ -54,9 +56,11 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     });
   }
 
-  void _showMessage(String m) {
+  void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -66,43 +70,52 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
 
     return AuraScaffold(
       title: 'Profile',
-      body: FutureBuilder<ProfileBundle>(
+      body: FutureBuilder<_ProfileBundle>(
         future: _bundleFuture,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snap.hasError || snap.data == null) {
-            return AuraCard(
-              child: Text(
-                'Could not load profile.',
-                style: AuraText.body,
-              ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(),
             );
           }
 
-          final bundle = snap.data!;
-          final p = bundle.profile;
-          final posts = bundle.posts;
-          final followState = bundle.followState;
+          if (snapshot.hasError || snapshot.data == null) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16,
+                AuraSpace.s12,
+                AuraSpace.s16,
+                AuraSpace.s24,
+              ),
+              children: [
+                AuraCard(
+                  child: Text(
+                    'Could not load profile.',
+                    style: AuraText.body,
+                  ),
+                ),
+              ],
+            );
+          }
 
-          final name =
-              p.displayName.trim().isNotEmpty ? p.displayName : widget.handle;
+          final bundle = snapshot.data!;
+          final Profile profile = bundle.profile;
+          final List<Post> posts = bundle.posts;
+          final String followState = bundle.followState;
 
-          final bio = (p.bio ?? '').trim();
-          final avatar = (p.avatarUrl ?? '').trim();
+          final String name = profile.displayName.trim().isNotEmpty
+              ? profile.displayName.trim()
+              : widget.handle;
+          final String bio = (profile.bio ?? '').trim();
+          final String avatar = (profile.avatarUrl ?? '').trim();
 
-          final followers = p.followersCount;
-          final following = p.followingCount;
-
-          final label = switch (followState) {
+          final String followLabel = switch (followState) {
             'following' => 'Following',
             'outgoing_pending' => 'Requested',
             _ => 'Follow',
           };
 
-          final canTap =
+          final bool canTap =
               followState == 'none' || followState == 'outgoing_pending';
 
           return ListView(
@@ -121,15 +134,13 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                 stats: [
                   ProfileHeaderStat(
                     label: 'Followers',
-                    value: '$followers',
-                    onTap: () =>
-                        context.push('/u/${widget.handle}/followers'),
+                    value: '${profile.followersCount}',
+                    onTap: () => context.push('/u/${widget.handle}/followers'),
                   ),
                   ProfileHeaderStat(
                     label: 'Following',
-                    value: '$following',
-                    onTap: () =>
-                        context.push('/u/${widget.handle}/following'),
+                    value: '${profile.followingCount}',
+                    onTap: () => context.push('/u/${widget.handle}/following'),
                   ),
                 ],
                 actions: [
@@ -142,7 +153,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                     )
                   else
                     ProfileHeaderAction(
-                      label: label,
+                      label: followLabel,
                       primary: true,
                       icon: followState == 'following'
                           ? Icons.check
@@ -160,36 +171,33 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                                   await repo.follow(widget.handle);
                                   _showMessage('Follow request sent');
                                 }
-
                                 _reload();
                               } catch (_) {
-                                _showMessage(
-                                  'Could not update follow state',
-                                );
+                                _showMessage('Could not update follow state');
                               }
                             },
                     ),
                 ],
               ),
-
               const SizedBox(height: AuraSpace.s18),
-
               Text('Work', style: AuraText.title),
-
               const SizedBox(height: AuraSpace.s10),
-
               if (posts.isEmpty)
                 AuraCard(
-                  child: Text('No work yet.', style: AuraText.body),
+                  child: Text(
+                    'No work yet.',
+                    style: AuraText.body,
+                  ),
                 )
               else
                 Column(
                   children: posts
                       .map(
-                        (p) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: AuraSpace.s10),
-                          child: PostCard(post: p),
+                        (post) => Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AuraSpace.s10,
+                          ),
+                          child: PostCard(post: post),
                         ),
                       )
                       .toList(),
@@ -202,8 +210,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   }
 }
 
-class ProfileBundle {
-  const ProfileBundle({
+class _ProfileBundle {
+  const _ProfileBundle({
     required this.profile,
     required this.posts,
     required this.followState,
