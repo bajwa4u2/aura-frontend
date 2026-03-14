@@ -66,7 +66,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = ref.read(profileRepositoryProvider);
-    final isAuthed = ref.watch(isAuthedProvider);
+    final isAuthed = ref.watch(authStatusProvider) == AuthStatus.authed;
 
     return AuraScaffold(
       title: 'Profile',
