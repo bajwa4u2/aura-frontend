@@ -24,7 +24,7 @@ class UpdatesScreen extends ConsumerWidget {
       );
     }
 
-    return const AuraScaffold(
+    return AuraScaffold(
       title: 'Updates',
       actions: [
         _UpdatesMenu(),

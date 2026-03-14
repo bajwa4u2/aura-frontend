@@ -344,7 +344,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAuthed = ref.watch(isAuthedProvider);
+    final authStatus = ref.watch(authStatusProvider);
+    final isAuthed = authStatus == AuthStatus.authed;
 
     if (!isAuthed) {
       return AuraScaffold(
