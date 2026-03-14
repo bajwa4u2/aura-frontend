@@ -11,6 +11,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart' as ui;
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
 import 'edit_profile_screen.dart';
@@ -211,6 +212,42 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final t = body.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (t.isEmpty) return '';
     return t.length <= 160 ? t : '${t.substring(0, 160).trim()}…';
+  }
+
+  String _extractPostPreview(Map<String, dynamic> post) {
+    final raw = [
+      post['excerpt'],
+      post['summary'],
+      post['body'],
+      post['bodyMarkdown'],
+      post['content'],
+      post['text'],
+    ].firstWhere(
+      (e) => e != null && e.toString().trim().isNotEmpty,
+      orElse: () => '',
+    );
+
+    final text = raw.toString().trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (text.isEmpty) return '';
+    return text.length <= 180 ? text : '${text.substring(0, 180).trim()}…';
+  }
+
+  String _extractPostTitle(Map<String, dynamic> post) {
+    final raw = [
+      post['title'],
+      post['headline'],
+      post['name'],
+    ].firstWhere(
+      (e) => e != null && e.toString().trim().isNotEmpty,
+      orElse: () => '',
+    );
+
+    final title = raw.toString().trim();
+    if (title.isNotEmpty) return title;
+
+    final preview = _extractPostPreview(post);
+    if (preview.isEmpty) return 'Untitled';
+    return preview.length <= 80 ? preview : '${preview.substring(0, 80).trim()}…';
   }
 
   String? _extractMediaId(dynamic raw) {
@@ -645,52 +682,114 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _groupButton({
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: Text(title, style: AuraText.title),
+    );
+  }
+
+  Widget _section({
     required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(title),
+        ui.AuraCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: _withDividers(children),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> children) {
+    final out = <Widget>[];
+
+    for (var i = 0; i < children.length; i++) {
+      out.add(children[i]);
+      if (i != children.length - 1) {
+        out.add(const Divider(
+          height: 1,
+          thickness: 1,
+          color: AuraSurface.divider,
+        ));
+      }
+    }
+
+    return out;
+  }
+
+  Widget _sectionRow({
+    required String title,
+    String? subtitle,
     String? trailing,
     required VoidCallback? onTap,
+    IconData? leading,
+    bool enabled = true,
   }) {
-    final enabled = onTap != null;
+    final active = enabled && onTap != null;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
+        onTap: active ? onTap : null,
+        child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 14,
-          ),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12),
-            borderRadius: BorderRadius.circular(16),
+            horizontal: AuraSpace.s16,
+            vertical: AuraSpace.s14,
           ),
           child: Row(
             children: [
+              if (leading != null) ...[
+                Icon(
+                  leading,
+                  size: 18,
+                  color: active ? AuraSurface.ink : AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s12),
+              ],
               Expanded(
-                child: Text(
-                  title,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: enabled ? null : Colors.black45,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: active ? AuraSurface.ink : AuraSurface.muted,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (trailing != null && trailing.trim().isNotEmpty) ...[
                 Text(
                   trailing,
                   style: AuraText.small.copyWith(
-                    color: Colors.black54,
+                    color: AuraSurface.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AuraSpace.s10),
               ],
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: enabled ? Colors.black54 : Colors.black26,
+                color: active ? AuraSurface.muted : AuraSurface.divider,
               ),
             ],
           ),
@@ -699,38 +798,89 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _buttonGrid(List<Widget> children) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 900.0;
-
-        final columns = maxWidth >= 900
-            ? 3
-            : maxWidth >= 620
-                ? 2
-                : 1;
-
-        final spacing = AuraSpace.s10;
-        final width = columns == 1
-            ? maxWidth
-            : (maxWidth - (spacing * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: children
-              .map((child) => SizedBox(width: width, child: child))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(title, style: AuraText.title),
+  Widget _workSection(
+    BuildContext context, {
+    required List<Map<String, dynamic>> posts,
+    required bool hasDraft,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Work'),
+        if (posts.isEmpty && !hasDraft)
+          ui.AuraCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AuraSpace.s18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('No work yet.', style: AuraText.body),
+                  const SizedBox(height: AuraSpace.s12),
+                  _pillButton(
+                    label: 'Compose',
+                    onTap: () => context.go('/compose'),
+                    icon: Icons.edit_outlined,
+                    primary: true,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          if (hasDraft)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+              child: ui.AuraCard(
+                child: InkWell(
+                  onTap: () => context.go('/compose'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.drafts_outlined, size: 18),
+                        const SizedBox(width: AuraSpace.s12),
+                        Expanded(
+                          child: Text(
+                            'Draft',
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Continue',
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ...posts.take(4).map(
+                (post) => Padding(
+                  padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                  child: _PostPreviewCard(
+                    title: _extractPostTitle(post),
+                    preview: _extractPostPreview(post),
+                    onTap: () => context.go('/home'),
+                  ),
+                ),
+              ),
+          if (posts.length > 4)
+            Padding(
+              padding: const EdgeInsets.only(top: AuraSpace.s4),
+              child: TextButton(
+                onPressed: () => context.go('/home'),
+                child: const Text('View all posts'),
+              ),
+            ),
+        ],
+      ],
     );
   }
 
@@ -742,94 +892,90 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }) {
     final hasHandle = handle.trim().isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _section(
+      title: 'Connections',
       children: [
-        _sectionTitle('Connections'),
-        _buttonGrid([
-          _groupButton(
-            title: 'Followers',
-            trailing: followersCount > 0 ? '$followersCount' : '',
-            onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
-          ),
-          _groupButton(
-            title: 'Following',
-            trailing: followingCount > 0 ? '$followingCount' : '',
-            onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
-          ),
-          _groupButton(
-            title: 'Requests',
-            onTap: () => context.go('/me/follow-requests'),
-          ),
-        ]),
+        _sectionRow(
+          title: 'Followers',
+          trailing: '$followersCount',
+          leading: Icons.people_outline,
+          onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
+        ),
+        _sectionRow(
+          title: 'Following',
+          trailing: '$followingCount',
+          leading: Icons.person_add_alt_outlined,
+          onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
+        ),
+        _sectionRow(
+          title: 'Requests',
+          leading: Icons.mail_outline,
+          onTap: () => context.go('/me/follow-requests'),
+        ),
       ],
     );
   }
 
-  Widget _activitySection(
+  Widget _toolsSection(
     BuildContext context, {
     required bool hasDraft,
-    required int postsCount,
     required int savedCount,
     required int repliesCount,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _section(
+      title: 'Tools',
       children: [
-        _sectionTitle('Activity'),
-        _buttonGrid([
-          _groupButton(
-            title: 'Compose',
-            onTap: () => context.go('/compose'),
-          ),
-          _groupButton(
-            title: 'Draft',
-            trailing: hasDraft ? '1' : '',
-            onTap: () => context.go('/compose'),
-          ),
-          _groupButton(
-            title: 'Posts',
-            trailing: postsCount > 0 ? '$postsCount' : '',
-            onTap: () => context.go('/home'),
-          ),
-          _groupButton(
-            title: 'Replies',
-            trailing: repliesCount > 0 ? '$repliesCount' : '',
-            onTap: () => context.go('/home'),
-          ),
-          _groupButton(
-            title: 'Saved',
-            trailing: savedCount > 0 ? '$savedCount' : '',
-            onTap: () => context.go('/saved'),
-          ),
-        ]),
+        _sectionRow(
+          title: 'Compose',
+          leading: Icons.edit_outlined,
+          onTap: () => context.go('/compose'),
+        ),
+        _sectionRow(
+          title: 'Draft',
+          trailing: hasDraft ? '1' : '',
+          leading: Icons.drafts_outlined,
+          onTap: () => context.go('/compose'),
+        ),
+        _sectionRow(
+          title: 'Saved',
+          trailing: savedCount > 0 ? '$savedCount' : '',
+          leading: Icons.bookmark_border,
+          onTap: () => context.go('/saved'),
+        ),
+        _sectionRow(
+          title: 'Replies',
+          trailing: repliesCount > 0 ? '$repliesCount' : '',
+          leading: Icons.reply_outlined,
+          onTap: () => context.go('/home'),
+        ),
       ],
     );
   }
 
   Widget _adminSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _section(
+      title: 'Admin',
       children: [
-        _sectionTitle('Admin'),
-        _buttonGrid([
-          _groupButton(
-            title: 'Publish announcement',
-            onTap: _adminCreateAnnouncementDialog,
-          ),
-          _groupButton(
-            title: 'Correspondence',
-            onTap: () => context.go('/me/correspondence'),
-          ),
-          _groupButton(
-            title: 'Announcements',
-            onTap: () => context.go('/announcements'),
-          ),
-          _groupButton(
-            title: 'Institution',
-            onTap: () => context.go('/institution/dashboard'),
-          ),
-        ]),
+        _sectionRow(
+          title: 'Publish announcement',
+          leading: Icons.campaign_outlined,
+          onTap: _adminCreateAnnouncementDialog,
+        ),
+        _sectionRow(
+          title: 'Correspondence',
+          leading: Icons.forum_outlined,
+          onTap: () => context.go('/me/correspondence'),
+        ),
+        _sectionRow(
+          title: 'Announcements',
+          leading: Icons.notifications_outlined,
+          onTap: () => context.go('/announcements'),
+        ),
+        _sectionRow(
+          title: 'Institution',
+          leading: Icons.apartment_outlined,
+          onTap: () => context.go('/institution/dashboard'),
+        ),
       ],
     );
   }
@@ -840,7 +986,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     for (var i = 0; i < children.length; i++) {
       items.add(children[i]);
       if (i != children.length - 1) {
-        items.add(const SizedBox(height: AuraSpace.s16));
+        items.add(const SizedBox(height: 32));
       }
     }
 
@@ -1019,10 +1165,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             orElse: () => false,
           );
 
-          final postsCount = postsAsync.maybeWhen(
-            data: (items) => items.length,
-            orElse: () => 0,
+          final posts = postsAsync.maybeWhen(
+            data: (items) => items,
+            orElse: () => const <Map<String, dynamic>>[],
           );
+
+          final postsCount = posts.length;
 
           final savedCount = savedAsync.maybeWhen(
             data: (items) => items.length,
@@ -1098,7 +1246,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black12),
+                      border: Border.all(color: AuraSurface.divider),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -1115,22 +1263,72 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ),
               ],
             ),
+            _workSection(
+              context,
+              posts: posts,
+              hasDraft: hasDraft,
+            ),
             _connectionsSection(
               context,
               handle,
               followersCount: followersCount,
               followingCount: followingCount,
             ),
-            _activitySection(
+            _toolsSection(
               context,
               hasDraft: hasDraft,
-              postsCount: postsCount,
               savedCount: savedCount,
               repliesCount: repliesCount,
             ),
             if (isAdmin) _adminSection(context),
           ]);
         },
+      ),
+    );
+  }
+}
+
+class _PostPreviewCard extends StatelessWidget {
+  const _PostPreviewCard({
+    required this.title,
+    required this.preview,
+    required this.onTap,
+  });
+
+  final String title;
+  final String preview;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ui.AuraCard(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AuraText.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (preview.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  preview,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
