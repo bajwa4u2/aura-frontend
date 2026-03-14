@@ -249,7 +249,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     if (!isAuthed) {
       return AuraScaffold(
-        title: 'Search',
+        title: 'Find people and work',
         actions: [
           TextButton(
             onPressed: () => context.go('/login?redirect=%2Fsearch'),

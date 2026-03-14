@@ -1314,7 +1314,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               loadingLabel: 'Loading posts…',
               errorLabel: 'Posts load failed',
               dataBuilder: (items) => _countCard(
-                title: 'Posts',
+                title: 'Your posts',
                 emptyLabel: 'No posts yet.',
                 countLabel:
                     'You have ${(items as List<Map<String, dynamic>>).length} post(s).',

@@ -68,7 +68,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
     return meAsync.when(
       loading: () => AuraScaffold(
-        title: 'Announcements',
+        title: 'Platform notices',
         showHomeAction: true,
         body: const Center(child: CircularProgressIndicator()),
       ),

@@ -128,7 +128,7 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite member', style: AuraText.title),
+                Text('Choose who to invite', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
                   'Search and invite from allowed followers only. This is not an open platform-wide search.',
