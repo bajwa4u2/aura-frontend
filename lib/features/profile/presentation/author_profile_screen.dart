@@ -63,8 +63,27 @@ final myHandleProvider = FutureProvider<String>((ref) async {
 });
 
 class AuthorProfileScreen extends ConsumerWidget {
-  const AuthorProfileScreen({super.key, required this.handle});
+  const AuthorProfileScreen({
+    super.key,
+    required this.handle,
+  });
+
   final String handle;
+
+  void _showMessage(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _invalidateProfileState(WidgetRef ref) {
+    ref.invalidate(authorProvider(handle));
+    ref.invalidate(authorPostsProvider(handle));
+    ref.invalidate(followStateProvider(handle));
+    ref.invalidate(followersProvider(handle));
+    ref.invalidate(followingProvider(handle));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,6 +136,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                 data: (items) => items.length,
                 orElse: () => u.followersCount,
               );
+
               final followingCount = followingAsync.maybeWhen(
                 data: (items) => items.length,
                 orElse: () => u.followingCount,
@@ -133,9 +153,12 @@ class AuthorProfileScreen extends ConsumerWidget {
                         CircleAvatar(
                           radius: 28,
                           backgroundColor: const Color(0x332E2A26),
-                          backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                          backgroundImage:
+                              avatar.isNotEmpty ? NetworkImage(avatar) : null,
                           child: avatar.isEmpty
-                              ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'A')
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                                )
                               : null,
                         ),
                         const SizedBox(width: AuraSpace.s12),
@@ -152,17 +175,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                                 runSpacing: AuraSpace.s8,
                                 children: [
                                   InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => _ProfileConnectionsScreen(
-                                            title: 'Followers',
-                                            handle: handle,
-                                            kind: _ConnectionsKind.followers,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    onTap: () => context.push('/u/$handle/followers'),
                                     child: Text(
                                       '$followersCount followers',
                                       style: AuraText.small.copyWith(
@@ -171,17 +184,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => _ProfileConnectionsScreen(
-                                            title: 'Following',
-                                            handle: handle,
-                                            kind: _ConnectionsKind.following,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    onTap: () => context.push('/u/$handle/following'),
                                     child: Text(
                                       '$followingCount following',
                                       style: AuraText.small.copyWith(
@@ -198,75 +201,126 @@ class AuthorProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AuraSpace.s12),
                     Text(
-                      bio.isNotEmpty ? bio : 'Curated work. Responsible conversation.',
+                      bio.isNotEmpty
+                          ? bio
+                          : 'Curated work. Responsible conversation.',
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                       style: AuraText.body.copyWith(height: 1.35),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    Row(
-                      children: [
-                        Consumer(
-                          builder: (context, ref, _) {
-                            if (!isAuthed) {
-                              return const FilledButton(
-                                onPressed: null,
-                                child: Text('Login to follow'),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        if (!isAuthed) {
+                          return const FilledButton(
+                            onPressed: null,
+                            child: Text('Login to follow'),
+                          );
+                        }
+
+                        if (isSelf) {
+                          return const FilledButton(
+                            onPressed: null,
+                            child: Text('This is you'),
+                          );
+                        }
+
+                        final stateAsync = ref.watch(followStateProvider(handle));
+
+                        return stateAsync.when(
+                          data: (state) {
+                            final trimmed = state.trim();
+                            final repo = ref.read(profileRepositoryProvider);
+                            final dio = ref.read(dioProvider);
+
+                            if (trimmed == 'incoming_pending') {
+                              return Wrap(
+                                spacing: AuraSpace.s10,
+                                runSpacing: AuraSpace.s10,
+                                children: [
+                                  FilledButton(
+                                    onPressed: () async {
+                                      try {
+                                        await dio.post('/users/$handle/follow/accept');
+                                        _invalidateProfileState(ref);
+                                        _showMessage(context, 'Follow request accepted');
+                                      } catch (_) {
+                                        _showMessage(
+                                          context,
+                                          'Could not accept follow request',
+                                        );
+                                      }
+                                    },
+                                    child: const Text('Accept'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () async {
+                                      try {
+                                        await dio.post('/users/$handle/follow/deny');
+                                        _invalidateProfileState(ref);
+                                        _showMessage(context, 'Follow request denied');
+                                      } catch (_) {
+                                        _showMessage(
+                                          context,
+                                          'Could not deny follow request',
+                                        );
+                                      }
+                                    },
+                                    child: const Text('Deny'),
+                                  ),
+                                ],
                               );
                             }
 
-                            if (isSelf) {
-                              return const FilledButton(
-                                onPressed: null,
-                                child: Text('This is you'),
-                              );
-                            }
+                            final label = switch (trimmed) {
+                              'following' => 'Following',
+                              'outgoing_pending' => 'Requested',
+                              _ => 'Follow',
+                            };
 
-                            final stateAsync = ref.watch(followStateProvider(handle));
+                            final canTap =
+                                trimmed == 'none' || trimmed == 'outgoing_pending';
 
-                            return stateAsync.when(
-                              data: (state) {
-                                final trimmed = state.trim();
+                            return FilledButton(
+                              onPressed: !canTap
+                                  ? null
+                                  : () async {
+                                      try {
+                                        if (trimmed == 'outgoing_pending') {
+                                          await repo.unfollow(handle);
+                                          _showMessage(
+                                            context,
+                                            'Follow request canceled',
+                                          );
+                                        } else {
+                                          await repo.follow(handle);
+                                          _showMessage(
+                                            context,
+                                            'Follow request sent',
+                                          );
+                                        }
 
-                                final label = switch (trimmed) {
-                                  'following' => 'Following',
-                                  'outgoing_pending' => 'Requested',
-                                  'incoming_pending' => 'Pending',
-                                  _ => 'Follow',
-                                };
-
-                                final canTap =
-                                    trimmed == 'none' || trimmed == 'outgoing_pending';
-
-                                return FilledButton(
-                                  onPressed: !canTap
-                                      ? null
-                                      : () async {
-                                          final repo = ref.read(profileRepositoryProvider);
-
-                                          if (trimmed == 'outgoing_pending') {
-                                            await repo.unfollow(handle);
-                                          } else {
-                                            await repo.follow(handle);
-                                          }
-
-                                          ref.invalidate(followStateProvider(handle));
-                                        },
-                                  child: Text(label),
-                                );
-                              },
-                              loading: () => const FilledButton(
-                                onPressed: null,
-                                child: Text('…'),
-                              ),
-                              error: (_, __) => FilledButton(
-                                onPressed: () => ref.invalidate(followStateProvider(handle)),
-                                child: const Text('Follow'),
-                              ),
+                                        _invalidateProfileState(ref);
+                                      } catch (_) {
+                                        _showMessage(
+                                          context,
+                                          'Could not update follow state',
+                                        );
+                                      }
+                                    },
+                              child: Text(label),
                             );
                           },
-                        ),
-                      ],
+                          loading: () => const FilledButton(
+                            onPressed: null,
+                            child: Text('…'),
+                          ),
+                          error: (_, __) => FilledButton(
+                            onPressed: () => ref.invalidate(followStateProvider(handle)),
+                            child: const Text('Follow'),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -310,110 +364,6 @@ class AuthorProfileScreen extends ConsumerWidget {
             ),
             error: (e, _) => AuraCard(
               child: Text('Could not load posts: $e', style: AuraText.body),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _ConnectionsKind { followers, following }
-
-class _ProfileConnectionsScreen extends ConsumerWidget {
-  const _ProfileConnectionsScreen({
-    required this.title,
-    required this.handle,
-    required this.kind,
-  });
-
-  final String title;
-  final String handle;
-  final _ConnectionsKind kind;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final itemsAsync = kind == _ConnectionsKind.followers
-        ? ref.watch(followersProvider(handle))
-        : ref.watch(followingProvider(handle));
-
-    return AuraScaffold(
-      title: title,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s12,
-          AuraSpace.s16,
-          AuraSpace.s24,
-        ),
-        children: [
-          itemsAsync.when(
-            data: (items) {
-              if (items.isEmpty) {
-                return AuraCard(
-                  child: Text('No entries yet.', style: AuraText.body),
-                );
-              }
-
-              return Column(
-                children: items
-                    .map<Widget>((item) {
-                      final name = item.displayName.isNotEmpty
-                          ? item.displayName
-                          : (item.handle.isNotEmpty ? item.handle : 'Author');
-                      final avatar = (item.avatarUrl ?? '').trim();
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: AuraCard(
-                          onTap: item.handle.isEmpty
-                              ? null
-                              : () => context.push('/u/${item.handle}'),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: const Color(0x332E2A26),
-                                backgroundImage:
-                                    avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                                child: avatar.isEmpty
-                                    ? Text(
-                                        name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: AuraSpace.s12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: AuraText.body.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    if (item.handle.isNotEmpty)
-                                      Text('@${item.handle}', style: AuraText.muted),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right),
-                            ],
-                          ),
-                        ),
-                      );
-                    })
-                    .toList(),
-              );
-            },
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(),
-              ),
-            ),
-            error: (e, _) => AuraCard(
-              child: Text('Could not load $title: $e', style: AuraText.body),
             ),
           ),
         ],

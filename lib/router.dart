@@ -30,6 +30,8 @@ import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
+import 'features/profile/presentation/followers_screen.dart';
+import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
@@ -420,6 +422,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/u/:handle',
             builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/u/:handle/followers',
+            builder: (context, state) => FollowersScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/u/:handle/following',
+            builder: (context, state) => FollowingScreen(
               handle: state.pathParameters['handle'] ?? '',
             ),
           ),
