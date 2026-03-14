@@ -102,6 +102,18 @@ final dioProvider = Provider<Dio>((ref) {
     return null;
   }
 
+  bool _isUnauthorizedStatus(int? status) {
+    return status == 401 || status == 403;
+  }
+
+  Future<void> _clearSessionState() async {
+    await ref.read(tokenStoreProvider).clearTokens();
+
+    // Nudge dependents that rely on bootstrap/auth state to recompute cleanly.
+    ref.invalidate(sessionBootstrapProvider);
+    ref.invalidate(authStatusProvider);
+  }
+
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
@@ -125,11 +137,7 @@ final dioProvider = Provider<Dio>((ref) {
 
   bool shouldClearTokensOnRefreshFailure(Object error) {
     if (error is DioException) {
-      final status = error.response?.statusCode;
-
-      if (kIsWeb) return false;
-
-      return status == 401 || status == 403;
+      return _isUnauthorizedStatus(error.response?.statusCode);
     }
 
     return false;
@@ -173,7 +181,7 @@ final dioProvider = Provider<Dio>((ref) {
 
         if (res.statusCode == 204) return;
 
-        if (res.statusCode == 401 || res.statusCode == 403) {
+        if (_isUnauthorizedStatus(res.statusCode)) {
           throw DioException(
             requestOptions: res.requestOptions,
             response: res,
@@ -207,7 +215,7 @@ final dioProvider = Provider<Dio>((ref) {
         options: Options(headers: const {'x-token-transport': 'body'}),
       );
 
-      if (res.statusCode == 401 || res.statusCode == 403) {
+      if (_isUnauthorizedStatus(res.statusCode)) {
         throw DioException(
           requestOptions: res.requestOptions,
           response: res,
@@ -326,7 +334,13 @@ final dioProvider = Provider<Dio>((ref) {
 
         try {
           await ensureFreshWebAuthIfNeeded(options);
-        } catch (_) {}
+        } catch (e) {
+          if (shouldClearTokensOnRefreshFailure(e)) {
+            await _clearSessionState();
+          }
+          // Intentionally do not reject here.
+          // Public endpoints should still be allowed to proceed unauthenticated.
+        }
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {
@@ -394,7 +408,9 @@ final dioProvider = Provider<Dio>((ref) {
           handler.resolve(cloned);
         } catch (refreshError) {
           if (shouldClearTokensOnRefreshFailure(refreshError)) {
-            await ref.read(tokenStoreProvider).clearTokens();
+            await _clearSessionState();
+            handler.next(err);
+            return;
           }
 
           if (refreshError is DioException) {

@@ -84,9 +84,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
   ref.listen<AsyncValue<void>>(sessionBootstrapProvider, (_, __) => refresh.value++);
 
+  bool isBootPath(String path) => path == kRouterBootRoute;
+
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
-    if (path == kRouterBootRoute) return true;
+    if (isBootPath(path)) return true;
 
     if (path == '/mission' ||
         path == '/white-paper' ||
@@ -105,7 +107,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
 
     if (path == '/announcements') return true;
-    if (path == '/announcements/create') return false;
     if (path.startsWith('/announcements/')) return true;
 
     if (path == '/auth') return true;
@@ -150,6 +151,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/verify-pending';
   }
 
+  bool requiresAuth(String path) => isMemberPath(path);
+
+  bool requiresVerifiedEmail(String path) {
+    return requiresAuth(path) &&
+        path != '/verify-email' &&
+        path != '/verify-pending';
+  }
+
+  bool isGuestOnly(String path) => isPlainAuthPage(path);
+
   String bootRedirectFor(String target) {
     final encoded = Uri.encodeComponent(_normalizeRedirectDest(target));
     return '$kRouterBootRoute?redirect=$encoded';
@@ -169,48 +180,45 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isBootstrapping = bootstrap.isLoading;
       final isLoggedIn = authStatus == AuthStatus.authed;
-      final isPublic = isPublicPath(path);
-      final isMember = isMemberPath(path);
-      final isPlainAuth = isPlainAuthPage(path);
-      final isAuthAction = isAuthActionPath(path);
       final isVerifyPending = path == '/verify-pending';
       final isVerifyEmail = path == '/verify-email';
+      final isPublic = isPublicPath(path);
+      final isAuthAction = isAuthActionPath(path);
 
-      final bool isVerified = emailVerifiedAsync.maybeWhen(
+      final isVerified = emailVerifiedAsync.maybeWhen(
         data: (value) => value,
         orElse: () => false,
       );
 
+      // 1) During bootstrap, hold member and guest-only routes behind /_boot.
       if (isBootstrapping) {
-        if (path == kRouterBootRoute) return null;
+        if (isBootPath(path)) return null;
 
-        if (isMember || isPlainAuth) {
+        if (requiresAuth(path) || isGuestOnly(path)) {
           return bootRedirectFor(currentLocation);
         }
 
         return null;
       }
 
-      if (path == kRouterBootRoute) {
-        return redirectDest;
-      }
-
-      if (path == '/announcements/create') {
-        final encoded = Uri.encodeComponent('/create');
-
+      // 2) Leaving /_boot must re-check auth and verification before resuming.
+      if (isBootPath(path)) {
         if (!isLoggedIn) {
+          final encoded = Uri.encodeComponent(redirectDest);
           return '/login?redirect=$encoded';
         }
 
         if (!isVerified) {
+          final encoded = Uri.encodeComponent(redirectDest);
           return '/verify-pending?redirect=$encoded';
         }
 
-        return '/create';
+        return redirectDest;
       }
 
+      // 3) Logged-out users can stay on public/auth-action pages, but not member pages.
       if (!isLoggedIn) {
-        if (isMember) {
+        if (requiresAuth(path)) {
           final encoded =
               Uri.encodeComponent(_normalizeRedirectDest(currentLocation));
           return '/login?redirect=$encoded';
@@ -219,15 +227,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
+      // 4) /verify-email must remain reachable for logged-in users.
       if (isVerifyEmail) {
         return null;
       }
 
+      // 5) Logged-in but unverified users are held at verify-pending for
+      //    verified-only pages and guest-only pages.
       if (!isVerified) {
         if (isVerifyPending) return null;
 
-        if (isMember || isPlainAuth) {
-          final encoded = Uri.encodeComponent(redirectDest);
+        if (requiresVerifiedEmail(path) || isGuestOnly(path)) {
+          final encoded =
+              Uri.encodeComponent(_normalizeRedirectDest(currentLocation));
           return '/verify-pending?redirect=$encoded';
         }
 
@@ -236,8 +248,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
+      // 6) Verified users should not sit on login/register/verify-pending.
       if (isVerified) {
-        if (isPlainAuth || isVerifyPending) {
+        if (isGuestOnly(path) || isVerifyPending) {
           return redirectDest;
         }
       }
