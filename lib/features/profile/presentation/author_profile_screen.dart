@@ -1,114 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import 'package:aura/core/auth/session_providers.dart';
-import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_text.dart';
-import '../../feed/domain/post.dart';
-import '../../posts/presentation/widgets/post_card.dart';
-import '../domain/profile.dart';
-import '../providers.dart';
-
-final authorProvider =
-    FutureProvider.family<Profile, String>((ref, handle) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getUser(handle);
-});
-
-final authorPostsProvider =
-    FutureProvider.family<List<Post>, String>((ref, handle) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getUserPosts(handle, limit: 20);
-});
-
-class FollowStateDetail {
-  const FollowStateDetail({
-    required this.state,
-    this.requestId,
-    this.cooldownDaysRemaining,
-  });
-
-  final String state;
-  final String? requestId;
-  final int? cooldownDaysRemaining;
-}
-
-Map<String, dynamic> _asMap(dynamic value) {
-  if (value is Map<String, dynamic>) return value;
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-FollowStateDetail _parseFollowState(dynamic raw) {
-  final root = _asMap(raw);
-  final inner = root['data'] is Map ? _asMap(root['data']) : root;
-
-  final state = (inner['state'] ?? root['state'] ?? 'none').toString().trim();
-  final requestIdRaw = (inner['requestId'] ?? root['requestId'] ?? '')
-      .toString()
-      .trim();
-
-  int? cooldown;
-  final cooldownRaw =
-      inner['cooldownDaysRemaining'] ?? root['cooldownDaysRemaining'];
-  if (cooldownRaw is int) {
-    cooldown = cooldownRaw;
-  } else if (cooldownRaw != null) {
-    cooldown = int.tryParse(cooldownRaw.toString());
-  }
-
-  return FollowStateDetail(
-    state: state.isEmpty ? 'none' : state,
-    requestId: requestIdRaw.isEmpty ? null : requestIdRaw,
-    cooldownDaysRemaining: cooldown,
-  );
-}
-
-final followStateProvider =
-    FutureProvider.family<FollowStateDetail, String>((ref, handle) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/users/$handle/follow/state');
-  return _parseFollowState(res.data);
-});
-
-final followersProvider =
-    FutureProvider.family<List<ProfileListItem>, String>((ref, handle) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getFollowers(handle);
-});
-
-final followingProvider =
-    FutureProvider.family<List<ProfileListItem>, String>((ref, handle) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getFollowing(handle);
-});
-
-final myHandleProvider = FutureProvider<String>((ref) async {
-  final dio = ref.read(dioProvider);
-
-  Response res;
-  try {
-    res = await dio.get('/users/me');
-  } catch (_) {
-    res = await dio.get('/auth/me');
-  }
-
-  final data = res.data;
-  if (data is Map) {
-    final outer = data['data'];
-    if (outer is Map) {
-      return (outer['handle'] ?? '').toString().trim();
-    }
-    return (data['handle'] ?? '').toString().trim();
-  }
-  return '';
-});
-
 class AuthorProfileScreen extends ConsumerWidget {
   const AuthorProfileScreen({
     super.key,
@@ -138,25 +27,12 @@ class AuthorProfileScreen extends ConsumerWidget {
     final postsAsync = ref.watch(authorPostsProvider(handle));
     final followersAsync = ref.watch(followersProvider(handle));
     final followingAsync = ref.watch(followingProvider(handle));
+
     final isAuthed = ref.watch(isAuthedProvider);
     final myHandleAsync = isAuthed ? ref.watch(myHandleProvider) : null;
 
     return AuraScaffold(
-      title: 'Author',
-      actions: [
-        if (isAuthed)
-          myHandleAsync?.maybeWhen(
-                data: (me) => me != handle
-                    ? IconButton(
-                        tooltip: 'Support',
-                        onPressed: () => context.push('/support/$handle'),
-                        icon: const Icon(Icons.volunteer_activism_outlined),
-                      )
-                    : const SizedBox.shrink(),
-                orElse: () => const SizedBox.shrink(),
-              ) ??
-              const SizedBox.shrink(),
-      ],
+      title: 'Profile',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
@@ -168,7 +44,7 @@ class AuthorProfileScreen extends ConsumerWidget {
           userAsync.when(
             data: (u) {
               final name = u.displayName.isNotEmpty ? u.displayName : handle;
-              final bio = u.bio ?? '';
+              final bio = (u.bio ?? '').trim();
               final avatar = (u.avatarUrl ?? '').trim();
 
               final isSelf = isAuthed
@@ -190,25 +66,22 @@ class AuthorProfileScreen extends ConsumerWidget {
               );
 
               return AuraCard(
-                padding: const EdgeInsets.all(AuraSpace.s18),
+                padding: const EdgeInsets.all(AuraSpace.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CircleAvatar(
-                          radius: 28,
+                          radius: 32,
                           backgroundColor: const Color(0x332E2A26),
                           backgroundImage:
                               avatar.isNotEmpty ? NetworkImage(avatar) : null,
                           child: avatar.isEmpty
-                              ? Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                                )
+                              ? Text(name[0].toUpperCase())
                               : null,
                         ),
-                        const SizedBox(width: AuraSpace.s12),
+                        const SizedBox(width: AuraSpace.s14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,48 +89,47 @@ class AuthorProfileScreen extends ConsumerWidget {
                               Text(name, style: AuraText.title),
                               const SizedBox(height: AuraSpace.s4),
                               Text('@$handle', style: AuraText.muted),
-                              const SizedBox(height: AuraSpace.s10),
-                              Wrap(
-                                spacing: AuraSpace.s14,
-                                runSpacing: AuraSpace.s8,
-                                children: [
-                                  InkWell(
-                                    onTap: () =>
-                                        context.push('/u/$handle/followers'),
-                                    child: Text(
-                                      '$followersCount followers',
-                                      style: AuraText.small.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () =>
-                                        context.push('/u/$handle/following'),
-                                    child: Text(
-                                      '$followingCount following',
-                                      style: AuraText.small.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AuraSpace.s12),
-                    Text(
-                      bio.isNotEmpty
-                          ? bio
-                          : 'Curated work. Responsible conversation.',
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.body.copyWith(height: 1.35),
+
+                    if (bio.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      Text(bio, style: AuraText.body),
+                    ],
+
+                    const SizedBox(height: AuraSpace.s16),
+
+                    Wrap(
+                      spacing: AuraSpace.s16,
+                      children: [
+                        InkWell(
+                          onTap: () =>
+                              context.push('/u/$handle/followers'),
+                          child: Text(
+                            '$followersCount followers',
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () =>
+                              context.push('/u/$handle/following'),
+                          child: Text(
+                            '$followingCount following',
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AuraSpace.s14),
+
+                    const SizedBox(height: AuraSpace.s16),
+
                     Consumer(
                       builder: (context, ref, _) {
                         if (!isAuthed) {
@@ -268,73 +140,16 @@ class AuthorProfileScreen extends ConsumerWidget {
                         }
 
                         if (isSelf) {
-                          return const FilledButton(
-                            onPressed: null,
-                            child: Text('This is you'),
-                          );
+                          return const SizedBox.shrink();
                         }
 
-                        final stateAsync = ref.watch(followStateProvider(handle));
+                        final stateAsync =
+                            ref.watch(followStateProvider(handle));
 
                         return stateAsync.when(
                           data: (detail) {
-                            final trimmed = detail.state.trim();
                             final repo = ref.read(profileRepositoryProvider);
-                            final dio = ref.read(dioProvider);
-                            final requestId = (detail.requestId ?? '').trim();
-
-                            if (trimmed == 'incoming_pending') {
-                              return Wrap(
-                                spacing: AuraSpace.s10,
-                                runSpacing: AuraSpace.s10,
-                                children: [
-                                  FilledButton(
-                                    onPressed: requestId.isEmpty
-                                        ? null
-                                        : () async {
-                                            try {
-                                              await dio.post(
-                                                '/users/me/follow/requests/$requestId/accept',
-                                              );
-                                              _invalidateProfileState(ref);
-                                              _showMessage(
-                                                context,
-                                                'Follow request accepted',
-                                              );
-                                            } catch (_) {
-                                              _showMessage(
-                                                context,
-                                                'Could not accept follow request',
-                                              );
-                                            }
-                                          },
-                                    child: const Text('Accept'),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: requestId.isEmpty
-                                        ? null
-                                        : () async {
-                                            try {
-                                              await dio.post(
-                                                '/users/me/follow/requests/$requestId/decline',
-                                              );
-                                              _invalidateProfileState(ref);
-                                              _showMessage(
-                                                context,
-                                                'Follow request denied',
-                                              );
-                                            } catch (_) {
-                                              _showMessage(
-                                                context,
-                                                'Could not deny follow request',
-                                              );
-                                            }
-                                          },
-                                    child: const Text('Deny'),
-                                  ),
-                                ],
-                              );
-                            }
+                            final trimmed = detail.state.trim();
 
                             final label = switch (trimmed) {
                               'following' => 'Following',
@@ -354,7 +169,7 @@ class AuthorProfileScreen extends ConsumerWidget {
                                           await repo.unfollow(handle);
                                           _showMessage(
                                             context,
-                                            'Follow request canceled',
+                                            'Request canceled',
                                           );
                                         } else {
                                           await repo.follow(handle);
@@ -366,18 +181,10 @@ class AuthorProfileScreen extends ConsumerWidget {
 
                                         _invalidateProfileState(ref);
                                       } catch (_) {
-                                        final cooldown = detail.cooldownDaysRemaining;
-                                        if (cooldown != null && cooldown > 0) {
-                                          _showMessage(
-                                            context,
-                                            'You can request again in $cooldown day(s)',
-                                          );
-                                        } else {
-                                          _showMessage(
-                                            context,
-                                            'Could not update follow state',
-                                          );
-                                        }
+                                        _showMessage(
+                                          context,
+                                          'Could not update follow state',
+                                        );
                                       }
                                     },
                               child: Text(label),
@@ -400,16 +207,20 @@ class AuthorProfileScreen extends ConsumerWidget {
               );
             },
             loading: () => const Padding(
-              padding: EdgeInsets.all(AuraSpace.s12),
+              padding: EdgeInsets.all(20),
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (e, _) => AuraCard(
-              child: Text('Could not load author: $e', style: AuraText.body),
+              child: Text('Could not load profile: $e'),
             ),
           ),
-          const SizedBox(height: AuraSpace.s16),
-          Text('Selected work', style: AuraText.title),
+
+          const SizedBox(height: AuraSpace.s18),
+
+          Text('Work', style: AuraText.title),
+
           const SizedBox(height: AuraSpace.s10),
+
           postsAsync.when(
             data: (items) {
               if (items.isEmpty) {
@@ -420,23 +231,22 @@ class AuthorProfileScreen extends ConsumerWidget {
 
               return Column(
                 children: items
-                    .map<Widget>(
+                    .map(
                       (p) => Padding(
-                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                        child: PostCard(post: p, compact: false),
+                        padding:
+                            const EdgeInsets.only(bottom: AuraSpace.s10),
+                        child: PostCard(post: p),
                       ),
                     )
                     .toList(),
               );
             },
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(),
-              ),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
             ),
             error: (e, _) => AuraCard(
-              child: Text('Could not load posts: $e', style: AuraText.body),
+              child: Text('Could not load posts: $e'),
             ),
           ),
         ],
