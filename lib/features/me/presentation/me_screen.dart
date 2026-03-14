@@ -1142,7 +1142,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     if (!authed) {
       return AuraScaffold(
-        title: 'Account',
+        showHeader: false,
         body: _cardList([
           ui.AuraCard(
             child: Padding(
@@ -1182,7 +1182,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final profileAsync = ref.watch(meProfileProvider);
 
     return AuraScaffold(
-      title: 'Account',
+      showHeader: false,
       body: profileAsync.when(
         loading: () => _cardList(const [
           ui.AuraCard(
@@ -1295,7 +1295,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               id: id,
               isAdmin: isAdmin,
             ),
-            if (isAdmin) _adminWorkspaceCard(context) else _memberWorkspaceCard(context),
+            if (isAdmin)
+              _adminWorkspaceCard(context)
+            else
+              _memberWorkspaceCard(context),
             _publicHubsCard(context),
             _asyncStatusCard(
               asyncValue: ref.watch(_meDraftProvider),

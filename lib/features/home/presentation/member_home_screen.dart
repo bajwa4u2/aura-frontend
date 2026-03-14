@@ -193,6 +193,7 @@ class MemberHomeScreen extends ConsumerWidget {
         : const AsyncValue<Map<String, dynamic>?>.data(null);
 
     return AuraScaffold(
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
