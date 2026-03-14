@@ -616,7 +616,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     }
   }
 
-  Widget _workspaceTile({
+  Widget _statTile({
     required String title,
     required String detail,
     required String status,
@@ -638,7 +638,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             ),
             padding: const EdgeInsets.all(14),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -646,10 +645,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  detail,
-                  style: AuraText.body,
-                ),
+                Text(detail, style: AuraText.body),
                 const SizedBox(height: 10),
                 Text(
                   status,
@@ -697,7 +693,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _sectionCard({
     required String title,
-    required String intro,
+    String? intro,
     required List<Widget> children,
   }) {
     return ui.AuraCard(
@@ -707,8 +703,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: AuraText.title),
-            const SizedBox(height: 10),
-            Text(intro, style: AuraText.small),
+            if (intro != null && intro.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(intro, style: AuraText.small),
+            ],
             const SizedBox(height: 12),
             _tileGrid(children),
           ],
@@ -718,7 +716,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Widget _profileCard({
-    required BuildContext context,
     required String displayName,
     required String handle,
     required String bio,
@@ -738,10 +735,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             final avatar = GestureDetector(
               onTap: _openEditProfile,
               child: CircleAvatar(
-                radius: 28,
+                radius: 34,
                 backgroundImage:
                     avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+                child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 28) : null,
               ),
             );
 
@@ -754,7 +751,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(identityText, style: AuraText.small),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -771,11 +768,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     ),
                   ),
                 ),
-                if (bio.trim().isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(bio, style: AuraText.body),
-                ],
                 const SizedBox(height: 12),
+                Text(
+                  bio.trim().isNotEmpty
+                      ? bio
+                      : 'This is your member presence inside Aura.',
+                  style: AuraText.body,
+                ),
+                const SizedBox(height: 14),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -785,21 +785,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       child: const Text('Edit profile'),
                     ),
                     OutlinedButton(
-                      onPressed: _busyLogout ? null : _logout,
-                      child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
-                    ),
-                    OutlinedButton(
                       onPressed: _pickAndUploadPhoto,
                       child: const Text('Upload photo'),
                     ),
+                    OutlinedButton(
+                      onPressed: _busyLogout ? null : _logout,
+                      child: Text(_busyLogout ? 'Signing out…' : 'Sign out'),
+                    ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  isAdmin
-                      ? 'This account carries platform administration as well as member access.'
-                      : 'This space is for your personal member account and writing activity.',
-                  style: AuraText.small,
                 ),
                 if (kDebugMode && id.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -816,7 +809,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   avatar,
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   content,
                 ],
               );
@@ -826,7 +819,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 avatar,
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: content),
               ],
             );
@@ -836,152 +829,111 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _adminWorkspaceCard(BuildContext context) {
-    return _sectionCard(
-      title: 'Admin workspace',
-      intro:
-          'These controls belong only to the platform administrator. They should not appear for regular members or institution accounts.',
-      children: [
-        _workspaceTile(
-          title: 'Publish announcement',
-          detail:
-              'Create and publish official platform announcements through the admin announcement flow.',
-          status: 'Admin only',
-          onTap: _adminCreateAnnouncementDialog,
-        ),
-        _workspaceTile(
-          title: 'Correspondence hub',
-          detail:
-              'Open the current platform correspondence surface used for admin-level handling.',
-          status: 'Admin only',
-          onTap: () => context.go('/me/correspondence'),
-        ),
-        _workspaceTile(
-          title: 'Public announcements',
-          detail:
-              'Review the live announcements surface as it appears inside the platform.',
-          status: 'Available now',
-          onTap: () => context.go('/announcements'),
-        ),
-        _workspaceTile(
-          title: 'Institution dashboard',
-          detail:
-              'Open the institution-facing workspace separately from the admin account surface.',
-          status: 'Separate surface',
-          onTap: () => context.go('/institution/dashboard'),
-        ),
-      ],
-    );
-  }
+  Widget _connectionsCard(BuildContext context, String handle) {
+    final hasHandle = handle.trim().isNotEmpty;
 
-  Widget _memberWorkspaceCard(
-    BuildContext context, {
-    required String handle,
-  }) {
     return _sectionCard(
-      title: 'Member workspace',
+      title: 'Connections',
       intro:
-          'This is your personal account surface. It carries member activity only, not admin or institution-only controls.',
+          'The relationship surfaces around your presence in Aura.',
       children: [
-        _workspaceTile(
-          title: 'Compose',
-          detail:
-              'Write a new post from your member account and continue your normal writing flow.',
-          status: 'Available now',
-          onTap: () => context.go('/compose'),
-        ),
-        _workspaceTile(
-          title: 'Saved',
-          detail:
-              'Open the posts and items you have saved from the member feed.',
-          status: 'Available now',
-          onTap: () => context.go('/saved'),
-        ),
-        _workspaceTile(
+        _statTile(
           title: 'Followers',
-          detail: 'Open the people who follow your member profile.',
-          status: handle.trim().isNotEmpty ? 'Available now' : 'Unavailable',
-          onTap: handle.trim().isNotEmpty
-              ? () => context.go('/u/$handle/followers')
-              : null,
+          detail: 'People who follow your profile.',
+          status: hasHandle ? 'Available now' : 'Unavailable',
+          onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
         ),
-        _workspaceTile(
+        _statTile(
           title: 'Following',
-          detail:
-              'Open the people your member account currently follows.',
-          status: handle.trim().isNotEmpty ? 'Available now' : 'Unavailable',
-          onTap: handle.trim().isNotEmpty
-              ? () => context.go('/u/$handle/following')
-              : null,
+          detail: 'People your account currently follows.',
+          status: hasHandle ? 'Available now' : 'Unavailable',
+          onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
         ),
-        _workspaceTile(
+        _statTile(
           title: 'Follow requests',
-          detail:
-              'Review people requesting to follow your account and accept or deny them.',
+          detail: 'Accept or deny pending follow requests.',
           status: 'Available now',
           onTap: () => context.go('/me/follow-requests'),
         ),
-        _workspaceTile(
-          title: 'Announcements',
-          detail:
-              'Read official platform announcements from the public announcements surface.',
+      ],
+    );
+  }
+
+  Widget _activityCard(BuildContext context) {
+    return _sectionCard(
+      title: 'Your activity',
+      intro:
+          'Your writing, saved work, and ongoing presence inside Aura.',
+      children: [
+        _statTile(
+          title: 'Compose',
+          detail: 'Write a new post from your member account.',
           status: 'Available now',
-          onTap: () => context.go('/announcements'),
+          onTap: () => context.go('/compose'),
         ),
-        _workspaceTile(
-          title: 'Institution account',
-          detail:
-              'Institution-related tools live in a separate dashboard so member and institution roles do not blur together.',
-          status: 'Separate surface',
-          onTap: () => context.go('/institution/dashboard'),
+        _statTile(
+          title: 'Draft',
+          detail: 'Open your current draft and continue where you left off.',
+          status: 'Available now',
+          onTap: () => context.go('/compose'),
+        ),
+        _statTile(
+          title: 'Posts',
+          detail: 'Review your published writing and profile activity.',
+          status: 'Available now',
+          onTap: () => context.go('/home'),
+        ),
+        _statTile(
+          title: 'Replies',
+          detail: 'View the replies attached to your activity in Aura.',
+          status: 'Available now',
+          onTap: () => context.go('/home'),
+        ),
+        _statTile(
+          title: 'Saved',
+          detail: 'Open the posts and items you have saved.',
+          status: 'Available now',
+          onTap: () => context.go('/saved'),
         ),
       ],
     );
   }
 
-  Widget _publicHubsCard(BuildContext context) {
-    return ui.AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Public hubs', style: AuraText.title),
-            const SizedBox(height: 10),
-            Text(
-              'These are public-facing pages. They are not role-specific.',
-              style: AuraText.small,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                OutlinedButton(
-                  onPressed: () => context.go('/mission'),
-                  child: const Text('Mission'),
-                ),
-                OutlinedButton(
-                  onPressed: () => context.go('/founder'),
-                  child: const Text('Founder'),
-                ),
-                OutlinedButton(
-                  onPressed: () => context.go('/investors'),
-                  child: const Text('Investors'),
-                ),
-                OutlinedButton(
-                  onPressed: () => context.go('/institutions'),
-                  child: const Text('Institutions'),
-                ),
-                OutlinedButton(
-                  onPressed: () => context.go('/contact'),
-                  child: const Text('Contact'),
-                ),
-              ],
-            ),
-          ],
+  Widget _adminToolsCard(BuildContext context) {
+    return _sectionCard(
+      title: 'Admin tools',
+      intro:
+          'Separate controls for platform administration. Kept secondary to your member identity.',
+      children: [
+        _statTile(
+          title: 'Publish announcement',
+          detail:
+              'Create and publish official platform announcements.',
+          status: 'Admin only',
+          onTap: _adminCreateAnnouncementDialog,
         ),
-      ),
+        _statTile(
+          title: 'Correspondence hub',
+          detail:
+              'Open the admin-level correspondence surface.',
+          status: 'Admin only',
+          onTap: () => context.go('/me/correspondence'),
+        ),
+        _statTile(
+          title: 'Announcements',
+          detail:
+              'Review the live platform announcements surface.',
+          status: 'Available now',
+          onTap: () => context.go('/announcements'),
+        ),
+        _statTile(
+          title: 'Institution dashboard',
+          detail:
+              'Open the institution-facing workspace separately.',
+          status: 'Separate surface',
+          onTap: () => context.go('/institution/dashboard'),
+        ),
+      ],
     );
   }
 
@@ -1314,7 +1266,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
           return _cardList([
             _profileCard(
-              context: context,
               displayName: displayName,
               handle: handle,
               bio: bio,
@@ -1322,14 +1273,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               id: id,
               isAdmin: isAdmin,
             ),
-            if (isAdmin)
-              _adminWorkspaceCard(context)
-            else
-              _memberWorkspaceCard(
-                context,
-                handle: handle,
-              ),
-            _publicHubsCard(context),
+            _connectionsCard(context, handle),
+            _activityCard(context),
             _asyncStatusCard(
               asyncValue: ref.watch(_meDraftProvider),
               loadingLabel: 'Loading draft…',
@@ -1344,7 +1289,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               loadingLabel: 'Loading posts…',
               errorLabel: 'Posts load failed',
               dataBuilder: (items) => _countCard(
-                title: 'Your posts',
+                title: 'Posts',
                 emptyLabel: 'No posts yet.',
                 countLabel:
                     'You have ${(items as List<Map<String, dynamic>>).length} post(s).',
@@ -1356,7 +1301,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ),
                   OutlinedButton(
                     onPressed: () => context.go('/home'),
-                    child: const Text('Member feed'),
+                    child: const Text('Open feed'),
                   ),
                   OutlinedButton(
                     onPressed: () => ref.invalidate(_mePostsProvider),
@@ -1400,7 +1345,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 actions: [
                   OutlinedButton(
                     onPressed: () => context.go('/home'),
-                    child: const Text('Member feed'),
+                    child: const Text('Open feed'),
                   ),
                   OutlinedButton(
                     onPressed: () => ref.invalidate(_meRepliesProvider),
@@ -1409,6 +1354,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ],
               ),
             ),
+            if (isAdmin) _adminToolsCard(context),
           ]);
         },
       ),
