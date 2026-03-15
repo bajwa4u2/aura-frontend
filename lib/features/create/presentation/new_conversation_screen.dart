@@ -151,8 +151,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
   Future<Map<String, dynamic>> _loadMe(Dio dio) async {
     final res = await dio.get('/users/me');
-    final raw = _asMap(res.data);
-    return _unwrapMap(raw);
+    return _deepFirstMap(res.data);
   }
 
   Future<List<_DirectoryEntry>> _loadRelationshipEntries(
@@ -180,7 +179,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }) async {
     try {
       final res = await dio.get(path, queryParameters: query);
-      return _unwrapItems(_asMap(res.data));
+      return _deepFirstList(res.data);
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
       if (status == 401 || status == 403 || status == 404) {
@@ -278,15 +277,17 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     });
 
     try {
-      final space = await _createSpaceFromSelection();
-      final spaceId = _pickString(space, const ['id', 'spaceId', '_id']);
-      final threadId = _pickDefaultThreadId(space);
+      final created = await _createSpaceFromSelection();
+
+      final spaceId = _extractSpaceId(created);
+      final threadId = _extractThreadId(created);
 
       if (!mounted) return;
 
       if (spaceId.isEmpty) {
-        context.go('/me/correspondence');
-        return;
+        throw Exception(
+          'Space was created but the response did not return a usable space id.',
+        );
       }
 
       if (threadId.isNotEmpty) {
@@ -306,7 +307,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> _createSpaceFromSelection() async {
+  Future<dynamic> _createSpaceFromSelection() async {
     final dio = ref.read(dioProvider);
 
     final participantIds = _selectedEntries
@@ -339,7 +340,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
 
     final res = await dio.post('/spaces', data: payload);
-    return _unwrapMap(_asMap(res.data));
+    return res.data;
   }
 
   @override
@@ -748,67 +749,6 @@ class _DirectoryEntry {
   final String? profileRoute;
 }
 
-Map<String, dynamic> _asMap(dynamic value) {
-  if (value is Map<String, dynamic>) return value;
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-Map<String, dynamic> _unwrapMap(Map<String, dynamic> raw) {
-  final direct = raw['item'] ?? raw['data'] ?? raw['result'];
-  if (direct is Map) return Map<String, dynamic>.from(direct);
-  return raw;
-}
-
-List<Map<String, dynamic>> _unwrapItems(Map<String, dynamic> raw) {
-  final candidates = [
-    raw['items'],
-    raw['results'],
-    raw['data'],
-    raw['list'],
-  ];
-
-  for (final candidate in candidates) {
-    if (candidate is List) {
-      return candidate
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-  }
-
-  if (raw.isNotEmpty &&
-      !raw.containsKey('items') &&
-      !raw.containsKey('results') &&
-      !raw.containsKey('data') &&
-      !raw.containsKey('list')) {
-    return [raw];
-  }
-
-  return const [];
-}
-
-Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> raw) {
-  const nestedKeys = [
-    'user',
-    'profile',
-    'member',
-    'account',
-    'author',
-    'follower',
-    'following',
-  ];
-
-  for (final key in nestedKeys) {
-    final value = raw[key];
-    if (value is Map) {
-      return Map<String, dynamic>.from(value);
-    }
-  }
-
-  return raw;
-}
-
 _DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> raw) {
   final user = _unwrapNestedUser(raw);
 
@@ -854,6 +794,182 @@ List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
   return byId.values.toList(growable: false);
 }
 
+Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> raw) {
+  const nestedKeys = [
+    'user',
+    'profile',
+    'member',
+    'account',
+    'author',
+    'follower',
+    'following',
+  ];
+
+  for (final key in nestedKeys) {
+    final value = raw[key];
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+  }
+
+  return raw;
+}
+
+Map<String, dynamic> _deepFirstMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) {
+    final direct = raw;
+    const candidateKeys = [
+      'data',
+      'item',
+      'result',
+      'space',
+      'thread',
+      'payload',
+    ];
+
+    for (final key in candidateKeys) {
+      final nested = direct[key];
+      if (nested is Map) {
+        return _deepFirstMap(Map<String, dynamic>.from(nested));
+      }
+    }
+
+    return direct;
+  }
+
+  if (raw is Map) {
+    return _deepFirstMap(Map<String, dynamic>.from(raw));
+  }
+
+  return <String, dynamic>{};
+}
+
+List<Map<String, dynamic>> _deepFirstList(dynamic raw) {
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    const candidateKeys = [
+      'items',
+      'results',
+      'list',
+      'users',
+      'followers',
+      'following',
+      'data',
+    ];
+
+    for (final key in candidateKeys) {
+      final value = map[key];
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      if (value is Map) {
+        final nested = _deepFirstList(Map<String, dynamic>.from(value));
+        if (nested.isNotEmpty) return nested;
+      }
+    }
+  }
+
+  return const <Map<String, dynamic>>[];
+}
+
+String _extractSpaceId(dynamic raw) {
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    final direct = _pickString(map, const [
+      'id',
+      '_id',
+      'spaceId',
+    ]);
+    if (direct.isNotEmpty) return direct;
+
+    const nestedKeys = [
+      'data',
+      'item',
+      'result',
+      'space',
+      'payload',
+    ];
+
+    for (final key in nestedKeys) {
+      final nested = map[key];
+      final candidate = _extractSpaceId(nested);
+      if (candidate.isNotEmpty) return candidate;
+    }
+  }
+
+  if (raw is List) {
+    for (final item in raw) {
+      final candidate = _extractSpaceId(item);
+      if (candidate.isNotEmpty) return candidate;
+    }
+  }
+
+  return '';
+}
+
+String _extractThreadId(dynamic raw) {
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    final direct = _pickString(map, const [
+      'threadId',
+      'defaultThreadId',
+      'id',
+      '_id',
+    ]);
+    if (direct.isNotEmpty &&
+        (map.containsKey('threadId') ||
+            map.containsKey('defaultThreadId') ||
+            map.containsKey('thread') ||
+            map.containsKey('threads'))) {
+      return direct;
+    }
+
+    final thread = map['thread'];
+    if (thread is Map) {
+      final id = _pickString(Map<String, dynamic>.from(thread), const ['id', '_id']);
+      if (id.isNotEmpty) return id;
+    }
+
+    final threads = map['threads'];
+    if (threads is List && threads.isNotEmpty) {
+      final first = threads.first;
+      if (first is Map) {
+        final id = _pickString(Map<String, dynamic>.from(first), const ['id', '_id']);
+        if (id.isNotEmpty) return id;
+      }
+    }
+
+    const nestedKeys = [
+      'data',
+      'item',
+      'result',
+      'payload',
+      'space',
+    ];
+
+    for (final key in nestedKeys) {
+      final nested = map[key];
+      final candidate = _extractThreadId(nested);
+      if (candidate.isNotEmpty) return candidate;
+    }
+  }
+
+  if (raw is List) {
+    for (final item in raw) {
+      final candidate = _extractThreadId(item);
+      if (candidate.isNotEmpty) return candidate;
+    }
+  }
+
+  return '';
+}
+
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
     final value = map[key];
@@ -868,18 +984,6 @@ String _avatarLetterFrom(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return '?';
   return trimmed.characters.first.toUpperCase();
-}
-
-String _pickDefaultThreadId(Map<String, dynamic> map) {
-  final threads = map['threads'];
-  if (threads is List && threads.isNotEmpty) {
-    final first = threads.first;
-    if (first is Map) {
-      return _pickString(Map<String, dynamic>.from(first), const ['id', '_id']);
-    }
-  }
-
-  return _pickString(map, const ['threadId', 'defaultThreadId']);
 }
 
 String _normalizeHandle(String? value) {

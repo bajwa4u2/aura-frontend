@@ -59,7 +59,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
     _debounce?.cancel();
     setState(() => _searching = true);
 
-    _debounce = Timer(const Duration(milliseconds: 220), () {
+    _debounce = Timer(const Duration(milliseconds: 180), () {
       if (!mounted) return;
       setState(() => _searching = false);
     });
@@ -70,11 +70,15 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
     if (q.isEmpty) return _allCandidates;
 
     return _allCandidates.where((person) {
-      return person.name.toLowerCase().contains(q) ||
-          person.handle.toLowerCase().contains(q) ||
-          person.subtitle.toLowerCase().contains(q) ||
-          person.searchBlob.toLowerCase().contains(q);
-    }).toList();
+      final haystack = [
+        person.name,
+        person.handle,
+        person.subtitle,
+        person.searchBlob,
+      ].join(' ').toLowerCase();
+
+      return haystack.contains(q);
+    }).toList(growable: false);
   }
 
   bool get _canSubmit => !_submitting && _selectedPerson != null;
@@ -89,22 +93,24 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
     try {
       final dio = ref.read(dioProvider);
       final me = await _loadMe(dio);
-      final handle = _pickString(me, const ['handle', 'username']);
+      final myHandle = _pickString(me, const ['handle', 'username']);
 
-      if (handle.isEmpty) {
+      if (myHandle.isEmpty) {
         throw Exception('Could not determine the current user handle.');
       }
 
       final results = await Future.wait<List<Map<String, dynamic>>>([
-        _fetchList(dio, '/users/$handle/followers'),
-        _fetchList(dio, '/users/$handle/following'),
+        _fetchList(dio, '/users/$myHandle/followers'),
+        _fetchList(dio, '/users/$myHandle/following'),
       ]);
 
-      final merged = results.expand((e) => e).toList();
+      final merged = results.expand((e) => e).toList(growable: false);
+
       final candidates = merged
           .map(_candidateFromMap)
           .whereType<_InviteCandidate>()
-          .toList();
+          .where((candidate) => candidate.userId.trim().isNotEmpty)
+          .toList(growable: false);
 
       final deduped = _dedupeCandidates(candidates)
         ..sort(
@@ -112,6 +118,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
         );
 
       if (!mounted) return;
+
       setState(() {
         _allCandidates = deduped;
         _loading = false;
@@ -127,7 +134,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
 
   Future<Map<String, dynamic>> _loadMe(Dio dio) async {
     final res = await dio.get('/users/me');
-    return _unwrapMap(_asMap(res.data));
+    return _deepFirstMap(res.data);
   }
 
   Future<List<Map<String, dynamic>>> _fetchList(
@@ -136,7 +143,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
   ) async {
     try {
       final res = await dio.get(path);
-      return _unwrapItems(_asMap(res.data));
+      return _deepFirstList(res.data);
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
       if (status == 401 || status == 403 || status == 404) {
@@ -172,35 +179,13 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Invite sent to ${selected.name}.',
-          ),
+          content: Text('Invite sent to ${selected.name}.'),
         ),
       );
 
       context.pop(true);
     } on DioException catch (e) {
-      final responseData = e.response?.data;
-      String message = e.message ?? 'Could not send invite.';
-
-      if (responseData is Map) {
-        final map = Map<String, dynamic>.from(responseData);
-        final nestedError = map['error'];
-        if (nestedError is Map) {
-          final nestedMap = Map<String, dynamic>.from(nestedError);
-          final nestedMessage = (nestedMap['message'] ?? '').toString().trim();
-          if (nestedMessage.isNotEmpty) {
-            message = nestedMessage;
-          }
-        } else {
-          final directMessage = (map['message'] ?? '').toString().trim();
-          if (directMessage.isNotEmpty) {
-            message = directMessage;
-          }
-        }
-      } else if (responseData != null) {
-        message = responseData.toString();
-      }
+      final message = _extractDioMessage(e);
 
       if (!mounted) return;
       setState(() {
@@ -220,6 +205,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
 
   void _selectPerson(_InviteCandidate person) {
     setState(() {
+      _submitError = null;
       if (_selectedPerson?.id == person.id) {
         _selectedPerson = null;
       } else {
@@ -246,7 +232,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
                   Text('Invite member', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'Invites are limited to people in your followers and following relationships.',
+                    'Connected members from your followers and following relationships appear here.',
                     style: AuraText.body,
                   ),
                 ],
@@ -257,7 +243,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Search', style: AuraText.title),
+                  Text('Find member', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
@@ -303,19 +289,24 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('People', style: AuraText.title),
+                  Text('Members', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   if (_loading)
-                    const _LoadingBlock(label: 'Loading people...')
+                    const _LoadingBlock(label: 'Loading members...')
                   else if (_loadError != null)
                     _InlineErrorBlock(
-                      title: 'Could not load people',
+                      title: 'Could not load connected members',
                       body: _loadError!,
                       onRetry: _loadCandidates,
                     )
+                  else if (_allCandidates.isEmpty)
+                    Text(
+                      'No connected members were found from followers or following yet.',
+                      style: AuraText.body,
+                    )
                   else if (filteredCandidates.isEmpty)
                     Text(
-                      'No matching people found.',
+                      'No matching members found.',
                       style: AuraText.body,
                     )
                   else
@@ -329,7 +320,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
                             onTap: () => _selectPerson(filteredCandidates[i]),
                             onOpenProfile: filteredCandidates[i].profileRoute == null
                                 ? null
-                                : () => context.go(
+                                : () => context.push(
                                       filteredCandidates[i].profileRoute!,
                                     ),
                           ),
@@ -450,7 +441,9 @@ class _InvitePersonRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${person.handle} · ${person.subtitle}',
+                    person.handle.isEmpty
+                        ? person.subtitle
+                        : '${person.handle} · ${person.subtitle}',
                     style: AuraText.small,
                   ),
                 ],
@@ -618,7 +611,7 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
   final user = _unwrapNestedUser(item);
 
   final userId = _pickString(user, const ['id', 'userId', '_id']);
-  final handle = _cleanHandle(
+  final cleanHandle = _cleanHandle(
     _pickString(user, const ['handle', 'username', 'userHandle']),
   );
   final name = _pickString(
@@ -626,7 +619,7 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
     const ['displayName', 'fullName', 'name', 'username', 'handle'],
   );
 
-  if (userId.isEmpty || name.isEmpty && handle.isEmpty) {
+  if (userId.isEmpty && cleanHandle.isEmpty && name.isEmpty) {
     return null;
   }
 
@@ -635,97 +628,40 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
     const ['state', 'relationship', 'followState', 'status'],
   ).replaceAll('_', ' ');
 
+  final bio = _pickString(
+    user,
+    const ['bio', 'headline', 'summary', 'tagline'],
+  );
+
   final subtitleParts = <String>[
     if (relationship.isNotEmpty) relationship,
+    if (bio.isNotEmpty) bio,
   ];
 
+  final resolvedName = name.isNotEmpty
+      ? name
+      : (cleanHandle.isNotEmpty ? cleanHandle : 'Member');
+
+  final handleLabel = cleanHandle.isNotEmpty ? '@$cleanHandle' : '';
+
   return _InviteCandidate(
-    id: userId,
+    id: userId.isNotEmpty ? userId : cleanHandle,
     userId: userId,
-    name: name.isNotEmpty ? name : handle,
-    handle: handle.isNotEmpty ? '@$handle' : '',
+    name: resolvedName,
+    handle: handleLabel,
     subtitle: subtitleParts.isEmpty ? 'Connected' : subtitleParts.join(' · '),
-    searchBlob: [name, handle, relationship].join(' '),
-    profileRoute: handle.isEmpty ? null : '/u/$handle',
+    searchBlob: [resolvedName, cleanHandle, relationship, bio].join(' '),
+    profileRoute: cleanHandle.isEmpty ? null : '/u/$cleanHandle',
   );
 }
 
 List<_InviteCandidate> _dedupeCandidates(List<_InviteCandidate> items) {
   final map = <String, _InviteCandidate>{};
   for (final item in items) {
-    map[item.id] = item;
+    final key = item.userId.isNotEmpty ? item.userId : item.id;
+    map[key] = item;
   }
-  return map.values.toList();
-}
-
-Map<String, dynamic> _asMap(dynamic value) {
-  if (value is Map<String, dynamic>) return value;
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-Map<String, dynamic> _unwrapMap(Map<String, dynamic> raw) {
-  final data = raw['data'];
-
-  if (data is Map<String, dynamic>) {
-    if (data['data'] is Map) {
-      return Map<String, dynamic>.from(data['data'] as Map);
-    }
-    return data;
-  }
-
-  if (data is Map) {
-    final mapped = Map<String, dynamic>.from(data);
-    if (mapped['data'] is Map) {
-      return Map<String, dynamic>.from(mapped['data'] as Map);
-    }
-    return mapped;
-  }
-
-  return raw;
-}
-
-List<Map<String, dynamic>> _unwrapItems(Map<String, dynamic> raw) {
-  dynamic current = raw;
-
-  if (current['data'] is Map) current = current['data'];
-
-  if (current is Map && current['items'] is List) {
-    return (current['items'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  if (current is Map && current['data'] is List) {
-    return (current['data'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  if (current is Map && current['results'] is List) {
-    return (current['results'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  if (raw['items'] is List) {
-    return (raw['items'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  if (raw['data'] is List) {
-    return (raw['data'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  return const <Map<String, dynamic>>[];
+  return map.values.toList(growable: false);
 }
 
 Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
@@ -736,6 +672,7 @@ Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
     'author',
     'follower',
     'following',
+    'account',
   ];
 
   for (final key in nestedKeys) {
@@ -747,10 +684,79 @@ Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
   return item;
 }
 
+Map<String, dynamic> _deepFirstMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) {
+    const candidateKeys = [
+      'data',
+      'item',
+      'result',
+      'payload',
+      'user',
+      'me',
+    ];
+
+    for (final key in candidateKeys) {
+      final nested = raw[key];
+      if (nested is Map) {
+        return _deepFirstMap(Map<String, dynamic>.from(nested));
+      }
+    }
+
+    return raw;
+  }
+
+  if (raw is Map) {
+    return _deepFirstMap(Map<String, dynamic>.from(raw));
+  }
+
+  return <String, dynamic>{};
+}
+
+List<Map<String, dynamic>> _deepFirstList(dynamic raw) {
+  if (raw is List) {
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList(growable: false);
+  }
+
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    const candidateKeys = [
+      'items',
+      'results',
+      'list',
+      'users',
+      'followers',
+      'following',
+      'data',
+    ];
+
+    for (final key in candidateKeys) {
+      final value = map[key];
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(growable: false);
+      }
+      if (value is Map) {
+        final nested = _deepFirstList(Map<String, dynamic>.from(value));
+        if (nested.isNotEmpty) return nested;
+      }
+    }
+  }
+
+  return const <Map<String, dynamic>>[];
+}
+
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
-    final value = (map[key] ?? '').toString().trim();
-    if (value.isNotEmpty) return value;
+    final value = map[key];
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) return text;
   }
   return '';
 }
@@ -759,4 +765,33 @@ String _cleanHandle(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return '';
   return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
+}
+
+String _extractDioMessage(DioException e) {
+  final responseData = e.response?.data;
+  String message = e.message ?? 'Could not send invite.';
+
+  if (responseData is Map) {
+    final map = Map<String, dynamic>.from(responseData);
+    final nestedError = map['error'];
+    if (nestedError is Map) {
+      final nestedMap = Map<String, dynamic>.from(nestedError);
+      final nestedMessage = (nestedMap['message'] ?? '').toString().trim();
+      if (nestedMessage.isNotEmpty) {
+        return nestedMessage;
+      }
+    }
+
+    final directMessage = (map['message'] ?? '').toString().trim();
+    if (directMessage.isNotEmpty) {
+      return directMessage;
+    }
+  } else if (responseData != null) {
+    final text = responseData.toString().trim();
+    if (text.isNotEmpty) {
+      return text;
+    }
+  }
+
+  return message;
 }
