@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
-import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -64,6 +63,40 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
+  void _openPrivateConversation(Profile profile) {
+    final userId = _cleanValue(profile.id);
+    final displayName = _cleanValue(profile.displayName);
+    final handle = _cleanValue(widget.handle);
+
+    final uri = Uri(
+      path: '/me/correspondence/create/conversation',
+      queryParameters: {
+        if (userId.isNotEmpty) 'userId': userId,
+        if (handle.isNotEmpty) 'handle': handle,
+        if (displayName.isNotEmpty) 'name': displayName,
+      },
+    );
+
+    context.go(uri.toString());
+  }
+
+  void _openInviteToSpace(Profile profile) {
+    final userId = _cleanValue(profile.id);
+    final displayName = _cleanValue(profile.displayName);
+    final handle = _cleanValue(widget.handle);
+
+    final uri = Uri(
+      path: '/me/correspondence',
+      queryParameters: {
+        if (userId.isNotEmpty) 'invite_user_id': userId,
+        if (handle.isNotEmpty) 'invite_handle': handle,
+        if (displayName.isNotEmpty) 'invite_name': displayName,
+      },
+    );
+
+    context.go(uri.toString());
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = ref.read(profileRepositoryProvider);
@@ -100,24 +133,26 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           }
 
           final bundle = snapshot.data!;
-          final Profile profile = bundle.profile;
-          final List<Post> posts = bundle.posts;
-          final String followState = bundle.followState;
+          final profile = bundle.profile;
+          final posts = bundle.posts;
+          final followState = bundle.followState;
 
-          final String name = profile.displayName.trim().isNotEmpty
+          final name = profile.displayName.trim().isNotEmpty
               ? profile.displayName.trim()
               : widget.handle;
-          final String bio = (profile.bio ?? '').trim();
-          final String avatar = (profile.avatarUrl ?? '').trim();
+          final bio = (profile.bio ?? '').trim();
+          final avatar = (profile.avatarUrl ?? '').trim();
 
-          final String followLabel = switch (followState) {
+          final followLabel = switch (followState) {
             'following' => 'Following',
             'outgoing_pending' => 'Requested',
             _ => 'Follow',
           };
 
-          final bool canTap =
+          final canFollowAction =
               followState == 'none' || followState == 'outgoing_pending';
+
+          final canCorrespond = isAuthed && followState == 'following';
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -161,7 +196,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                           : followState == 'outgoing_pending'
                               ? Icons.schedule
                               : Icons.person_add_alt_1,
-                      onTap: !canTap
+                      onTap: !canFollowAction
                           ? null
                           : () async {
                               try {
@@ -178,8 +213,35 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                               }
                             },
                     ),
+                  ProfileHeaderAction(
+                    label: 'Message',
+                    primary: false,
+                    icon: Icons.chat_bubble_outline,
+                    onTap: canCorrespond
+                        ? () => _openPrivateConversation(profile)
+                        : null,
+                  ),
+                  ProfileHeaderAction(
+                    label: 'Invite to space',
+                    primary: false,
+                    icon: Icons.person_add_alt_outlined,
+                    onTap: canCorrespond
+                        ? () => _openInviteToSpace(profile)
+                        : null,
+                  ),
                 ],
               ),
+              if (isAuthed && !canCorrespond) ...[
+                const SizedBox(height: AuraSpace.s12),
+                AuraCard(
+                  child: Text(
+                    followState == 'outgoing_pending'
+                        ? 'Correspondence opens after the follow relationship is established.'
+                        : 'Follow first to open direct correspondence or invite this person into a space.',
+                    style: AuraText.body,
+                  ),
+                ),
+              ],
               const SizedBox(height: AuraSpace.s18),
               Text('Work', style: AuraText.title),
               const SizedBox(height: AuraSpace.s10),
@@ -221,4 +283,9 @@ class _ProfileBundle {
   final Profile profile;
   final List<Post> posts;
   final String followState;
+}
+
+String _cleanValue(String? value) {
+  final v = (value ?? '').trim();
+  return v;
 }

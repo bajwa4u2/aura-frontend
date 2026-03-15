@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/spaces_repository.dart';
 import '../data/threads_repository.dart';
+import 'invite_member_screen.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
@@ -15,37 +16,39 @@ final _spaceDetailProvider =
   return repo.getSpace(spaceId);
 });
 
-final _threadsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, spaceId) async {
-  final repo = ref.watch(threadsRepositoryProvider);
-  return repo.listThreads(spaceId: spaceId);
-});
+final _threadsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
+  (ref, spaceId) async {
+    final repo = ref.watch(threadsRepositoryProvider);
+    return repo.listThreads(spaceId: spaceId);
+  },
+);
 
-final _invitesProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, spaceId) async {
-  final repo = ref.watch(spacesRepositoryProvider);
-  final invites = await repo.listInvites();
+final _invitesProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
+  (ref, spaceId) async {
+    final repo = ref.watch(spacesRepositoryProvider);
+    final invites = await repo.listInvites();
 
-  return invites.where((invite) {
-    final inviteSpaceId = _pickString(invite, const [
-      'spaceId',
-      'space_id',
-    ]);
+    return invites.where((invite) {
+      final inviteSpaceId = _pickString(invite, const [
+        'spaceId',
+        'space_id',
+      ]);
 
-    if (inviteSpaceId == spaceId) return true;
+      if (inviteSpaceId == spaceId) return true;
 
-    final nestedSpace = invite['space'];
-    if (nestedSpace is Map) {
-      final nestedId = _pickString(
-        Map<String, dynamic>.from(nestedSpace),
-        const ['id', 'spaceId'],
-      );
-      return nestedId == spaceId;
-    }
+      final nestedSpace = invite['space'];
+      if (nestedSpace is Map) {
+        final nestedId = _pickString(
+          Map<String, dynamic>.from(nestedSpace),
+          const ['id', 'spaceId'],
+        );
+        return nestedId == spaceId;
+      }
 
-    return false;
-  }).toList();
-});
+      return false;
+    }).toList();
+  },
+);
 
 class SpaceScreen extends ConsumerWidget {
   const SpaceScreen({super.key, required this.spaceId});
@@ -90,7 +93,7 @@ class SpaceScreen extends ConsumerWidget {
                 data: (space) => _SpaceHeaderCard(
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
-                  onInviteMember: () => _showInviteDialog(context, ref),
+                  onInviteMember: () => _openInviteScreen(context, ref),
                   onNewConversation: () =>
                       context.go('/me/correspondence/create/conversation'),
                 ),
@@ -126,7 +129,7 @@ class SpaceScreen extends ConsumerWidget {
                       _MembersTab(spaceAsync: spaceAsync),
                       _InvitesTab(
                         invitesAsync: invitesAsync,
-                        onInviteMember: () => _showInviteDialog(context, ref),
+                        onInviteMember: () => _openInviteScreen(context, ref),
                         onRevokeInvite: (inviteId) async {
                           await ref
                               .read(spacesRepositoryProvider)
@@ -157,14 +160,16 @@ class SpaceScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _showInviteDialog(BuildContext context, WidgetRef ref) async {
-    final invited = await showDialog<bool>(
-      context: context,
-      builder: (_) => _InviteMemberDialog(spaceId: spaceId),
+  Future<void> _openInviteScreen(BuildContext context, WidgetRef ref) async {
+    final invited = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => InviteMemberScreen(spaceId: spaceId),
+      ),
     );
 
     if (invited == true) {
       ref.invalidate(_invitesProvider(spaceId));
+      ref.invalidate(_spaceDetailProvider(spaceId));
     }
   }
 }
@@ -674,122 +679,6 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
         FilledButton(
           onPressed: _submitting ? null : _submit,
           child: Text(_submitting ? 'Creating...' : 'Create'),
-        ),
-      ],
-    );
-  }
-}
-
-class _InviteMemberDialog extends ConsumerStatefulWidget {
-  const _InviteMemberDialog({required this.spaceId});
-
-  final String spaceId;
-
-  @override
-  ConsumerState<_InviteMemberDialog> createState() => _InviteMemberDialogState();
-}
-
-class _InviteMemberDialogState extends ConsumerState<_InviteMemberDialog> {
-  final _userIdController = TextEditingController();
-  String _role = 'MEMBER';
-  bool _submitting = false;
-  String? _errorText;
-
-  @override
-  void dispose() {
-    _userIdController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final userId = _userIdController.text.trim();
-    final spaceId = widget.spaceId.trim();
-
-    if (spaceId.isEmpty || userId.isEmpty) {
-      setState(() {
-        _errorText = 'Please enter a user ID.';
-      });
-      return;
-    }
-
-    setState(() {
-      _submitting = true;
-      _errorText = null;
-    });
-
-    try {
-      await ref.read(spacesRepositoryProvider).inviteMember(
-            spaceId: spaceId,
-            userId: userId,
-            role: _role,
-          );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      setState(() {
-        _errorText = '$e';
-        _submitting = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Invite member'),
-      content: SingleChildScrollView(
-        child: SizedBox(
-          width: 460,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _userIdController,
-                decoration: const InputDecoration(
-                  labelText: 'User ID',
-                  hintText: 'Enter the member user ID',
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              DropdownButtonFormField<String>(
-                value: _role,
-                items: const [
-                  DropdownMenuItem(value: 'MEMBER', child: Text('Member')),
-                  DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
-                ],
-                onChanged: _submitting
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        setState(() => _role = value);
-                      },
-                decoration: const InputDecoration(labelText: 'Role'),
-              ),
-              if (_errorText != null) ...[
-                const SizedBox(height: AuraSpace.s12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _errorText!,
-                    style: AuraText.small.copyWith(
-                      color: Colors.red.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submitting ? null : _submit,
-          child: Text(_submitting ? 'Inviting...' : 'Invite'),
         ),
       ],
     );

@@ -26,22 +26,260 @@ class CorrespondenceHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const _MemberCorrespondenceScreen();
+    final auth = ref.watch(authStatusProvider);
+
+    if (auth != AuthStatus.authed) {
+      return AuraScaffold(
+        title: 'Correspondence',
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            _HeroBand(
+              eyebrow: 'Correspondence',
+              title: 'A governed place for continuing exchange.',
+              body:
+                  'Private conversation, shared spaces, and invitations live here in one ordered surface.',
+              primaryLabel: 'Sign in',
+              onPrimary: () => context.go('/login'),
+              secondaryLabel: 'Back to account',
+              onSecondary: () => context.go('/me'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final spacesAsync = ref.watch(_correspondenceSpacesProvider);
+
+    return AuraScaffold(
+      title: 'Correspondence',
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(_correspondenceSpacesProvider);
+          await ref.read(_correspondenceSpacesProvider.future);
+        },
+        child: spacesAsync.when(
+          loading: () => ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: const [
+              _HeroBand.loading(),
+              SizedBox(height: AuraSpace.s18),
+              _SectionShell.loading(title: 'Continue'),
+              SizedBox(height: AuraSpace.s16),
+              _SectionShell.loading(title: 'Invitations'),
+              SizedBox(height: AuraSpace.s16),
+              _SectionShell.loading(title: 'Spaces'),
+              SizedBox(height: AuraSpace.s16),
+              _SectionShell.loading(title: 'People'),
+              SizedBox(height: AuraSpace.s16),
+              _SectionShell.loading(title: 'Create'),
+            ],
+          ),
+          error: (error, _) => ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              const _HeroBand(
+                eyebrow: 'Correspondence',
+                title: 'A governed place for continuing exchange.',
+                body:
+                    'Private conversation, shared spaces, and invitations live here in one ordered surface.',
+              ),
+              const SizedBox(height: AuraSpace.s18),
+              _ErrorStateCard(
+                title: 'Could not load correspondence',
+                body: '$error',
+                onRetry: () => ref.invalidate(_correspondenceSpacesProvider),
+              ),
+            ],
+          ),
+          data: (spaces) {
+            final sortedSpaces = [...spaces]..sort(_sortSpacesByRecency);
+            final continueItems = _buildContinueItems(sortedSpaces);
+            final peopleItems = _buildPeopleItems(sortedSpaces);
+            final invitationItems = _buildInvitationItems(sortedSpaces);
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                _HeroBand(
+                  eyebrow: 'Correspondence',
+                  title: 'Ordered continuity across people, spaces, and threads.',
+                  body:
+                      'This is not an inbox in identity, but it should behave with inbox-grade clarity. What is active comes forward. What is governed stays durable.',
+                  primaryLabel: 'New conversation',
+                  onPrimary: () =>
+                      context.go('/me/correspondence/create/conversation'),
+                  secondaryLabel: 'Create space',
+                  onSecondary: () =>
+                      context.go('/me/correspondence/create/space'),
+                ),
+                const SizedBox(height: AuraSpace.s18),
+                _SectionShell(
+                  title: 'Continue',
+                  subtitle:
+                      'Recent correspondence ready to reopen, across active spaces and threads.',
+                  child: continueItems.isEmpty
+                      ? const _EmptyStateRow(
+                          title: 'Nothing active yet',
+                          body:
+                              'When correspondence begins, recent activity will collect here first.',
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < continueItems.length; i++) ...[
+                              _ContinueRow(item: continueItems[i]),
+                              if (i != continueItems.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                _SectionShell(
+                  title: 'Invitations',
+                  subtitle:
+                      'Pending access and membership belong near the top, not buried inside another screen.',
+                  trailing: TextButton(
+                    onPressed: () {
+                      final firstSpaceId = _firstSpaceId(sortedSpaces);
+                      if (firstSpaceId.isNotEmpty) {
+                        context.go('/me/correspondence/$firstSpaceId');
+                      }
+                    },
+                    child: const Text('Open spaces'),
+                  ),
+                  child: invitationItems.isEmpty
+                      ? const _EmptyStateRow(
+                          title: 'No invitations surfaced here yet',
+                          body:
+                              'The structural place is locked. Real invitation rows should be wired from live invite data in the next pass.',
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < invitationItems.length; i++) ...[
+                              _InvitationRow(item: invitationItems[i]),
+                              if (i != invitationItems.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                _SectionShell(
+                  title: 'Spaces',
+                  subtitle:
+                      'Governed places for continuing exchange, ordered by recent activity rather than by age alone.',
+                  trailing: TextButton(
+                    onPressed: () =>
+                        context.go('/me/correspondence/create/space'),
+                    child: const Text('Create'),
+                  ),
+                  child: sortedSpaces.isEmpty
+                      ? _EmptyStateRow(
+                          title: 'No spaces yet',
+                          body:
+                              'Create the first shared place and let correspondence gather around it.',
+                          actionLabel: 'Create space',
+                          onAction: () =>
+                              context.go('/me/correspondence/create/space'),
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < sortedSpaces.length; i++) ...[
+                              _SpaceRow(space: sortedSpaces[i]),
+                              if (i != sortedSpaces.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                _SectionShell(
+                  title: 'People',
+                  subtitle:
+                      'Profiles should lead into correspondence. Followers, following, members, and institutes belong here as reachable identities.',
+                  trailing: TextButton(
+                    onPressed: () =>
+                        context.go('/me/correspondence/create/conversation'),
+                    child: const Text('Find people'),
+                  ),
+                  child: peopleItems.isEmpty
+                      ? const _EmptyStateRow(
+                          title: 'No people surfaced yet',
+                          body:
+                              'This section is ready for real members and institutes. It should be wired from live search and relationship data next.',
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < peopleItems.length; i++) ...[
+                              _PersonRow(item: peopleItems[i]),
+                              if (i != peopleItems.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                _SectionShell(
+                  title: 'Create',
+                  subtitle:
+                      'Creation stays available, but it should not dominate the screen.',
+                  child: Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      _ActionPill(
+                        label: 'New conversation',
+                        icon: Icons.chat_bubble_outline,
+                        onTap: () => context
+                            .go('/me/correspondence/create/conversation'),
+                        primary: true,
+                      ),
+                      _ActionPill(
+                        label: 'Create space',
+                        icon: Icons.groups_outlined,
+                        onTap: () =>
+                            context.go('/me/correspondence/create/space'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 
-class _SectionIntroCard extends StatelessWidget {
-  const _SectionIntroCard({
+class _HeroBand extends StatelessWidget {
+  const _HeroBand({
+    required this.eyebrow,
     required this.title,
     required this.body,
-    this.backLabel = 'Back to account',
-    this.backRoute = '/me',
+    this.primaryLabel,
+    this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
+  const _HeroBand.loading()
+      : eyebrow = 'Correspondence',
+        title = 'Loading correspondence...',
+        body = 'Preparing your active exchange surfaces.',
+        primaryLabel = null,
+        onPrimary = null,
+        secondaryLabel = null,
+        onSecondary = null;
+
+  final String eyebrow;
   final String title;
   final String body;
-  final String backLabel;
-  final String backRoute;
+  final String? primaryLabel;
+  final VoidCallback? onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -49,284 +287,234 @@ class _SectionIntroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (title.trim().isNotEmpty) ...[
-            Text(title, style: AuraText.title),
-            const SizedBox(height: AuraSpace.s10),
-          ],
-          Text(body, style: AuraText.body),
-          const SizedBox(height: AuraSpace.s12),
-          OutlinedButton(
-            onPressed: () => context.go(backRoute),
-            child: Text(backLabel),
+          Text(
+            eyebrow,
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
           ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(title, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s10),
+          Text(body, style: AuraText.body),
+          if (primaryLabel != null || secondaryLabel != null) ...[
+            const SizedBox(height: AuraSpace.s14),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                if (primaryLabel != null)
+                  FilledButton(
+                    onPressed: onPrimary,
+                    child: Text(primaryLabel!),
+                  ),
+                if (secondaryLabel != null)
+                  OutlinedButton(
+                    onPressed: onSecondary,
+                    child: Text(secondaryLabel!),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _MemberCorrespondenceScreen extends ConsumerWidget {
-  const _MemberCorrespondenceScreen();
+class _SectionShell extends StatelessWidget {
+  const _SectionShell({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.trailing,
+  });
+
+  const _SectionShell.loading({required this.title})
+      : subtitle = '',
+        child = const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        trailing = null;
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final Widget? trailing;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authStatusProvider);
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AuraText.title),
+                    if (subtitle.trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(subtitle, style: AuraText.body),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: AuraSpace.s12),
+                trailing!,
+              ],
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          child,
+        ],
+      ),
+    );
+  }
+}
 
-    final spacesAsync = auth == AuthStatus.authed
-        ? ref.watch(_correspondenceSpacesProvider)
-        : const AsyncValue<List<Map<String, dynamic>>>.loading();
+class _ContinueItem {
+  const _ContinueItem({
+    required this.id,
+    required this.title,
+    required this.preview,
+    required this.kindLabel,
+    required this.meta,
+    required this.route,
+  });
 
-    return AuraScaffold(
-      title: 'Correspondence',
-      body: RefreshIndicator(
-        onRefresh: () async {
-          if (ref.read(authStatusProvider) != AuthStatus.authed) return;
+  final String id;
+  final String title;
+  final String preview;
+  final String kindLabel;
+  final String meta;
+  final String route;
+}
 
-          ref.invalidate(_correspondenceSpacesProvider);
-          await ref.read(_correspondenceSpacesProvider.future);
-        },
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+class _InvitationItem {
+  const _InvitationItem({
+    required this.title,
+    required this.body,
+    required this.route,
+  });
+
+  final String title;
+  final String body;
+  final String route;
+}
+
+class _PeopleItem {
+  const _PeopleItem({
+    required this.title,
+    required this.subtitle,
+    required this.actionLabel,
+    required this.route,
+  });
+
+  final String title;
+  final String subtitle;
+  final String actionLabel;
+  final String route;
+}
+
+class _ContinueRow extends StatelessWidget {
+  const _ContinueRow({required this.item});
+
+  final _ContinueItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.go(item.route),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SectionIntroCard(
-              title: 'Private conversations',
-              body:
-                  'Private conversations and small group discussions connected to your account.',
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            FilledButton.icon(
-              onPressed: auth == AuthStatus.authed
-                  ? () => context.go('/me/correspondence/create/conversation')
-                  : null,
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Start new conversation'),
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            AuraCard(
+            _LetterBadge(label: item.kindLabel),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Spaces', style: AuraText.title),
-                            const SizedBox(height: AuraSpace.s8),
-                            Text(
-                              'Spaces organize ongoing conversations with specific groups.',
-                              style: AuraText.body,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      FilledButton(
-                        onPressed: auth == AuthStatus.authed
-                            ? () => _showCreateSpaceDialog(context, ref)
-                            : null,
-                        child: const Text('New space'),
-                      ),
-                    ],
+                  Text(
+                    item.title,
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: AuraSpace.s14),
-                  spacesAsync.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    item.preview,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small,
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                  Text(
+                    item.meta,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    error: (error, _) => _InlineStateCard(
-                      title: 'Could not load spaces',
-                      body: '$error',
-                      actionLabel: 'Try again',
-                      onAction: () =>
-                          ref.invalidate(_correspondenceSpacesProvider),
-                    ),
-                    data: (spaces) {
-                      if (spaces.isEmpty) {
-                        return _InlineStateCard(
-                          title: 'No spaces yet',
-                          body:
-                              'Create your first space to organize conversations with others.',
-                          actionLabel: 'Create space',
-                          onAction: auth == AuthStatus.authed
-                              ? () => _showCreateSpaceDialog(context, ref)
-                              : () {},
-                        );
-                      }
-
-                      return Column(
-                        children: [
-                          for (var i = 0; i < spaces.length; i++) ...[
-                            _SpaceTile(space: spaces[i]),
-                            if (i != spaces.length - 1)
-                              const SizedBox(height: AuraSpace.s10),
-                          ],
-                        ],
-                      );
-                    },
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: AuraSpace.s10),
+            const Icon(Icons.chevron_right, size: 18),
           ],
         ),
       ),
     );
   }
-
-  Future<void> _showCreateSpaceDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final created = await showDialog<bool>(
-      context: context,
-      builder: (_) => const _CreateSpaceDialog(),
-    );
-
-    if (created == true) {
-      ref.invalidate(_correspondenceSpacesProvider);
-    }
-  }
 }
 
-class _CreateSpaceDialog extends ConsumerStatefulWidget {
-  const _CreateSpaceDialog();
+class _InvitationRow extends StatelessWidget {
+  const _InvitationRow({required this.item});
 
-  @override
-  ConsumerState<_CreateSpaceDialog> createState() => _CreateSpaceDialogState();
-}
-
-class _CreateSpaceDialogState extends ConsumerState<_CreateSpaceDialog> {
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-
-  String _visibility = 'PRIVATE';
-  bool _submitting = false;
-  String? _errorText;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final name = _nameController.text.trim();
-    final description = _descriptionController.text.trim();
-
-    if (name.isEmpty) {
-      setState(() {
-        _errorText = 'Please enter a space name.';
-      });
-      return;
-    }
-
-    setState(() {
-      _submitting = true;
-      _errorText = null;
-    });
-
-    try {
-      final repo = ref.read(spacesRepositoryProvider);
-
-      await repo.createSpace(
-        name: name,
-        description: description.isEmpty ? null : description,
-        visibility: _visibility,
-      );
-
-      if (!mounted) return;
-
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      setState(() {
-        _errorText = '$e';
-        _submitting = false;
-      });
-    }
-  }
+  final _InvitationItem item;
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create space'),
-      content: SingleChildScrollView(
-        child: SizedBox(
-          width: 460,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Space name',
-                  hintText: 'Family, Research, Outreach',
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              TextField(
-                controller: _descriptionController,
-                minLines: 3,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Optional context for this space',
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              DropdownButtonFormField<String>(
-                value: _visibility,
-                items: const [
-                  DropdownMenuItem(value: 'PRIVATE', child: Text('Private')),
-                  DropdownMenuItem(value: 'SHARED', child: Text('Shared')),
-                ],
-                onChanged: _submitting
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        setState(() => _visibility = value);
-                      },
-                decoration: const InputDecoration(
-                  labelText: 'Visibility',
-                ),
-              ),
-              if (_errorText != null) ...[
-                const SizedBox(height: AuraSpace.s12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _errorText!,
-                    style: AuraText.small.copyWith(
-                      color: Colors.red.shade700,
-                    ),
+    return InkWell(
+      onTap: () => context.go(item.route),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LetterBadge(label: 'INV'),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
-                ),
-              ],
-            ],
-          ),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    item.body,
+                    style: AuraText.small,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            const Icon(Icons.chevron_right, size: 18),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submitting ? null : _submit,
-          child: Text(_submitting ? 'Creating...' : 'Create'),
-        ),
-      ],
     );
   }
 }
 
-class _SpaceTile extends StatelessWidget {
-  const _SpaceTile({required this.space});
+class _SpaceRow extends StatelessWidget {
+  const _SpaceRow({required this.space});
 
   final Map<String, dynamic> space;
 
@@ -338,46 +526,67 @@ class _SpaceTile extends StatelessWidget {
     final visibility = _pickString(space, const ['visibility', 'type']);
     final memberCount = _pickInt(space, const ['memberCount', 'membersCount']);
     final threadCount = _pickInt(space, const ['threadCount', 'threadsCount']);
+    final updatedAt = _pickString(space, const [
+      'updatedAt',
+      'lastActivityAt',
+      'lastMessageAt',
+      'createdAt',
+    ]);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
       onTap: id.isEmpty ? null : () => context.go('/me/correspondence/$id'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  name.isEmpty ? 'Untitled space' : name,
-                  style: AuraText.title,
-                ),
-                if (visibility.isNotEmpty)
-                  _Pill(label: visibility.replaceAll('_', ' ')),
-              ],
+            const _LetterBadge(label: 'SP'),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    runSpacing: AuraSpace.s8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        name.isEmpty ? 'Untitled space' : name,
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (visibility.isNotEmpty)
+                        _MiniPill(label: visibility.replaceAll('_', ' ')),
+                    ],
+                  ),
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small,
+                    ),
+                  ],
+                  const SizedBox(height: AuraSpace.s8),
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    runSpacing: AuraSpace.s8,
+                    children: [
+                      _MiniMeta(label: 'Members', value: '$memberCount'),
+                      _MiniMeta(label: 'Threads', value: '$threadCount'),
+                      if (updatedAt.isNotEmpty)
+                        _MiniMeta(label: 'Active', value: updatedAt),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s8),
-              Text(description, style: AuraText.body),
-            ],
-            const SizedBox(height: AuraSpace.s12),
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                _MetaChip(label: 'Members', value: '$memberCount'),
-                _MetaChip(label: 'Threads', value: '$threadCount'),
-                if (id.isNotEmpty) _MetaChip(label: 'ID', value: id),
-              ],
-            ),
+            const SizedBox(width: AuraSpace.s10),
+            const Icon(Icons.chevron_right, size: 18),
           ],
         ),
       ),
@@ -385,18 +594,99 @@ class _SpaceTile extends StatelessWidget {
   }
 }
 
-class _InlineStateCard extends StatelessWidget {
-  const _InlineStateCard({
+class _PersonRow extends StatelessWidget {
+  const _PersonRow({required this.item});
+
+  final _PeopleItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.go(item.route),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LetterBadge(label: 'PR'),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    item.subtitle,
+                    style: AuraText.small,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Text(
+              item.actionLabel,
+              style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: AuraSpace.s6),
+            const Icon(Icons.chevron_right, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyStateRow extends StatelessWidget {
+  const _EmptyStateRow({
     required this.title,
     required this.body,
-    required this.actionLabel,
-    required this.onAction,
+    this.actionLabel,
+    this.onAction,
   });
 
   final String title;
   final String body;
-  final String actionLabel;
-  final VoidCallback onAction;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AuraSpace.s6),
+          Text(body, style: AuraText.small),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            OutlinedButton(
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorStateCard extends StatelessWidget {
+  const _ErrorStateCard({
+    required this.title,
+    required this.body,
+    required this.onRetry,
+  });
+
+  final String title;
+  final String body;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -409,8 +699,8 @@ class _InlineStateCard extends StatelessWidget {
           Text(body, style: AuraText.body),
           const SizedBox(height: AuraSpace.s12),
           OutlinedButton(
-            onPressed: onAction,
-            child: Text(actionLabel),
+            onPressed: onRetry,
+            child: const Text('Try again'),
           ),
         ],
       ),
@@ -418,8 +708,62 @@ class _InlineStateCard extends StatelessWidget {
   }
 }
 
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({
+class _ActionPill extends StatelessWidget {
+  const _ActionPill({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    if (primary) {
+      return FilledButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+    );
+  }
+}
+
+class _LetterBadge extends StatelessWidget {
+  const _LetterBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _MiniMeta extends StatelessWidget {
+  const _MiniMeta({
     required this.label,
     required this.value,
   });
@@ -429,25 +773,15 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$label: $value',
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
+    return Text(
+      '$label: $value',
+      style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label});
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({required this.label});
 
   final String label;
 
@@ -455,8 +789,8 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
+        horizontal: AuraSpace.s8,
+        vertical: AuraSpace.s4,
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
@@ -468,6 +802,148 @@ class _Pill extends StatelessWidget {
       ),
     );
   }
+}
+
+List<_ContinueItem> _buildContinueItems(List<Map<String, dynamic>> spaces) {
+  return spaces.take(6).map((space) {
+    final id = _pickString(space, const ['id', '_id', 'spaceId']);
+    final name = _pickString(space, const ['name', 'title']);
+    final description = _pickString(space, const ['description', 'summary']);
+    final threadCount = _pickInt(space, const ['threadCount', 'threadsCount']);
+    final memberCount = _pickInt(space, const ['memberCount', 'membersCount']);
+    final activity = _pickString(space, const [
+      'updatedAt',
+      'lastActivityAt',
+      'lastMessageAt',
+      'createdAt',
+    ]);
+
+    return _ContinueItem(
+      id: id,
+      title: name.isEmpty ? 'Untitled space' : name,
+      preview: description.isEmpty
+          ? 'Open this space to continue the thread of exchange.'
+          : description,
+      kindLabel: 'SP',
+      meta:
+          'Threads $threadCount · Members $memberCount${activity.isNotEmpty ? ' · $activity' : ''}',
+      route: id.isEmpty ? '/me/correspondence' : '/me/correspondence/$id',
+    );
+  }).toList();
+}
+
+List<_InvitationItem> _buildInvitationItems(List<Map<String, dynamic>> spaces) {
+  final items = <_InvitationItem>[];
+
+  for (final space in spaces.take(3)) {
+    final id = _pickString(space, const ['id', '_id', 'spaceId']);
+    final name = _pickString(space, const ['name', 'title']);
+    final memberCount = _pickInt(space, const ['memberCount', 'membersCount']);
+
+    if (id.isEmpty || name.isEmpty) continue;
+
+    items.add(
+      _InvitationItem(
+        title: 'Review access for $name',
+        body:
+            'Membership, invite history, and pending access should open from the space surface. This row is the long-term slot for that action.',
+        route: '/me/correspondence/$id',
+      ),
+    );
+
+    if (memberCount > 0) break;
+  }
+
+  return items;
+}
+
+List<_PeopleItem> _buildPeopleItems(List<Map<String, dynamic>> spaces) {
+  final seen = <String>{};
+  final items = <_PeopleItem>[];
+
+  for (final space in spaces) {
+    final members = _extractMembers(space);
+
+    for (final member in members) {
+      final handle = _pickString(
+        member,
+        const ['handle', 'username', 'userHandle'],
+      );
+      final name = _pickString(
+        member,
+        const ['name', 'displayName', 'fullName', 'username', 'handle'],
+      );
+      final role = _pickString(member, const ['role', 'memberRole']);
+
+      if (handle.isEmpty || seen.contains(handle)) continue;
+      seen.add(handle);
+
+      items.add(
+        _PeopleItem(
+          title: name.isEmpty ? handle : name,
+          subtitle: role.isEmpty ? '@$handle' : '@$handle · $role',
+          actionLabel: 'Open',
+          route: '/u/$handle',
+        ),
+      );
+
+      if (items.length >= 8) return items;
+    }
+  }
+
+  return items;
+}
+
+List<Map<String, dynamic>> _extractMembers(Map<String, dynamic> space) {
+  const candidateKeys = [
+    'members',
+    'participants',
+    'memberList',
+    'participantList',
+    'users',
+  ];
+
+  for (final key in candidateKeys) {
+    final value = space[key];
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+  }
+
+  return const [];
+}
+
+String _firstSpaceId(List<Map<String, dynamic>> spaces) {
+  for (final space in spaces) {
+    final id = _pickString(space, const ['id', '_id', 'spaceId']);
+    if (id.isNotEmpty) return id;
+  }
+  return '';
+}
+
+int _sortSpacesByRecency(Map<String, dynamic> a, Map<String, dynamic> b) {
+  final aValue = _bestDateForSort(a);
+  final bValue = _bestDateForSort(b);
+  return bValue.compareTo(aValue);
+}
+
+DateTime _bestDateForSort(Map<String, dynamic> map) {
+  final raw = _pickString(map, const [
+    'updatedAt',
+    'lastActivityAt',
+    'lastMessageAt',
+    'createdAt',
+  ]);
+
+  if (raw.isEmpty) {
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  return DateTime.tryParse(raw)?.toUtc() ??
+      DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {
