@@ -73,6 +73,10 @@ const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
 const String kRouterBootRoute = '/_boot';
 
+const String kCorrespondenceHubRoute = '/me/correspondence';
+const String kCreateConversationRoute = '/me/correspondence/create/conversation';
+const String kCreateSpaceRoute = '/me/correspondence/create/space';
+
 String _normalizeRedirectDest(
   String? dest, {
   String fallback = '/home',
@@ -146,8 +150,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/me/edit' ||
         path == '/security' ||
         path == '/me/follow-requests' ||
-        path == '/me/correspondence' ||
-        path.startsWith('/me/correspondence/') ||
+        path == kCorrespondenceHubRoute ||
+        path == kCreateConversationRoute ||
+        path == kCreateSpaceRoute ||
+        path.startsWith('$kCorrespondenceHubRoute/') ||
         path == kInstitutionDashboardRoute ||
         path == kInstitutionDomainsRoute ||
         path == kInstitutionProfileRoute ||
@@ -202,8 +208,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic = isPublicPath(path);
       final isAuthAction = isAuthActionPath(path);
 
-      final isVerificationLoading =
-          isLoggedIn && emailVerifiedAsync.isLoading;
+      final isVerificationLoading = isLoggedIn && emailVerifiedAsync.isLoading;
 
       final isVerified = emailVerifiedAsync.maybeWhen(
         data: (value) => value,
@@ -411,50 +416,49 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/me/follow-requests',
             builder: (_, __) => const FollowRequestsScreen(),
           ),
+
+          // Correspondence routes flattened for stable direct navigation
           GoRoute(
-            path: '/me/correspondence',
+            path: kCorrespondenceHubRoute,
             builder: (_, __) => const CorrespondenceHubScreen(),
-            routes: [
-              GoRoute(
-                path: 'create/conversation',
-                builder: (context, state) => NewConversationScreen(
-                  isSharedSpaceMode: false,
-                  initialUserId: state.uri.queryParameters['userId'],
-                  initialHandle: state.uri.queryParameters['handle'],
-                  initialName: state.uri.queryParameters['name'],
-                ),
-              ),
-              GoRoute(
-                path: 'create/space',
-                builder: (context, state) => NewConversationScreen(
-                  isSharedSpaceMode: true,
-                  initialUserId: state.uri.queryParameters['userId'],
-                  initialHandle: state.uri.queryParameters['handle'],
-                  initialName: state.uri.queryParameters['name'],
-                ),
-              ),
-              GoRoute(
-                path: ':spaceId',
-                builder: (context, state) => SpaceScreen(
-                  spaceId: state.pathParameters['spaceId'] ?? '',
-                ),
-                routes: [
-                  GoRoute(
-                    path: 'invite',
-                    builder: (context, state) => InviteMemberScreen(
-                      spaceId: state.pathParameters['spaceId'] ?? '',
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'thread/:threadId',
-                    builder: (context, state) => ThreadScreen(
-                      threadId: state.pathParameters['threadId'] ?? '',
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
+          GoRoute(
+            path: kCreateConversationRoute,
+            builder: (context, state) => NewConversationScreen(
+              isSharedSpaceMode: false,
+              initialUserId: state.uri.queryParameters['userId'],
+              initialHandle: state.uri.queryParameters['handle'],
+              initialName: state.uri.queryParameters['name'],
+            ),
+          ),
+          GoRoute(
+            path: kCreateSpaceRoute,
+            builder: (context, state) => NewConversationScreen(
+              isSharedSpaceMode: true,
+              initialUserId: state.uri.queryParameters['userId'],
+              initialHandle: state.uri.queryParameters['handle'],
+              initialName: state.uri.queryParameters['name'],
+            ),
+          ),
+          GoRoute(
+            path: '/me/correspondence/:spaceId',
+            builder: (context, state) => SpaceScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/me/correspondence/:spaceId/invite',
+            builder: (context, state) => InviteMemberScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/me/correspondence/:spaceId/thread/:threadId',
+            builder: (context, state) => ThreadScreen(
+              threadId: state.pathParameters['threadId'] ?? '',
+            ),
+          ),
+
           GoRoute(
             path: '/compose',
             builder: (context, state) => ComposeScreen(

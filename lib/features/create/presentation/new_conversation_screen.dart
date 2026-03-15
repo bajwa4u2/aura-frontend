@@ -161,8 +161,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     if (handle.trim().isEmpty) return const <_DirectoryEntry>[];
 
     final results = await Future.wait<List<Map<String, dynamic>>>([
-      _fetchList(dio, '/users/$handle/followers'),
-      _fetchList(dio, '/users/$handle/following'),
+      _fetchDirectoryList(dio, '/users/$handle/followers'),
+      _fetchDirectoryList(dio, '/users/$handle/following'),
     ]);
 
     return results
@@ -172,7 +172,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchList(
+  Future<List<Map<String, dynamic>>> _fetchDirectoryList(
     Dio dio,
     String path, {
     Map<String, dynamic>? query,
@@ -187,6 +187,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       }
       rethrow;
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchRequiredList(
+    Dio dio,
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    final res = await dio.get(path, queryParameters: query);
+    return _deepFirstList(res.data);
   }
 
   void _applyInitialSelectionIfNeeded() {
@@ -326,10 +335,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return returnedThreadId;
     }
 
-    final existingThreads = await _fetchList(dio, '/spaces/$spaceId/threads');
-    for (final thread in existingThreads) {
-      final id = _pickString(thread, const ['id', '_id', 'threadId']);
-      if (id.isNotEmpty) return id;
+    final existingThreads = await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
+    final preferredExistingThreadId = _pickPreferredThreadId(existingThreads);
+    if (preferredExistingThreadId.isNotEmpty) {
+      return preferredExistingThreadId;
     }
 
     final res = await dio.post(
@@ -357,15 +366,34 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return directId;
     }
 
-    final refreshedThreads = await _fetchList(dio, '/spaces/$spaceId/threads');
-    for (final thread in refreshedThreads) {
-      final id = _pickString(thread, const ['id', '_id', 'threadId']);
-      if (id.isNotEmpty) return id;
+    final refreshedThreads = await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
+    final preferredRefreshedThreadId = _pickPreferredThreadId(refreshedThreads);
+    if (preferredRefreshedThreadId.isNotEmpty) {
+      return preferredRefreshedThreadId;
     }
 
     throw Exception(
       'Conversation space was created, but no usable thread could be opened.',
     );
+  }
+
+  String _pickPreferredThreadId(List<Map<String, dynamic>> threads) {
+    if (threads.isEmpty) return '';
+
+    for (final thread in threads) {
+      final kind = _pickString(thread, const ['kind', 'type']).toUpperCase();
+      final id = _pickString(thread, const ['id', '_id', 'threadId']);
+      if (id.isNotEmpty && kind == 'DIRECT') {
+        return id;
+      }
+    }
+
+    for (final thread in threads) {
+      final id = _pickString(thread, const ['id', '_id', 'threadId']);
+      if (id.isNotEmpty) return id;
+    }
+
+    return '';
   }
 
   Future<dynamic> _createSpaceFromSelection() async {
