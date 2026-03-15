@@ -277,12 +277,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     });
 
     try {
+      final dio = ref.read(dioProvider);
       final created = await _createSpaceFromSelection();
 
       final spaceId = _extractSpaceId(created);
-      final threadId = _extractThreadId(created);
-
-      if (!mounted) return;
 
       if (spaceId.isEmpty) {
         throw Exception(
@@ -290,11 +288,22 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         );
       }
 
-      if (threadId.isNotEmpty) {
-        context.go('/me/correspondence/$spaceId/thread/$threadId');
-      } else {
+      if (_isSharedSpaceMode) {
+        if (!mounted) return;
         context.go('/me/correspondence/$spaceId');
+        return;
       }
+
+      final selectedMember = _selectedEntries.first;
+      final threadId = await _ensureDirectThreadId(
+        dio,
+        createdResponse: created,
+        spaceId: spaceId,
+        member: selectedMember,
+      );
+
+      if (!mounted) return;
+      context.go('/me/correspondence/$spaceId/thread/$threadId');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -305,6 +314,65 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         setState(() => _submitting = false);
       }
     }
+  }
+
+  Future<String> _ensureDirectThreadId(
+    Dio dio, {
+    required dynamic createdResponse,
+    required String spaceId,
+    required _DirectoryEntry member,
+  }) async {
+    final returnedThreadId = _extractThreadId(createdResponse);
+    if (returnedThreadId.isNotEmpty) {
+      return returnedThreadId;
+    }
+
+    final existingThreads = await _fetchList(dio, '/spaces/$spaceId/threads');
+    for (final thread in existingThreads) {
+      final id = _pickString(thread, const ['id', '_id', 'threadId']);
+      if (id.isNotEmpty) {
+        return id;
+      }
+    }
+
+    final createThreadPayload = <String, dynamic>{
+      'title': member.displayName.trim().isNotEmpty
+          ? member.displayName.trim()
+          : 'Conversation',
+      'kind': 'DIRECT',
+      if (member.userId.trim().isNotEmpty) 'memberIds': [member.userId.trim()],
+    };
+
+    final createThreadRes = await dio.post(
+      '/spaces/$spaceId/threads',
+      data: createThreadPayload,
+    );
+
+    final createdThreadId = _extractThreadId(createThreadRes.data);
+    if (createdThreadId.isNotEmpty) {
+      return createdThreadId;
+    }
+
+    final createdThreadMap = _deepFirstMap(createThreadRes.data);
+    final fallbackThreadId = _pickString(
+      createdThreadMap,
+      const ['id', '_id', 'threadId'],
+    );
+    if (fallbackThreadId.isNotEmpty) {
+      return fallbackThreadId;
+    }
+
+    final threadsAfterCreate = await _fetchList(dio, '/spaces/$spaceId/threads');
+    for (final thread in threadsAfterCreate) {
+      final id = _pickString(thread, const ['id', '_id', 'threadId']);
+      if (id.isNotEmpty) {
+        return id;
+      }
+    }
+
+    throw Exception(
+      'Conversation space was created, but no usable thread could be created.',
+    );
   }
 
   Future<dynamic> _createSpaceFromSelection() async {
@@ -855,6 +923,7 @@ List<Map<String, dynamic>> _deepFirstList(dynamic raw) {
       'users',
       'followers',
       'following',
+      'threads',
       'data',
     ];
 
@@ -871,6 +940,13 @@ List<Map<String, dynamic>> _deepFirstList(dynamic raw) {
         if (nested.isNotEmpty) return nested;
       }
     }
+  }
+
+  if (raw is List) {
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   return const <Map<String, dynamic>>[];
@@ -932,7 +1008,10 @@ String _extractThreadId(dynamic raw) {
 
     final thread = map['thread'];
     if (thread is Map) {
-      final id = _pickString(Map<String, dynamic>.from(thread), const ['id', '_id']);
+      final id = _pickString(
+        Map<String, dynamic>.from(thread),
+        const ['id', '_id', 'threadId'],
+      );
       if (id.isNotEmpty) return id;
     }
 
@@ -940,7 +1019,10 @@ String _extractThreadId(dynamic raw) {
     if (threads is List && threads.isNotEmpty) {
       final first = threads.first;
       if (first is Map) {
-        final id = _pickString(Map<String, dynamic>.from(first), const ['id', '_id']);
+        final id = _pickString(
+          Map<String, dynamic>.from(first),
+          const ['id', '_id', 'threadId'],
+        );
         if (id.isNotEmpty) return id;
       }
     }
