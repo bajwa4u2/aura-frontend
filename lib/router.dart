@@ -190,6 +190,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic = isPublicPath(path);
       final isAuthAction = isAuthActionPath(path);
 
+      final isVerificationLoading =
+          isLoggedIn && emailVerifiedAsync.isLoading;
+
       final isVerified = emailVerifiedAsync.maybeWhen(
         data: (value) => value,
         orElse: () => false,
@@ -202,6 +205,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           return bootRedirectFor(currentLocation);
         }
 
+        return null;
+      }
+
+      // Hold route decisions for already-authenticated users until
+      // verification status has actually resolved. This removes the
+      // brief /verify-pending flash on browser refresh.
+      if (isLoggedIn && isVerificationLoading) {
         return null;
       }
 
