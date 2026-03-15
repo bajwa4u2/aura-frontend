@@ -1,3 +1,4 @@
+// me_screen.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart' as ui;
@@ -180,8 +180,6 @@ class MeScreen extends ConsumerStatefulWidget {
 }
 
 class _MeScreenState extends ConsumerState<MeScreen> {
-  bool _busyLogout = false;
-
   bool _isAdmin(Map<String, dynamic> me) {
     final role = (me['role'] ?? '').toString().toLowerCase();
     if (role == 'admin') return true;
@@ -200,31 +198,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ),
     );
     ref.invalidate(meProfileProvider);
-  }
-
-  Future<void> _logout() async {
-    if (_busyLogout) return;
-    setState(() => _busyLogout = true);
-
-    try {
-      final dio = ref.read(dioProvider);
-      await dio.post('/auth/logout');
-    } catch (_) {
-      // ignore
-    }
-
-    try {
-      ref.read(tokenStoreProvider).clear();
-      ref.invalidate(authStatusProvider);
-      ref.invalidate(isAuthedProvider);
-      ref.invalidate(emailVerifiedProvider);
-      ref.invalidate(meProfileProvider);
-
-      if (!mounted) return;
-      context.go('/public');
-    } finally {
-      if (mounted) setState(() => _busyLogout = false);
-    }
   }
 
   String _firstLineSummary(String body) {
@@ -1193,11 +1166,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   label: 'Upload photo',
                   onTap: _pickAndUploadPhoto,
                   icon: Icons.image_outlined,
-                ),
-                ProfileHeaderAction(
-                  label: _busyLogout ? 'Signing out…' : 'Sign out',
-                  onTap: _busyLogout ? null : _logout,
-                  icon: Icons.logout,
                 ),
               ],
               trailingMeta: [

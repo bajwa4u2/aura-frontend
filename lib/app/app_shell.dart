@@ -1,7 +1,14 @@
+// app_shell.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/auth/auth_providers.dart';
+import '../core/auth/session_providers.dart';
+import '../core/net/dio_provider.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -101,9 +108,7 @@ class AppShell extends StatelessWidget {
                           selectedIndex: selectedIndex,
                           currentPath: path,
                         ),
-                      Expanded(
-                        child: child,
-                      ),
+                      Expanded(child: child),
                     ],
                   ),
                 ),
@@ -205,7 +210,7 @@ class _AuraWordmark extends StatelessWidget {
   }
 }
 
-class _HeaderTools extends StatelessWidget {
+class _HeaderTools extends ConsumerStatefulWidget {
   const _HeaderTools({
     required this.isTablet,
     required this.isDesktop,
@@ -215,8 +220,61 @@ class _HeaderTools extends StatelessWidget {
   final bool isDesktop;
 
   @override
+  ConsumerState<_HeaderTools> createState() => _HeaderToolsState();
+}
+
+class _HeaderToolsState extends ConsumerState<_HeaderTools> {
+  bool _busyLogout = false;
+
+  Future<void> _handleAccountAction(String value) async {
+    switch (value) {
+      case 'profile':
+        context.go('/me');
+        return;
+      case 'settings':
+        context.go('/me/edit');
+        return;
+      case 'logout':
+        await _logout();
+        return;
+    }
+  }
+
+  Future<void> _logout() async {
+    if (_busyLogout) return;
+
+    setState(() => _busyLogout = true);
+
+    final container = ProviderScope.containerOf(context, listen: false);
+    final dio = container.read(dioProvider);
+
+    try {
+      await dio.post('/auth/logout');
+    } catch (_) {
+      // Deliberately continue. Local logout must still complete.
+    }
+
+    if (mounted) {
+      context.go('/public');
+    }
+
+    await Future<void>.delayed(Duration.zero);
+
+    try {
+      await container.read(tokenStoreProvider).clear();
+      container.invalidate(emailVerifiedProvider);
+      container.invalidate(authStatusProvider);
+      container.invalidate(isAuthedProvider);
+    } finally {
+      if (mounted) {
+        setState(() => _busyLogout = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isDesktop) {
+    if (widget.isDesktop) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -234,11 +292,10 @@ class _HeaderTools extends StatelessWidget {
             onTap: () => context.push('/updates'),
           ),
           const SizedBox(width: AuraSpace.s8),
-          _HeaderPillButton(
-            tooltip: 'Me',
-            icon: Icons.person_outline,
-            label: 'Me',
-            onTap: () => context.push('/me'),
+          _HeaderAccountButton(
+            compact: false,
+            busy: _busyLogout,
+            onSelected: (value) => unawaited(_handleAccountAction(value)),
           ),
         ],
       );
@@ -259,12 +316,108 @@ class _HeaderTools extends StatelessWidget {
           onTap: () => context.push('/updates'),
         ),
         const SizedBox(width: AuraSpace.s8),
-        _HeaderIconButton(
-          tooltip: 'Me',
-          icon: Icons.person_outline,
-          onTap: () => context.push('/me'),
+        _HeaderAccountButton(
+          compact: true,
+          busy: _busyLogout,
+          onSelected: (value) => unawaited(_handleAccountAction(value)),
         ),
-        if (isTablet) const SizedBox(width: AuraSpace.s4),
+        if (widget.isTablet) const SizedBox(width: AuraSpace.s4),
+      ],
+    );
+  }
+}
+
+class _HeaderAccountButton extends StatelessWidget {
+  const _HeaderAccountButton({
+    required this.compact,
+    required this.busy,
+    required this.onSelected,
+  });
+
+  final bool compact;
+  final bool busy;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AbsorbPointer(
+      absorbing: busy,
+      child: PopupMenuButton<String>(
+        tooltip: 'Account',
+        onSelected: onSelected,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: AuraSurface.divider),
+        ),
+        color: AuraSurface.card,
+        itemBuilder: (context) => [
+          const PopupMenuItem<String>(
+            value: 'profile',
+            child: _AccountMenuItemRow(
+              icon: Icons.person_outline,
+              label: 'Profile',
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'settings',
+            child: _AccountMenuItemRow(
+              icon: Icons.settings_outlined,
+              label: 'Account settings',
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: 'logout',
+            child: _AccountMenuItemRow(
+              icon: busy ? Icons.hourglass_empty : Icons.logout,
+              label: busy ? 'Signing out…' : 'Sign out',
+              danger: true,
+            ),
+          ),
+        ],
+        child: compact
+            ? _HeaderIconButtonVisual(
+                tooltip: 'Account',
+                icon: busy ? null : Icons.person_outline,
+                progress: busy,
+              )
+            : _HeaderPillButtonVisual(
+                tooltip: 'Account',
+                icon: busy ? null : Icons.person_outline,
+                label: busy ? 'Signing out…' : 'Account',
+                progress: busy,
+              ),
+      ),
+    );
+  }
+}
+
+class _AccountMenuItemRow extends StatelessWidget {
+  const _AccountMenuItemRow({
+    required this.icon,
+    required this.label,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? Colors.redAccent : AuraSurface.ink;
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: AuraSpace.s12),
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -288,19 +441,51 @@ class _HeaderIconButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: AuraSurface.muted,
-          ),
+        child: _HeaderIconButtonVisual(
+          tooltip: tooltip,
+          icon: icon,
+          progress: false,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButtonVisual extends StatelessWidget {
+  const _HeaderIconButtonVisual({
+    required this.tooltip,
+    required this.icon,
+    required this.progress,
+  });
+
+  final String tooltip;
+  final IconData? icon;
+  final bool progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AuraSurface.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Center(
+          child: progress
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  icon,
+                  size: 20,
+                  color: AuraSurface.muted,
+                ),
         ),
       ),
     );
@@ -327,34 +512,74 @@ class _HeaderPillButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12,
-          ),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: _HeaderPillButtonVisual(
+          tooltip: tooltip,
+          icon: icon,
+          label: label,
+          progress: false,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderPillButtonVisual extends StatelessWidget {
+  const _HeaderPillButtonVisual({
+    required this.tooltip,
+    required this.icon,
+    required this.label,
+    required this.progress,
+  });
+
+  final String tooltip;
+  final IconData? icon;
+  final String label;
+  final bool progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (progress)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
               Icon(
                 icon,
                 size: 18,
                 color: AuraSurface.muted,
               ),
-              const SizedBox(width: AuraSpace.s8),
-              Text(
-                label,
-                style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AuraSurface.muted,
-                ),
+            const SizedBox(width: AuraSpace.s8),
+            Text(
+              label,
+              style: AuraText.small.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AuraSurface.muted,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AuraSpace.s6),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 18,
+              color: AuraSurface.muted,
+            ),
+          ],
         ),
       ),
     );
@@ -441,9 +666,7 @@ class _MemberRailButton extends StatelessWidget {
             color: background,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected
-                  ? AuraSurface.divider
-                  : Colors.transparent,
+              color: selected ? AuraSurface.divider : Colors.transparent,
             ),
           ),
           child: Row(

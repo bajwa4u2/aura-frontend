@@ -1,3 +1,4 @@
+// router.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -71,11 +72,14 @@ const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
 const String kRouterBootRoute = '/_boot';
 
-String _normalizeRedirectDest(String? dest) {
+String _normalizeRedirectDest(
+  String? dest, {
+  String fallback = '/home',
+}) {
   final trimmed = (dest ?? '').trim();
-  if (trimmed.isEmpty || trimmed == '/') return '/home';
-  if (!trimmed.startsWith('/')) return '/home';
-  if (trimmed == kRouterBootRoute) return '/home';
+  if (trimmed.isEmpty || trimmed == '/') return fallback;
+  if (!trimmed.startsWith('/')) return fallback;
+  if (trimmed == kRouterBootRoute) return fallback;
   return trimmed;
 }
 
@@ -89,9 +93,22 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isBootPath(String path) => path == kRouterBootRoute;
 
+  bool isPlainAuthPage(String path) {
+    return path == '/login' || path == '/register' || path == '/auth';
+  }
+
+  bool isAuthActionPath(String path) {
+    return path == '/forgot-password' ||
+        path == '/reset-password' ||
+        path == '/verify-email' ||
+        path == '/verify-pending';
+  }
+
   bool isPublicPath(String path) {
     if (path == '/' || path == '/public') return true;
     if (isBootPath(path)) return true;
+    if (isPlainAuthPage(path)) return true;
+    if (isAuthActionPath(path)) return true;
 
     if (path == '/mission' ||
         path == '/white-paper' ||
@@ -111,8 +128,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     if (path == '/announcements') return true;
     if (path.startsWith('/announcements/')) return true;
-
-    if (path == '/auth') return true;
 
     return false;
   }
@@ -145,17 +160,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path.startsWith('/support/');
   }
 
-  bool isPlainAuthPage(String path) {
-    return path == '/login' || path == '/register' || path == '/auth';
-  }
-
-  bool isAuthActionPath(String path) {
-    return path == '/forgot-password' ||
-        path == '/reset-password' ||
-        path == '/verify-email' ||
-        path == '/verify-pending';
-  }
-
   bool requiresAuth(String path) => isMemberPath(path);
 
   bool requiresVerifiedEmail(String path) {
@@ -166,8 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isGuestOnly(String path) => isPlainAuthPage(path);
 
-  String bootRedirectFor(String target) {
-    final encoded = Uri.encodeComponent(_normalizeRedirectDest(target));
+  String bootRedirectFor(String target, {required String fallback}) {
+    final encoded = Uri.encodeComponent(
+      _normalizeRedirectDest(target, fallback: fallback),
+    );
     return '$kRouterBootRoute?redirect=$encoded';
   }
 
@@ -176,12 +182,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.uri.path;
       final currentLocation = state.uri.toString();
-      final redirectDest =
-          _normalizeRedirectDest(state.uri.queryParameters['redirect']);
 
       final bootstrap = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
+
+      final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
+      final redirectDest = _normalizeRedirectDest(
+        state.uri.queryParameters['redirect'],
+        fallback: defaultRedirect,
+      );
 
       final isBootstrapping = bootstrap.isLoading;
       final isLoggedIn = authStatus == AuthStatus.authed;
@@ -202,27 +212,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (isBootPath(path)) return null;
 
         if (requiresAuth(path) || isGuestOnly(path)) {
-          return bootRedirectFor(currentLocation);
+          return bootRedirectFor(
+            currentLocation,
+            fallback: defaultRedirect,
+          );
         }
 
         return null;
       }
 
-      // Hold route decisions for already-authenticated users until
-      // verification status has actually resolved. This removes the
-      // brief /verify-pending flash on browser refresh.
       if (isLoggedIn && isVerificationLoading) {
         return null;
       }
 
       if (isBootPath(path)) {
         if (!isLoggedIn) {
-          final encoded = Uri.encodeComponent(redirectDest);
+          if (isPublicPath(redirectDest) || isAuthActionPath(redirectDest)) {
+            return redirectDest;
+          }
+
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(redirectDest, fallback: '/public'),
+          );
           return '/login?redirect=$encoded';
         }
 
         if (!isVerified) {
-          final encoded = Uri.encodeComponent(redirectDest);
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(redirectDest, fallback: '/home'),
+          );
           return '/verify-pending?redirect=$encoded';
         }
 
@@ -231,8 +249,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn) {
         if (requiresAuth(path)) {
-          final encoded =
-              Uri.encodeComponent(_normalizeRedirectDest(currentLocation));
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(currentLocation, fallback: '/public'),
+          );
           return '/login?redirect=$encoded';
         }
 
@@ -247,8 +266,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (isVerifyPending) return null;
 
         if (requiresVerifiedEmail(path) || isGuestOnly(path)) {
-          final encoded =
-              Uri.encodeComponent(_normalizeRedirectDest(currentLocation));
+          final encoded = Uri.encodeComponent(
+            _normalizeRedirectDest(currentLocation, fallback: '/home'),
+          );
           return '/verify-pending?redirect=$encoded';
         }
 
@@ -426,7 +446,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
-          // Backward-compatible alias for older profile links
           GoRoute(
             path: '/author/:handle',
             redirect: (context, state) {
