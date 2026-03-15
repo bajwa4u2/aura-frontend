@@ -140,6 +140,11 @@ class ThreadScreen extends ConsumerWidget {
                             _MessageTile(
                               message: messages[i],
                               currentUserId: currentUserId,
+                              showAuthorHeader:
+                                  !_isSameSender(
+                                    messages[i],
+                                    i > 0 ? messages[i - 1] : null,
+                                  ),
                               onEdit: () => _showEditMessageDialog(
                                 context,
                                 ref,
@@ -240,10 +245,7 @@ class _ThreadHeaderCard extends StatelessWidget {
           ),
           if (description.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(
-              description,
-              style: AuraText.body,
-            ),
+            Text(description, style: AuraText.body),
           ],
           if (spaceId.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
@@ -945,12 +947,14 @@ class _MessageTile extends StatelessWidget {
   const _MessageTile({
     required this.message,
     required this.currentUserId,
+    required this.showAuthorHeader,
     required this.onEdit,
     required this.onDelete,
   });
 
   final Map<String, dynamic> message;
   final String currentUserId;
+  final bool showAuthorHeader;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -988,15 +992,15 @@ class _MessageTile extends StatelessWidget {
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width > 900 ? 640 : 540,
+          maxWidth: MediaQuery.of(context).size.width > 900 ? 660 : 560,
         ),
         child: Column(
           crossAxisAlignment:
               isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            if (!isMine && author.isNotEmpty) ...[
+            if (!isMine && showAuthorHeader && author.isNotEmpty) ...[
               Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 6),
+                padding: const EdgeInsets.only(left: 6, bottom: 6),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap:
@@ -1038,7 +1042,16 @@ class _MessageTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: bubbleColor,
                 border: Border.all(color: bubbleBorderColor),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isMine
+                    ? null
+                    : const [
+                        BoxShadow(
+                          blurRadius: 12,
+                          offset: Offset(0, 3),
+                          color: Color(0x08000000),
+                        ),
+                      ],
               ),
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
               child: Column(
@@ -1141,7 +1154,7 @@ class _MessageAttachmentList extends StatelessWidget {
   }
 }
 
-class _MessageAttachmentCard extends StatelessWidget {
+class _MessageAttachmentCard extends StatefulWidget {
   const _MessageAttachmentCard({
     required this.attachment,
     required this.isMine,
@@ -1149,6 +1162,13 @@ class _MessageAttachmentCard extends StatelessWidget {
 
   final Map<String, dynamic> attachment;
   final bool isMine;
+
+  @override
+  State<_MessageAttachmentCard> createState() => _MessageAttachmentCardState();
+}
+
+class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
+  bool _hovering = false;
 
   Future<void> _openUrl(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
@@ -1172,8 +1192,80 @@ class _MessageAttachmentCard extends StatelessWidget {
     }
   }
 
+  void _openImageViewer(BuildContext context, String imageUrl, String title) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 320,
+                      width: 520,
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Could not load image.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+            if (title.isNotEmpty)
+              Positioned(
+                left: 16,
+                right: 72,
+                top: 16,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final attachment = widget.attachment;
+    final isMine = widget.isMine;
+
     final fileName = _pickString(attachment, const ['fileName', 'name']);
     final mimeType = _pickString(attachment, const ['mimeType', 'mime']);
     final sizeBytes = _pickInt(attachment, const ['sizeBytes', 'size']);
@@ -1185,6 +1277,21 @@ class _MessageAttachmentCard extends StatelessWidget {
     final surfaceColor = isMine ? Colors.white.withOpacity(0.08) : Colors.white;
     final primaryTextColor = isMine ? Colors.white : Colors.black87;
     final secondaryTextColor = isMine ? Colors.white70 : Colors.black54;
+
+    void handleTap() {
+      if (url.isEmpty) return;
+
+      if (kind == _AttachmentKind.image) {
+        _openImageViewer(
+          context,
+          thumbUrl.isNotEmpty ? thumbUrl : url,
+          fileName,
+        );
+        return;
+      }
+
+      _openUrl(context, url);
+    }
 
     Widget mediaSurface;
     switch (kind) {
@@ -1198,6 +1305,7 @@ class _MessageAttachmentCard extends StatelessWidget {
           secondaryTextColor: secondaryTextColor,
           fileName: fileName,
           sizeBytes: sizeBytes,
+          hovering: _hovering,
         );
         break;
       case _AttachmentKind.video:
@@ -1210,6 +1318,7 @@ class _MessageAttachmentCard extends StatelessWidget {
           secondaryTextColor: secondaryTextColor,
           fileName: fileName,
           sizeBytes: sizeBytes,
+          hovering: _hovering,
         );
         break;
       case _AttachmentKind.audio:
@@ -1222,16 +1331,21 @@ class _MessageAttachmentCard extends StatelessWidget {
           fileName: fileName,
           sizeBytes: sizeBytes,
           mimeType: mimeType,
+          hovering: _hovering,
         );
         break;
     }
 
     if (url.isEmpty) return mediaSurface;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () => _openUrl(context, url),
-      child: mediaSurface,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: handleTap,
+        child: mediaSurface,
+      ),
     );
   }
 }
@@ -1246,6 +1360,7 @@ class _ImageAttachmentSurface extends StatelessWidget {
     required this.secondaryTextColor,
     required this.fileName,
     required this.sizeBytes,
+    required this.hovering,
   });
 
   final String thumbUrl;
@@ -1256,12 +1371,15 @@ class _ImageAttachmentSurface extends StatelessWidget {
   final Color secondaryTextColor;
   final String fileName;
   final int? sizeBytes;
+  final bool hovering;
 
   @override
   Widget build(BuildContext context) {
     final imageUrl = thumbUrl.isNotEmpty ? thumbUrl : url;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
       decoration: BoxDecoration(
         color: surfaceColor,
         border: Border.all(color: borderColor),
@@ -1292,13 +1410,20 @@ class _ImageAttachmentSurface extends StatelessWidget {
                     text: 'Image unavailable',
                     textColor: secondaryTextColor,
                   ),
-                Positioned(
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 140),
+                  opacity: hovering ? 1 : 0.92,
+                  child: Container(
+                    color: Colors.black.withOpacity(hovering ? 0.18 : 0.08),
+                  ),
+                ),
+                const Center(
+                  child: _CenterOpenIcon(),
+                ),
+                const Positioned(
                   right: 10,
                   bottom: 10,
-                  child: _OpenBadge(
-                    label: 'Open',
-                    dark: true,
-                  ),
+                  child: _OpenBadge(label: 'Open', dark: true),
                 ),
               ],
             ),
@@ -1342,6 +1467,7 @@ class _VideoAttachmentSurface extends StatelessWidget {
     required this.secondaryTextColor,
     required this.fileName,
     required this.sizeBytes,
+    required this.hovering,
   });
 
   final String thumbUrl;
@@ -1352,12 +1478,15 @@ class _VideoAttachmentSurface extends StatelessWidget {
   final Color secondaryTextColor;
   final String fileName;
   final int? sizeBytes;
+  final bool hovering;
 
   @override
   Widget build(BuildContext context) {
     final previewUrl = thumbUrl.isNotEmpty ? thumbUrl : url;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
       decoration: BoxDecoration(
         color: surfaceColor,
         border: Border.all(color: borderColor),
@@ -1390,29 +1519,14 @@ class _VideoAttachmentSurface extends StatelessWidget {
                     textColor: Colors.white70,
                     dark: true,
                   ),
-                Container(color: Colors.black26),
-                Center(
-                  child: Container(
-                    height: 56,
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
+                Container(color: Colors.black.withOpacity(hovering ? 0.34 : 0.26)),
+                const Center(
+                  child: _CenterPlayIcon(),
                 ),
-                Positioned(
+                const Positioned(
                   right: 10,
                   bottom: 10,
-                  child: _OpenBadge(
-                    label: 'Open',
-                    dark: true,
-                  ),
+                  child: _OpenBadge(label: 'Open', dark: true),
                 ),
               ],
             ),
@@ -1456,6 +1570,7 @@ class _AudioAttachmentSurface extends StatelessWidget {
     required this.fileName,
     required this.sizeBytes,
     required this.mimeType,
+    required this.hovering,
   });
 
   final String url;
@@ -1466,10 +1581,13 @@ class _AudioAttachmentSurface extends StatelessWidget {
   final String fileName;
   final int? sizeBytes;
   final String mimeType;
+  final bool hovering;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -1479,9 +1597,12 @@ class _AudioAttachmentSurface extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            height: 46,
-            width: 46,
+            height: 48,
+            width: 48,
             decoration: BoxDecoration(
+              color: hovering
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.transparent,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(14),
             ),
@@ -1566,6 +1687,48 @@ class _BrokenMediaFallback extends StatelessWidget {
             style: AuraText.small.copyWith(color: textColor),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CenterOpenIcon extends StatelessWidget {
+  const _CenterOpenIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      width: 52,
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Icon(
+        Icons.open_in_full,
+        size: 24,
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _CenterPlayIcon extends StatelessWidget {
+  const _CenterPlayIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      width: 56,
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Icon(
+        Icons.play_arrow_rounded,
+        color: Colors.white,
+        size: 32,
       ),
     );
   }
@@ -1984,6 +2147,7 @@ String _resolveAttachmentUrl(Map<String, dynamic> attachment) {
     attachment,
     const [
       'displayUrl',
+      'playbackUrl',
       'url',
       'publicUrl',
       'signedUrl',
@@ -1992,6 +2156,7 @@ String _resolveAttachmentUrl(Map<String, dynamic> attachment) {
       'href',
       'src',
       'downloadUrl',
+      'originalUrl',
     ],
   );
 }
@@ -2010,6 +2175,14 @@ String _resolveAttachmentThumbUrl(Map<String, dynamic> attachment) {
       'url',
     ],
   );
+}
+
+bool _isSameSender(Map<String, dynamic> current, Map<String, dynamic>? previous) {
+  if (previous == null) return false;
+  final currentSender = _extractSenderId(current).trim();
+  final previousSender = _extractSenderId(previous).trim();
+  if (currentSender.isEmpty || previousSender.isEmpty) return false;
+  return currentSender == previousSender;
 }
 
 String _formatBytes(int bytes) {
