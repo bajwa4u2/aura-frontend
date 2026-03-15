@@ -985,7 +985,7 @@ class _MessageTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 4, bottom: 6),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
+                  onTap: handle.isEmpty ? null : () => context.push('/author/$handle'),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
@@ -1001,11 +1001,11 @@ class _MessageTile extends StatelessWidget {
                           ),
                         ),
                         if (handle.isNotEmpty) ...[
-                          const SizedBox(height: AuraSpace.s2),
+                          const SizedBox(height: AuraSpace.s4),
                           Text('@$handle', style: AuraText.small),
                         ],
                         if (contextLine.isNotEmpty) ...[
-                          const SizedBox(height: AuraSpace.s2),
+                          const SizedBox(height: AuraSpace.s4),
                           Text(
                             contextLine,
                             maxLines: 1,
@@ -1566,34 +1566,6 @@ class _ErrorBlock extends StatelessWidget {
           child: const Text('Try again'),
         ),
       ],
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$label: $value',
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
     );
   }
 }
