@@ -37,6 +37,34 @@ final dioProvider = Provider<Dio>((ref) {
     return true;
   }
 
+  String _normalizePath(String path) {
+    final trimmed = path.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+
+    var normalized = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+
+    final baseUri = Uri.tryParse(AppConfig.apiBaseUrl);
+    final basePath = baseUri?.path.trim() ?? '';
+    final hasV1InBase = basePath == '/v1' || basePath.endsWith('/v1');
+
+    if (hasV1InBase && normalized.startsWith('/v1/')) {
+      normalized = normalized.substring(3);
+      if (!normalized.startsWith('/')) {
+        normalized = '/$normalized';
+      }
+    }
+
+    while (normalized.contains('//')) {
+      normalized = normalized.replaceAll('//', '/');
+    }
+
+    return normalized;
+  }
+
   void _normalizeContentTypeForRequest(RequestOptions options) {
     final method = options.method.toUpperCase();
     final hasBody = _hasMeaningfulBody(options.data);
@@ -115,7 +143,7 @@ final dioProvider = Provider<Dio>((ref) {
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
-    final path = o.path;
+    final path = _normalizePath(o.path);
     if (path.startsWith('/auth')) return true;
     if (path.startsWith('/v1/auth')) return true;
     return false;
@@ -153,7 +181,7 @@ final dioProvider = Provider<Dio>((ref) {
         headers: const {
           'Accept': 'application/json',
         },
-        validateStatus: (code) => code != null && code >= 200 && code < 500,
+        validateStatus: (code) => code != null && code < 500,
       ),
     );
 
@@ -252,6 +280,7 @@ final dioProvider = Provider<Dio>((ref) {
           await store.waitUntilLoaded();
         } catch (_) {}
 
+        options.path = _normalizePath(options.path);
         _normalizeContentTypeForRequest(options);
 
         final token = store.accessToken;
@@ -309,6 +338,7 @@ final dioProvider = Provider<Dio>((ref) {
           }
 
           req.extra['__retried_after_refresh'] = true;
+          req.path = _normalizePath(req.path);
           req.headers['Authorization'] = 'Bearer $newToken';
 
           _normalizeContentTypeForRequest(req);
