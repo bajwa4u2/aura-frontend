@@ -27,7 +27,6 @@ class MessagesRepository {
     );
 
     final items = _extractList(res.data);
-
     return items.map(_asMap).toList();
   }
 
@@ -72,13 +71,21 @@ List<dynamic> _extractList(dynamic raw) {
   if (raw is Map) {
     final map = Map<String, dynamic>.from(raw);
 
-    final data = map['data'];
-
-    if (data is List) return data;
-
     for (final key in ['items', 'messages', 'results']) {
       final value = map[key];
       if (value is List) return value;
+    }
+
+    final data = map['data'];
+    if (data is List) return data;
+
+    if (data is Map) {
+      final dataMap = Map<String, dynamic>.from(data);
+
+      for (final key in ['items', 'messages', 'results']) {
+        final value = dataMap[key];
+        if (value is List) return value;
+      }
     }
   }
 
