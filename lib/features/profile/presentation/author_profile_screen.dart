@@ -77,7 +77,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
       },
     );
 
-    context.go(uri.toString());
+    context.push(uri.toString());
   }
 
   void _openInviteToSpace(Profile profile) {
@@ -86,15 +86,15 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     final handle = _cleanValue(widget.handle);
 
     final uri = Uri(
-      path: '/me/correspondence',
+      path: '/me/correspondence/create/space',
       queryParameters: {
-        if (userId.isNotEmpty) 'invite_user_id': userId,
-        if (handle.isNotEmpty) 'invite_handle': handle,
-        if (displayName.isNotEmpty) 'invite_name': displayName,
+        if (userId.isNotEmpty) 'userId': userId,
+        if (handle.isNotEmpty) 'handle': handle,
+        if (displayName.isNotEmpty) 'name': displayName,
       },
     );
 
-    context.go(uri.toString());
+    context.push(uri.toString());
   }
 
   @override
@@ -237,7 +237,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                   child: Text(
                     followState == 'outgoing_pending'
                         ? 'Correspondence opens after the follow relationship is established.'
-                        : 'Follow first to open direct correspondence or invite this person into a space.',
+                        : 'Follow first to open direct correspondence or create a shared space with this person.',
                     style: AuraText.body,
                   ),
                 ),

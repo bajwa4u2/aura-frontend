@@ -12,7 +12,18 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
-  const NewConversationScreen({super.key});
+  const NewConversationScreen({
+    super.key,
+    this.isSharedSpaceMode = false,
+    this.initialUserId,
+    this.initialHandle,
+    this.initialName,
+  });
+
+  final bool isSharedSpaceMode;
+  final String? initialUserId;
+  final String? initialHandle;
+  final String? initialName;
 
   @override
   ConsumerState<NewConversationScreen> createState() =>
@@ -30,32 +41,27 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   bool _loading = true;
   bool _searching = false;
   bool _submitting = false;
+  bool _initialSelectionApplied = false;
   String? _loadError;
   String? _submitError;
   String _spaceType = 'CIRCLE';
 
   Timer? _searchDebounce;
 
-  bool get _isSharedSpaceMode {
-    final location = GoRouterState.of(context).uri.toString().toLowerCase();
-    return location.contains('/create/space');
-  }
+  bool get _isSharedSpaceMode => widget.isSharedSpaceMode;
 
   List<_DirectoryEntry> get _selectedEntries => _allEntries
       .where((entry) => _selectedIds.contains(entry.id))
       .toList(growable: false);
 
-  int get _selectedMemberCount =>
-      _selectedEntries.where((e) => e.kind == _EntryKind.member).length;
-
-  int get _selectedInstitutionCount =>
-      _selectedEntries.where((e) => e.kind == _EntryKind.institution).length;
+  int get _selectedMemberCount => _selectedEntries.length;
 
   bool get _canSubmit {
     if (_submitting || _loading) return false;
 
     if (_isSharedSpaceMode) {
-      return _selectedMemberCount >= 1 && _titleController.text.trim().isNotEmpty;
+      return _selectedMemberCount >= 1 &&
+          _titleController.text.trim().isNotEmpty;
     }
 
     return _selectedMemberCount == 1;
@@ -69,7 +75,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final haystack = [
         entry.displayName,
         entry.subtitle,
-        entry.kindLabel,
       ].join(' ').toLowerCase();
 
       return haystack.contains(query);
@@ -115,13 +120,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final me = await _loadMe(dio);
       final handle = _pickString(me, const ['handle', 'username']);
 
-      final results = await Future.wait<List<_DirectoryEntry>>([
-        _loadRelationshipEntries(dio, handle: handle),
-        _loadInstitutionEntries(dio),
-      ]);
+      final relationshipEntries = await _loadRelationshipEntries(
+        dio,
+        handle: handle,
+      );
 
-      final merged = results.expand((e) => e).toList();
-      final deduped = _dedupeEntries(merged)
+      final deduped = _dedupeEntries(relationshipEntries)
         ..sort(
           (a, b) => a.displayName.toLowerCase().compareTo(
                 b.displayName.toLowerCase(),
@@ -129,10 +133,13 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         );
 
       if (!mounted) return;
+
       setState(() {
         _allEntries = deduped;
         _loading = false;
       });
+
+      _applyInitialSelectionIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -166,28 +173,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         .toList();
   }
 
-  Future<List<_DirectoryEntry>> _loadInstitutionEntries(Dio dio) async {
-    final candidates = <Future<List<Map<String, dynamic>>>>[
-      _fetchList(dio, '/institutions', query: const {'limit': 20}),
-      _fetchList(dio, '/institutions/search', query: const {'limit': 20}),
-      _fetchList(dio, '/institution/search', query: const {'limit': 20}),
-    ];
-
-    for (final future in candidates) {
-      try {
-        final items = await future;
-        if (items.isNotEmpty) {
-          return items
-              .map(_institutionEntryFromMap)
-              .whereType<_DirectoryEntry>()
-              .toList();
-        }
-      } catch (_) {}
-    }
-
-    return const <_DirectoryEntry>[];
-  }
-
   Future<List<Map<String, dynamic>>> _fetchList(
     Dio dio,
     String path, {
@@ -203,6 +188,49 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       }
       rethrow;
     }
+  }
+
+  void _applyInitialSelectionIfNeeded() {
+    if (_initialSelectionApplied || _allEntries.isEmpty) return;
+
+    final wantedUserId = (widget.initialUserId ?? '').trim();
+    final wantedHandle = _normalizeHandle(widget.initialHandle);
+    final wantedName = (widget.initialName ?? '').trim().toLowerCase();
+
+    _DirectoryEntry? matched;
+
+    for (final entry in _allEntries) {
+      final entryHandle = _normalizeHandle(entry.handle);
+
+      final sameUserId =
+          wantedUserId.isNotEmpty && entry.userId.trim() == wantedUserId;
+      final sameHandle =
+          wantedHandle.isNotEmpty && entryHandle == wantedHandle;
+      final sameName = wantedName.isNotEmpty &&
+          entry.displayName.trim().toLowerCase() == wantedName;
+
+      if (sameUserId || sameHandle || sameName) {
+        matched = entry;
+        break;
+      }
+    }
+
+    _initialSelectionApplied = true;
+
+    if (matched == null) return;
+
+    setState(() {
+      if (_isSharedSpaceMode) {
+        _selectedIds.add(matched!.id);
+        if (_titleController.text.trim().isEmpty) {
+          _titleController.text = matched.displayName;
+        }
+      } else {
+        _selectedIds
+          ..clear()
+          ..add(matched!.id);
+      }
+    });
   }
 
   void _toggleEntry(String id) {
@@ -223,8 +251,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
           _selectedIds.add(id);
         }
       } else {
-        if (tapped.kind != _EntryKind.member) return;
-
         if (_selectedIds.contains(id)) {
           _selectedIds.clear();
         } else {
@@ -283,10 +309,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   Future<Map<String, dynamic>> _createSpaceFromSelection() async {
     final dio = ref.read(dioProvider);
 
-    final selectedMembers =
-        _selectedEntries.where((e) => e.kind == _EntryKind.member).toList();
-
-    final participantIds = selectedMembers
+    final participantIds = _selectedEntries
         .map((e) => e.userId)
         .where((e) => e.trim().isNotEmpty)
         .toList();
@@ -311,7 +334,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         payload['description'] = _descriptionController.text.trim();
       }
     } else {
-      final member = selectedMembers.first;
+      final member = _selectedEntries.first;
       payload['title'] = member.displayName;
     }
 
@@ -345,9 +368,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: _isSharedSpaceMode
-                        ? 'Search members or institutions'
-                        : 'Search members',
+                    hintText: 'Search members',
                     suffixIcon: _searching
                         ? const Padding(
                             padding: EdgeInsets.all(12),
@@ -377,7 +398,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                       for (final entry in _selectedEntries)
                         _SelectedEntryChip(
                           label: entry.displayName,
-                          kindLabel: entry.kindLabel,
                           onRemoved: () => _removeSelected(entry.id),
                         ),
                     ],
@@ -442,25 +462,20 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _isSharedSpaceMode ? 'Directory' : 'Members',
-                  style: AuraText.title,
-                ),
+                Text('Members', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 if (_loading)
-                  const _LoadingBlock(label: 'Loading directory...')
+                  const _LoadingBlock(label: 'Loading members...')
                 else if (_loadError != null)
                   _InlineErrorBlock(
-                    title: 'Could not load directory',
+                    title: 'Could not load members',
                     body: _loadError!,
                     onRetry: _loadDirectory,
                   )
                 else if (filteredEntries.isEmpty)
                   Text(
                     _searchController.text.trim().isEmpty
-                        ? (_isSharedSpaceMode
-                            ? 'No members or institutions available yet.'
-                            : 'No members available yet.')
+                        ? 'No members available yet.'
                         : 'No matches found.',
                     style: AuraText.body,
                   )
@@ -472,11 +487,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                           entry: filteredEntries[i],
                           selected: _selectedIds.contains(filteredEntries[i].id),
                           allowMultiSelect: _isSharedSpaceMode,
-                          allowInstitutionSelection: _isSharedSpaceMode,
                           onTap: () => _toggleEntry(filteredEntries[i].id),
                           onOpenProfile: filteredEntries[i].profileRoute == null
                               ? null
-                              : () => context.go(filteredEntries[i].profileRoute!),
+                              : () => context.push(filteredEntries[i].profileRoute!),
                         ),
                         if (i != filteredEntries.length - 1)
                           const Divider(height: 1),
@@ -552,7 +566,6 @@ class _DirectoryRow extends StatelessWidget {
     required this.entry,
     required this.selected,
     required this.allowMultiSelect,
-    required this.allowInstitutionSelection,
     required this.onTap,
     required this.onOpenProfile,
   });
@@ -560,31 +573,25 @@ class _DirectoryRow extends StatelessWidget {
   final _DirectoryEntry entry;
   final bool selected;
   final bool allowMultiSelect;
-  final bool allowInstitutionSelection;
   final VoidCallback onTap;
   final VoidCallback? onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
-    final selectable =
-        allowInstitutionSelection || entry.kind == _EntryKind.member;
-
-    final trailing = !selectable
-        ? const SizedBox(width: 20)
-        : allowMultiSelect
-            ? Checkbox(
-                value: selected,
-                onChanged: (_) => onTap(),
-              )
-            : Radio<bool>(
-                value: true,
-                groupValue: selected,
-                onChanged: (_) => onTap(),
-              );
+    final trailing = allowMultiSelect
+        ? Checkbox(
+            value: selected,
+            onChanged: (_) => onTap(),
+          )
+        : Radio<bool>(
+            value: true,
+            groupValue: selected,
+            onChanged: (_) => onTap(),
+          );
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: selectable ? onTap : null,
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
@@ -601,17 +608,9 @@ class _DirectoryRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: AuraSpace.s8,
-                    runSpacing: AuraSpace.s8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        entry.displayName,
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      _KindPill(label: entry.kindLabel),
-                    ],
+                  Text(
+                    entry.displayName,
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s4),
                   Text(entry.subtitle, style: AuraText.small),
@@ -635,12 +634,10 @@ class _DirectoryRow extends StatelessWidget {
 class _SelectedEntryChip extends StatelessWidget {
   const _SelectedEntryChip({
     required this.label,
-    required this.kindLabel,
     required this.onRemoved,
   });
 
   final String label;
-  final String kindLabel;
   final VoidCallback onRemoved;
 
   @override
@@ -657,37 +654,13 @@ class _SelectedEntryChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$kindLabel · $label', style: AuraText.small),
+          Text(label, style: AuraText.small),
           const SizedBox(width: AuraSpace.s8),
           InkWell(
             onTap: onRemoved,
             child: const Icon(Icons.close, size: 16),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _KindPill extends StatelessWidget {
-  const _KindPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: AuraSpace.s4,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -746,16 +719,11 @@ class _InlineErrorBlock extends StatelessWidget {
   }
 }
 
-enum _EntryKind {
-  member,
-  institution,
-}
-
 class _DirectoryEntry {
   const _DirectoryEntry({
     required this.id,
-    required this.kind,
     required this.userId,
+    required this.handle,
     required this.displayName,
     required this.subtitle,
     required this.avatarLetter,
@@ -764,22 +732,20 @@ class _DirectoryEntry {
 
   const _DirectoryEntry.empty()
       : id = '',
-        kind = _EntryKind.member,
         userId = '',
+        handle = '',
         displayName = '',
         subtitle = '',
         avatarLetter = '?',
         profileRoute = null;
 
   final String id;
-  final _EntryKind kind;
   final String userId;
+  final String handle;
   final String displayName;
   final String subtitle;
   final String avatarLetter;
   final String? profileRoute;
-
-  String get kindLabel => kind == _EntryKind.member ? 'Member' : 'Institution';
 }
 
 Map<String, dynamic> _asMap(dynamic value) {
@@ -829,6 +795,8 @@ Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> raw) {
     'member',
     'account',
     'author',
+    'follower',
+    'following',
   ];
 
   for (final key in nestedKeys) {
@@ -845,7 +813,9 @@ _DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> raw) {
   final user = _unwrapNestedUser(raw);
 
   final id = _pickString(user, const ['id', '_id', 'userId']);
-  final handle = _pickString(user, const ['handle', 'username']);
+  final handle = _normalizeHandle(
+    _pickString(user, const ['handle', 'username']),
+  );
   final displayName = _pickString(
     user,
     const ['displayName', 'name', 'fullName', 'title'],
@@ -865,40 +835,12 @@ _DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> raw) {
 
   return _DirectoryEntry(
     id: 'member:${id.isNotEmpty ? id : handle}',
-    kind: _EntryKind.member,
     userId: id,
+    handle: handle,
     displayName: resolvedName,
     subtitle: subtitleParts.isEmpty ? 'Member' : subtitleParts.join(' · '),
     avatarLetter: _avatarLetterFrom(resolvedName),
     profileRoute: handle.isNotEmpty ? '/author/$handle' : null,
-  );
-}
-
-_DirectoryEntry? _institutionEntryFromMap(Map<String, dynamic> raw) {
-  final item = _unwrapNestedUser(raw);
-
-  final id = _pickString(item, const ['id', '_id', 'institutionId']);
-  final slug = _pickString(item, const ['slug', 'handle']);
-  final name = _pickString(item, const ['name', 'title', 'displayName']);
-
-  if (id.isEmpty && slug.isEmpty && name.isEmpty) return null;
-
-  final resolvedName = name.isNotEmpty ? name : (slug.isNotEmpty ? slug : 'Institution');
-
-  final subtitleParts = <String>[];
-  final kind = _pickString(item, const ['kind', 'type']);
-  if (kind.isNotEmpty) subtitleParts.add(kind);
-  final description = _pickString(item, const ['description', 'bio', 'summary']);
-  if (description.isNotEmpty) subtitleParts.add(description);
-
-  return _DirectoryEntry(
-    id: 'institution:${id.isNotEmpty ? id : slug}',
-    kind: _EntryKind.institution,
-    userId: id,
-    displayName: resolvedName,
-    subtitle: subtitleParts.isEmpty ? 'Institution' : subtitleParts.join(' · '),
-    avatarLetter: _avatarLetterFrom(resolvedName),
-    profileRoute: slug.isNotEmpty ? '/institutions/$slug' : null,
   );
 }
 
@@ -938,4 +880,10 @@ String _pickDefaultThreadId(Map<String, dynamic> map) {
   }
 
   return _pickString(map, const ['threadId', 'defaultThreadId']);
+}
+
+String _normalizeHandle(String? value) {
+  final trimmed = (value ?? '').trim();
+  if (trimmed.isEmpty) return '';
+  return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
 }

@@ -45,6 +45,7 @@ import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
 import 'features/correspondence/presentation/thread_screen.dart';
+import 'features/correspondence/presentation/invite_member_screen.dart';
 import 'features/create/presentation/new_conversation_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
 
@@ -416,11 +417,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'create/conversation',
-                builder: (_, __) => const NewConversationScreen(),
+                builder: (context, state) => NewConversationScreen(
+                  isSharedSpaceMode: false,
+                  initialUserId: state.uri.queryParameters['userId'],
+                  initialHandle: state.uri.queryParameters['handle'],
+                  initialName: state.uri.queryParameters['name'],
+                ),
               ),
               GoRoute(
                 path: 'create/space',
-                builder: (_, __) => const CreateHubScreen(),
+                builder: (context, state) => NewConversationScreen(
+                  isSharedSpaceMode: true,
+                  initialUserId: state.uri.queryParameters['userId'],
+                  initialHandle: state.uri.queryParameters['handle'],
+                  initialName: state.uri.queryParameters['name'],
+                ),
               ),
               GoRoute(
                 path: ':spaceId',
@@ -428,6 +439,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   spaceId: state.pathParameters['spaceId'] ?? '',
                 ),
                 routes: [
+                  GoRoute(
+                    path: 'invite',
+                    builder: (context, state) => InviteMemberScreen(
+                      spaceId: state.pathParameters['spaceId'] ?? '',
+                    ),
+                  ),
                   GoRoute(
                     path: 'thread/:threadId',
                     builder: (context, state) => ThreadScreen(
@@ -450,7 +467,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               postId: state.pathParameters['id'] ?? '',
             ),
           ),
-
           GoRoute(
             path: '/author/:handle',
             redirect: (context, state) {
@@ -458,7 +474,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return '/u/$handle';
             },
           ),
-
           GoRoute(
             path: '/u/:handle',
             builder: (context, state) => AuthorProfileScreen(
