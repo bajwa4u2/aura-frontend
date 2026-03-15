@@ -100,18 +100,6 @@ bool _isEmailNotVerifiedError(Object err) {
       s.contains('verify your email');
 }
 
-int? _readMeaningfulCount(List<dynamic> candidates) {
-  for (final value in candidates) {
-    if (value is int && value > 0) return value;
-    if (value is num && value.toInt() > 0) return value.toInt();
-    if (value is String) {
-      final parsed = int.tryParse(value.trim());
-      if (parsed != null && parsed > 0) return parsed;
-    }
-  }
-  return null;
-}
-
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
@@ -135,30 +123,49 @@ final _meDraftProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return <String, dynamic>{};
 });
 
-final _mePostsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _meOwnPostsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, handle) async {
+  if (handle.trim().isEmpty) return const <Map<String, dynamic>>[];
+
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/posts?limit=12');
+  final res = await dio.get(
+    '/users/$handle/posts',
+    queryParameters: {'limit': 12},
+  );
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
   return <Map<String, dynamic>>[];
+});
+
+final _meFollowersCountProvider =
+    FutureProvider.family<int, String>((ref, handle) async {
+  if (handle.trim().isEmpty) return 0;
+
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/users/$handle/followers');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapItems(raw).length;
+  return 0;
+});
+
+final _meFollowingCountProvider =
+    FutureProvider.family<int, String>((ref, handle) async {
+  if (handle.trim().isEmpty) return 0;
+
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/users/$handle/following');
+  final raw = res.data;
+  final root = _asMap(raw);
+  if (root['ok'] == true) return _unwrapItems(raw).length;
+  return 0;
 });
 
 final _meSavedProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/saves/me', queryParameters: {'limit': 12});
-  final raw = res.data;
-  final root = _asMap(raw);
-  if (root['ok'] == true) return _unwrapItems(raw);
-  return <Map<String, dynamic>>[];
-});
-
-final _meRepliesProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/replies?limit=12');
   final raw = res.data;
   final root = _asMap(raw);
   if (root['ok'] == true) return _unwrapItems(raw);
@@ -315,9 +322,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final form = FormData.fromMap({'file': part});
 
     final res = await dio.post(_uploadEndpointForAnnouncementMedia, data: form);
-    final mediaId = _extractMediaId(res.data);
-
-    return mediaId;
+    return _extractMediaId(res.data);
   }
 
   Future<void> _adminCreateAnnouncementDialog() async {
@@ -375,17 +380,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: summaryCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Summary',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Summary'),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: bodyCtrl,
                         maxLines: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Body',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Body'),
                         onChanged: (v) {
                           if (summaryCtrl.text.trim().isEmpty) {
                             final s = _firstLineSummary(v);
@@ -399,54 +400,27 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: audience,
-                              decoration: const InputDecoration(
-                                labelText: 'Audience',
-                              ),
+                              decoration: const InputDecoration(labelText: 'Audience'),
                               items: const [
-                                DropdownMenuItem(
-                                  value: 'PUBLIC',
-                                  child: Text('PUBLIC'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'MEMBERS',
-                                  child: Text('MEMBERS'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'INTERNAL',
-                                  child: Text('INTERNAL'),
-                                ),
+                                DropdownMenuItem(value: 'PUBLIC', child: Text('PUBLIC')),
+                                DropdownMenuItem(value: 'MEMBERS', child: Text('MEMBERS')),
+                                DropdownMenuItem(value: 'INTERNAL', child: Text('INTERNAL')),
                               ],
-                              onChanged: (v) =>
-                                  setState(() => audience = v ?? audience),
+                              onChanged: (v) => setState(() => audience = v ?? audience),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: kind,
-                              decoration: const InputDecoration(
-                                labelText: 'Kind',
-                              ),
+                              decoration: const InputDecoration(labelText: 'Kind'),
                               items: const [
-                                DropdownMenuItem(
-                                  value: 'GENERAL',
-                                  child: Text('GENERAL'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'RELEASE',
-                                  child: Text('RELEASE'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'SAFETY',
-                                  child: Text('SAFETY'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'GOVERNANCE',
-                                  child: Text('GOVERNANCE'),
-                                ),
+                                DropdownMenuItem(value: 'GENERAL', child: Text('GENERAL')),
+                                DropdownMenuItem(value: 'RELEASE', child: Text('RELEASE')),
+                                DropdownMenuItem(value: 'SAFETY', child: Text('SAFETY')),
+                                DropdownMenuItem(value: 'GOVERNANCE', child: Text('GOVERNANCE')),
                               ],
-                              onChanged: (v) =>
-                                  setState(() => kind = v ?? kind),
+                              onChanged: (v) => setState(() => kind = v ?? kind),
                             ),
                           ),
                         ],
@@ -456,14 +430,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         value: status,
                         decoration: const InputDecoration(labelText: 'Status'),
                         items: const [
-                          DropdownMenuItem(
-                            value: 'PUBLISHED',
-                            child: Text('PUBLISHED'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'DRAFT',
-                            child: Text('DRAFT'),
-                          ),
+                          DropdownMenuItem(value: 'PUBLISHED', child: Text('PUBLISHED')),
+                          DropdownMenuItem(value: 'DRAFT', child: Text('DRAFT')),
                         ],
                         onChanged: (v) => setState(() => status = v ?? status),
                       ),
@@ -487,10 +455,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 18,
-                                  ),
+                                  const Icon(Icons.check_circle_outline, size: 18),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
@@ -519,9 +484,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: Text(
-                    status == 'PUBLISHED' ? 'Publish' : 'Save draft',
-                  ),
+                  child: Text(status == 'PUBLISHED' ? 'Publish' : 'Save draft'),
                 ),
               ],
             );
@@ -539,14 +502,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (title.isEmpty || summary.isEmpty || bodyMd.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title, summary, and body are required.'),
-        ),
+        const SnackBar(content: Text('Title, summary, and body are required.')),
       );
       return;
     }
 
-    final excerpt = summary;
     final dio = ref.read(dioProvider);
 
     try {
@@ -555,7 +515,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         data: {
           'title': title,
           'summary': summary,
-          'excerpt': excerpt,
+          'excerpt': summary,
           'bodyMarkdown': bodyMd,
           'audience': audience,
           'kind': kind,
@@ -812,6 +772,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _workSection(
     BuildContext context, {
+    required String handle,
     required List<Map<String, dynamic>> posts,
     required bool hasDraft,
   }) {
@@ -879,7 +840,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   child: _PostPreviewCard(
                     title: _extractPostTitle(post),
                     preview: _extractPostPreview(post),
-                    onTap: () => context.go('/home'),
+                    onTap: () => context.go('/u/$handle'),
                   ),
                 ),
               ),
@@ -887,7 +848,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             Padding(
               padding: const EdgeInsets.only(top: AuraSpace.s4),
               child: TextButton(
-                onPressed: () => context.go('/home'),
+                onPressed: () => context.go('/u/$handle'),
                 child: const Text('View all posts'),
               ),
             ),
@@ -899,8 +860,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Widget _connectionsSection(
     BuildContext context,
     String handle, {
-    int? followersCount,
-    int? followingCount,
+    required int followersCount,
+    required int followingCount,
   }) {
     final hasHandle = handle.trim().isNotEmpty;
 
@@ -909,13 +870,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       children: [
         _sectionRow(
           title: 'Followers',
-          trailing: followersCount != null ? '$followersCount' : null,
+          trailing: '$followersCount',
           leading: Icons.people_outline,
           onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
         ),
         _sectionRow(
           title: 'Following',
-          trailing: followingCount != null ? '$followingCount' : null,
+          trailing: '$followingCount',
           leading: Icons.person_add_alt_outlined,
           onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
         ),
@@ -932,7 +893,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     BuildContext context, {
     required bool hasDraft,
     int? savedCount,
-    int? repliesCount,
   }) {
     return _section(
       title: 'Tools',
@@ -953,12 +913,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           trailing: savedCount != null ? '$savedCount' : null,
           leading: Icons.bookmark_border,
           onTap: () => context.go('/saved'),
-        ),
-        _sectionRow(
-          title: 'Replies',
-          trailing: repliesCount != null ? '$repliesCount' : null,
-          leading: Icons.reply_outlined,
-          onTap: () => context.go('/home'),
         ),
       ],
     );
@@ -1079,9 +1033,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final profileAsync = ref.watch(meProfileProvider);
     final draftAsync = ref.watch(_meDraftProvider);
-    final postsAsync = ref.watch(_mePostsProvider);
     final savedAsync = ref.watch(_meSavedProvider);
-    final repliesAsync = ref.watch(_meRepliesProvider);
 
     return AuraScaffold(
       showHeader: false,
@@ -1112,9 +1064,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                             await dio.post('/auth/resend-verification');
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Verification email sent'),
-                              ),
+                              const SnackBar(content: Text('Verification email sent')),
                             );
                           } catch (e) {
                             if (!mounted) return;
@@ -1172,37 +1122,39 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               (profile['avatarUrl'] ?? me['avatarUrl'] ?? '').toString();
           final isAdmin = _isAdmin(me);
 
+          final ownPostsAsync = ref.watch(_meOwnPostsProvider(handle));
+          final followersCountAsync = ref.watch(_meFollowersCountProvider(handle));
+          final followingCountAsync = ref.watch(_meFollowingCountProvider(handle));
+
           final hasDraft = draftAsync.maybeWhen(
             data: (draft) => draft.isNotEmpty && draft['id'] != null,
             orElse: () => false,
           );
 
-          final posts = postsAsync.maybeWhen(
+          final ownPosts = ownPostsAsync.maybeWhen(
             data: (items) => items,
             orElse: () => const <Map<String, dynamic>>[],
           );
 
-          final ownPostsCount = posts.isNotEmpty ? posts.length : null;
+          final ownPostsCount = ownPostsAsync.maybeWhen(
+            data: (items) => items.length,
+            orElse: () => 0,
+          );
+
+          final followersCount = followersCountAsync.maybeWhen(
+            data: (count) => count,
+            orElse: () => 0,
+          );
+
+          final followingCount = followingCountAsync.maybeWhen(
+            data: (count) => count,
+            orElse: () => 0,
+          );
 
           final savedCount = savedAsync.maybeWhen(
             data: (items) => items.isNotEmpty ? items.length : null,
             orElse: () => null,
           );
-
-          final repliesCount = repliesAsync.maybeWhen(
-            data: (items) => items.isNotEmpty ? items.length : null,
-            orElse: () => null,
-          );
-
-          final followersCount = _readMeaningfulCount([
-            me['followersCount'],
-            profile['followersCount'],
-          ]);
-
-          final followingCount = _readMeaningfulCount([
-            me['followingCount'],
-            profile['followingCount'],
-          ]);
 
           return _cardList([
             ProfileHeader(
@@ -1213,23 +1165,22 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               stats: [
                 ProfileHeaderStat(
                   label: 'Followers',
-                  value: followersCount != null ? '$followersCount' : '—',
+                  value: '$followersCount',
                   onTap: handle.trim().isNotEmpty
                       ? () => context.go('/u/$handle/followers')
                       : null,
                 ),
                 ProfileHeaderStat(
                   label: 'Following',
-                  value: followingCount != null ? '$followingCount' : '—',
+                  value: '$followingCount',
                   onTap: handle.trim().isNotEmpty
                       ? () => context.go('/u/$handle/following')
                       : null,
                 ),
-                if (ownPostsCount != null)
-                  ProfileHeaderStat(
-                    label: 'Posts',
-                    value: '$ownPostsCount',
-                  ),
+                ProfileHeaderStat(
+                  label: 'Posts',
+                  value: '$ownPostsCount',
+                ),
               ],
               actions: [
                 ProfileHeaderAction(
@@ -1276,7 +1227,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             ),
             _workSection(
               context,
-              posts: posts,
+              handle: handle,
+              posts: ownPosts,
               hasDraft: hasDraft,
             ),
             _connectionsSection(
@@ -1289,7 +1241,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               context,
               hasDraft: hasDraft,
               savedCount: savedCount,
-              repliesCount: repliesCount,
             ),
             if (isAdmin) _adminSection(context),
           ]);
