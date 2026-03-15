@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/net/dio_provider.dart';
-import '../../../../core/ui/aura_card.dart';
-import '../../../../core/ui/aura_scaffold.dart';
-import '../../../../core/ui/aura_space.dart';
-import '../../../../core/ui/aura_text.dart';
+import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_text.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
   const NewConversationScreen({super.key});
@@ -19,77 +19,31 @@ class NewConversationScreen extends ConsumerStatefulWidget {
       _NewConversationScreenState();
 }
 
-class _NewConversationScreenState
-    extends ConsumerState<NewConversationScreen> {
+class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
   final Set<String> _selectedIds = <String>{};
 
-  Timer? _debounce;
+  List<_DirectoryEntry> _allEntries = const [];
   bool _loading = true;
   bool _searching = false;
   bool _submitting = false;
   String? _loadError;
   String? _submitError;
-
   String _spaceType = 'CIRCLE';
 
-  List<_DirectoryEntry> _allEntries = const <_DirectoryEntry>[];
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDirectory();
-    });
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
+  Timer? _searchDebounce;
 
   bool get _isSharedSpaceMode {
-    final location = GoRouterState.of(context).uri.toString();
+    final location = GoRouterState.of(context).uri.toString().toLowerCase();
     return location.contains('/create/space');
   }
 
-  String get _pageTitle =>
-      _isSharedSpaceMode ? 'Create space' : 'New conversation';
-
-  String get _pageBody => _isSharedSpaceMode
-      ? 'Bring people into a durable shared place.'
-      : 'Start a direct conversation by creating a private space with one member.';
-
-  List<_DirectoryEntry> get _selectedEntries {
-    final selected = _allEntries.where((e) => _selectedIds.contains(e.id)).toList();
-    selected.sort(
-      (a, b) => a.displayName.toLowerCase().compareTo(
-            b.displayName.toLowerCase(),
-          ),
-    );
-    return selected;
-  }
-
-  List<_DirectoryEntry> get _filteredEntries {
-    final q = _searchController.text.trim().toLowerCase();
-
-    return _allEntries.where((entry) {
-      if (q.isEmpty) return true;
-      return entry.displayName.toLowerCase().contains(q) ||
-          entry.handle.toLowerCase().contains(q) ||
-          entry.subtitle.toLowerCase().contains(q) ||
-          entry.searchBlob.toLowerCase().contains(q);
-    }).toList();
-  }
+  List<_DirectoryEntry> get _selectedEntries => _allEntries
+      .where((entry) => _selectedIds.contains(entry.id))
+      .toList(growable: false);
 
   int get _selectedMemberCount =>
       _selectedEntries.where((e) => e.kind == _EntryKind.member).length;
@@ -98,21 +52,53 @@ class _NewConversationScreenState
       _selectedEntries.where((e) => e.kind == _EntryKind.institution).length;
 
   bool get _canSubmit {
-    if (_submitting) return false;
+    if (_submitting || _loading) return false;
 
     if (_isSharedSpaceMode) {
-      return _selectedMemberCount >= 1 &&
-          _titleController.text.trim().isNotEmpty;
+      return _selectedMemberCount >= 1 && _titleController.text.trim().isNotEmpty;
     }
 
     return _selectedMemberCount == 1;
   }
 
-  void _onSearchChanged() {
-    _debounce?.cancel();
+  List<_DirectoryEntry> get _filteredEntries {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _allEntries;
+
+    return _allEntries.where((entry) {
+      final haystack = [
+        entry.displayName,
+        entry.subtitle,
+        entry.kindLabel,
+      ].join(' ').toLowerCase();
+
+      return haystack.contains(query);
+    }).toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadDirectory());
+    _searchController.addListener(_handleSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_handleSearchChanged);
+    _searchController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    _searchDebounce?.cancel();
+
     setState(() => _searching = true);
 
-    _debounce = Timer(const Duration(milliseconds: 220), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 160), () {
       if (!mounted) return;
       setState(() => _searching = false);
     });
@@ -219,6 +205,44 @@ class _NewConversationScreenState
     }
   }
 
+  void _toggleEntry(String id) {
+    final tapped = _allEntries.firstWhere(
+      (entry) => entry.id == id,
+      orElse: () => const _DirectoryEntry.empty(),
+    );
+
+    if (tapped.id.isEmpty) return;
+
+    setState(() {
+      _submitError = null;
+
+      if (_isSharedSpaceMode) {
+        if (_selectedIds.contains(id)) {
+          _selectedIds.remove(id);
+        } else {
+          _selectedIds.add(id);
+        }
+      } else {
+        if (tapped.kind != _EntryKind.member) return;
+
+        if (_selectedIds.contains(id)) {
+          _selectedIds.clear();
+        } else {
+          _selectedIds
+            ..clear()
+            ..add(id);
+        }
+      }
+    });
+  }
+
+  void _removeSelected(String id) {
+    setState(() {
+      _selectedIds.remove(id);
+      _submitError = null;
+    });
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
 
@@ -277,263 +301,248 @@ class _NewConversationScreenState
 
     final payload = <String, dynamic>{
       'type': _isSharedSpaceMode ? _spaceType : 'PRIVATE',
+      'visibility': 'PRIVATE',
       'participantIds': participantIds,
-      if (_isSharedSpaceMode) 'title': _titleController.text.trim(),
-      if (_descriptionController.text.trim().isNotEmpty)
-        'description': _descriptionController.text.trim(),
     };
 
-    final res = await dio.post('/spaces', data: payload);
-    final raw = _asMap(res.data);
-    final created = _unwrapMap(raw);
-
-    final spaceId = _pickString(created, const ['id', 'spaceId', '_id']);
-    if (spaceId.isEmpty) {
-      throw Exception('Space was created but no space id was returned.');
+    if (_isSharedSpaceMode) {
+      payload['title'] = _titleController.text.trim();
+      if (_descriptionController.text.trim().isNotEmpty) {
+        payload['description'] = _descriptionController.text.trim();
+      }
+    } else {
+      final member = selectedMembers.first;
+      payload['title'] = member.displayName;
     }
 
-    return created;
-  }
-
-  void _toggleEntry(String id) {
-    setState(() {
-      if (_selectedIds.contains(id)) {
-        _selectedIds.remove(id);
-      } else {
-        _selectedIds.add(id);
-      }
-    });
-  }
-
-  void _removeSelected(String id) {
-    setState(() {
-      _selectedIds.remove(id);
-    });
+    final res = await dio.post('/spaces', data: payload);
+    return _unwrapMap(_asMap(res.data));
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedEntries = _selectedEntries;
     final filteredEntries = _filteredEntries;
+    final pageTitle = _isSharedSpaceMode ? 'Create space' : 'New conversation';
+    final pageBody = _isSharedSpaceMode
+        ? 'Choose members, then define the shared space.'
+        : 'Choose one member to begin a private conversation.';
 
     return AuraScaffold(
-      title: _pageTitle,
-      body: RefreshIndicator(
-        onRefresh: _loadDirectory,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_pageTitle, style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s8),
-                  Text(_pageBody, style: AuraText.body),
-                ],
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isSharedSpaceMode ? 'Participants' : 'Member',
-                    style: AuraText.title,
+      title: pageTitle,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: [
+          _PageIntro(
+            title: pageTitle,
+            body: pageBody,
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: _isSharedSpaceMode
+                        ? 'Search members or institutions'
+                        : 'Search members',
+                    suffixIcon: _searching
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : (_searchController.text.trim().isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close),
+                              )),
                   ),
-                  const SizedBox(height: AuraSpace.s12),
+                ),
+                if (_selectedEntries.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s14),
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    runSpacing: AuraSpace.s8,
+                    children: [
+                      for (final entry in _selectedEntries)
+                        _SelectedEntryChip(
+                          label: entry.displayName,
+                          kindLabel: entry.kindLabel,
+                          onRemoved: () => _removeSelected(entry.id),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          if (_isSharedSpaceMode) ...[
+            AuraCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Space details', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
                   TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: 'Search name, handle, or institution',
-                      labelText: 'Search',
-                      suffixIcon: _searching
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            )
-                          : (_searchController.text.trim().isEmpty
-                              ? null
-                              : IconButton(
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.close),
-                                )),
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Space title',
+                      hintText: 'Research Circle, Studio, Family',
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
-                  if (selectedEntries.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s14),
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      children: [
-                        for (final entry in selectedEntries)
-                          _SelectedEntryChip(
-                            label: entry.displayName,
-                            kindLabel: entry.kindLabel,
-                            onRemoved: () => _removeSelected(entry.id),
-                          ),
-                      ],
+                  const SizedBox(height: AuraSpace.s12),
+                  TextField(
+                    controller: _descriptionController,
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Optional context',
                     ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Directory', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  if (_loading)
-                    const _LoadingBlock(label: 'Loading people and institutions...')
-                  else if (_loadError != null)
-                    _InlineErrorBlock(
-                      title: 'Could not load directory',
-                      body: _loadError!,
-                      onRetry: _loadDirectory,
-                    )
-                  else if (filteredEntries.isEmpty)
-                    const _EmptyStateBlock(
-                      title: 'No matching results',
-                      body: 'Try another name, handle, or institution.',
-                    )
-                  else
-                    Column(
-                      children: [
-                        for (var i = 0; i < filteredEntries.length; i++) ...[
-                          _DirectoryRow(
-                            entry: filteredEntries[i],
-                            selected: _selectedIds.contains(filteredEntries[i].id),
-                            allowMultiSelect: _isSharedSpaceMode,
-                            onTap: () => _toggleEntry(filteredEntries[i].id),
-                            onOpenProfile: filteredEntries[i].profileRoute == null
-                                ? null
-                                : () => context.go(filteredEntries[i].profileRoute!),
-                          ),
-                          if (i != filteredEntries.length - 1)
-                            const Divider(height: 1),
-                        ],
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isSharedSpaceMode ? 'Space details' : 'Conversation details',
-                    style: AuraText.title,
                   ),
-                  const SizedBox(height: AuraSpace.s10),
-                  if (_isSharedSpaceMode) ...[
-                    TextField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Space title',
-                        hintText: 'Research Circle, Studio, Family',
+                  const SizedBox(height: AuraSpace.s12),
+                  DropdownButtonFormField<String>(
+                    value: _spaceType,
+                    decoration: const InputDecoration(
+                      labelText: 'Space type',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'CIRCLE',
+                        child: Text('Circle'),
                       ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    TextField(
-                      controller: _descriptionController,
-                      minLines: 3,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'Optional context',
+                      DropdownMenuItem(
+                        value: 'STUDIO',
+                        child: Text('Studio'),
                       ),
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    DropdownButtonFormField<String>(
-                      value: _spaceType,
-                      decoration: const InputDecoration(
-                        labelText: 'Space type',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'CIRCLE',
-                          child: Text('Circle'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'STUDIO',
-                          child: Text('Studio'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => _spaceType = value);
-                      },
-                    ),
-                  ] else ...[
-                    const _MetaRow(
-                      label: 'Type',
-                      value: 'Private space',
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    _MetaRow(
-                      label: 'Members',
-                      value: '$_selectedMemberCount',
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    _MetaRow(
-                      label: 'Institutions',
-                      value: '$_selectedInstitutionCount',
-                    ),
-                  ],
-                  if (_submitError != null) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Text(
-                      _submitError!,
-                      style: AuraText.small.copyWith(
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ],
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _spaceType = value);
+                    },
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: AuraSpace.s18),
-            Row(
+            const SizedBox(height: AuraSpace.s14),
+          ],
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _submitting ? null : () => context.pop(),
-                    child: const Text('Cancel'),
-                  ),
+                Text(
+                  _isSharedSpaceMode ? 'Directory' : 'Members',
+                  style: AuraText.title,
                 ),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _canSubmit ? _submit : null,
-                    child: Text(
-                      _submitting
-                          ? (_isSharedSpaceMode ? 'Creating...' : 'Starting...')
-                          : (_isSharedSpaceMode
-                              ? 'Create space'
-                              : 'Start conversation'),
+                const SizedBox(height: AuraSpace.s10),
+                if (_loading)
+                  const _LoadingBlock(label: 'Loading directory...')
+                else if (_loadError != null)
+                  _InlineErrorBlock(
+                    title: 'Could not load directory',
+                    body: _loadError!,
+                    onRetry: _loadDirectory,
+                  )
+                else if (filteredEntries.isEmpty)
+                  Text(
+                    _searchController.text.trim().isEmpty
+                        ? (_isSharedSpaceMode
+                            ? 'No members or institutions available yet.'
+                            : 'No members available yet.')
+                        : 'No matches found.',
+                    style: AuraText.body,
+                  )
+                else
+                  Column(
+                    children: [
+                      for (var i = 0; i < filteredEntries.length; i++) ...[
+                        _DirectoryRow(
+                          entry: filteredEntries[i],
+                          selected: _selectedIds.contains(filteredEntries[i].id),
+                          allowMultiSelect: _isSharedSpaceMode,
+                          allowInstitutionSelection: _isSharedSpaceMode,
+                          onTap: () => _toggleEntry(filteredEntries[i].id),
+                          onOpenProfile: filteredEntries[i].profileRoute == null
+                              ? null
+                              : () => context.go(filteredEntries[i].profileRoute!),
+                        ),
+                        if (i != filteredEntries.length - 1)
+                          const Divider(height: 1),
+                      ],
+                    ],
+                  ),
+                if (_submitError != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(
+                    _submitError!,
+                    style: AuraText.small.copyWith(
+                      color: Colors.red.shade700,
                     ),
                   ),
-                ),
+                ],
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AuraSpace.s18),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _submitting ? null : () => context.pop(),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _canSubmit ? _submit : null,
+                  child: Text(
+                    _submitting
+                        ? (_isSharedSpaceMode ? 'Creating...' : 'Starting...')
+                        : (_isSharedSpaceMode
+                            ? 'Create space'
+                            : 'Start conversation'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _PageIntro extends StatelessWidget {
+  const _PageIntro({
+    required this.title,
+    required this.body,
+  });
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AuraText.title),
+        const SizedBox(height: AuraSpace.s6),
+        Text(body, style: AuraText.body),
+      ],
     );
   }
 }
@@ -543,6 +552,7 @@ class _DirectoryRow extends StatelessWidget {
     required this.entry,
     required this.selected,
     required this.allowMultiSelect,
+    required this.allowInstitutionSelection,
     required this.onTap,
     required this.onOpenProfile,
   });
@@ -550,25 +560,31 @@ class _DirectoryRow extends StatelessWidget {
   final _DirectoryEntry entry;
   final bool selected;
   final bool allowMultiSelect;
+  final bool allowInstitutionSelection;
   final VoidCallback onTap;
   final VoidCallback? onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
-    final trailing = allowMultiSelect
-        ? Checkbox(
-            value: selected,
-            onChanged: (_) => onTap(),
-          )
-        : Radio<bool>(
-            value: true,
-            groupValue: selected,
-            onChanged: (_) => onTap(),
-          );
+    final selectable =
+        allowInstitutionSelection || entry.kind == _EntryKind.member;
+
+    final trailing = !selectable
+        ? const SizedBox(width: 20)
+        : allowMultiSelect
+            ? Checkbox(
+                value: selected,
+                onChanged: (_) => onTap(),
+              )
+            : Radio<bool>(
+                value: true,
+                groupValue: selected,
+                onChanged: (_) => onTap(),
+              );
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
+      onTap: selectable ? onTap : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
@@ -653,32 +669,6 @@ class _SelectedEntryChip extends StatelessWidget {
   }
 }
 
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-        Expanded(child: Text(value, style: AuraText.body)),
-      ],
-    );
-  }
-}
-
 class _KindPill extends StatelessWidget {
   const _KindPill({required this.label});
 
@@ -740,40 +730,18 @@ class _InlineErrorBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          title,
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: AuraSpace.s6),
         Text(body, style: AuraText.small),
-        const SizedBox(height: AuraSpace.s12),
+        const SizedBox(height: AuraSpace.s10),
         OutlinedButton(
           onPressed: onRetry,
-          child: const Text('Try again'),
+          child: const Text('Retry'),
         ),
       ],
-    );
-  }
-}
-
-class _EmptyStateBlock extends StatelessWidget {
-  const _EmptyStateBlock({
-    required this.title,
-    required this.body,
-  });
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: AuraSpace.s6),
-          Text(body, style: AuraText.small),
-        ],
-      ),
     );
   }
 }
@@ -787,135 +755,31 @@ class _DirectoryEntry {
   const _DirectoryEntry({
     required this.id,
     required this.kind,
-    required this.displayName,
-    required this.handle,
-    required this.subtitle,
-    required this.searchBlob,
     required this.userId,
+    required this.displayName,
+    required this.subtitle,
+    required this.avatarLetter,
     required this.profileRoute,
   });
 
+  const _DirectoryEntry.empty()
+      : id = '',
+        kind = _EntryKind.member,
+        userId = '',
+        displayName = '',
+        subtitle = '',
+        avatarLetter = '?',
+        profileRoute = null;
+
   final String id;
   final _EntryKind kind;
-  final String displayName;
-  final String handle;
-  final String subtitle;
-  final String searchBlob;
   final String userId;
+  final String displayName;
+  final String subtitle;
+  final String avatarLetter;
   final String? profileRoute;
 
   String get kindLabel => kind == _EntryKind.member ? 'Member' : 'Institution';
-
-  String get avatarLetter {
-    final source =
-        displayName.trim().isNotEmpty ? displayName.trim() : handle.trim();
-    if (source.isEmpty) return '?';
-    return source.characters.first.toUpperCase();
-  }
-}
-
-_DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> item) {
-  final user = _unwrapNestedUser(item);
-  final userId = _pickString(user, const ['id', 'userId', '_id']);
-  final handle = _cleanHandle(
-    _pickString(user, const ['handle', 'username', 'userHandle']),
-  );
-  final displayName = _pickString(
-    user,
-    const ['displayName', 'fullName', 'name', 'username', 'handle'],
-  );
-
-  if (userId.isEmpty && handle.isEmpty && displayName.isEmpty) {
-    return null;
-  }
-
-  final relationship = _pickString(
-    item,
-    const ['state', 'relationship', 'followState', 'status'],
-  );
-
-  final subtitleParts = <String>[
-    if (handle.isNotEmpty) '@$handle',
-    if (relationship.isNotEmpty) relationship.replaceAll('_', ' '),
-  ];
-
-  return _DirectoryEntry(
-    id: userId.isNotEmpty ? 'member:$userId' : 'member:$handle',
-    kind: _EntryKind.member,
-    displayName: displayName.isEmpty ? handle : displayName,
-    handle: handle,
-    subtitle: subtitleParts.join(' · '),
-    searchBlob: [displayName, handle, relationship].join(' '),
-    userId: userId,
-    profileRoute: handle.isEmpty ? null : '/u/$handle',
-  );
-}
-
-_DirectoryEntry? _institutionEntryFromMap(Map<String, dynamic> item) {
-  final id = _pickString(item, const ['id', 'institutionId', '_id']);
-  final slug = _pickString(item, const ['slug', 'handle', 'username']);
-  final name = _pickString(item, const ['name', 'displayName', 'title']);
-  final subtitle = _pickString(
-    item,
-    const ['tagline', 'description', 'summary', 'type'],
-  );
-
-  if (id.isEmpty && slug.isEmpty && name.isEmpty) {
-    return null;
-  }
-
-  return _DirectoryEntry(
-    id: id.isNotEmpty ? 'institution:$id' : 'institution:$slug',
-    kind: _EntryKind.institution,
-    displayName: name.isEmpty ? slug : name,
-    handle: _cleanHandle(slug),
-    subtitle: subtitle.isEmpty ? 'Institution' : subtitle,
-    searchBlob: [name, slug, subtitle].join(' '),
-    userId: '',
-    profileRoute: null,
-  );
-}
-
-List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
-  final byId = <String, _DirectoryEntry>{};
-  for (final entry in entries) {
-    byId[entry.id] = entry;
-  }
-  return byId.values.toList();
-}
-
-String _pickDefaultThreadId(Map<String, dynamic> space) {
-  const possibleListKeys = [
-    'threads',
-    'threadList',
-    'items',
-  ];
-
-  for (final key in possibleListKeys) {
-    final value = space[key];
-    if (value is List && value.isNotEmpty) {
-      for (final item in value) {
-        if (item is Map) {
-          final threadId = _pickString(
-            Map<String, dynamic>.from(item),
-            const ['id', 'threadId', '_id'],
-          );
-          if (threadId.isNotEmpty) return threadId;
-        }
-      }
-    }
-  }
-
-  final nestedThread = space['defaultThread'];
-  if (nestedThread is Map) {
-    final threadId = _pickString(
-      Map<String, dynamic>.from(nestedThread),
-      const ['id', 'threadId', '_id'],
-    );
-    if (threadId.isNotEmpty) return threadId;
-  }
-
-  return _pickString(space, const ['defaultThreadId', 'threadId']);
 }
 
 Map<String, dynamic> _asMap(dynamic value) {
@@ -925,93 +789,153 @@ Map<String, dynamic> _asMap(dynamic value) {
 }
 
 Map<String, dynamic> _unwrapMap(Map<String, dynamic> raw) {
-  final data = raw['data'];
+  final direct = raw['item'] ?? raw['data'] ?? raw['result'];
+  if (direct is Map) return Map<String, dynamic>.from(direct);
+  return raw;
+}
 
-  if (data is Map<String, dynamic>) {
-    if (data['data'] is Map) {
-      return Map<String, dynamic>.from(data['data'] as Map);
+List<Map<String, dynamic>> _unwrapItems(Map<String, dynamic> raw) {
+  final candidates = [
+    raw['items'],
+    raw['results'],
+    raw['data'],
+    raw['list'],
+  ];
+
+  for (final candidate in candidates) {
+    if (candidate is List) {
+      return candidate
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
-    return data;
   }
 
-  if (data is Map) {
-    final mapped = Map<String, dynamic>.from(data);
-    if (mapped['data'] is Map) {
-      return Map<String, dynamic>.from(mapped['data'] as Map);
+  if (raw.isNotEmpty &&
+      !raw.containsKey('items') &&
+      !raw.containsKey('results') &&
+      !raw.containsKey('data') &&
+      !raw.containsKey('list')) {
+    return [raw];
+  }
+
+  return const [];
+}
+
+Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> raw) {
+  const nestedKeys = [
+    'user',
+    'profile',
+    'member',
+    'account',
+    'author',
+  ];
+
+  for (final key in nestedKeys) {
+    final value = raw[key];
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
     }
-    return mapped;
   }
 
   return raw;
 }
 
-List<Map<String, dynamic>> _unwrapItems(Map<String, dynamic> raw) {
-  dynamic current = raw;
+_DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> raw) {
+  final user = _unwrapNestedUser(raw);
 
-  if (current['data'] is Map) current = current['data'];
-  if (current is Map && current['items'] is List) {
-    return (current['items'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-  if (current is Map && current['data'] is List) {
-    return (current['data'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-  if (current is Map && current['results'] is List) {
-    return (current['results'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-  if (raw['items'] is List) {
-    return (raw['items'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-  if (raw['data'] is List) {
-    return (raw['data'] as List)
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
+  final id = _pickString(user, const ['id', '_id', 'userId']);
+  final handle = _pickString(user, const ['handle', 'username']);
+  final displayName = _pickString(
+    user,
+    const ['displayName', 'name', 'fullName', 'title'],
+  );
 
-  return const <Map<String, dynamic>>[];
+  if (id.isEmpty && handle.isEmpty && displayName.isEmpty) return null;
+
+  final resolvedName = displayName.isNotEmpty
+      ? displayName
+      : (handle.isNotEmpty ? handle : 'Member');
+
+  final subtitleParts = <String>[];
+  if (handle.isNotEmpty) subtitleParts.add('@$handle');
+
+  final bio = _pickString(user, const ['bio', 'headline', 'summary']);
+  if (bio.isNotEmpty) subtitleParts.add(bio);
+
+  return _DirectoryEntry(
+    id: 'member:${id.isNotEmpty ? id : handle}',
+    kind: _EntryKind.member,
+    userId: id,
+    displayName: resolvedName,
+    subtitle: subtitleParts.isEmpty ? 'Member' : subtitleParts.join(' · '),
+    avatarLetter: _avatarLetterFrom(resolvedName),
+    profileRoute: handle.isNotEmpty ? '/author/$handle' : null,
+  );
 }
 
-Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
-  const nestedKeys = [
-    'user',
-    'member',
-    'profile',
-    'author',
-    'follower',
-    'following',
-  ];
+_DirectoryEntry? _institutionEntryFromMap(Map<String, dynamic> raw) {
+  final item = _unwrapNestedUser(raw);
 
-  for (final key in nestedKeys) {
-    final value = item[key];
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) return Map<String, dynamic>.from(value);
+  final id = _pickString(item, const ['id', '_id', 'institutionId']);
+  final slug = _pickString(item, const ['slug', 'handle']);
+  final name = _pickString(item, const ['name', 'title', 'displayName']);
+
+  if (id.isEmpty && slug.isEmpty && name.isEmpty) return null;
+
+  final resolvedName = name.isNotEmpty ? name : (slug.isNotEmpty ? slug : 'Institution');
+
+  final subtitleParts = <String>[];
+  final kind = _pickString(item, const ['kind', 'type']);
+  if (kind.isNotEmpty) subtitleParts.add(kind);
+  final description = _pickString(item, const ['description', 'bio', 'summary']);
+  if (description.isNotEmpty) subtitleParts.add(description);
+
+  return _DirectoryEntry(
+    id: 'institution:${id.isNotEmpty ? id : slug}',
+    kind: _EntryKind.institution,
+    userId: id,
+    displayName: resolvedName,
+    subtitle: subtitleParts.isEmpty ? 'Institution' : subtitleParts.join(' · '),
+    avatarLetter: _avatarLetterFrom(resolvedName),
+    profileRoute: slug.isNotEmpty ? '/institutions/$slug' : null,
+  );
+}
+
+List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
+  final byId = <String, _DirectoryEntry>{};
+
+  for (final entry in entries) {
+    byId.putIfAbsent(entry.id, () => entry);
   }
 
-  return item;
+  return byId.values.toList(growable: false);
 }
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
-    final value = (map[key] ?? '').toString().trim();
-    if (value.isNotEmpty) return value;
+    final value = map[key];
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) return text;
   }
   return '';
 }
 
-String _cleanHandle(String value) {
+String _avatarLetterFrom(String value) {
   final trimmed = value.trim();
-  if (trimmed.isEmpty) return '';
-  return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
+  if (trimmed.isEmpty) return '?';
+  return trimmed.characters.first.toUpperCase();
+}
+
+String _pickDefaultThreadId(Map<String, dynamic> map) {
+  final threads = map['threads'];
+  if (threads is List && threads.isNotEmpty) {
+    final first = threads.first;
+    if (first is Map) {
+      return _pickString(Map<String, dynamic>.from(first), const ['id', '_id']);
+    }
+  }
+
+  return _pickString(map, const ['threadId', 'defaultThreadId']);
 }
