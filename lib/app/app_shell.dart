@@ -53,7 +53,7 @@ class AppShell extends StatelessWidget {
 
   static const double _maxContentWidth = 920;
   static const double _headerHeight = 72;
-  static const double _logoHeight = 40;
+  static const double _logoHeight = 44;
   static const double _desktopBreakpoint = 1100;
   static const double _tabletBreakpoint = 760;
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
