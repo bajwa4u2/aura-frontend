@@ -108,7 +108,6 @@ final dioProvider = Provider<Dio>((ref) {
 
   Future<void> _clearSessionState() async {
     await ref.read(tokenStoreProvider).clearTokens();
-
     ref.invalidate(sessionBootstrapProvider);
     ref.invalidate(authStatusProvider);
   }
@@ -129,6 +128,9 @@ final dioProvider = Provider<Dio>((ref) {
 
     final boot = ref.read(sessionBootstrapProvider);
     if (boot.isLoading) return false;
+
+    final authStatus = ref.read(authStatusProvider);
+    if (authStatus != AuthStatus.authed) return false;
 
     return true;
   }
@@ -241,37 +243,6 @@ final dioProvider = Provider<Dio>((ref) {
     }
   }
 
-  Future<Response<T>> retryRequest<T>(
-    RequestOptions req,
-    Map<String, dynamic> retryHeaders,
-  ) {
-    final options = Options(
-      method: req.method,
-      headers: retryHeaders,
-      responseType: req.responseType,
-      contentType: req.contentType,
-      followRedirects: req.followRedirects,
-      receiveDataWhenStatusError: req.receiveDataWhenStatusError,
-      sendTimeout: req.sendTimeout,
-      receiveTimeout: req.receiveTimeout,
-      extra: Map<String, dynamic>.from(req.extra),
-      validateStatus: req.validateStatus,
-      requestEncoder: req.requestEncoder,
-      responseDecoder: req.responseDecoder,
-      listFormat: req.listFormat,
-    );
-
-    return dio.request<T>(
-      req.path,
-      data: req.data,
-      queryParameters: req.queryParameters,
-      options: options,
-      cancelToken: req.cancelToken,
-      onReceiveProgress: req.onReceiveProgress,
-      onSendProgress: req.onSendProgress,
-    );
-  }
-
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -333,20 +304,17 @@ final dioProvider = Provider<Dio>((ref) {
           }
 
           final newToken = ref.read(tokenStoreProvider).accessToken;
-
-          final retryHeaders = Map<String, dynamic>.from(req.headers);
-          retryHeaders.remove('Authorization');
-          if (newToken != null && newToken.trim().isNotEmpty) {
-            retryHeaders['Authorization'] = 'Bearer $newToken';
+          if (newToken == null || newToken.trim().isEmpty) {
+            throw Exception('Refresh completed but no access token is available');
           }
 
-          final extra = Map<String, dynamic>.from(req.extra);
-          extra['__retried_after_refresh'] = true;
+          req.extra['__retried_after_refresh'] = true;
+          req.headers['Authorization'] = 'Bearer $newToken';
 
-          final reqWithExtra = req.copyWith(extra: extra);
-          final cloned = await retryRequest<dynamic>(reqWithExtra, retryHeaders);
+          _normalizeContentTypeForRequest(req);
 
-          handler.resolve(cloned);
+          final response = await dio.fetch<dynamic>(req);
+          handler.resolve(response);
         } catch (refreshError) {
           if (shouldClearTokensOnRefreshFailure(refreshError)) {
             await _clearSessionState();
