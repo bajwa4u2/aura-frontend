@@ -124,10 +124,12 @@ class _CorrespondenceHubScreenState
                       _filter = value;
                     });
                   },
-                  onNewConversation: () =>
-                      context.go('/me/correspondence/create/conversation'),
-                  onCreateSpace: () =>
-                      context.go('/me/correspondence/create/space'),
+                  onNewConversation: () => context.push(
+                    '/me/correspondence/create/conversation',
+                  ),
+                  onCreateSpace: () => context.push(
+                    '/me/correspondence/create/space',
+                  ),
                 ),
                 const SizedBox(height: AuraSpace.s16),
                 if (items.isEmpty)
@@ -139,10 +141,10 @@ class _CorrespondenceHubScreenState
                         : 'Create space',
                     onAction: () {
                       if (_filter == _HubFilter.private) {
-                        context.go('/me/correspondence/create/conversation');
+                        context.push('/me/correspondence/create/conversation');
                         return;
                       }
-                      context.go('/me/correspondence/create/space');
+                      context.push('/me/correspondence/create/space');
                     },
                   )
                 else
@@ -319,7 +321,7 @@ class _InboxRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.go(item.route),
+      onTap: () => context.push(item.route),
       borderRadius: BorderRadius.circular(14),
       child: Padding(
         padding: const EdgeInsets.symmetric(

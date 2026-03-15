@@ -8,7 +8,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/spaces_repository.dart';
 import '../data/threads_repository.dart';
-import 'invite_member_screen.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
@@ -93,9 +92,10 @@ class SpaceScreen extends ConsumerWidget {
                 data: (space) => _SpaceHeaderCard(
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
-                  onInviteMember: () => _openInviteScreen(context, ref),
-                  onNewConversation: () =>
-                      context.go('/me/correspondence/create/conversation'),
+                  onInviteMember: () => _openInviteScreen(context),
+                  onNewConversation: () => context.push(
+                    '/me/correspondence/create/conversation',
+                  ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
@@ -129,7 +129,7 @@ class SpaceScreen extends ConsumerWidget {
                       _MembersTab(spaceAsync: spaceAsync),
                       _InvitesTab(
                         invitesAsync: invitesAsync,
-                        onInviteMember: () => _openInviteScreen(context, ref),
+                        onInviteMember: () => _openInviteScreen(context),
                         onRevokeInvite: (inviteId) async {
                           await ref
                               .read(spacesRepositoryProvider)
@@ -157,20 +157,12 @@ class SpaceScreen extends ConsumerWidget {
 
     if (created == true) {
       ref.invalidate(_threadsProvider(spaceId));
+      ref.invalidate(_spaceDetailProvider(spaceId));
     }
   }
 
-  Future<void> _openInviteScreen(BuildContext context, WidgetRef ref) async {
-    final invited = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => InviteMemberScreen(spaceId: spaceId),
-      ),
-    );
-
-    if (invited == true) {
-      ref.invalidate(_invitesProvider(spaceId));
-      ref.invalidate(_spaceDetailProvider(spaceId));
-    }
+  Future<void> _openInviteScreen(BuildContext context) async {
+    await context.push('/me/correspondence/$spaceId/invite');
   }
 }
 
@@ -279,7 +271,7 @@ class _MembersTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Members surface ready', style: AuraText.title),
+                    Text('Members', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
                       memberCount > 0
@@ -711,7 +703,7 @@ class _ThreadTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: id.isEmpty
             ? null
-            : () => context.go('/me/correspondence/$spaceId/thread/$id'),
+            : () => context.push('/me/correspondence/$spaceId/thread/$id'),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

@@ -68,7 +68,7 @@ class ThreadScreen extends ConsumerWidget {
                           const ['spaceId', 'space_id'],
                         );
                         if (spaceId.isEmpty) return;
-                        context.go('/me/correspondence/$spaceId');
+                        context.push('/me/correspondence/$spaceId');
                       },
                     ),
                   ),
@@ -449,7 +449,7 @@ class _MessageTile extends StatelessWidget {
           if (author.isNotEmpty) ...[
             InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: handle.isEmpty ? null : () => context.go('/u/$handle'),
+              onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 2,
