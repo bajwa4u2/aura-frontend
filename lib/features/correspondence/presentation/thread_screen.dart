@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -32,6 +33,12 @@ final _messagesProvider =
       return repo.listMessages(threadId: threadId);
     });
 
+final _currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/users/me');
+  return _unwrapResponseMap(res.data);
+});
+
 class ThreadScreen extends ConsumerWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -41,6 +48,7 @@ class ThreadScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threadAsync = ref.watch(_threadDetailProvider(threadId));
     final messagesAsync = ref.watch(_messagesProvider(threadId));
+    final meAsync = ref.watch(_currentUserProvider);
 
     return AuraScaffold(
       title: 'Thread',
@@ -51,9 +59,11 @@ class ThreadScreen extends ConsumerWidget {
               onRefresh: () async {
                 ref.invalidate(_threadDetailProvider(threadId));
                 ref.invalidate(_messagesProvider(threadId));
+                ref.invalidate(_currentUserProvider);
                 await Future.wait([
                   ref.read(_threadDetailProvider(threadId).future),
                   ref.read(_messagesProvider(threadId).future),
+                  ref.read(_currentUserProvider.future),
                 ]);
               },
               child: ListView(
@@ -115,11 +125,20 @@ class ThreadScreen extends ConsumerWidget {
                         );
                       }
 
+                      final currentUserId = meAsync.maybeWhen(
+                        data: (me) => _pickString(
+                          me,
+                          const ['id', '_id', 'userId'],
+                        ),
+                        orElse: () => '',
+                      );
+
                       return Column(
                         children: [
                           for (var i = 0; i < messages.length; i++) ...[
                             _MessageTile(
                               message: messages[i],
+                              currentUserId: currentUserId,
                               onEdit: () => _showEditMessageDialog(
                                 context,
                                 ref,
@@ -911,128 +930,194 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
 class _MessageTile extends StatelessWidget {
   const _MessageTile({
     required this.message,
+    required this.currentUserId,
     required this.onEdit,
     required this.onDelete,
   });
 
   final Map<String, dynamic> message;
+  final String currentUserId;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final body = _pickString(message, const ['body', 'text', 'content']);
+    final authorMap = _extractAuthorMap(message);
     final author = _pickString(
-      message,
-      const ['authorName', 'senderName', 'userName', 'displayName'],
+      authorMap.isNotEmpty ? authorMap : message,
+      const ['displayName', 'authorName', 'senderName', 'name', 'userName'],
     );
     final handle = _pickString(
-      message,
-      const ['authorHandle', 'senderHandle', 'handle', 'username'],
+      authorMap.isNotEmpty ? authorMap : message,
+      const ['handle', 'authorHandle', 'senderHandle', 'username'],
     );
     final contextLine = _pickString(
-      message,
-      const ['authorContext', 'senderContext', 'bio', 'tagline'],
+      authorMap.isNotEmpty ? authorMap : message,
+      const ['authorContext', 'senderContext', 'bio', 'tagline', 'headline'],
     );
     final createdAt = _pickString(
       message,
       const ['createdAt', 'sentAt', 'timestamp'],
     );
     final attachments = _listOfMap(message['attachments']);
+    final senderId = _extractSenderId(message);
+    final isMine =
+        currentUserId.trim().isNotEmpty && senderId.trim() == currentUserId.trim();
 
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (author.isNotEmpty) ...[
-            InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 2,
-                  horizontal: 2,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      author,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+    final bubbleColor = isMine ? Colors.black : Colors.white;
+    final bubbleBorderColor = isMine ? Colors.black : Colors.black12;
+    final textColor = isMine ? Colors.white : Colors.black87;
+    final metaColor = isMine ? Colors.white70 : Colors.black54;
+
+    return Align(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width > 900 ? 620 : 520,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            if (!isMine && author.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
                     ),
-                    if (handle.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      Text(
-                        '@$handle',
-                        style: AuraText.small,
-                      ),
-                    ],
-                    if (contextLine.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      Text(
-                        contextLine,
-                        style: AuraText.small,
-                      ),
-                    ],
-                  ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          author,
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (handle.isNotEmpty) ...[
+                          const SizedBox(height: AuraSpace.s2),
+                          Text('@$handle', style: AuraText.small),
+                        ],
+                        if (contextLine.isNotEmpty) ...[
+                          const SizedBox(height: AuraSpace.s2),
+                          Text(
+                            contextLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.small,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-          ],
-          if (body.isNotEmpty) ...[
-            Text(
-              body,
-              style: AuraText.body,
-            ),
-            if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
-          ],
-          if (attachments.isNotEmpty) ...[
-            _MessageAttachmentList(attachments: attachments),
-            const SizedBox(height: AuraSpace.s10),
-          ] else if (body.isEmpty) ...[
-            Text(
-              '(empty message)',
-              style: AuraText.body,
-            ),
-            const SizedBox(height: AuraSpace.s10),
-          ],
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (createdAt.isNotEmpty)
-                _MetaChip(label: 'Sent', value: createdAt),
-              TextButton(
-                onPressed: onEdit,
-                child: const Text('Edit'),
-              ),
-              TextButton(
-                onPressed: onDelete,
-                child: const Text('Delete'),
               ),
             ],
-          ),
-        ],
+            Container(
+              decoration: BoxDecoration(
+                color: bubbleColor,
+                border: Border.all(color: bubbleBorderColor),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (body.isNotEmpty) ...[
+                    Text(
+                      body,
+                      style: AuraText.body.copyWith(color: textColor),
+                    ),
+                    if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
+                  ],
+                  if (attachments.isNotEmpty) ...[
+                    _MessageAttachmentList(
+                      attachments: attachments,
+                      isMine: isMine,
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ] else if (body.isEmpty) ...[
+                    Text(
+                      '(empty message)',
+                      style: AuraText.body.copyWith(color: textColor),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (createdAt.isNotEmpty)
+                        Flexible(
+                          child: Text(
+                            createdAt,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.small.copyWith(color: metaColor),
+                          ),
+                        ),
+                      if (isMine) ...[
+                        const SizedBox(width: AuraSpace.s8),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.more_horiz,
+                            size: 18,
+                            color: metaColor,
+                          ),
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              onEdit();
+                            } else if (value == 'delete') {
+                              onDelete();
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Text('Edit'),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _MessageAttachmentList extends StatelessWidget {
-  const _MessageAttachmentList({required this.attachments});
+  const _MessageAttachmentList({
+    required this.attachments,
+    required this.isMine,
+  });
 
   final List<Map<String, dynamic>> attachments;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < attachments.length; i++) ...[
-          _MessageAttachmentCard(attachment: attachments[i]),
+          _MessageAttachmentCard(
+            attachment: attachments[i],
+            isMine: isMine,
+          ),
           if (i != attachments.length - 1)
             const SizedBox(height: AuraSpace.s8),
         ],
@@ -1042,9 +1127,30 @@ class _MessageAttachmentList extends StatelessWidget {
 }
 
 class _MessageAttachmentCard extends StatelessWidget {
-  const _MessageAttachmentCard({required this.attachment});
+  const _MessageAttachmentCard({
+    required this.attachment,
+    required this.isMine,
+  });
 
   final Map<String, dynamic> attachment;
+  final bool isMine;
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open this attachment.')),
+      );
+      return;
+    }
+
+    final ok = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open this attachment.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1054,52 +1160,330 @@ class _MessageAttachmentCard extends StatelessWidget {
     final kind = _kindFromMime(mimeType);
     final url = _pickString(
       attachment,
-      const ['displayUrl', 'url', 'thumbnailUrl', 'thumbUrl'],
+      const ['displayUrl', 'url', 'sourceUrl', 'fileUrl'],
+    );
+    final thumbUrl = _pickString(
+      attachment,
+      const ['thumbnailUrl', 'thumbUrl', 'displayUrl', 'url'],
     );
 
-    final surface = Container(
-      padding: const EdgeInsets.all(AuraSpace.s12),
+    final borderColor = isMine ? Colors.white24 : Colors.black12;
+    final surfaceColor = isMine ? Colors.white.withOpacity(0.08) : Colors.white;
+    final primaryTextColor = isMine ? Colors.white : Colors.black87;
+    final secondaryTextColor = isMine ? Colors.white70 : Colors.black54;
+
+    Widget mediaSurface;
+    switch (kind) {
+      case _AttachmentKind.image:
+        mediaSurface = _ImageAttachmentSurface(
+          thumbUrl: thumbUrl,
+          url: url,
+          borderColor: borderColor,
+          surfaceColor: surfaceColor,
+          primaryTextColor: primaryTextColor,
+          secondaryTextColor: secondaryTextColor,
+          fileName: fileName,
+          sizeBytes: sizeBytes,
+        );
+        break;
+      case _AttachmentKind.video:
+        mediaSurface = _VideoAttachmentSurface(
+          thumbUrl: thumbUrl,
+          url: url,
+          borderColor: borderColor,
+          surfaceColor: surfaceColor,
+          primaryTextColor: primaryTextColor,
+          secondaryTextColor: secondaryTextColor,
+          fileName: fileName,
+          sizeBytes: sizeBytes,
+        );
+        break;
+      case _AttachmentKind.audio:
+        mediaSurface = _AudioAttachmentSurface(
+          url: url,
+          borderColor: borderColor,
+          surfaceColor: surfaceColor,
+          primaryTextColor: primaryTextColor,
+          secondaryTextColor: secondaryTextColor,
+          fileName: fileName,
+          sizeBytes: sizeBytes,
+          mimeType: mimeType,
+        );
+        break;
+    }
+
+    if (url.isEmpty) return mediaSurface;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => _openUrl(context, url),
+      child: mediaSurface,
+    );
+  }
+}
+
+class _ImageAttachmentSurface extends StatelessWidget {
+  const _ImageAttachmentSurface({
+    required this.thumbUrl,
+    required this.url,
+    required this.borderColor,
+    required this.surfaceColor,
+    required this.primaryTextColor,
+    required this.secondaryTextColor,
+    required this.fileName,
+    required this.sizeBytes,
+  });
+
+  final String thumbUrl;
+  final String url;
+  final Color borderColor;
+  final Color surfaceColor;
+  final Color primaryTextColor;
+  final Color secondaryTextColor;
+  final String fileName;
+  final int? sizeBytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = thumbUrl.isNotEmpty ? thumbUrl : url;
+
+    return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AttachmentIcon(kind: kind),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          AspectRatio(
+            aspectRatio: 16 / 10,
+            child: imageUrl.isEmpty
+                ? Container(
+                    color: Colors.black12,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 36,
+                      color: secondaryTextColor,
+                    ),
+                  )
+                : Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.black12,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        size: 36,
+                        color: secondaryTextColor,
+                      ),
+                    ),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AuraSpace.s10),
+            child: Row(
               children: [
-                Text(
-                  fileName.isEmpty ? _attachmentKindLabel(kind) : fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    fileName.isEmpty ? 'Image' : fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: primaryTextColor,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: AuraSpace.s4),
-                Text(
-                  [
-                    if (mimeType.isNotEmpty) mimeType,
-                    if (sizeBytes != null) _formatBytes(sizeBytes),
-                  ].join(' • '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small,
-                ),
+                if (sizeBytes != null)
+                  Text(
+                    _formatBytes(sizeBytes!),
+                    style: AuraText.small.copyWith(color: secondaryTextColor),
+                  ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+}
 
-    if (url.isEmpty) return surface;
+class _VideoAttachmentSurface extends StatelessWidget {
+  const _VideoAttachmentSurface({
+    required this.thumbUrl,
+    required this.url,
+    required this.borderColor,
+    required this.surfaceColor,
+    required this.primaryTextColor,
+    required this.secondaryTextColor,
+    required this.fileName,
+    required this.sizeBytes,
+  });
 
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(14),
-      child: surface,
+  final String thumbUrl;
+  final String url;
+  final Color borderColor;
+  final Color surfaceColor;
+  final Color primaryTextColor;
+  final Color secondaryTextColor;
+  final String fileName;
+  final int? sizeBytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewUrl = thumbUrl.isNotEmpty ? thumbUrl : url;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 10,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (previewUrl.isNotEmpty)
+                  Image.network(
+                    previewUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.black12,
+                    ),
+                  )
+                else
+                  Container(color: Colors.black12),
+                Container(color: Colors.black26),
+                Center(
+                  child: Container(
+                    height: 52,
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AuraSpace.s10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    fileName.isEmpty ? 'Video' : fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                ),
+                if (sizeBytes != null)
+                  Text(
+                    _formatBytes(sizeBytes!),
+                    style: AuraText.small.copyWith(color: secondaryTextColor),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AudioAttachmentSurface extends StatelessWidget {
+  const _AudioAttachmentSurface({
+    required this.url,
+    required this.borderColor,
+    required this.surfaceColor,
+    required this.primaryTextColor,
+    required this.secondaryTextColor,
+    required this.fileName,
+    required this.sizeBytes,
+    required this.mimeType,
+  });
+
+  final String url;
+  final Color borderColor;
+  final Color surfaceColor;
+  final Color primaryTextColor;
+  final Color secondaryTextColor;
+  final String fileName;
+  final int? sizeBytes;
+  final String mimeType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.graphic_eq_outlined,
+              color: secondaryTextColor,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName.isEmpty ? 'Audio' : fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: primaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s4),
+                Text(
+                  [
+                    if (mimeType.isNotEmpty) mimeType,
+                    if (sizeBytes != null) _formatBytes(sizeBytes!),
+                    if (url.isNotEmpty) 'Tap to open',
+                  ].join(' • '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(color: secondaryTextColor),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1393,6 +1777,36 @@ Map<String, dynamic> _unwrapDataMap(dynamic raw) {
   return <String, dynamic>{};
 }
 
+Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) {
+    const nestedKeys = [
+      'data',
+      'user',
+      'item',
+      'result',
+      'payload',
+    ];
+
+    for (final key in nestedKeys) {
+      final nested = raw[key];
+      if (nested is Map<String, dynamic>) {
+        return _unwrapResponseMap(nested);
+      }
+      if (nested is Map) {
+        return _unwrapResponseMap(Map<String, dynamic>.from(nested));
+      }
+    }
+
+    return raw;
+  }
+
+  if (raw is Map) {
+    return _unwrapResponseMap(Map<String, dynamic>.from(raw));
+  }
+
+  return <String, dynamic>{};
+}
+
 Map<String, dynamic> _asMap(dynamic raw) {
   if (raw is Map<String, dynamic>) return raw;
   if (raw is Map) return Map<String, dynamic>.from(raw);
@@ -1430,6 +1844,46 @@ String _pickString(Map<String, dynamic> map, List<String> keys) {
     if (value.isNotEmpty) return value;
   }
   return '';
+}
+
+Map<String, dynamic> _extractAuthorMap(Map<String, dynamic> message) {
+  const keys = [
+    'author',
+    'sender',
+    'user',
+    'member',
+    'profile',
+    'createdBy',
+  ];
+
+  for (final key in keys) {
+    final value = message[key];
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+  }
+
+  return const <String, dynamic>{};
+}
+
+String _extractSenderId(Map<String, dynamic> message) {
+  final direct = _pickString(message, const [
+    'authorId',
+    'senderId',
+    'userId',
+    'createdById',
+    'memberId',
+  ]);
+  if (direct.isNotEmpty) return direct;
+
+  final author = _extractAuthorMap(message);
+  if (author.isEmpty) return '';
+
+  return _pickString(author, const [
+    'id',
+    '_id',
+    'userId',
+    'memberId',
+  ]);
 }
 
 String _formatBytes(int bytes) {
