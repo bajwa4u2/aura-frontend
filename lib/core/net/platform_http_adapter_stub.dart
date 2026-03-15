@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
 
-void configureDioForPlatformImpl(Dio dio) {
-  // Fallback no-op (should not be used on web/io)
+void configureDioForPlatform(Dio dio) {
+  // Non-web platforms do not need special cookie transport configuration.
 }

@@ -1,10 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:dio/browser.dart';
+import 'package:dio/dio.dart';
 
-void configureDioForPlatformImpl(Dio dio) {
-  // On web, cookies are NOT sent cross-origin unless credentials are enabled.
-  // This is required for HttpOnly refresh cookie (api.*) to be sent from app.*.
+void configureDioForPlatform(Dio dio) {
   final current = dio.httpClientAdapter;
+
   if (current is BrowserHttpClientAdapter) {
     current.withCredentials = true;
     return;

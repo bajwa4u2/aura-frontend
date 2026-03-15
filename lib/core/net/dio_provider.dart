@@ -109,7 +109,6 @@ final dioProvider = Provider<Dio>((ref) {
   Future<void> _clearSessionState() async {
     await ref.read(tokenStoreProvider).clearTokens();
 
-    // Nudge dependents that rely on bootstrap/auth state to recompute cleanly.
     ref.invalidate(sessionBootstrapProvider);
     ref.invalidate(authStatusProvider);
   }
@@ -129,7 +128,6 @@ final dioProvider = Provider<Dio>((ref) {
     if (!store.isLoaded) return false;
 
     final boot = ref.read(sessionBootstrapProvider);
-
     if (boot.isLoading) return false;
 
     return true;
@@ -243,53 +241,6 @@ final dioProvider = Provider<Dio>((ref) {
     }
   }
 
-  Future<void> ensureFreshWebAuthIfNeeded(RequestOptions options) async {
-    if (!kIsWeb) return;
-    if (isAuthEndpoint(options)) return;
-
-    final store = ref.read(tokenStoreProvider);
-
-    try {
-      await store.waitUntilLoaded();
-    } catch (_) {}
-
-    final token = store.accessToken;
-    if (token != null && token.trim().isNotEmpty) {
-      return;
-    }
-
-    if (!canAttemptRefreshNow()) {
-      return;
-    }
-
-    if (options.extra['__web_preflight_refresh_attempted'] == true) {
-      return;
-    }
-
-    options.extra['__web_preflight_refresh_attempted'] = true;
-
-    if (refreshInFlight != null) {
-      await refreshInFlight!;
-      return;
-    }
-
-    final completer = Completer<void>();
-    refreshInFlight = completer.future;
-
-    () async {
-      try {
-        await performRefresh();
-        completer.complete();
-      } catch (e, st) {
-        completer.completeError(e, st);
-      } finally {
-        refreshInFlight = null;
-      }
-    }();
-
-    await completer.future;
-  }
-
   Future<Response<T>> retryRequest<T>(
     RequestOptions req,
     Map<String, dynamic> retryHeaders,
@@ -331,16 +282,6 @@ final dioProvider = Provider<Dio>((ref) {
         } catch (_) {}
 
         _normalizeContentTypeForRequest(options);
-
-        try {
-          await ensureFreshWebAuthIfNeeded(options);
-        } catch (e) {
-          if (shouldClearTokensOnRefreshFailure(e)) {
-            await _clearSessionState();
-          }
-          // Intentionally do not reject here.
-          // Public endpoints should still be allowed to proceed unauthenticated.
-        }
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {

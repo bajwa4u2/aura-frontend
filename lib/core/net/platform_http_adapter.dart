@@ -1,6 +1,2 @@
-import 'package:dio/dio.dart';
-
-void configureDioForPlatform(Dio dio) {
-  // Temporary no-op to prevent any web-only Dio adapter path
-  // from entering Android compilation.
-}
+export 'platform_http_adapter_stub.dart'
+    if (dart.library.html) 'platform_http_adapter_web.dart';

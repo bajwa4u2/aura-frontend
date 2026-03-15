@@ -8,19 +8,19 @@ import '../../config.dart';
 import '../net/platform_http_adapter.dart';
 import 'auth_providers.dart';
 
-/// Bootstraps session at app start:
-/// - Web: always attempts /auth/refresh once using the HttpOnly cookie.
-/// - Non-web: uses stored refreshToken if accessToken is missing.
+/// Bootstraps session at app start.
 ///
-/// Goal:
-/// - make startup auth resolution consistent across all routes
-/// - avoid route-dependent session restoration
-/// - settle once, then let router trust the result
+/// Web:
+/// - Attempts /auth/refresh once per app load using the HttpOnly cookie.
+/// - Request transport is configured separately so browser credentials are sent.
 ///
-/// IMPORTANT:
+/// Non-web:
+/// - Uses the stored refresh token only when access token is missing.
+///
+/// Important:
 /// - Runs at most once per app load.
-/// - Uses a dedicated Dio instance with NO interceptors.
-/// - Never throws; settles quickly.
+/// - Uses a dedicated Dio instance with no interceptors.
+/// - Never throws. It always settles.
 final sessionBootstrapProvider = FutureProvider<void>((ref) async {
   if (_bootstrapDone) return;
 
@@ -123,7 +123,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
       final rt = store.refreshToken;
       if (rt == null || rt.trim().isEmpty) return;
-
       final res = await bootstrapDio.post(
         '/auth/refresh',
         data: {'refreshToken': rt},
