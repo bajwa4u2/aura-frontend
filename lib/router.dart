@@ -1,4 +1,3 @@
-// router.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -28,6 +27,7 @@ import 'features/announcements/presentation/announcement_detail_screen.dart';
 import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
+import 'features/me/presentation/security_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
@@ -143,6 +143,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/ai/claim-audit' ||
         path == '/me' ||
         path == '/me/edit' ||
+        path == '/security' ||
         path == '/me/follow-requests' ||
         path == '/me/correspondence' ||
         path.startsWith('/me/correspondence/') ||
@@ -400,6 +401,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/me/edit',
             builder: (_, __) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: '/security',
+            builder: (_, __) => const SecurityScreen(),
           ),
           GoRoute(
             path: '/me/follow-requests',

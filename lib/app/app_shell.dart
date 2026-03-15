@@ -1,4 +1,3 @@
-// app_shell.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -108,7 +107,9 @@ class AppShell extends StatelessWidget {
                           selectedIndex: selectedIndex,
                           currentPath: path,
                         ),
-                      Expanded(child: child),
+                      Expanded(
+                        child: child,
+                      ),
                     ],
                   ),
                 ),
@@ -231,8 +232,11 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
       case 'profile':
         context.go('/me');
         return;
-      case 'settings':
+      case 'edit_profile':
         context.go('/me/edit');
+        return;
+      case 'security':
+        context.go('/security');
         return;
       case 'logout':
         await _logout();
@@ -251,7 +255,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
     try {
       await dio.post('/auth/logout');
     } catch (_) {
-      // Deliberately continue. Local logout must still complete.
+      // Local logout should still complete even if server logout fails.
     }
 
     if (mounted) {
@@ -359,10 +363,17 @@ class _HeaderAccountButton extends StatelessWidget {
             ),
           ),
           const PopupMenuItem<String>(
-            value: 'settings',
+            value: 'edit_profile',
             child: _AccountMenuItemRow(
-              icon: Icons.settings_outlined,
-              label: 'Account settings',
+              icon: Icons.edit_outlined,
+              label: 'Edit profile',
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'security',
+            child: _AccountMenuItemRow(
+              icon: Icons.shield_outlined,
+              label: 'Security',
             ),
           ),
           const PopupMenuDivider(),
@@ -666,7 +677,9 @@ class _MemberRailButton extends StatelessWidget {
             color: background,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected ? AuraSurface.divider : Colors.transparent,
+              color: selected
+                  ? AuraSurface.divider
+                  : Colors.transparent,
             ),
           ),
           child: Row(
