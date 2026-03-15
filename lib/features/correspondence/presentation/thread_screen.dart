@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -519,11 +520,24 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
       attachment.url = _firstNonEmpty(
         patched,
-        const ['displayUrl', 'url', 'thumbnailUrl', 'thumbUrl'],
+        const [
+          'displayUrl',
+          'url',
+          'publicUrl',
+          'signedUrl',
+          'sourceUrl',
+          'fileUrl',
+        ],
       );
       attachment.thumbUrl = _firstNonEmpty(
         patched,
-        const ['thumbnailUrl', 'thumbUrl', 'displayUrl', 'url'],
+        const [
+          'thumbnailUrl',
+          'thumbUrl',
+          'previewUrl',
+          'displayUrl',
+          'url',
+        ],
       );
 
       attachment.storageKey = _firstNonEmpty(patched, const [
@@ -974,7 +988,7 @@ class _MessageTile extends StatelessWidget {
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width > 900 ? 620 : 520,
+          maxWidth: MediaQuery.of(context).size.width > 900 ? 640 : 540,
         ),
         child: Column(
           crossAxisAlignment:
@@ -985,7 +999,8 @@ class _MessageTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 4, bottom: 6),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: handle.isEmpty ? null : () => context.push('/author/$handle'),
+                  onTap:
+                      handle.isEmpty ? null : () => context.push('/author/$handle'),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
@@ -1144,7 +1159,12 @@ class _MessageAttachmentCard extends StatelessWidget {
       return;
     }
 
-    final ok = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    final ok = await launchUrl(
+      uri,
+      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      webOnlyWindowName: '_blank',
+    );
+
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open this attachment.')),
@@ -1158,14 +1178,8 @@ class _MessageAttachmentCard extends StatelessWidget {
     final mimeType = _pickString(attachment, const ['mimeType', 'mime']);
     final sizeBytes = _pickInt(attachment, const ['sizeBytes', 'size']);
     final kind = _kindFromMime(mimeType);
-    final url = _pickString(
-      attachment,
-      const ['displayUrl', 'url', 'sourceUrl', 'fileUrl'],
-    );
-    final thumbUrl = _pickString(
-      attachment,
-      const ['thumbnailUrl', 'thumbUrl', 'displayUrl', 'url'],
-    );
+    final url = _resolveAttachmentUrl(attachment);
+    final thumbUrl = _resolveAttachmentThumbUrl(attachment);
 
     final borderColor = isMine ? Colors.white24 : Colors.black12;
     final surfaceColor = isMine ? Colors.white.withOpacity(0.08) : Colors.white;
@@ -1259,29 +1273,35 @@ class _ImageAttachmentSurface extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 16 / 10,
-            child: imageUrl.isEmpty
-                ? Container(
-                    color: Colors.black12,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: 36,
-                      color: secondaryTextColor,
-                    ),
-                  )
-                : Image.network(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl.isNotEmpty)
+                  Image.network(
                     imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.black12,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        size: 36,
-                        color: secondaryTextColor,
-                      ),
+                    errorBuilder: (_, __, ___) => _BrokenMediaFallback(
+                      icon: Icons.image_outlined,
+                      text: 'Image preview unavailable',
+                      textColor: secondaryTextColor,
                     ),
+                  )
+                else
+                  _BrokenMediaFallback(
+                    icon: Icons.image_outlined,
+                    text: 'Image unavailable',
+                    textColor: secondaryTextColor,
                   ),
+                Positioned(
+                  right: 10,
+                  bottom: 10,
+                  child: _OpenBadge(
+                    label: 'Open',
+                    dark: true,
+                  ),
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(AuraSpace.s10),
@@ -1356,17 +1376,25 @@ class _VideoAttachmentSurface extends StatelessWidget {
                   Image.network(
                     previewUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.black12,
+                    errorBuilder: (_, __, ___) => _BrokenMediaFallback(
+                      icon: Icons.videocam_outlined,
+                      text: 'Video preview unavailable',
+                      textColor: Colors.white70,
+                      dark: true,
                     ),
                   )
                 else
-                  Container(color: Colors.black12),
+                  _BrokenMediaFallback(
+                    icon: Icons.videocam_outlined,
+                    text: 'Video ready to open',
+                    textColor: Colors.white70,
+                    dark: true,
+                  ),
                 Container(color: Colors.black26),
                 Center(
                   child: Container(
-                    height: 52,
-                    width: 52,
+                    height: 56,
+                    width: 56,
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(999),
@@ -1374,8 +1402,16 @@ class _VideoAttachmentSurface extends StatelessWidget {
                     child: const Icon(
                       Icons.play_arrow_rounded,
                       color: Colors.white,
-                      size: 30,
+                      size: 32,
                     ),
+                  ),
+                ),
+                Positioned(
+                  right: 10,
+                  bottom: 10,
+                  child: _OpenBadge(
+                    label: 'Open',
+                    dark: true,
                   ),
                 ),
               ],
@@ -1443,11 +1479,11 @@ class _AudioAttachmentSurface extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            height: 42,
-            width: 42,
+            height: 46,
+            width: 46,
             decoration: BoxDecoration(
               border: Border.all(color: borderColor),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               Icons.graphic_eq_outlined,
@@ -1473,13 +1509,98 @@ class _AudioAttachmentSurface extends StatelessWidget {
                   [
                     if (mimeType.isNotEmpty) mimeType,
                     if (sizeBytes != null) _formatBytes(sizeBytes!),
-                    if (url.isNotEmpty) 'Tap to open',
                   ].join(' • '),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AuraText.small.copyWith(color: secondaryTextColor),
                 ),
+                const SizedBox(height: AuraSpace.s6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.open_in_new,
+                      size: 14,
+                      color: secondaryTextColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      url.isNotEmpty ? 'Open audio' : 'Audio unavailable',
+                      style: AuraText.small.copyWith(color: secondaryTextColor),
+                    ),
+                  ],
+                ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrokenMediaFallback extends StatelessWidget {
+  const _BrokenMediaFallback({
+    required this.icon,
+    required this.text,
+    required this.textColor,
+    this.dark = false,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color textColor;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: dark ? Colors.black38 : Colors.black12,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 36, color: textColor),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            style: AuraText.small.copyWith(color: textColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OpenBadge extends StatelessWidget {
+  const _OpenBadge({
+    required this.label,
+    this.dark = false,
+  });
+
+  final String label;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: dark ? Colors.black54 : Colors.white70,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.open_in_new,
+            size: 12,
+            color: dark ? Colors.white : Colors.black87,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: dark ? Colors.white : Colors.black87,
             ),
           ),
         ],
@@ -1856,6 +1977,39 @@ String _extractSenderId(Map<String, dynamic> message) {
     'userId',
     'memberId',
   ]);
+}
+
+String _resolveAttachmentUrl(Map<String, dynamic> attachment) {
+  return _pickString(
+    attachment,
+    const [
+      'displayUrl',
+      'url',
+      'publicUrl',
+      'signedUrl',
+      'sourceUrl',
+      'fileUrl',
+      'href',
+      'src',
+      'downloadUrl',
+    ],
+  );
+}
+
+String _resolveAttachmentThumbUrl(Map<String, dynamic> attachment) {
+  return _pickString(
+    attachment,
+    const [
+      'thumbnailUrl',
+      'thumbUrl',
+      'previewUrl',
+      'posterUrl',
+      'displayUrl',
+      'publicUrl',
+      'signedUrl',
+      'url',
+    ],
+  );
 }
 
 String _formatBytes(int bytes) {
