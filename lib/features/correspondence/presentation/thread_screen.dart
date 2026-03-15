@@ -60,8 +60,9 @@ class ThreadScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
                   threadAsync.when(
-                    loading: () =>
-                        const AuraCard(child: _LoadingBlock(label: 'Loading thread...')),
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading thread...'),
+                    ),
                     error: (error, _) => AuraCard(
                       child: _ErrorBlock(
                         title: 'Could not load thread',
@@ -86,8 +87,9 @@ class ThreadScreen extends ConsumerWidget {
                   Text('Messages', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   messagesAsync.when(
-                    loading: () =>
-                        const AuraCard(child: _LoadingBlock(label: 'Loading messages...')),
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading messages...'),
+                    ),
                     error: (error, _) => AuraCard(
                       child: _ErrorBlock(
                         title: 'Could not load messages',
@@ -307,24 +309,6 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     );
   }
 
-  Future<void> _pickDocumentOrFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
-      withData: true,
-      type: FileType.any,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final picked = result.files.single;
-    final file = XFile.fromData(
-      picked.bytes ?? Uint8List(0),
-      name: picked.name,
-      mimeType: _inferMime(picked.name),
-    );
-
-    await _addAttachment(file, kind: _classifyKindFromName(picked.name));
-  }
-
   Future<void> _pickAudioFile() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
@@ -334,13 +318,25 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     if (result == null || result.files.isEmpty) return;
 
     final picked = result.files.single;
+    if (picked.bytes == null || picked.bytes!.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read selected audio file.')),
+      );
+      return;
+    }
+
     final file = XFile.fromData(
-      picked.bytes ?? Uint8List(0),
+      picked.bytes!,
       name: picked.name,
       mimeType: _inferMime(picked.name),
     );
 
-    await _addAttachment(file, kind: _AttachmentKind.audio);
+    await _addAttachment(
+      file,
+      kind: _AttachmentKind.audio,
+      source: _AttachmentSource.upload,
+    );
   }
 
   Future<void> _toggleAudioRecording() async {
@@ -363,7 +359,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       await _addAttachment(
         file,
         kind: _AttachmentKind.audio,
-        source: _AttachmentSource.microphone,
+        source: _AttachmentSource.recording,
       );
       return;
     }
@@ -529,13 +525,21 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     }
 
     if (attachment.storageKey.isEmpty) {
-      final signed = _firstNonEmpty(presigned, const [
+      attachment.storageKey = _firstNonEmpty(upload, const [
+        'objectKey',
+        'storageKey',
+        'key',
+        'path',
+      ]);
+    }
+
+    if (attachment.storageKey.isEmpty) {
+      attachment.storageKey = _firstNonEmpty(presigned, const [
         'storageKey',
         'objectKey',
         'key',
         'path',
       ]);
-      attachment.storageKey = signed;
     }
 
     if (attachment.storageKey.isEmpty) {
@@ -639,11 +643,6 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                 title: const Text('Upload audio'),
                 onTap: () => closeAnd(_pickAudioFile),
               ),
-              ListTile(
-                leading: const Icon(Icons.attach_file_outlined),
-                title: const Text('Upload document or file'),
-                onTap: () => closeAnd(_pickDocumentOrFile),
-              ),
             ],
           ),
         );
@@ -700,8 +699,8 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                     _sending
                         ? 'Sending...'
                         : uploadingCount > 0
-                        ? 'Uploading...'
-                        : 'Send',
+                            ? 'Uploading...'
+                            : 'Send',
                   ),
                 ),
               ],
@@ -725,7 +724,7 @@ class _AttachmentPreviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 88,
+      height: 110,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: attachments.length,
@@ -757,11 +756,11 @@ class _AttachmentPreviewCard extends StatelessWidget {
     final subtitle = attachment.uploading
         ? 'Uploading...'
         : attachment.error != null
-        ? 'Failed'
-        : _attachmentKindLabel(attachment.kind);
+            ? 'Failed'
+            : _attachmentKindLabel(attachment.kind);
 
     return Container(
-      width: 220,
+      width: 240,
       padding: const EdgeInsets.all(AuraSpace.s10),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
@@ -778,7 +777,7 @@ class _AttachmentPreviewCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
                 ),
@@ -1123,12 +1122,6 @@ class _AttachmentIcon extends StatelessWidget {
       case _AttachmentKind.audio:
         icon = Icons.graphic_eq_outlined;
         break;
-      case _AttachmentKind.document:
-        icon = Icons.description_outlined;
-        break;
-      case _AttachmentKind.file:
-        icon = Icons.attach_file_outlined;
-        break;
     }
 
     return Container(
@@ -1297,15 +1290,13 @@ enum _AttachmentKind {
   image,
   video,
   audio,
-  document,
-  file,
 }
 
 enum _AttachmentSource {
   gallery,
   camera,
-  microphone,
-  files,
+  upload,
+  recording,
 }
 
 String _attachmentKindLabel(_AttachmentKind kind) {
@@ -1316,10 +1307,6 @@ String _attachmentKindLabel(_AttachmentKind kind) {
       return 'Video';
     case _AttachmentKind.audio:
       return 'Audio';
-    case _AttachmentKind.document:
-      return 'Document';
-    case _AttachmentKind.file:
-      return 'File';
   }
 }
 
@@ -1331,10 +1318,6 @@ String _mediaKindValue(_AttachmentKind kind) {
       return 'VIDEO';
     case _AttachmentKind.audio:
       return 'AUDIO';
-    case _AttachmentKind.document:
-      return 'DOCUMENT';
-    case _AttachmentKind.file:
-      return 'FILE';
   }
 }
 
@@ -1344,31 +1327,18 @@ String _mediaSourceValue(_AttachmentSource source) {
       return 'GALLERY';
     case _AttachmentSource.camera:
       return 'CAMERA';
-    case _AttachmentSource.microphone:
-      return 'MICROPHONE';
-    case _AttachmentSource.files:
-      return 'FILES';
+    case _AttachmentSource.upload:
+      return 'UPLOAD';
+    case _AttachmentSource.recording:
+      return 'RECORDING';
   }
-}
-
-_AttachmentKind _classifyKindFromName(String fileName) {
-  final mime = _inferMime(fileName);
-  return _kindFromMime(mime);
 }
 
 _AttachmentKind _kindFromMime(String mime) {
   final lower = mime.toLowerCase();
   if (lower.startsWith('image/')) return _AttachmentKind.image;
   if (lower.startsWith('video/')) return _AttachmentKind.video;
-  if (lower.startsWith('audio/')) return _AttachmentKind.audio;
-  if (lower.contains('pdf') ||
-      lower.contains('word') ||
-      lower.contains('sheet') ||
-      lower.contains('document') ||
-      lower.contains('text/')) {
-    return _AttachmentKind.document;
-  }
-  return _AttachmentKind.file;
+  return _AttachmentKind.audio;
 }
 
 String _inferMime(String fileName) {
@@ -1389,23 +1359,6 @@ String _inferMime(String fileName) {
   if (lower.endsWith('.aac')) return 'audio/aac';
   if (lower.endsWith('.wav')) return 'audio/wav';
   if (lower.endsWith('.ogg')) return 'audio/ogg';
-
-  if (lower.endsWith('.pdf')) return 'application/pdf';
-  if (lower.endsWith('.doc')) return 'application/msword';
-  if (lower.endsWith('.docx')) {
-    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  }
-  if (lower.endsWith('.xls')) return 'application/vnd.ms-excel';
-  if (lower.endsWith('.xlsx')) {
-    return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  }
-  if (lower.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
-  if (lower.endsWith('.pptx')) {
-    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-  }
-  if (lower.endsWith('.txt')) return 'text/plain';
-  if (lower.endsWith('.csv')) return 'text/csv';
-  if (lower.endsWith('.zip')) return 'application/zip';
 
   return 'application/octet-stream';
 }
