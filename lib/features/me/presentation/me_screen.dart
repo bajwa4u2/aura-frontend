@@ -100,6 +100,18 @@ bool _isEmailNotVerifiedError(Object err) {
       s.contains('verify your email');
 }
 
+int? _readMeaningfulCount(List<dynamic> candidates) {
+  for (final value in candidates) {
+    if (value is int && value > 0) return value;
+    if (value is num && value.toInt() > 0) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value.trim());
+      if (parsed != null && parsed > 0) return parsed;
+    }
+  }
+  return null;
+}
+
 final meProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
@@ -887,8 +899,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Widget _connectionsSection(
     BuildContext context,
     String handle, {
-    required int followersCount,
-    required int followingCount,
+    int? followersCount,
+    int? followingCount,
   }) {
     final hasHandle = handle.trim().isNotEmpty;
 
@@ -897,13 +909,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       children: [
         _sectionRow(
           title: 'Followers',
-          trailing: '$followersCount',
+          trailing: followersCount != null ? '$followersCount' : null,
           leading: Icons.people_outline,
           onTap: hasHandle ? () => context.go('/u/$handle/followers') : null,
         ),
         _sectionRow(
           title: 'Following',
-          trailing: '$followingCount',
+          trailing: followingCount != null ? '$followingCount' : null,
           leading: Icons.person_add_alt_outlined,
           onTap: hasHandle ? () => context.go('/u/$handle/following') : null,
         ),
@@ -919,8 +931,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Widget _toolsSection(
     BuildContext context, {
     required bool hasDraft,
-    required int savedCount,
-    required int repliesCount,
+    int? savedCount,
+    int? repliesCount,
   }) {
     return _section(
       title: 'Tools',
@@ -932,19 +944,19 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         ),
         _sectionRow(
           title: 'Draft',
-          trailing: hasDraft ? '1' : '',
+          trailing: hasDraft ? '1' : null,
           leading: Icons.drafts_outlined,
           onTap: () => context.go('/compose'),
         ),
         _sectionRow(
           title: 'Saved',
-          trailing: savedCount > 0 ? '$savedCount' : '',
+          trailing: savedCount != null ? '$savedCount' : null,
           leading: Icons.bookmark_border,
           onTap: () => context.go('/saved'),
         ),
         _sectionRow(
           title: 'Replies',
-          trailing: repliesCount > 0 ? '$repliesCount' : '',
+          trailing: repliesCount != null ? '$repliesCount' : null,
           leading: Icons.reply_outlined,
           onTap: () => context.go('/home'),
         ),
@@ -1170,29 +1182,27 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             orElse: () => const <Map<String, dynamic>>[],
           );
 
-          final postsCount = posts.length;
+          final ownPostsCount = posts.isNotEmpty ? posts.length : null;
 
           final savedCount = savedAsync.maybeWhen(
-            data: (items) => items.length,
-            orElse: () => 0,
+            data: (items) => items.isNotEmpty ? items.length : null,
+            orElse: () => null,
           );
 
           final repliesCount = repliesAsync.maybeWhen(
-            data: (items) => items.length,
-            orElse: () => 0,
+            data: (items) => items.isNotEmpty ? items.length : null,
+            orElse: () => null,
           );
 
-          final followersCount = (me['followersCount'] is num)
-              ? (me['followersCount'] as num).toInt()
-              : (profile['followersCount'] is num)
-                  ? (profile['followersCount'] as num).toInt()
-                  : 0;
+          final followersCount = _readMeaningfulCount([
+            me['followersCount'],
+            profile['followersCount'],
+          ]);
 
-          final followingCount = (me['followingCount'] is num)
-              ? (me['followingCount'] as num).toInt()
-              : (profile['followingCount'] is num)
-                  ? (profile['followingCount'] as num).toInt()
-                  : 0;
+          final followingCount = _readMeaningfulCount([
+            me['followingCount'],
+            profile['followingCount'],
+          ]);
 
           return _cardList([
             ProfileHeader(
@@ -1203,22 +1213,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               stats: [
                 ProfileHeaderStat(
                   label: 'Followers',
-                  value: '$followersCount',
+                  value: followersCount != null ? '$followersCount' : '—',
                   onTap: handle.trim().isNotEmpty
                       ? () => context.go('/u/$handle/followers')
                       : null,
                 ),
                 ProfileHeaderStat(
                   label: 'Following',
-                  value: '$followingCount',
+                  value: followingCount != null ? '$followingCount' : '—',
                   onTap: handle.trim().isNotEmpty
                       ? () => context.go('/u/$handle/following')
                       : null,
                 ),
-                ProfileHeaderStat(
-                  label: 'Posts',
-                  value: '$postsCount',
-                ),
+                if (ownPostsCount != null)
+                  ProfileHeaderStat(
+                    label: 'Posts',
+                    value: '$ownPostsCount',
+                  ),
               ],
               actions: [
                 ProfileHeaderAction(
