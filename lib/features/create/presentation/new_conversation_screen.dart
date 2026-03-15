@@ -281,7 +281,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final created = await _createSpaceFromSelection();
 
       final spaceId = _extractSpaceId(created);
-
       if (spaceId.isEmpty) {
         throw Exception(
           'Space was created but the response did not return a usable space id.',
@@ -294,12 +293,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         return;
       }
 
-      final selectedMember = _selectedEntries.first;
+      final member = _selectedEntries.first;
       final threadId = await _ensureDirectThreadId(
         dio,
         createdResponse: created,
         spaceId: spaceId,
-        member: selectedMember,
+        member: member,
       );
 
       if (!mounted) return;
@@ -330,48 +329,42 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     final existingThreads = await _fetchList(dio, '/spaces/$spaceId/threads');
     for (final thread in existingThreads) {
       final id = _pickString(thread, const ['id', '_id', 'threadId']);
-      if (id.isNotEmpty) {
-        return id;
-      }
+      if (id.isNotEmpty) return id;
     }
 
-    final createThreadPayload = <String, dynamic>{
-      'title': member.displayName.trim().isNotEmpty
-          ? member.displayName.trim()
-          : 'Conversation',
-      'kind': 'DIRECT',
-      if (member.userId.trim().isNotEmpty) 'memberIds': [member.userId.trim()],
-    };
-
-    final createThreadRes = await dio.post(
+    final res = await dio.post(
       '/spaces/$spaceId/threads',
-      data: createThreadPayload,
+      data: <String, dynamic>{
+        'title': member.displayName.trim().isEmpty
+            ? 'Conversation'
+            : member.displayName.trim(),
+        'kind': 'DIRECT',
+        if (member.userId.trim().isNotEmpty) 'memberIds': [member.userId.trim()],
+      },
     );
 
-    final createdThreadId = _extractThreadId(createThreadRes.data);
+    final createdThreadId = _extractThreadId(res.data);
     if (createdThreadId.isNotEmpty) {
       return createdThreadId;
     }
 
-    final createdThreadMap = _deepFirstMap(createThreadRes.data);
-    final fallbackThreadId = _pickString(
+    final createdThreadMap = _deepFirstMap(res.data);
+    final directId = _pickString(
       createdThreadMap,
       const ['id', '_id', 'threadId'],
     );
-    if (fallbackThreadId.isNotEmpty) {
-      return fallbackThreadId;
+    if (directId.isNotEmpty) {
+      return directId;
     }
 
-    final threadsAfterCreate = await _fetchList(dio, '/spaces/$spaceId/threads');
-    for (final thread in threadsAfterCreate) {
+    final refreshedThreads = await _fetchList(dio, '/spaces/$spaceId/threads');
+    for (final thread in refreshedThreads) {
       final id = _pickString(thread, const ['id', '_id', 'threadId']);
-      if (id.isNotEmpty) {
-        return id;
-      }
+      if (id.isNotEmpty) return id;
     }
 
     throw Exception(
-      'Conversation space was created, but no usable thread could be created.',
+      'Conversation space was created, but no usable thread could be opened.',
     );
   }
 
