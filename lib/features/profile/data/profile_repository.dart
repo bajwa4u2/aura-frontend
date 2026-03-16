@@ -15,8 +15,67 @@ class FollowStateDetail {
   final int? cooldownDaysRemaining;
 }
 
+class FollowRequestInboxItem {
+  const FollowRequestInboxItem({
+    required this.id,
+    required this.createdAt,
+    required this.requester,
+  });
+
+  final String id;
+  final DateTime? createdAt;
+  final ProfileListItem requester;
+
+  factory FollowRequestInboxItem.fromJson(Map<String, dynamic> json) {
+    final requesterRaw = json['requester'];
+    final requesterMap = requesterRaw is Map<String, dynamic>
+        ? requesterRaw
+        : requesterRaw is Map
+            ? Map<String, dynamic>.from(requesterRaw)
+            : <String, dynamic>{};
+
+    final createdAtRaw = (json['createdAt'] ?? '').toString().trim();
+
+    return FollowRequestInboxItem(
+      id: (json['id'] ?? '').toString().trim(),
+      createdAt: createdAtRaw.isEmpty ? null : DateTime.tryParse(createdAtRaw),
+      requester: ProfileListItem.fromJson(requesterMap),
+    );
+  }
+}
+
+class FollowRequestOutboxItem {
+  const FollowRequestOutboxItem({
+    required this.id,
+    required this.createdAt,
+    required this.target,
+  });
+
+  final String id;
+  final DateTime? createdAt;
+  final ProfileListItem target;
+
+  factory FollowRequestOutboxItem.fromJson(Map<String, dynamic> json) {
+    final targetRaw = json['target'];
+    final targetMap = targetRaw is Map<String, dynamic>
+        ? targetRaw
+        : targetRaw is Map
+            ? Map<String, dynamic>.from(targetRaw)
+            : <String, dynamic>{};
+
+    final createdAtRaw = (json['createdAt'] ?? '').toString().trim();
+
+    return FollowRequestOutboxItem(
+      id: (json['id'] ?? '').toString().trim(),
+      createdAt: createdAtRaw.isEmpty ? null : DateTime.tryParse(createdAtRaw),
+      target: ProfileListItem.fromJson(targetMap),
+    );
+  }
+}
+
 class ProfileRepository {
   ProfileRepository(this._dio);
+
   final Dio _dio;
 
   Map<String, dynamic> _asMap(dynamic v) {
@@ -200,20 +259,7 @@ class ProfileRepository {
   }
 
   Future<void> unfollow(String handle) async {
-    try {
-      await _dio.post('/users/$handle/follow/cancel');
-    } catch (e) {
-      final msg = _errorMessage(e).toLowerCase();
-
-      if (msg.contains('not found') ||
-          msg.contains('bad request') ||
-          msg.contains('cannot')) {
-        await _dio.post('/users/$handle/follow/cancel');
-        return;
-      }
-
-      rethrow;
-    }
+    await _dio.post('/users/$handle/follow/cancel');
   }
 
   Future<List<ProfileListItem>> getFollowers(String handle) async {
@@ -234,5 +280,39 @@ class ProfileRepository {
     } catch (_) {
       return const <ProfileListItem>[];
     }
+  }
+
+  Future<List<FollowRequestInboxItem>> getFollowRequestsInbox() async {
+    try {
+      final res = await _dio.get('/users/me/follow/requests/inbox');
+      final items = _unwrapItems(res.data);
+      return items
+          .map((e) => FollowRequestInboxItem.fromJson(e))
+          .where((e) => e.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const <FollowRequestInboxItem>[];
+    }
+  }
+
+  Future<List<FollowRequestOutboxItem>> getFollowRequestsOutbox() async {
+    try {
+      final res = await _dio.get('/users/me/follow/requests/outbox');
+      final items = _unwrapItems(res.data);
+      return items
+          .map((e) => FollowRequestOutboxItem.fromJson(e))
+          .where((e) => e.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const <FollowRequestOutboxItem>[];
+    }
+  }
+
+  Future<void> acceptFollowRequest(String id) async {
+    await _dio.post('/users/me/follow/requests/$id/accept');
+  }
+
+  Future<void> declineFollowRequest(String id) async {
+    await _dio.post('/users/me/follow/requests/$id/decline');
   }
 }
