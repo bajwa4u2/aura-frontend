@@ -50,7 +50,7 @@ class PresenceHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 720;
-          const coverHeight = 208.0;
+          const coverHeight = 200.0;
           const avatarSize = 104.0;
           const overlap = 34.0;
 
@@ -219,7 +219,9 @@ class _PresenceCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasCover = coverUrl.trim().isNotEmpty;
+    final raw = coverUrl.trim();
+    final hasCover = raw.isNotEmpty;
+    final resolvedUrl = hasCover ? _withBust(raw) : '';
 
     return SizedBox(
       height: height,
@@ -229,9 +231,25 @@ class _PresenceCover extends StatelessWidget {
         children: [
           if (hasCover)
             Image.network(
-              coverUrl.trim(),
+              resolvedUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _emptySurface(),
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _emptySurface(),
+                    const Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ],
+                );
+              },
             )
           else
             _emptySurface(),
@@ -301,6 +319,11 @@ class _PresenceCover extends StatelessWidget {
       ),
     );
   }
+
+  String _withBust(String value) {
+    final separator = value.contains('?') ? '&' : '?';
+    return '$value${separator}v=${DateTime.now().millisecondsSinceEpoch}';
+    }
 }
 
 class _PresenceAvatar extends StatelessWidget {
@@ -317,6 +340,7 @@ class _PresenceAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = _initials(displayName);
+    final raw = avatarUrl.trim();
 
     final fallback = Container(
       width: size,
@@ -344,7 +368,9 @@ class _PresenceAvatar extends StatelessWidget {
       ),
     );
 
-    if (avatarUrl.trim().isEmpty) return fallback;
+    if (raw.isEmpty) return fallback;
+
+    final resolvedUrl = _withBust(raw);
 
     return Container(
       width: size,
@@ -363,9 +389,13 @@ class _PresenceAvatar extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Image.network(
-        avatarUrl.trim(),
+        resolvedUrl,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => fallback,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return fallback;
+        },
       ),
     );
   }
@@ -383,6 +413,11 @@ class _PresenceAvatar extends StatelessWidget {
     final first = parts.first.substring(0, 1).toUpperCase();
     final last = parts.last.substring(0, 1).toUpperCase();
     return '$first$last';
+  }
+
+  String _withBust(String value) {
+    final separator = value.contains('?') ? '&' : '?';
+    return '$value${separator}v=${DateTime.now().millisecondsSinceEpoch}';
   }
 }
 
