@@ -718,9 +718,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     };
   }
 
-  Future<void> _saveDraft({bool silent = false}) async {
+  Future<void> _saveDraft({
+    bool silent = false,
+    bool allowWhilePosting = false,
+  }) async {
     if (_isReply) return;
-    if (_saving || _posting) return;
+    if (_saving) return;
+    if (_posting && !allowWhilePosting) return;
 
     if (!_hasText) {
       if (!silent && mounted) {
@@ -760,6 +764,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           SnackBar(content: Text('Could not save draft: $e')),
         );
       }
+      rethrow;
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -955,8 +960,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<void> _publishPostNow() async {
     final dio = ref.read(dioProvider);
-
-    await _saveDraft(silent: true);
     await dio.post('/posts/draft/publish');
   }
 
@@ -1007,10 +1010,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
     if (proceed != true || !mounted) return;
 
+    _autosaveDebounce?.cancel();
+
     setState(() => _posting = true);
 
     try {
+      if (!_isReply) {
+        await _saveDraft(
+          silent: true,
+          allowWhilePosting: true,
+        );
+      }
+
       await _publishNow();
+
       if (!mounted) return;
       context.pop(true);
     } catch (e) {
