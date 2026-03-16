@@ -106,6 +106,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Map<String, dynamic>? _auditResult;
   String? _auditError;
 
+  bool _tiktokLoading = false;
+  bool _tiktokActionBusy = false;
+  bool _publishToTikTok = false;
+  bool _publishingToTikTok = false;
+  bool _tiktokConnected = false;
+  String _tiktokAccountLabel = '';
+  String? _tiktokError;
+  String _currentUserId = '';
+
   bool get _isReply => widget.replyToPostId != null;
 
   String get _replyToPostId => (widget.replyToPostId ?? '').trim();
@@ -116,6 +125,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool get _hasUploadingAttachments => _attachments.any((a) => a.uploading);
   bool get _canAddMoreAttachments =>
       !_isReply && _attachments.length < _maxAttachments;
+
+  _ComposeAttachment? get _primaryTikTokVideoAttachment {
+    for (final attachment in _attachments) {
+      final url = (attachment.url ?? '').trim();
+      if (attachment.isVideo &&
+          attachment.isUploaded &&
+          !attachment.uploading &&
+          url.isNotEmpty) {
+        return attachment;
+      }
+    }
+    return null;
+  }
+
+  bool get _hasTikTokVideo => _primaryTikTokVideoAttachment != null;
 
   bool get _canPublish {
     if (!_hasText) return false;
@@ -274,6 +298,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     if (!_isReply) {
       _loadDraft();
+      _loadTikTokConnection();
     }
 
     _textController.addListener(() {
@@ -296,6 +321,124 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       attachment.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadTikTokConnection() async {
+    if (_isReply) return;
+
+    if (mounted) {
+      setState(() {
+        _tiktokLoading = true;
+        _tiktokError = null;
+      });
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+
+      final meRes = await dio.get('/v1/users/me');
+      final user = _unwrapUser(meRes.data);
+      final userId = _str(user['id']);
+
+      if (userId.isEmpty) {
+        throw Exception('User id is missing.');
+      }
+
+      final accountRes = await dio.get(
+        '/v1/integrations/tiktok/account',
+        queryParameters: {'userId': userId},
+      );
+
+      final account = _unwrapTikTokAccount(accountRes.data);
+      final connected = _readTikTokConnected(account);
+      final label = _readTikTokAccountLabel(account);
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentUserId = userId;
+        _tiktokConnected = connected;
+        _tiktokAccountLabel = label;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _tiktokError = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _tiktokLoading = false;
+        });
+      }
+    }
+  }
+
+  Map<String, dynamic> _unwrapUser(dynamic raw) {
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+
+      final user = map['user'];
+      if (user is Map) return Map<String, dynamic>.from(user);
+
+      final data = map['data'];
+      if (data is Map) {
+        final nestedData = Map<String, dynamic>.from(data);
+        final nestedUser = nestedData['user'];
+        if (nestedUser is Map) return Map<String, dynamic>.from(nestedUser);
+        return nestedData;
+      }
+
+      return map;
+    }
+
+    return <String, dynamic>{};
+  }
+
+  Map<String, dynamic> _unwrapTikTokAccount(dynamic raw) {
+    if (raw is! Map) return <String, dynamic>{};
+
+    final root = Map<String, dynamic>.from(raw);
+
+    final account = root['account'];
+    if (account is Map) {
+      return Map<String, dynamic>.from(account);
+    }
+
+    final data = root['data'];
+    if (data is Map) {
+      final nested = Map<String, dynamic>.from(data);
+      final nestedAccount = nested['account'];
+      if (nestedAccount is Map) {
+        return Map<String, dynamic>.from(nestedAccount);
+      }
+      return nested;
+    }
+
+    return root;
+  }
+
+  bool _readTikTokConnected(Map<String, dynamic> account) {
+    final connected = account['connected'];
+    if (connected is bool) return connected;
+
+    final platformUserId = _str(account['platformUserId']);
+    final username = _str(account['username']);
+    return platformUserId.isNotEmpty || username.isNotEmpty;
+  }
+
+  String _readTikTokAccountLabel(Map<String, dynamic> account) {
+    return _firstNonEmpty([
+      _str(account['username']),
+      _str(account['platformUserId']),
+      _str(account['id']),
+    ]);
+  }
+
+  void _syncTikTokToggle() {
+    if (!_hasTikTokVideo && _publishToTikTok) {
+      _publishToTikTok = false;
+    }
   }
 
   Future<void> _loadDraft() async {
@@ -366,6 +509,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _attachments
           ..clear()
           ..addAll(loadedAttachments);
+        _syncTikTokToggle();
 
         if (_hasText) {
           _showTextError = false;
@@ -502,6 +646,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       _attachments.add(attachment);
       _uploadingMedia = true;
+      _syncTikTokToggle();
     });
 
     try {
@@ -520,6 +665,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (mounted) {
         setState(() {
           _uploadingMedia = _attachments.any((a) => a.uploading);
+          _syncTikTokToggle();
         });
       }
     }
@@ -616,6 +762,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               : null);
       attachment.uploading = false;
       attachment.error = null;
+      _syncTikTokToggle();
     });
   }
 
@@ -647,6 +794,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       _attachments.removeWhere((a) => a.localId == attachment.localId);
       _uploadingMedia = _attachments.any((a) => a.uploading);
+      _syncTikTokToggle();
     });
 
     attachment.dispose();
@@ -673,6 +821,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       final item = _attachments.removeAt(index);
       _attachments.insert(index - 1, item);
+      _syncTikTokToggle();
     });
     _scheduleAutosave();
   }
@@ -682,6 +831,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       final item = _attachments.removeAt(index);
       _attachments.insert(index + 1, item);
+      _syncTikTokToggle();
     });
     _scheduleAutosave();
   }
@@ -691,6 +841,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return 'Replies publish directly and do not use the main draft yet.';
     }
     if (_uploadingMedia) return 'Uploading attachments…';
+    if (_publishingToTikTok) return 'Queuing TikTok publish…';
     if (_saving) return 'Saving…';
     final dt = _lastSavedAt;
     if (dt == null) return 'Draft not saved yet.';
@@ -943,7 +1094,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return '$firstLine\nExample: $example';
   }
 
-  Future<void> _publishReplyNow() async {
+  Future<String?> _publishReplyNow() async {
     final dio = ref.read(dioProvider);
 
     if (_replyToPostId.isEmpty) {
@@ -956,20 +1107,73 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         'text': _textController.text.trim(),
       },
     );
+
+    return null;
   }
 
-  Future<void> _publishPostNow() async {
+  Future<String?> _publishPostNow() async {
     final dio = ref.read(dioProvider);
-    await dio.post('/posts/draft/publish');
+    final res = await dio.post('/posts/draft/publish');
+    return _extractPublishedPostId(res.data);
   }
 
-  Future<void> _publishNow() async {
+  Future<String?> _publishNow() async {
     if (_isReply) {
-      await _publishReplyNow();
-      return;
+      return _publishReplyNow();
     }
 
-    await _publishPostNow();
+    return _publishPostNow();
+  }
+
+  String? _extractPublishedPostId(dynamic raw) {
+    final root = _asMap(raw);
+    final candidates = <Map<String, dynamic>>[
+      root,
+      _asMap(root['data']),
+      _asMap(root['post']),
+      _asMap(_asMap(root['data'])['post']),
+    ];
+
+    for (final item in candidates) {
+      final id = _str(item['id']);
+      if (id.isNotEmpty) return id;
+    }
+
+    return null;
+  }
+
+  String _buildTikTokCaption() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return '';
+
+    final collapsed = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (collapsed.length <= 150) return collapsed;
+    return '${collapsed.substring(0, 147).trim()}...';
+  }
+
+  Future<void> _publishToTikTokNow(String postId) async {
+    final attachment = _primaryTikTokVideoAttachment;
+    if (attachment == null) {
+      throw Exception('Add and upload a video first.');
+    }
+
+    final mediaUrl = (attachment.url ?? '').trim();
+    if (mediaUrl.isEmpty) {
+      throw Exception('Uploaded video URL is missing.');
+    }
+
+    final dio = ref.read(dioProvider);
+
+    await dio.post(
+      '/v1/integrations/tiktok/publish/video',
+      data: {
+        'postId': postId,
+        'mediaUrl': mediaUrl,
+        'caption': _buildTikTokCaption(),
+        if (_visibility == _PostVisibility.public)
+          'privacyLevel': 'PUBLIC_TO_EVERYONE',
+      },
+    );
   }
 
   Future<void> _publish() async {
@@ -999,6 +1203,26 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
+    if (_publishToTikTok) {
+      if (!_tiktokConnected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connect TikTok in Me before publishing externally.'),
+          ),
+        );
+        return;
+      }
+
+      if (!_hasTikTokVideo) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('TikTok publishing requires one uploaded video.'),
+          ),
+        );
+        return;
+      }
+    }
+
     if (!_canPublish) return;
 
     final review = await _runAuraEditor(fromPublish: true);
@@ -1014,6 +1238,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     setState(() => _posting = true);
 
+    String? publishedPostId;
+    String? externalMessage;
+
     try {
       if (!_isReply) {
         await _saveDraft(
@@ -1022,9 +1249,44 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         );
       }
 
-      await _publishNow();
+      publishedPostId = await _publishNow();
+
+      if (!_isReply && _publishToTikTok) {
+        setState(() {
+          _publishingToTikTok = true;
+        });
+
+        try {
+          if ((publishedPostId ?? '').trim().isEmpty) {
+            throw Exception(
+              'Aura published successfully, but the published post id was not returned.',
+            );
+          }
+
+          await _publishToTikTokNow(publishedPostId!);
+          externalMessage = 'Published to Aura and queued for TikTok.';
+        } catch (e) {
+          externalMessage =
+              'Published to Aura. TikTok publish could not be queued: $e';
+        } finally {
+          if (mounted) {
+            setState(() {
+              _publishingToTikTok = false;
+            });
+          }
+        }
+      } else {
+        externalMessage = _isReply ? 'Reply published.' : 'Published to Aura.';
+      }
 
       if (!mounted) return;
+
+      if ((externalMessage ?? '').trim().isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(externalMessage!)),
+        );
+      }
+
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -1033,7 +1295,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _posting = false);
+        setState(() {
+          _posting = false;
+          _publishingToTikTok = false;
+        });
       }
     }
   }
@@ -1407,6 +1672,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _auditResult = null;
       _auditError = null;
       _uploadingMedia = false;
+      _publishToTikTok = false;
     });
 
     if (!mounted) return;
@@ -1703,6 +1969,112 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
+  Widget _buildExternalPublishingBlock() {
+    if (_isReply) return const SizedBox.shrink();
+
+    final canUseTikTok = _tiktokConnected && _hasTikTokVideo && !_posting;
+    final subtitle = _tiktokLoading
+        ? 'Checking connection…'
+        : !_tiktokConnected
+            ? 'Connect TikTok from Me to publish externally.'
+            : !_hasTikTokVideo
+                ? 'Add and upload one video to enable TikTok publishing.'
+                : _tiktokAccountLabel.isNotEmpty
+                    ? 'Connected as $_tiktokAccountLabel'
+                    : 'Connected';
+
+    final helper = (_tiktokError ?? '').trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'External publishing',
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Container(
+          decoration: BoxDecoration(
+            color: AuraSurface.page,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          padding: const EdgeInsets.all(AuraSpace.s12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.music_note_outlined,
+                    size: 18,
+                    color: AuraSurface.ink,
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'TikTok',
+                          style: AuraText.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_tiktokLoading || _tiktokActionBusy)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Switch(
+                      value: _publishToTikTok,
+                      onChanged: canUseTikTok
+                          ? (value) {
+                              setState(() {
+                                _publishToTikTok = value;
+                              });
+                            }
+                          : null,
+                    ),
+                ],
+              ),
+              if (helper.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  helper,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.warnInk,
+                  ),
+                ),
+              ],
+              if (_publishToTikTok) ...[
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  'Aura will publish the post first, then queue the first uploaded video to TikTok.',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBottomBar(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
@@ -1748,7 +2120,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   },
             child: Text(
               _posting
-                  ? (_isReply ? 'Publishing reply…' : 'Publishing…')
+                  ? (_isReply
+                      ? 'Publishing reply…'
+                      : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
                   : (_auditBusy
                       ? 'Reviewing…'
                       : (_isReply ? 'Publish reply' : 'Publish to record')),
@@ -1810,6 +2184,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                               _divider(),
                               const SizedBox(height: AuraSpace.s12),
                               _buildAttachmentsBlock(),
+                              if (!_isReply) ...[
+                                const SizedBox(height: AuraSpace.s12),
+                                _divider(),
+                                const SizedBox(height: AuraSpace.s12),
+                                _buildExternalPublishingBlock(),
+                              ],
                             ],
                           ),
                         ),
