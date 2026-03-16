@@ -128,25 +128,41 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Widget _buildContent(BuildContext context) {
     final user = _user ?? <String, dynamic>{};
 
-    final displayName = _value(user['displayName']);
+    final displayName = _firstNonEmpty([
+      _value(user['displayName']),
+      _value(user['name']),
+    ]);
     final handle = _value(user['handle']);
-    final bio = _value(user['bio']);
-    final avatarUrl = _resolveMediaUrl(_value(user['avatarUrl']));
-    final coverUrl = _resolveMediaUrl(_value(user['coverUrl']));
-    final city = _value(user['city']);
-    final country = _value(user['country']);
-    final websiteUrl = _value(user['websiteUrl']);
+    final bio = _firstNonEmpty([
+      _value(user['bio']),
+      _value(user['headline']),
+      _value(user['summary']),
+    ]);
+    final avatarUrl = _resolveMediaUrl(
+      _firstNonEmpty([
+        _value(user['avatarUrl']),
+        _value(user['avatar']),
+        _value(user['photoUrl']),
+      ]),
+    );
+    final coverUrl = _resolveMediaUrl(
+      _firstNonEmpty([
+        _value(user['coverUrl']),
+        _value(user['bannerUrl']),
+      ]),
+    );
+
+    final locationText = _locationText(user);
+    final websiteUrl = _websiteText(user);
+    final websiteLabel = _websiteLabel(websiteUrl);
 
     final trailingMeta = <Widget>[
       _metaChip('Followers', _followersCount),
       _metaChip('Following', _followingCount),
       _metaChip('Requests', _incomingRequestsCount),
       if (_outgoingRequestsCount > 0) _metaChip('Sent', _outgoingRequestsCount),
-      if (city.isNotEmpty || country.isNotEmpty)
-        _textMetaChip(
-          [city, country].where((e) => e.isNotEmpty).join(', '),
-        ),
-      if (websiteUrl.isNotEmpty) _textMetaChip('Website'),
+      if (locationText.isNotEmpty) _textMetaChip(locationText),
+      if (websiteLabel.isNotEmpty) _textMetaChip(websiteLabel),
     ];
 
     return ListView(
@@ -170,7 +186,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               label: 'Edit profile',
               primary: true,
               icon: Icons.edit_outlined,
-              onTap: () => context.push('/me/edit'),
+              onTap: () async {
+                await context.push('/me/edit');
+                if (!mounted) return;
+                await _load();
+              },
             ),
             PresenceHeaderAction(
               label: 'Security',
@@ -200,6 +220,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               icon: Icons.bookmark_border_outlined,
               onTap: () => context.push('/saved'),
             ),
+            if (websiteUrl.isNotEmpty)
+              _item(
+                label: 'Website',
+                icon: Icons.language_outlined,
+                subtitle: websiteUrl,
+              ),
+            if (locationText.isNotEmpty)
+              _item(
+                label: 'Location',
+                icon: Icons.place_outlined,
+                subtitle: locationText,
+              ),
           ],
         ),
         const SizedBox(height: AuraSpace.lg),
@@ -283,6 +315,27 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             ),
           ],
         ),
+        const SizedBox(height: AuraSpace.lg),
+        _section(
+          title: 'App administration',
+          children: [
+            _item(
+              label: 'Create announcement',
+              icon: Icons.add_alert_outlined,
+              onTap: () => context.push('/announcements/create'),
+            ),
+            _item(
+              label: 'Announcements',
+              icon: Icons.campaign_outlined,
+              onTap: () => context.push('/announcements'),
+            ),
+            _item(
+              label: 'Updates',
+              icon: Icons.notifications_none_outlined,
+              onTap: () => context.push('/updates'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -359,7 +412,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Opacity(
-        opacity: enabled ? 1 : 0.55,
+        opacity: enabled ? 1 : 0.82,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AuraSpace.s12,
@@ -401,11 +454,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 const SizedBox(width: AuraSpace.s10),
               ],
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AuraSurface.muted,
-              ),
+              if (enabled)
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: AuraSurface.muted,
+                ),
             ],
           ),
         ),
@@ -530,6 +584,49 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   String _value(dynamic v) => (v ?? '').toString().trim();
+
+  String _firstNonEmpty(List<String> values) {
+    for (final value in values) {
+      if (value.trim().isNotEmpty) return value.trim();
+    }
+    return '';
+  }
+
+  String _locationText(Map<String, dynamic> user) {
+    final location = _firstNonEmpty([
+      _value(user['location']),
+      _value(user['place']),
+    ]);
+    if (location.isNotEmpty) return location;
+
+    final city = _value(user['city']);
+    final country = _value(user['country']);
+    return [city, country].where((e) => e.isNotEmpty).join(', ');
+  }
+
+  String _websiteText(Map<String, dynamic> user) {
+    return _firstNonEmpty([
+      _value(user['websiteUrl']),
+      _value(user['website']),
+      _value(user['site']),
+      _value(user['url']),
+    ]);
+  }
+
+  String _websiteLabel(String website) {
+    final value = website.trim();
+    if (value.isEmpty) return '';
+
+    final withScheme = value.startsWith('http://') || value.startsWith('https://')
+        ? value
+        : 'https://$value';
+
+    final uri = Uri.tryParse(withScheme);
+    final host = uri?.host.trim() ?? '';
+    if (host.isEmpty) return value;
+
+    return host.startsWith('www.') ? host.substring(4) : host;
+  }
 
   String _resolveMediaUrl(String raw) {
     final value = raw.trim();

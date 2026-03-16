@@ -133,8 +133,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       _initialDisplayName = _readString(data, const ['displayName', 'name']);
       _initialBio = _readString(data, const ['bio', 'headline', 'summary']);
-      _initialLocation = _readString(data, const ['location']);
-      _initialWebsite = _readString(data, const ['website', 'site', 'url']);
+      _initialLocation = _readString(data, const ['location', 'place']);
+      if (_initialLocation.isEmpty) {
+        final city = _readString(data, const ['city']);
+        final country = _readString(data, const ['country']);
+        _initialLocation = [city, country].where((e) => e.isNotEmpty).join(', ');
+      }
+
+      _initialWebsite = _readString(
+        data,
+        const ['website', 'websiteUrl', 'site', 'url'],
+      );
       _initialAvatarUrl = _emptyToNull(
         _readString(data, const ['avatarUrl', 'avatar', 'photoUrl']),
       );
@@ -330,15 +339,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final dio = ref.read(dioProvider);
 
+      final location = _emptyToNull(_locationController.text);
+      final website = _emptyToNull(_websiteController.text);
+
       await dio.patch(
         '/v1/users/me',
         data: {
           'displayName': _displayNameController.text.trim(),
           'bio': _bioController.text.trim(),
-          'location': _emptyToNull(_locationController.text),
-          'website': _emptyToNull(_websiteController.text),
+          'location': location,
+          'website': website,
+          'websiteUrl': website,
           'avatarUrl': _emptyToNull(_avatarUrl),
           'coverUrl': _emptyToNull(_coverUrl),
+          'bannerUrl': _emptyToNull(_coverUrl),
         },
       );
 
