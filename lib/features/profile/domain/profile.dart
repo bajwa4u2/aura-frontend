@@ -5,12 +5,12 @@ class Profile {
     required this.displayName,
     required this.bio,
     required this.avatarUrl,
-    required this.coverUrl,
-    required this.location,
+    this.coverUrl,
+    this.location,
     required this.followersCount,
     required this.followingCount,
     required this.isFollowing,
-    required this.isVerified,
+    this.isVerified = false,
     this.followState = 'none',
   });
 
@@ -60,7 +60,10 @@ class Profile {
       followingCount: asInt(j['followingCount']),
       isFollowing: following,
       isVerified: asBool(
-        j['isVerified'] ?? j['verified'] ?? j['verificationStatus'] == 'VERIFIED',
+        j['isVerified'] ??
+            j['verified'] ??
+            ((j['verificationStatus'] ?? '').toString().trim().toUpperCase() ==
+                'VERIFIED'),
       ),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
     );

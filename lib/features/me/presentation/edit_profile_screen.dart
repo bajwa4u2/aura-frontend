@@ -759,7 +759,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget _recordRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s2oFallback,
+        horizontal: AuraSpace.s20,
         vertical: AuraSpace.s16,
       ),
       child: Row(
@@ -1051,8 +1051,4 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
     'width': image.width,
     'height': image.height,
   };
-}
-
-extension on AuraSpace {
-  static const double s2oFallback = 20;
 }
