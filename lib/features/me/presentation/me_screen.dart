@@ -52,8 +52,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final handle = _value(user['handle']);
 
       final futures = await Future.wait<dynamic>([
-        if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/followers') else Future.value(null),
-        if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/following') else Future.value(null),
+        if (handle.isNotEmpty)
+          _safeGet(dio, '/users/$handle/followers')
+        else
+          Future.value(null),
+        if (handle.isNotEmpty)
+          _safeGet(dio, '/users/$handle/following')
+        else
+          Future.value(null),
         _safeGet(dio, '/users/me/follow/requests/inbox'),
         _safeGet(dio, '/users/me/follow/requests/outbox'),
       ]);
@@ -414,7 +420,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.bg,
+        color: AuraSurface.card,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AuraSurface.divider),
       ),
@@ -435,7 +441,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.bg,
+        color: AuraSurface.card,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AuraSurface.divider),
       ),
