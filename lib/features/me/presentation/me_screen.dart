@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -29,6 +30,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   int _incomingRequestsCount = 0;
   int _outgoingRequestsCount = 0;
 
+  Map<String, dynamic>? _tiktokAccount;
+  bool _tiktokLoading = false;
+  bool _tiktokActionBusy = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +55,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final user = _unwrapUser(meResponse.data);
 
       final handle = _value(user['handle']);
+      final userId = _value(user['id']);
 
       final futures = await Future.wait<dynamic>([
         if (handle.isNotEmpty)
@@ -62,12 +68,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           Future.value(null),
         _safeGet(dio, '/users/me/follow/requests/inbox'),
         _safeGet(dio, '/users/me/follow/requests/outbox'),
+        if (userId.isNotEmpty)
+          _safeGet(
+            dio,
+            '/v1/integrations/tiktok/account',
+            queryParameters: {'userId': userId},
+          )
+        else
+          Future.value(null),
       ]);
 
       final followersRes = futures[0];
       final followingRes = futures[1];
       final inboxRes = futures[2];
       final outboxRes = futures[3];
+      final tiktokRes = futures[4];
 
       if (!mounted) return;
 
@@ -77,6 +92,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _followingCount = _countItemsFromPayload(followingRes?.data);
         _incomingRequestsCount = _countItemsFromPayload(inboxRes?.data);
         _outgoingRequestsCount = _countItemsFromPayload(outboxRes?.data);
+        _tiktokAccount = _unwrapTikTokAccount(tiktokRes?.data);
         _loading = false;
       });
     } on DioException catch (e) {
@@ -92,6 +108,228 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _reloadTikTokOnly() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        _tiktokLoading = true;
+      });
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get(
+        '/v1/integrations/tiktok/account',
+        queryParameters: {'userId': userId},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _tiktokAccount = _unwrapTikTokAccount(res.data);
+      });
+    } catch (_) {
+      if (!mounted) return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _tiktokLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _connectTikTok() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty || _tiktokActionBusy) return;
+
+    setState(() {
+      _tiktokActionBusy = true;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get(
+        '/v1/integrations/tiktok/connect/start',
+        queryParameters: {'userId': userId},
+      );
+
+      final payload = _asMap(res.data);
+      final authorizationUrl = _firstNonEmpty([
+        _value(payload['authorizationUrl']),
+        _value(payload['url']),
+        _value(payload['authUrl']),
+      ]);
+
+      if (authorizationUrl.isEmpty) {
+        throw Exception('TikTok authorization URL was not returned.');
+      }
+
+      final uri = Uri.tryParse(authorizationUrl);
+      if (uri == null) {
+        throw Exception('TikTok authorization URL is invalid.');
+      }
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+      );
+
+      if (!launched) {
+        throw Exception('Could not open TikTok authorization.');
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('TikTok authorization opened. Return here after approval.'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start TikTok connection: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _tiktokActionBusy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshTikTokToken() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty || _tiktokActionBusy) return;
+
+    setState(() {
+      _tiktokActionBusy = true;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.post(
+        '/v1/integrations/tiktok/refresh',
+        data: {'userId': userId},
+      );
+
+      await _reloadTikTokOnly();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('TikTok connection refreshed.')),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _readApiError(e, fallback: 'Could not refresh TikTok connection.'),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not refresh TikTok connection: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _tiktokActionBusy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _disconnectTikTok() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty || _tiktokActionBusy) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Disconnect TikTok'),
+          content: const Text(
+            'This will remove your TikTok connection from Aura.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Disconnect'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _tiktokActionBusy = true;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.post(
+        '/v1/integrations/tiktok/disconnect',
+        data: {'userId': userId},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _tiktokAccount = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('TikTok disconnected.')),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _readApiError(e, fallback: 'Could not disconnect TikTok.'),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not disconnect TikTok: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _tiktokActionBusy = false;
+        });
+      }
+    }
+  }
+
+  String get _currentUserId => _value((_user ?? const <String, dynamic>{})['id']);
+
+  bool get _isTikTokConnected {
+    final account = _tiktokAccount;
+    if (account == null) return false;
+
+    final connected = account['connected'];
+    if (connected is bool) return connected;
+
+    final userId = _value(account['platformUserId']);
+    return userId.isNotEmpty || account.isNotEmpty;
   }
 
   @override
@@ -167,7 +405,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (websiteLabel.isNotEmpty) _metaChip(label: websiteLabel),
       if (_incomingRequestsCount > 0)
         _metaChip(label: 'Requests $_incomingRequestsCount'),
-      if (_outgoingRequestsCount > 0) _metaChip(label: 'Sent $_outgoingRequestsCount'),
+      if (_outgoingRequestsCount > 0)
+        _metaChip(label: 'Sent $_outgoingRequestsCount'),
     ];
 
     return ListView(
@@ -250,12 +489,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     _item(
                       label: 'New conversation',
                       icon: Icons.chat_bubble_outline,
-                      onTap: () => context.push('/me/correspondence/create/conversation'),
+                      onTap: () =>
+                          context.push('/me/correspondence/create/conversation'),
                     ),
                     _item(
                       label: 'Create space',
                       icon: Icons.groups_outlined,
-                      onTap: () => context.push('/me/correspondence/create/space'),
+                      onTap: () =>
+                          context.push('/me/correspondence/create/space'),
                     ),
                   ],
                 ),
@@ -291,7 +532,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     _item(
                       label: 'Verification',
                       icon: Icons.verified_outlined,
-                      onTap: () => context.push('/institution/request-verification'),
+                      onTap: () =>
+                          context.push('/institution/request-verification'),
                     ),
                   ],
                 ),
@@ -299,6 +541,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 _section(
                   title: 'Platform',
                   children: [
+                    _tiktokBlock(),
                     _item(
                       label: 'Announcements workspace',
                       icon: Icons.campaign_outlined,
@@ -354,6 +597,93 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _tiktokBlock() {
+    final connected = _isTikTokConnected;
+    final platformUserId = _value((_tiktokAccount ?? const <String, dynamic>{})['platformUserId']);
+    final username = _value((_tiktokAccount ?? const <String, dynamic>{})['username']);
+    final accountLabel = _firstNonEmpty([
+      username,
+      platformUserId,
+      connected ? 'Connected' : '',
+    ]);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AuraSpace.s12,
+        horizontal: AuraSpace.s4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.music_note_outlined, size: 18, color: AuraSurface.ink),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TikTok',
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _tiktokLoading
+                          ? 'Checking connection…'
+                          : connected
+                              ? accountLabel
+                              : 'Not connected',
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_tiktokActionBusy || _tiktokLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              if (!connected)
+                OutlinedButton(
+                  onPressed: _tiktokActionBusy ? null : _connectTikTok,
+                  child: const Text('Connect'),
+                ),
+              if (connected)
+                OutlinedButton(
+                  onPressed: _tiktokActionBusy ? null : _refreshTikTokToken,
+                  child: const Text('Refresh'),
+                ),
+              OutlinedButton(
+                onPressed: (_tiktokActionBusy || _tiktokLoading)
+                    ? null
+                    : _reloadTikTokOnly,
+                child: const Text('Check'),
+              ),
+              if (connected)
+                OutlinedButton(
+                  onPressed: _tiktokActionBusy ? null : _disconnectTikTok,
+                  child: const Text('Disconnect'),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -595,9 +925,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Future<Response<dynamic>?> _safeGet(Dio dio, String path) async {
+  Future<Response<dynamic>?> _safeGet(
+    Dio dio,
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
-      return await dio.get(path);
+      return await dio.get(path, queryParameters: queryParameters);
     } catch (_) {
       return null;
     }
@@ -666,6 +1000,48 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       return map;
     }
 
+    return <String, dynamic>{};
+  }
+
+  Map<String, dynamic>? _unwrapTikTokAccount(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is! Map) return null;
+
+    final map = Map<String, dynamic>.from(raw);
+
+    final account = map['account'];
+    if (account is Map) {
+      final out = Map<String, dynamic>.from(account);
+      out['connected'] = true;
+      return out;
+    }
+
+    final data = map['data'];
+    if (data is Map) {
+      final nested = Map<String, dynamic>.from(data);
+
+      final nestedAccount = nested['account'];
+      if (nestedAccount is Map) {
+        final out = Map<String, dynamic>.from(nestedAccount);
+        out['connected'] = true;
+        return out;
+      }
+
+      if (nested.containsKey('connected') || nested.containsKey('platformUserId')) {
+        return nested;
+      }
+    }
+
+    if (map.containsKey('connected') || map.containsKey('platformUserId')) {
+      return map;
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic> _asMap(dynamic raw) {
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
     return <String, dynamic>{};
   }
 
