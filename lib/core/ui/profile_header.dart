@@ -23,10 +23,8 @@ class PresenceHeader extends StatelessWidget {
   final String displayName;
   final String handle;
   final String bio;
-
   final String avatarUrl;
   final String coverUrl;
-
   final List<PresenceHeaderAction> actions;
   final List<Widget> trailingMeta;
 
@@ -93,7 +91,7 @@ class PresenceHeader extends StatelessWidget {
                   isNarrow ? AuraSpace.s18 : AuraSpace.s24,
                   (avatarSize / 2) + AuraSpace.s10,
                   isNarrow ? AuraSpace.s18 : AuraSpace.s24,
-                  AuraSpace.s22,
+                  AuraSpace.s24,
                 ),
                 child: identity,
               ),
@@ -243,29 +241,11 @@ class _PresenceCover extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(hasCover ? 0.10 : 0.06),
-                  Colors.black.withOpacity(hasCover ? 0.18 : 0.10),
-                  Colors.black.withOpacity(hasCover ? 0.28 : 0.16),
+                  Colors.black.withOpacity(hasCover ? 0.10 : 0.08),
+                  Colors.black.withOpacity(hasCover ? 0.20 : 0.16),
+                  Colors.black.withOpacity(hasCover ? 0.34 : 0.24),
                 ],
                 stops: const [0.0, 0.52, 1.0],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: 72,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.10),
-                  ],
-                ),
               ),
             ),
           ),
@@ -276,14 +256,14 @@ class _PresenceCover extends StatelessWidget {
 
   Widget _emptySurface() {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AuraSurface.elevated,
-            const Color(0xFFF2F0EB),
-            AuraSurface.elevated,
+            Color(0xFF232833),
+            Color(0xFF1C212A),
+            Color(0xFF171B22),
           ],
         ),
         border: Border(
@@ -294,26 +274,26 @@ class _PresenceCover extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Positioned(
-            top: -40,
-            right: -20,
+            top: -34,
+            right: -16,
             child: Container(
               width: 180,
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.18),
+                color: Colors.white.withOpacity(0.04),
               ),
             ),
           ),
           Positioned(
             bottom: -50,
-            left: -30,
+            left: -28,
             child: Container(
               width: 220,
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.white.withOpacity(0.02),
               ),
             ),
           ),
@@ -338,16 +318,16 @@ class _PresenceAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final initials = _initials(displayName);
 
-    Widget fallback = Container(
+    final fallback = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: AuraSurface.card,
         border: Border.all(color: AuraSurface.divider, width: 1.2),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x22000000),
             blurRadius: 16,
             offset: Offset(0, 6),
           ),
@@ -371,11 +351,11 @@ class _PresenceAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: Colors.white, width: 4),
+        color: AuraSurface.card,
+        border: Border.all(color: AuraSurface.card, width: 4),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x18000000),
+            color: Color(0x24000000),
             blurRadius: 18,
             offset: Offset(0, 7),
           ),
@@ -395,10 +375,14 @@ class _PresenceAvatar extends StatelessWidget {
         name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
 
     if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    if (parts.length == 1) {
+      final first = parts.first;
+      return first.isEmpty ? '?' : first.substring(0, 1).toUpperCase();
+    }
 
-    return (parts.first.characters.first + parts.last.characters.first)
-        .toUpperCase();
+    final first = parts.first.substring(0, 1).toUpperCase();
+    final last = parts.last.substring(0, 1).toUpperCase();
+    return '$first$last';
   }
 }
 

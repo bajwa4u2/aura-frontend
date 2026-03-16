@@ -5,9 +5,12 @@ class Profile {
     required this.displayName,
     required this.bio,
     required this.avatarUrl,
+    required this.coverUrl,
+    required this.location,
     required this.followersCount,
     required this.followingCount,
     required this.isFollowing,
+    required this.isVerified,
     this.followState = 'none',
   });
 
@@ -16,9 +19,12 @@ class Profile {
   final String displayName;
   final String? bio;
   final String? avatarUrl;
+  final String? coverUrl;
+  final String? location;
   final int followersCount;
   final int followingCount;
   final bool isFollowing;
+  final bool isVerified;
   final String followState;
 
   factory Profile.fromJson(Map<String, dynamic> j) {
@@ -28,18 +34,34 @@ class Profile {
       return int.tryParse((v ?? '').toString()) ?? 0;
     }
 
+    bool asBool(dynamic v) {
+      if (v is bool) return v;
+      final text = (v ?? '').toString().trim().toLowerCase();
+      return text == 'true' || text == '1' || text == 'yes';
+    }
+
+    String? asNullableString(dynamic v) {
+      final text = (v ?? '').toString().trim();
+      return text.isEmpty ? null : text;
+    }
+
     final state = (j['followState'] ?? j['state'] ?? '').toString().trim();
     final following = j['isFollowing'] == true || state == 'following';
 
     return Profile(
-      id: (j['id'] ?? '').toString(),
-      handle: (j['handle'] ?? '').toString(),
-      displayName: (j['displayName'] ?? '').toString(),
-      bio: j['bio'] as String?,
-      avatarUrl: j['avatarUrl'] as String?,
+      id: (j['id'] ?? '').toString().trim(),
+      handle: (j['handle'] ?? '').toString().trim(),
+      displayName: (j['displayName'] ?? '').toString().trim(),
+      bio: asNullableString(j['bio']),
+      avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),
+      coverUrl: asNullableString(j['coverUrl'] ?? j['bannerUrl']),
+      location: asNullableString(j['location']),
       followersCount: asInt(j['followersCount']),
       followingCount: asInt(j['followingCount']),
       isFollowing: following,
+      isVerified: asBool(
+        j['isVerified'] ?? j['verified'] ?? j['verificationStatus'] == 'VERIFIED',
+      ),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
     );
   }
@@ -59,11 +81,16 @@ class ProfileListItem {
   final String? avatarUrl;
 
   factory ProfileListItem.fromJson(Map<String, dynamic> j) {
+    String? asNullableString(dynamic v) {
+      final text = (v ?? '').toString().trim();
+      return text.isEmpty ? null : text;
+    }
+
     return ProfileListItem(
-      id: (j['id'] ?? '').toString(),
+      id: (j['id'] ?? '').toString().trim(),
       handle: (j['handle'] ?? '').toString().trim(),
       displayName: (j['displayName'] ?? '').toString().trim(),
-      avatarUrl: j['avatarUrl'] as String?,
+      avatarUrl: asNullableString(j['avatarUrl'] ?? j['avatar']),
     );
   }
 }

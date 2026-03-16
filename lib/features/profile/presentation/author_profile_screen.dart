@@ -238,7 +238,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
-  Widget _presenceMeta(Profile profile) {
+  List<Widget> _presenceMeta(Profile profile) {
     final meta = <Widget>[];
 
     if (profile.isVerified) {
@@ -284,11 +284,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
       );
     }
 
-    return Wrap(
-      spacing: AuraSpace.s8,
-      runSpacing: AuraSpace.s8,
-      children: meta,
-    );
+    return meta;
   }
 
   Widget _workSection(List<Post> posts) {
@@ -311,9 +307,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
             children: posts
                 .map(
                   (post) => Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: AuraSpace.s10,
-                    ),
+                    padding: const EdgeInsets.only(bottom: AuraSpace.s10),
                     child: PostCard(post: post),
                   ),
                 )
@@ -469,6 +463,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           final bio = (profile.bio ?? '').trim();
           final avatar = (profile.avatarUrl ?? '').trim();
           final cover = (profile.coverUrl ?? '').trim();
+          final trailingMeta = _presenceMeta(profile);
 
           final followLabel = switch (followState) {
             'following' => 'Following',
@@ -488,9 +483,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
               bio: bio,
               avatarUrl: avatar,
               coverUrl: cover,
-              trailingMeta: [
-                _presenceMeta(profile),
-              ],
+              trailingMeta: trailingMeta,
               actions: [
                 if (!isAuthed)
                   const PresenceHeaderAction(
@@ -575,6 +568,5 @@ class _ProfileBundle {
 }
 
 String _cleanValue(String? value) {
-  final v = (value ?? '').trim();
-  return v;
+  return (value ?? '').trim();
 }
