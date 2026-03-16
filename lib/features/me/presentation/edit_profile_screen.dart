@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -16,283 +19,507 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  late final TextEditingController _displayNameController;
-  late final TextEditingController _bioController;
-  late final TextEditingController _avatarUrlController;
+  final _displayNameController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _websiteController = TextEditingController();
+  final _picker = ImagePicker();
 
   bool _loading = true;
   bool _saving = false;
-  String? _error;
+  bool _uploadingAvatar = false;
+  bool _uploadingCover = false;
+
+  String? _errorText;
+
+  String? _avatarUrl;
+  String? _coverUrl;
 
   String _handle = '';
   String _email = '';
+  String _firstName = '';
+  String _lastName = '';
 
   String _initialDisplayName = '';
   String _initialBio = '';
-  String _initialAvatarUrl = '';
+  String _initialLocation = '';
+  String _initialWebsite = '';
+  String? _initialAvatarUrl;
+  String? _initialCoverUrl;
 
   @override
   void initState() {
     super.initState();
-
-    _displayNameController = TextEditingController();
-    _bioController = TextEditingController();
-    _avatarUrlController = TextEditingController();
-
-    _displayNameController.addListener(_onFormChanged);
-    _bioController.addListener(_onFormChanged);
-    _avatarUrlController.addListener(_onFormChanged);
-
-    Future.microtask(_load);
+    _displayNameController.addListener(_onChanged);
+    _bioController.addListener(_onChanged);
+    _locationController.addListener(_onChanged);
+    _websiteController.addListener(_onChanged);
+    _load();
   }
 
   @override
   void dispose() {
-    _displayNameController.removeListener(_onFormChanged);
-    _bioController.removeListener(_onFormChanged);
-    _avatarUrlController.removeListener(_onFormChanged);
+    _displayNameController.removeListener(_onChanged);
+    _bioController.removeListener(_onChanged);
+    _locationController.removeListener(_onChanged);
+    _websiteController.removeListener(_onChanged);
 
     _displayNameController.dispose();
     _bioController.dispose();
-    _avatarUrlController.dispose();
+    _locationController.dispose();
+    _websiteController.dispose();
     super.dispose();
   }
 
-  void _onFormChanged() {
+  void _onChanged() {
     if (mounted) {
       setState(() {});
     }
   }
 
+  bool get _busy => _saving || _uploadingAvatar || _uploadingCover;
+
   bool get _hasChanges {
     return _displayNameController.text.trim() != _initialDisplayName ||
         _bioController.text.trim() != _initialBio ||
-        _avatarUrlController.text.trim() != _initialAvatarUrl;
+        _locationController.text.trim() != _initialLocation ||
+        _websiteController.text.trim() != _initialWebsite ||
+        (_avatarUrl ?? '') != (_initialAvatarUrl ?? '') ||
+        (_coverUrl ?? '') != (_initialCoverUrl ?? '');
   }
 
-  String get _displayNameValue => _displayNameController.text.trim();
-  String get _bioValue => _bioController.text.trim();
-  String get _avatarValue => _avatarUrlController.text.trim();
-
-  String get _effectiveDisplayLabel {
-    if (_displayNameValue.isNotEmpty) return _displayNameValue;
-    if (_handle.isNotEmpty) return _handle;
-    return 'Your profile';
+  String get _displayName {
+    final value = _displayNameController.text.trim();
+    if (value.isNotEmpty) return value;
+    if (_firstName.trim().isNotEmpty || _lastName.trim().isNotEmpty) {
+      return '${_firstName.trim()} ${_lastName.trim()}'.trim();
+    }
+    if (_handle.trim().isNotEmpty) return _handle.trim();
+    return 'Profile';
   }
 
-  ImageProvider<Object>? get _avatarProvider {
-    final url = _avatarValue;
-    if (url.isEmpty) return null;
+  String get _bio => _bioController.text.trim();
 
-    final uri = Uri.tryParse(url);
-    if (uri == null) return null;
-    if (!(uri.isScheme('http') || uri.isScheme('https'))) return null;
+  String get _location => _locationController.text.trim();
 
-    return NetworkImage(url);
+  String get _website => _websiteController.text.trim();
+
+  String get _initials {
+    final source = _displayName.trim();
+    if (source.isEmpty) return 'A';
+    final parts = source.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.length == 1) {
+      return parts.first.characters.first.toUpperCase();
+    }
+    return '${parts.first.characters.first}${parts.last.characters.first}'.toUpperCase();
   }
 
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _errorText = null;
     });
 
-    final dio = ref.read(dioProvider);
-
     try {
-      final res = await dio.get('/users/me');
-      final data = Map<String, dynamic>.from(res.data as Map);
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/v1/users/me');
+      final data = _unwrapResponseMap(res.data);
 
-      if (!mounted) return;
-
-      _initialDisplayName = (data['displayName'] ?? '').toString().trim();
-      _initialBio = (data['bio'] ?? '').toString().trim();
-      _initialAvatarUrl = (data['avatarUrl'] ?? '').toString().trim();
+      _initialDisplayName = _readString(data, const ['displayName', 'name']);
+      _initialBio = _readString(data, const ['bio', 'headline', 'summary']);
+      _initialLocation = _readString(data, const ['location']);
+      _initialWebsite = _readString(data, const ['website', 'site', 'url']);
+      _initialAvatarUrl = _emptyToNull(
+        _readString(data, const ['avatarUrl', 'avatar', 'photoUrl']),
+      );
+      _initialCoverUrl = _emptyToNull(
+        _readString(data, const ['coverUrl', 'bannerUrl']),
+      );
 
       _displayNameController.text = _initialDisplayName;
       _bioController.text = _initialBio;
-      _avatarUrlController.text = _initialAvatarUrl;
+      _locationController.text = _initialLocation;
+      _websiteController.text = _initialWebsite;
+      _avatarUrl = _initialAvatarUrl;
+      _coverUrl = _initialCoverUrl;
 
-      _handle = (data['handle'] ?? '').toString().trim();
-      _email = (data['email'] ?? '').toString().trim();
+      _handle = _readString(data, const ['handle', 'username']);
+      _email = _readString(data, const ['email']);
+      _firstName = _readString(data, const ['firstName']);
+      _lastName = _readString(data, const ['lastName']);
 
       setState(() {
         _loading = false;
       });
     } on DioException catch (e) {
       setState(() {
-        _error = _readApiError(e, fallback: 'Failed to load profile');
         _loading = false;
+        _errorText = _readApiError(e, fallback: 'Could not load profile.');
       });
     } catch (_) {
       setState(() {
-        _error = 'Failed to load profile';
         _loading = false;
+        _errorText = 'Could not load profile.';
       });
     }
   }
 
+  Future<void> _pickAvatar() async {
+    if (_busy) return;
+    await _pickAndUploadImage(isAvatar: true);
+  }
+
+  Future<void> _pickCover() async {
+    if (_busy) return;
+    await _pickAndUploadImage(isAvatar: false);
+  }
+
+  Future<void> _pickAndUploadImage({required bool isAvatar}) async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 92,
+    );
+    if (file == null) return;
+
+    setState(() {
+      _errorText = null;
+      if (isAvatar) {
+        _uploadingAvatar = true;
+      } else {
+        _uploadingCover = true;
+      }
+    });
+
+    try {
+      final uploadedUrl = await _uploadImage(file);
+      if (!mounted) return;
+
+      setState(() {
+        if (isAvatar) {
+          _avatarUrl = uploadedUrl;
+        } else {
+          _coverUrl = uploadedUrl;
+        }
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = _readApiError(e, fallback: 'Could not upload image.');
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = 'Could not upload image.';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        if (isAvatar) {
+          _uploadingAvatar = false;
+        } else {
+          _uploadingCover = false;
+        }
+      });
+    }
+  }
+
+  Future<String> _uploadImage(XFile file) async {
+    final dio = ref.read(dioProvider);
+    final bytes = await file.readAsBytes();
+    final mimeType = file.mimeType ?? _inferMime(file.name);
+    final size = await _decodeImageSize(bytes);
+
+    final presignRes = await dio.post(
+      '/media/presign',
+      data: {
+        'fileName': file.name,
+        'mimeType': mimeType,
+        'bytes': bytes.length,
+        'kind': 'IMAGE',
+        'source': 'UPLOAD',
+        if (size?['width'] != null) 'width': size!['width'],
+        if (size?['height'] != null) 'height': size!['height'],
+      },
+    );
+
+    final presigned = _unwrapDataMap(presignRes.data);
+    final mediaMap = _asMap(presigned['media']);
+    final uploadMap = _asMap(presigned['upload']);
+
+    final uploadUrl = _readString(uploadMap, const ['url']);
+    if (uploadUrl.isEmpty) {
+      throw Exception('Upload URL missing.');
+    }
+
+    final uploadHeaders = <String, String>{};
+    final rawHeaders = _asMap(uploadMap['headers']);
+    rawHeaders.forEach((key, value) {
+      if (value == null) return;
+      uploadHeaders[key.toString()] = value.toString();
+    });
+    uploadHeaders.putIfAbsent('Content-Type', () => mimeType);
+
+    final uploadDio = Dio(
+      BaseOptions(
+        responseType: ResponseType.plain,
+        followRedirects: true,
+      ),
+    );
+
+    await uploadDio.put(
+      uploadUrl,
+      data: bytes,
+      options: Options(
+        headers: uploadHeaders,
+        contentType: uploadHeaders['Content-Type'],
+        validateStatus: (code) => code != null && code >= 200 && code < 300,
+      ),
+    );
+
+    final mediaId = _readString(mediaMap, const ['id', 'mediaId']);
+    if (mediaId.isEmpty) {
+      throw Exception('Media id missing.');
+    }
+
+    await dio.post('/media/$mediaId/confirm');
+    await dio.post('/media/$mediaId/ready');
+
+    final patchRes = await dio.patch(
+      '/media/$mediaId',
+      data: {
+        if (size?['width'] != null) 'width': size!['width'],
+        if (size?['height'] != null) 'height': size!['height'],
+        'editDisclosure': false,
+      },
+    );
+
+    final patched = _unwrapDataMap(patchRes.data);
+
+    final url = _readString(
+      patched,
+      const ['displayUrl', 'url', 'publicUrl', 'sourceUrl', 'originalUrl'],
+    );
+    if (url.isNotEmpty) return url;
+
+    final fallback = _readString(
+      mediaMap,
+      const ['displayUrl', 'url', 'publicUrl', 'sourceUrl', 'originalUrl'],
+    );
+    if (fallback.isNotEmpty) return fallback;
+
+    throw Exception('Uploaded image URL missing.');
+  }
+
   Future<void> _save() async {
-    final form = _formKey.currentState;
-    if (form == null || !form.validate()) return;
-    if (!_hasChanges) return;
+    if (_busy || !_hasChanges) return;
 
     setState(() {
       _saving = true;
-      _error = null;
+      _errorText = null;
     });
 
-    final dio = ref.read(dioProvider);
-
     try {
+      final dio = ref.read(dioProvider);
+
       await dio.patch(
-        '/users/me',
+        '/v1/users/me',
         data: {
-          'displayName': _displayNameValue,
-          'bio': _bioValue,
-          'avatarUrl': _avatarValue,
+          'displayName': _displayNameController.text.trim(),
+          'bio': _bioController.text.trim(),
+          'location': _emptyToNull(_locationController.text),
+          'website': _emptyToNull(_websiteController.text),
+          'avatarUrl': _emptyToNull(_avatarUrl),
+          'coverUrl': _emptyToNull(_coverUrl),
         },
       );
 
-      _initialDisplayName = _displayNameValue;
-      _initialBio = _bioValue;
-      _initialAvatarUrl = _avatarValue;
+      _initialDisplayName = _displayNameController.text.trim();
+      _initialBio = _bioController.text.trim();
+      _initialLocation = _locationController.text.trim();
+      _initialWebsite = _websiteController.text.trim();
+      _initialAvatarUrl = _emptyToNull(_avatarUrl);
+      _initialCoverUrl = _emptyToNull(_coverUrl);
 
       if (!mounted) return;
+
+      setState(() {
+        _saving = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated')),
       );
-      Navigator.of(context).pop(true);
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = _readApiError(e, fallback: 'Failed to save profile');
+        _saving = false;
+        _errorText = _readApiError(e, fallback: 'Could not save changes.');
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to save profile';
+        _saving = false;
+        _errorText = 'Could not save changes.';
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
     }
   }
 
-  String _readApiError(DioException e, {required String fallback}) {
-    final data = e.response?.data;
+  void _discardChanges() {
+    if (_busy) return;
 
-    if (data is Map) {
-      final message = data['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message.trim();
-      }
-
-      final error = data['error'];
-      if (error is Map) {
-        final nestedMessage = error['message'];
-        if (nestedMessage is String && nestedMessage.trim().isNotEmpty) {
-          return nestedMessage.trim();
-        }
-      }
-    }
-
-    if (e.message != null && e.message!.trim().isNotEmpty) {
-      return e.message!.trim();
-    }
-
-    return fallback;
+    setState(() {
+      _displayNameController.text = _initialDisplayName;
+      _bioController.text = _initialBio;
+      _locationController.text = _initialLocation;
+      _websiteController.text = _initialWebsite;
+      _avatarUrl = _initialAvatarUrl;
+      _coverUrl = _initialCoverUrl;
+      _errorText = null;
+    });
   }
 
-  InputDecoration _inputDecoration(
-    String label, {
-    String? hint,
-    Widget? prefixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: prefixIcon,
-      alignLabelWithHint: true,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
-      ),
-    );
+  void _removeAvatar() {
+    if (_busy) return;
+    setState(() {
+      _avatarUrl = null;
+    });
   }
 
-  Widget _buildSectionTitle(String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  void _removeCover() {
+    if (_busy) return;
+    setState(() {
+      _coverUrl = null;
+    });
+  }
+
+  ImageProvider? _imageProviderFromUrl(String? value) {
+    final url = (value ?? '').trim();
+    if (url.isEmpty) return null;
+    return NetworkImage(url);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const AuraScaffold(
+        title: 'Profile',
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return AuraScaffold(
+      title: 'Profile',
+      body: Stack(
         children: [
-          Text(
-            title,
-            style: AuraText.body.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 780),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCoverSurface(),
+                      Transform.translate(
+                        offset: const Offset(0, -36),
+                        child: Column(
+                          children: [
+                            _buildAvatar(),
+                            const SizedBox(height: 14),
+                            _buildIdentityPreview(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (_errorText != null) ...[
+                        _buildErrorBanner(),
+                        const SizedBox(height: 24),
+                      ],
+                      _buildSectionLabel('Identity'),
+                      const SizedBox(height: 14),
+                      _buildIdentityBlock(),
+                      const SizedBox(height: 32),
+                      _buildSectionLabel('Presence'),
+                      const SizedBox(height: 14),
+                      _buildPresenceBlock(),
+                      const SizedBox(height: 32),
+                      _buildSectionLabel('Account record'),
+                      const SizedBox(height: 14),
+                      _buildAccountRecordBlock(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: AuraText.small.copyWith(
-              color: Colors.white70,
-            ),
-          ),
+          if (_hasChanges) _buildSaveRail(),
         ],
       ),
     );
   }
 
-  Widget _buildReadonlyRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget _buildCoverSurface() {
+    final coverProvider = _imageProviderFromUrl(_coverUrl);
+
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      height: 200,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(24),
+        color: Colors.black.withOpacity(0.06),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Icon(icon, size: 18, color: Colors.white70),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (coverProvider != null)
+            Image(
+              image: coverProvider,
+              fit: BoxFit.cover,
+            )
+          else
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.10),
+                    Colors.black.withOpacity(0.04),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.18),
+                  Colors.black.withOpacity(0.10),
+                  Colors.black.withOpacity(0.04),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 14,
+            right: 14,
+            child: Wrap(
+              spacing: 8,
               children: [
-                Text(
-                  label,
-                  style: AuraText.small.copyWith(color: Colors.white60),
+                _surfaceActionButton(
+                  label: _uploadingCover ? 'Uploading...' : 'Change cover',
+                  onPressed: _busy ? null : _pickCover,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-                ),
+                if ((_coverUrl ?? '').isNotEmpty)
+                  _surfaceActionButton(
+                    label: 'Remove',
+                    onPressed: _busy ? null : _removeCover,
+                  ),
               ],
             ),
           ),
@@ -301,312 +528,359 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildAvatarPreview() {
-    final provider = _avatarProvider;
-    final initials = _effectiveDisplayLabel.isNotEmpty
-        ? _effectiveDisplayLabel.characters.first.toUpperCase()
-        : 'A';
+  Widget _buildAvatar() {
+    final avatarProvider = _imageProviderFromUrl(_avatarUrl);
 
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-        color: Colors.white.withValues(alpha: 0.02),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: Colors.white12,
-            foregroundImage: provider,
-            child: provider == null
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+                color: Colors.black.withOpacity(0.08),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(6),
+          child: CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.black.withOpacity(0.08),
+            backgroundImage: avatarProvider,
+            child: avatarProvider == null
                 ? Text(
-                    initials,
-                    style: AuraText.body.copyWith(
-                      fontSize: 24,
+                    _initials,
+                    style: AuraTextStyles.title.copyWith(
+                      fontSize: 28,
                       fontWeight: FontWeight.w700,
                     ),
                   )
                 : null,
           ),
-          const SizedBox(width: AuraSpace.s16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _effectiveDisplayLabel,
-                  style: AuraText.body.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+        ),
+        Positioned(
+          right: 0,
+          bottom: 2,
+          child: PopupMenuButton<String>(
+            enabled: !_busy,
+            onSelected: (value) {
+              if (value == 'change') {
+                _pickAvatar();
+              } else if (value == 'remove') {
+                _removeAvatar();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'change',
+                child: Text(_uploadingAvatar ? 'Uploading...' : 'Change photo'),
+              ),
+              if ((_avatarUrl ?? '').isNotEmpty)
+                const PopupMenuItem<String>(
+                  value: 'remove',
+                  child: Text('Remove photo'),
                 ),
-                if (_handle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '@$_handle',
-                    style: AuraText.small.copyWith(color: Colors.white70),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  'This is how your identity begins to read across Aura.',
-                  style: AuraText.small.copyWith(color: Colors.white60),
-                ),
-              ],
+            ],
+            child: Container(
+              height: 34,
+              width: 34,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.camera_alt_outlined,
+                size: 17,
+                color: Colors.white,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHeader() {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+  Widget _buildIdentityPreview() {
+    return Column(
+      children: [
+        Text(
+          _displayName,
+          textAlign: TextAlign.center,
+          style: AuraTextStyles.title.copyWith(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (_handle.trim().isNotEmpty) ...[
+          const SizedBox(height: 6),
           Text(
-            'Profile Studio',
-            style: AuraText.body.copyWith(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+            '@${_handle.trim()}',
+            textAlign: TextAlign.center,
+            style: AuraTextStyles.muted.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Shape how you appear, how you are read, and how your work is encountered.',
-            style: AuraText.body.copyWith(
-              color: Colors.white70,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s20),
-          _buildAvatarPreview(),
         ],
-      ),
+        if (_bio.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Text(
+              _bio,
+              textAlign: TextAlign.center,
+              style: AuraTextStyles.body.copyWith(height: 1.45),
+            ),
+          ),
+        ],
+        if (_location.isNotEmpty || _website.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              if (_location.isNotEmpty)
+                Text(
+                  _location,
+                  style: AuraTextStyles.muted.copyWith(fontSize: 13),
+                ),
+              if (_website.isNotEmpty)
+                Text(
+                  _website,
+                  style: AuraTextStyles.muted.copyWith(fontSize: 13),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
-  Widget _buildIdentitySection() {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
+  Widget _buildIdentityBlock() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        color: Colors.black.withOpacity(0.02),
+      ),
+      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle(
-            'Identity',
-            'The public name and account markers people recognize first.',
-          ),
-          if (_handle.isNotEmpty || _email.isNotEmpty) ...[
-            if (_handle.isNotEmpty)
-              _buildReadonlyRow(
-                icon: Icons.alternate_email_rounded,
-                label: 'Handle',
-                value: '@$_handle',
-              ),
-            if (_handle.isNotEmpty && _email.isNotEmpty)
-              const SizedBox(height: AuraSpace.s12),
-            if (_email.isNotEmpty)
-              _buildReadonlyRow(
-                icon: Icons.mail_outline_rounded,
-                label: 'Email',
-                value: _email,
-              ),
-            const SizedBox(height: AuraSpace.s16),
-          ],
-          TextFormField(
+          _buildField(
+            label: 'Display name',
             controller: _displayNameController,
             textInputAction: TextInputAction.next,
-            decoration: _inputDecoration(
-              'Display name',
-              hint: 'How your name appears across Aura',
-              prefixIcon: const Icon(Icons.badge_outlined),
-            ),
-            validator: (value) {
-              final v = (value ?? '').trim();
-              if (v.isEmpty) return 'Display name is required';
-              if (v.length < 2) return 'Display name is too short';
-              if (v.length > 80) return 'Display name must be 80 characters or less';
-              return null;
-            },
+            maxLines: 1,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPresenceSection() {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle(
-            'Presence',
-            'A short introduction that gives people a sense of your voice and direction.',
-          ),
-          TextFormField(
+          const SizedBox(height: 16),
+          _buildField(
+            label: 'Bio',
             controller: _bioController,
+            textInputAction: TextInputAction.newline,
+            minLines: 4,
             maxLines: 6,
-            maxLength: 280,
-            decoration: _inputDecoration(
-              'Bio',
-              hint: 'Write a concise description of your work, interests, or point of view',
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(bottom: 72),
-                child: Icon(Icons.notes_rounded),
-              ),
-            ),
-            validator: (value) {
-              final v = (value ?? '').trim();
-              if (v.length > 280) {
-                return 'Bio must be 280 characters or less';
-              }
-              return null;
-            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileImageSection() {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
+  Widget _buildPresenceBlock() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        color: Colors.black.withOpacity(0.02),
+      ),
+      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle(
-            'Profile image',
-            'Use a stable image URL for now. This can later be upgraded to first-class media upload.',
+          _buildField(
+            label: 'Location',
+            controller: _locationController,
+            textInputAction: TextInputAction.next,
+            maxLines: 1,
           ),
-          TextFormField(
-            controller: _avatarUrlController,
-            keyboardType: TextInputType.url,
+          const SizedBox(height: 16),
+          _buildField(
+            label: 'Website',
+            controller: _websiteController,
             textInputAction: TextInputAction.done,
-            decoration: _inputDecoration(
-              'Avatar URL',
-              hint: 'https://example.com/avatar.jpg',
-              prefixIcon: const Icon(Icons.image_outlined),
-            ),
-            validator: (value) {
-              final v = (value ?? '').trim();
-              if (v.isEmpty) return null;
-
-              final uri = Uri.tryParse(v);
-              final valid = uri != null &&
-                  (uri.isScheme('http') || uri.isScheme('https')) &&
-                  (uri.host.isNotEmpty);
-
-              if (!valid) return 'Enter a valid image URL';
-              return null;
-            },
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            'A clean portrait or mark works best. Leave blank if you do not want to use one yet.',
-            style: AuraText.small.copyWith(color: Colors.white60),
+            maxLines: 1,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAccountRecordBlock() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        color: Colors.black.withOpacity(0.02),
+      ),
+      child: Column(
+        children: [
+          _recordRow('Handle', _handle.isEmpty ? '—' : '@$_handle'),
+          _divider(),
+          _recordRow('Email', _email.isEmpty ? '—' : _email),
+          _divider(),
+          _recordRow('First name', _firstName.isEmpty ? '—' : _firstName),
+          _divider(),
+          _recordRow('Last name', _lastName.isEmpty ? '—' : _lastName),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: AuraTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: AuraTextStyles.muted,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required TextEditingController controller,
+    required TextInputAction textInputAction,
+    int minLines = 1,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AuraTextStyles.muted.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: controller,
+          textInputAction: textInputAction,
+          minLines: minLines,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.10)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.black.withOpacity(0.10)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.black, width: 1.2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildErrorBanner() {
-    if (_error == null) return const SizedBox.shrink();
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.12),
+        color: const Color(0xFFFCECEC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.red.withValues(alpha: 0.35),
+        border: Border.all(color: const Color(0xFFE8B7B7)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Text(
+        _errorText ?? '',
+        style: AuraTextStyles.body.copyWith(
+          color: const Color(0xFF7A1E1E),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.error_outline_rounded, color: Colors.redAccent),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _error!,
-              style: AuraText.small.copyWith(
-                color: const Color(0xFFFFB4B4),
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _buildActions() {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              _hasChanges
-                  ? 'You have unsaved changes.'
-                  : 'Everything is up to date.',
-              style: AuraText.small.copyWith(color: Colors.white70),
+  Widget _buildSaveRail() {
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: 20,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 780),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black.withOpacity(0.10)),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                  color: Colors.black.withOpacity(0.10),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: AuraSpace.s12),
-          TextButton(
-            onPressed: _saving ? null : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          ElevatedButton(
-            onPressed: (_saving || !_hasChanges) ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save changes'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 920),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          child: Form(
-            key: _formKey,
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
               children: [
-                _buildHeader(),
-                const SizedBox(height: AuraSpace.s16),
-                _buildErrorBanner(),
-                if (_error != null) const SizedBox(height: AuraSpace.s16),
-                _buildIdentitySection(),
-                const SizedBox(height: AuraSpace.s16),
-                _buildPresenceSection(),
-                const SizedBox(height: AuraSpace.s16),
-                _buildProfileImageSection(),
-                const SizedBox(height: AuraSpace.s16),
-                _buildActions(),
+                Expanded(
+                  child: Text(
+                    _saving ? 'Saving...' : 'Unsaved changes',
+                    style: AuraTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _busy ? null : _discardChanges,
+                  child: const Text('Discard'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _busy ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Save'),
+                ),
               ],
             ),
           ),
@@ -615,11 +889,136 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: _buildBody(),
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: AuraTextStyles.muted.copyWith(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
+
+  Widget _surfaceActionButton({
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Material(
+      color: Colors.white.withOpacity(0.90),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          child: Text(
+            label,
+            style: AuraTextStyles.body.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 18),
+      color: Colors.black.withOpacity(0.07),
+    );
+  }
+
+  String _readApiError(DioException e, {required String fallback}) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final direct = data['message'];
+      if (direct is String && direct.trim().isNotEmpty) {
+        return direct.trim();
+      }
+      final error = data['error'];
+      if (error is Map) {
+        final nested = error['message'];
+        if (nested is String && nested.trim().isNotEmpty) {
+          return nested.trim();
+        }
+      }
+    }
+    final msg = e.message?.trim() ?? '';
+    if (msg.isNotEmpty) return msg;
+    return fallback;
+  }
+}
+
+Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) {
+    const nestedKeys = ['data', 'user', 'item', 'result', 'payload'];
+    for (final key in nestedKeys) {
+      final nested = raw[key];
+      if (nested is Map<String, dynamic>) {
+        return _unwrapResponseMap(nested);
+      }
+      if (nested is Map) {
+        return _unwrapResponseMap(Map<String, dynamic>.from(nested));
+      }
+    }
+    return raw;
+  }
+
+  if (raw is Map) {
+    return _unwrapResponseMap(Map<String, dynamic>.from(raw));
+  }
+
+  return <String, dynamic>{};
+}
+
+Map<String, dynamic> _unwrapDataMap(dynamic raw) {
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+    final data = map['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return map;
+  }
+  return <String, dynamic>{};
+}
+
+Map<String, dynamic> _asMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) return raw;
+  if (raw is Map) return Map<String, dynamic>.from(raw);
+  return <String, dynamic>{};
+}
+
+String _readString(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = (map[key] ?? '').toString().trim();
+    if (value.isNotEmpty) return value;
+  }
+  return '';
+}
+
+String? _emptyToNull(String? value) {
+  final text = (value ?? '').trim();
+  return text.isEmpty ? null : text;
+}
+
+String _inferMime(String fileName) {
+  final lower = fileName.toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'application/octet-stream';
+}
+
+Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  final image = frame.image;
+  return {
+    'width': image.width,
+    'height': image.height,
+  };
 }

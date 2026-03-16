@@ -6,6 +6,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
 import '../../feed/domain/post.dart';
@@ -97,6 +98,331 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     context.push(uri.toString());
   }
 
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: Text(title, style: AuraText.title),
+    );
+  }
+
+  Widget _surfaceSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(title),
+        AuraCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: _withDividers(children),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> children) {
+    final out = <Widget>[];
+
+    for (var i = 0; i < children.length; i++) {
+      out.add(children[i]);
+      if (i != children.length - 1) {
+        out.add(const Divider(
+          height: 1,
+          thickness: 1,
+          color: AuraSurface.divider,
+        ));
+      }
+    }
+
+    return out;
+  }
+
+  Widget _sectionRow({
+    required String title,
+    String? subtitle,
+    String? trailing,
+    required VoidCallback? onTap,
+    IconData? leading,
+    bool enabled = true,
+  }) {
+    final active = enabled && onTap != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: active ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s16,
+            vertical: AuraSpace.s14,
+          ),
+          child: Row(
+            children: [
+              if (leading != null) ...[
+                Icon(
+                  leading,
+                  size: 18,
+                  color: active ? AuraSurface.ink : AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s12),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: active ? AuraSurface.ink : AuraSurface.muted,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null && trailing.trim().isNotEmpty) ...[
+                Text(
+                  trailing,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s10),
+              ],
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: active ? AuraSurface.muted : AuraSurface.divider,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _presenceNotice({
+    required bool isAuthed,
+    required bool canCorrespond,
+    required String followState,
+  }) {
+    if (!isAuthed || canCorrespond) {
+      return const SizedBox.shrink();
+    }
+
+    final message = followState == 'outgoing_pending'
+        ? 'Correspondence opens when the follow relationship is established.'
+        : 'Follow first to open direct correspondence or invite this person into a shared space.';
+
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        child: Text(
+          message,
+          style: AuraText.body,
+        ),
+      ),
+    );
+  }
+
+  Widget _presenceMeta(Profile profile) {
+    final meta = <Widget>[];
+
+    if (profile.isVerified) {
+      meta.add(
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: AuraSurface.divider),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            'Verified',
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final location = _cleanValue(profile.location);
+    if (location.isNotEmpty) {
+      meta.add(
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: AuraSurface.divider),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            location,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: meta,
+    );
+  }
+
+  Widget _workSection(List<Post> posts) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Works'),
+        if (posts.isEmpty)
+          AuraCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AuraSpace.s18),
+              child: Text(
+                'No work yet.',
+                style: AuraText.body,
+              ),
+            ),
+          )
+        else
+          Column(
+            children: posts
+                .map(
+                  (post) => Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AuraSpace.s10,
+                    ),
+                    child: PostCard(post: post),
+                  ),
+                )
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _correspondenceSection({
+    required bool isAuthed,
+    required bool canCorrespond,
+    required Profile profile,
+  }) {
+    return _surfaceSection(
+      title: 'Correspondence',
+      children: [
+        _sectionRow(
+          title: 'Message',
+          subtitle: canCorrespond
+              ? 'Open a private conversation'
+              : isAuthed
+                  ? 'Available after the follow relationship is established'
+                  : 'Sign in to continue',
+          leading: Icons.chat_bubble_outline,
+          enabled: canCorrespond,
+          onTap: canCorrespond ? () => _openPrivateConversation(profile) : null,
+        ),
+        _sectionRow(
+          title: 'Invite to space',
+          subtitle: canCorrespond
+              ? 'Bring this person into a shared room'
+              : isAuthed
+                  ? 'Available after the follow relationship is established'
+                  : 'Sign in to continue',
+          leading: Icons.person_add_alt_outlined,
+          enabled: canCorrespond,
+          onTap: canCorrespond ? () => _openInviteToSpace(profile) : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _connectionsSection(Profile profile) {
+    return _surfaceSection(
+      title: 'Connections',
+      children: [
+        _sectionRow(
+          title: 'Followers',
+          trailing: '${profile.followersCount}',
+          leading: Icons.people_outline,
+          onTap: () => context.push('/u/${widget.handle}/followers'),
+        ),
+        _sectionRow(
+          title: 'Following',
+          trailing: '${profile.followingCount}',
+          leading: Icons.person_add_alt_1_outlined,
+          onTap: () => context.push('/u/${widget.handle}/following'),
+        ),
+      ],
+    );
+  }
+
+  Widget _pageList(List<Widget> children) {
+    final items = <Widget>[];
+
+    for (var i = 0; i < children.length; i++) {
+      items.add(children[i]);
+      if (i != children.length - 1) {
+        items.add(const SizedBox(height: 32));
+      }
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        double horizontalPadding;
+        double maxWidth;
+
+        if (width < 600) {
+          horizontalPadding = 12;
+          maxWidth = double.infinity;
+        } else if (width < 980) {
+          horizontalPadding = 24;
+          maxWidth = 760;
+        } else {
+          horizontalPadding = 32;
+          maxWidth = 860;
+        }
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                18,
+                horizontalPadding,
+                28,
+              ),
+              children: items,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = ref.read(profileRepositoryProvider);
@@ -108,28 +434,28 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
         future: _bundleFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return _pageList(const [
+              AuraCard(
+                child: Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ]);
           }
 
           if (snapshot.hasError || snapshot.data == null) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s12,
-                AuraSpace.s16,
-                AuraSpace.s24,
-              ),
-              children: [
-                AuraCard(
+            return _pageList([
+              AuraCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
                   child: Text(
                     'Could not load profile.',
                     style: AuraText.body,
                   ),
                 ),
-              ],
-            );
+              ),
+            ]);
           }
 
           final bundle = snapshot.data!;
@@ -142,6 +468,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
               : widget.handle;
           final bio = (profile.bio ?? '').trim();
           final avatar = (profile.avatarUrl ?? '').trim();
+          final cover = (profile.coverUrl ?? '').trim();
 
           final followLabel = switch (followState) {
             'following' => 'Following',
@@ -154,119 +481,81 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
 
           final canCorrespond = isAuthed && followState == 'following';
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s12,
-              AuraSpace.s16,
-              AuraSpace.s24,
-            ),
-            children: [
-              ProfileHeader(
-                displayName: name,
-                handle: widget.handle,
-                bio: bio,
-                avatarUrl: avatar,
-                stats: [
-                  ProfileHeaderStat(
-                    label: 'Followers',
-                    value: '${profile.followersCount}',
-                    onTap: () => context.push('/u/${widget.handle}/followers'),
-                  ),
-                  ProfileHeaderStat(
-                    label: 'Following',
-                    value: '${profile.followingCount}',
-                    onTap: () => context.push('/u/${widget.handle}/following'),
-                  ),
-                ],
-                actions: [
-                  if (!isAuthed)
-                    const ProfileHeaderAction(
-                      label: 'Login to follow',
-                      primary: true,
-                      onTap: null,
-                      icon: Icons.lock_outline,
-                    )
-                  else
-                    ProfileHeaderAction(
-                      label: followLabel,
-                      primary: true,
-                      icon: followState == 'following'
-                          ? Icons.check
-                          : followState == 'outgoing_pending'
-                              ? Icons.schedule
-                              : Icons.person_add_alt_1,
-                      onTap: !canFollowAction
-                          ? null
-                          : () async {
-                              try {
-                                if (followState == 'outgoing_pending') {
-                                  await repo.unfollow(widget.handle);
-                                  _showMessage('Request canceled');
-                                } else {
-                                  await repo.follow(widget.handle);
-                                  _showMessage('Follow request sent');
-                                }
-                                _reload();
-                              } catch (_) {
-                                _showMessage('Could not update follow state');
+          return _pageList([
+            PresenceHeader(
+              displayName: name,
+              handle: widget.handle,
+              bio: bio,
+              avatarUrl: avatar,
+              coverUrl: cover,
+              trailingMeta: [
+                _presenceMeta(profile),
+              ],
+              actions: [
+                if (!isAuthed)
+                  const PresenceHeaderAction(
+                    label: 'Login to follow',
+                    primary: true,
+                    onTap: null,
+                    icon: Icons.lock_outline,
+                  )
+                else
+                  PresenceHeaderAction(
+                    label: followLabel,
+                    primary: true,
+                    icon: followState == 'following'
+                        ? Icons.check
+                        : followState == 'outgoing_pending'
+                            ? Icons.schedule
+                            : Icons.person_add_alt_1,
+                    onTap: !canFollowAction
+                        ? null
+                        : () async {
+                            try {
+                              if (followState == 'outgoing_pending') {
+                                await repo.unfollow(widget.handle);
+                                _showMessage('Request canceled');
+                              } else {
+                                await repo.follow(widget.handle);
+                                _showMessage('Follow request sent');
                               }
-                            },
-                    ),
-                  ProfileHeaderAction(
-                    label: 'Message',
-                    primary: false,
-                    icon: Icons.chat_bubble_outline,
-                    onTap: canCorrespond
-                        ? () => _openPrivateConversation(profile)
-                        : null,
+                              _reload();
+                            } catch (_) {
+                              _showMessage('Could not update follow state');
+                            }
+                          },
                   ),
-                  ProfileHeaderAction(
-                    label: 'Invite to space',
-                    primary: false,
-                    icon: Icons.person_add_alt_outlined,
-                    onTap: canCorrespond
-                        ? () => _openInviteToSpace(profile)
-                        : null,
-                  ),
-                ],
-              ),
-              if (isAuthed && !canCorrespond) ...[
-                const SizedBox(height: AuraSpace.s12),
-                AuraCard(
-                  child: Text(
-                    followState == 'outgoing_pending'
-                        ? 'Correspondence opens after the follow relationship is established.'
-                        : 'Follow first to open direct correspondence or create a shared space with this person.',
-                    style: AuraText.body,
-                  ),
+                PresenceHeaderAction(
+                  label: 'Message',
+                  primary: false,
+                  icon: Icons.chat_bubble_outline,
+                  onTap: canCorrespond
+                      ? () => _openPrivateConversation(profile)
+                      : null,
+                ),
+                PresenceHeaderAction(
+                  label: 'Invite to space',
+                  primary: false,
+                  icon: Icons.person_add_alt_outlined,
+                  onTap: canCorrespond
+                      ? () => _openInviteToSpace(profile)
+                      : null,
                 ),
               ],
-              const SizedBox(height: AuraSpace.s18),
-              Text('Work', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              if (posts.isEmpty)
-                AuraCard(
-                  child: Text(
-                    'No work yet.',
-                    style: AuraText.body,
-                  ),
-                )
-              else
-                Column(
-                  children: posts
-                      .map(
-                        (post) => Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AuraSpace.s10,
-                          ),
-                          child: PostCard(post: post),
-                        ),
-                      )
-                      .toList(),
-                ),
-            ],
-          );
+            ),
+            _presenceNotice(
+              isAuthed: isAuthed,
+              canCorrespond: canCorrespond,
+              followState: followState,
+            ),
+            _workSection(posts),
+            _correspondenceSection(
+              isAuthed: isAuthed,
+              canCorrespond: canCorrespond,
+              profile: profile,
+            ),
+            _connectionsSection(profile),
+          ]);
         },
       ),
     );
