@@ -194,27 +194,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   String _str(dynamic v) => (v ?? '').toString().trim();
 
-  List<String> _listOfString(dynamic v, {int take = 3}) {
-    if (v is! List) return const [];
-
-    final out = <String>[];
-    final seen = <String>{};
-
-    for (final item in v) {
-      final s = _str(item);
-      if (s.isEmpty) continue;
-
-      final k = s.toLowerCase();
-      if (seen.contains(k)) continue;
-
-      seen.add(k);
-      out.add(s);
-
-      if (out.length >= take) break;
+String _firstNonEmpty(List<String?> values, {String fallback = ''}) {
+  for (final value in values) {
+    final s = (value ?? '').trim();
+    if (s.isNotEmpty) {
+      return s;
     }
-
-    return out;
   }
+  return fallback;
+}
+
+List<String> _listOfString(dynamic v, {int take = 3}) {
+  if (v is! List) return const [];
+
+  final out = <String>[];
+  final seen = <String>{};
+
+  for (final item in v) {
+    final s = _str(item);
+    if (s.isEmpty) continue;
+
+    final k = s.toLowerCase();
+    if (seen.contains(k)) continue;
+
+    seen.add(k);
+    out.add(s);
+
+    if (out.length >= take) break;
+  }
+
+  return out;
+}
 
   String _inferMime(String fileName) {
     final lower = fileName.toLowerCase();
