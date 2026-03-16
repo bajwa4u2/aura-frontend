@@ -50,6 +50,12 @@ String _linkedInShareUrl(String postUrl) {
   return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
 }
 
+String _emailShareUrl(String postUrl) {
+  final subject = Uri.encodeComponent('Aura post');
+  final body = Uri.encodeComponent(postUrl);
+  return 'mailto:?subject=$subject&body=$body';
+}
+
 bool _extractBool(dynamic data, List<String> keys) {
   if (data is! Map) return false;
 
@@ -67,6 +73,36 @@ bool _extractBool(dynamic data, List<String> keys) {
   }
 
   return false;
+}
+
+Map<String, dynamic> _asMap(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) return Map<String, dynamic>.from(v);
+  return <String, dynamic>{};
+}
+
+String _readString(dynamic v) => (v ?? '').toString().trim();
+
+String _readNestedString(
+  Map<String, dynamic> root,
+  List<List<String>> candidatePaths,
+) {
+  for (final path in candidatePaths) {
+    dynamic cur = root;
+    var ok = true;
+    for (final key in path) {
+      if (cur is Map && cur.containsKey(key)) {
+        cur = cur[key];
+      } else {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+    final value = _readString(cur);
+    if (value.isNotEmpty) return value;
+  }
+  return '';
 }
 
 String _normalizeVisibilityLabel(String? raw) {
@@ -161,6 +197,43 @@ Future<void> _openExternalUrl(
   }
 }
 
+class _ViewerIdentity {
+  const _ViewerIdentity({
+    required this.id,
+    required this.handle,
+  });
+
+  final String id;
+  final String handle;
+}
+
+final viewerIdentityProvider = FutureProvider<_ViewerIdentity?>((ref) async {
+  final dio = ref.read(dioProvider);
+
+  try {
+    final res = await dio.get('/users/me');
+    final root = _asMap(res.data);
+    final payload = root['data'] is Map ? _asMap(root['data']) : root;
+
+    final id = _readNestedString(payload, [
+      ['id'],
+      ['user', 'id'],
+      ['profile', 'id'],
+    ]);
+
+    final handle = _readNestedString(payload, [
+      ['handle'],
+      ['user', 'handle'],
+      ['profile', 'handle'],
+    ]);
+
+    if (id.isEmpty && handle.isEmpty) return null;
+    return _ViewerIdentity(id: id, handle: handle);
+  } catch (_) {
+    return null;
+  }
+});
+
 final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
   final dio = ref.read(dioProvider);
   final pid = postId.trim();
@@ -247,18 +320,18 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (s.startsWith('http://') || s.startsWith('https://')) return s;
     if (s.startsWith('//')) return 'https:$s';
 
-    final apiBase =
-        const String.fromEnvironment('API_BASE_URL', defaultValue: '');
-    if (apiBase.isNotEmpty) {
-      final uri = Uri.tryParse(apiBase);
-      if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
-        final origin = uri.origin;
-        if (s.startsWith('/')) return '$origin$s';
-        return '$origin/$s';
-      }
+    const uploadsBase = String.fromEnvironment(
+      'UPLOADS_BASE_URL',
+      defaultValue: 'https://uploads.auraplatform.org',
+    );
+
+    var base = uploadsBase.trim();
+    while (base.endsWith('/')) {
+      base = base.substring(0, base.length - 1);
     }
 
-    return s;
+    if (s.startsWith('/')) return '$base$s';
+    return '$base/$s';
   }
 
   double _mediaMaxHeight(BuildContext context) {
@@ -456,11 +529,89 @@ class _PostCardState extends ConsumerState<PostCard> {
     return '';
   }
 
+  String _authorId(dynamic author) {
+    try {
+      return _readString(author?.id);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool _isOwnPost(dynamic author, _ViewerIdentity? viewer) {
+    if (viewer == null) return false;
+
+    final authorId = _authorId(author);
+    if (authorId.isNotEmpty && viewer.id.isNotEmpty && authorId == viewer.id) {
+      return true;
+    }
+
+    try {
+      final authorHandle = _readString(author?.handle).toLowerCase();
+      final viewerHandle = viewer.handle.toLowerCase();
+      if (authorHandle.isNotEmpty &&
+          viewerHandle.isNotEmpty &&
+          authorHandle == viewerHandle) {
+        return true;
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  Future<void> _deletePost(BuildContext context, String postId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Delete post'),
+          content: const Text(
+            'This will remove the post from the record. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.delete('/posts/$postId');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted')),
+      );
+
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not delete post')),
+      );
+    }
+  }
+
   Future<void> _showPostMenu(
     BuildContext context, {
     required String postId,
     required String postUrl,
     required String? handle,
+    required bool isOwnPost,
   }) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -478,6 +629,18 @@ class _PostCardState extends ConsumerState<PostCard> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (isOwnPost)
+                  _MenuActionTile(
+                    icon: Icons.edit_outlined,
+                    label: 'Edit post',
+                    onTap: () => Navigator.of(ctx).pop('edit_post'),
+                  ),
+                if (isOwnPost)
+                  _MenuActionTile(
+                    icon: Icons.delete_outline,
+                    label: 'Delete post',
+                    onTap: () => Navigator.of(ctx).pop('delete_post'),
+                  ),
                 _MenuActionTile(
                   icon: Icons.article_outlined,
                   label: 'Open post',
@@ -491,13 +654,18 @@ class _PostCardState extends ConsumerState<PostCard> {
                   ),
                 _MenuActionTile(
                   icon: Icons.link_outlined,
-                  label: 'Copy post link',
+                  label: 'Copy link',
                   onTap: () => Navigator.of(ctx).pop('copy_link'),
                 ),
                 _MenuActionTile(
-                  icon: Icons.share_outlined,
-                  label: 'Share options',
-                  onTap: () => Navigator.of(ctx).pop('share'),
+                  icon: Icons.work_outline,
+                  label: 'Share to LinkedIn',
+                  onTap: () => Navigator.of(ctx).pop('share_linkedin'),
+                ),
+                _MenuActionTile(
+                  icon: Icons.email_outlined,
+                  label: 'Share to Email',
+                  onTap: () => Navigator.of(ctx).pop('share_email'),
                 ),
               ],
             ),
@@ -509,6 +677,14 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (!mounted || selected == null) return;
 
     switch (selected) {
+      case 'edit_post':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post editing is not wired yet.')),
+        );
+        break;
+      case 'delete_post':
+        await _deletePost(context, postId);
+        break;
       case 'open_post':
         context.push('/posts/$postId');
         break;
@@ -524,10 +700,18 @@ class _PostCardState extends ConsumerState<PostCard> {
           message: 'Post link copied',
         );
         break;
-      case 'share':
-        await _showShareSheet(
+      case 'share_linkedin':
+        await _openExternalUrl(
           context,
-          postId: postId,
+          _linkedInShareUrl(postUrl),
+          fallbackCopyMessage: 'LinkedIn share link copied',
+        );
+        break;
+      case 'share_email':
+        await _openExternalUrl(
+          context,
+          _emailShareUrl(postUrl),
+          fallbackCopyMessage: 'Email share link copied',
         );
         break;
     }
@@ -539,14 +723,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   }) async {
     final postUrl = _canonicalPostUrl(postId);
     final linkedInUrl = _linkedInShareUrl(postUrl);
-
-    await Clipboard.setData(ClipboardData(text: postUrl));
-
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Post link copied')),
-    );
+    final emailUrl = _emailShareUrl(postUrl);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -568,90 +745,48 @@ class _PostCardState extends ConsumerState<PostCard> {
                 Text('Share', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Aura does not auto-post on your behalf. We keep it clean: you copy a link and share intentionally.',
+                  'Share this post intentionally.',
                   style: AuraText.body,
                 ),
-                const SizedBox(height: AuraSpace.s12),
-                AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Post URL',
-                          style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        SelectableText(postUrl, style: AuraText.small),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: AuraSpace.s10,
-                          runSpacing: AuraSpace.s10,
-                          children: [
-                            OutlinedButton(
-                              onPressed: () async {
-                                await Clipboard.setData(
-                                  ClipboardData(text: postUrl),
-                                );
-                                if (!ctx.mounted) return;
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Post link copied'),
-                                  ),
-                                );
-                              },
-                              child: const Text('Copy link'),
-                            ),
-                          ],
-                        ),
-                      ],
+                const SizedBox(height: AuraSpace.s14),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await _copyToClipboard(
+                          ctx,
+                          postUrl,
+                          message: 'Post link copied',
+                        );
+                      },
+                      icon: const Icon(Icons.link_outlined),
+                      label: const Text('Copy link'),
                     ),
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                AuraCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'LinkedIn share URL',
-                          style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        SelectableText(linkedInUrl, style: AuraText.small),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: AuraSpace.s10,
-                          runSpacing: AuraSpace.s10,
-                          children: [
-                            OutlinedButton(
-                              onPressed: () async {
-                                await Clipboard.setData(
-                                  ClipboardData(text: linkedInUrl),
-                                );
-                                if (!ctx.mounted) return;
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'LinkedIn share URL copied',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Text('Copy LinkedIn share URL'),
-                            ),
-                          ],
-                        ),
-                      ],
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await _openExternalUrl(
+                          ctx,
+                          linkedInUrl,
+                          fallbackCopyMessage: 'LinkedIn share link copied',
+                        );
+                      },
+                      icon: const Icon(Icons.work_outline),
+                      label: const Text('Share to LinkedIn'),
                     ),
-                  ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await _openExternalUrl(
+                          ctx,
+                          emailUrl,
+                          fallbackCopyMessage: 'Email share link copied',
+                        );
+                      },
+                      icon: const Icon(Icons.email_outlined),
+                      label: const Text('Share to Email'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AuraSpace.s12),
                 Align(
@@ -685,6 +820,10 @@ class _PostCardState extends ConsumerState<PostCard> {
     final handle = (a?.handle ?? '').trim();
     final avatarResolved = _resolveAvatarUrl(ref, a?.avatarUrl);
     final contextLine = _authorContextLine(a);
+
+    final viewerAsync = ref.watch(viewerIdentityProvider);
+    final viewer = viewerAsync.valueOrNull;
+    final isOwnPost = _isOwnPost(a, viewer);
 
     final dyn = post as dynamic;
 
@@ -786,6 +925,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 postId: postId,
                 postUrl: postUrl,
                 handle: handle,
+                isOwnPost: isOwnPost,
               ),
             ),
             if (widget.showAdminBadges) ...[
@@ -1521,17 +1661,6 @@ class _ActionRow extends ConsumerWidget {
     }
 
     Future<void> share() async {
-      final postUrl = _canonicalPostUrl(postId);
-      final linkedInUrl = _linkedInShareUrl(postUrl);
-
-      await Clipboard.setData(ClipboardData(text: postUrl));
-
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post link copied')),
-      );
-
       await showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
@@ -1552,90 +1681,48 @@ class _ActionRow extends ConsumerWidget {
                   Text('Share', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   Text(
-                    'Aura does not auto-post on your behalf. We keep it clean: you copy a link and share intentionally.',
+                    'Share this post intentionally.',
                     style: AuraText.body,
                   ),
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Post URL',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          SelectableText(postUrl, style: AuraText.small),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: AuraSpace.s10,
-                            runSpacing: AuraSpace.s10,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: postUrl),
-                                  );
-                                  if (!ctx.mounted) return;
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Post link copied'),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Copy link'),
-                              ),
-                            ],
-                          ),
-                        ],
+                  const SizedBox(height: AuraSpace.s14),
+                  Wrap(
+                    spacing: AuraSpace.s10,
+                    runSpacing: AuraSpace.s10,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _copyToClipboard(
+                            ctx,
+                            _canonicalPostUrl(postId),
+                            message: 'Post link copied',
+                          );
+                        },
+                        icon: const Icon(Icons.link_outlined),
+                        label: const Text('Copy link'),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'LinkedIn share URL',
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          SelectableText(linkedInUrl, style: AuraText.small),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: AuraSpace.s10,
-                            runSpacing: AuraSpace.s10,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: linkedInUrl),
-                                  );
-                                  if (!ctx.mounted) return;
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'LinkedIn share URL copied',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Copy LinkedIn share URL'),
-                              ),
-                            ],
-                          ),
-                        ],
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _openExternalUrl(
+                            ctx,
+                            _linkedInShareUrl(_canonicalPostUrl(postId)),
+                            fallbackCopyMessage: 'LinkedIn share link copied',
+                          );
+                        },
+                        icon: const Icon(Icons.work_outline),
+                        label: const Text('Share to LinkedIn'),
                       ),
-                    ),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _openExternalUrl(
+                            ctx,
+                            _emailShareUrl(_canonicalPostUrl(postId)),
+                            fallbackCopyMessage: 'Email share link copied',
+                          );
+                        },
+                        icon: const Icon(Icons.email_outlined),
+                        label: const Text('Share to Email'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   Align(
