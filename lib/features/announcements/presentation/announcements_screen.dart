@@ -38,8 +38,7 @@ Map<String, dynamic> _unwrapMap(dynamic raw) {
   return root;
 }
 
-final _announcementsMeProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
+final _announcementsMeProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
   return _unwrapMap(res.data);
@@ -62,13 +61,12 @@ class AnnouncementsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final meAsync = ref.watch(_announcementsMeProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
-
     final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
     final listAsync = ref.watch(announcementsProvider);
 
     return meAsync.when(
       loading: () => AuraScaffold(
-        title: 'Platform notices',
+        title: 'Announcements',
         showHomeAction: true,
         body: const Center(child: CircularProgressIndicator()),
       ),
@@ -80,6 +78,7 @@ class AnnouncementsScreen extends ConsumerWidget {
       },
       data: (me) {
         final isAdmin = _isAdmin(me);
+
         if (isAdmin) {
           return _AdminAnnouncementsScreen(
             pinnedAsync: pinnedAsync,
@@ -102,10 +101,8 @@ class AnnouncementsScreen extends ConsumerWidget {
           data: (institutionAccess) {
             final hasInstitutionStanding =
                 institutionAccess.state == InstitutionAccessState.pending ||
-                    institutionAccess.state ==
-                        InstitutionAccessState.verifiedMember ||
-                    institutionAccess.state ==
-                        InstitutionAccessState.authorizedSpeaker;
+                    institutionAccess.state == InstitutionAccessState.verifiedMember ||
+                    institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
 
             if (hasInstitutionStanding) {
               return _InstitutionAnnouncementsScreen(
@@ -150,8 +147,7 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
         children: [
           const _IntroCard(
             title: 'Announcements',
-            body:
-                'This is the public announcements surface for official platform notices.',
+            body: 'This is the public announcements surface for official platform notices.',
           ),
           const SizedBox(height: AuraSpace.s12),
           _PinnedSection(asyncValue: pinnedAsync),
@@ -163,7 +159,7 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
   }
 }
 
-class _AdminAnnouncementsScreen extends StatelessWidget {
+class _AdminAnnouncementsScreen extends ConsumerWidget {
   const _AdminAnnouncementsScreen({
     required this.pinnedAsync,
     required this.listAsync,
@@ -173,7 +169,7 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
   final AsyncValue<List<Announcement>> listAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AuraScaffold(
       title: 'Announcements',
       showHomeAction: true,
@@ -186,41 +182,45 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
         ),
         children: [
           const _IntroCard(
-            title: 'Admin Announcement Workspace',
+            title: 'Admin announcement workspace',
             body:
-                'This space carries platform-level announcements. It belongs to app administration, not institution accounts.',
+                'This is the working surface for platform notices. It is for reviewing pinned notices, the public archive, and the live announcement detail paths.',
           ),
           const SizedBox(height: AuraSpace.s12),
           AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Admin tools', style: AuraText.title),
+                Text('Workspace', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Platform publishing belongs to app admin. Institution announcements should live on their own institution-specific paths.',
+                  'Use this area to review what is live, what is pinned, and how each notice opens on the public path.',
                   style: AuraText.body,
                 ),
-                const SizedBox(height: AuraSpace.s12),
-                const _ToolGrid(
+                const SizedBox(height: AuraSpace.s14),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
                   children: [
-                    _ToolTile(
-                      title: 'Platform announcement publishing',
-                      detail:
-                          'Use the admin publishing flow for platform-wide notices only.',
-                      status: 'Admin-only workflow',
+                    FilledButton.icon(
+                      onPressed: () => ref.invalidate(announcementsProvider),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Refresh archive'),
                     ),
-                    _ToolTile(
-                      title: 'Pinned platform notices',
-                      detail:
-                          'Pinned announcements remain part of the platform-wide public announcements layer.',
-                      status: 'Active structure',
+                    FilledButton.icon(
+                      onPressed: () => ref.invalidate(pinnedAnnouncementsProvider),
+                      icon: const Icon(Icons.push_pin_outlined, size: 18),
+                      label: const Text('Refresh pinned'),
                     ),
-                    _ToolTile(
-                      title: 'Institution announcement paths',
-                      detail:
-                          'Institution-specific announcements should not be published through the platform admin flow.',
-                      status: 'Separate institution workflow',
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/updates'),
+                      icon: const Icon(Icons.notifications_none_outlined, size: 18),
+                      label: const Text('Open updates'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/public'),
+                      icon: const Icon(Icons.public_outlined, size: 18),
+                      label: const Text('Public home'),
                     ),
                   ],
                 ),
@@ -228,9 +228,17 @@ class _AdminAnnouncementsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s12),
-          _PinnedSection(asyncValue: pinnedAsync),
+          _PinnedSection(
+            asyncValue: pinnedAsync,
+            title: 'Pinned platform notices',
+          ),
           const SizedBox(height: AuraSpace.s12),
-          _AllSection(asyncValue: listAsync),
+          _AllSection(
+            asyncValue: listAsync,
+            title: 'Announcement archive',
+            emptyTitle: 'No announcements yet',
+            emptyBody: 'When platform notices are published, they will appear here.',
+          ),
         ],
       ),
     );
@@ -315,7 +323,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
                 Text(institutionName, style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'This space should carry institution announcements tied to institutional identity and domain, separate from platform-admin announcements.',
+                  'This area holds institution-facing announcement context while platform notices remain visible for reference.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s12),
@@ -335,66 +343,17 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Institution announcement tools', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Institution publishing should happen through institution-owned paths and identity, not through the app-admin announcement flow.',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                const _ToolGrid(
-                  children: [
-                    _ToolTile(
-                      title: 'Institution notices',
-                      detail:
-                          'Institution-owned announcements should appear here under institution identity.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Domain-linked publishing',
-                      detail:
-                          'Institution publishing should be tied to verified domain and institutional standing.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Pinned institution notices',
-                      detail:
-                          'Pinned notices should be separate from pinned platform announcements.',
-                      status: 'Placeholder',
-                    ),
-                    _ToolTile(
-                      title: 'Institution announcement archive',
-                      detail:
-                          'A record of institution-originated notices should live here once institution publishing paths exist.',
-                      status: 'Placeholder',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          _PinnedSection(
+            asyncValue: pinnedAsync,
+            title: 'Pinned platform notices',
           ),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Platform announcements', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'These are still the shared platform notices from Aura itself. They remain visible here for reference, but they are not institution-owned announcements.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
+          _AllSection(
+            asyncValue: listAsync,
+            title: 'Platform announcements',
+            emptyTitle: 'Nothing yet',
+            emptyBody: 'Platform notices will appear here when published.',
           ),
-          const SizedBox(height: AuraSpace.s12),
-          _PinnedSection(asyncValue: pinnedAsync),
-          const SizedBox(height: AuraSpace.s12),
-          _AllSection(asyncValue: listAsync),
         ],
       ),
     );
@@ -449,86 +408,14 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _ToolTile extends StatelessWidget {
-  const _ToolTile({
-    required this.title,
-    required this.detail,
-    required this.status,
-    this.onTap,
+class _PinnedSection extends StatelessWidget {
+  const _PinnedSection({
+    required this.asyncValue,
+    this.title = 'Pinned platform notices',
   });
 
-  final String title;
-  final String detail;
-  final String status;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 132),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Ink(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            padding: const EdgeInsets.all(AuraSpace.s14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Expanded(
-                  child: Text(detail, style: AuraText.body),
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  status,
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: enabled ? Colors.black87 : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ToolGrid extends StatelessWidget {
-  const _ToolGrid({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AuraSpace.s12,
-      runSpacing: AuraSpace.s12,
-      children: children
-          .map((child) => SizedBox(width: 320, child: child))
-          .toList(),
-    );
-  }
-}
-
-class _PinnedSection extends StatelessWidget {
-  const _PinnedSection({required this.asyncValue});
-
   final AsyncValue<List<Announcement>> asyncValue;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -536,20 +423,32 @@ class _PinnedSection extends StatelessWidget {
       loading: () => const _LoadingCard(label: 'Loading pinned…'),
       error: (e, _) => _ErrorCard(error: e),
       data: (items) {
-        if (items.isEmpty) return const SizedBox.shrink();
+        if (items.isEmpty) {
+          return AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AuraText.title),
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  'No pinned notices right now.',
+                  style: AuraText.body,
+                ),
+              ],
+            ),
+          );
+        }
 
         return AuraCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Pinned platform notices', style: AuraText.title),
+              Text(title, style: AuraText.title),
               const SizedBox(height: AuraSpace.s10),
               for (final a in items) ...[
                 _AnnouncementRow(
                   title: a.title.isEmpty ? a.slug : a.title,
-                  subtitle: a.publishedAt == null
-                      ? null
-                      : a.publishedAt!.toLocal().toString(),
+                  subtitle: a.publishedAt == null ? null : a.publishedAt!.toLocal().toString(),
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
                 const SizedBox(height: AuraSpace.s8),
@@ -563,9 +462,17 @@ class _PinnedSection extends StatelessWidget {
 }
 
 class _AllSection extends StatelessWidget {
-  const _AllSection({required this.asyncValue});
+  const _AllSection({
+    required this.asyncValue,
+    this.title = 'All platform notices',
+    this.emptyTitle = 'Nothing yet',
+    this.emptyBody = 'When platform notices are published, they will appear here.',
+  });
 
   final AsyncValue<List<Announcement>> asyncValue;
+  final String title;
+  final String emptyTitle;
+  final String emptyBody;
 
   @override
   Widget build(BuildContext context) {
@@ -578,10 +485,10 @@ class _AllSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Nothing yet', style: AuraText.title),
+                Text(emptyTitle, style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'When platform notices are published, they will appear here.',
+                  emptyBody,
                   style: AuraText.body,
                 ),
               ],
@@ -593,14 +500,12 @@ class _AllSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('All platform notices', style: AuraText.title),
+              Text(title, style: AuraText.title),
               const SizedBox(height: AuraSpace.s10),
               for (final a in items) ...[
                 _AnnouncementRow(
                   title: a.title.isEmpty ? a.slug : a.title,
-                  subtitle: a.publishedAt == null
-                      ? null
-                      : a.publishedAt!.toLocal().toString(),
+                  subtitle: a.publishedAt == null ? null : a.publishedAt!.toLocal().toString(),
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
                 const SizedBox(height: AuraSpace.s8),
