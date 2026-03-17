@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -25,11 +24,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _passwordCtrl = TextEditingController();
 
   bool _busy = false;
-  bool _oauthBusy = false;
   bool _obscurePassword = true;
   String? _error;
-
-  bool get _isBusy => _busy || _oauthBusy;
 
   String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
@@ -122,39 +118,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return 'We could not sign you in right now. Please try again.';
   }
 
-  String _humanizeLinkedInError(Object error) {
-    final raw = error.toString().trim();
-    final msg = raw.toLowerCase();
-
-    if (msg.contains('cancel')) {
-      return 'LinkedIn sign-in was cancelled.';
-    }
-
-    if (msg.contains('state')) {
-      return 'LinkedIn sign-in could not be verified safely. Please try again.';
-    }
-
-    if (msg.contains('invalid') || msg.contains('expired')) {
-      return 'That LinkedIn sign-in attempt is no longer valid. Please try again.';
-    }
-
-    if (msg.contains('network error') ||
-        msg.contains('socketexception') ||
-        msg.contains('connection error') ||
-        msg.contains('connection refused') ||
-        msg.contains('failed host lookup') ||
-        msg.contains('timed out') ||
-        msg.contains('timeoutexception')) {
-      return 'We could not reach the server. Check your connection and try again.';
-    }
-
-    return 'LinkedIn sign-in could not be started right now. Please try again.';
-  }
-
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
 
-    if (_isBusy) return;
+    if (_busy) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() {
@@ -178,44 +145,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (mounted) {
         setState(() {
           _busy = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _continueWithLinkedIn() async {
-    FocusScope.of(context).unfocus();
-
-    if (_isBusy) return;
-
-    setState(() {
-      _oauthBusy = true;
-      _error = null;
-    });
-
-    try {
-      final controller = ref.read(authControllerProvider);
-      final uri = await controller.startLinkedInAuth(
-        redirectTo: _safeRedirectOrNull(widget.redirectTo),
-      );
-
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.platformDefault,
-      );
-
-      if (!launched) {
-        throw Exception('Could not open LinkedIn authorization.');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = _humanizeLinkedInError(e);
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _oauthBusy = false;
         });
       }
     }
@@ -287,7 +216,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ],
                       TextFormField(
                         controller: _emailCtrl,
-                        enabled: !_isBusy,
+                        enabled: !_busy,
                         keyboardType: TextInputType.emailAddress,
                         decoration: _decoration(
                           label: 'Email',
@@ -296,10 +225,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         validator: _emailValidator,
                         textInputAction: TextInputAction.next,
                         autocorrect: false,
-                        autofillHints: const [
-                          AutofillHints.username,
-                          AutofillHints.email,
-                        ],
+                        autofillHints: const [AutofillHints.username, AutofillHints.email],
                         inputFormatters: [
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),
                         ],
@@ -307,12 +233,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       const SizedBox(height: AuraSpace.s10),
                       TextFormField(
                         controller: _passwordCtrl,
-                        enabled: !_isBusy,
+                        enabled: !_busy,
                         obscureText: _obscurePassword,
                         decoration: _decoration(
                           label: 'Password',
                           suffixIcon: IconButton(
-                            onPressed: _isBusy
+                            onPressed: _busy
                                 ? null
                                 : () {
                                     setState(() {
@@ -329,54 +255,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         validator: _passwordValidator,
                         textInputAction: TextInputAction.done,
                         autofillHints: const [AutofillHints.password],
-                        onFieldSubmitted: (_) => _isBusy ? null : _login(),
+                        onFieldSubmitted: (_) => _busy ? null : _login(),
                       ),
                       const SizedBox(height: AuraSpace.s14),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                          onPressed: _isBusy ? null : _login,
+                          onPressed: _busy ? null : _login,
                           child: Text(_busy ? 'Signing in…' : 'Sign in'),
-                        ),
-                      ),
-                      const SizedBox(height: AuraSpace.s10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _isBusy ? null : _continueWithLinkedIn,
-                          icon: _oauthBusy
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.work_outline),
-                          label: Text(
-                            _oauthBusy
-                                ? 'Opening LinkedIn…'
-                                : 'Continue with LinkedIn',
-                          ),
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s10),
                       Row(
                         children: [
                           TextButton(
-                            onPressed: _isBusy
+                            onPressed: _busy
                                 ? null
-                                : () => context.push(
-                                      _withRedirect('/forgot-password'),
-                                    ),
+                                : () => context.push(_withRedirect('/forgot-password')),
                             child: const Text('Forgot password'),
                           ),
                           const Spacer(),
                           TextButton(
-                            onPressed: _isBusy
+                            onPressed: _busy
                                 ? null
-                                : () => context.push(
-                                      _withRedirect('/register'),
-                                    ),
+                                : () => context.push(_withRedirect('/register')),
                             child: const Text('Create account'),
                           ),
                         ],
