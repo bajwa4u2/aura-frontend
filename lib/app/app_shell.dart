@@ -41,7 +41,7 @@ class AppShell extends StatelessWidget {
       label: 'Activity',
       icon: Icons.notifications_none,
       selectedIcon: Icons.notifications,
-      path: '/updates',
+      path: '/activity',
     ),
     _MemberNavItem(
       label: 'Me',

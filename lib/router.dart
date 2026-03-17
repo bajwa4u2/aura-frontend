@@ -22,6 +22,7 @@ import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
+import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
 import 'features/ai/presentation/claim_audit_screen.dart';
@@ -398,7 +399,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
-          GoRoute(path: '/activity', redirect: (_, __) => '/updates'),
+          GoRoute(
+            path: '/activity',
+            builder: (_, __) => const ActivityScreen(),
+          ),
           GoRoute(
             path: '/ai/claim-audit',
             builder: (_, __) => const ClaimAuditScreen(),
