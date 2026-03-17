@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
@@ -289,6 +291,16 @@ class _ResolvedMediaItem {
   bool get isSvg =>
       type.toUpperCase().contains('SVG') ||
       ((url ?? '').toLowerCase().endsWith('.svg'));
+
+  String get playableUrl => (url ?? '').trim();
+  String get previewUrl {
+    if (isVideo) {
+      final thumb = (thumbUrl ?? '').trim();
+      if (thumb.isNotEmpty) return thumb;
+      return playableUrl;
+    }
+    return playableUrl;
+  }
 }
 
 class PostCard extends ConsumerStatefulWidget {
@@ -810,6 +822,25 @@ class _PostCardState extends ConsumerState<PostCard> {
     context.push('/u/$h');
   }
 
+  Future<void> _openMediaViewer(
+    BuildContext context,
+    List<_ResolvedMediaItem> items,
+    int initialIndex,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.88),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: _MediaViewerDialog(
+          items: items,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -1006,6 +1037,11 @@ class _PostCardState extends ConsumerState<PostCard> {
               linkTitle: linkTitle,
               linkSubtitle: linkSubtitle,
               linkThumbUrl: linkThumbUrl,
+              onOpenMediaAt: (index) => _openMediaViewer(
+                context,
+                mediaItems,
+                index,
+              ),
             ),
             const SizedBox(height: AuraSpace.s12),
             _ActionRow(postId: post.id),
@@ -1023,6 +1059,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     required String? linkTitle,
     required String? linkSubtitle,
     required String? linkThumbUrl,
+    required ValueChanged<int> onOpenMediaAt,
   }) {
     final lUrl = (linkUrl ?? '').trim();
 
@@ -1035,6 +1072,7 @@ class _PostCardState extends ConsumerState<PostCard> {
           items: mediaItems,
           postId: postId,
           maxHeight: _mediaMaxHeight(context),
+          onOpenMediaAt: onOpenMediaAt,
         ),
       );
     }
@@ -1281,15 +1319,13 @@ class _PostMediaBlock extends StatelessWidget {
     required this.items,
     required this.postId,
     required this.maxHeight,
+    required this.onOpenMediaAt,
   });
 
   final List<_ResolvedMediaItem> items;
   final String postId;
   final double maxHeight;
-
-  void _openPost(BuildContext context) {
-    context.push('/posts/$postId');
-  }
+  final ValueChanged<int> onOpenMediaAt;
 
   @override
   Widget build(BuildContext context) {
@@ -1297,7 +1333,7 @@ class _PostMediaBlock extends StatelessWidget {
       return _SingleMediaCard(
         item: items.first,
         maxHeight: maxHeight,
-        onTap: () => _openPost(context),
+        onTap: () => onOpenMediaAt(0),
       );
     }
 
@@ -1313,16 +1349,17 @@ class _PostMediaBlock extends StatelessWidget {
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: items.map((item) {
+          children: List.generate(items.length, (index) {
+            final item = items[index];
             return SizedBox(
               width: cardWidth,
               child: _SingleMediaCard(
                 item: item,
                 maxHeight: columns == 1 ? maxHeight : 260,
-                onTap: () => _openPost(context),
+                onTap: () => onOpenMediaAt(index),
               ),
             );
-          }).toList(),
+          }),
         );
       },
     );
@@ -1367,15 +1404,13 @@ class _SingleMediaCard extends StatelessWidget {
     final radius = BorderRadius.circular(16);
     final ratio = _ratio();
 
-    final imageUrl = item.isVideo
-        ? ((item.thumbUrl ?? '').trim().isNotEmpty ? item.thumbUrl : item.url)
-        : item.url;
+    final imageUrl = item.previewUrl;
 
     Widget mediaWidget;
 
-    if (item.isSvg && (imageUrl ?? '').isNotEmpty) {
+    if (item.isSvg && imageUrl.isNotEmpty) {
       mediaWidget = SvgPicture.network(
-        imageUrl!,
+        imageUrl,
         fit: BoxFit.cover,
         placeholderBuilder: (_) => const SizedBox(
           height: 140,
@@ -1384,15 +1419,15 @@ class _SingleMediaCard extends StatelessWidget {
           ),
         ),
       );
-    } else if ((imageUrl ?? '').isNotEmpty) {
+    } else if (imageUrl.isNotEmpty) {
       mediaWidget = Image.network(
-        imageUrl!,
+        imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => Container(
           constraints: const BoxConstraints(minHeight: 180),
           alignment: Alignment.center,
           child: Text(
-            item.isVideo ? 'Video attached' : 'Media unavailable',
+            item.isVideo ? 'Video unavailable' : 'Media unavailable',
             style: AuraText.small,
             textAlign: TextAlign.center,
           ),
@@ -1417,7 +1452,7 @@ class _SingleMediaCard extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 180),
         alignment: Alignment.center,
         child: Text(
-          item.isVideo ? 'Video attached' : 'Media unavailable',
+          item.isVideo ? 'Video unavailable' : 'Media unavailable',
           style: AuraText.small,
           textAlign: TextAlign.center,
         ),
@@ -1427,6 +1462,24 @@ class _SingleMediaCard extends StatelessWidget {
     Widget content = Stack(
       children: [
         Positioned.fill(child: mediaWidget),
+        if (item.isVideo)
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.58),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  size: 38,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
         if (item.isVideo)
           Positioned(
             top: 12,
@@ -1440,7 +1493,7 @@ class _SingleMediaCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.play_arrow, size: 14, color: Colors.white),
+                  const Icon(Icons.videocam, size: 14, color: Colors.white),
                   if (_durationLabel().isNotEmpty) ...[
                     const SizedBox(width: 4),
                     Text(
@@ -1504,6 +1557,441 @@ class _SingleMediaCard extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _MediaViewerDialog extends StatefulWidget {
+  const _MediaViewerDialog({
+    required this.items,
+    required this.initialIndex,
+  });
+
+  final List<_ResolvedMediaItem> items;
+  final int initialIndex;
+
+  @override
+  State<_MediaViewerDialog> createState() => _MediaViewerDialogState();
+}
+
+class _MediaViewerDialogState extends State<_MediaViewerDialog> {
+  late final PageController _pageController;
+  late int _index;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex.clamp(0, widget.items.length - 1);
+    _pageController = PageController(initialPage: _index);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _jump(int next) {
+    if (next < 0 || next >= widget.items.length) return;
+    _pageController.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.items[_index];
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 1100,
+        maxHeight: 820,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.items.length,
+                    onPageChanged: (value) {
+                      setState(() {
+                        _index = value;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final media = widget.items[index];
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: media.isVideo
+                              ? _VideoViewer(url: media.playableUrl)
+                              : _ImageViewer(url: media.previewUrl),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.white12),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if ((item.caption ?? '').trim().isNotEmpty)
+                        Text(
+                          item.caption!.trim(),
+                          style: AuraText.body.copyWith(color: Colors.white),
+                        ),
+                      if ((item.caption ?? '').trim().isNotEmpty)
+                        const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            '${_index + 1} / ${widget.items.length}',
+                            style: AuraText.small.copyWith(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (item.playableUrl.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () => _openExternalUrl(
+                                context,
+                                item.playableUrl,
+                                fallbackCopyMessage: 'Media link copied',
+                              ),
+                              icon: const Icon(Icons.open_in_new, color: Colors.white),
+                              label: Text(
+                                item.isVideo ? 'Open video' : 'Open image',
+                                style: AuraText.small.copyWith(color: Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+            if (_index > 0)
+              Positioned(
+                left: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerArrowButton(
+                    icon: Icons.chevron_left,
+                    onTap: () => _jump(_index - 1),
+                  ),
+                ),
+              ),
+            if (_index < widget.items.length - 1)
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _ViewerArrowButton(
+                    icon: Icons.chevron_right,
+                    onTap: () => _jump(_index + 1),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerArrowButton extends StatelessWidget {
+  const _ViewerArrowButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withOpacity(0.45),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: Icon(icon, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageViewer extends StatelessWidget {
+  const _ImageViewer({
+    required this.url,
+  });
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.trim().isEmpty) {
+      return Text(
+        'Image unavailable',
+        style: AuraText.body.copyWith(color: Colors.white),
+      );
+    }
+
+    return InteractiveViewer(
+      minScale: 0.8,
+      maxScale: 4.0,
+      child: Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Text(
+          'Image unavailable',
+          style: AuraText.body.copyWith(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoViewer extends StatefulWidget {
+  const _VideoViewer({
+    required this.url,
+  });
+
+  final String url;
+
+  @override
+  State<_VideoViewer> createState() => _VideoViewerState();
+}
+
+class _VideoViewerState extends State<_VideoViewer> {
+  VideoPlayerController? _controller;
+  Future<void>? _initializeFuture;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _setup();
+  }
+
+  void _setup() {
+    final url = widget.url.trim();
+    if (url.isEmpty) {
+      _error = 'Video URL is missing';
+      return;
+    }
+
+    try {
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      _controller = controller;
+      _initializeFuture = controller.initialize().then((_) async {
+        await controller.setLooping(true);
+        if (mounted) {
+          setState(() {});
+        }
+      }).catchError((_) {
+        _error = 'Could not load video';
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    } catch (_) {
+      _error = 'Could not open video';
+    }
+  }
+
+  @override
+  void dispose() {
+    final controller = _controller;
+    _controller = null;
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if ((_error ?? '').trim().isNotEmpty) {
+      return _VideoFallback(
+        message: _error!,
+        url: widget.url,
+      );
+    }
+
+    final controller = _controller;
+    final initializeFuture = _initializeFuture;
+
+    if (controller == null || initializeFuture == null) {
+      return _VideoFallback(
+        message: 'Video unavailable',
+        url: widget.url,
+      );
+    }
+
+    return FutureBuilder<void>(
+      future: initializeFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _VideoFallback(
+            message: 'Could not load video',
+            url: widget.url,
+          );
+        }
+
+        if (snapshot.connectionState != ConnectionState.done ||
+            !controller.value.isInitialized) {
+          return const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: AspectRatio(
+                aspectRatio: controller.value.aspectRatio > 0
+                    ? controller.value.aspectRatio
+                    : (16 / 9),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: VideoPlayer(controller),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: () async {
+                    if (controller.value.isPlaying) {
+                      await controller.pause();
+                    } else {
+                      await controller.play();
+                    }
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  icon: Icon(
+                    controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                  ),
+                  label: Text(
+                    controller.value.isPlaying ? 'Pause' : 'Play',
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await controller.seekTo(Duration.zero);
+                    if (!controller.value.isPlaying) {
+                      await controller.play();
+                    }
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Restart'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _openExternalUrl(
+                    context,
+                    widget.url,
+                    fallbackCopyMessage: 'Video link copied',
+                  ),
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open externally'),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _VideoFallback extends StatelessWidget {
+  const _VideoFallback({
+    required this.message,
+    required this.url,
+  });
+
+  final String message;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 220, minWidth: 320),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.videocam_outlined,
+            size: 40,
+            color: Colors.white70,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: AuraText.body.copyWith(color: Colors.white),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => _openExternalUrl(
+              context,
+              url,
+              fallbackCopyMessage: 'Video link copied',
+            ),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Open video'),
+          ),
+        ],
+      ),
     );
   }
 }
