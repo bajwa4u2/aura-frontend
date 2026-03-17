@@ -158,11 +158,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         queryParameters: {'userId': userId},
       );
 
-      final payload = _asMap(res.data);
+      final root = _asMap(res.data);
+      final nestedData = _asMap(root['data']);
+      final nestedInnerData = _asMap(nestedData['data']);
+
       final authorizationUrl = _firstNonEmpty([
-        _value(payload['authorizationUrl']),
-        _value(payload['url']),
-        _value(payload['authUrl']),
+        _value(root['authorizationUrl']),
+        _value(root['url']),
+        _value(root['authUrl']),
+        _value(root['authorization_url']),
+        _value(nestedData['authorizationUrl']),
+        _value(nestedData['url']),
+        _value(nestedData['authUrl']),
+        _value(nestedData['authorization_url']),
+        _value(nestedInnerData['authorizationUrl']),
+        _value(nestedInnerData['url']),
+        _value(nestedInnerData['authUrl']),
+        _value(nestedInnerData['authorization_url']),
       ]);
 
       if (authorizationUrl.isEmpty) {
@@ -170,7 +182,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       }
 
       final uri = Uri.tryParse(authorizationUrl);
-      if (uri == null) {
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
         throw Exception('TikTok authorization URL is invalid.');
       }
 
@@ -602,8 +614,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _tiktokBlock() {
     final connected = _isTikTokConnected;
-    final platformUserId = _value((_tiktokAccount ?? const <String, dynamic>{})['platformUserId']);
-    final username = _value((_tiktokAccount ?? const <String, dynamic>{})['username']);
+    final platformUserId =
+        _value((_tiktokAccount ?? const <String, dynamic>{})['platformUserId']);
+    final username =
+        _value((_tiktokAccount ?? const <String, dynamic>{})['username']);
     final accountLabel = _firstNonEmpty([
       username,
       platformUserId,
