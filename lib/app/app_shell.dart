@@ -68,7 +68,7 @@ class AppShell extends StatelessWidget {
 
     if (path == '/compose' || path == '/create') return 2;
 
-    if (path == '/updates') return 3;
+    if (path == '/activity') return 3;
 
     if (path == '/me' || path.startsWith('/me/')) return 4;
 
@@ -293,7 +293,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             tooltip: 'Activity',
             icon: Icons.notifications_none,
             label: 'Activity',
-            onTap: () => context.push('/updates'),
+            onTap: () => context.push('/activity'),
           ),
           const SizedBox(width: AuraSpace.s8),
           _HeaderAccountButton(
@@ -317,7 +317,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
         _HeaderIconButton(
           tooltip: 'Activity',
           icon: Icons.notifications_none,
-          onTap: () => context.push('/updates'),
+          onTap: () => context.push('/activity'),
         ),
         const SizedBox(width: AuraSpace.s8),
         _HeaderAccountButton(
