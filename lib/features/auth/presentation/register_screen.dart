@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/auth_repository.dart';
+import '../auth_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({
@@ -29,9 +31,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPassword = TextEditingController();
 
   bool _loading = false;
+  bool _oauthBusy = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _error;
+
+  bool get _isBusy => _loading || _oauthBusy;
 
   @override
   void dispose() {
@@ -193,6 +198,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return 'We could not create your account right now. Please try again.';
   }
 
+  String _humanizeLinkedInError(Object error) {
+    final raw = error.toString().trim().toLowerCase();
+
+    if (raw.contains('cancel')) {
+      return 'LinkedIn sign-in was cancelled.';
+    }
+
+    if (raw.contains('state')) {
+      return 'LinkedIn sign-in could not be verified safely. Please try again.';
+    }
+
+    if (raw.contains('invalid') || raw.contains('expired')) {
+      return 'That LinkedIn sign-in attempt is no longer valid. Please try again.';
+    }
+
+    if (raw.contains('network error') ||
+        raw.contains('socketexception') ||
+        raw.contains('connection error') ||
+        raw.contains('connection refused') ||
+        raw.contains('failed host lookup') ||
+        raw.contains('timed out') ||
+        raw.contains('timeoutexception')) {
+      return 'We could not reach the server. Check your connection and try again.';
+    }
+
+    return 'LinkedIn sign-in could not be started right now. Please try again.';
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
@@ -244,6 +277,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       setState(() => _error = _humanizeRegisterError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _continueWithLinkedIn() async {
+    FocusScope.of(context).unfocus();
+
+    if (_isBusy) return;
+
+    setState(() {
+      _oauthBusy = true;
+      _error = null;
+    });
+
+    try {
+      final controller = ref.read(authControllerProvider);
+      final uri = await controller.startLinkedInAuth(
+        redirectTo: _safeRedirect(widget.redirectTo),
+      );
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+      );
+
+      if (!launched) {
+        throw Exception('Could not open LinkedIn authorization.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _humanizeLinkedInError(e));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _oauthBusy = false;
+        });
+      }
     }
   }
 
@@ -331,7 +400,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ],
                     TextFormField(
                       controller: _firstName,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'First name',
                         hint: 'Private',
@@ -343,7 +412,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _lastName,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Last name',
                         hint: 'Private',
@@ -355,7 +424,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _displayName,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Display name',
                         hint: 'Public name shown on Aura',
@@ -366,7 +435,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _handle,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Handle',
                         hint: 'Your public identity handle',
@@ -383,7 +452,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _email,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Email',
                         hint: 'name@example.com',
@@ -397,12 +466,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _password,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Password',
                         hint: 'At least 8 characters',
                         suffixIcon: IconButton(
-                          onPressed: _loading
+                          onPressed: _isBusy
                               ? null
                               : () {
                                   setState(() {
@@ -424,12 +493,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _confirmPassword,
-                      enabled: !_loading,
+                      enabled: !_isBusy,
                       decoration: _decoration(
                         label: 'Confirm password',
                         hint: 'Re-enter your password',
                         suffixIcon: IconButton(
-                          onPressed: _loading
+                          onPressed: _isBusy
                               ? null
                               : () {
                                   setState(() {
@@ -448,16 +517,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       obscureText: _obscureConfirmPassword,
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.newPassword],
-                      onFieldSubmitted: (_) => _loading ? null : _submit(),
+                      onFieldSubmitted: (_) => _isBusy ? null : _submit(),
                     ),
                     const SizedBox(height: 18),
                     FilledButton(
-                      onPressed: _loading ? null : _submit,
+                      onPressed: _isBusy ? null : _submit,
                       child: Text(ctaLabel),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isBusy ? null : _continueWithLinkedIn,
+                        icon: _oauthBusy
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.work_outline),
+                        label: Text(
+                          _oauthBusy
+                              ? 'Opening LinkedIn…'
+                              : 'Continue with LinkedIn',
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextButton(
-                      onPressed: _loading
+                      onPressed: _isBusy
                           ? null
                           : () => context.go('/login?redirect=$redirect'),
                       child: Text(loginLabel),

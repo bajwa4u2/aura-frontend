@@ -16,6 +16,7 @@ import 'features/auth/presentation/verify_email_screen.dart';
 import 'features/auth/presentation/verify_pending_screen.dart';
 import 'features/auth/presentation/forgot_password_screen.dart';
 import 'features/auth/presentation/reset_password_screen.dart';
+import 'features/auth/presentation/linkedin_callback_screen.dart';
 
 // Public / Member
 import 'features/home/presentation/public_home_screen.dart';
@@ -74,8 +75,13 @@ const String kEnterInstitutionRoute = '/enter-institution';
 const String kRouterBootRoute = '/_boot';
 
 const String kCorrespondenceHubRoute = '/me/correspondence';
-const String kCreateConversationRoute = '/me/correspondence/create/conversation';
+const String kCreateConversationRoute =
+    '/me/correspondence/create/conversation';
 const String kCreateSpaceRoute = '/me/correspondence/create/space';
+
+const String kLinkedInCallbackRoute = '/auth/linkedin/callback';
+const String kLegacyLinkedInCallbackRoute = '/linkedin/callback';
+const String kGenericAuthCallbackRoute = '/auth/callback';
 
 String _normalizeRedirectDest(
   String? dest, {
@@ -98,6 +104,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isBootPath(String path) => path == kRouterBootRoute;
 
+  bool isLinkedInCallbackPath(String path) {
+    return path == kLinkedInCallbackRoute ||
+        path == kLegacyLinkedInCallbackRoute ||
+        path == kGenericAuthCallbackRoute;
+  }
+
   bool isPlainAuthPage(String path) {
     return path == '/login' || path == '/register' || path == '/auth';
   }
@@ -106,7 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     return path == '/forgot-password' ||
         path == '/reset-password' ||
         path == '/verify-email' ||
-        path == '/verify-pending';
+        path == '/verify-pending' ||
+        isLinkedInCallbackPath(path);
   }
 
   bool isPublicPath(String path) {
@@ -195,7 +208,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
 
-      final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
+      final defaultRedirect =
+          authStatus == AuthStatus.authed ? '/home' : '/public';
       final redirectDest = _normalizeRedirectDest(
         state.uri.queryParameters['redirect'],
         fallback: defaultRedirect,
@@ -387,6 +401,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           email: state.uri.queryParameters['email'],
           redirectTo: state.uri.queryParameters['redirect'],
         ),
+      ),
+      GoRoute(
+        path: kLinkedInCallbackRoute,
+        builder: (_, __) => const LinkedInCallbackScreen(),
+      ),
+      GoRoute(
+        path: kLegacyLinkedInCallbackRoute,
+        builder: (_, __) => const LinkedInCallbackScreen(),
+      ),
+      GoRoute(
+        path: kGenericAuthCallbackRoute,
+        builder: (_, __) => const LinkedInCallbackScreen(),
       ),
 
       // Member shell
