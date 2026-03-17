@@ -458,7 +458,7 @@ class _ActivityEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s40),
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
         children: const [
           Icon(
