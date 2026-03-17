@@ -543,7 +543,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
   void _syncExternalPublishingToggles() {
-    _syncExternalPublishingToggles();
+    _syncTikTokToggle();
 
     if (!_linkedinConnected && _publishToLinkedIn) {
       _publishToLinkedIn = false;
@@ -1451,11 +1451,27 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         );
       }
 
-      context.pop(true);
+      if (!mounted) return;
+
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        router.pop(true);
+      } else {
+        if (_isReply) {
+          router.go('/correspondence');
+        } else {
+          router.go('/');
+        }
+      }
     } catch (e) {
       if (!mounted) return;
+
+      final message = publishedPostId != null && publishedPostId.trim().isNotEmpty
+          ? 'Published to Aura, but the screen could not finish cleanly: $e'
+          : 'Could not publish: $e';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not publish: $e')),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) {
