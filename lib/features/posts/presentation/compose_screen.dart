@@ -113,6 +113,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _tiktokConnected = false;
   String _tiktokAccountLabel = '';
   String? _tiktokError;
+
+  bool _linkedinLoading = false;
+  bool _publishToLinkedIn = false;
+  bool _linkedinConnected = false;
+  String _linkedinAccountLabel = '';
+  String? _linkedinError;
+
   String _currentUserId = '';
 
   bool get _isReply => widget.replyToPostId != null;
@@ -308,7 +315,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     if (!_isReply) {
       _loadDraft();
-      _loadTikTokConnection();
+      _loadExternalConnections();
     }
 
     _textController.addListener(() {
@@ -333,13 +340,15 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     super.dispose();
   }
 
-  Future<void> _loadTikTokConnection() async {
+  Future<void> _loadExternalConnections() async {
     if (_isReply) return;
 
     if (mounted) {
       setState(() {
         _tiktokLoading = true;
+        _linkedinLoading = true;
         _tiktokError = null;
+        _linkedinError = null;
       });
     }
 
@@ -354,33 +363,63 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         throw Exception('User id is missing.');
       }
 
-      final accountRes = await dio.get(
-        '/v1/integrations/tiktok/account',
-        queryParameters: {'userId': userId},
-      );
+      final results = await Future.wait<dynamic>([
+        _safeGet(
+          dio,
+          '/v1/integrations/tiktok/account',
+          queryParameters: {'userId': userId},
+        ),
+        _safeGet(
+          dio,
+          '/v1/integrations/linkedin/account',
+          queryParameters: {'userId': userId},
+        ),
+        _safeGet(
+          dio,
+          '/integrations/linkedin/account',
+          queryParameters: {'userId': userId},
+        ),
+      ]);
 
-      final account = _unwrapTikTokAccount(accountRes.data);
-      final connected = _readTikTokConnected(account);
-      final label = _readTikTokAccountLabel(account);
+      final tiktokAccount = _unwrapTikTokAccount(results[0]?.data);
+      final linkedinAccount = _unwrapLinkedInAccount(
+        results[1]?.data ?? results[2]?.data,
+      );
 
       if (!mounted) return;
 
       setState(() {
         _currentUserId = userId;
-        _tiktokConnected = connected;
-        _tiktokAccountLabel = label;
+        _tiktokConnected = _readTikTokConnected(tiktokAccount);
+        _tiktokAccountLabel = _readTikTokAccountLabel(tiktokAccount);
+        _linkedinConnected = _readLinkedInConnected(linkedinAccount);
+        _linkedinAccountLabel = _readLinkedInAccountLabel(linkedinAccount);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _tiktokError = e.toString();
+        _linkedinError = e.toString();
       });
     } finally {
       if (mounted) {
         setState(() {
           _tiktokLoading = false;
+          _linkedinLoading = false;
         });
       }
+    }
+  }
+
+  Future<Response<dynamic>?> _safeGet(
+    Dio dio,
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await dio.get(path, queryParameters: queryParameters);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -445,9 +484,69 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     ]);
   }
 
+
+  Map<String, dynamic> _unwrapLinkedInAccount(dynamic raw) {
+    if (raw is! Map) return <String, dynamic>{};
+
+    final root = Map<String, dynamic>.from(raw);
+    final data = _asMap(root['data']);
+    final nestedData = _asMap(data['data']);
+    final account = _asMap(root['account']);
+    final nestedAccount = _asMap(data['account']);
+    final deepAccount = _asMap(nestedData['account']);
+
+    return _firstNonEmptyMap([
+      deepAccount,
+      nestedAccount,
+      account,
+      nestedData,
+      data,
+      root,
+    ]);
+  }
+
+  Map<String, dynamic> _firstNonEmptyMap(List<Map<String, dynamic>> maps) {
+    for (final map in maps) {
+      if (map.isNotEmpty) return map;
+    }
+    return <String, dynamic>{};
+  }
+
+  bool _readLinkedInConnected(Map<String, dynamic> account) {
+    final connected = account['connected'];
+    if (connected is bool) return connected;
+
+    return _firstNonEmpty([
+          _str(account['linkedinMemberId']),
+          _str(account['memberId']),
+          _str(account['id']),
+          _str(account['sub']),
+          _str(account['name']),
+          _str(account['email']),
+        ]).isNotEmpty;
+  }
+
+  String _readLinkedInAccountLabel(Map<String, dynamic> account) {
+    return _firstNonEmpty([
+      _str(account['name']),
+      _str(account['localizedFirstName']),
+      _str(account['email']),
+      _str(account['linkedinMemberId']),
+      _str(account['memberId']),
+    ]);
+  }
+
   void _syncTikTokToggle() {
     if (!_hasTikTokVideo && _publishToTikTok) {
       _publishToTikTok = false;
+    }
+  }
+
+  void _syncExternalPublishingToggles() {
+    _syncExternalPublishingToggles();
+
+    if (!_linkedinConnected && _publishToLinkedIn) {
+      _publishToLinkedIn = false;
     }
   }
 
@@ -519,7 +618,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         _attachments
           ..clear()
           ..addAll(loadedAttachments);
-        _syncTikTokToggle();
+        _syncExternalPublishingToggles();
 
         if (_hasText) {
           _showTextError = false;
@@ -656,7 +755,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     setState(() {
       _attachments.add(attachment);
       _uploadingMedia = true;
-      _syncTikTokToggle();
+      _syncExternalPublishingToggles();
     });
 
     try {
@@ -675,7 +774,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       if (mounted) {
         setState(() {
           _uploadingMedia = _attachments.any((a) => a.uploading);
-          _syncTikTokToggle();
+          _syncExternalPublishingToggles();
         });
       }
     }
@@ -772,7 +871,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
               : null);
       attachment.uploading = false;
       attachment.error = null;
-      _syncTikTokToggle();
+      _syncExternalPublishingToggles();
     });
   }
 
@@ -804,7 +903,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     setState(() {
       _attachments.removeWhere((a) => a.localId == attachment.localId);
       _uploadingMedia = _attachments.any((a) => a.uploading);
-      _syncTikTokToggle();
+      _syncExternalPublishingToggles();
     });
 
     attachment.dispose();
@@ -831,7 +930,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     setState(() {
       final item = _attachments.removeAt(index);
       _attachments.insert(index - 1, item);
-      _syncTikTokToggle();
+      _syncExternalPublishingToggles();
     });
     _scheduleAutosave();
   }
@@ -841,7 +940,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     setState(() {
       final item = _attachments.removeAt(index);
       _attachments.insert(index + 1, item);
-      _syncTikTokToggle();
+      _syncExternalPublishingToggles();
     });
     _scheduleAutosave();
   }
@@ -1161,6 +1260,39 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     return '${collapsed.substring(0, 147).trim()}...';
   }
 
+  Future<void> _publishToLinkedInNow(String postId) async {
+    final dio = ref.read(dioProvider);
+
+    final payload = {
+      'postId': postId,
+      'text': _textController.text.trim(),
+    };
+
+    final attempts = <String>[
+      '/v1/integrations/linkedin/publish/post',
+      '/integrations/linkedin/publish/post',
+    ];
+
+    DioException? lastDioError;
+    Object? lastError;
+
+    for (final path in attempts) {
+      try {
+        await dio.post(path, data: payload);
+        return;
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    if (lastError != null) throw Exception(lastError.toString());
+    throw Exception('LinkedIn publish endpoint was not available.');
+  }
+
   Future<void> _publishToTikTokNow(String postId) async {
     final attachment = _primaryTikTokVideoAttachment;
     if (attachment == null) {
@@ -1261,29 +1393,51 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       publishedPostId = await _publishNow();
 
-      if (!_isReply && _publishToTikTok) {
-        setState(() {
-          _publishingToTikTok = true;
-        });
+      if (!_isReply &&
+          (_publishToTikTok || _publishToLinkedIn) &&
+          (publishedPostId ?? '').trim().isNotEmpty) {
+        final queuedTargets = <String>[];
+        final failedTargets = <String>[];
 
-        try {
-          if ((publishedPostId ?? '').trim().isEmpty) {
-            throw Exception(
-              'Aura published successfully, but the published post id was not returned.',
-            );
+        if (_publishToTikTok) {
+          setState(() {
+            _publishingToTikTok = true;
+          });
+
+          try {
+            await _publishToTikTokNow(publishedPostId!);
+            queuedTargets.add('TikTok');
+          } catch (e) {
+            failedTargets.add('TikTok ($e)');
+          } finally {
+            if (mounted) {
+              setState(() {
+                _publishingToTikTok = false;
+              });
+            }
           }
+        }
 
-          await _publishToTikTokNow(publishedPostId!);
-          externalMessage = 'Published to Aura and queued for TikTok.';
-        } catch (e) {
+        if (_publishToLinkedIn) {
+          try {
+            await _publishToLinkedInNow(publishedPostId!);
+            queuedTargets.add('LinkedIn');
+          } catch (e) {
+            failedTargets.add('LinkedIn ($e)');
+          }
+        }
+
+        if (queuedTargets.isNotEmpty && failedTargets.isEmpty) {
           externalMessage =
-              'Published to Aura. TikTok publish could not be queued: $e';
-        } finally {
-          if (mounted) {
-            setState(() {
-              _publishingToTikTok = false;
-            });
-          }
+              'Published to Aura and shared to ${queuedTargets.join(' and ')}.';
+        } else if (queuedTargets.isNotEmpty && failedTargets.isNotEmpty) {
+          externalMessage =
+              'Published to Aura. Shared to ${queuedTargets.join(' and ')}. ${failedTargets.join(', ')} could not be queued.';
+        } else if (failedTargets.isNotEmpty) {
+          externalMessage =
+              'Published to Aura. ${failedTargets.join(', ')} could not be queued.';
+        } else {
+          externalMessage = 'Published to Aura.';
         }
       } else {
         externalMessage = _isReply ? 'Reply published.' : 'Published to Aura.';
@@ -1983,7 +2137,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_isReply) return const SizedBox.shrink();
 
     final canUseTikTok = _tiktokConnected && _hasTikTokVideo && !_posting;
-    final subtitle = _tiktokLoading
+    final tiktokSubtitle = _tiktokLoading
         ? 'Checking connection…'
         : !_tiktokConnected
             ? 'Connect TikTok from Me to publish externally.'
@@ -1993,7 +2147,16 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                     ? 'Connected as $_tiktokAccountLabel'
                     : 'Connected';
 
-    final helper = (_tiktokError ?? '').trim();
+    final linkedinVisible = _linkedinLoading || _linkedinConnected;
+    final canUseLinkedIn = _linkedinConnected && !_posting;
+    final linkedinSubtitle = _linkedinLoading
+        ? 'Checking connection…'
+        : _linkedinAccountLabel.isNotEmpty
+            ? 'Connected as $_linkedinAccountLabel'
+            : 'Connected';
+
+    final tiktokHelper = (_tiktokError ?? '').trim();
+    final linkedinHelper = (_linkedinError ?? '').trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2033,7 +2196,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          subtitle,
+                          tiktokSubtitle,
                           style: AuraText.small.copyWith(
                             color: AuraSurface.muted,
                           ),
@@ -2060,19 +2223,84 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                     ),
                 ],
               ),
-              if (helper.isNotEmpty) ...[
+              if (tiktokHelper.isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  helper,
+                  tiktokHelper,
                   style: AuraText.small.copyWith(
                     color: AuraSurface.warnInk,
                   ),
                 ),
               ],
-              if (_publishToTikTok) ...[
+              if (linkedinVisible) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Container(height: 1, color: AuraSurface.divider),
+                const SizedBox(height: AuraSpace.s12),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.business_center_outlined,
+                      size: 18,
+                      color: AuraSurface.ink,
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LinkedIn',
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            linkedinSubtitle,
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_linkedinLoading)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      Switch(
+                        value: _publishToLinkedIn,
+                        onChanged: canUseLinkedIn
+                            ? (value) {
+                                setState(() {
+                                  _publishToLinkedIn = value;
+                                });
+                              }
+                            : null,
+                      ),
+                  ],
+                ),
+                if (linkedinHelper.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    linkedinHelper,
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.warnInk,
+                    ),
+                  ),
+                ],
+              ],
+              if (_publishToTikTok || _publishToLinkedIn) ...[
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Aura will publish the post first, then queue the first uploaded video to TikTok.',
+                  _publishToTikTok && _publishToLinkedIn
+                      ? 'Aura publishes first, then sends the post to TikTok and LinkedIn.'
+                      : _publishToTikTok
+                          ? 'Aura will publish the post first, then queue the first uploaded video to TikTok.'
+                          : 'Aura will publish the post first, then send the text to LinkedIn.',
                   style: AuraText.small.copyWith(
                     color: AuraSurface.muted,
                   ),

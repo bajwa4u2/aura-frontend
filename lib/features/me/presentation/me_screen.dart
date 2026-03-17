@@ -34,10 +34,18 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   bool _tiktokLoading = false;
   bool _tiktokActionBusy = false;
 
+  Map<String, dynamic>? _linkedinAccount;
+  bool _linkedinLoading = false;
+  bool _linkedinActionBusy = false;
+  bool _handledLinkedInRedirect = false;
+
   @override
   void initState() {
     super.initState();
     unawaited(_load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleLinkedInRedirectIfNeeded());
+    });
   }
 
   Future<void> _load() async {
@@ -76,6 +84,22 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           )
         else
           Future.value(null),
+        if (userId.isNotEmpty)
+          _safeGet(
+            dio,
+            '/v1/integrations/linkedin/account',
+            queryParameters: {'userId': userId},
+          )
+        else
+          Future.value(null),
+        if (userId.isNotEmpty)
+          _safeGet(
+            dio,
+            '/integrations/linkedin/account',
+            queryParameters: {'userId': userId},
+          )
+        else
+          Future.value(null),
       ]);
 
       final followersRes = futures[0];
@@ -83,6 +107,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final inboxRes = futures[2];
       final outboxRes = futures[3];
       final tiktokRes = futures[4];
+      final linkedinRes = futures[5];
+      final linkedinAltRes = futures[6];
 
       if (!mounted) return;
 
@@ -93,6 +119,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _incomingRequestsCount = _countItemsFromPayload(inboxRes?.data);
         _outgoingRequestsCount = _countItemsFromPayload(outboxRes?.data);
         _tiktokAccount = _unwrapTikTokAccount(tiktokRes?.data);
+        _linkedinAccount = _unwrapLinkedInAccount(
+          linkedinRes?.data ?? linkedinAltRes?.data,
+        );
         _loading = false;
       });
     } on DioException catch (e) {
@@ -107,6 +136,224 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _error = 'Could not load your workspace.';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _handleLinkedInRedirectIfNeeded() async {
+    if (_handledLinkedInRedirect || !mounted) return;
+    _handledLinkedInRedirect = true;
+
+    final query = Uri.base.queryParameters;
+    if (!query.containsKey('linkedin')) return;
+
+    final state = query['linkedin']?.trim() ?? '';
+    final message = query['message']?.trim() ?? '';
+
+    await _load();
+    if (!mounted) return;
+
+    final cleanPath = Uri.base.path.isEmpty ? '/me' : Uri.base.path;
+    context.go(cleanPath);
+
+    final snack = state.toLowerCase() == 'connected'
+        ? 'LinkedIn connected.'
+        : (message.isNotEmpty ? message : 'LinkedIn flow finished.');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(snack)),
+    );
+  }
+
+  Future<void> _reloadLinkedInOnly() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        _linkedinLoading = true;
+      });
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      final primary = await _safeGet(
+        dio,
+        '/v1/integrations/linkedin/account',
+        queryParameters: {'userId': userId},
+      );
+      final secondary = await _safeGet(
+        dio,
+        '/integrations/linkedin/account',
+        queryParameters: {'userId': userId},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _linkedinAccount = _unwrapLinkedInAccount(
+          primary?.data ?? secondary?.data,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _linkedinLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _connectLinkedIn() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty || _linkedinActionBusy) return;
+
+    setState(() {
+      _linkedinActionBusy = true;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await _getFirstSuccessful(
+        dio,
+        [
+          '/v1/integrations/linkedin/connect/start',
+          '/integrations/linkedin/connect/start',
+        ],
+        queryParameters: {'userId': userId},
+      );
+
+      final root = _asMap(res.data);
+      final nestedData = _asMap(root['data']);
+      final nestedInnerData = _asMap(nestedData['data']);
+
+      final authorizationUrl = _firstNonEmpty([
+        _value(root['authorizationUrl']),
+        _value(root['url']),
+        _value(root['authUrl']),
+        _value(root['authorization_url']),
+        _value(nestedData['authorizationUrl']),
+        _value(nestedData['url']),
+        _value(nestedData['authUrl']),
+        _value(nestedData['authorization_url']),
+        _value(nestedInnerData['authorizationUrl']),
+        _value(nestedInnerData['url']),
+        _value(nestedInnerData['authUrl']),
+        _value(nestedInnerData['authorization_url']),
+      ]);
+
+      if (authorizationUrl.isEmpty) {
+        throw Exception('LinkedIn authorization URL was not returned.');
+      }
+
+      final uri = Uri.tryParse(authorizationUrl);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        throw Exception('LinkedIn authorization URL is invalid.');
+      }
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+      );
+
+      if (!launched) {
+        throw Exception('Could not open LinkedIn authorization.');
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('LinkedIn authorization opened. Return here after approval.'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start LinkedIn connection: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _linkedinActionBusy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _disconnectLinkedIn() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty || _linkedinActionBusy) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Disconnect LinkedIn'),
+          content: const Text(
+            'This will remove your LinkedIn connection from Aura.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Disconnect'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _linkedinActionBusy = true;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      await _postFirstSuccessful(
+        dio,
+        [
+          '/v1/integrations/linkedin/disconnect',
+          '/integrations/linkedin/disconnect',
+        ],
+        data: {'userId': userId},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _linkedinAccount = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('LinkedIn disconnected.')),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _readApiError(e, fallback: 'Could not disconnect LinkedIn.'),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not disconnect LinkedIn: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _linkedinActionBusy = false;
+        });
+      }
     }
   }
 
@@ -333,6 +580,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   String get _currentUserId => _value((_user ?? const <String, dynamic>{})['id']);
 
+  bool get _isLinkedInConnected {
+    final account = _linkedinAccount;
+    if (account == null) return false;
+
+    final connected = account['connected'];
+    if (connected is bool) return connected;
+
+    return _firstNonEmpty([
+      _value(account['linkedinMemberId']),
+      _value(account['memberId']),
+      _value(account['id']),
+      _value(account['sub']),
+      _value(account['name']),
+      _value(account['email']),
+    ]).isNotEmpty;
+  }
+
   bool get _isTikTokConnected {
     final account = _tiktokAccount;
     if (account == null) return false;
@@ -553,6 +817,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 _section(
                   title: 'Platform',
                   children: [
+                    _linkedinBlock(),
                     _tiktokBlock(),
                     _item(
                       label: 'Announcements workspace',
@@ -692,6 +957,91 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               if (connected)
                 OutlinedButton(
                   onPressed: _tiktokActionBusy ? null : _disconnectTikTok,
+                  child: const Text('Disconnect'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linkedinBlock() {
+    final connected = _isLinkedInConnected;
+    final accountLabel = _firstNonEmpty([
+      _value((_linkedinAccount ?? const <String, dynamic>{})['name']),
+      _value((_linkedinAccount ?? const <String, dynamic>{})['email']),
+      _value((_linkedinAccount ?? const <String, dynamic>{})['linkedinMemberId']),
+      connected ? 'Connected' : '',
+    ]);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AuraSpace.s12,
+        horizontal: AuraSpace.s4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.business_center_outlined,
+                size: 18,
+                color: AuraSurface.ink,
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'LinkedIn',
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _linkedinLoading
+                          ? 'Checking connection…'
+                          : connected
+                              ? accountLabel
+                              : 'Not connected',
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_linkedinActionBusy || _linkedinLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              if (!connected)
+                OutlinedButton(
+                  onPressed: _linkedinActionBusy ? null : _connectLinkedIn,
+                  child: const Text('Connect'),
+                ),
+              OutlinedButton(
+                onPressed: (_linkedinActionBusy || _linkedinLoading)
+                    ? null
+                    : _reloadLinkedInOnly,
+                child: const Text('Check'),
+              ),
+              if (connected)
+                OutlinedButton(
+                  onPressed: _linkedinActionBusy ? null : _disconnectLinkedIn,
                   child: const Text('Disconnect'),
                 ),
             ],
@@ -939,6 +1289,57 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
+  Future<Response<dynamic>> _getFirstSuccessful(
+    Dio dio,
+    List<String> paths, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    DioException? lastDioError;
+
+    for (final path in paths) {
+      try {
+        return await dio.get(path, queryParameters: queryParameters);
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    throw DioException(
+      requestOptions: RequestOptions(path: paths.isEmpty ? '' : paths.first),
+      error: 'No endpoint available.',
+    );
+  }
+
+  Future<Response<dynamic>> _postFirstSuccessful(
+    Dio dio,
+    List<String> paths, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    DioException? lastDioError;
+
+    for (final path in paths) {
+      try {
+        return await dio.post(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+        );
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    throw DioException(
+      requestOptions: RequestOptions(path: paths.isEmpty ? '' : paths.first),
+      error: 'No endpoint available.',
+    );
+  }
+
   Future<Response<dynamic>?> _safeGet(
     Dio dio,
     String path, {
@@ -1048,6 +1449,38 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     if (map.containsKey('connected') || map.containsKey('platformUserId')) {
       return map;
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic>? _unwrapLinkedInAccount(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is! Map) return null;
+
+    final root = Map<String, dynamic>.from(raw);
+    final data = _asMap(root['data']);
+    final nestedData = _asMap(data['data']);
+
+    final candidates = <Map<String, dynamic>>[
+      _asMap(nestedData['account']),
+      _asMap(data['account']),
+      _asMap(root['account']),
+      nestedData,
+      data,
+      root,
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate.isEmpty) continue;
+
+      if (candidate.containsKey('connected') ||
+          candidate.containsKey('linkedinMemberId') ||
+          candidate.containsKey('memberId') ||
+          candidate.containsKey('name') ||
+          candidate.containsKey('email')) {
+        return candidate;
+      }
     }
 
     return null;
