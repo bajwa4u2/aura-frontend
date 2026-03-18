@@ -153,10 +153,7 @@ class PostDetailScreen extends ConsumerWidget {
                   _TopBar(postId: postId),
                   const SizedBox(height: AuraSpace.s16),
 
-                  const _PageIntro(),
-                  const SizedBox(height: AuraSpace.s16),
-
-                  const _SectionLabel(title: 'Original post'),
+                  const _SectionLabel(title: 'Work'),
                   const SizedBox(height: AuraSpace.s10),
 
                   postAsync.when(
@@ -184,9 +181,9 @@ class PostDetailScreen extends ConsumerWidget {
                         ],
                       );
                     },
-                    loading: () => const _LoadingCard(label: 'Loading post…'),
+                    loading: () => const _LoadingCard(label: 'Loading work…'),
                     error: (e, _) => _ErrorCard(
-                      message: 'Could not load post: $e',
+                      message: 'Could not load work: $e',
                     ),
                   ),
 
@@ -197,7 +194,7 @@ class PostDetailScreen extends ConsumerWidget {
                   Row(
                     children: [
                       const Expanded(
-                        child: _SectionLabel(title: 'Replies'),
+                        child: _SectionLabel(title: 'Responses'),
                       ),
                       repliesAsync.when(
                         data: (items) => _CountPill(count: items.length),
@@ -210,7 +207,7 @@ class PostDetailScreen extends ConsumerWidget {
                   const SizedBox(height: AuraSpace.s10),
 
                   Text(
-                    'Responses stay in sequence beneath the original post.',
+                    'Responses remain with the work.',
                     style: AuraText.small.copyWith(
                       color: AuraSurface.muted,
                     ),
@@ -228,14 +225,14 @@ class PostDetailScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'No replies yet.',
+                                  'No responses yet.',
                                   style: AuraText.body.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: AuraSpace.s8),
                                 Text(
-                                  'Be the first to respond to this post.',
+                                  'No response has been added yet.',
                                   style: AuraText.small.copyWith(
                                     color: AuraSurface.muted,
                                   ),
@@ -243,7 +240,7 @@ class PostDetailScreen extends ConsumerWidget {
                                 const SizedBox(height: AuraSpace.s12),
                                 OutlinedButton.icon(
                                   icon: const Icon(Icons.reply_outlined),
-                                  label: const Text('Write a reply'),
+                                  label: const Text('Add response'),
                                   onPressed: () =>
                                       context.push('/compose?replyTo=$postId'),
                                 ),
@@ -267,9 +264,9 @@ class PostDetailScreen extends ConsumerWidget {
                         },
                       );
                     },
-                    loading: () => const _LoadingCard(label: 'Loading replies…'),
+                    loading: () => const _LoadingCard(label: 'Loading responses…'),
                     error: (e, _) => _ErrorCard(
-                      message: 'Could not load replies: $e',
+                      message: 'Could not load responses: $e',
                     ),
                   ),
                 ],
@@ -302,47 +299,16 @@ class _TopBar extends StatelessWidget {
               context.pop();
               return;
             }
-            context.go('/home');
+            context.go('/works');
           },
           icon: const Icon(Icons.arrow_back),
           label: const Text('Back'),
         ),
         Text(
-          'Post record',
+          'Work',
           style: AuraText.title,
         ),
       ],
-    );
-  }
-}
-
-class _PageIntro extends StatelessWidget {
-  const _PageIntro();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This page keeps the original post and its replies together.',
-              style: AuraText.body.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              'Read the post first, then follow the response trail beneath it.',
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

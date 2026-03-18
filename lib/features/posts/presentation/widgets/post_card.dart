@@ -575,9 +575,9 @@ class _PostCardState extends ConsumerState<PostCard> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Delete post'),
+          title: const Text('Delete work'),
           content: const Text(
-            'This will remove the post from the record. This action cannot be undone.',
+            'This will remove the work from the record. This action cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -602,7 +602,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post deleted')),
+        const SnackBar(content: Text('Work deleted')),
       );
 
       if (context.canPop()) {
@@ -644,18 +644,18 @@ class _PostCardState extends ConsumerState<PostCard> {
                 if (isOwnPost)
                   _MenuActionTile(
                     icon: Icons.edit_outlined,
-                    label: 'Edit post',
+                    label: 'Edit work',
                     onTap: () => Navigator.of(ctx).pop('edit_post'),
                   ),
                 if (isOwnPost)
                   _MenuActionTile(
                     icon: Icons.delete_outline,
-                    label: 'Delete post',
+                    label: 'Delete work',
                     onTap: () => Navigator.of(ctx).pop('delete_post'),
                   ),
                 _MenuActionTile(
                   icon: Icons.article_outlined,
-                  label: 'Open post',
+                  label: 'Open work',
                   onTap: () => Navigator.of(ctx).pop('open_post'),
                 ),
                 if ((handle ?? '').trim().isNotEmpty)
@@ -691,7 +691,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     switch (selected) {
       case 'edit_post':
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post editing is not wired yet.')),
+          const SnackBar(content: Text('Work editing is not wired yet.')),
         );
         break;
       case 'delete_post':
@@ -709,7 +709,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         await _copyToClipboard(
           context,
           postUrl,
-          message: 'Post link copied',
+          message: 'Work link copied',
         );
         break;
       case 'share_linkedin':
@@ -757,7 +757,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 Text('Share', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Share this post intentionally.',
+                  'Share this work.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
@@ -770,7 +770,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         await _copyToClipboard(
                           ctx,
                           postUrl,
-                          message: 'Post link copied',
+                          message: 'Work link copied',
                         );
                       },
                       icon: const Icon(Icons.link_outlined),
@@ -2139,7 +2139,7 @@ class _ActionRow extends ConsumerWidget {
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reposted')),
+          const SnackBar(content: Text('Work reposted')),
         );
       } catch (_) {
         _showError(context, 'Could not repost');
@@ -2169,7 +2169,7 @@ class _ActionRow extends ConsumerWidget {
                   Text('Share', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   Text(
-                    'Share this post intentionally.',
+                    'Share this work.',
                     style: AuraText.body,
                   ),
                   const SizedBox(height: AuraSpace.s14),
@@ -2182,7 +2182,7 @@ class _ActionRow extends ConsumerWidget {
                           await _copyToClipboard(
                             ctx,
                             _canonicalPostUrl(postId),
-                            message: 'Post link copied',
+                            message: 'Work link copied',
                           );
                         },
                         icon: const Icon(Icons.link_outlined),
@@ -2272,7 +2272,7 @@ class _ActionRow extends ConsumerWidget {
       children: [
         pill(
           icon: Icons.reply_outlined,
-          label: 'Reply',
+          label: 'Respond',
           onTap: () => context.push('/compose?replyTo=$postId'),
         ),
         pill(

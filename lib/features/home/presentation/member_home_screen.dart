@@ -185,7 +185,7 @@ class MemberHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
-    final feedAsync = ref.watch(feedProvider);
+    final worksAsync = ref.watch(feedProvider);
     final savedAsync = ref.watch(savedPostsProvider);
 
     final draftAsync = isAuthed
@@ -220,20 +220,20 @@ class MemberHomeScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s16),
-          feedAsync.when(
+          worksAsync.when(
             data: (posts) {
               final top = posts.take(6).toList();
 
               if (top.isEmpty) {
                 return AuraCard(
-                  child: Text('No posts yet.', style: AuraText.body),
+                  child: Text('No works yet.', style: AuraText.body),
                 );
               }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle(title: 'Latest'),
+                  const _SectionTitle(title: 'Works'),
                   const SizedBox(height: AuraSpace.s12),
                   ListView.separated(
                     shrinkWrap: true,
@@ -250,13 +250,11 @@ class MemberHomeScreen extends ConsumerWidget {
             },
             loading: () => const _LoadingCard(),
             error: (e, _) => AuraCard(
-              child: Text('Could not load feed: $e', style: AuraText.body),
+              child: Text('Could not load works: $e', style: AuraText.body),
             ),
           ),
           const SizedBox(height: AuraSpace.s18),
-          const _PinnedAnnouncementBanner(),
-          const SizedBox(height: AuraSpace.s18),
-          savedAsync.when(
+          const           savedAsync.when(
             data: (raw) {
               final posts = _coercePosts(raw);
 
@@ -266,7 +264,7 @@ class MemberHomeScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Saved posts',
+                        'Saved works',
                         style: AuraText.body.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -288,7 +286,7 @@ class MemberHomeScreen extends ConsumerWidget {
                     AuraCard(
                       onTap: () => context.push('/saved'),
                       child: Text(
-                        'Save something you want to return to. It will live here.',
+                        'Saved works live here.',
                         style: AuraText.body,
                       ),
                     ),
@@ -340,14 +338,14 @@ class _ComposerEntryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            hasDraft ? 'Continue writing' : 'Write something',
+            hasDraft ? 'Continue draft' : 'New work',
             style: AuraText.title,
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
             hasDraft
-                ? 'Your draft is waiting. Return to it with care.'
-                : 'Begin a post, a reflection, or a piece of correspondence.',
+                ? 'Return to the draft already in progress.'
+                : 'Start a new work.',
             style: AuraText.body,
           ),
         ],

@@ -21,7 +21,7 @@ class PublicHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(feedProvider);
+    final worksAsync = ref.watch(feedProvider);
 
     return AuraScaffold(
       body: Center(
@@ -35,19 +35,19 @@ class PublicHomeScreen extends ConsumerWidget {
               AuraSpace.s24,
             ),
             children: [
-              const _PublicEntryBand(),
-              const SizedBox(height: AuraSpace.s24),
+              const _PublicAccessBand(),
+              const SizedBox(height: AuraSpace.s20),
               const _SectionHeader(
-                title: 'Public record',
-                subtitle: 'Approved public posts.',
+                title: 'Works',
+                subtitle: 'Published works.',
               ),
               const SizedBox(height: AuraSpace.s12),
-              feedAsync.when(
+              worksAsync.when(
                 data: (posts) {
                   if (posts.isEmpty) {
                     return const AuraCard(
                       child: Text(
-                        'No public posts yet.',
+                        'No public works yet.',
                         style: AuraText.body,
                       ),
                     );
@@ -58,7 +58,7 @@ class PublicHomeScreen extends ConsumerWidget {
                   return Column(
                     children: [
                       for (final p in show) ...[
-                        _PublicPostPreview(post: p),
+                        _PublicWorkPreview(post: p),
                         const SizedBox(height: AuraSpace.s10),
                       ],
                       const SizedBox(height: AuraSpace.s6),
@@ -66,7 +66,7 @@ class PublicHomeScreen extends ConsumerWidget {
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton(
                           onPressed: () => context.go('/search'),
-                          child: const Text('See more'),
+                          child: const Text('More works'),
                         ),
                       ),
                     ],
@@ -75,7 +75,7 @@ class PublicHomeScreen extends ConsumerWidget {
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(
                   child: Text(
-                    'Could not load public feed yet. ($e)',
+                    'Could not load works right now. ($e)',
                     style: AuraText.body,
                   ),
                 ),
@@ -88,8 +88,8 @@ class PublicHomeScreen extends ConsumerWidget {
   }
 }
 
-class _PublicEntryBand extends StatelessWidget {
-  const _PublicEntryBand();
+class _PublicAccessBand extends StatelessWidget {
+  const _PublicAccessBand();
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +101,7 @@ class _PublicEntryBand extends StatelessWidget {
           return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _PublicHero(),
+              _PublicWorksHeader(),
               SizedBox(height: AuraSpace.s16),
               _AccessPanel(),
             ],
@@ -113,7 +113,7 @@ class _PublicEntryBand extends StatelessWidget {
           children: [
             Expanded(
               flex: 6,
-              child: _PublicHero(),
+              child: _PublicWorksHeader(),
             ),
             SizedBox(width: AuraSpace.s16),
             Expanded(
@@ -128,7 +128,7 @@ class _PublicEntryBand extends StatelessWidget {
 }
 
 class _PublicHero extends StatelessWidget {
-  const _PublicHero();
+  const _PublicWorksHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -211,18 +211,18 @@ class _AccessPanel extends StatelessWidget {
           _CompactAccessCard(
             title: 'Members',
             subtitle:
-                'Create a personal account or sign in to continue your work, correspondence, and activity.',
-            primaryLabel: 'Register',
-            primaryRoute: '/register',
-            secondaryLabel: 'Login',
-            secondaryRoute: '/login',
+                'Enter your member account.',
+            primaryLabel: 'Login',
+            primaryRoute: '/login',
+            secondaryLabel: 'Register',
+            secondaryRoute: '/register',
             icon: Icons.person_outline,
           ),
           SizedBox(height: AuraSpace.s12),
           _CompactAccessCard(
             title: 'Institutions',
             subtitle:
-                'Sign in to an existing institutional presence or begin the institutional account flow.',
+                'Enter an institutional account.',
             primaryLabel: 'Login',
             primaryRoute: '/institution/sign-in',
             secondaryLabel: 'Register',
@@ -251,7 +251,7 @@ class _AccessPanelHeader extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s8),
         Text(
-          'Use the right path for members or institutions.',
+          'Member and institutional entry.',
           style: AuraText.small.copyWith(
             color: AuraSurface.muted,
           ),
@@ -345,8 +345,8 @@ class _CompactAccessCard extends StatelessWidget {
   }
 }
 
-class _PublicPostPreview extends StatelessWidget {
-  const _PublicPostPreview({required this.post});
+class _PublicWorkPreview extends StatelessWidget {
+  const _PublicWorkPreview({required this.post});
   final Post post;
 
   @override
@@ -388,7 +388,7 @@ class _PublicPostPreview extends StatelessWidget {
               const SizedBox(width: AuraSpace.s10),
               Expanded(
                 child: Text(
-                  byline.isEmpty ? 'Public entry' : byline,
+                  byline.isEmpty ? 'Work' : byline,
                   style: AuraText.small.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
