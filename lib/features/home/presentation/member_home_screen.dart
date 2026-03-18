@@ -254,7 +254,7 @@ class MemberHomeScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s18),
-          const           savedAsync.when(
+          savedAsync.when(
             data: (raw) {
               final posts = _coercePosts(raw);
 

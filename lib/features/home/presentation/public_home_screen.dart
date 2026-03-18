@@ -127,7 +127,7 @@ class _PublicAccessBand extends StatelessWidget {
   }
 }
 
-class _PublicHero extends StatelessWidget {
+class _PublicWorksHeader extends StatelessWidget {
   const _PublicWorksHeader();
 
   @override
