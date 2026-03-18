@@ -9,6 +9,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
@@ -86,16 +87,23 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     super.initState();
     unawaited(_loadDirectory());
     _searchController.addListener(_handleSearchChanged);
+    _titleController.addListener(_onDetailsChanged);
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.removeListener(_handleSearchChanged);
+    _titleController.removeListener(_onDetailsChanged);
     _searchController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _onDetailsChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _handleSearchChanged() {
@@ -212,8 +220,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
       final sameUserId =
           wantedUserId.isNotEmpty && entry.userId.trim() == wantedUserId;
-      final sameHandle =
-          wantedHandle.isNotEmpty && entryHandle == wantedHandle;
+      final sameHandle = wantedHandle.isNotEmpty && entryHandle == wantedHandle;
       final sameName = wantedName.isNotEmpty &&
           entry.displayName.trim().toLowerCase() == wantedName;
 
@@ -335,7 +342,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return returnedThreadId;
     }
 
-    final existingThreads = await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
+    final existingThreads =
+        await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
     final preferredExistingThreadId = _pickPreferredThreadId(existingThreads);
     if (preferredExistingThreadId.isNotEmpty) {
       return preferredExistingThreadId;
@@ -366,7 +374,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return directId;
     }
 
-    final refreshedThreads = await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
+    final refreshedThreads =
+        await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
     final preferredRefreshedThreadId = _pickPreferredThreadId(refreshedThreads);
     if (preferredRefreshedThreadId.isNotEmpty) {
       return preferredRefreshedThreadId;
@@ -436,217 +445,271 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   Widget build(BuildContext context) {
     final filteredEntries = _filteredEntries;
     final pageTitle = _isSharedSpaceMode ? 'Create space' : 'New conversation';
-    final pageBody = _isSharedSpaceMode
-        ? 'Choose members, then define the shared space.'
-        : 'Choose one member to begin a private conversation.';
 
     return AuraScaffold(
       title: pageTitle,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          _PageIntro(
-            title: pageTitle,
-            body: pageBody,
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: 'Search members',
-                    suffixIcon: _searching
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : (_searchController.text.trim().isEmpty
-                            ? null
-                            : IconButton(
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {});
-                                },
-                                icon: const Icon(Icons.close),
-                              )),
-                  ),
-                ),
-                if (_selectedEntries.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s14),
-                  Wrap(
-                    spacing: AuraSpace.s8,
-                    runSpacing: AuraSpace.s8,
-                    children: [
-                      for (final entry in _selectedEntries)
-                        _SelectedEntryChip(
-                          label: entry.displayName,
-                          onRemoved: () => _removeSelected(entry.id),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s24,
             ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          if (_isSharedSpaceMode) ...[
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Space details', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  TextField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Space title',
-                      hintText: 'Research Circle, Studio, Family',
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  TextField(
-                    controller: _descriptionController,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      hintText: 'Optional context',
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  DropdownButtonFormField<String>(
-                    value: _spaceType,
-                    decoration: const InputDecoration(
-                      labelText: 'Space type',
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'CIRCLE',
-                        child: Text('Circle'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'STUDIO',
-                        child: Text('Studio'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _spaceType = value);
-                    },
-                  ),
-                ],
+            children: [
+              _LeadCard(
+                title: pageTitle,
+                subtitle: _isSharedSpaceMode
+                    ? 'Select members and set the space.'
+                    : 'Select one member.',
               ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-          ],
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Members', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                if (_loading)
-                  const _LoadingBlock(label: 'Loading members...')
-                else if (_loadError != null)
-                  _InlineErrorBlock(
-                    title: 'Could not load members',
-                    body: _loadError!,
-                    onRetry: _loadDirectory,
-                  )
-                else if (filteredEntries.isEmpty)
-                  Text(
-                    _searchController.text.trim().isEmpty
-                        ? 'No members available yet.'
-                        : 'No matches found.',
-                    style: AuraText.body,
-                  )
-                else
-                  Column(
-                    children: [
-                      for (var i = 0; i < filteredEntries.length; i++) ...[
-                        _DirectoryRow(
-                          entry: filteredEntries[i],
-                          selected: _selectedIds.contains(filteredEntries[i].id),
-                          allowMultiSelect: _isSharedSpaceMode,
-                          onTap: () => _toggleEntry(filteredEntries[i].id),
-                          onOpenProfile: filteredEntries[i].profileRoute == null
-                              ? null
-                              : () => context.push(filteredEntries[i].profileRoute!),
-                        ),
-                        if (i != filteredEntries.length - 1)
-                          const Divider(height: 1),
+              const SizedBox(height: AuraSpace.s16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = constraints.maxWidth < 860;
+                  final directory = _buildDirectoryCard(context, filteredEntries);
+                  final side = _buildSelectionRail(context);
+
+                  if (stacked) {
+                    return Column(
+                      children: [
+                        side,
+                        const SizedBox(height: AuraSpace.s14),
+                        directory,
                       ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 4, child: side),
+                      const SizedBox(width: AuraSpace.s14),
+                      Expanded(flex: 6, child: directory),
                     ],
-                  ),
-                if (_submitError != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(
+                  );
+                },
+              ),
+              const SizedBox(height: AuraSpace.s18),
+              if (_submitError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                  child: Text(
                     _submitError!,
                     style: AuraText.small.copyWith(
-                      color: Colors.red.shade700,
+                      color: AuraSurface.warnInk,
+                    ),
+                  ),
+                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _submitting ? null : () => context.pop(),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _canSubmit ? _submit : null,
+                      child: Text(
+                        _submitting
+                            ? (_isSharedSpaceMode ? 'Creating...' : 'Starting...')
+                            : (_isSharedSpaceMode
+                                ? 'Create space'
+                                : 'Start conversation'),
+                      ),
                     ),
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s18),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _submitting ? null : () => context.pop(),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _canSubmit ? _submit : null,
-                  child: Text(
-                    _submitting
-                        ? (_isSharedSpaceMode ? 'Creating...' : 'Starting...')
-                        : (_isSharedSpaceMode
-                            ? 'Create space'
-                            : 'Start conversation'),
-                  ),
-                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionRail(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isSharedSpaceMode ? 'Selection' : 'Conversation',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            _isSharedSpaceMode
+                ? '${_selectedMemberCount.toString()} selected'
+                : (_selectedEntries.isEmpty ? 'No member selected' : 'One member selected'),
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          if (_selectedEntries.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                for (final entry in _selectedEntries)
+                  _SelectedEntryChip(
+                    label: entry.displayName,
+                    onRemoved: () => _removeSelected(entry.id),
+                  ),
+              ],
+            ),
+          ],
+          if (_isSharedSpaceMode) ...[
+            const SizedBox(height: AuraSpace.s16),
+            Container(
+              height: 1,
+              color: AuraSurface.divider,
+            ),
+            const SizedBox(height: AuraSpace.s16),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            TextField(
+              controller: _descriptionController,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            DropdownButtonFormField<String>(
+              value: _spaceType,
+              decoration: const InputDecoration(
+                labelText: 'Type',
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'CIRCLE',
+                  child: Text('Circle'),
+                ),
+                DropdownMenuItem(
+                  value: 'STUDIO',
+                  child: Text('Studio'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _spaceType = value);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDirectoryCard(
+    BuildContext context,
+    List<_DirectoryEntry> filteredEntries,
+  ) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Members',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Search members',
+              suffixIcon: _searching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : (_searchController.text.trim().isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.close),
+                        )),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          if (_loading)
+            const _LoadingBlock(label: 'Loading members...')
+          else if (_loadError != null)
+            _InlineErrorBlock(
+              title: 'Could not load members',
+              body: _loadError!,
+              onRetry: _loadDirectory,
+            )
+          else if (filteredEntries.isEmpty)
+            Text(
+              _searchController.text.trim().isEmpty
+                  ? 'No members available.'
+                  : 'No matches found.',
+              style: AuraText.body,
+            )
+          else
+            Column(
+              children: [
+                for (var i = 0; i < filteredEntries.length; i++) ...[
+                  _DirectoryRow(
+                    entry: filteredEntries[i],
+                    selected: _selectedIds.contains(filteredEntries[i].id),
+                    allowMultiSelect: _isSharedSpaceMode,
+                    onTap: () => _toggleEntry(filteredEntries[i].id),
+                    onOpenProfile: filteredEntries[i].profileRoute == null
+                        ? null
+                        : () => context.push(filteredEntries[i].profileRoute!),
+                  ),
+                  if (i != filteredEntries.length - 1)
+                    const Divider(height: 1),
+                ],
+              ],
+            ),
         ],
       ),
     );
   }
 }
 
-class _PageIntro extends StatelessWidget {
-  const _PageIntro({
-    required this.title,
-    required this.body,
-  });
+class _LeadCard extends StatelessWidget {
+  const _LeadCard({required this.title, required this.subtitle});
 
   final String title;
-  final String body;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AuraText.title),
-        const SizedBox(height: AuraSpace.s6),
-        Text(body, style: AuraText.body),
-      ],
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            subtitle,
+            style: AuraText.body.copyWith(color: AuraSurface.muted),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -703,13 +766,16 @@ class _DirectoryRow extends StatelessWidget {
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s4),
-                  Text(entry.subtitle, style: AuraText.small),
+                  Text(
+                    entry.subtitle,
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
                 ],
               ),
             ),
             if (onOpenProfile != null)
               IconButton(
-                tooltip: 'Open',
+                tooltip: 'Open profile',
                 onPressed: onOpenProfile,
                 icon: const Icon(Icons.north_east, size: 18),
               ),
@@ -738,7 +804,8 @@ class _SelectedEntryChip extends StatelessWidget {
         vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
+        color: AuraSurface.elevated,
+        border: Border.all(color: AuraSurface.divider),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
