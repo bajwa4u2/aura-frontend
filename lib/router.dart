@@ -22,6 +22,7 @@ import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
+import 'features/conversations/presentation/conversations_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
@@ -143,6 +144,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/search' ||
         path == '/saved' ||
         path == '/updates' ||
+        path == '/conversations' ||
         path == '/activity' ||
         path == '/create' ||
         path == '/announcements/create' ||
@@ -399,6 +401,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
+          GoRoute(
+            path: '/conversations',
+            builder: (_, __) => const ConversationsScreen(),
+          ),
           GoRoute(
             path: '/activity',
             builder: (_, __) => const ActivityScreen(),

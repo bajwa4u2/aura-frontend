@@ -38,10 +38,10 @@ class AppShell extends StatelessWidget {
       isPrimary: true,
     ),
     _MemberNavItem(
-      label: 'Activity',
-      icon: Icons.notifications_none,
-      selectedIcon: Icons.notifications,
-      path: '/activity',
+      label: 'Conversations',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum,
+      path: '/conversations',
     ),
     _MemberNavItem(
       label: 'Me',
@@ -68,7 +68,7 @@ class AppShell extends StatelessWidget {
 
     if (path == '/compose' || path == '/create') return 2;
 
-    if (path == '/activity') return 3;
+    if (path == '/conversations') return 3;
 
     if (path == '/me' || path.startsWith('/me/')) return 4;
 
