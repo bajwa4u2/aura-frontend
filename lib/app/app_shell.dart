@@ -19,7 +19,7 @@ class AppShell extends StatelessWidget {
 
   static const List<_MemberNavItem> _items = [
     _MemberNavItem(
-      label: 'Home',
+      label: 'Works',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
       path: '/home',
@@ -44,7 +44,7 @@ class AppShell extends StatelessWidget {
       path: '/conversations',
     ),
     _MemberNavItem(
-      label: 'Me',
+      label: 'Presence',
       icon: Icons.person_outline,
       selectedIcon: Icons.person,
       path: '/me',
