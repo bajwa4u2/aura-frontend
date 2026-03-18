@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import 'notifications_repository.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -15,16 +19,34 @@ class ActivityScreen extends ConsumerStatefulWidget {
 }
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
+  static const _pageSize = 24;
+  static const _pollInterval = Duration(seconds: 8);
+
   bool _loading = true;
+  bool _loadingMore = false;
   bool _markingAllRead = false;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
   String? _nextCursor;
+  Timer? _pollTimer;
+
+  NotificationsRepository get _repo =>
+      NotificationsRepository(ref.read(dioProvider));
 
   @override
   void initState() {
     super.initState();
     _loadInitial();
+    _pollTimer = Timer.periodic(_pollInterval, (_) {
+      if (!mounted || _loading || _loadingMore || _markingAllRead) return;
+      _refreshSilently();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadInitial() async {
@@ -34,17 +56,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     });
 
     try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.get('/notifications');
-      final payload = _normalizePayload(response.data);
+      _repo.clearCache();
+      final items = await _repo.list(limit: _pageSize, forceRefresh: true);
+      final nextCursor = await _repo.nextCursor(limit: _pageSize);
 
       if (!mounted) return;
       setState(() {
-        _items = payload.items;
-        _nextCursor = payload.nextCursor;
+        _items = items;
+        _nextCursor = nextCursor;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Unable to load activity right now.';
@@ -53,34 +75,79 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     }
   }
 
+  Future<void> _refreshSilently() async {
+    try {
+      _repo.clearCache();
+      final items = await _repo.list(limit: _pageSize, forceRefresh: true);
+      final nextCursor = await _repo.nextCursor(limit: _pageSize);
+      if (!mounted) return;
+      setState(() {
+        _items = _mergeIncoming(current: _items, incoming: items);
+        _nextCursor = nextCursor;
+      });
+    } catch (_) {}
+  }
+
   Future<void> _loadMore() async {
     final cursor = _nextCursor;
-    if (cursor == null || cursor.isEmpty) return;
+    if (_loadingMore || cursor == null || cursor.isEmpty) return;
+
+    setState(() => _loadingMore = true);
 
     try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.get(
-        '/notifications',
-        queryParameters: {'cursor': cursor},
+      final items = await _repo.list(
+        limit: _pageSize,
+        cursor: cursor,
+        forceRefresh: true,
       );
-      final payload = _normalizePayload(response.data);
-      final existingIds = _items.map((e) => _stringOf(e['id'])).where((e) => e.isNotEmpty).toSet();
-      final merged = <Map<String, dynamic>>[..._items];
-
-      for (final item in payload.items) {
-        final id = _stringOf(item['id']);
-        if (id.isEmpty || existingIds.contains(id)) continue;
-        merged.add(item);
-      }
+      final nextCursor = await _repo.nextCursor(
+        limit: _pageSize,
+        cursor: cursor,
+      );
 
       if (!mounted) return;
       setState(() {
-        _items = merged;
-        _nextCursor = payload.nextCursor;
+        _items = _mergeIncoming(current: _items, incoming: items, append: true);
+        _nextCursor = nextCursor;
       });
-    } catch (_) {
-      // Keep the current list stable. We do not collapse the screen for pagination failure.
+    } finally {
+      if (mounted) {
+        setState(() => _loadingMore = false);
+      }
     }
+  }
+
+  List<Map<String, dynamic>> _mergeIncoming({
+    required List<Map<String, dynamic>> current,
+    required List<Map<String, dynamic>> incoming,
+    bool append = false,
+  }) {
+    final byId = <String, Map<String, dynamic>>{};
+
+    if (append) {
+      for (final item in current) {
+        final id = _stringOf(item['id']);
+        if (id.isNotEmpty) byId[id] = item;
+      }
+      for (final item in incoming) {
+        final id = _stringOf(item['id']);
+        if (id.isEmpty) continue;
+        byId[id] = item;
+      }
+      return byId.values.toList(growable: false);
+    }
+
+    for (final item in incoming) {
+      final id = _stringOf(item['id']);
+      if (id.isEmpty) continue;
+      byId[id] = item;
+    }
+    for (final item in current) {
+      final id = _stringOf(item['id']);
+      if (id.isEmpty || byId.containsKey(id)) continue;
+      byId[id] = item;
+    }
+    return byId.values.toList(growable: false);
   }
 
   Future<void> _markAllRead() async {
@@ -89,16 +156,15 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     setState(() => _markingAllRead = true);
 
     try {
-      final dio = ref.read(dioProvider);
-      await dio.post('/notifications/read-all');
-
+      await _repo.markAllRead();
       if (!mounted) return;
+      final now = DateTime.now().toIso8601String();
       setState(() {
         _items = _items
             .map(
               (item) => {
                 ...item,
-                'readAt': item['readAt'] ?? DateTime.now().toIso8601String(),
+                'readAt': _stringOf(item['readAt']).isEmpty ? now : item['readAt'],
               },
             )
             .toList(growable: false);
@@ -117,12 +183,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   Future<void> _handleTap(Map<String, dynamic> item) async {
     final id = _stringOf(item['id']);
-    final readAt = item['readAt'];
-
-    if (id.isNotEmpty && (readAt == null || _stringOf(readAt).isEmpty)) {
+    if (id.isNotEmpty && _stringOf(item['readAt']).isEmpty) {
       try {
-        final dio = ref.read(dioProvider);
-        await dio.post('/notifications/$id/read');
+        await _repo.markRead(id);
         if (mounted) {
           setState(() {
             _items = _items
@@ -137,11 +200,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 .toList(growable: false);
           });
         }
-      } catch (_) {
-        // Navigation should still proceed.
-      }
+      } catch (_) {}
     }
-
     if (!mounted) return;
     _navigateFromActivity(item);
   }
@@ -178,9 +238,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return;
       case 'FOLLOW_ACCEPTED':
       case 'FOLLOW':
-        if (handle.isNotEmpty) {
-          context.push('/u/$handle');
-        }
+        if (handle.isNotEmpty) context.push('/u/$handle');
         return;
       case 'LIKE':
       case 'REPLY':
@@ -191,34 +249,21 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           context.push('/posts/$postId');
           return;
         }
-        if (handle.isNotEmpty) {
-          context.push('/u/$handle');
-        }
+        if (handle.isNotEmpty) context.push('/u/$handle');
         return;
       case 'POST_PUBLISH_FAILED':
-        context.push('/me');
+        context.push('/presence');
         return;
       case 'SPACE_INVITE':
       case 'INVITE_ACCEPTED':
-        if (spaceId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId');
-        }
+        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
         return;
       case 'THREAD_INVITE':
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {
           context.push('/me/correspondence/$spaceId/thread/$threadId');
           return;
         }
-        if (spaceId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId');
-        }
-        return;
-      case 'SYSTEM':
-        if (postId.isNotEmpty) {
-          context.push('/posts/$postId');
-          return;
-        }
-        context.push('/me');
+        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
         return;
       default:
         if (postId.isNotEmpty) {
@@ -233,16 +278,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           context.push('/me/correspondence/$spaceId/thread/$threadId');
           return;
         }
-        if (spaceId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId');
-        }
+        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AuraSurface.page,
+    final unreadCount = _items.where((item) => _stringOf(item['readAt']).isEmpty).length;
+
+    return AuraScaffold(
+      showHeader: false,
       body: SafeArea(
         bottom: false,
         child: Center(
@@ -259,6 +304,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 ),
                 children: [
                   _ActivityHeader(
+                    unreadCount: unreadCount,
                     onMarkAllRead: _items.isEmpty ? null : _markAllRead,
                     markingAllRead: _markingAllRead,
                   ),
@@ -282,8 +328,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       const SizedBox(height: AuraSpace.s16),
                       Center(
                         child: OutlinedButton(
-                          onPressed: _loadMore,
-                          child: const Text('Load more'),
+                          onPressed: _loadingMore ? null : _loadMore,
+                          child: Text(_loadingMore ? 'Loading…' : 'Load more'),
                         ),
                       ),
                     ],
@@ -296,35 +342,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       ),
     );
   }
-}
-
-class _ActivityPayload {
-  const _ActivityPayload({
-    required this.items,
-    required this.nextCursor,
-  });
-
-  final List<Map<String, dynamic>> items;
-  final String? nextCursor;
-}
-
-_ActivityPayload _normalizePayload(dynamic raw) {
-  final map = _mapOf(raw);
-  final rawItems = map['items'];
-  final items = <Map<String, dynamic>>[];
-
-  if (rawItems is List) {
-    for (final entry in rawItems) {
-      final normalized = _mapOf(entry);
-      if (normalized.isNotEmpty) items.add(normalized);
-    }
-  }
-
-  final nextCursor = _stringOf(map['nextCursor']);
-  return _ActivityPayload(
-    items: items,
-    nextCursor: nextCursor.isEmpty ? null : nextCursor,
-  );
 }
 
 Map<String, dynamic> _mapOf(dynamic value) {
@@ -349,10 +366,12 @@ String _firstNonEmpty(List<String> values) {
 
 class _ActivityHeader extends StatelessWidget {
   const _ActivityHeader({
+    required this.unreadCount,
     required this.onMarkAllRead,
     required this.markingAllRead,
   });
 
+  final int unreadCount;
   final VoidCallback? onMarkAllRead;
   final bool markingAllRead;
 
@@ -365,24 +384,11 @@ class _ActivityHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('Activity', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s6),
               Text(
-                'Activity',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AuraSurface.ink,
-                      fontWeight: FontWeight.w700,
-                    ) ??
-                    const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: AuraSurface.ink,
-                    ),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                'Signals around your writing, presence, and correspondence.',
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
-                ),
+                unreadCount > 0 ? '$unreadCount unread' : 'All caught up',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
               ),
             ],
           ),
@@ -411,8 +417,6 @@ class _ActivityLoadingState extends StatelessWidget {
             height: 28,
             child: CircularProgressIndicator(strokeWidth: 2.4),
           ),
-          SizedBox(height: AuraSpace.s16),
-          _MutedBodyText('Loading activity…'),
         ],
       ),
     );
@@ -434,18 +438,11 @@ class _ActivityErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 28,
-            color: AuraSurface.muted,
-          ),
+          const Icon(Icons.error_outline, size: 28, color: AuraSurface.muted),
           const SizedBox(height: AuraSpace.s12),
-          _MutedBodyText(message),
+          Text(message, style: AuraText.small.copyWith(color: AuraSurface.muted)),
           const SizedBox(height: AuraSpace.s16),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text('Try again'),
-          ),
+          OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
         ],
       ),
     );
@@ -460,18 +457,10 @@ class _ActivityEmptyState extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
-        children: const [
-          Icon(
-            Icons.notifications_none,
-            size: 32,
-            color: AuraSurface.muted,
-          ),
-          SizedBox(height: AuraSpace.s12),
-          _MutedBodyText('No activity yet.'),
-          SizedBox(height: AuraSpace.s8),
-          _MutedCaptionText(
-            'Replies, follows, invitations, and publishing events will appear here.',
-          ),
+        children: [
+          const Icon(Icons.notifications_none, size: 32, color: AuraSurface.muted),
+          const SizedBox(height: AuraSpace.s12),
+          Text('No activity yet.', style: AuraText.small.copyWith(color: AuraSurface.muted)),
         ],
       ),
     );
@@ -502,9 +491,7 @@ class _ActivityTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: AuraSpace.s14),
         decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: AuraSurface.divider),
-          ),
+          border: Border(bottom: BorderSide(color: AuraSurface.divider)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,9 +517,7 @@ class _ActivityTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                      ),
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
                     ),
                   ],
                 ],
@@ -542,12 +527,7 @@ class _ActivityTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  timeLabel,
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                  ),
-                ),
+                Text(timeLabel, style: AuraText.small.copyWith(color: AuraSurface.muted)),
                 if (unread) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -631,11 +611,7 @@ class _ActivityLeadingIcon extends StatelessWidget {
                     ),
                   ),
                 )
-              : Icon(
-                  _iconForType(),
-                  size: 18,
-                  color: AuraSurface.ink,
-                ),
+              : Icon(_iconForType(), size: 18, color: AuraSurface.ink),
         ),
         if (unread)
           Positioned(
@@ -647,10 +623,7 @@ class _ActivityLeadingIcon extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AuraSurface.ink,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: AuraSurface.page,
-                  width: 1.5,
-                ),
+                border: Border.all(color: AuraSurface.page, width: 1.5),
               ),
             ),
           ),
@@ -677,11 +650,11 @@ String _buildTitle(Map<String, dynamic> item) {
     case 'FOLLOW':
       return '$actorName followed you';
     case 'LIKE':
-      return '$actorName appreciated your post';
+      return '$actorName appreciated your work';
     case 'REPLY':
-      return '$actorName replied to your post';
+      return '$actorName replied to your work';
     case 'REPOST':
-      return '$actorName reposted your post';
+      return '$actorName reposted your work';
     case 'MENTION':
       return '$actorName mentioned you';
     case 'SPACE_INVITE':
@@ -691,9 +664,9 @@ String _buildTitle(Map<String, dynamic> item) {
     case 'INVITE_ACCEPTED':
       return '$actorName accepted your invitation';
     case 'POST_PUBLISHED':
-      return 'Your post was published';
+      return 'Your work was published';
     case 'POST_PUBLISH_FAILED':
-      return 'A post could not be published';
+      return 'A work could not be published';
     case 'SYSTEM':
       final title = _stringOf(data['title']);
       return title.isNotEmpty ? title : 'System activity';
@@ -722,13 +695,13 @@ String _buildSubtitle(Map<String, dynamic> item) {
       return 'Open requests';
     case 'FOLLOW_ACCEPTED':
     case 'FOLLOW':
-      return 'View profile';
+      return 'Open profile';
     case 'REPLY':
     case 'LIKE':
     case 'REPOST':
     case 'MENTION':
     case 'POST_PUBLISHED':
-      return 'Open post';
+      return 'Open work';
     case 'SPACE_INVITE':
       return 'Open space';
     case 'THREAD_INVITE':
@@ -736,7 +709,7 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'INVITE_ACCEPTED':
       return 'Open correspondence';
     case 'POST_PUBLISH_FAILED':
-      return 'Return to your profile';
+      return 'Return to presence';
     default:
       return '';
   }
@@ -751,13 +724,10 @@ String _truncate(String value, int max) {
 String _timeAgoLabel(dynamic raw) {
   final value = _stringOf(raw);
   if (value.isEmpty) return '';
-
   final createdAt = DateTime.tryParse(value)?.toLocal();
   if (createdAt == null) return '';
-
   final now = DateTime.now();
   final diff = now.difference(createdAt);
-
   if (diff.inSeconds < 60) return 'now';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m';
   if (diff.inHours < 24) return '${diff.inHours}h';
@@ -765,39 +735,4 @@ String _timeAgoLabel(dynamic raw) {
   if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w';
   if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
   return '${(diff.inDays / 365).floor()}y';
-}
-
-class _MutedBodyText extends StatelessWidget {
-  const _MutedBodyText(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: AuraText.small.copyWith(
-        color: AuraSurface.muted,
-      ),
-    );
-  }
-}
-
-class _MutedCaptionText extends StatelessWidget {
-  const _MutedCaptionText(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: AuraText.small.copyWith(
-        color: AuraSurface.muted,
-        height: 1.45,
-      ),
-    );
-  }
 }
