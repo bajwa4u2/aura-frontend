@@ -28,7 +28,7 @@ dependencies:
   # Media + file picking
   image_picker: ^1.1.2
   file_picker: ^8.0.0
-  record: ^5.1.2
+  record: ^5.2.1
   cached_network_image: ^3.3.1
   video_player: ^2.11.1
 
