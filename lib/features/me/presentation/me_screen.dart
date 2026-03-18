@@ -14,6 +14,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
+  // Presence surface kept under existing route/widget contract for compatibility.
   const MeScreen({super.key});
 
   @override
@@ -127,13 +128,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = _readApiError(e, fallback: 'Could not load your workspace.');
+        _error = _readApiError(e, fallback: 'Could not load your presence.');
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Could not load your workspace.';
+        _error = 'Could not load your presence.';
         _loading = false;
       });
     }
@@ -611,7 +612,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      title: 'Me',
+      title: 'Presence',
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -674,15 +675,15 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final websiteUrl = _websiteText(user);
     final websiteLabel = _websiteLabel(websiteUrl);
 
-    final displayTitle = displayName.isNotEmpty ? displayName : 'Profile';
+    final displayTitle = displayName.isNotEmpty ? displayName : 'Presence';
     final displayHandle = handle;
     final meta = <Widget>[
       if (locationText.isNotEmpty) _metaChip(label: locationText),
       if (websiteLabel.isNotEmpty) _metaChip(label: websiteLabel),
       if (_incomingRequestsCount > 0)
-        _metaChip(label: 'Requests $_incomingRequestsCount'),
+        _metaChip(label: 'Incoming $_incomingRequestsCount'),
       if (_outgoingRequestsCount > 0)
-        _metaChip(label: 'Sent $_outgoingRequestsCount'),
+        _metaChip(label: 'Outgoing $_outgoingRequestsCount'),
     ];
 
     return ListView(
@@ -709,7 +710,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   trailingMeta: meta,
                   actions: [
                     PresenceHeaderAction(
-                      label: 'Edit profile',
+                      label: 'Edit presence',
                       icon: Icons.edit_outlined,
                       primary: true,
                       onTap: () async {
@@ -732,38 +733,33 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Personal',
+                  title: 'Identity',
                   children: [
                     if (handle.isNotEmpty)
                       _item(
-                        label: 'View public profile',
+                        label: 'View public presence',
                         icon: Icons.visibility_outlined,
                         subtitle: '@$handle',
                         onTap: () => context.push('/u/$handle'),
                       ),
                     _item(
-                      label: 'Compose',
+                      label: 'Create',
                       icon: Icons.edit_note_outlined,
                       onTap: () => context.push('/compose'),
-                    ),
-                    _item(
-                      label: 'Saved',
-                      icon: Icons.bookmark_border_outlined,
-                      onTap: () => context.push('/saved'),
                     ),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Correspondence',
+                  title: 'Reach',
                   children: [
                     _item(
-                      label: 'Correspondence hub',
+                      label: 'Open correspondence',
                       icon: Icons.forum_outlined,
                       onTap: () => context.push('/me/correspondence'),
                     ),
                     _item(
-                      label: 'New conversation',
+                      label: 'Begin conversation',
                       icon: Icons.chat_bubble_outline,
                       onTap: () =>
                           context.push('/me/correspondence/create/conversation'),
@@ -778,7 +774,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Institution',
+                  title: 'Institutional standing',
                   children: [
                     _item(
                       label: 'Dashboard',
@@ -815,37 +811,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Platform',
+                  title: 'Connected accounts',
                   children: [
                     _linkedinBlock(),
                     _tiktokBlock(),
-                    _item(
-                      label: 'Announcements workspace',
-                      icon: Icons.campaign_outlined,
-                      onTap: () => context.push('/announcements'),
-                    ),
-                    _item(
-                      label: 'Create announcement',
-                      icon: Icons.add_circle_outline,
-                      onTap: () => context.push('/create'),
-                    ),
-                    _item(
-                      label: 'Updates',
-                      icon: Icons.notifications_none_outlined,
-                      onTap: () => context.push('/updates'),
-                    ),
-                    _item(
-                      label: 'Institution approvals',
-                      icon: Icons.approval_outlined,
-                      subtitle: 'Place route when ready',
-                      onTap: null,
-                    ),
-                    _item(
-                      label: 'Contact CRM',
-                      icon: Icons.perm_contact_calendar_outlined,
-                      subtitle: 'Place route when ready',
-                      onTap: null,
-                    ),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.lg),
@@ -856,16 +825,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       label: 'Security',
                       icon: Icons.lock_outline,
                       onTap: () => context.push('/security'),
-                    ),
-                    _item(
-                      label: 'Activity',
-                      icon: Icons.notifications_none_outlined,
-                      onTap: () => context.push('/updates'),
-                    ),
-                    _item(
-                      label: 'Search',
-                      icon: Icons.search,
-                      onTap: () => context.push('/search'),
                     ),
                   ],
                 ),
@@ -1077,13 +1036,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             onTap: handle.isEmpty ? null : () => context.push('/u/$handle/following'),
           ),
           _summaryButton(
-            label: 'Requests',
+            label: 'Incoming',
             value: _incomingRequestsCount,
             onTap: () => context.push('/me/follow-requests'),
           ),
           if (_outgoingRequestsCount > 0)
             _summaryButton(
-              label: 'Sent',
+              label: 'Outgoing',
               value: _outgoingRequestsCount,
               onTap: () => context.push('/me/follow-requests'),
             ),
@@ -1551,4 +1510,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     return '$baseOrigin/$value';
   }
+}
+
+class PresenceScreen extends MeScreen {
+  const PresenceScreen({super.key});
 }

@@ -96,7 +96,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final fallback = '${_firstName.trim()} ${_lastName.trim()}'.trim();
     if (fallback.isNotEmpty) return fallback;
     if (_handle.trim().isNotEmpty) return _handle.trim();
-    return 'Profile';
+    return 'Presence';
   }
 
   String get _bio => _bioController.text.trim();
@@ -369,7 +369,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated')),
+        const SnackBar(content: Text('Presence updated')),
       );
     } on DioException catch (e) {
       if (!mounted) return;
@@ -424,13 +424,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return AuraScaffold(
-        title: 'Profile',
+        title: 'Edit presence',
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return AuraScaffold(
-      title: 'Profile',
+      title: 'Edit presence',
       body: Stack(
         children: [
           ListView(
