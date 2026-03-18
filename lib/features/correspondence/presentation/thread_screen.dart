@@ -126,6 +126,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     ),
                     data: (thread) => _ThreadHeaderCard(
                       thread: thread,
+                      onOpenSpace: () {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        context.push('/me/correspondence/$spaceId');
+                      },
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
@@ -240,9 +245,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
+    required this.onOpenSpace,
   });
 
   final Map<String, dynamic> thread;
+  final VoidCallback onOpenSpace;
 
   @override
   Widget build(BuildContext context) {

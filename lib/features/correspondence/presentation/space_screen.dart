@@ -105,8 +105,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
         title: 'Space',
         body: RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(_spaceDetailProvider(spaceId));
-            ref.invalidate(_threadsProvider(spaceId));
+            ref.invalidate(_spaceDetailProvider(widget.spaceId));
+            ref.invalidate(_threadsProvider(widget.spaceId));
             ref.invalidate(_invitesProvider(spaceId));
             await Future.wait([
               ref.read(_spaceDetailProvider(spaceId).future),
@@ -188,17 +188,17 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   Future<void> _showCreateThreadDialog(BuildContext context, WidgetRef ref) async {
     final created = await showDialog<bool>(
       context: context,
-      builder: (_) => _CreateThreadDialog(spaceId: spaceId),
+      builder: (_) => _CreateThreadDialog(spaceId: widget.spaceId),
     );
 
     if (created == true) {
-      ref.invalidate(_threadsProvider(spaceId));
-      ref.invalidate(_spaceDetailProvider(spaceId));
+      ref.invalidate(_threadsProvider(widget.spaceId));
+      ref.invalidate(_spaceDetailProvider(widget.spaceId));
     }
   }
 
   Future<void> _openInviteScreen(BuildContext context) async {
-    await context.push('/me/correspondence/$spaceId/invite');
+    await context.push('/me/correspondence/${widget.spaceId}/invite');
   }
 }
 
