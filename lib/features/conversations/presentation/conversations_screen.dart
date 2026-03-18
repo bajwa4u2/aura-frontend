@@ -324,7 +324,7 @@ class _ConversationRow extends StatelessWidget {
                     ],
                   ),
                   if (item.preview.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s5),
+                    const SizedBox(height: AuraSpace.s6),
                     Text(
                       item.preview,
                       maxLines: 2,
