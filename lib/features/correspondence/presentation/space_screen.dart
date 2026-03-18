@@ -49,16 +49,55 @@ final _invitesProvider = FutureProvider.family<List<Map<String, dynamic>>, Strin
   },
 );
 
-class SpaceScreen extends ConsumerWidget {
+class SpaceScreen extends ConsumerStatefulWidget {
   const SpaceScreen({super.key, required this.spaceId});
 
   final String spaceId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SpaceScreen> createState() => _SpaceScreenState();
+}
+
+class _SpaceScreenState extends ConsumerState<SpaceScreen> {
+  bool _redirectingToThread = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final spaceId = widget.spaceId;
+    final ref = this.ref;
     final spaceAsync = ref.watch(_spaceDetailProvider(spaceId));
     final threadsAsync = ref.watch(_threadsProvider(spaceId));
     final invitesAsync = ref.watch(_invitesProvider(spaceId));
+
+    final spaceData = spaceAsync.valueOrNull;
+    final threadsData = threadsAsync.valueOrNull;
+    final isPrivateSpace = _pickString(
+          spaceData ?? const <String, dynamic>{},
+          const ['type'],
+        ).toUpperCase() == 'PRIVATE';
+
+    if (!_redirectingToThread &&
+        isPrivateSpace &&
+        threadsData != null &&
+        threadsData.length == 1) {
+      final threadId = _pickString(threadsData.first, const ['id', 'threadId']);
+      if (threadId.isNotEmpty) {
+        _redirectingToThread = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.go('/me/correspondence/$spaceId/thread/$threadId');
+        });
+      }
+    }
+
+    if (_redirectingToThread) {
+      return AuraScaffold(
+        title: 'Conversation',
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return DefaultTabController(
       length: 4,
@@ -93,9 +132,6 @@ class SpaceScreen extends ConsumerWidget {
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
                   onInviteMember: () => _openInviteScreen(context),
-                  onNewConversation: () => context.push(
-                    '/me/correspondence/create/conversation',
-                  ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
@@ -490,13 +526,11 @@ class _SpaceHeaderCard extends StatelessWidget {
     required this.space,
     required this.onCreateThread,
     required this.onInviteMember,
-    required this.onNewConversation,
   });
 
   final Map<String, dynamic> space;
   final VoidCallback onCreateThread;
   final VoidCallback onInviteMember;
-  final VoidCallback onNewConversation;
 
   @override
   Widget build(BuildContext context) {
@@ -549,10 +583,7 @@ class _SpaceHeaderCard extends StatelessWidget {
                 onPressed: onInviteMember,
                 child: const Text('Invite member'),
               ),
-              OutlinedButton(
-                onPressed: onNewConversation,
-                child: const Text('New conversation'),
-              ),
+  
             ],
           ),
         ],

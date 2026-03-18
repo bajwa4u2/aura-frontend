@@ -13,23 +13,11 @@ class SpacesRepository {
 
   final Dio _dio;
 
-  List<Map<String, dynamic>>? _cachedSpaces;
-  DateTime? _cacheTime;
-
-  static const Duration _cacheTTL = Duration(seconds: 30);
-
   Future<List<Map<String, dynamic>>> listMySpaces({
     int limit = 50,
     String? cursor,
-    bool forceRefresh = false,
+    bool forceRefresh = true,
   }) async {
-    if (!forceRefresh &&
-        _cachedSpaces != null &&
-        _cacheTime != null &&
-        DateTime.now().difference(_cacheTime!) < _cacheTTL) {
-      return _cachedSpaces!;
-    }
-
     final res = await _dio.get(
       '/spaces',
       queryParameters: {
@@ -46,9 +34,6 @@ class SpacesRepository {
     );
 
     final spaces = items.map(_asMap).toList();
-
-    _cachedSpaces = spaces;
-    _cacheTime = DateTime.now();
 
     return spaces;
   }
@@ -74,8 +59,6 @@ class SpacesRepository {
 
     final res = await _dio.post('/spaces', data: body);
 
-    _invalidateCache();
-
     return _unwrapData(res.data);
   }
 
@@ -92,8 +75,6 @@ class SpacesRepository {
     };
 
     final res = await _dio.patch('/spaces/$spaceId', data: body);
-
-    _invalidateCache();
 
     return _unwrapData(res.data);
   }
@@ -141,11 +122,8 @@ class SpacesRepository {
     await _dio.delete('/invites/$inviteId');
   }
 
-  void _invalidateCache() {
-    _cachedSpaces = null;
-    _cacheTime = null;
-  }
 }
+
 
 Map<String, dynamic> _unwrapData(dynamic raw) {
   final root = _asMap(raw);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -18,6 +19,18 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
+
+final _threadOpenProvider = FutureProvider.family<void, String>((
+  ref,
+  threadId,
+) async {
+  final repo = ref.watch(threadsRepositoryProvider);
+  try {
+    await repo.markThreadRead(threadId);
+  } catch (_) {
+    // best-effort
+  }
+});
 
 final _threadDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, threadId) async {
@@ -40,13 +53,40 @@ final _currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return _unwrapResponseMap(res.data);
 });
 
-class ThreadScreen extends ConsumerWidget {
+class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
   final String threadId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ThreadScreen> createState() => _ThreadScreenState();
+}
+
+class _ThreadScreenState extends ConsumerState<ThreadScreen> {
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      ref.invalidate(_threadDetailProvider(widget.threadId));
+      ref.invalidate(_messagesProvider(widget.threadId));
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final threadId = widget.threadId;
+
+    ref.watch(_threadOpenProvider(threadId));
+
     final threadAsync = ref.watch(_threadDetailProvider(threadId));
     final messagesAsync = ref.watch(_messagesProvider(threadId));
     final meAsync = ref.watch(_currentUserProvider);
@@ -58,10 +98,12 @@ class ThreadScreen extends ConsumerWidget {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
+                ref.invalidate(_threadOpenProvider(threadId));
                 ref.invalidate(_threadDetailProvider(threadId));
                 ref.invalidate(_messagesProvider(threadId));
                 ref.invalidate(_currentUserProvider);
                 await Future.wait([
+                  ref.read(_threadOpenProvider(threadId).future),
                   ref.read(_threadDetailProvider(threadId).future),
                   ref.read(_messagesProvider(threadId).future),
                   ref.read(_currentUserProvider.future),
@@ -84,14 +126,6 @@ class ThreadScreen extends ConsumerWidget {
                     ),
                     data: (thread) => _ThreadHeaderCard(
                       thread: thread,
-                      onOpenSpace: () {
-                        final spaceId = _pickString(
-                          thread,
-                          const ['spaceId', 'space_id'],
-                        );
-                        if (spaceId.isEmpty) return;
-                        context.push('/me/correspondence/$spaceId');
-                      },
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
@@ -118,7 +152,7 @@ class ThreadScreen extends ConsumerWidget {
                               Text('No messages yet', style: AuraText.title),
                               SizedBox(height: AuraSpace.s8),
                               Text(
-                                'This thread has not started yet.',
+                                'Nothing has been said here yet.',
                                 style: AuraText.body,
                               ),
                             ],
@@ -159,7 +193,8 @@ class ThreadScreen extends ConsumerWidget {
                                 await ref
                                     .read(messagesRepositoryProvider)
                                     .deleteMessage(messageId);
-                                ref.invalidate(_messagesProvider(threadId));
+                                ref.invalidate(_threadDetailProvider(widget.threadId));
+                                ref.invalidate(_messagesProvider(widget.threadId));
                               },
                             ),
                             if (i != messages.length - 1)
@@ -176,7 +211,8 @@ class ThreadScreen extends ConsumerWidget {
           _ComposerBar(
             threadId: threadId,
             onSent: () {
-              ref.invalidate(_messagesProvider(threadId));
+              ref.invalidate(_threadDetailProvider(widget.threadId));
+              ref.invalidate(_messagesProvider(widget.threadId));
             },
           ),
         ],
@@ -195,7 +231,8 @@ class ThreadScreen extends ConsumerWidget {
     );
 
     if (edited == true) {
-      ref.invalidate(_messagesProvider(threadId));
+      ref.invalidate(_threadDetailProvider(widget.threadId));
+      ref.invalidate(_messagesProvider(widget.threadId));
     }
   }
 }
@@ -203,11 +240,9 @@ class ThreadScreen extends ConsumerWidget {
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
-    required this.onOpenSpace,
   });
 
   final Map<String, dynamic> thread;
-  final VoidCallback onOpenSpace;
 
   @override
   Widget build(BuildContext context) {

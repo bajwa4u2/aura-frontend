@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../correspondence/data/spaces_repository.dart';
+import '../../correspondence/data/threads_repository.dart';
 
 final _conversationSpacesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -37,6 +39,74 @@ class ConversationsScreen extends ConsumerStatefulWidget {
 
 class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   _ConversationFilter _filter = _ConversationFilter.all;
+  Timer? _pollTimer;
+  String _openingConversationId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      ref.invalidate(_conversationSpacesProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _openConversation(_ConversationItem item) async {
+    if (_openingConversationId.isNotEmpty) return;
+
+    if (item.id.isEmpty) {
+      context.push('/me/correspondence');
+      return;
+    }
+
+    setState(() {
+      _openingConversationId = item.id;
+    });
+
+    try {
+      if (item.isPrivate) {
+        var threadId = item.directThreadId;
+
+        if (threadId.isEmpty) {
+          final threads = await ref.read(threadsRepositoryProvider).listThreads(
+                spaceId: item.id,
+              );
+
+          final visibleThreads = threads
+              .where((thread) => thread['archived'] != true)
+              .toList(growable: false);
+
+          final target = visibleThreads.isNotEmpty ? visibleThreads.first : (threads.isNotEmpty ? threads.first : null);
+
+          if (target != null) {
+            threadId = _pickString(target, const ['id', 'threadId']);
+          }
+        }
+
+        if (!mounted) return;
+
+        if (threadId.isNotEmpty) {
+          context.push('/me/correspondence/${item.id}/thread/$threadId');
+          return;
+        }
+      }
+
+      if (!mounted) return;
+      context.push(item.route);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _openingConversationId = '';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +121,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             const _PageIntro(
               title: 'Conversations',
               body:
-                  'Ongoing exchange gathers here once correspondence begins.',
+                  'Ongoing private and shared exchange settles here.',
             ),
             const SizedBox(height: AuraSpace.s18),
             _StateCard(
@@ -81,7 +151,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             children: const [
               _PageIntro(
                 title: 'Conversations',
-                body: 'Loading recent continuity.',
+                body: 'Loading conversations.',
               ),
               SizedBox(height: AuraSpace.s14),
               _FilterRowSkeleton(),
@@ -116,7 +186,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                 const _PageIntro(
                   title: 'Conversations',
                   body:
-                      'Threads already in motion, held together without noise.',
+                      'Active private and shared continuity.',
                 ),
                 const SizedBox(height: AuraSpace.s14),
                 _FilterRow(
@@ -134,7 +204,11 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                     onPrimary: () => context.go('/me/correspondence'),
                   )
                 else
-                  _ConversationList(items: items),
+                  _ConversationList(
+                    items: items,
+                    openingConversationId: _openingConversationId,
+                    onOpenConversation: _openConversation,
+                  ),
               ],
             );
           },
@@ -248,9 +322,13 @@ class _FilterPill extends StatelessWidget {
 class _ConversationList extends StatelessWidget {
   const _ConversationList({
     required this.items,
+    required this.openingConversationId,
+    required this.onOpenConversation,
   });
 
   final List<_ConversationItem> items;
+  final String openingConversationId;
+  final ValueChanged<_ConversationItem> onOpenConversation;
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +340,11 @@ class _ConversationList extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            _ConversationRow(item: items[i]),
+            _ConversationRow(
+              item: items[i],
+              opening: openingConversationId == items[i].id,
+              onTap: () => onOpenConversation(items[i]),
+            ),
             if (i != items.length - 1) const Divider(height: 1),
           ],
         ],
@@ -274,14 +356,18 @@ class _ConversationList extends StatelessWidget {
 class _ConversationRow extends StatelessWidget {
   const _ConversationRow({
     required this.item,
+    required this.opening,
+    required this.onTap,
   });
 
   final _ConversationItem item;
+  final bool opening;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.push(item.route),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -348,7 +434,13 @@ class _ConversationRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AuraSpace.s10),
-            const Icon(Icons.chevron_right, size: 18),
+            opening
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right, size: 18),
           ],
         ),
       ),
@@ -535,6 +627,8 @@ class _ConversationItem {
     required this.icon,
     required this.timestamp,
     required this.sortDate,
+    required this.isPrivate,
+    required this.directThreadId,
   });
 
   final String id;
@@ -546,6 +640,8 @@ class _ConversationItem {
   final IconData icon;
   final String timestamp;
   final DateTime sortDate;
+  final bool isPrivate;
+  final String directThreadId;
 }
 
 List<Map<String, dynamic>> _filterSpaces(
@@ -591,11 +687,18 @@ List<_ConversationItem> _buildConversationItems(
     ]);
     final updatedAt = _bestDateForSort(space);
 
+    final directThreadId = _pickString(space, const [
+      'threadId',
+      'mainThreadId',
+      'defaultThreadId',
+      'primaryThreadId',
+    ]);
+
     final preview = description.isNotEmpty
         ? description
         : type == 'PRIVATE'
-            ? 'Private exchange in progress.'
-            : 'Shared conversation in progress.';
+            ? 'Direct exchange'
+            : 'Shared space';
 
     final metaParts = <String>[];
 
@@ -625,6 +728,8 @@ List<_ConversationItem> _buildConversationItems(
       icon: type == 'PRIVATE' ? Icons.person_outline : Icons.forum_outlined,
       timestamp: _formatTimestamp(updatedRaw),
       sortDate: updatedAt,
+      isPrivate: type == 'PRIVATE',
+      directThreadId: directThreadId,
     );
   }).toList();
 
@@ -756,11 +861,11 @@ String _emptyTitleForFilter(_ConversationFilter filter) {
 String _emptyBodyForFilter(_ConversationFilter filter) {
   switch (filter) {
     case _ConversationFilter.all:
-      return 'Once correspondence becomes active, it will settle here.';
+      return 'Active continuity will appear here.';
     case _ConversationFilter.private:
-      return 'Your private exchanges will appear here once they begin.';
+      return 'Your direct exchanges will appear here.';
     case _ConversationFilter.spaces:
-      return 'Your shared spaces will appear here once they become active.';
+      return 'Your shared spaces will appear here.';
   }
 }
 
