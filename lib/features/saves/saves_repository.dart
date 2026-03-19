@@ -176,6 +176,8 @@ class SavesRepository {
     _savedPostIdsCache = _buildSavedPostIdsCache(items);
 
     return items
+        .map((e) => e['post'])
+        .whereType<Map>()
         .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
