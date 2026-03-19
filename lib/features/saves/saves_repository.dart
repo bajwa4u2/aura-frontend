@@ -5,12 +5,6 @@ import '../../core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
 import '../feed/domain/post.dart';
 
-final savesRepositoryProvider = Provider<SavesRepository>((ref) {
-  return SavesRepository(
-    ref,
-    ref.read(dioProvider),
-  );
-});
 
 class SavesRepository {
   SavesRepository(this._ref, this._dio);
