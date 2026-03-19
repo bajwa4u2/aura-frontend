@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -759,13 +760,37 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       ),
                   ],
                 ),
+                if (_publicationsFromUser(user).isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.lg),
+                  _section(
+                    title: 'Publications',
+                    children: _buildPublicationItems(_publicationsFromUser(user)),
+                  ),
+                ],
+                if (_linksFromUser(user).isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.lg),
+                  _section(
+                    title: 'Links',
+                    children: _buildLinkItems(_linksFromUser(user)),
+                  ),
+                ],
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Saved',
+                  title: 'Record Room',
                   children: [
                     _item(
-                      label: 'Saved works',
+                      label: 'Saved posts',
                       icon: Icons.bookmark_outline,
+                      onTap: () => context.push('/saved'),
+                    ),
+                    _item(
+                      label: 'Saved for later',
+                      icon: Icons.schedule_outlined,
+                      onTap: () => context.push('/saved'),
+                    ),
+                    _item(
+                      label: 'Private posts',
+                      icon: Icons.lock_outline,
                       onTap: () => context.push('/saved'),
                     ),
                   ],
@@ -823,6 +848,234 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         ),
       ],
     );
+  }
+
+
+  List<_PresencePublication> _publicationsFromUser(Map<String, dynamic> user) {
+    final raw = _firstNonNull([
+      user['publications'],
+      user['publicationRecords'],
+      user['publicationItems'],
+    ]);
+
+    final list = _coerceListOfMaps(raw);
+    final out = <_PresencePublication>[];
+
+    for (final item in list) {
+      final title = _firstNonEmpty([
+        _value(item['title']),
+        _value(item['name']),
+        _value(item['label']),
+      ]);
+      final url = _firstNonEmpty([
+        _value(item['url']),
+        _value(item['link']),
+        _value(item['href']),
+      ]);
+      final description = _firstNonEmpty([
+        _value(item['description']),
+        _value(item['summary']),
+        _value(item['note']),
+      ]);
+
+      if (title.isEmpty && url.isEmpty && description.isEmpty) continue;
+
+      out.add(
+        _PresencePublication(
+          title: title.isNotEmpty ? title : _websiteLabel(url),
+          url: url,
+          description: description,
+        ),
+      );
+    }
+
+    return out;
+  }
+
+  List<_PresenceLink> _linksFromUser(Map<String, dynamic> user) {
+    final raw = _firstNonNull([
+      user['links'],
+      user['linkItems'],
+      user['presenceLinks'],
+    ]);
+
+    final list = _coerceListOfMaps(raw);
+    final out = <_PresenceLink>[];
+
+    for (final item in list) {
+      final label = _firstNonEmpty([
+        _value(item['label']),
+        _value(item['title']),
+        _value(item['name']),
+      ]);
+      final url = _firstNonEmpty([
+        _value(item['url']),
+        _value(item['link']),
+        _value(item['href']),
+      ]);
+
+      if (label.isEmpty && url.isEmpty) continue;
+
+      out.add(
+        _PresenceLink(
+          label: label.isNotEmpty ? label : _websiteLabel(url),
+          url: url,
+        ),
+      );
+    }
+
+    return out;
+  }
+
+  List<Widget> _buildPublicationItems(List<_PresencePublication> publications) {
+    return publications
+        .map(
+          (publication) => _recordItemCard(
+            icon: Icons.menu_book_outlined,
+            title: publication.title.isNotEmpty ? publication.title : 'Publication',
+            subtitle: publication.description,
+            trailingLabel: publication.url.isNotEmpty
+                ? _websiteLabel(publication.url)
+                : null,
+            onTap: publication.url.isNotEmpty
+                ? () => _openExternalUrl(publication.url)
+                : null,
+          ),
+        )
+        .toList();
+  }
+
+  List<Widget> _buildLinkItems(List<_PresenceLink> links) {
+    return links
+        .map(
+          (link) => _recordItemCard(
+            icon: Icons.link_outlined,
+            title: link.label.isNotEmpty ? link.label : 'Link',
+            trailingLabel: link.url.isNotEmpty ? _websiteLabel(link.url) : null,
+            onTap: link.url.isNotEmpty ? () => _openExternalUrl(link.url) : null,
+          ),
+        )
+        .toList();
+  }
+
+  Widget _recordItemCard({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    String? trailingLabel,
+    VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        decoration: BoxDecoration(
+          color: AuraSurface.elevated,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AuraSurface.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Icon(icon, size: 18, color: AuraSurface.ink),
+            ),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AuraText.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle.trim(),
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  if (trailingLabel != null && trailingLabel.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      trailingLabel.trim(),
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (enabled)
+              const Padding(
+                padding: EdgeInsets.only(left: AuraSpace.s8, top: 2),
+                child: Icon(
+                  Icons.open_in_new,
+                  size: 16,
+                  color: AuraSurface.muted,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openExternalUrl(String raw) async {
+    final value = raw.trim();
+    if (value.isEmpty) return;
+
+    final normalized = value.startsWith('http://') || value.startsWith('https://')
+        ? value
+        : 'https://$value';
+
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) return;
+
+    await launchUrl(uri, mode: LaunchMode.platformDefault);
+  }
+
+  List<Map<String, dynamic>> _coerceListOfMaps(dynamic raw) {
+    final decoded = _decodeJsonLike(raw);
+    if (decoded is List) {
+      return decoded
+          .whereType<dynamic>()
+          .map(_asMap)
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  dynamic _decodeJsonLike(dynamic raw) {
+    if (raw is String) {
+      final value = raw.trim();
+      if (value.isEmpty) return null;
+      try {
+        return jsonDecode(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return raw;
   }
 
   Widget _tiktokBlock() {
@@ -1397,6 +1650,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     return '';
   }
 
+  dynamic _firstNonNull(List<dynamic> values) {
+    for (final value in values) {
+      if (value != null) return value;
+    }
+    return null;
+  }
+
   String _locationText(Map<String, dynamic> user) {
     final location = _firstNonEmpty([
       _value(user['location']),
@@ -1448,6 +1708,30 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     return '$baseOrigin/$value';
   }
 }
+
+
+class _PresencePublication {
+  const _PresencePublication({
+    required this.title,
+    required this.url,
+    required this.description,
+  });
+
+  final String title;
+  final String url;
+  final String description;
+}
+
+class _PresenceLink {
+  const _PresenceLink({
+    required this.label,
+    required this.url,
+  });
+
+  final String label;
+  final String url;
+}
+
 
 class PresenceScreen extends MeScreen {
   const PresenceScreen({super.key});
