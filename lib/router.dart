@@ -94,9 +94,27 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
 
-  ref.listen<AuthStatus>(authStatusProvider, (_, __) => refresh.value++);
-  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (_, __) => refresh.value++);
-  ref.listen<AsyncValue<void>>(sessionBootstrapProvider, (_, __) => refresh.value++);
+  ref.listen<AuthStatus>(authStatusProvider, (prev, next) {
+    if (prev != next) refresh.value++;
+  });
+
+  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (prev, next) {
+    final prevValue = prev?.maybeWhen(
+      data: (value) => value,
+      orElse: () => null,
+    );
+    final nextValue = next.maybeWhen(
+      data: (value) => value,
+      orElse: () => null,
+    );
+
+    final prevLoading = prev?.isLoading ?? false;
+    final nextLoading = next.isLoading;
+
+    if (prevValue != nextValue || prevLoading != nextLoading) {
+      refresh.value++;
+    }
+  });
 
   bool isBootPath(String path) => path == kRouterBootRoute;
 
@@ -204,7 +222,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         fallback: defaultRedirect,
       );
 
-      final isBootstrapping = bootstrap.isLoading;
+      final isBootstrapping = bootstrap.isLoading && !bootstrap.hasValue;
       final isLoggedIn = authStatus == AuthStatus.authed;
       final isVerifyPending = path == '/verify-pending';
       final isVerifyEmail = path == '/verify-email';
@@ -221,14 +239,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isBootstrapping) {
         if (isBootPath(path)) return null;
 
-        if (requiresAuth(path) || isGuestOnly(path)) {
-          return bootRedirectFor(
-            currentLocation,
-            fallback: defaultRedirect,
-          );
-        }
-
-        return null;
+        return bootRedirectFor(
+          currentLocation,
+          fallback: defaultRedirect,
+        );
       }
 
       if (isLoggedIn && isVerificationLoading) {
