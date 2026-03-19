@@ -69,6 +69,16 @@ class FeedController extends StateNotifier<FeedState> {
 
   final FeedRepository _repo;
 
+  List<Post> _dedupeById(List<Post> items) {
+    final map = <String, Post>{};
+    for (final item in items) {
+      final id = item.id.trim();
+      if (id.isEmpty) continue;
+      map[id] = item;
+    }
+    return map.values.toList();
+  }
+
   Future<void> loadInitial() async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -76,7 +86,7 @@ class FeedController extends StateNotifier<FeedState> {
       final page = await _repo.fetchFeed(limit: 20);
       state = state.copyWith(
         isLoading: false,
-        items: page.items,
+        items: _dedupeById(page.items),
         nextCursor: page.nextCursor,
         error: null,
       );
@@ -94,7 +104,10 @@ class FeedController extends StateNotifier<FeedState> {
 
     try {
       final page = await _repo.fetchFeed(limit: 20, cursor: cursor);
-      final merged = <Post>[...state.items, ...page.items];
+      final merged = _dedupeById(<Post>[
+        ...state.items,
+        ...page.items,
+      ]);
 
       state = state.copyWith(
         isLoadingMore: false,
