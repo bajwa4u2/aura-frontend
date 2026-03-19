@@ -64,7 +64,7 @@ class SavedScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: AuraSpace.s6),
                 Text(
-                  'Saved posts stay private by default.',
+                  'Saved posts stay private.',
                   style: AuraText.body,
                 ),
               ],
@@ -78,7 +78,7 @@ class SavedScreen extends ConsumerWidget {
               if (posts.isEmpty) {
                 return AuraCard(
                   child: Text(
-                    'Nothing saved yet. When you save a post, it will appear here.',
+                    'Nothing saved yet.',
                     style: AuraText.body,
                   ),
                 );

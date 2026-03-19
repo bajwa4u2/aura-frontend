@@ -241,6 +241,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (handle.isNotEmpty) context.push('/u/$handle');
         return;
       case 'LIKE':
+      case 'SAVE':
       case 'REPLY':
       case 'REPOST':
       case 'MENTION':
@@ -572,6 +573,8 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.repeat;
       case 'LIKE':
         return Icons.favorite_border;
+      case 'SAVE':
+        return Icons.bookmark_border;
       case 'SPACE_INVITE':
       case 'THREAD_INVITE':
       case 'INVITE_ACCEPTED':
@@ -651,6 +654,8 @@ String _buildTitle(Map<String, dynamic> item) {
       return '$actorName followed you';
     case 'LIKE':
       return '$actorName appreciated your work';
+    case 'SAVE':
+      return '$actorName saved your work';
     case 'REPLY':
       return '$actorName replied to your work';
     case 'REPOST':
@@ -698,6 +703,7 @@ String _buildSubtitle(Map<String, dynamic> item) {
       return 'Open profile';
     case 'REPLY':
     case 'LIKE':
+    case 'SAVE':
     case 'REPOST':
     case 'MENTION':
     case 'POST_PUBLISHED':

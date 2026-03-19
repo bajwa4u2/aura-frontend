@@ -14,6 +14,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../feed/domain/post.dart';
+import '../../../saves/providers.dart';
 import '../../../saves/saves_repository.dart';
 
 String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
@@ -2092,6 +2093,7 @@ class _ActionRow extends ConsumerWidget {
         final repo = ref.read(savesRepositoryProvider);
         await repo.toggle(postId);
         ref.invalidate(isSavedProvider(postId));
+        ref.invalidate(savedPostsProvider);
       } catch (_) {
         _showError(context, 'Could not update save');
       }
@@ -2283,7 +2285,7 @@ class _ActionRow extends ConsumerWidget {
         saved.when(
           data: (v) => pill(
             icon: v ? Icons.bookmark : Icons.bookmark_border,
-            label: 'Save',
+            label: v ? 'Saved' : 'Save',
             onTap: toggleSave,
             active: v,
           ),

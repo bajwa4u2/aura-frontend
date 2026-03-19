@@ -18,9 +18,6 @@ class SavesRepository {
   final Ref _ref;
   final Dio _dio;
 
-  Set<String>? _savedPostIdsCache;
-  bool _loadingCache = false;
-
   bool _isAuthed() {
     final status = _ref.read(authStatusProvider);
     return status == AuthStatus.authed;
@@ -29,11 +26,6 @@ class SavesRepository {
   bool _isAuthFailure(DioException e) {
     final code = e.response?.statusCode;
     return code == 401 || code == 403;
-  }
-
-  void _clearSavedCache() {
-    _savedPostIdsCache = null;
-    _loadingCache = false;
   }
 
   bool _extractSaved(dynamic data) {
@@ -106,35 +98,6 @@ class SavesRepository {
     return <Map<String, dynamic>>[];
   }
 
-  String? _extractSavedPostId(Map<String, dynamic> item) {
-    final postId = (item['postId'] ?? '').toString().trim();
-    if (postId.isNotEmpty) return postId;
-
-    final nestedPost = item['post'];
-    if (nestedPost is Map) {
-      final nestedPostId = (nestedPost['id'] ?? '').toString().trim();
-      if (nestedPostId.isNotEmpty) return nestedPostId;
-    }
-
-    final directId = (item['id'] ?? '').toString().trim();
-    if (directId.isNotEmpty) return directId;
-
-    return null;
-  }
-
-  Set<String> _buildSavedPostIdsCache(List<Map<String, dynamic>> items) {
-    final ids = <String>{};
-
-    for (final item in items) {
-      final id = _extractSavedPostId(item);
-      if (id != null && id.isNotEmpty) {
-        ids.add(id);
-      }
-    }
-
-    return ids;
-  }
-
   Future<List<Map<String, dynamic>>> _fetchSavedRaw({
     int limit = 100,
     String? cursor,
@@ -157,23 +120,8 @@ class SavesRepository {
     }
   }
 
-  Future<void> _ensureSavedCacheLoaded() async {
-    if (_savedPostIdsCache != null || _loadingCache) return;
-
-    _loadingCache = true;
-
-    try {
-      final items = await _fetchSavedRaw(limit: 200);
-      _savedPostIdsCache = _buildSavedPostIdsCache(items);
-    } finally {
-      _loadingCache = false;
-    }
-  }
-
   Future<List<Post>> listSaved({int limit = 24, String? cursor}) async {
     final items = await _fetchSavedRaw(limit: limit, cursor: cursor);
-
-    _savedPostIdsCache = _buildSavedPostIdsCache(items);
 
     return items
         .map((e) => e['post'])
@@ -189,43 +137,55 @@ class SavesRepository {
     if (pid.isEmpty) return false;
 
     try {
-      await _ensureSavedCacheLoaded();
-      return _savedPostIdsCache?.contains(pid) ?? false;
+      final res = await _dio.get('/saves/for/$pid');
+      return _extractSaved(res.data);
     } on DioException catch (e) {
       if (_isAuthFailure(e)) {
-        _clearSavedCache();
         return false;
       }
       rethrow;
     }
   }
 
-  /// ✅ FIXED HERE
-  Future<bool> toggle(String postId) async {
+  Future<bool> save(String postId) async {
     if (!_isAuthed()) return false;
 
     final pid = postId.trim();
     if (pid.isEmpty) return false;
 
     try {
-      final res = await _dio.post('/saves/toggle/$pid'); // ← fixed
-      final saved = _extractSaved(res.data);
-
-      _savedPostIdsCache ??= <String>{};
-
-      if (saved) {
-        _savedPostIdsCache!.add(pid);
-      } else {
-        _savedPostIdsCache!.remove(pid);
-      }
-
-      return saved;
+      final res = await _dio.post('/saves/$pid');
+      return _extractSaved(res.data);
     } on DioException catch (e) {
       if (_isAuthFailure(e)) {
-        _clearSavedCache();
         return false;
       }
       rethrow;
     }
+  }
+
+  Future<bool> unsave(String postId) async {
+    if (!_isAuthed()) return false;
+
+    final pid = postId.trim();
+    if (pid.isEmpty) return false;
+
+    try {
+      final res = await _dio.delete('/saves/$pid');
+      return _extractSaved(res.data);
+    } on DioException catch (e) {
+      if (_isAuthFailure(e)) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> toggle(String postId) async {
+    final currentlySaved = await isSaved(postId);
+    if (currentlySaved) {
+      return unsave(postId);
+    }
+    return save(postId);
   }
 }
