@@ -679,11 +679,32 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final displayHandle = handle;
     final meta = <Widget>[
       if (locationText.isNotEmpty) _metaChip(label: locationText),
-      if (websiteLabel.isNotEmpty) _metaChip(label: websiteLabel),
-      if (_incomingRequestsCount > 0)
-        _metaChip(label: 'Incoming $_incomingRequestsCount'),
-      if (_outgoingRequestsCount > 0)
-        _metaChip(label: 'Outgoing $_outgoingRequestsCount'),
+      if (websiteLabel.isNotEmpty)
+        _metaLinkChip(
+          label: websiteLabel,
+          onTap: () async {
+            final uri = Uri.tryParse(websiteUrl);
+            if (uri == null) return;
+            await launchUrl(uri, mode: LaunchMode.platformDefault);
+          },
+        ),
+      if (handle.isNotEmpty)
+        _metaLinkChip(
+          label: '$_followersCount Followers',
+          onTap: () => context.push('/u/$handle/followers'),
+        ),
+      if (handle.isNotEmpty)
+        _metaLinkChip(
+          label: '$_followingCount Following',
+          onTap: () => context.push('/u/$handle/following'),
+        ),
+      if (_incomingRequestsCount > 0 || _outgoingRequestsCount > 0)
+        _metaLinkChip(
+          label: _outgoingRequestsCount > 0
+              ? 'Requests $_incomingRequestsCount / $_outgoingRequestsCount'
+              : 'Requests $_incomingRequestsCount',
+          onTap: () => context.push('/me/follow-requests'),
+        ),
     ];
 
     return ListView(
@@ -726,12 +747,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AuraSpace.lg),
-                _summaryStrip(
-                  context: context,
-                  handle: handle,
-                ),
-                const SizedBox(height: AuraSpace.lg),
                 _section(
                   title: 'Identity',
                   children: [
@@ -742,90 +757,64 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         subtitle: '@$handle',
                         onTap: () => context.push('/u/$handle'),
                       ),
-                    _item(
-                      label: 'Create',
-                      icon: Icons.edit_note_outlined,
-                      onTap: () => context.push('/compose'),
-                    ),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.lg),
                 _section(
-                  title: 'Reach',
+                  title: 'Saved',
                   children: [
                     _item(
-                      label: 'Open correspondence',
-                      icon: Icons.forum_outlined,
-                      onTap: () => context.push('/me/correspondence'),
-                    ),
-                    _item(
-                      label: 'Begin conversation',
-                      icon: Icons.chat_bubble_outline,
-                      onTap: () =>
-                          context.push('/me/correspondence/create/conversation'),
-                    ),
-                    _item(
-                      label: 'Create space',
-                      icon: Icons.groups_outlined,
-                      onTap: () =>
-                          context.push('/me/correspondence/create/space'),
+                      label: 'Saved works',
+                      icon: Icons.bookmark_outline,
+                      onTap: () => context.push('/saved'),
                     ),
                   ],
                 ),
-                const SizedBox(height: AuraSpace.lg),
-                _section(
-                  title: 'Institutional standing',
-                  children: [
-                    _item(
-                      label: 'Dashboard',
-                      icon: Icons.dashboard_outlined,
-                      onTap: () => context.push('/institution/dashboard'),
-                    ),
-                    _item(
-                      label: 'Profile',
-                      icon: Icons.apartment_outlined,
-                      onTap: () => context.push('/institution/profile'),
-                    ),
-                    _item(
-                      label: 'Domains',
-                      icon: Icons.domain_verification_outlined,
-                      onTap: () => context.push('/institution/domains'),
-                    ),
-                    _item(
-                      label: 'Announcements',
-                      icon: Icons.campaign_outlined,
-                      onTap: () => context.push('/institution/announcements'),
-                    ),
-                    _item(
-                      label: 'Correspondence',
-                      icon: Icons.mail_outline,
-                      onTap: () => context.push('/institution/correspondence'),
-                    ),
-                    _item(
-                      label: 'Verification',
-                      icon: Icons.verified_outlined,
-                      onTap: () =>
-                          context.push('/institution/request-verification'),
-                    ),
-                  ],
-                ),
+                if (_hasInstitutionStanding(user)) ...[
+                  const SizedBox(height: AuraSpace.lg),
+                  _section(
+                    title: 'Institutional standing',
+                    children: [
+                      _item(
+                        label: 'Dashboard',
+                        icon: Icons.dashboard_outlined,
+                        onTap: () => context.push('/institution/dashboard'),
+                      ),
+                      _item(
+                        label: 'Profile',
+                        icon: Icons.apartment_outlined,
+                        onTap: () => context.push('/institution/profile'),
+                      ),
+                      _item(
+                        label: 'Domains',
+                        icon: Icons.domain_verification_outlined,
+                        onTap: () => context.push('/institution/domains'),
+                      ),
+                      _item(
+                        label: 'Announcements',
+                        icon: Icons.campaign_outlined,
+                        onTap: () => context.push('/institution/announcements'),
+                      ),
+                      _item(
+                        label: 'Correspondence',
+                        icon: Icons.mail_outline,
+                        onTap: () => context.push('/institution/correspondence'),
+                      ),
+                      _item(
+                        label: 'Verification',
+                        icon: Icons.verified_outlined,
+                        onTap: () =>
+                            context.push('/institution/request-verification'),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: AuraSpace.lg),
                 _section(
                   title: 'Connected accounts',
                   children: [
                     _linkedinBlock(),
                     _tiktokBlock(),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.lg),
-                _section(
-                  title: 'Account',
-                  children: [
-                    _item(
-                      label: 'Security',
-                      icon: Icons.lock_outline,
-                      onTap: () => context.push('/security'),
-                    ),
                   ],
                 ),
               ],
@@ -1010,103 +999,37 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _summaryStrip({
-    required BuildContext context,
-    required String handle,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s18),
-      child: Wrap(
-        spacing: AuraSpace.s12,
-        runSpacing: AuraSpace.s12,
-        children: [
-          _summaryButton(
-            label: 'Followers',
-            value: _followersCount,
-            onTap: handle.isEmpty ? null : () => context.push('/u/$handle/followers'),
-          ),
-          _summaryButton(
-            label: 'Following',
-            value: _followingCount,
-            onTap: handle.isEmpty ? null : () => context.push('/u/$handle/following'),
-          ),
-          _summaryButton(
-            label: 'Incoming',
-            value: _incomingRequestsCount,
-            onTap: () => context.push('/me/follow-requests'),
-          ),
-          if (_outgoingRequestsCount > 0)
-            _summaryButton(
-              label: 'Outgoing',
-              value: _outgoingRequestsCount,
-              onTap: () => context.push('/me/follow-requests'),
-            ),
-        ],
-      ),
-    );
-  }
+  bool _hasInstitutionStanding(Map<String, dynamic> user) {
+    final candidates = [
+      user['institutionId'],
+      user['institutionRole'],
+      user['institutionStatus'],
+      user['institutionMemberId'],
+      user['institutionMembershipId'],
+      user['institutionSlug'],
+      user['institutionHandle'],
+      user['organizationId'],
+      user['organizationRole'],
+      user['verifiedInstitutionId'],
+    ];
 
-  Widget _summaryButton({
-    required String label,
-    required int value,
-    required VoidCallback? onTap,
-  }) {
-    final enabled = onTap != null;
+    for (final value in candidates) {
+      if (_value(value).isNotEmpty) return true;
+    }
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 140),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14,
-          vertical: AuraSpace.s14,
-        ),
-        decoration: BoxDecoration(
-          color: AuraSurface.page,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$value',
-                    style: AuraText.title.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s4),
-                  Text(
-                    label,
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (enabled)
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AuraSurface.muted,
-              ),
-          ],
-        ),
-      ),
-    );
+    final flags = [
+      user['isInstitutionMember'],
+      user['hasInstitutionStanding'],
+      user['hasInstitutionAccess'],
+      user['institutionVerified'],
+      user['isInstitutionVerified'],
+    ];
+
+    for (final value in flags) {
+      if (value == true) return true;
+    }
+
+    return false;
   }
 
   Widget _buildStateCard({required Widget child}) {
@@ -1223,6 +1146,20 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _metaLinkChip({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: _metaChip(label: label),
       ),
     );
   }

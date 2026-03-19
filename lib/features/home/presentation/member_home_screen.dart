@@ -13,7 +13,6 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
-import '../../saves/providers.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -153,27 +152,6 @@ final draftProvider =
   return null;
 });
 
-List<Post> _coercePosts(dynamic raw) {
-  if (raw is List<Post>) return raw;
-
-  if (raw is List) {
-    final out = <Post>[];
-    for (final item in raw) {
-      if (item is Post) {
-        out.add(item);
-        continue;
-      }
-      if (item is Map) {
-        out.add(Post.fromJson((item as Map).cast<String, dynamic>()));
-        continue;
-      }
-    }
-    return out;
-  }
-
-  return const <Post>[];
-}
-
 class MemberHomeScreen extends ConsumerWidget {
   const MemberHomeScreen({super.key});
 
@@ -186,7 +164,6 @@ class MemberHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
     final worksAsync = ref.watch(feedProvider);
-    final savedAsync = ref.watch(savedPostsProvider);
 
     final draftAsync = isAuthed
         ? ref.watch(draftProvider)
@@ -251,68 +228,6 @@ class MemberHomeScreen extends ConsumerWidget {
             loading: () => const _LoadingCard(),
             error: (e, _) => AuraCard(
               child: Text('Could not load works: $e', style: AuraText.body),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s18),
-          savedAsync.when(
-            data: (raw) {
-              final posts = _coercePosts(raw);
-
-              final header = AuraCard(
-                onTap: () => context.push('/saved'),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Saved works',
-                        style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right),
-                  ],
-                ),
-              );
-
-              if (posts.isEmpty) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _SectionTitle(title: 'Saved'),
-                    const SizedBox(height: AuraSpace.s10),
-                    header,
-                    const SizedBox(height: AuraSpace.s10),
-                    AuraCard(
-                      onTap: () => context.push('/saved'),
-                      child: Text(
-                        'Saved works live here.',
-                        style: AuraText.body,
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _SectionTitle(title: 'Saved'),
-                  const SizedBox(height: AuraSpace.s10),
-                  header,
-                  const SizedBox(height: AuraSpace.s10),
-                  ...posts.take(2).map(
-                        (p) => Padding(
-                          padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-                          child: PostCard(post: p, compact: true),
-                        ),
-                      ),
-                ],
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text('Could not load saved: $e', style: AuraText.body),
             ),
           ),
         ],
