@@ -170,7 +170,6 @@ class SavesRepository {
     }
   }
 
-  /// Canonical saved-list read.
   Future<List<Post>> listSaved({int limit = 24, String? cursor}) async {
     final items = await _fetchSavedRaw(limit: limit, cursor: cursor);
 
@@ -181,7 +180,6 @@ class SavesRepository {
         .toList();
   }
 
-  /// Safe saved-state check.
   Future<bool> isSaved(String postId) async {
     if (!_isAuthed()) return false;
 
@@ -200,8 +198,7 @@ class SavesRepository {
     }
   }
 
-  /// Toggle save state
-  /// POST /v1/saves/:postId/toggle -> { saved: bool }
+  /// ✅ FIXED HERE
   Future<bool> toggle(String postId) async {
     if (!_isAuthed()) return false;
 
@@ -209,7 +206,7 @@ class SavesRepository {
     if (pid.isEmpty) return false;
 
     try {
-      final res = await _dio.post('/saves/$pid/toggle');
+      final res = await _dio.post('/saves/toggle/$pid'); // ← fixed
       final saved = _extractSaved(res.data);
 
       _savedPostIdsCache ??= <String>{};
