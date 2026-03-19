@@ -781,17 +781,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     _item(
                       label: 'Saved posts',
                       icon: Icons.bookmark_outline,
-                      onTap: () => context.push('/saved'),
+                      onTap: () => context.push('/saved?kind=saved'),
                     ),
                     _item(
-                      label: 'Saved for later',
+                      label: 'Held for later',
                       icon: Icons.schedule_outlined,
-                      onTap: () => context.push('/saved'),
+                      onTap: () => context.push('/saved?kind=held'),
                     ),
                     _item(
                       label: 'Private posts',
                       icon: Icons.lock_outline,
-                      onTap: () => context.push('/saved'),
+                      onTap: () => context.push('/saved?kind=private'),
                     ),
                   ],
                 ),

@@ -19,10 +19,12 @@ import '../../ai/providers.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
+  final String? heldPostId;
 
   const ComposeScreen({
     super.key,
     this.replyToPostId,
+    this.heldPostId,
   });
 
   @override
@@ -125,6 +127,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool get _isReply => widget.replyToPostId != null;
 
   String get _replyToPostId => (widget.replyToPostId ?? '').trim();
+  String get _heldPostId => (widget.heldPostId ?? '').trim();
 
   bool get _hasText => _textController.text.trim().isNotEmpty;
   bool get _textTooLong => _textController.text.trim().length > _limit;
@@ -555,9 +558,26 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.get('/posts/draft');
+      Response<dynamic>? res;
+
+      if (_heldPostId.isNotEmpty) {
+        final heldRes = await _safeGet(dio, '/posts/held');
+        final heldRoot = _asMap(heldRes?.data);
+        final heldItems = _listOfMap(heldRoot['items'].is List ? heldRoot['items'] : _asMap(heldRoot['data'])['items']);
+        for (final item in heldItems) {
+          if (_str(item['id']) == _heldPostId) {
+            res = Response(requestOptions: RequestOptions(path: '/posts/held'), data: item);
+            break;
+          }
+        }
+      }
+
+      res ??= await _safeGet(dio, '/posts/held/latest');
+      res ??= await _safeGet(dio, '/posts/draft');
+      if (res == null) return;
+
       final data = _asMap(res.data);
-      final draftSource = data['draft'] ?? data;
+      final draftSource = data['item'] ?? data['draft'] ?? data;
 
       if (draftSource is! Map) return;
 
@@ -951,10 +971,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
     if (_uploadingMedia) return 'Uploading attachments…';
     if (_publishingToTikTok) return 'Queuing TikTok publish…';
-    if (_saving) return 'Saving…';
+    if (_saving) return 'Holding…';
     final dt = _lastSavedAt;
-    if (dt == null) return 'Draft not saved yet.';
-    return 'Draft saved ${_time(dt)}.';
+    if (dt == null) return 'Nothing held yet.';
+    return 'Held ${_time(dt)}.';
   }
 
   Map<String, dynamic> _buildComposePayload() {
@@ -1021,7 +1041,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       if (!mounted) return;
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save draft: $e')),
+          SnackBar(content: Text('Could not hold this work: $e')),
         );
       }
       rethrow;
@@ -2358,7 +2378,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       }
                       _saveDraft(silent: false);
                     },
-              child: Text(_isReply ? 'Draft disabled for replies' : 'Save draft'),
+              child: Text(_isReply ? 'Holding disabled for replies' : 'Hold for later'),
             ),
           ),
           const SizedBox(width: AuraSpace.s12),

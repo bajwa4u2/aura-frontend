@@ -129,23 +129,21 @@ final pinnedAnnouncementProvider =
   return _unwrapPinned(res.data);
 });
 
-final draftProvider =
+final latestHeldProvider =
     FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/posts/draft');
+  final res = await dio.get('/posts/held/latest');
   final raw = res.data;
 
   final root = _asMap(raw);
-  final topDraft = root['draft'];
-  if (topDraft is Map) return Map<String, dynamic>.from(topDraft);
+  final topHeld = root['item'] ?? root['draft'];
+  if (topHeld is Map) return Map<String, dynamic>.from(topHeld);
 
   final m = _unwrapMap(raw);
+  final innerHeld = m['item'] ?? m['draft'];
+  if (innerHeld is Map) return Map<String, dynamic>.from(innerHeld);
 
-  final innerDraft = m['draft'];
-  if (innerDraft is Map) return Map<String, dynamic>.from(innerDraft);
-
-  if (m.isNotEmpty &&
-      (m['id'] != null || m['title'] != null || m['body'] != null)) {
+  if (m.isNotEmpty && (m['id'] != null || m['text'] != null)) {
     return m;
   }
 
@@ -155,9 +153,10 @@ final draftProvider =
 class MemberHomeScreen extends ConsumerWidget {
   const MemberHomeScreen({super.key});
 
-  Future<void> _openCompose(BuildContext context, WidgetRef ref) async {
-    await context.push('/compose');
-    ref.invalidate(draftProvider);
+  Future<void> _openCompose(BuildContext context, WidgetRef ref, {String? heldId}) async {
+    final target = (heldId ?? '').trim().isNotEmpty ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}' : '/compose';
+    await context.push(target);
+    ref.invalidate(latestHeldProvider);
   }
 
   @override
@@ -165,8 +164,8 @@ class MemberHomeScreen extends ConsumerWidget {
     final isAuthed = ref.watch(isAuthedProvider);
     final worksAsync = ref.watch(feedProvider);
 
-    final draftAsync = isAuthed
-        ? ref.watch(draftProvider)
+    final heldAsync = isAuthed
+        ? ref.watch(latestHeldProvider)
         : const AsyncValue<Map<String, dynamic>?>.data(null);
 
     return AuraScaffold(
@@ -179,20 +178,21 @@ class MemberHomeScreen extends ConsumerWidget {
           AuraSpace.s24,
         ),
         children: [
-          draftAsync.when(
-            data: (draft) {
-              final hasDraft = draft != null;
+          heldAsync.when(
+            data: (held) {
+              final hasHeld = held != null;
+              final heldId = _asMap(held)['id']?.toString();
               return _ComposerEntryCard(
-                hasDraft: hasDraft,
-                onTap: () => _openCompose(context, ref),
+                hasHeld: hasHeld,
+                onTap: () => _openCompose(context, ref, heldId: heldId),
               );
             },
             loading: () => _ComposerEntryCard(
-              hasDraft: false,
+              hasHeld: false,
               onTap: () => _openCompose(context, ref),
             ),
             error: (_, __) => _ComposerEntryCard(
-              hasDraft: false,
+              hasHeld: false,
               onTap: () => _openCompose(context, ref),
             ),
           ),
@@ -238,11 +238,11 @@ class MemberHomeScreen extends ConsumerWidget {
 
 class _ComposerEntryCard extends StatelessWidget {
   const _ComposerEntryCard({
-    required this.hasDraft,
+    required this.hasHeld,
     required this.onTap,
   });
 
-  final bool hasDraft;
+  final bool hasHeld;
   final VoidCallback onTap;
 
   @override
@@ -253,13 +253,13 @@ class _ComposerEntryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            hasDraft ? 'Continue draft' : 'New work',
+            hasHeld ? 'Continue where you left' : 'New work',
             style: AuraText.title,
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            hasDraft
-                ? 'Return to the draft already in progress.'
+            hasHeld
+                ? 'Return to the latest work you are holding.'
                 : 'Start a new work.',
             style: AuraText.body,
           ),
