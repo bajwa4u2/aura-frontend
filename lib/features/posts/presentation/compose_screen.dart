@@ -563,7 +563,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       if (_heldPostId.isNotEmpty) {
         final heldRes = await _safeGet(dio, '/posts/held');
         final heldRoot = _asMap(heldRes?.data);
-        final heldItems = _listOfMap(heldRoot['items'].is List ? heldRoot['items'] : _asMap(heldRoot['data'])['items']);
+        final directItems = heldRoot['items'];
+        final nestedItems = _asMap(heldRoot['data'])['items'];
+        final heldItems = _listOfMap(
+          directItems is List ? directItems : nestedItems,
+        );
         for (final item in heldItems) {
           if (_str(item['id']) == _heldPostId) {
             res = Response(requestOptions: RequestOptions(path: '/posts/held'), data: item);
