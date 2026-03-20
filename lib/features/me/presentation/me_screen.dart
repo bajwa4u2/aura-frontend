@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/auth/admin_access_provider.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -15,7 +17,6 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
-  // Presence surface kept under existing route/widget contract for compatibility.
   const MeScreen({super.key});
 
   @override
@@ -68,14 +69,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final userId = _value(user['id']);
 
       final futures = await Future.wait<dynamic>([
-        if (handle.isNotEmpty)
-          _safeGet(dio, '/users/$handle/followers')
-        else
-          Future.value(null),
-        if (handle.isNotEmpty)
-          _safeGet(dio, '/users/$handle/following')
-        else
-          Future.value(null),
+        if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/followers') else Future.value(null),
+        if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/following') else Future.value(null),
         _safeGet(dio, '/users/me/follow/requests/inbox'),
         _safeGet(dio, '/users/me/follow/requests/outbox'),
         if (userId.isNotEmpty)
@@ -643,6 +638,21 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _buildContent(BuildContext context) {
     final user = _user ?? <String, dynamic>{};
+    final appAdminAsync = ref.watch(appAdminAccessProvider);
+    final institutionAsync = ref.watch(institutionAccessProvider);
+
+    final isAppAdmin = appAdminAsync.maybeWhen(
+      data: (value) => value.isAdmin,
+      orElse: () => false,
+    );
+
+    final institutionAccess = institutionAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
+    );
+
+    final hasInstitutionWorkspace = institutionAccess.hasAccess;
+    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
 
     final displayName = _firstNonEmpty([
       _value(user['displayName']),
@@ -678,6 +688,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     final displayTitle = displayName.isNotEmpty ? displayName : 'Presence';
     final displayHandle = handle;
+
     final meta = <Widget>[
       if (locationText.isNotEmpty) _metaChip(label: locationText),
       if (websiteLabel.isNotEmpty)
@@ -705,6 +716,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               ? 'Requests $_incomingRequestsCount / $_outgoingRequestsCount'
               : 'Requests $_incomingRequestsCount',
           onTap: () => context.push('/me/follow-requests'),
+        ),
+      if (isAppAdmin) _metaChip(label: 'Platform admin'),
+      if (institutionLabel.isNotEmpty) _metaChip(label: institutionLabel),
+    ];
+
+    final workspaceActions = <PresenceHeaderAction>[
+      if (hasInstitutionWorkspace)
+        PresenceHeaderAction(
+          label: 'Institution workspace',
+          icon: Icons.apartment_outlined,
+          onTap: () => context.push('/institution/dashboard'),
+        ),
+      if (isAppAdmin)
+        PresenceHeaderAction(
+          label: 'Admin workspace',
+          icon: Icons.admin_panel_settings_outlined,
+          onTap: () => context.push('/admin'),
         ),
     ];
 
@@ -747,6 +775,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       onTap: () => context.push('/security'),
                     ),
                   ],
+                  workspaceActions: workspaceActions,
                 ),
                 _section(
                   title: 'Identity',
@@ -763,14 +792,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 if (_publicationsFromUser(user).isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
                   _section(
-                    title: 'Publications',
+                    title: 'Public record',
                     children: _buildPublicationItems(_publicationsFromUser(user)),
                   ),
                 ],
                 if (_linksFromUser(user).isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
                   _section(
-                    title: 'Links',
+                    title: 'Elsewhere',
                     children: _buildLinkItems(_linksFromUser(user)),
                   ),
                 ],
@@ -781,59 +810,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     _item(
                       label: 'Saved posts',
                       icon: Icons.bookmark_outline,
+                      subtitle: 'Things you chose to keep close',
                       onTap: () => context.push('/saved?kind=saved'),
                     ),
                     _item(
                       label: 'Held for later',
                       icon: Icons.schedule_outlined,
+                      subtitle: 'Work not released yet',
                       onTap: () => context.push('/saved?kind=held'),
                     ),
                     _item(
                       label: 'Private posts',
                       icon: Icons.lock_outline,
+                      subtitle: 'Visible only to you',
                       onTap: () => context.push('/saved?kind=private'),
                     ),
                   ],
                 ),
-                if (_hasInstitutionStanding(user)) ...[
-                  const SizedBox(height: AuraSpace.lg),
-                  _section(
-                    title: 'Institutional standing',
-                    children: [
-                      _item(
-                        label: 'Dashboard',
-                        icon: Icons.dashboard_outlined,
-                        onTap: () => context.push('/institution/dashboard'),
-                      ),
-                      _item(
-                        label: 'Profile',
-                        icon: Icons.apartment_outlined,
-                        onTap: () => context.push('/institution/profile'),
-                      ),
-                      _item(
-                        label: 'Domains',
-                        icon: Icons.domain_verification_outlined,
-                        onTap: () => context.push('/institution/domains'),
-                      ),
-                      _item(
-                        label: 'Announcements',
-                        icon: Icons.campaign_outlined,
-                        onTap: () => context.push('/institution/announcements'),
-                      ),
-                      _item(
-                        label: 'Correspondence',
-                        icon: Icons.mail_outline,
-                        onTap: () => context.push('/institution/correspondence'),
-                      ),
-                      _item(
-                        label: 'Verification',
-                        icon: Icons.verified_outlined,
-                        onTap: () =>
-                            context.push('/institution/request-verification'),
-                      ),
-                    ],
-                  ),
-                ],
                 const SizedBox(height: AuraSpace.lg),
                 _section(
                   title: 'Connected accounts',
@@ -850,6 +843,28 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
+  String _institutionWorkspaceLabel(InstitutionAccess access) {
+    if (!access.hasAccess) return '';
+
+    final institution = access.institution ?? const <String, dynamic>{};
+    final request = access.request ?? const <String, dynamic>{};
+
+    final name = _firstNonEmpty([
+      _value(institution['name']),
+      _value(request['organizationName']),
+    ]);
+
+    switch (access.state) {
+      case InstitutionAccessState.pending:
+        return name.isNotEmpty ? '$name · pending' : 'Institution · pending';
+      case InstitutionAccessState.verifiedMember:
+        return name.isNotEmpty ? '$name · member' : 'Institution · member';
+      case InstitutionAccessState.authorizedSpeaker:
+        return name.isNotEmpty ? '$name · speaker' : 'Institution · speaker';
+      case InstitutionAccessState.none:
+        return '';
+    }
+  }
 
   List<_PresencePublication> _publicationsFromUser(Map<String, dynamic> user) {
     final raw = _firstNonNull([
@@ -1250,39 +1265,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         ],
       ),
     );
-  }
-
-  bool _hasInstitutionStanding(Map<String, dynamic> user) {
-    final candidates = [
-      user['institutionId'],
-      user['institutionRole'],
-      user['institutionStatus'],
-      user['institutionMemberId'],
-      user['institutionMembershipId'],
-      user['institutionSlug'],
-      user['institutionHandle'],
-      user['organizationId'],
-      user['organizationRole'],
-      user['verifiedInstitutionId'],
-    ];
-
-    for (final value in candidates) {
-      if (_value(value).isNotEmpty) return true;
-    }
-
-    final flags = [
-      user['isInstitutionMember'],
-      user['hasInstitutionStanding'],
-      user['hasInstitutionAccess'],
-      user['institutionVerified'],
-      user['isInstitutionVerified'],
-    ];
-
-    for (final value in flags) {
-      if (value == true) return true;
-    }
-
-    return false;
   }
 
   Widget _buildStateCard({required Widget child}) {
@@ -1709,7 +1691,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 }
 
-
 class _PresencePublication {
   const _PresencePublication({
     required this.title,
@@ -1731,7 +1712,6 @@ class _PresenceLink {
   final String label;
   final String url;
 }
-
 
 class PresenceScreen extends MeScreen {
   const PresenceScreen({super.key});

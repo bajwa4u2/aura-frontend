@@ -26,6 +26,7 @@ class PresenceHeader extends StatelessWidget {
   final String avatarUrl;
   final String coverUrl;
   final List<PresenceHeaderAction> actions;
+  final List<PresenceHeaderAction> workspaceActions;
   final List<Widget> trailingMeta;
 
   const PresenceHeader({
@@ -36,6 +37,7 @@ class PresenceHeader extends StatelessWidget {
     this.avatarUrl = '',
     this.coverUrl = '',
     this.actions = const [],
+    this.workspaceActions = const [],
     this.trailingMeta = const [],
   });
 
@@ -59,6 +61,7 @@ class PresenceHeader extends StatelessWidget {
             handle: safeHandle,
             bio: safeBio,
             actions: actions,
+            workspaceActions: workspaceActions,
             trailingMeta: trailingMeta,
             isNarrow: isNarrow,
           );
@@ -108,6 +111,7 @@ class _PresenceIdentity extends StatelessWidget {
   final String handle;
   final String bio;
   final List<PresenceHeaderAction> actions;
+  final List<PresenceHeaderAction> workspaceActions;
   final List<Widget> trailingMeta;
   final bool isNarrow;
 
@@ -116,6 +120,7 @@ class _PresenceIdentity extends StatelessWidget {
     required this.handle,
     required this.bio,
     required this.actions,
+    required this.workspaceActions,
     required this.trailingMeta,
     required this.isNarrow,
   });
@@ -166,24 +171,20 @@ class _PresenceIdentity extends StatelessWidget {
       ],
     );
 
-    final actionsBlock = actions.isEmpty
-        ? const SizedBox.shrink()
-        : Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: actions
-                .map((action) => _PresenceActionButton(action: action))
-                .toList(),
-          );
+    final controlBlock = _PresenceControlRail(
+      actions: actions,
+      workspaceActions: workspaceActions,
+      isNarrow: isNarrow,
+    );
 
     if (isNarrow) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           textBlock,
-          if (actions.isNotEmpty) ...[
+          if (actions.isNotEmpty || workspaceActions.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s16),
-            actionsBlock,
+            controlBlock,
           ],
         ],
       );
@@ -193,17 +194,86 @@ class _PresenceIdentity extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: textBlock),
-        if (actions.isNotEmpty) ...[
+        if (actions.isNotEmpty || workspaceActions.isNotEmpty) ...[
           const SizedBox(width: AuraSpace.s20),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 260),
-            child: Align(
-              alignment: Alignment.topRight,
-              child: actionsBlock,
-            ),
+            constraints: const BoxConstraints(maxWidth: 286),
+            child: controlBlock,
           ),
         ],
       ],
+    );
+  }
+}
+
+class _PresenceControlRail extends StatelessWidget {
+  const _PresenceControlRail({
+    required this.actions,
+    required this.workspaceActions,
+    required this.isNarrow,
+  });
+
+  final List<PresenceHeaderAction> actions;
+  final List<PresenceHeaderAction> workspaceActions;
+  final bool isNarrow;
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions.isEmpty && workspaceActions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isNarrow ? AuraSpace.s12 : AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ...actions.map((action) => Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                child: _PresenceActionButton(
+                  action: action,
+                  expand: true,
+                ),
+              )),
+          if (workspaceActions.isNotEmpty) ...[
+            if (actions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: AuraSpace.s2,
+                  bottom: AuraSpace.s12,
+                ),
+                child: Container(
+                  height: 1,
+                  color: AuraSurface.divider,
+                ),
+              ),
+            Text(
+              'Workspaces',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            ...workspaceActions.map(
+              (action) => Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                child: _PresenceActionButton(
+                  action: action,
+                  expand: true,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -323,7 +393,7 @@ class _PresenceCover extends StatelessWidget {
   String _withBust(String value) {
     final separator = value.contains('?') ? '&' : '?';
     return '$value${separator}v=${DateTime.now().millisecondsSinceEpoch}';
-    }
+  }
 }
 
 class _PresenceAvatar extends StatelessWidget {
@@ -423,21 +493,30 @@ class _PresenceAvatar extends StatelessWidget {
 
 class _PresenceActionButton extends StatelessWidget {
   final PresenceHeaderAction action;
+  final bool expand;
 
   const _PresenceActionButton({
     required this.action,
+    this.expand = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final child = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment:
+          expand ? MainAxisAlignment.center : MainAxisAlignment.start,
       children: [
         if (action.icon != null) ...[
           Icon(action.icon, size: 16),
           const SizedBox(width: AuraSpace.s8),
         ],
-        Text(action.label),
+        Flexible(
+          child: Text(
+            action.label,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
 
@@ -445,6 +524,7 @@ class _PresenceActionButton extends StatelessWidget {
       return FilledButton(
         onPressed: action.onTap,
         style: FilledButton.styleFrom(
+          minimumSize: expand ? const Size.fromHeight(48) : null,
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s16,
             vertical: AuraSpace.s12,
@@ -460,6 +540,7 @@ class _PresenceActionButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: action.onTap,
       style: OutlinedButton.styleFrom(
+        minimumSize: expand ? const Size.fromHeight(48) : null,
         padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s16,
           vertical: AuraSpace.s12,
