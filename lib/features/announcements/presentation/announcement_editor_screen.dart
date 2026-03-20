@@ -80,6 +80,12 @@ class _AnnouncementEditorScreenState
     }
   }
 
+  Map<String, dynamic> _mapOrEmpty(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return <String, dynamic>{};
+  }
+
   String _institutionName() {
     final access = ref.read(institutionAccessProvider).maybeWhen(
           data: (value) => value,
@@ -87,16 +93,15 @@ class _AnnouncementEditorScreenState
         );
 
     if (access == null) return 'Institution';
-    final institution = access.institution;
-    if (institution is Map) {
-      final fromInstitution = (institution['name'] ?? '').toString().trim();
-      if (fromInstitution.isNotEmpty) return fromInstitution;
-    }
-    final request = access.request;
-    if (request is Map) {
-      final fromRequest = (request['organizationName'] ?? '').toString().trim();
-      if (fromRequest.isNotEmpty) return fromRequest;
-    }
+
+    final institution = _mapOrEmpty(access.institution);
+    final fromInstitution = (institution['name'] ?? '').toString().trim();
+    if (fromInstitution.isNotEmpty) return fromInstitution;
+
+    final request = _mapOrEmpty(access.request);
+    final fromRequest = (request['organizationName'] ?? '').toString().trim();
+    if (fromRequest.isNotEmpty) return fromRequest;
+
     return 'Institution';
   }
 
