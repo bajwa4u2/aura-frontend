@@ -85,10 +85,6 @@ class AnnouncementsRepository {
     return [];
   }
 
-  // =======================
-  // PUBLIC READ
-  // =======================
-
   Future<List<Announcement>> list() {
     if (_cachedList != null && _isFresh(_listFetchedAt)) {
       return Future.value(_cachedList);
@@ -151,15 +147,11 @@ class AnnouncementsRepository {
     return Announcement.fromJson(m);
   }
 
-  // =======================
-  // ADMIN WRITE (REAL WIRING)
-  // =======================
-
   Future<Announcement> createDraft({
     required String title,
     required String summary,
     String? excerpt,
-    String? body,
+    String? bodyMarkdown,
   }) async {
     final res = await _dio.post(
       '/admin/announcements',
@@ -167,7 +159,8 @@ class AnnouncementsRepository {
         'title': title,
         'summary': summary,
         if (excerpt != null && excerpt.isNotEmpty) 'excerpt': excerpt,
-        if (body != null && body.isNotEmpty) 'body': body,
+        if (bodyMarkdown != null && bodyMarkdown.isNotEmpty)
+          'bodyMarkdown': bodyMarkdown,
       },
     );
 
@@ -177,31 +170,26 @@ class AnnouncementsRepository {
 
   Future<void> publish(String id) async {
     await _dio.post('/admin/announcements/$id/publish');
-
     _invalidateCache();
   }
 
   Future<void> unpublish(String id) async {
     await _dio.post('/admin/announcements/$id/unpublish');
-
     _invalidateCache();
   }
 
   Future<void> pin(String id) async {
     await _dio.post('/admin/announcements/$id/pin');
-
     _invalidateCache();
   }
 
   Future<void> unpin(String id) async {
     await _dio.post('/admin/announcements/$id/unpin');
-
     _invalidateCache();
   }
 
   Future<void> remove(String id) async {
     await _dio.delete('/admin/announcements/$id');
-
     _invalidateCache();
   }
 
@@ -210,5 +198,7 @@ class AnnouncementsRepository {
     _cachedPinned = null;
     _listFetchedAt = null;
     _pinnedFetchedAt = null;
+    _listInFlight = null;
+    _pinnedInFlight = null;
   }
 }
