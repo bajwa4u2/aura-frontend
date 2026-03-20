@@ -134,6 +134,10 @@ final dioProvider = Provider<Dio>((ref) {
     return status == 401 || status == 403;
   }
 
+  bool _isSafeSessionResetStatus(int? status) {
+    return status == 401 || status == 403;
+  }
+
   Future<void> _clearSessionState() async {
     await ref.read(tokenStoreProvider).clearTokens();
     ref.invalidate(sessionBootstrapProvider);
@@ -149,6 +153,17 @@ final dioProvider = Provider<Dio>((ref) {
     return false;
   }
 
+  bool _shouldAttemptRefreshForRequest(RequestOptions req) {
+    final method = req.method.toUpperCase();
+    final path = _normalizePath(req.path);
+
+    if (method == 'GET') return true;
+
+    if (path == '/auth/me' || path == '/me') return true;
+
+    return false;
+  }
+
   bool canAttemptRefreshNow() {
     final store = ref.read(tokenStoreProvider);
 
@@ -161,14 +176,6 @@ final dioProvider = Provider<Dio>((ref) {
     if (authStatus != AuthStatus.authed) return false;
 
     return true;
-  }
-
-  bool shouldClearTokensOnRefreshFailure(Object error) {
-    if (error is DioException) {
-      return _isUnauthorizedStatus(error.response?.statusCode);
-    }
-
-    return false;
   }
 
   Dio buildRefreshDio() {
@@ -301,6 +308,11 @@ final dioProvider = Provider<Dio>((ref) {
           return;
         }
 
+        if (!_shouldAttemptRefreshForRequest(req)) {
+          handler.next(err);
+          return;
+        }
+
         if (!canAttemptRefreshNow()) {
           handler.next(err);
           return;
@@ -346,24 +358,17 @@ final dioProvider = Provider<Dio>((ref) {
           final response = await dio.fetch<dynamic>(req);
           handler.resolve(response);
         } catch (refreshError) {
-          if (shouldClearTokensOnRefreshFailure(refreshError)) {
+          final refreshStatus = refreshError is DioException
+              ? refreshError.response?.statusCode
+              : null;
+
+          if (_isSafeSessionResetStatus(refreshStatus)) {
             await _clearSessionState();
             handler.next(err);
             return;
           }
 
-          if (refreshError is DioException) {
-            handler.next(refreshError);
-          } else {
-            handler.next(
-              DioException(
-                requestOptions: req,
-                type: DioExceptionType.unknown,
-                error: refreshError,
-                message: 'Refresh failed: $refreshError',
-              ),
-            );
-          }
+          handler.next(err);
         }
       },
     ),

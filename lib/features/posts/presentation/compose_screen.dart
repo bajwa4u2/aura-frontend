@@ -1483,8 +1483,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       } else {
         if (_isReply) {
           router.go('/correspondence');
+        } else if ((publishedPostId ?? '').trim().isNotEmpty) {
+          router.go('/posts/${publishedPostId!.trim()}');
         } else {
-          router.go('/');
+          router.go('/home');
         }
       }
     } catch (e) {
