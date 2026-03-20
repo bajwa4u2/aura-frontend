@@ -20,9 +20,6 @@ Map<String, dynamic> _asMap(dynamic v) {
   return <String, dynamic>{};
 }
 
-/// Unwrap common envelopes:
-/// - { ok:true, data:{...} }
-/// - { ok:true, data:{ data:{...} } }
 Map<String, dynamic> _unwrapMap(dynamic raw) {
   final root = _asMap(raw);
   dynamic inner = root['data'];
@@ -154,7 +151,10 @@ class MemberHomeScreen extends ConsumerWidget {
   const MemberHomeScreen({super.key});
 
   Future<void> _openCompose(BuildContext context, WidgetRef ref, {String? heldId}) async {
-    final target = (heldId ?? '').trim().isNotEmpty ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}' : '/compose';
+    final target = (heldId ?? '').trim().isNotEmpty
+        ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}'
+        : '/compose';
+
     await context.push(target);
     ref.invalidate(latestHeldProvider);
   }
@@ -178,6 +178,9 @@ class MemberHomeScreen extends ConsumerWidget {
           AuraSpace.s24,
         ),
         children: [
+          const _PinnedAnnouncementBanner(),
+          const SizedBox(height: AuraSpace.s16),
+
           heldAsync.when(
             data: (held) {
               final hasHeld = held != null;
@@ -196,7 +199,9 @@ class MemberHomeScreen extends ConsumerWidget {
               onTap: () => _openCompose(context, ref),
             ),
           ),
+
           const SizedBox(height: AuraSpace.s16),
+
           worksAsync.when(
             data: (posts) {
               final top = posts.take(6).toList();
