@@ -203,6 +203,11 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
                   runSpacing: AuraSpace.s10,
                   children: [
                     FilledButton.icon(
+                      onPressed: () => context.go('/announcements/create?scope=platform'),
+                      icon: const Icon(Icons.add_circle_outline, size: 18),
+                      label: const Text('Create platform notice'),
+                    ),
+                    FilledButton.icon(
                       onPressed: () => ref.invalidate(announcementsProvider),
                       icon: const Icon(Icons.refresh, size: 18),
                       label: const Text('Refresh archive'),
@@ -333,6 +338,11 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
                   children: [
                     _StatusChip(label: standing),
                     if (domain.isNotEmpty) _StatusChip(label: 'Domain: $domain'),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/announcements/create?scope=institution'),
+                      icon: const Icon(Icons.add_circle_outline, size: 18),
+                      label: const Text('Create institution notice'),
+                    ),
                     OutlinedButton(
                       onPressed: () => context.go('/institution/dashboard'),
                       child: const Text('Back to institution dashboard'),

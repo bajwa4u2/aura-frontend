@@ -26,6 +26,7 @@ import 'features/conversations/presentation/conversations_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
+import 'features/announcements/presentation/announcement_editor_screen.dart';
 import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
@@ -356,7 +357,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/announcements/create',
-        redirect: (_, __) => '/create',
+        builder: (context, state) {
+          final scope = (state.uri.queryParameters['scope'] ?? '').trim().toLowerCase();
+          final editorScope = scope == 'institution'
+              ? AnnouncementEditorScope.institution
+              : AnnouncementEditorScope.platform;
+          return AnnouncementEditorScreen(scope: editorScope);
+        },
       ),
       GoRoute(
         path: '/announcements/:slug',

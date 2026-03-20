@@ -31,23 +31,40 @@ class AnnouncementsRepository {
 
   List<Map<String, dynamic>> _asList(dynamic v) {
     if (v is List) {
-      return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      return v
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     return [];
   }
 
+  /// 🔥 FIXED: handles nested envelopes properly
   Map<String, dynamic> _unwrapMap(dynamic raw) {
     final root = _asMap(raw);
 
-    if (root.containsKey('ok') && root.containsKey('data')) {
-      return _asMap(root['data']);
+    dynamic inner = root;
+
+    // unwrap { ok, data }
+    if (inner.containsKey('ok') && inner.containsKey('data')) {
+      inner = inner['data'];
     }
 
-    if (root.containsKey('item')) {
-      return _asMap(root['item']);
+    // unwrap nested { data: { ... } }
+    if (inner is Map && inner['data'] is Map) {
+      inner = inner['data'];
     }
 
-    return root;
+    // unwrap { item: {...} }
+    if (inner is Map && inner['item'] is Map) {
+      inner = inner['item'];
+    }
+
+    if (inner is Map) {
+      return Map<String, dynamic>.from(inner);
+    }
+
+    return {};
   }
 
   List<Map<String, dynamic>> _unwrapList(dynamic raw) {
