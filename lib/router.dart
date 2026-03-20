@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
+import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
+import 'core/institutions/institution_access_provider.dart';
 
 // Auth
 import 'features/auth/presentation/auth_screen.dart';
@@ -39,6 +41,7 @@ import 'features/profile/presentation/followers_screen.dart';
 import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
+import 'features/institutions/presentation/admin_workspace_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
@@ -74,6 +77,7 @@ const String kInstitutionVerificationRoute = '/institution/request-verification'
 const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
+const String kAdminWorkspaceRoute = '/admin';
 const String kRouterBootRoute = '/_boot';
 
 const String kCorrespondenceHubRoute = '/me/correspondence';
@@ -115,6 +119,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     if (prevValue != nextValue || prevLoading != nextLoading) {
       refresh.value++;
     }
+  });
+
+  ref.listen<AsyncValue<InstitutionAccess>>(institutionAccessProvider, (_, __) {
+    refresh.value++;
+  });
+
+  ref.listen<AsyncValue<AppAdminAccess>>(appAdminAccessProvider, (_, __) {
+    refresh.value++;
   });
 
   bool isBootPath(String path) => path == kRouterBootRoute;
@@ -175,6 +187,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == kCorrespondenceHubRoute ||
         path == kCreateConversationRoute ||
         path == kCreateSpaceRoute ||
+        path == kAdminWorkspaceRoute ||
         path.startsWith('$kCorrespondenceHubRoute/') ||
         path == kInstitutionDashboardRoute ||
         path == kInstitutionDomainsRoute ||
@@ -200,6 +213,24 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isGuestOnly(String path) => isPlainAuthPage(path);
 
+  bool requiresAppAdmin(String path) => path == kAdminWorkspaceRoute;
+
+  bool requiresInstitutionAccess(String path) {
+    return path == kInstitutionDashboardRoute ||
+        path == kInstitutionProfileRoute ||
+        path == kInstitutionCorrespondenceRoute ||
+        path == kInstitutionVerificationRoute ||
+        path == kInstitutionAnnouncementsRoute;
+  }
+
+  bool requiresInstitutionAdminOrSpeaker(String path) {
+    return path == kInstitutionAnnouncementsRoute;
+  }
+
+  bool requiresInstitutionAdmin(String path) {
+    return path == kInstitutionDomainsRoute;
+  }
+
   String bootRedirectFor(String target, {required String fallback}) {
     final encoded = Uri.encodeComponent(
       _normalizeRedirectDest(target, fallback: fallback),
@@ -216,6 +247,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bootstrap = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
+      final institutionAsync = ref.read(institutionAccessProvider);
+      final appAdminAsync = ref.read(appAdminAccessProvider);
 
       final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
       final redirectDest = _normalizeRedirectDest(
@@ -237,6 +270,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => false,
       );
 
+      final institutionAccess = institutionAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
+      );
+
+      final appAdmin = appAdminAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => const AppAdminAccess(state: AppAdminState.none),
+      );
+
+      final institutionAccessLoading = isLoggedIn &&
+          (requiresInstitutionAccess(path) ||
+              requiresInstitutionAdminOrSpeaker(path) ||
+              requiresInstitutionAdmin(path)) &&
+          institutionAsync.isLoading;
+
+      final appAdminLoading =
+          isLoggedIn && requiresAppAdmin(path) && appAdminAsync.isLoading;
+
       if (isBootstrapping) {
         if (isBootPath(path)) return null;
 
@@ -246,7 +298,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         );
       }
 
-      if (isLoggedIn && isVerificationLoading) {
+      if (isLoggedIn && (isVerificationLoading || institutionAccessLoading || appAdminLoading)) {
         return null;
       }
 
@@ -306,6 +358,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (isGuestOnly(path) || isVerifyPending) {
           return redirectDest;
         }
+      }
+
+      if (requiresAppAdmin(path) && !appAdmin.isAdmin) {
+        return '/home';
+      }
+
+      if (requiresInstitutionAccess(path) && !institutionAccess.hasAccess) {
+        return kEnterInstitutionRoute;
+      }
+
+      final isInstitutionAdmin =
+          institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
+      final isInstitutionSpeakerOrAdmin =
+          institutionAccess.state == InstitutionAccessState.authorizedSpeaker ||
+              institutionAccess.state == InstitutionAccessState.verifiedMember;
+
+      if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
+        return kInstitutionDashboardRoute;
+      }
+
+      if (requiresInstitutionAdminOrSpeaker(path) && !isInstitutionSpeakerOrAdmin) {
+        return kInstitutionDashboardRoute;
       }
 
       return null;
@@ -446,6 +520,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/me/follow-requests',
             builder: (_, __) => const FollowRequestsScreen(),
+          ),
+          GoRoute(
+            path: kAdminWorkspaceRoute,
+            builder: (_, __) => const AdminWorkspaceScreen(),
           ),
 
           // Correspondence routes flattened for stable direct navigation
