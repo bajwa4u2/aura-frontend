@@ -16,6 +16,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../ai/providers.dart';
+import '../../feed/providers.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
@@ -1473,6 +1474,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(externalMessage!)),
         );
+      }
+
+      if (!_isReply) {
+        ref.invalidate(feedProvider);
+        await ref.read(feedControllerProvider.notifier).loadInitial();
       }
 
       if (!mounted) return;
