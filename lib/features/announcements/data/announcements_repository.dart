@@ -1,3 +1,4 @@
+
 import 'package:dio/dio.dart';
 
 import '../domain/announcement.dart';
@@ -31,10 +32,7 @@ class AnnouncementsRepository {
 
   List<Map<String, dynamic>> _asList(dynamic v) {
     if (v is List) {
-      return v
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     }
     return [];
   }
@@ -99,9 +97,7 @@ class AnnouncementsRepository {
   Future<List<Announcement>> _fetchList() async {
     final res = await _dio.get('/announcements');
 
-    final items = _unwrapList(res.data)
-        .map((e) => Announcement.fromJson(e))
-        .toList();
+    final items = _unwrapList(res.data).map((e) => Announcement.fromJson(e)).toList();
 
     _cachedList = items;
     _listFetchedAt = DateTime.now();
@@ -124,9 +120,7 @@ class AnnouncementsRepository {
   Future<List<Announcement>> _fetchPinned() async {
     final res = await _dio.get('/announcements/pinned');
 
-    final items = _unwrapList(res.data)
-        .map((e) => Announcement.fromJson(e))
-        .toList();
+    final items = _unwrapList(res.data).map((e) => Announcement.fromJson(e)).toList();
 
     _cachedPinned = items;
     _pinnedFetchedAt = DateTime.now();
@@ -150,20 +144,48 @@ class AnnouncementsRepository {
   Future<Announcement> createDraft({
     required String title,
     required String summary,
-    String? excerpt,
-    String? bodyMarkdown,
+    required String excerpt,
+    required String bodyMarkdown,
+    List<String> mediaIds = const [],
   }) async {
+    final cleanedMediaIds =
+        mediaIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
     final res = await _dio.post(
       '/admin/announcements',
       data: {
         'title': title,
         'summary': summary,
-        if (excerpt != null && excerpt.isNotEmpty) 'excerpt': excerpt,
-        if (bodyMarkdown != null && bodyMarkdown.isNotEmpty)
-          'bodyMarkdown': bodyMarkdown,
+        'excerpt': excerpt,
+        'bodyMarkdown': bodyMarkdown,
+        if (cleanedMediaIds.isNotEmpty) 'mediaIds': cleanedMediaIds,
       },
     );
 
+    final m = _unwrapMap(res.data);
+    return Announcement.fromJson(m);
+  }
+
+  Future<Announcement> updateDraft({
+    required String id,
+    String? title,
+    String? summary,
+    String? excerpt,
+    String? bodyMarkdown,
+    List<String>? mediaIds,
+  }) async {
+    final payload = <String, dynamic>{};
+
+    if (title != null) payload['title'] = title;
+    if (summary != null) payload['summary'] = summary;
+    if (excerpt != null) payload['excerpt'] = excerpt;
+    if (bodyMarkdown != null) payload['bodyMarkdown'] = bodyMarkdown;
+    if (mediaIds != null) {
+      payload['mediaIds'] =
+          mediaIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+
+    final res = await _dio.patch('/admin/announcements/$id', data: payload);
     final m = _unwrapMap(res.data);
     return Announcement.fromJson(m);
   }
