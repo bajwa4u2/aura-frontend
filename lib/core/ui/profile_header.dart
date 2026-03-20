@@ -245,7 +245,7 @@ class _PresenceControlRail extends StatelessWidget {
             if (actions.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(
-                  top: AuraSpace.s2,
+                  top: 2,
                   bottom: AuraSpace.s12,
                 ),
                 child: Container(
