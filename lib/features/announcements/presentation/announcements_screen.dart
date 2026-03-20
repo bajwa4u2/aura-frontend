@@ -184,7 +184,7 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
           const _IntroCard(
             title: 'Admin announcement workspace',
             body:
-                'This is the working surface for platform notices. It is for reviewing pinned notices, the public archive, and the live announcement detail paths.',
+                'This is the working surface for official platform notices. Use it to create notices, review pinned notices, review the archive, and open the public announcements view.',
           ),
           const SizedBox(height: AuraSpace.s12),
           AuraCard(
@@ -194,7 +194,7 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
                 Text('Workspace', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Use this area to review what is live, what is pinned, and how each notice opens on the public path.',
+                  'This area is reserved for official announcement work only.',
                   style: AuraText.body,
                 ),
                 const SizedBox(height: AuraSpace.s14),
@@ -218,14 +218,9 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
                       label: const Text('Refresh pinned'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: () => context.go('/updates'),
-                      icon: const Icon(Icons.notifications_none_outlined, size: 18),
-                      label: const Text('Open updates'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/public'),
+                      onPressed: () => context.go('/announcements'),
                       icon: const Icon(Icons.public_outlined, size: 18),
-                      label: const Text('Public home'),
+                      label: const Text('Open public announcements'),
                     ),
                   ],
                 ),

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../domain/announcement.dart';
+import '../providers.dart';
 
 enum AnnouncementEditorScope {
   platform,
@@ -36,6 +39,8 @@ class _AnnouncementEditorScreenState
   bool _publishToLinkedIn = false;
   bool _publishToTikTok = false;
 
+  bool _isSubmitting = false;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -65,9 +70,9 @@ class _AnnouncementEditorScreenState
   String get _introText {
     switch (widget.scope) {
       case AnnouncementEditorScope.platform:
-        return 'Use this surface for official notices issued in the platform voice. Distribution controls stay deliberate and limited.';
+        return 'Use this surface for official platform notices.';
       case AnnouncementEditorScope.institution:
-        return 'Use this surface for institution-facing notices. Distribution remains controlled and should reflect institutional standing and intent.';
+        return 'Institution announcement publishing is not wired yet. This surface can remain for drafting and structure, but it should not pretend to publish.';
     }
   }
 
@@ -76,9 +81,18 @@ class _AnnouncementEditorScreenState
       case AnnouncementEditorScope.platform:
         return 'Publish platform notice';
       case AnnouncementEditorScope.institution:
-        return 'Publish institution notice';
+        return 'Institution publishing unavailable';
     }
   }
+
+  bool get _institutionPublishingAvailable => false;
+
+  bool get _canSubmitPlatform =>
+      !_isSubmitting &&
+      _publishToAura &&
+      _titleController.text.trim().isNotEmpty &&
+      _summaryController.text.trim().isNotEmpty &&
+      _bodyController.text.trim().isNotEmpty;
 
   Map<String, dynamic> _mapOrEmpty(dynamic value) {
     if (value is Map<String, dynamic>) return value;
@@ -105,15 +119,114 @@ class _AnnouncementEditorScreenState
     return 'Institution';
   }
 
-  void _notWiredYet() {
+  void _showMessage(String message, {bool error = false}) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Editor surface is ready. Publish wiring can be connected next.',
-        ),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
       ),
+    );
+  }
+
+  String _buildExcerpt(String summary) {
+    final clean = summary.trim();
+    if (clean.length <= 180) return clean;
+    return '${clean.substring(0, 177).trimRight()}...';
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _publishPlatformNotice() async {
+    final title = _titleController.text.trim();
+    final summary = _summaryController.text.trim();
+    final bodyMarkdown = _bodyController.text.trim();
+
+    if (title.isEmpty || summary.isEmpty || bodyMarkdown.isEmpty) {
+      _showMessage(
+        'Title, summary, and body are required.',
+        error: true,
+      );
+      return;
+    }
+
+    if (!_publishToAura) {
+      _showMessage(
+        'Aura publication must remain enabled for a platform notice.',
+        error: true,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final repo = ref.read(announcementsRepoProvider);
+
+      final created = await repo.createDraft(
+        title: title,
+        summary: summary,
+        excerpt: _buildExcerpt(summary),
+        bodyMarkdown: bodyMarkdown,
+      );
+
+      await repo.publish(created.id);
+
+      if (_pinNotice) {
+        await repo.pin(created.id);
+      }
+
+      ref.invalidate(announcementsProvider);
+      ref.invalidate(pinnedAnnouncementsProvider);
+      ref.invalidate(announcementBySlugProvider(created.slug));
+
+      final externalTargets = <String>[];
+      if (_publishToLinkedIn) externalTargets.add('LinkedIn');
+      if (_publishToTikTok) externalTargets.add('TikTok');
+
+      if (!mounted) return;
+
+      if (externalTargets.isEmpty) {
+        _showMessage('Platform notice published.');
+      } else {
+        _showMessage(
+          'Platform notice published in Aura. ${externalTargets.join(' and ')} distribution is not wired yet.',
+        );
+      }
+
+      context.go('/announcements/${created.slug}');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(
+        'Failed to publish platform notice: $e',
+        error: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _handlePublish() async {
+    if (widget.scope == AnnouncementEditorScope.institution) {
+      _showMessage(
+        'Institution announcement publishing is not wired yet.',
+        error: true,
+      );
+      return;
+    }
+
+    await _publishPlatformNotice();
+  }
+
+  void _handleAttachmentTap() {
+    _showMessage(
+      'Attachments are not wired in this editor yet.',
+      error: true,
     );
   }
 
@@ -131,6 +244,7 @@ class _AnnouncementEditorScreenState
         TextField(
           controller: controller,
           maxLines: maxLines,
+          onChanged: (_) => _onChanged(),
           decoration: InputDecoration(
             hintText: hint,
             border: OutlineInputBorder(
@@ -144,8 +258,8 @@ class _AnnouncementEditorScreenState
 
   Widget _distributionCard() {
     final linkedInSubtitle = widget.scope == AnnouncementEditorScope.platform
-        ? 'Connected'
-        : 'Connected for authorized institutional use';
+        ? 'Not wired yet'
+        : 'Institution distribution not available yet';
 
     return AuraCard(
       child: Column(
@@ -154,7 +268,7 @@ class _AnnouncementEditorScreenState
           Text('Distribution', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Choose where this notice should be issued. This is an administrative decision surface, not a casual sharing layer.',
+            'Aura publication is live here. External distribution should remain visibly unavailable until it is actually connected.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -163,6 +277,7 @@ class _AnnouncementEditorScreenState
             title: 'Aura',
             subtitle: 'Primary publication',
             value: _publishToAura,
+            enabled: widget.scope == AnnouncementEditorScope.platform,
             onChanged: (value) {
               setState(() => _publishToAura = value);
             },
@@ -173,6 +288,7 @@ class _AnnouncementEditorScreenState
             title: 'LinkedIn',
             subtitle: linkedInSubtitle,
             value: _publishToLinkedIn,
+            enabled: false,
             onChanged: (value) {
               setState(() => _publishToLinkedIn = value);
             },
@@ -181,8 +297,9 @@ class _AnnouncementEditorScreenState
           _DistributionRow(
             icon: Icons.music_note_outlined,
             title: 'TikTok',
-            subtitle: 'Requires compatible video media',
+            subtitle: 'Not wired yet',
             value: _publishToTikTok,
+            enabled: false,
             onChanged: (value) {
               setState(() => _publishToTikTok = value);
             },
@@ -200,7 +317,7 @@ class _AnnouncementEditorScreenState
           Text('Controls', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Keep the announcement surface quiet and official. Pinned notices should be used sparingly.',
+            'Pinned notices should be used sparingly.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -209,9 +326,11 @@ class _AnnouncementEditorScreenState
             title: const Text('Pin this notice'),
             subtitle: const Text('Keep visible at the top of announcement surfaces'),
             value: _pinNotice,
-            onChanged: (value) {
-              setState(() => _pinNotice = value);
-            },
+            onChanged: _isSubmitting
+                ? null
+                : (value) {
+                    setState(() => _pinNotice = value);
+                  },
           ),
         ],
       ),
@@ -226,14 +345,39 @@ class _AnnouncementEditorScreenState
           Text('Attachments', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Attachments are not wired in this editor yet. When connected, this section should follow the same controlled media rules used elsewhere in Aura.',
+            'Attachments are not wired in this editor yet.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
           OutlinedButton.icon(
-            onPressed: _notWiredYet,
+            onPressed: _isSubmitting ? null : _handleAttachmentTap,
             icon: const Icon(Icons.add),
             label: const Text('Add attachment'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionCard() {
+    final isInstitution = widget.scope == AnnouncementEditorScope.institution;
+    final publishEnabled = isInstitution ? false : _canSubmitPlatform;
+
+    return AuraCard(
+      child: Wrap(
+        spacing: AuraSpace.s10,
+        runSpacing: AuraSpace.s10,
+        children: [
+          FilledButton.icon(
+            onPressed: publishEnabled ? _handlePublish : null,
+            icon: _isSubmitting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.publish_outlined),
+            label: Text(_publishButtonText),
           ),
         ],
       ),
@@ -270,6 +414,9 @@ class _AnnouncementEditorScreenState
                     _EditorChip(label: 'Scope: $_scopeLabel'),
                     if (widget.scope == AnnouncementEditorScope.institution)
                       _EditorChip(label: institutionName),
+                    if (widget.scope == AnnouncementEditorScope.institution &&
+                        !_institutionPublishingAvailable)
+                      const _EditorChip(label: 'Publishing unavailable'),
                   ],
                 ),
               ],
@@ -309,24 +456,7 @@ class _AnnouncementEditorScreenState
           const SizedBox(height: AuraSpace.s12),
           _distributionCard(),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: [
-                FilledButton.icon(
-                  onPressed: _notWiredYet,
-                  icon: const Icon(Icons.publish_outlined),
-                  label: Text(_publishButtonText),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _notWiredYet,
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  label: const Text('Save draft'),
-                ),
-              ],
-            ),
-          ),
+          _actionCard(),
         ],
       ),
     );
@@ -339,6 +469,7 @@ class _DistributionRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.value,
+    required this.enabled,
     required this.onChanged,
   });
 
@@ -346,6 +477,7 @@ class _DistributionRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool value;
+  final bool enabled;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -356,7 +488,7 @@ class _DistributionRow extends StatelessWidget {
       title: Text(title),
       subtitle: Text(subtitle),
       value: value,
-      onChanged: onChanged,
+      onChanged: enabled ? onChanged : null,
     );
   }
 }

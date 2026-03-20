@@ -39,23 +39,19 @@ class AnnouncementsRepository {
     return [];
   }
 
-  /// 🔥 FIXED: handles nested envelopes properly
   Map<String, dynamic> _unwrapMap(dynamic raw) {
     final root = _asMap(raw);
 
     dynamic inner = root;
 
-    // unwrap { ok, data }
     if (inner.containsKey('ok') && inner.containsKey('data')) {
       inner = inner['data'];
     }
 
-    // unwrap nested { data: { ... } }
     if (inner is Map && inner['data'] is Map) {
       inner = inner['data'];
     }
 
-    // unwrap { item: {...} }
     if (inner is Map && inner['item'] is Map) {
       inner = inner['item'];
     }
@@ -88,6 +84,10 @@ class AnnouncementsRepository {
 
     return [];
   }
+
+  // =======================
+  // PUBLIC READ
+  // =======================
 
   Future<List<Announcement>> list() {
     if (_cachedList != null && _isFresh(_listFetchedAt)) {
@@ -149,5 +149,66 @@ class AnnouncementsRepository {
     if (m.isEmpty) return null;
 
     return Announcement.fromJson(m);
+  }
+
+  // =======================
+  // ADMIN WRITE (REAL WIRING)
+  // =======================
+
+  Future<Announcement> createDraft({
+    required String title,
+    required String summary,
+    String? excerpt,
+    String? body,
+  }) async {
+    final res = await _dio.post(
+      '/admin/announcements',
+      data: {
+        'title': title,
+        'summary': summary,
+        if (excerpt != null && excerpt.isNotEmpty) 'excerpt': excerpt,
+        if (body != null && body.isNotEmpty) 'body': body,
+      },
+    );
+
+    final m = _unwrapMap(res.data);
+    return Announcement.fromJson(m);
+  }
+
+  Future<void> publish(String id) async {
+    await _dio.post('/admin/announcements/$id/publish');
+
+    _invalidateCache();
+  }
+
+  Future<void> unpublish(String id) async {
+    await _dio.post('/admin/announcements/$id/unpublish');
+
+    _invalidateCache();
+  }
+
+  Future<void> pin(String id) async {
+    await _dio.post('/admin/announcements/$id/pin');
+
+    _invalidateCache();
+  }
+
+  Future<void> unpin(String id) async {
+    await _dio.post('/admin/announcements/$id/unpin');
+
+    _invalidateCache();
+  }
+
+  Future<void> remove(String id) async {
+    await _dio.delete('/admin/announcements/$id');
+
+    _invalidateCache();
+  }
+
+  void _invalidateCache() {
+    _cachedList = null;
+    _cachedPinned = null;
+    _listFetchedAt = null;
+    _pinnedFetchedAt = null;
   }
 }
