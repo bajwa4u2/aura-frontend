@@ -16,6 +16,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../composition/data/composition_repository.dart';
+import '../../composition/domain/composition_models.dart';
 import '../providers.dart';
 import 'announcement_distribution.dart';
 
@@ -113,9 +115,17 @@ class _AnnouncementEditorScreenState
   String _currentUserId = '';
   final List<_AnnouncementAttachment> _attachments = [];
 
+  CompositionReviewResult? _compositionReview;
+  String? _compositionError;
+  bool _compositionReviewing = false;
+  final Set<String> _applyingFindingIds = <String>{};
+
   @override
   void initState() {
     super.initState();
+    _titleController.addListener(_handleAnnouncementInputChanged);
+    _summaryController.addListener(_handleAnnouncementInputChanged);
+    _bodyController.addListener(_handleAnnouncementInputChanged);
     if (widget.scope == AnnouncementEditorScope.platform) {
       _loadExternalConnections();
     }
@@ -123,6 +133,9 @@ class _AnnouncementEditorScreenState
 
   @override
   void dispose() {
+    _titleController.removeListener(_handleAnnouncementInputChanged);
+    _summaryController.removeListener(_handleAnnouncementInputChanged);
+    _bodyController.removeListener(_handleAnnouncementInputChanged);
     _titleController.dispose();
     _summaryController.dispose();
     _bodyController.dispose();
@@ -153,9 +166,9 @@ class _AnnouncementEditorScreenState
   String get _introText {
     switch (widget.scope) {
       case AnnouncementEditorScope.platform:
-        return 'Official notice';
+        return 'Use this surface for official platform notices.';
       case AnnouncementEditorScope.institution:
-        return 'Institution notice';
+        return 'Institution publishing is not wired yet. This surface remains for structure only.';
     }
   }
 
@@ -720,6 +733,277 @@ class _AnnouncementEditorScreenState
     );
   }
 
+  void _handleAnnouncementInputChanged() {
+    if (!mounted) return;
+    if (_compositionReview == null && _compositionError == null) return;
+    setState(() {
+      _compositionReview = null;
+      _compositionError = null;
+    });
+  }
+
+  bool get _canRunAnnouncementReview {
+    if (_institutionMode || _submitting || _uploadingMedia || _compositionReviewing) {
+      return false;
+    }
+    return _announcementCompositeText().trim().isNotEmpty;
+  }
+
+  String _announcementCompositeText() {
+    return [
+      'Title:',
+      _titleController.text.trim(),
+      '',
+      'Summary:',
+      _summaryController.text.trim(),
+      '',
+      'Body:',
+      _bodyController.text.trim(),
+    ].join('\n');
+  }
+
+  void _setAnnouncementCompositeText(String text) {
+    final normalized = text.replaceAll('\r\n', '\n').trim();
+    final reg = RegExp(r'Title:\s*\n([\s\S]*?)\n\s*Summary:\s*\n([\s\S]*?)\n\s*Body:\s*\n([\s\S]*)$', multiLine: true);
+    final match = reg.firstMatch(normalized);
+
+    if (match != null) {
+      _titleController.text = (match.group(1) ?? '').trim();
+      _summaryController.text = (match.group(2) ?? '').trim();
+      _bodyController.text = (match.group(3) ?? '').trim();
+      return;
+    }
+
+    _bodyController.text = normalized;
+  }
+
+  Future<void> _runAnnouncementReview() async {
+    if (!_canRunAnnouncementReview) return;
+
+    setState(() {
+      _compositionReviewing = true;
+      _compositionError = null;
+      _compositionReview = null;
+    });
+
+    try {
+      final repo = ref.read(compositionRepositoryProvider);
+      final review = await repo.review(
+        text: _announcementCompositeText(),
+        surface: CompositionSurface.composer,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _compositionReview = review;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _compositionError = 'Review could not be completed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _compositionReviewing = false);
+      }
+    }
+  }
+
+  Future<void> _applyAnnouncementFinding(CompositionFinding finding) async {
+    final review = _compositionReview;
+    if (review == null) return;
+    if (finding.id.trim().isEmpty) return;
+
+    setState(() {
+      _applyingFindingIds.add(finding.id);
+      _compositionError = null;
+    });
+
+    try {
+      final repo = ref.read(compositionRepositoryProvider);
+      final applied = await repo.apply(
+        sessionId: review.sessionId,
+        findingId: finding.id,
+        text: _announcementCompositeText(),
+        surface: CompositionSurface.composer,
+      );
+
+      if (!mounted) return;
+
+      if (applied.text.trim().isNotEmpty) {
+        _setAnnouncementCompositeText(applied.text);
+      }
+
+      setState(() {
+        _compositionReview = applied.review ?? review;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _compositionError = 'Apply failed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _applyingFindingIds.remove(finding.id);
+        });
+      }
+    }
+  }
+
+  Map<String, List<CompositionFinding>> _groupAnnouncementFindings(
+    List<CompositionFinding> findings,
+  ) {
+    final grouped = <String, List<CompositionFinding>>{};
+    for (final finding in findings) {
+      final key = finding.chapterLabel;
+      grouped.putIfAbsent(key, () => <CompositionFinding>[]).add(finding);
+    }
+    return grouped;
+  }
+
+  Widget _compositionCard() {
+    final review = _compositionReview;
+    final grouped = review == null
+        ? const <String, List<CompositionFinding>>{}
+        : _groupAnnouncementFindings(review.findings);
+    final allowApply = review?.allowApply ?? false;
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Review', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Review before publishing.',
+                      style: AuraText.body,
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _canRunAnnouncementReview ? _runAnnouncementReview : null,
+                icon: _compositionReviewing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high_outlined),
+                label: Text(_compositionReviewing ? 'Reviewing...' : 'Review'),
+              ),
+            ],
+          ),
+          if (review != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                _EditorChip(label: 'Surface: ${review.surface.label}'),
+                if (review.intensityLabel.isNotEmpty)
+                  _EditorChip(label: 'Intensity: ${review.intensityLabel}'),
+                _EditorChip(label: 'Findings: ${review.findings.length}'),
+                _EditorChip(label: review.allowApply ? 'Apply enabled' : 'Apply limited'),
+              ],
+            ),
+          ],
+          if ((review?.summary ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(review!.summary, style: AuraText.body),
+          ],
+          if ((_compositionError ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              _compositionError!,
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
+          ],
+          if (review != null && review.findings.isEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              'No findings returned for this announcement.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+          for (final entry in grouped.entries) ...[
+            const SizedBox(height: AuraSpace.s14),
+            Text(
+              entry.key,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            for (final finding in entry.value) ...[
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: AuraSpace.s10),
+                padding: const EdgeInsets.all(AuraSpace.s12),
+                decoration: BoxDecoration(
+                  color: AuraSurface.page,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AuraSpace.s8,
+                      runSpacing: AuraSpace.s8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          finding.message,
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        _EditorChip(label: finding.stateLabel),
+                      ],
+                    ),
+                    if (finding.suggestion.trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(finding.suggestion, style: AuraText.body),
+                    ],
+                    if (allowApply) ...[
+                      const SizedBox(height: AuraSpace.s10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: _applyingFindingIds.contains(finding.id)
+                              ? null
+                              : () => _applyAnnouncementFinding(finding),
+                          icon: _applyingFindingIds.contains(finding.id)
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.rule_folder_outlined),
+                          label: Text(
+                            _applyingFindingIds.contains(finding.id)
+                                ? 'Applying...'
+                                : (finding.actionLabel.trim().isNotEmpty
+                                    ? finding.actionLabel
+                                    : 'Apply'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
   void _showMessage(String message, {bool error = false}) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
@@ -784,6 +1068,29 @@ class _AnnouncementEditorScreenState
     );
   }
 
+
+  Future<bool> _ensureAnnouncementReviewed() async {
+    if (_institutionMode) return true;
+
+    if (_compositionReviewing) return false;
+
+    if (_compositionReview == null) {
+      await _runAnnouncementReview();
+    }
+
+    if (!mounted) return false;
+
+    if (_compositionReview == null) {
+      final message = (_compositionError ?? '').trim().isNotEmpty
+          ? _compositionError!
+          : 'Review is required before publish.';
+      _showMessage(message, error: true);
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _handlePublish() async {
     if (_institutionMode) {
       _showMessage('Institution announcement publishing is not wired yet.', error: true);
@@ -794,6 +1101,9 @@ class _AnnouncementEditorScreenState
       _showMessage('Title, summary, and body are required.', error: true);
       return;
     }
+
+    final reviewed = await _ensureAnnouncementReviewed();
+    if (!reviewed || !mounted) return;
 
     setState(() => _submitting = true);
 
@@ -934,7 +1244,7 @@ class _AnnouncementEditorScreenState
           Text('Controls', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Pin if needed.',
+            'Pinned notices should be used sparingly.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -962,7 +1272,7 @@ class _AnnouncementEditorScreenState
           Text('Attachments', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Images and videos.'
+            'Images and videos upload through the Aura media system and attach to the announcement record.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -1013,7 +1323,7 @@ class _AnnouncementEditorScreenState
             Text('Distribution', style: AuraText.title),
             const SizedBox(height: AuraSpace.s8),
             Text(
-              'Unavailable.'
+              'Institution distribution is not wired yet.',
               style: AuraText.body,
             ),
           ],
@@ -1142,7 +1452,7 @@ class _AnnouncementEditorScreenState
                   children: [
                     _EditorChip(label: 'Scope: $_scopeLabel'),
                     if (_institutionMode) _EditorChip(label: institutionName),
-                    if (_institutionMode) const _EditorChip(label: 'Unavailable'),
+                    if (_institutionMode) const _EditorChip(label: 'Publishing unavailable'),
                     if (!_institutionMode && _currentUserId.isNotEmpty)
                       _EditorChip(label: 'Admin ready'),
                   ],
@@ -1177,6 +1487,8 @@ class _AnnouncementEditorScreenState
               ],
             ),
           ),
+          const SizedBox(height: AuraSpace.s12),
+          _compositionCard(),
           const SizedBox(height: AuraSpace.s12),
           _metadataCard(),
           const SizedBox(height: AuraSpace.s12),

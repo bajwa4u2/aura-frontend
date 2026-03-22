@@ -15,17 +15,20 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../ai/providers.dart';
+import '../../composition/data/composition_repository.dart';
+import '../../composition/domain/composition_models.dart';
 import '../../feed/providers.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
   final String? heldPostId;
+  final String? surface;
 
   const ComposeScreen({
     super.key,
     this.replyToPostId,
     this.heldPostId,
+    this.surface,
   });
 
   @override
@@ -106,8 +109,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool _auditBusy = false;
   DateTime? _lastAuditAt;
-  Map<String, dynamic>? _auditResult;
+  CompositionReviewResult? _auditResult;
   String? _auditError;
+  bool _reviewMode = false;
 
   bool _tiktokLoading = false;
   bool _tiktokActionBusy = false;
@@ -328,10 +332,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         setState(() {
           if (_showTextError && _hasText) {
             _showTextError = false;
-          }
-          if (_auditResult != null || (_auditError ?? '').trim().isNotEmpty) {
-            _auditResult = null;
-            _auditError = null;
           }
         });
       }
@@ -1061,14 +1061,24 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
+
+  CompositionSurface get _compositionSurface {
+    final explicit = CompositionSurfaceX.tryParse(widget.surface);
+    if (explicit != null) return explicit;
+    return _isReply ? CompositionSurface.dm : CompositionSurface.composer;
+  }
+
+  String get _compositionSurfaceLabel => _compositionSurface.label;
+
   bool get _auditCooldownActive {
     final t = _lastAuditAt;
     if (t == null) return false;
     return DateTime.now().difference(t) < const Duration(seconds: 15);
   }
 
-  Future<Map<String, dynamic>?> _runAuraEditor({
+  Future<CompositionReviewResult?> _runAuraEditor({
     bool fromPublish = false,
+    bool quiet = false,
   }) async {
     final text = _textController.text.trim();
 
@@ -1078,7 +1088,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         _auditResult = null;
       });
 
-      if (!fromPublish && mounted) {
+      if (!fromPublish && !quiet && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Text is required.')),
         );
@@ -1098,19 +1108,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     });
 
     try {
-      final repo = ref.read(aiRepoProvider);
-
-      Map<String, dynamic> out;
-      try {
-        out = await repo.editorReview(text: text);
-      } on DioException catch (e) {
-        final code = e.response?.statusCode;
-        if (code == 404) {
-          out = await repo.claimAudit(text: text);
-        } else {
-          rethrow;
-        }
-      }
+      final repo = ref.read(compositionRepositoryProvider);
+      final out = await repo.review(
+        text: text,
+        surface: _compositionSurface,
+      );
 
       if (!mounted) return null;
 
@@ -1126,9 +1128,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         _auditError = e.toString();
       });
 
-      if (!fromPublish) {
+      if (!fromPublish && !quiet) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Aura Editor could not run: $e')),
+          SnackBar(content: Text('Aura could not review this draft: $e')),
         );
       }
 
@@ -1140,96 +1142,65 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
-  List<Map<String, String>> _spellingItems(Map<String, dynamic> r) {
-    final raw = r['spelling'];
-    if (raw is! List) return const [];
-
-    final out = <Map<String, String>>[];
-    for (final item in raw) {
-      if (item is! Map) continue;
-      final m = Map<String, dynamic>.from(item);
-      final original = _str(m['original']);
-      final suggestion = _str(m['suggestion']);
-      if (original.isEmpty || suggestion.isEmpty) continue;
-      out.add({'original': original, 'suggestion': suggestion});
-      if (out.length >= 5) break;
+  Map<String, List<CompositionFinding>> _groupedFindings(
+    CompositionReviewResult review,
+  ) {
+    final grouped = <String, List<CompositionFinding>>{};
+    for (final finding in review.findings) {
+      grouped.putIfAbsent(finding.chapterLabel, () => <CompositionFinding>[]);
+      grouped[finding.chapterLabel]!.add(finding);
     }
-
-    return out;
+    return grouped;
   }
 
-  List<Map<String, String>> _grammarItems(Map<String, dynamic> r) {
-    final raw = r['grammar'];
-    if (raw is! List) return const [];
-
-    final out = <Map<String, String>>[];
-    for (final item in raw) {
-      if (item is! Map) continue;
-      final m = Map<String, dynamic>.from(item);
-      final issue = _str(m['issue']);
-      final suggestion = _str(m['suggestion']);
-      if (issue.isEmpty || suggestion.isEmpty) continue;
-      out.add({'issue': issue, 'suggestion': suggestion});
-      if (out.length >= 5) break;
-    }
-
-    return out;
+  int _activeFindingCount(CompositionReviewResult? review) {
+    if (review == null) return 0;
+    return review.findings.where((f) => !f.isResolved).length;
   }
 
-  List<String> _legacySignals(Map<String, dynamic> r) {
-    final assumptions = _listOfMap(r['assumptions'])
-        .take(3)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
-    final clarity = _listOfMap(r['clarity_issues'])
-        .take(3)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
-    final tone = _listOfMap(r['tone_flags'])
-        .take(2)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
-
-    final combined = <String>[...clarity, ...assumptions, ...tone];
-    final seen = <String>{};
-    final out = <String>[];
-
-    for (final s in combined) {
-      final k = s.toLowerCase();
-      if (k.isEmpty || seen.contains(k)) continue;
-      seen.add(k);
-      out.add(s);
-      if (out.length >= 5) break;
+  Future<void> _applyCompositionFinding(CompositionFinding finding) async {
+    final review = _auditResult;
+    if (review == null) {
+      throw Exception('No active composition session.');
     }
 
-    return out;
-  }
-
-  String _legacyRefinement(Map<String, dynamic> r, String original) {
-    final signals = _legacySignals(r);
-    final firstLine = signals.isNotEmpty ? signals.first : '';
-
-    final text = original.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (text.isEmpty) return '';
-
-    final softened = text
-        .replaceAll(
-          RegExp(
-            r'\b(always|never|everyone|no one|obviously|clearly|completely|totally)\b',
-            caseSensitive: false,
-          ),
-          '',
-        )
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    final example = softened.isEmpty ? text : softened;
-
-    if (firstLine.isEmpty) {
-      return 'Try tightening one sentence for clarity.\nExample: $example';
+    final text = _textController.text.trim();
+    if (text.isEmpty) {
+      throw Exception('Text is required.');
     }
 
-    return '$firstLine\nExample: $example';
+    final repo = ref.read(compositionRepositoryProvider);
+    final applied = await repo.apply(
+      sessionId: review.sessionId,
+      findingId: finding.id,
+      text: text,
+      surface: _compositionSurface,
+    );
+
+    if (!mounted) return;
+
+    final nextText = applied.text.trim();
+    if (nextText.isNotEmpty && nextText != text) {
+      _textController.text = nextText;
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
+      setState(() {
+        _showTextError = false;
+      });
+    }
+
+    if (applied.review != null) {
+      setState(() {
+        _auditResult = applied.review;
+      });
+    } else {
+      await _runAuraEditor(quiet: true);
+    }
+
+    if (!_isReply) {
+      await _saveDraft(silent: true);
+    }
   }
 
   Future<String?> _publishReplyNow() async {
@@ -1396,12 +1367,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     if (!_canPublish) return;
 
-    final review = await _runAuraEditor(fromPublish: true, quiet: true);
-    if (!mounted) return;
-    if (review == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_auditError ?? 'Review is required before publish.')),
-      );
+    if (!_reviewMode || _auditResult == null) {
+      await _runAuraEditor(fromPublish: true);
+      if (!mounted) return;
+      setState(() => _reviewMode = true);
       return;
     }
 
@@ -1519,76 +1488,223 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
-  bool get _showInlineReview =>
-      _auditBusy || _auditResult != null || (_auditError ?? '').trim().isNotEmpty;
-
-  Widget _buildInlineReviewCard() {
-    if (!_showInlineReview) {
-      return const SizedBox.shrink();
+  Future<bool?> _openAuraEditorSheet({
+    CompositionReviewResult? reviewResult,
+    bool publishMode = false,
+  }) async {
+    if (reviewResult != null && mounted) {
+      setState(() {
+        _auditResult = reviewResult;
+        _auditError = null;
+      });
     }
 
-    final review = _auditResult;
-    final grouped = review == null
-        ? const <String, List<CompositionFinding>>{}
-        : _groupedFindings(review);
-    final activeCount = _activeFindingCount(review);
-    final allowApply = review?.allowApply ?? true;
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AuraSurface.page,
+      builder: (ctx) {
+        final pad = MediaQuery.of(ctx).viewInsets.bottom;
 
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('Review', style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
-              _InfoChip(label: _compositionSurfaceLabel),
-              if (review != null && review.intensityLabel.isNotEmpty)
-                _InfoChip(label: review.intensityLabel),
-              if (review != null)
-                _InfoChip(
-                  label: activeCount == 1 ? '1 finding' : '$activeCount findings',
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final review = _auditResult;
+            final grouped = review == null
+                ? const <String, List<CompositionFinding>>{}
+                : _groupedFindings(review);
+
+            Future<void> rerun() async {
+              setModalState(() {});
+              await _runAuraEditor(fromPublish: publishMode);
+              if (!ctx.mounted) return;
+              setModalState(() {});
+            }
+
+            Future<void> applyFinding(CompositionFinding finding) async {
+              try {
+                setModalState(() {});
+                await _applyCompositionFinding(finding);
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not apply change: $e')),
+                );
+              } finally {
+                if (ctx.mounted) {
+                  setModalState(() {});
+                }
+              }
+            }
+
+            final activeCount = _activeFindingCount(review);
+            final allowApply = review?.allowApply ?? true;
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  AuraSpace.s16 + pad,
                 ),
-            ],
-          ),
-          if (_auditBusy) ...[
-            const SizedBox(height: AuraSpace.s12),
-            const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ],
-          if ((_auditError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              _auditError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-          if (review != null && review.summary.trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text(review.summary, style: AuraText.body),
-          ],
-          if (review != null && grouped.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            for (final entry in grouped.entries) ...[
-              _CompositionChapterSection(
-                chapter: entry.key,
-                findings: entry.value,
-                allowApply: allowApply,
-                busy: _auditBusy,
-                onApply: _applyCompositionFinding,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Composition review', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s8),
+                      Wrap(
+                        spacing: AuraSpace.s8,
+                        runSpacing: AuraSpace.s8,
+                        children: [
+                          _InfoChip(label: _compositionSurfaceLabel),
+                          if (review != null && review.intensityLabel.isNotEmpty)
+                            _InfoChip(label: review.intensityLabel),
+                          _InfoChip(
+                            label: activeCount == 1
+                                ? '1 active finding'
+                                : '$activeCount active findings',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      AuraCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Flow',
+                              style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: AuraSpace.s8),
+                            Text(
+                              publishMode
+                                  ? 'Review the findings, apply what should change, then publish.'
+                                  : 'Review the findings and apply changes one by one. The backend stays the source of truth.',
+                              style: AuraText.body,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if ((_auditError ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Note',
+                                style: AuraText.body.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: AuraSpace.s8),
+                              Text(_auditError!, style: AuraText.body),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (_auditBusy) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        AuraCard(
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              const SizedBox(width: AuraSpace.s10),
+                              Expanded(
+                                child: Text(
+                                  'Reviewing through the composition engine…',
+                                  style: AuraText.body,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (!_auditBusy && review == null) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        AuraCard(
+                          child: Text(
+                            'No composition review is available yet.',
+                            style: AuraText.body,
+                          ),
+                        ),
+                      ],
+                      if (review != null && review.summary.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Summary',
+                                style: AuraText.body.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: AuraSpace.s8),
+                              Text(review.summary, style: AuraText.body),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (review != null && grouped.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        for (final entry in grouped.entries) ...[
+                          _CompositionChapterSection(
+                            chapter: entry.key,
+                            findings: entry.value,
+                            allowApply: allowApply,
+                            busy: _auditBusy,
+                            onApply: applyFinding,
+                          ),
+                          const SizedBox(height: AuraSpace.s12),
+                        ],
+                      ],
+                      Wrap(
+                        spacing: AuraSpace.s10,
+                        runSpacing: AuraSpace.s10,
+                        children: [
+                          OutlinedButton(
+                            onPressed: _auditBusy
+                                ? null
+                                : () => Navigator.of(ctx).pop(false),
+                            child: Text(publishMode ? 'Keep editing' : 'Close'),
+                          ),
+                          OutlinedButton(
+                            onPressed:
+                                (_auditBusy || _auditCooldownActive) ? null : rerun,
+                            child: Text(
+                              _auditCooldownActive ? 'Please wait…' : 'Run again',
+                            ),
+                          ),
+                          if (publishMode)
+                            FilledButton(
+                              onPressed: _auditBusy
+                                  ? null
+                                  : () => Navigator.of(ctx).pop(true),
+                              child: Text(_isReply ? 'Publish reply' : 'Publish'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-          ],
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
+
 
   Future<void> _discardAndClose() async {
     if (_posting) return;
@@ -1695,6 +1811,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           _isReply ? 'Reply' : 'Compose',
           style: AuraText.title,
         ),
+        _InfoChip(label: _compositionSurfaceLabel),
         if (!_isReply)
           Text(
             _savedLine(),
@@ -1712,8 +1829,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         OutlinedButton(
           onPressed: (_posting || _auditBusy)
               ? null
-              : () => _runAuraEditor(),
-          child: Text(_auditBusy ? 'Reviewing…' : 'Refine'),
+              : () async {
+                  final result = await _runAuraEditor();
+                  if (!mounted) return;
+                  await _openAuraEditorSheet(reviewResult: result);
+                },
+          child: const Text('Refine'),
         ),
         OutlinedButton(
           onPressed: _posting ? null : _discardAndClose,
@@ -1730,14 +1851,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
-          _isReply ? 'Reply' : 'Composing',
+          _isReply ? 'Composing reply' : 'Composing',
           style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
-        if (!_isReply)
-          Text(
-            _savedLine(),
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
+        Text(
+          'Review → Apply → Publish',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+        Text(
+          _savedLine(),
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
       ],
     );
   }
@@ -1845,7 +1969,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         ),
         const SizedBox(height: AuraSpace.s8),
         Text(
-          'Images and videos.',
+          'Images and videos upload through the new Aura media system. Each item can have its own caption.',
           style: AuraText.small.copyWith(color: AuraSurface.muted),
         ),
         const SizedBox(height: AuraSpace.s12),
@@ -2065,10 +2189,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 const SizedBox(height: AuraSpace.s10),
                 Text(
                   _publishToTikTok && _publishToLinkedIn
-                      ? 'Aura, TikTok, LinkedIn'
+                      ? 'Aura publishes first, then sends the post to TikTok and LinkedIn.'
                       : _publishToTikTok
-                          ? 'Aura, TikTok'
-                          : 'Aura, LinkedIn',
+                          ? 'Aura will publish the post first, then queue the first uploaded video to TikTok.'
+                          : 'Aura will publish the post first, then send the text to LinkedIn.',
                   style: AuraText.small.copyWith(
                     color: AuraSurface.muted,
                   ),
@@ -2139,6 +2263,111 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     );
   }
 
+
+  Widget _buildReviewMode() {
+    final review = _auditResult;
+    final grouped = review == null
+        ? const <String, List<CompositionFinding>>{}
+        : _groupedFindings(review);
+    final allowApply = review?.allowApply ?? true;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s12,
+        AuraSpace.s16,
+        AuraSpace.s20,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPageTopBar(),
+              const SizedBox(height: AuraSpace.s12),
+              Text('Review', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: AuraSpace.s16),
+              if ((_auditError ?? '').trim().isNotEmpty) ...[
+                AuraCard(child: Text(_auditError!, style: AuraText.body)),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              if (_auditBusy && review == null) ...[
+                AuraCard(child: Text('Reviewing...', style: AuraText.body)),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              if (!_auditBusy && review != null && review.summary.trim().isNotEmpty) ...[
+                AuraCard(child: Text(review.summary, style: AuraText.body)),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              if (!_auditBusy && review != null && grouped.isEmpty) ...[
+                AuraCard(child: Text('No findings.', style: AuraText.body)),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              if (review != null && grouped.isNotEmpty)
+                for (final entry in grouped.entries) ...[
+                  _CompositionChapterSection(
+                    chapter: entry.key,
+                    findings: entry.value,
+                    allowApply: allowApply,
+                    busy: _auditBusy,
+                    onApply: (finding) async {
+                      try {
+                        await _applyCompositionFinding(finding);
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Could not apply change: $e')),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewBottomBar(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s12,
+        AuraSpace.s16,
+        AuraSpace.s12 + bottomPad,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _auditBusy ? null : () => setState(() => _reviewMode = false),
+              child: const Text('Back'),
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          OutlinedButton(
+            onPressed: (_auditBusy || _auditCooldownActive) ? null : _runAuraEditor,
+            child: Text(_auditCooldownActive ? 'Please wait…' : 'Run again'),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          FilledButton(
+            onPressed: (_posting || _auditBusy || _auditResult == null) ? null : _publish,
+            child: Text(_posting ? (_isReply ? 'Publishing reply…' : 'Publishing…') : (_isReply ? 'Publish reply' : 'Publish to record')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
@@ -2152,65 +2381,63 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 12 : 0),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16,
-                  AuraSpace.s12,
-                  AuraSpace.s16,
-                  AuraSpace.s20,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 920),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPageTopBar(),
-                        const SizedBox(height: AuraSpace.s12),
-                        _buildActionRow(),
-                        if (_showInlineReview) ...[
-                          const SizedBox(height: AuraSpace.s12),
-                          _buildInlineReviewCard(),
-                        ],
-                        const SizedBox(height: AuraSpace.s16),
-                        AuraCard(
+              child: _reviewMode
+                  ? _buildReviewMode()
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AuraSpace.s16,
+                        AuraSpace.s12,
+                        AuraSpace.s16,
+                        AuraSpace.s20,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 920),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildStatusRow(),
+                              _buildPageTopBar(),
                               const SizedBox(height: AuraSpace.s12),
-                              _divider(),
-                              const SizedBox(height: AuraSpace.s12),
-                              if (!_isReply) ...[
-                                _buildAudienceBlock(),
-                                const SizedBox(height: AuraSpace.s12),
-                                _divider(),
-                                const SizedBox(height: AuraSpace.s12),
-                              ],
-                              _buildComposerBox(),
-                              const SizedBox(height: AuraSpace.s8),
-                              _buildCharacterLine(),
-                              const SizedBox(height: AuraSpace.s12),
-                              _divider(),
-                              const SizedBox(height: AuraSpace.s12),
-                              _buildAttachmentsBlock(),
-                              if (!_isReply) ...[
-                                const SizedBox(height: AuraSpace.s12),
-                                _divider(),
-                                const SizedBox(height: AuraSpace.s12),
-                                _buildExternalPublishingBlock(),
-                              ],
+                              _buildActionRow(),
+                              const SizedBox(height: AuraSpace.s16),
+                              AuraCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildStatusRow(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _divider(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    if (!_isReply) ...[
+                                      _buildAudienceBlock(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _divider(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                    ],
+                                    _buildComposerBox(),
+                                    const SizedBox(height: AuraSpace.s8),
+                                    _buildCharacterLine(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _divider(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _buildAttachmentsBlock(),
+                                    if (!_isReply) ...[
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _divider(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _buildExternalPublishingBlock(),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
           ),
-          _buildBottomBar(context),
+          _reviewMode ? _buildReviewBottomBar(context) : _buildBottomBar(context),
         ],
       ),
     );
@@ -2250,6 +2477,164 @@ class _VisibilityChip extends StatelessWidget {
               : AuraText.small.copyWith(color: AuraSurface.muted),
         ),
       ),
+    );
+  }
+}
+
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompositionChapterSection extends StatelessWidget {
+  const _CompositionChapterSection({
+    required this.chapter,
+    required this.findings,
+    required this.allowApply,
+    required this.busy,
+    required this.onApply,
+  });
+
+  final String chapter;
+  final List<CompositionFinding> findings;
+  final bool allowApply;
+  final bool busy;
+  final Future<void> Function(CompositionFinding finding) onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            chapter,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          for (var i = 0; i < findings.length; i++) ...[
+            _CompositionFindingTile(
+              finding: findings[i],
+              allowApply: allowApply,
+              busy: busy,
+              onApply: onApply,
+            ),
+            if (i != findings.length - 1) ...[
+              const SizedBox(height: AuraSpace.s12),
+              Container(height: 1, color: AuraSurface.divider),
+              const SizedBox(height: AuraSpace.s12),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CompositionFindingTile extends StatelessWidget {
+  const _CompositionFindingTile({
+    required this.finding,
+    required this.allowApply,
+    required this.busy,
+    required this.onApply,
+  });
+
+  final CompositionFinding finding;
+  final bool allowApply;
+  final bool busy;
+  final Future<void> Function(CompositionFinding finding) onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final stateColor = finding.isResolved
+        ? AuraSurface.muted
+        : (finding.isWarning ? AuraSurface.warnInk : AuraSurface.ink);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              finding.message,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8,
+                vertical: AuraSpace.s4,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AuraSurface.divider),
+                color: AuraSurface.elevated,
+              ),
+              child: Text(
+                finding.stateLabel,
+                style: AuraText.small.copyWith(
+                  color: stateColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (finding.suggestion.trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            finding.suggestion,
+            style: AuraText.body,
+          ),
+        ],
+        if (finding.actionLabel.isNotEmpty || allowApply) ...[
+          const SizedBox(height: AuraSpace.s10),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              if (allowApply)
+                OutlinedButton(
+                  onPressed: (busy || finding.isResolved)
+                      ? null
+                      : () => onApply(finding),
+                  child: Text(
+                    finding.actionLabel.isNotEmpty
+                        ? finding.actionLabel
+                        : 'Apply change',
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

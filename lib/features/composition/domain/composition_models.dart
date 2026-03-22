@@ -10,11 +10,11 @@ extension CompositionSurfaceX on CompositionSurface {
   String get apiValue {
     switch (this) {
       case CompositionSurface.composer:
-        return 'composer'; // ✅ FIXED (lowercase)
+        return 'composer';
       case CompositionSurface.space:
-        return 'space'; // ✅ FIXED
+        return 'space';
       case CompositionSurface.dm:
-        return 'dm'; // ✅ FIXED
+        return 'dm';
     }
   }
 
@@ -30,20 +30,19 @@ extension CompositionSurfaceX on CompositionSurface {
   }
 
   static CompositionSurface? tryParse(String? raw) {
-    final value = (raw ?? '').trim().toLowerCase(); // ✅ FIXED (lowercase parsing)
-
+    final value = (raw ?? '').trim().toLowerCase();
     switch (value) {
-      case 'composer':
-      case 'compose':
-      case 'post':
+      case 'COMPOSER':
+      case 'COMPOSE':
+      case 'POST':
         return CompositionSurface.composer;
-      case 'space':
-      case 'spaces':
+      case 'SPACE':
+      case 'SPACES':
         return CompositionSurface.space;
-      case 'dm':
-      case 'direct':
-      case 'direct_message':
-      case 'reply':
+      case 'DM':
+      case 'DIRECT':
+      case 'DIRECT_MESSAGE':
+      case 'REPLY':
         return CompositionSurface.dm;
       default:
         return null;
