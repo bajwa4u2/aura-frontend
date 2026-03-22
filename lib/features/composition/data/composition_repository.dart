@@ -168,11 +168,38 @@ class CompositionRepository {
       ['data', 'items'],
     ]) {
       final value = _valueAtPath(root, path);
+
       if (value is List) {
         final parsed = _parseFindingList(value);
         if (parsed.isNotEmpty) return parsed;
       }
+
+      if (value is Map) {
+        final out = <CompositionFinding>[];
+
+        value.forEach((chapterKey, listValue) {
+          if (listValue is! List) return;
+
+          final parsed = _parseFindingList(listValue).map((finding) {
+            return CompositionFinding(
+              id: finding.id,
+              chapter: chapterKey.toString(),
+              state: finding.state,
+              message: finding.message,
+              suggestion: finding.suggestion,
+              actionType: finding.actionType,
+              actionLabel: finding.actionLabel,
+              raw: finding.raw,
+            );
+          });
+
+          out.addAll(parsed);
+        });
+
+        if (out.isNotEmpty) return out;
+      }
     }
+
     return const <CompositionFinding>[];
   }
 
