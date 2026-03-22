@@ -573,6 +573,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => ComposeScreen(
               replyToPostId: state.uri.queryParameters['replyTo'],
               heldPostId: state.uri.queryParameters['held'],
+              surface: state.uri.queryParameters['surface'],
             ),
           ),
           GoRoute(

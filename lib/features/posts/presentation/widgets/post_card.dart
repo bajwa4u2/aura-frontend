@@ -2275,7 +2275,7 @@ class _ActionRow extends ConsumerWidget {
         pill(
           icon: Icons.reply_outlined,
           label: 'Respond',
-          onTap: () => context.push('/compose?replyTo=$postId'),
+          onTap: () => context.push('/compose?replyTo=$postId&surface=dm'),
         ),
         pill(
           icon: Icons.repeat,

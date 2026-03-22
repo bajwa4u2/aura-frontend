@@ -11,6 +11,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../composition/data/composition_repository.dart';
+import '../../composition/domain/composition_models.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
   const NewConversationScreen({
@@ -46,6 +48,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   String? _loadError;
   String? _submitError;
   String _spaceType = 'CIRCLE';
+
+  CompositionReviewResult? _spaceCompositionReview;
+  String? _spaceCompositionError;
+  bool _spaceCompositionReviewing = false;
+  final Set<String> _applyingFindingIds = <String>{};
 
   Timer? _searchDebounce;
 
@@ -88,6 +95,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     unawaited(_loadDirectory());
     _searchController.addListener(_handleSearchChanged);
     _titleController.addListener(_onDetailsChanged);
+    _titleController.addListener(_handleCompositionInputChanged);
+    _descriptionController.addListener(_handleCompositionInputChanged);
   }
 
   @override
@@ -96,6 +105,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     _searchController.removeListener(_handleSearchChanged);
     _titleController.removeListener(_onDetailsChanged);
     _searchController.dispose();
+    _titleController.removeListener(_handleCompositionInputChanged);
+    _descriptionController.removeListener(_handleCompositionInputChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -282,6 +293,268 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       _selectedIds.remove(id);
       _submitError = null;
     });
+  }
+
+  void _handleCompositionInputChanged() {
+    if (!mounted) return;
+    if (_spaceCompositionReview == null && _spaceCompositionError == null) return;
+    setState(() {
+      _spaceCompositionReview = null;
+      _spaceCompositionError = null;
+    });
+  }
+
+  bool get _canRunCreateCompositionReview {
+    if (!_isSharedSpaceMode || _submitting || _loading || _spaceCompositionReviewing) {
+      return false;
+    }
+    return _createSpaceCompositeText().trim().isNotEmpty;
+  }
+
+  String _createSpaceCompositeText() {
+    return [
+      'Title:',
+      _titleController.text.trim(),
+      '',
+      'Description:',
+      _descriptionController.text.trim(),
+    ].join('\n');
+  }
+
+  void _setCreateSpaceCompositeText(String text) {
+    final normalized = text.replaceAll('\r\n', '\n').trim();
+    final reg = RegExp(r'Title:\s*\n([\s\S]*?)\n\s*Description:\s*\n([\s\S]*)$', multiLine: true);
+    final match = reg.firstMatch(normalized);
+    if (match != null) {
+      _titleController.text = (match.group(1) ?? '').trim();
+      _descriptionController.text = (match.group(2) ?? '').trim();
+      return;
+    }
+
+    _descriptionController.text = normalized;
+  }
+
+  Future<void> _runCreateCompositionReview() async {
+    if (!_canRunCreateCompositionReview) return;
+
+    setState(() {
+      _spaceCompositionReviewing = true;
+      _spaceCompositionError = null;
+      _spaceCompositionReview = null;
+    });
+
+    try {
+      final repo = ref.read(compositionRepositoryProvider);
+      final review = await repo.review(
+        text: _createSpaceCompositeText(),
+        surface: CompositionSurface.space,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _spaceCompositionReview = review;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _spaceCompositionError = 'Review could not be completed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _spaceCompositionReviewing = false);
+      }
+    }
+  }
+
+  Future<void> _applyCreateCompositionFinding(CompositionFinding finding) async {
+    final review = _spaceCompositionReview;
+    if (review == null || finding.id.trim().isEmpty) return;
+
+    setState(() {
+      _applyingFindingIds.add(finding.id);
+      _spaceCompositionError = null;
+    });
+
+    try {
+      final repo = ref.read(compositionRepositoryProvider);
+      final applied = await repo.apply(
+        sessionId: review.sessionId,
+        findingId: finding.id,
+        text: _createSpaceCompositeText(),
+        surface: CompositionSurface.space,
+      );
+
+      if (!mounted) return;
+      if (applied.text.trim().isNotEmpty) {
+        _setCreateSpaceCompositeText(applied.text);
+      }
+      setState(() {
+        _spaceCompositionReview = applied.review ?? review;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _spaceCompositionError = 'Apply failed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _applyingFindingIds.remove(finding.id);
+        });
+      }
+    }
+  }
+
+  Map<String, List<CompositionFinding>> _groupCreateFindings(
+    List<CompositionFinding> findings,
+  ) {
+    final grouped = <String, List<CompositionFinding>>{};
+    for (final finding in findings) {
+      grouped.putIfAbsent(finding.chapterLabel, () => <CompositionFinding>[]).add(finding);
+    }
+    return grouped;
+  }
+
+  Widget _buildSpaceCompositionCard() {
+    final review = _spaceCompositionReview;
+    final grouped = review == null
+        ? const <String, List<CompositionFinding>>{}
+        : _groupCreateFindings(review.findings);
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Composition review',
+                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Review the title and description before creating the space.',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _canRunCreateCompositionReview ? _runCreateCompositionReview : null,
+                icon: _spaceCompositionReviewing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high_outlined),
+                label: Text(_spaceCompositionReviewing ? 'Reviewing...' : 'Review'),
+              ),
+            ],
+          ),
+          if (review != null) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                _MetaChip(label: 'Surface: ${review.surface.label}'),
+                if (review.intensityLabel.isNotEmpty)
+                  _MetaChip(label: 'Intensity: ${review.intensityLabel}'),
+                _MetaChip(label: 'Findings: ${review.findings.length}'),
+              ],
+            ),
+          ],
+          if ((review?.summary ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(review!.summary, style: AuraText.body),
+          ],
+          if ((_spaceCompositionError ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              _spaceCompositionError!,
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
+          ],
+          if (review != null && review.findings.isEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              'No findings returned for this space draft.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+          for (final entry in grouped.entries) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              entry.key,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            for (final finding in entry.value) ...[
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: AuraSpace.s10),
+                padding: const EdgeInsets.all(AuraSpace.s12),
+                decoration: BoxDecoration(
+                  color: AuraSurface.page,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AuraSpace.s8,
+                      runSpacing: AuraSpace.s8,
+                      children: [
+                        Text(
+                          finding.message,
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        _MetaChip(label: finding.stateLabel),
+                      ],
+                    ),
+                    if (finding.suggestion.trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(finding.suggestion, style: AuraText.body),
+                    ],
+                    if (review.allowApply) ...[
+                      const SizedBox(height: AuraSpace.s10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: _applyingFindingIds.contains(finding.id)
+                              ? null
+                              : () => _applyCreateCompositionFinding(finding),
+                          icon: _applyingFindingIds.contains(finding.id)
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.rule_folder_outlined),
+                          label: Text(
+                            _applyingFindingIds.contains(finding.id)
+                                ? 'Applying...'
+                                : (finding.actionLabel.trim().isNotEmpty
+                                    ? finding.actionLabel
+                                    : 'Apply'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -606,6 +879,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                 setState(() => _spaceType = value);
               },
             ),
+            const SizedBox(height: AuraSpace.s16),
+            _buildSpaceCompositionCard(),
           ],
         ],
       ),
@@ -685,6 +960,31 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
