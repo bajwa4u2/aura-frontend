@@ -1202,6 +1202,293 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
+  Future<String?> _publishReplyNow() async {
+    final dio = ref.read(dioProvider);
+
+    if (_replyToPostId.isEmpty) {
+      throw Exception('Reply target missing.');
+    }
+
+    await dio.post(
+      '/posts/$_replyToPostId/reply',
+      data: {
+        'text': _textController.text.trim(),
+      },
+    );
+
+    return null;
+  }
+
+  Future<String?> _publishPostNow() async {
+    final dio = ref.read(dioProvider);
+    final res = await dio.post('/posts/draft/publish');
+    return _extractPublishedPostId(res.data);
+  }
+
+  Future<String?> _publishNow() async {
+    if (_isReply) {
+      return _publishReplyNow();
+    }
+
+    return _publishPostNow();
+  }
+
+  String? _extractPublishedPostId(dynamic raw) {
+    final root = _asMap(raw);
+    final candidates = <Map<String, dynamic>>[
+      root,
+      _asMap(root['data']),
+      _asMap(root['post']),
+      _asMap(_asMap(root['data'])['post']),
+    ];
+
+    for (final item in candidates) {
+      final id = _str(item['id']);
+      if (id.isNotEmpty) return id;
+    }
+
+    return null;
+  }
+
+  String _buildTikTokCaption() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return '';
+
+    final collapsed = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (collapsed.length <= 150) return collapsed;
+    return '${collapsed.substring(0, 147).trim()}...';
+  }
+
+  Future<void> _publishToLinkedInNow(String postId) async {
+    final dio = ref.read(dioProvider);
+
+    final payload = {
+      'postId': postId,
+      'text': _textController.text.trim(),
+    };
+
+    final attempts = <String>[
+      '/v1/integrations/linkedin/publish/post',
+      '/integrations/linkedin/publish/post',
+    ];
+
+    DioException? lastDioError;
+    Object? lastError;
+
+    for (final path in attempts) {
+      try {
+        await dio.post(path, data: payload);
+        return;
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    if (lastError != null) throw Exception(lastError.toString());
+    throw Exception('LinkedIn publish endpoint was not available.');
+  }
+
+  Future<void> _publishToTikTokNow(String postId) async {
+    final attachment = _primaryTikTokVideoAttachment;
+    if (attachment == null) {
+      throw Exception('Add and upload a video first.');
+    }
+
+    final mediaUrl = (attachment.url ?? '').trim();
+    if (mediaUrl.isEmpty) {
+      throw Exception('Uploaded video URL is missing.');
+    }
+
+    final dio = ref.read(dioProvider);
+
+    await dio.post(
+      '/v1/integrations/tiktok/publish/video',
+      data: {
+        'postId': postId,
+        'mediaUrl': mediaUrl,
+        'caption': _buildTikTokCaption(),
+        if (_visibility == _PostVisibility.public)
+          'privacyLevel': 'PUBLIC_TO_EVERYONE',
+      },
+    );
+  }
+
+  Future<void> _publish() async {
+    if (_posting) return;
+
+    if (!_hasText) {
+      setState(() => _showTextError = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Text is required.')),
+      );
+      return;
+    }
+
+    if (_textTooLong) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Too long. Please shorten your post.')),
+      );
+      return;
+    }
+
+    if (_hasUploadingAttachments) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please wait for attachments to finish uploading.'),
+        ),
+      );
+      return;
+    }
+
+    if (_publishToTikTok) {
+      if (!_tiktokConnected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connect TikTok in Me before publishing externally.'),
+          ),
+        );
+        return;
+      }
+
+      if (!_hasTikTokVideo) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('TikTok publishing requires one uploaded video.'),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!_canPublish) return;
+
+    final review = await _runAuraEditor(fromPublish: true);
+    if (!mounted) return;
+
+    final proceed = await _openAuraEditorSheet(
+      reviewResult: review,
+      publishMode: true,
+    );
+    if (proceed != true || !mounted) return;
+
+    _autosaveDebounce?.cancel();
+
+    setState(() => _posting = true);
+
+    String? publishedPostId;
+    String? externalMessage;
+
+    try {
+      if (!_isReply) {
+        await _saveDraft(
+          silent: true,
+          allowWhilePosting: true,
+        );
+      }
+
+      publishedPostId = await _publishNow();
+
+      if (!_isReply &&
+          (_publishToTikTok || _publishToLinkedIn) &&
+          (publishedPostId ?? '').trim().isNotEmpty) {
+        final queuedTargets = <String>[];
+        final failedTargets = <String>[];
+
+        if (_publishToTikTok) {
+          setState(() {
+            _publishingToTikTok = true;
+          });
+
+          try {
+            await _publishToTikTokNow(publishedPostId!);
+            queuedTargets.add('TikTok');
+          } catch (e) {
+            failedTargets.add('TikTok ($e)');
+          } finally {
+            if (mounted) {
+              setState(() {
+                _publishingToTikTok = false;
+              });
+            }
+          }
+        }
+
+        if (_publishToLinkedIn) {
+          try {
+            await _publishToLinkedInNow(publishedPostId!);
+            queuedTargets.add('LinkedIn');
+          } catch (e) {
+            failedTargets.add('LinkedIn ($e)');
+          }
+        }
+
+        if (queuedTargets.isNotEmpty && failedTargets.isEmpty) {
+          externalMessage =
+              'Published to Aura and shared to ${queuedTargets.join(' and ')}.';
+        } else if (queuedTargets.isNotEmpty && failedTargets.isNotEmpty) {
+          externalMessage =
+              'Published to Aura. Shared to ${queuedTargets.join(' and ')}. ${failedTargets.join(', ')} could not be queued.';
+        } else if (failedTargets.isNotEmpty) {
+          externalMessage =
+              'Published to Aura. ${failedTargets.join(', ')} could not be queued.';
+        } else {
+          externalMessage = 'Published to Aura.';
+        }
+      } else {
+        externalMessage = _isReply ? 'Reply published.' : 'Published to Aura.';
+      }
+
+      if (!mounted) return;
+
+      if ((externalMessage ?? '').trim().isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(externalMessage!)),
+        );
+      }
+
+      if (!_isReply) {
+        ref.invalidate(feedProvider);
+        await ref.read(feedControllerProvider.notifier).loadInitial();
+      }
+
+      if (!mounted) return;
+
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        router.pop(true);
+      } else {
+        if (_isReply) {
+          router.go('/correspondence');
+        } else if ((publishedPostId ?? '').trim().isNotEmpty) {
+          router.go('/posts/${publishedPostId!.trim()}');
+        } else {
+          router.go('/home');
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      final message = publishedPostId != null && publishedPostId.trim().isNotEmpty
+          ? 'Published to Aura, but the screen could not finish cleanly: $e'
+          : 'Could not publish: $e';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _posting = false;
+          _publishingToTikTok = false;
+        });
+      }
+    }
+  }
+
   Future<bool?> _openAuraEditorSheet({
     CompositionReviewResult? reviewResult,
     bool publishMode = false,

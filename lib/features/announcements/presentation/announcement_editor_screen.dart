@@ -867,6 +867,7 @@ class _AnnouncementEditorScreenState
     final grouped = review == null
         ? const <String, List<CompositionFinding>>{}
         : _groupAnnouncementFindings(review.findings);
+    final allowApply = review?.allowApply ?? false;
 
     return AuraCard(
       child: Column(
@@ -968,7 +969,7 @@ class _AnnouncementEditorScreenState
                       const SizedBox(height: AuraSpace.s8),
                       Text(finding.suggestion, style: AuraText.body),
                     ],
-                    if (review.allowApply) ...[
+                    if (allowApply) ...[
                       const SizedBox(height: AuraSpace.s10),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -1067,6 +1068,29 @@ class _AnnouncementEditorScreenState
     );
   }
 
+
+  Future<bool> _ensureAnnouncementReviewed() async {
+    if (_institutionMode) return true;
+
+    if (_compositionReviewing) return false;
+
+    if (_compositionReview == null) {
+      await _runAnnouncementReview();
+    }
+
+    if (!mounted) return false;
+
+    if (_compositionReview == null) {
+      final message = (_compositionError ?? '').trim().isNotEmpty
+          ? _compositionError!
+          : 'Composition review is required before publish.';
+      _showMessage(message, error: true);
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _handlePublish() async {
     if (_institutionMode) {
       _showMessage('Institution announcement publishing is not wired yet.', error: true);
@@ -1077,6 +1101,9 @@ class _AnnouncementEditorScreenState
       _showMessage('Title, summary, and body are required.', error: true);
       return;
     }
+
+    final reviewed = await _ensureAnnouncementReviewed();
+    if (!reviewed || !mounted) return;
 
     setState(() => _submitting = true);
 

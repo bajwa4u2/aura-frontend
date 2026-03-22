@@ -420,6 +420,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     final grouped = review == null
         ? const <String, List<CompositionFinding>>{}
         : _groupCreateFindings(review.findings);
+    final allowApply = review?.allowApply ?? false;
 
     return AuraCard(
       child: Column(
@@ -522,7 +523,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                       const SizedBox(height: AuraSpace.s8),
                       Text(finding.suggestion, style: AuraText.body),
                     ],
-                    if (review.allowApply) ...[
+                    if (allowApply) ...[
                       const SizedBox(height: AuraSpace.s10),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -557,8 +558,35 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     );
   }
 
+
+  Future<bool> _ensureCreateReviewed() async {
+    if (!_isSharedSpaceMode) return true;
+
+    if (_spaceCompositionReviewing) return false;
+
+    if (_spaceCompositionReview == null) {
+      await _runCreateCompositionReview();
+    }
+
+    if (!mounted) return false;
+
+    if (_spaceCompositionReview == null) {
+      setState(() {
+        _submitError = (_spaceCompositionError ?? '').trim().isNotEmpty
+            ? _spaceCompositionError
+            : 'Composition review is required before creating the space.';
+      });
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
+
+    final reviewed = await _ensureCreateReviewed();
+    if (!reviewed || !mounted) return;
 
     setState(() {
       _submitting = true;
