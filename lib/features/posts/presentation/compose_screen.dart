@@ -1100,6 +1100,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       _compositionError = null;
       if (!fromPublish) {
         _compositionReview = null;
+        _showCompositionReview = false;
       }
     });
 
@@ -1111,10 +1112,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       );
 
       if (!mounted) return null;
+
+      final hasFindings = review.findings.isNotEmpty;
+
       setState(() {
         _compositionReview = review;
-        _showCompositionReview = review.findings.isNotEmpty;
+        _showCompositionReview = hasFindings;
+        if (!hasFindings) {
+          _compositionError = null;
+        }
       });
+
       return review;
     } catch (e) {
       if (!mounted) return null;
@@ -1158,8 +1166,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         );
       }
 
+      final nextReview = applied.review ?? review;
+      final hasFindings = nextReview.findings.isNotEmpty;
+
       setState(() {
-        _compositionReview = applied.review ?? review;
+        _compositionReview = nextReview;
+        _showCompositionReview = hasFindings;
       });
     } catch (e) {
       if (!mounted) return;
@@ -2600,9 +2612,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   Widget _buildBottomBar(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
-    final hasCleanReview =
-        _compositionReview != null && !_showCompositionReview;
-
     return Container(
       padding: EdgeInsets.fromLTRB(
         AuraSpace.s16,
@@ -2651,11 +2660,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   ? (_isReply
                       ? 'Publishing reply…'
                       : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
-                  : (_compositionBusy
-                      ? 'Reviewing…'
-                      : (hasCleanReview || _showCompositionReview)
-                          ? (_isReply ? 'Publish reply' : 'Publish to record')
-                          : 'Refine'),
+                  : (_isReply ? 'Publish reply' : 'Publish to record'),
             ),
           ),
         ],
