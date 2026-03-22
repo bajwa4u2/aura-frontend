@@ -17,19 +17,15 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../ai/providers.dart';
 import '../../feed/providers.dart';
-import '../../composition/data/composition_repository.dart';
-import '../../composition/domain/composition_models.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
   final String? heldPostId;
-  final String? surface;
 
   const ComposeScreen({
     super.key,
     this.replyToPostId,
     this.heldPostId,
-    this.surface,
   });
 
   @override
@@ -109,15 +105,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Timer? _autosaveDebounce;
 
   bool _auditBusy = false;
+  bool _showAuditReview = false;
   DateTime? _lastAuditAt;
   Map<String, dynamic>? _auditResult;
   String? _auditError;
-
-  bool _compositionBusy = false;
-  bool _showCompositionReview = false;
-  CompositionReviewResult? _compositionReview;
-  String? _compositionError;
-  final Set<String> _applyingCompositionFindingIds = <String>{};
 
   bool _tiktokLoading = false;
   bool _tiktokActionBusy = false;
@@ -339,9 +330,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           if (_showTextError && _hasText) {
             _showTextError = false;
           }
-          if (!_showCompositionReview && _compositionReview != null) {
-            _compositionReview = null;
-            _compositionError = null;
+          if (!_showAuditReview && _auditResult != null) {
+            _auditResult = null;
+            _auditError = null;
           }
         });
       }
@@ -1071,255 +1062,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
-
-  CompositionSurface get _compositionSurface {
-    final explicit = CompositionSurfaceX.tryParse(widget.surface);
-    if (explicit != null) return explicit;
-    return _isReply ? CompositionSurface.dm : CompositionSurface.composer;
-  }
-
-  Future<CompositionReviewResult?> _runCompositionReview({
-    bool fromPublish = false,
-  }) async {
-    final text = _textController.text.trim();
-
-    if (text.isEmpty) {
-      setState(() {
-        _showTextError = true;
-        _compositionError = 'Text is required.';
-        _compositionReview = null;
-        _showCompositionReview = false;
-      });
-      return null;
-    }
-
-    if (_compositionBusy) return _compositionReview;
-
-    setState(() {
-      _compositionBusy = true;
-      _compositionError = null;
-      if (!fromPublish) {
-        _compositionReview = null;
-      }
-    });
-
-    try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final review = await repo.review(
-        text: text,
-        surface: _compositionSurface,
-      );
-
-      if (!mounted) return null;
-      setState(() {
-        _compositionReview = review;
-        _showCompositionReview = true;
-      });
-      return review;
-    } catch (e) {
-      if (!mounted) return null;
-      setState(() {
-        _compositionError = '$e';
-        _showCompositionReview = true;
-      });
-      return null;
-    } finally {
-      if (mounted) {
-        setState(() => _compositionBusy = false);
-      }
-    }
-  }
-
-  Future<void> _applyCompositionFinding(CompositionFinding finding) async {
-    final review = _compositionReview;
-    if (review == null || finding.id.trim().isEmpty) return;
-
-    setState(() {
-      _applyingCompositionFindingIds.add(finding.id);
-      _compositionError = null;
-    });
-
-    try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final applied = await repo.apply(
-        sessionId: review.sessionId,
-        findingId: finding.id,
-        text: _textController.text.trim(),
-        surface: _compositionSurface,
-      );
-
-      if (!mounted) return;
-
-      if (applied.text.trim().isNotEmpty) {
-        _textController.value = _textController.value.copyWith(
-          text: applied.text,
-          selection: TextSelection.collapsed(offset: applied.text.length),
-          composing: TextRange.empty,
-        );
-      }
-
-      setState(() {
-        _compositionReview = applied.review ?? review;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _compositionError = '$e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _applyingCompositionFindingIds.remove(finding.id);
-        });
-      }
-    }
-  }
-
-  Map<String, List<CompositionFinding>> _groupCompositionFindings(
-    List<CompositionFinding> findings,
-  ) {
-    final grouped = <String, List<CompositionFinding>>{};
-    for (final finding in findings) {
-      grouped.putIfAbsent(finding.chapterLabel, () => <CompositionFinding>[]).add(finding);
-    }
-    return grouped;
-  }
-
-  Widget _buildCompositionReviewCard() {
-    final review = _compositionReview;
-    final grouped = review == null
-        ? const <String, List<CompositionFinding>>{}
-        : _groupCompositionFindings(review.findings);
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Review',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (_compositionBusy)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                OutlinedButton(
-                  onPressed: _runCompositionReview,
-                  child: const Text('Run again'),
-                ),
-            ],
-          ),
-          if ((_compositionError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              _compositionError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-          if (review != null && review.findings.isEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text('No findings.', style: AuraText.body),
-          ],
-          for (final entry in grouped.entries) ...[
-            const SizedBox(height: AuraSpace.s16),
-            Text(
-              entry.key,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            for (final finding in entry.value) ...[
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-                padding: const EdgeInsets.all(AuraSpace.s12),
-                decoration: BoxDecoration(
-                  color: AuraSurface.page,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      finding.message,
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    if (finding.suggestion.trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s6),
-                      Text(finding.suggestion, style: AuraText.body),
-                    ],
-                    if (review != null && review.allowApply) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: FilledButton(
-                          onPressed: _applyingCompositionFindingIds.contains(finding.id)
-                              ? null
-                              : () => _applyCompositionFinding(finding),
-                          child: Text(
-                            _applyingCompositionFindingIds.contains(finding.id)
-                                ? 'Applying...'
-                                : ((finding.actionLabel.trim().isNotEmpty)
-                                    ? finding.actionLabel
-                                    : 'Apply'),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainCard() {
-    if (_showCompositionReview) {
-      return _buildCompositionReviewCard();
-    }
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusRow(),
-          const SizedBox(height: AuraSpace.s12),
-          _divider(),
-          const SizedBox(height: AuraSpace.s12),
-          if (!_isReply) ...[
-            _buildAudienceBlock(),
-            const SizedBox(height: AuraSpace.s12),
-            _divider(),
-            const SizedBox(height: AuraSpace.s12),
-          ],
-          _buildComposerBox(),
-          const SizedBox(height: AuraSpace.s8),
-          _buildCharacterLine(),
-          const SizedBox(height: AuraSpace.s12),
-          _divider(),
-          const SizedBox(height: AuraSpace.s12),
-          _buildAttachmentsBlock(),
-          if (!_isReply) ...[
-            const SizedBox(height: AuraSpace.s12),
-            _divider(),
-            const SizedBox(height: AuraSpace.s12),
-            _buildExternalPublishingBlock(),
-          ],
-        ],
-      ),
-    );
-  }
-
   bool get _auditCooldownActive {
     final t = _lastAuditAt;
     if (t == null) return false;
@@ -1375,6 +1117,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       setState(() {
         _auditResult = out;
+        _showAuditReview = _hasAuditFindings(out);
       });
 
       return out;
@@ -1383,6 +1126,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       setState(() {
         _auditError = e.toString();
+        _showAuditReview = false;
       });
 
       if (!fromPublish) {
@@ -1489,6 +1233,73 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
 
     return '$firstLine\nExample: $example';
+  }
+
+
+  bool _hasAuditFindings(Map<String, dynamic>? r) {
+    if (r == null) return false;
+
+    return _spellingItems(r).isNotEmpty ||
+        _grammarItems(r).isNotEmpty ||
+        _legacySignals(r).isNotEmpty ||
+        _listOfString(r['things_to_consider'], take: 3).isNotEmpty ||
+        _listOfString(r['ways_to_strengthen'], take: 3).isNotEmpty ||
+        _str(r['suggested_refinement']).isNotEmpty;
+  }
+
+  List<String> _auditFindingLines(Map<String, dynamic> r) {
+    final lines = <String>[];
+
+    for (final item in _spellingItems(r)) {
+      lines.add('${item['original']} → ${item['suggestion']}');
+      if (lines.length >= 6) return lines;
+    }
+
+    for (final item in _grammarItems(r)) {
+      lines.add('${item['issue']} → ${item['suggestion']}');
+      if (lines.length >= 6) return lines;
+    }
+
+    for (final item in _listOfString(r['things_to_consider'], take: 3)) {
+      lines.add(item);
+      if (lines.length >= 6) return lines;
+    }
+
+    for (final item in _listOfString(r['ways_to_strengthen'], take: 3)) {
+      lines.add(item);
+      if (lines.length >= 6) return lines;
+    }
+
+    for (final item in _legacySignals(r)) {
+      lines.add(item);
+      if (lines.length >= 6) return lines;
+    }
+
+    return lines;
+  }
+
+  void _applyAuditRefinement() {
+    final r = _auditResult;
+    if (r == null) return;
+
+    final next = _str(r['suggested_refinement']).isNotEmpty
+        ? _str(r['suggested_refinement'])
+        : _legacyRefinement(r, _textController.text);
+
+    final text = next.trim();
+    if (text.isEmpty) return;
+
+    _textController.value = _textController.value.copyWith(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+      composing: TextRange.empty,
+    );
+
+    setState(() {
+      _showAuditReview = false;
+      _auditResult = null;
+      _auditError = null;
+    });
   }
 
   Future<String?> _publishReplyNow() async {
@@ -1655,14 +1466,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     if (!_canPublish) return;
 
-    if (!_showCompositionReview || _compositionReview == null) {
-      await _runCompositionReview(fromPublish: true);
-      return;
-    }
-
-    if (_compositionBusy || _applyingCompositionFindingIds.isNotEmpty) {
-      return;
-    }
+    final review = await _runAuraEditor(fromPublish: true);
+    if (!mounted) return;
+    if (review == null) return;
+    if (_hasAuditFindings(review)) return;
 
     _autosaveDebounce?.cancel();
 
@@ -1857,669 +1664,38 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       const SizedBox(height: AuraSpace.s8),
                       if (_auditError != null &&
                           _auditError!.trim().isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Note',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
+                        _showAuditReview
+                            ? _buildAuditReviewCard()
+                            : AuraCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildStatusRow(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _divider(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    if (!_isReply) ...[
+                                      _buildAudienceBlock(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _divider(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                    ],
+                                    _buildComposerBox(),
+                                    const SizedBox(height: AuraSpace.s8),
+                                    _buildCharacterLine(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _divider(),
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _buildAttachmentsBlock(),
+                                    if (!_isReply) ...[
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _divider(),
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _buildExternalPublishingBlock(),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: AuraSpace.s8),
-                              Text(_auditError!, style: AuraText.body),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (_auditBusy && !hasAnyContent) ...[
-                        AuraCard(
-                          child: Row(
-                            children: [
-                              const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                              const SizedBox(width: AuraSpace.s10),
-                              Expanded(
-                                child: Text(
-                                  'Reviewing…',
-                                  style: AuraText.body,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (!_auditBusy &&
-                          !hasAnyContent &&
-                          (_auditError ?? '').trim().isEmpty) ...[
-                        AuraCard(
-                          child: Text(
-                            'No review available yet.',
-                            style: AuraText.body,
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (what.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'What this is doing',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              Text(what, style: AuraText.body),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (spelling.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Spelling',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              for (final item in spelling)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AuraSpace.s10,
-                                  ),
-                                  child: Text(
-                                    '• ${item['original']} → ${item['suggestion']}',
-                                    style: AuraText.body,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (grammar.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Grammar',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              for (final item in grammar)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AuraSpace.s10,
-                                  ),
-                                  child: Text(
-                                    '• ${item['issue']}\n  ${item['suggestion']}',
-                                    style: AuraText.body,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (consider.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Things to consider',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              for (final item in consider)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AuraSpace.s10,
-                                  ),
-                                  child: Text('• $item', style: AuraText.body),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (strengthen.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Ways to strengthen',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              for (final item in strengthen)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AuraSpace.s10,
-                                  ),
-                                  child: Text('• $item', style: AuraText.body),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (civic.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Civic awareness',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              Text(civic, style: AuraText.body),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (refinement.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Suggested refinement',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              Text(refinement, style: AuraText.body),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      if (consider.isEmpty &&
-                          strengthen.isEmpty &&
-                          civic.isEmpty &&
-                          refinement.isEmpty &&
-                          spelling.isEmpty &&
-                          grammar.isEmpty &&
-                          legacySignals.isNotEmpty) ...[
-                        AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Signals',
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s10),
-                              for (final s in legacySignals)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AuraSpace.s10,
-                                  ),
-                                  child: Text('• $s', style: AuraText.body),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s12),
-                      ],
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          OutlinedButton(
-                            onPressed: _auditBusy
-                                ? null
-                                : () => Navigator.of(ctx).pop(false),
-                            child: Text(publishMode ? 'Edit' : 'Close'),
-                          ),
-                          OutlinedButton(
-                            onPressed:
-                                (_auditBusy || _auditCooldownActive) ? null : rerun,
-                            child: Text(
-                              _auditCooldownActive ? 'Please wait…' : 'Run again',
-                            ),
-                          ),
-                          if (publishMode)
-                            FilledButton(
-                              onPressed: _auditBusy
-                                  ? null
-                                  : () => Navigator.of(ctx).pop(true),
-                              child: Text(_isReply ? 'Publish reply' : 'Publish'),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _discardAndClose() async {
-    if (_posting) return;
-
-    _autosaveDebounce?.cancel();
-
-    for (final attachment in _attachments) {
-      attachment.dispose();
-    }
-
-    setState(() {
-      _textController.clear();
-      _attachments.clear();
-      _visibility = _PostVisibility.public;
-      _showTextError = false;
-      _auditResult = null;
-      _auditError = null;
-      _uploadingMedia = false;
-      _publishToTikTok = false;
-    });
-
-    if (!mounted) return;
-    context.pop(false);
-  }
-
-  Future<void> _showAddAttachmentSheet() async {
-    if (!_canAddMoreAttachments || _posting) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AuraSurface.page,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Add attachment', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s12),
-                _AttachmentActionButton(
-                  icon: Icons.camera_alt_outlined,
-                  label: 'Take photo',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickImageFromCamera();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.photo_library_outlined,
-                  label: 'Choose photo',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickImageFromGallery();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.videocam_outlined,
-                  label: 'Record video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromCamera();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.video_library_outlined,
-                  label: 'Choose video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromGallery();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _divider() => Container(height: 1, color: AuraSurface.divider);
-
-  int _attachmentColumns(double width) {
-    if (width < 700) return 1;
-    if (width < 1080) return 2;
-    return 3;
-  }
-
-  Widget _buildPageTopBar() {
-    return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        OutlinedButton.icon(
-          onPressed: _posting ? null : () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Back'),
-        ),
-        Text(
-          _isReply ? 'Reply' : 'Compose',
-          style: AuraText.title,
-        ),
-        if (!_isReply)
-          Text(
-            _savedLine(),
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildActionRow() {
-    return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
-      children: [
-        OutlinedButton(
-          onPressed: (_posting || _compositionBusy)
-              ? null
-              : () async {
-                  await _runCompositionReview();
-                },
-          child: Text(_showCompositionReview ? 'Run again' : 'Refine'),
-        ),
-        OutlinedButton(
-          onPressed: _posting
-              ? null
-              : () {
-                  if (_showCompositionReview) {
-                    setState(() {
-                      _showCompositionReview = false;
-                    });
-                  } else {
-                    _discardAndClose();
-                  }
-                },
-          child: Text(_showCompositionReview ? 'Back' : 'Discard'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusRow() {
-    return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text(
-          _isReply ? 'Composing reply' : 'Composing',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-        Text(
-          _savedLine(),
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAudienceBlock() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Audience',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Wrap(
-          spacing: AuraSpace.s8,
-          runSpacing: AuraSpace.s8,
-          children: _PostVisibility.values
-              .map(
-                (v) => _VisibilityChip(
-                  label: _visibilityLabel(v),
-                  selected: _visibility == v,
-                  onTap: _posting ? null : () => _setVisibility(v),
-                ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Text(
-          _visibilityHelp(_visibility),
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildComposerBox() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s10,
-      ),
-      child: TextField(
-        controller: _textController,
-        maxLines: null,
-        minLines: 6,
-        textCapitalization: TextCapitalization.sentences,
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.newline,
-        style: AuraText.body,
-        decoration: InputDecoration(
-          hintText: _isReply ? 'Write a reply…' : 'Add to the record… (required)',
-          hintStyle: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-          ),
-          border: InputBorder.none,
-          errorText: _showTextError ? 'Text is required' : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCharacterLine() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        '${_textController.text.trim().length}/$_limit',
-        style: AuraText.small.copyWith(
-          color: _textTooLong ? AuraSurface.warnInk : AuraSurface.muted,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttachmentsBlock() {
-    if (_isReply) {
-      return AuraCard(
-        child: Text(
-          'Reply attachments will be added after the reply endpoint is upgraded. Right now replies are text-only.',
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Attachments',
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-            Text(
-              '${_attachments.length}/$_maxAttachments',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Text(
-          'Images and videos upload through the new Aura media system. Each item can have its own caption.',
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        Wrap(
-          spacing: AuraSpace.s10,
-          runSpacing: AuraSpace.s10,
-          children: [
-            OutlinedButton.icon(
-              onPressed:
-                  (_posting || !_canAddMoreAttachments) ? null : _showAddAttachmentSheet,
-              icon: const Icon(Icons.add),
-              label: const Text('Add attachment'),
-            ),
-          ],
-        ),
-        if (_attachments.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = _attachmentColumns(constraints.maxWidth);
-              final gap = AuraSpace.s12;
-              final itemWidth =
-                  (constraints.maxWidth - ((columns - 1) * gap)) / columns;
-
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: _attachments.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final attachment = entry.value;
-                  return SizedBox(
-                    width: itemWidth,
-                    child: _AttachmentCard(
-                      attachment: attachment,
-                      index: index,
-                      count: _attachments.length,
-                      busy: _posting,
-                      onRemove: () => _removeAttachment(attachment),
-                      onMoveLeft: index > 0
-                          ? () => _moveAttachmentLeft(index)
-                          : null,
-                      onMoveRight: index < _attachments.length - 1
-                          ? () => _moveAttachmentRight(index)
-                          : null,
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildExternalPublishingBlock() {
-    if (_isReply) return const SizedBox.shrink();
-
-    final canUseTikTok = _tiktokConnected && _hasTikTokVideo && !_posting;
-    final tiktokSubtitle = _tiktokLoading
-        ? 'Checking connection…'
-        : !_tiktokConnected
-            ? 'Connect TikTok from Me to publish externally.'
-            : !_hasTikTokVideo
-                ? 'Add and upload one video to enable TikTok publishing.'
-                : _tiktokAccountLabel.isNotEmpty
-                    ? 'Connected as $_tiktokAccountLabel'
-                    : 'Connected';
-
-    final linkedinVisible = _linkedinLoading || _linkedinConnected;
-    final canUseLinkedIn = _linkedinConnected && !_posting;
-    final linkedinSubtitle = _linkedinLoading
-        ? 'Checking connection…'
-        : _linkedinAccountLabel.isNotEmpty
-            ? 'Connected as $_linkedinAccountLabel'
-            : 'Connected';
-
-    final tiktokHelper = (_tiktokError ?? '').trim();
-    final linkedinHelper = (_linkedinError ?? '').trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'External publishing',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Container(
-          decoration: BoxDecoration(
-            color: AuraSurface.page,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          padding: const EdgeInsets.all(AuraSpace.s12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.music_note_outlined,
-                    size: 18,
-                    color: AuraSurface.ink,
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'TikTok',
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          tiktokSubtitle,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -2632,6 +1808,56 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     );
   }
 
+
+  Widget _buildAuditReviewCard() {
+    final r = _auditResult;
+    final lines = r == null ? const <String>[] : _auditFindingLines(r);
+    final refinement = r == null
+        ? ''
+        : (_str(r['suggested_refinement']).isNotEmpty
+            ? _str(r['suggested_refinement'])
+            : _legacyRefinement(r, _textController.text));
+    final canApply = refinement.trim().isNotEmpty;
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if ((_auditError ?? '').trim().isNotEmpty) ...[
+            Text(
+              _auditError!,
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          for (final line in lines) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: AuraSpace.s10),
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              decoration: BoxDecoration(
+                color: AuraSurface.page,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Text(line, style: AuraText.body),
+            ),
+          ],
+          if (canApply) ...[
+            if (lines.isNotEmpty) const SizedBox(height: AuraSpace.s4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton(
+                onPressed: _auditBusy ? null : _applyAuditRefinement,
+                child: const Text('Apply'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
@@ -2651,30 +1877,24 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       child: Row(
         children: [
           Expanded(
-            child: TextButton(
-              onPressed: _showCompositionReview
-                  ? (_posting ? null : () {
-                      setState(() {
-                        _showCompositionReview = false;
-                      });
-                    })
-                  : (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
-                      ? null
-                      : () {
-                          if (!_hasText) {
-                            setState(() => _showTextError = true);
-                            return;
-                          }
-                          _saveDraft(silent: false);
-                        },
-              child: Text(_showCompositionReview
-                  ? 'Back'
-                  : (_isReply ? 'Holding disabled for replies' : 'Hold for later')),
-            ),
+            child: _showAuditReview
+                ? const SizedBox.shrink()
+                : TextButton(
+                    onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
+                        ? null
+                        : () {
+                            if (!_hasText) {
+                              setState(() => _showTextError = true);
+                              return;
+                            }
+                            _saveDraft(silent: false);
+                          },
+                    child: Text(_isReply ? 'Holding disabled for replies' : 'Hold for later'),
+                  ),
           ),
-          const SizedBox(width: AuraSpace.s12),
+          if (!_showAuditReview) const SizedBox(width: AuraSpace.s12),
           FilledButton(
-            onPressed: (_posting || _compositionBusy || !_canPublish)
+            onPressed: (_posting || _auditBusy || !_canPublish)
                 ? null
                 : () {
                     if (!_hasText) {
@@ -2688,11 +1908,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   ? (_isReply
                       ? 'Publishing reply…'
                       : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
-                  : (_compositionBusy
-                      ? 'Reviewing…'
-                      : (_showCompositionReview
-                          ? (_isReply ? 'Publish reply' : 'Publish to record')
-                          : 'Refine')),
+                  : (_isReply ? 'Publish reply' : 'Publish to record'),
             ),
           ),
         ],
@@ -2730,7 +1946,36 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                         const SizedBox(height: AuraSpace.s12),
                         _buildActionRow(),
                         const SizedBox(height: AuraSpace.s16),
-_buildMainCard(),
+                        AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildStatusRow(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _divider(),
+                              const SizedBox(height: AuraSpace.s12),
+                              if (!_isReply) ...[
+                                _buildAudienceBlock(),
+                                const SizedBox(height: AuraSpace.s12),
+                                _divider(),
+                                const SizedBox(height: AuraSpace.s12),
+                              ],
+                              _buildComposerBox(),
+                              const SizedBox(height: AuraSpace.s8),
+                              _buildCharacterLine(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _divider(),
+                              const SizedBox(height: AuraSpace.s12),
+                              _buildAttachmentsBlock(),
+                              if (!_isReply) ...[
+                                const SizedBox(height: AuraSpace.s12),
+                                _divider(),
+                                const SizedBox(height: AuraSpace.s12),
+                                _buildExternalPublishingBlock(),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
