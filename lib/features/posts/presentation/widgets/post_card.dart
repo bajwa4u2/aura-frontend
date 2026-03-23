@@ -1001,7 +1001,6 @@ class _PostCardState extends ConsumerState<PostCard> {
                     children: [
                       AuraTextBlock(
                         text,
-                        languageCode: post.languageCode,
                         style: bodyTextStyle,
                         maxLines: maxLines,
                         overflow: maxLines == null
