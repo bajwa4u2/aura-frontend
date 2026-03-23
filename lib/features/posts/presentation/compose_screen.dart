@@ -313,6 +313,49 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
+  bool _isRtlLanguageCode(String? code) {
+    final normalized = (code ?? '').trim().toLowerCase();
+    return normalized == 'ur' ||
+        normalized == 'ar' ||
+        normalized == 'fa' ||
+        normalized == 'he' ||
+        normalized == 'ps' ||
+        normalized == 'sd';
+  }
+
+  bool _looksRtlText(String text) {
+    return RegExp(r'[\u0590-\u08FF]').hasMatch(text);
+  }
+
+  TextDirection _editorDirection() {
+    return _looksRtlText(_textController.text)
+        ? TextDirection.rtl
+        : TextDirection.ltr;
+  }
+
+  TextAlign _editorTextAlign() {
+    return _editorDirection() == TextDirection.rtl
+        ? TextAlign.right
+        : TextAlign.left;
+  }
+
+  TextDirection _translationPreviewDirection() {
+    final preview = _translationPreview;
+    if (preview != null && _isRtlLanguageCode(preview.targetLanguage)) {
+      return TextDirection.rtl;
+    }
+    final previewText = _translationPreview?.translatedText ?? '';
+    return _looksRtlText(previewText)
+        ? TextDirection.rtl
+        : TextDirection.ltr;
+  }
+
+  TextAlign _translationPreviewTextAlign() {
+    return _translationPreviewDirection() == TextDirection.rtl
+        ? TextAlign.right
+        : TextAlign.left;
+  }
+
   Dio _cleanUploadDio() {
     return Dio(
       BaseOptions(
@@ -623,10 +666,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       final mediaItems = _listOfMap(draft['media']);
 
-      if (text.trim().isEmpty && mediaItems.isEmpty) {
-        return;
-      }
-
       final loadedAttachments = <_ComposeAttachment>[];
       for (final item in mediaItems) {
         final typeRaw = _str(item['type']).toUpperCase();
@@ -690,19 +729,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_isReply) return;
 
     _autosaveDebounce?.cancel();
-    _autosaveDebounce = Timer(const Duration(milliseconds: 900), () async {
+    _autosaveDebounce = Timer(const Duration(milliseconds: 900), () {
       if (!mounted) return;
       if (_posting || _saving || _uploadingMedia) return;
-
-      final hasAnyDraftContent =
-          _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
-
-      if (!hasAnyDraftContent) {
-        await _clearHeldDraft(silent: true);
-        return;
-      }
-
-      await _saveDraft(silent: true);
+      if (!_hasText) return;
+      _saveDraft(silent: true);
     });
   }
 
@@ -1043,45 +1074,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     };
   }
 
-  Future<void> _clearHeldDraft({bool silent = true}) async {
-    if (_isReply) return;
-
-    final dio = ref.read(dioProvider);
-    Object? lastError;
-
-    final attempts = <Future<dynamic> Function()>[
-      () => dio.delete('/posts/draft'),
-      () => dio.delete('/posts/held/latest'),
-      () => dio.put(
-            '/posts/draft',
-            data: {
-              'text': '',
-              'visibility': _visibilityApiValue(_visibility),
-              'media': <Map<String, dynamic>>[],
-            },
-          ),
-    ];
-
-    for (final attempt in attempts) {
-      try {
-        await attempt();
-        if (!mounted) return;
-        setState(() {
-          _lastSavedAt = null;
-        });
-        return;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-
-    if (!silent && mounted && lastError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not clear held work: $lastError')),
-      );
-    }
-  }
-
   Future<void> _saveDraft({
     bool silent = false,
     bool allowWhilePosting = false,
@@ -1090,11 +1082,13 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_saving) return;
     if (_posting && !allowWhilePosting) return;
 
-    final hasAnyDraftContent =
-        _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
-
-    if (!hasAnyDraftContent) {
-      await _clearHeldDraft(silent: silent);
+    if (!_hasText) {
+      if (!silent && mounted) {
+        setState(() => _showTextError = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Text is required.')),
+        );
+      }
       return;
     }
 
@@ -1135,21 +1129,21 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
 
-  String get _compositionSurfaceApiValue {
+  CompositionSurface get _compositionSurface {
     final explicit = (widget.surface ?? '').trim().toLowerCase();
     switch (explicit) {
-      case 'dm':
       case 'message':
+      case 'dm':
       case 'thread':
-        return 'dm';
+        return CompositionSurface.message;
+      case 'announcement':
+        return CompositionSurface.announcement;
       case 'space':
       case 'conversation':
-        return 'space';
-      case 'composer':
-      case 'compose':
+        return CompositionSurface.space;
       case 'post':
       default:
-        return 'composer';
+        return _isReply ? CompositionSurface.message : CompositionSurface.post;
     }
   }
 
@@ -1199,7 +1193,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         '/v1/composition/review',
         data: {
           'text': text,
-          'surface': _compositionSurfaceApiValue,
+          'surface': _compositionSurface.name,
         },
       );
 
@@ -1367,17 +1361,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         );
         _translationSnapshot = text;
       });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      final message = e.response?.statusCode == 404
-          ? 'Translation is not available on this backend yet.'
-          : e.toString();
-      setState(() {
-        _translationError = message;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1529,29 +1512,13 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 ),
               ),
               SizedBox(
-                width: 120,
+                width: 140,
                 child: DropdownButtonFormField<String>(
                   value: _translationTargetLanguage,
                   items: const [
-                    DropdownMenuItem(value: 'en', child: Text('English')),
                     DropdownMenuItem(value: 'ur', child: Text('Urdu')),
+                    DropdownMenuItem(value: 'en', child: Text('English')),
                     DropdownMenuItem(value: 'ar', child: Text('Arabic')),
-                    DropdownMenuItem(value: 'es', child: Text('Spanish')),
-                    DropdownMenuItem(value: 'fr', child: Text('French')),
-                    DropdownMenuItem(value: 'de', child: Text('German')),
-                    DropdownMenuItem(value: 'tr', child: Text('Turkish')),
-                    DropdownMenuItem(value: 'fa', child: Text('Persian')),
-                    DropdownMenuItem(value: 'hi', child: Text('Hindi')),
-                    DropdownMenuItem(value: 'pt', child: Text('Portuguese')),
-                    DropdownMenuItem(value: 'id', child: Text('Indonesian')),
-                    DropdownMenuItem(value: 'bn', child: Text('Bengali')),
-                    DropdownMenuItem(value: 'pa', child: Text('Punjabi')),
-                    DropdownMenuItem(value: 'zh', child: Text('Chinese')),
-                    DropdownMenuItem(value: 'ja', child: Text('Japanese')),
-                    DropdownMenuItem(value: 'ko', child: Text('Korean')),
-                    DropdownMenuItem(value: 'ms', child: Text('Malay')),
-                    DropdownMenuItem(value: 'sw', child: Text('Swahili')),
-                    DropdownMenuItem(value: 'ru', child: Text('Russian')),
                   ],
                   onChanged: _translationBusy || _posting
                       ? null
@@ -1592,7 +1559,14 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AuraSurface.divider),
               ),
-              child: Text(preview.translatedText, style: AuraText.body),
+              child: Directionality(
+                textDirection: _translationPreviewDirection(),
+                child: Text(
+                  preview.translatedText,
+                  style: AuraText.body,
+                  textAlign: _translationPreviewTextAlign(),
+                ),
+              ),
             ),
             const SizedBox(height: AuraSpace.s10),
             Wrap(
@@ -2088,7 +2062,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         router.pop(true);
       } else {
         if (_isReply) {
-          router.go('/me/correspondence');
+          router.go('/correspondence');
         } else if ((publishedPostId ?? '').trim().isNotEmpty) {
           router.go('/posts/${publishedPostId!.trim()}');
         } else {
@@ -2471,13 +2445,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_posting) return;
 
     _autosaveDebounce?.cancel();
-    await _clearHeldDraft(silent: true);
 
     for (final attachment in _attachments) {
       attachment.dispose();
     }
-
-    if (!mounted) return;
 
     setState(() {
       _textController.clear();
@@ -2488,15 +2459,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       _auditError = null;
       _uploadingMedia = false;
       _publishToTikTok = false;
-      _publishToLinkedIn = false;
-      _compositionReview = null;
-      _compositionError = null;
-      _compositionSnapshot = null;
-      _dismissedSuggestionIds.clear();
-      _translationPreview = null;
-      _translationError = null;
-      _translationSnapshot = null;
-      _lastSavedAt = null;
     });
 
     if (!mounted) return;
@@ -2611,35 +2573,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           child: Text(_translationBusy ? 'Translating…' : 'Translate'),
         ),
         OutlinedButton(
-          onPressed: _posting
-              ? null
-              : () async {
-                  _autosaveDebounce?.cancel();
-                  for (final attachment in _attachments) {
-                    attachment.dispose();
-                  }
-                  if (!mounted) return;
-                  setState(() {
-                    _textController.clear();
-                    _attachments.clear();
-                    _showTextError = false;
-                    _uploadingMedia = false;
-                    _publishToTikTok = false;
-                    _publishToLinkedIn = false;
-                    _compositionReview = null;
-                    _compositionError = null;
-                    _compositionSnapshot = null;
-                    _dismissedSuggestionIds.clear();
-                    _translationPreview = null;
-                    _translationError = null;
-                    _translationSnapshot = null;
-                    _lastSavedAt = null;
-                  });
-                  await _clearHeldDraft(silent: false);
-                },
-          child: const Text('Clear'),
-        ),
-        OutlinedButton(
           onPressed: _posting ? null : _discardAndClose,
           child: const Text('Discard'),
         ),
@@ -2715,6 +2648,8 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
         style: AuraText.body,
+        textDirection: _editorDirection(),
+        textAlign: _editorTextAlign(),
         decoration: InputDecoration(
           hintText: _isReply ? 'Write your reply…' : 'Write your post…',
           hintStyle: AuraText.small.copyWith(
