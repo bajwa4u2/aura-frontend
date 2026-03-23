@@ -119,6 +119,9 @@ class _AnnouncementEditorScreenState
       ? 'Write once. Let the system support clarity without taking over the surface.'
       : 'Institution announcement publishing is not wired yet. This surface is kept aligned so the writing flow does not drift.';
 
+  TextStyle get _sectionTitleStyle =>
+      AuraText.body.copyWith(fontWeight: FontWeight.w800);
+
   CompositionRepository _compositionRepo() {
     final token = ref.read(tokenStoreProvider).accessToken ?? '';
     return CompositionRepository(
@@ -143,7 +146,9 @@ class _AnnouncementEditorScreenState
   String _excerptFromDraft() {
     final summary = _summaryController.text.trim();
     if (summary.isNotEmpty) {
-      return summary.length <= 180 ? summary : '${summary.substring(0, 180).trim()}…';
+      return summary.length <= 180
+          ? summary
+          : '${summary.substring(0, 180).trim()}…';
     }
     final body = _bodyController.text.trim();
     if (body.isEmpty) return '';
@@ -496,10 +501,7 @@ class _AnnouncementEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Suggestions',
-            style: AuraText.sectionTitle,
-          ),
+          Text('Suggestions', style: _sectionTitleStyle),
           const SizedBox(height: 10),
           ...review.suggestions.map((suggestion) {
             final applying = _applyingSuggestionIds.contains(suggestion.id);
@@ -598,7 +600,7 @@ class _AnnouncementEditorScreenState
                 Expanded(
                   child: Text(
                     'Translation preview · ${preview.language}',
-                    style: AuraText.sectionTitle,
+                    style: _sectionTitleStyle,
                   ),
                 ),
                 TextButton(
@@ -659,7 +661,7 @@ class _AnnouncementEditorScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_pageTitle, style: AuraText.display),
+            Text(_pageTitle, style: AuraText.title),
             const SizedBox(height: 8),
             Text(
               _introText,
@@ -676,7 +678,7 @@ class _AnnouncementEditorScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Writing', style: AuraText.sectionTitle),
+                    Text('Writing', style: _sectionTitleStyle),
                     const SizedBox(height: 14),
                     TextField(
                       controller: _titleController,
@@ -719,7 +721,7 @@ class _AnnouncementEditorScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Writing support', style: AuraText.sectionTitle),
+                    Text('Writing support', style: _sectionTitleStyle),
                     const SizedBox(height: 14),
                     Wrap(
                       spacing: 10,
@@ -728,7 +730,9 @@ class _AnnouncementEditorScreenState
                       children: [
                         FilledButton.tonal(
                           onPressed: _reviewing ? null : _reviewAnnouncement,
-                          child: Text(_reviewing ? 'Reviewing' : 'Review wording'),
+                          child: Text(
+                            _reviewing ? 'Reviewing' : 'Review wording',
+                          ),
                         ),
                         SizedBox(
                           width: 180,
@@ -749,7 +753,8 @@ class _AnnouncementEditorScreenState
                             onChanged: _translating
                                 ? null
                                 : (value) {
-                                    if (value == null || value == _targetLanguage) {
+                                    if (value == null ||
+                                        value == _targetLanguage) {
                                       return;
                                     }
                                     setState(() {
@@ -761,7 +766,11 @@ class _AnnouncementEditorScreenState
                         ),
                         FilledButton.tonal(
                           onPressed: _translating ? null : _translateDraft,
-                          child: Text(_translating ? 'Translating' : 'Preview translation'),
+                          child: Text(
+                            _translating
+                                ? 'Translating'
+                                : 'Preview translation',
+                          ),
                         ),
                       ],
                     ),
@@ -784,7 +793,7 @@ class _AnnouncementEditorScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Distribution', style: AuraText.sectionTitle),
+                    Text('Distribution', style: _sectionTitleStyle),
                     const SizedBox(height: 12),
                     AnnouncementDistribution(
                       linkedinConnected: _linkedinConnected,
@@ -836,18 +845,23 @@ class _AnnouncementEditorScreenState
                       contentPadding: EdgeInsets.zero,
                       value: _pinNotice,
                       onChanged: _isPlatformMode
-                          ? (value) => setState(() => _pinNotice = value ?? false)
+                          ? (value) =>
+                              setState(() => _pinNotice = value ?? false)
                           : null,
                       title: const Text('Pin this notice'),
-                      subtitle: const Text('Keep it visible at the top after publication.'),
+                      subtitle: const Text(
+                        'Keep it visible at the top after publication.',
+                      ),
                     ),
                     if (!_isPlatformMode) ...[
                       const SizedBox(height: 8),
                       Text(
                         institutionAccess.when(
-                          data: (value) => 'Institution state: ${value.name}',
+                          data: (value) =>
+                              'Institution state: ${value.toString().split('.').last}',
                           loading: () => 'Checking institution access…',
-                          error: (_, __) => 'Institution access could not be read.',
+                          error: (_, __) =>
+                              'Institution access could not be read.',
                         ),
                         style: const TextStyle(color: Color(0xFF6B6358)),
                       ),
@@ -873,7 +887,9 @@ class _AnnouncementEditorScreenState
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _canSubmit ? _submitAnnouncement : null,
-                  child: Text(_submitting ? 'Publishing' : 'Publish announcement'),
+                  child: Text(
+                    _submitting ? 'Publishing' : 'Publish announcement',
+                  ),
                 ),
               ],
             ),
