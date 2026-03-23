@@ -1199,45 +1199,56 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
   Widget _buildCompositionReviewCard() {
     final review = _compositionReview;
-    final findings = review?.findings ?? const <CompositionFinding>[];
+    if (review == null) return const SizedBox.shrink();
+
+    final findings = review.findings.take(5).toList();
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final finding in findings) ...[
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-              padding: const EdgeInsets.all(AuraSpace.s12),
-              decoration: BoxDecoration(
-                color: AuraSurface.page,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AuraSurface.divider),
-              ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    finding.chapterLabel.toUpperCase(),
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     finding.message,
-                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                    style: AuraText.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   if (finding.suggestion.trim().isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text(finding.suggestion, style: AuraText.body),
+                    const SizedBox(height: 4),
+                    Text(
+                      finding.suggestion,
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.muted,
+                      ),
+                    ),
                   ],
-                  if (review != null && review.allowApply) ...[
-                    const SizedBox(height: AuraSpace.s10),
+                  if (review.allowApply && finding.isActionable) ...[
+                    const SizedBox(height: AuraSpace.s8),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: FilledButton(
-                        onPressed: _applyingCompositionFindingIds.contains(finding.id)
-                            ? null
-                            : () => _applyCompositionFinding(finding),
+                        onPressed:
+                            _applyingCompositionFindingIds.contains(finding.id)
+                                ? null
+                                : () => _applyCompositionFinding(finding),
                         child: Text(
                           _applyingCompositionFindingIds.contains(finding.id)
                               ? 'Applying...'
-                              : ((finding.actionLabel.trim().isNotEmpty)
+                              : (finding.actionLabel.trim().isNotEmpty
                                   ? finding.actionLabel
                                   : 'Apply'),
                         ),

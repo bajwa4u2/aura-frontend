@@ -93,6 +93,12 @@ class CompositionFinding {
     final value = state.trim().toUpperCase();
     return value == 'WARN' || value == 'WARNING' || value == 'NEEDS_ATTENTION';
   }
+
+  bool get isActionable {
+    if (actionType.trim().isNotEmpty) return true;
+    if (suggestion.trim().isNotEmpty) return true;
+    return false;
+  }
 }
 
 @immutable
