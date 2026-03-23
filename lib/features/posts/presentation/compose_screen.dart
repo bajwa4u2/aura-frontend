@@ -686,11 +686,19 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_isReply) return;
 
     _autosaveDebounce?.cancel();
-    _autosaveDebounce = Timer(const Duration(milliseconds: 900), () {
+    _autosaveDebounce = Timer(const Duration(milliseconds: 900), () async {
       if (!mounted) return;
       if (_posting || _saving || _uploadingMedia) return;
-      if (!_hasText) return;
-      _saveDraft(silent: true);
+
+      final hasAnyDraftContent =
+          _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
+
+      if (!hasAnyDraftContent) {
+        await _clearHeldDraft(silent: true);
+        return;
+      }
+
+      await _saveDraft(silent: true);
     });
   }
 
@@ -1031,6 +1039,47 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     };
   }
 
+  Future<void> _clearHeldDraft({bool silent = true}) async {
+    if (_isReply) return;
+
+    final dio = ref.read(dioProvider);
+    Object? lastError;
+
+    final attempts = <Future<dynamic> Function()>[
+      () => dio.delete('/posts/draft'),
+      () => dio.delete('/posts/held/latest'),
+      () => dio.put(
+            '/posts/draft',
+            data: {
+              'text': '',
+              'visibility': _visibilityApiValue(_visibility),
+              'media': <Map<String, dynamic>>[],
+            },
+          ),
+    ];
+
+    for (final attempt in attempts) {
+      try {
+        await attempt();
+        if (mounted) {
+          setState(() {
+            _lastSavedAt = null;
+          });
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (!silent && mounted && lastError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not clear held work: $lastError')),
+      );
+    }
+  }
+
+
   Future<void> _saveDraft({
     bool silent = false,
     bool allowWhilePosting = false,
@@ -1039,13 +1088,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_saving) return;
     if (_posting && !allowWhilePosting) return;
 
-    if (!_hasText) {
-      if (!silent && mounted) {
-        setState(() => _showTextError = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Text is required.')),
-        );
-      }
+    final hasAnyDraftContent =
+        _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
+
+    if (!hasAnyDraftContent) {
+      await _clearHeldDraft(silent: silent);
       return;
     }
 
@@ -1473,9 +1520,25 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 child: DropdownButtonFormField<String>(
                   value: _translationTargetLanguage,
                   items: const [
-                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
                     DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
                     DropdownMenuItem(value: 'ar', child: Text('Arabic')),
+                    DropdownMenuItem(value: 'es', child: Text('Spanish')),
+                    DropdownMenuItem(value: 'fr', child: Text('French')),
+                    DropdownMenuItem(value: 'de', child: Text('German')),
+                    DropdownMenuItem(value: 'tr', child: Text('Turkish')),
+                    DropdownMenuItem(value: 'fa', child: Text('Persian')),
+                    DropdownMenuItem(value: 'hi', child: Text('Hindi')),
+                    DropdownMenuItem(value: 'pt', child: Text('Portuguese')),
+                    DropdownMenuItem(value: 'id', child: Text('Indonesian')),
+                    DropdownMenuItem(value: 'bn', child: Text('Bengali')),
+                    DropdownMenuItem(value: 'pa', child: Text('Punjabi')),
+                    DropdownMenuItem(value: 'zh', child: Text('Chinese')),
+                    DropdownMenuItem(value: 'ja', child: Text('Japanese')),
+                    DropdownMenuItem(value: 'ko', child: Text('Korean')),
+                    DropdownMenuItem(value: 'ms', child: Text('Malay')),
+                    DropdownMenuItem(value: 'sw', child: Text('Swahili')),
+                    DropdownMenuItem(value: 'ru', child: Text('Russian')),
                   ],
                   onChanged: _translationBusy || _posting
                       ? null
@@ -2012,7 +2075,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         router.pop(true);
       } else {
         if (_isReply) {
-          router.go('/correspondence');
+          router.go('/me/correspondence');
         } else if ((publishedPostId ?? '').trim().isNotEmpty) {
           router.go('/posts/${publishedPostId!.trim()}');
         } else {
@@ -2396,9 +2459,13 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     _autosaveDebounce?.cancel();
 
+    await _clearHeldDraft(silent: true);
+
     for (final attachment in _attachments) {
       attachment.dispose();
     }
+
+    if (!mounted) return;
 
     setState(() {
       _textController.clear();
@@ -2409,6 +2476,15 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       _auditError = null;
       _uploadingMedia = false;
       _publishToTikTok = false;
+      _publishToLinkedIn = false;
+      _lastSavedAt = null;
+      _compositionReview = null;
+      _compositionError = null;
+      _compositionSnapshot = null;
+      _dismissedSuggestionIds.clear();
+      _translationPreview = null;
+      _translationError = null;
+      _translationSnapshot = null;
     });
 
     if (!mounted) return;
@@ -2521,6 +2597,34 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         OutlinedButton(
           onPressed: (_posting || _translationBusy) ? null : _translateDraft,
           child: Text(_translationBusy ? 'Translating…' : 'Translate'),
+        ),
+        OutlinedButton(
+          onPressed: _posting
+              ? null
+              : () async {
+                  _autosaveDebounce?.cancel();
+                  for (final attachment in _attachments) {
+                    attachment.dispose();
+                  }
+                  if (!mounted) return;
+                  setState(() {
+                    _textController.clear();
+                    _attachments.clear();
+                    _showTextError = false;
+                    _uploadingMedia = false;
+                    _publishToTikTok = false;
+                    _publishToLinkedIn = false;
+                    _compositionReview = null;
+                    _compositionError = null;
+                    _compositionSnapshot = null;
+                    _dismissedSuggestionIds.clear();
+                    _translationPreview = null;
+                    _translationError = null;
+                    _translationSnapshot = null;
+                  });
+                  await _clearHeldDraft(silent: false);
+                },
+          child: const Text('Clear'),
         ),
         OutlinedButton(
           onPressed: _posting ? null : _discardAndClose,
