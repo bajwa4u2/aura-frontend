@@ -12,15 +12,13 @@ class PostAuthor {
   final String? avatarUrl;
 
   factory PostAuthor.fromJson(Map<String, dynamic> j) {
-    final rawAvatar = j['avatarUrl'] as String?;
-    final avatar =
-        (rawAvatar == null || rawAvatar.trim().isEmpty) ? null : rawAvatar;
+    final rawAvatar = _readString(j['avatarUrl']);
 
     return PostAuthor(
-      id: (j['id'] ?? '').toString(),
-      handle: (j['handle'] ?? '').toString(),
-      displayName: (j['displayName'] ?? j['name'] ?? '').toString(),
-      avatarUrl: avatar,
+      id: _readString(j['id']) ?? '',
+      handle: _readString(j['handle']) ?? '',
+      displayName: _readString(j['displayName']) ?? _readString(j['name']) ?? '',
+      avatarUrl: rawAvatar,
     );
   }
 
@@ -89,74 +87,44 @@ class PostMediaItem {
   bool get isAudio => type.toUpperCase().contains('AUDIO');
 
   String? get bestUrl {
-    final candidates = [
-      displayUrl,
-      playbackUrl,
-      url,
-      originalUrl,
-    ];
-    for (final c in candidates) {
-      if (c != null && c.trim().isNotEmpty) return c;
+    final candidates = [displayUrl, playbackUrl, url, originalUrl];
+    for (final candidate in candidates) {
+      if (candidate != null && candidate.trim().isNotEmpty) return candidate;
     }
     return null;
   }
 
   String? get bestThumbUrl {
-    final candidates = [
-      thumbnailUrl,
-      thumbUrl,
-      isVideo ? null : bestUrl,
-    ];
-    for (final c in candidates) {
-      if (c != null && c.trim().isNotEmpty) return c;
+    final candidates = [thumbnailUrl, thumbUrl, isVideo ? null : bestUrl];
+    for (final candidate in candidates) {
+      if (candidate != null && candidate.trim().isNotEmpty) return candidate;
     }
     return null;
   }
 
-  static String? _asString(dynamic v) {
-    if (v == null) return null;
-    final s = v.toString().trim();
-    return s.isEmpty ? null : s;
-  }
-
-  static int? _asInt(dynamic v) {
-    if (v is num) return v.toInt();
-    final s = _asString(v);
-    if (s == null) return null;
-    return int.tryParse(s);
-  }
-
-  static bool _asBool(dynamic v) {
-    if (v is bool) return v;
-    final s = _asString(v)?.toLowerCase();
-    if (s == 'true') return true;
-    if (s == 'false') return false;
-    return false;
-  }
-
   factory PostMediaItem.fromJson(Map<String, dynamic> j) {
     return PostMediaItem(
-      id: (j['id'] ?? '').toString(),
-      type: _asString(j['type']) ?? 'IMAGE',
-      source: _asString(j['source']),
-      status: _asString(j['status']),
-      url: _asString(j['url']) ?? _asString(j['publicUrl']),
-      originalUrl: _asString(j['originalUrl']),
-      displayUrl: _asString(j['displayUrl']),
-      playbackUrl: _asString(j['playbackUrl']),
-      thumbUrl: _asString(j['thumbUrl']) ?? _asString(j['thumb']),
-      thumbnailUrl: _asString(j['thumbnailUrl']),
-      caption: _asString(j['caption']),
-      altText: _asString(j['altText']),
-      transcript: _asString(j['transcript']),
-      width: _asInt(j['width']),
-      height: _asInt(j['height']),
-      duration: _asInt(j['duration']),
-      position: _asInt(j['position']),
-      editDisclosure: _asBool(j['editDisclosure']),
-      mimeType: _asString(j['mimeType']),
-      fileName: _asString(j['fileName']),
-      fileSizeBytes: _asInt(j['fileSizeBytes']),
+      id: _readString(j['id']) ?? '',
+      type: _readString(j['type']) ?? 'IMAGE',
+      source: _readString(j['source']),
+      status: _readString(j['status']),
+      url: _readString(j['url']) ?? _readString(j['publicUrl']),
+      originalUrl: _readString(j['originalUrl']),
+      displayUrl: _readString(j['displayUrl']),
+      playbackUrl: _readString(j['playbackUrl']),
+      thumbUrl: _readString(j['thumbUrl']) ?? _readString(j['thumb']),
+      thumbnailUrl: _readString(j['thumbnailUrl']),
+      caption: _readString(j['caption']),
+      altText: _readString(j['altText']),
+      transcript: _readString(j['transcript']),
+      width: _readInt(j['width']),
+      height: _readInt(j['height']),
+      duration: _readInt(j['duration']),
+      position: _readInt(j['position']),
+      editDisclosure: _readBool(j['editDisclosure']),
+      mimeType: _readString(j['mimeType']),
+      fileName: _readString(j['fileName']),
+      fileSizeBytes: _readInt(j['fileSizeBytes']),
     );
   }
 
@@ -185,6 +153,44 @@ class PostMediaItem {
       };
 }
 
+class PostTranslation {
+  const PostTranslation({
+    required this.language,
+    required this.text,
+    this.provider,
+    this.status,
+  });
+
+  final String language;
+  final String text;
+  final String? provider;
+  final String? status;
+
+  bool get isUsable => language.trim().isNotEmpty && text.trim().isNotEmpty;
+
+  factory PostTranslation.fromJson(Map<String, dynamic> json) {
+    return PostTranslation(
+      language: _readString(
+            json['language'] ?? json['targetLanguage'] ?? json['locale'],
+          ) ??
+          '',
+      text: _readString(
+            json['text'] ?? json['translatedText'] ?? json['content'],
+          ) ??
+          '',
+      provider: _readString(json['provider']),
+      status: _readString(json['status']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'language': language,
+        'text': text,
+        'provider': provider,
+        'status': status,
+      };
+}
+
 class Post {
   Post({
     required this.id,
@@ -195,11 +201,7 @@ class Post {
     this.repostOfPostId,
     this.visibility = 'public',
     this.author,
-
-    // New structured media contract.
     this.media = const <PostMediaItem>[],
-
-    // Compatibility bridge fields.
     this.mediaType = 'NONE',
     this.mediaUrl,
     this.mediaThumbUrl,
@@ -207,11 +209,14 @@ class Post {
     this.mediaHeight,
     this.mediaDuration,
     this.caption,
-
-    // Link preview
     this.linkTitle,
     this.linkDescription,
     this.linkImageUrl,
+    this.originalLanguage,
+    this.translatedLanguage,
+    this.translatedText,
+    this.translationStatus,
+    this.availableTranslations = const <PostTranslation>[],
   });
 
   final String id;
@@ -224,11 +229,8 @@ class Post {
   final String visibility;
 
   final PostAuthor? author;
-
-  // New structured media
   final List<PostMediaItem> media;
 
-  // Compatibility bridge
   final String mediaType;
   final String? mediaUrl;
   final String? mediaThumbUrl;
@@ -237,101 +239,146 @@ class Post {
   final int? mediaDuration;
   final String? caption;
 
-  // Link preview
   final String? linkTitle;
   final String? linkDescription;
   final String? linkImageUrl;
 
-  static Map<String, dynamic>? _asMap(dynamic v) {
-    if (v is Map) return Map<String, dynamic>.from(v);
-    return null;
-  }
+  final String? originalLanguage;
+  final String? translatedLanguage;
+  final String? translatedText;
+  final String? translationStatus;
+  final List<PostTranslation> availableTranslations;
 
-  static String? _asString(dynamic v) {
-    if (v == null) return null;
-    final s = v.toString().trim();
-    return s.isEmpty ? null : s;
-  }
+  bool get hasTranslatedText =>
+      translatedText != null && translatedText!.trim().isNotEmpty;
 
-  static int? _asInt(dynamic v) {
-    if (v is num) return v.toInt();
-    final s = _asString(v);
-    if (s == null) return null;
-    return int.tryParse(s);
-  }
-
-  static List<PostMediaItem> _mediaListFromAny(dynamic mediaField) {
-    if (mediaField is List) {
-      return mediaField
-          .whereType<Map>()
-          .map((e) => PostMediaItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+  String displayText({String? preferredLanguage}) {
+    final preferred = preferredLanguage?.trim().toLowerCase();
+    if (preferred != null && preferred.isNotEmpty) {
+      for (final entry in availableTranslations) {
+        if (entry.language.trim().toLowerCase() == preferred &&
+            entry.text.trim().isNotEmpty) {
+          return entry.text;
+        }
+      }
     }
 
-    if (mediaField is Map) {
-      return [
-        PostMediaItem.fromJson(Map<String, dynamic>.from(mediaField)),
-      ];
-    }
-
-    return const <PostMediaItem>[];
+    if (hasTranslatedText) return translatedText!.trim();
+    return text;
   }
 
-  static PostMediaItem? _pickPrimaryMediaItem(List<PostMediaItem> media) {
-    if (media.isEmpty) return null;
-    return media.first;
+  Post copyWith({
+    String? id,
+    String? authorId,
+    String? text,
+    DateTime? createdAt,
+    String? replyToPostId,
+    String? repostOfPostId,
+    String? visibility,
+    PostAuthor? author,
+    List<PostMediaItem>? media,
+    String? mediaType,
+    String? mediaUrl,
+    String? mediaThumbUrl,
+    int? mediaWidth,
+    int? mediaHeight,
+    int? mediaDuration,
+    String? caption,
+    String? linkTitle,
+    String? linkDescription,
+    String? linkImageUrl,
+    String? originalLanguage,
+    String? translatedLanguage,
+    String? translatedText,
+    String? translationStatus,
+    List<PostTranslation>? availableTranslations,
+  }) {
+    return Post(
+      id: id ?? this.id,
+      authorId: authorId ?? this.authorId,
+      text: text ?? this.text,
+      createdAt: createdAt ?? this.createdAt,
+      replyToPostId: replyToPostId ?? this.replyToPostId,
+      repostOfPostId: repostOfPostId ?? this.repostOfPostId,
+      visibility: visibility ?? this.visibility,
+      author: author ?? this.author,
+      media: media ?? this.media,
+      mediaType: mediaType ?? this.mediaType,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaThumbUrl: mediaThumbUrl ?? this.mediaThumbUrl,
+      mediaWidth: mediaWidth ?? this.mediaWidth,
+      mediaHeight: mediaHeight ?? this.mediaHeight,
+      mediaDuration: mediaDuration ?? this.mediaDuration,
+      caption: caption ?? this.caption,
+      linkTitle: linkTitle ?? this.linkTitle,
+      linkDescription: linkDescription ?? this.linkDescription,
+      linkImageUrl: linkImageUrl ?? this.linkImageUrl,
+      originalLanguage: originalLanguage ?? this.originalLanguage,
+      translatedLanguage: translatedLanguage ?? this.translatedLanguage,
+      translatedText: translatedText ?? this.translatedText,
+      translationStatus: translationStatus ?? this.translationStatus,
+      availableTranslations:
+          availableTranslations ?? this.availableTranslations,
+    );
   }
 
   factory Post.fromJson(Map<String, dynamic> j) {
-    final authorJson = j['author'];
-    final a = (authorJson is Map)
-        ? PostAuthor.fromJson(Map<String, dynamic>.from(authorJson))
-        : null;
+    final authorJson = _readMap(j['author']);
+    final author = authorJson != null ? PostAuthor.fromJson(authorJson) : null;
 
-    final authorId = (j['authorId'] ?? a?.id ?? '').toString();
+    final authorId = _readString(j['authorId']) ?? author?.id ?? '';
 
-    final media = _mediaListFromAny(j['media']);
-    final primaryMedia = _pickPrimaryMediaItem(media);
+    final media = _readMediaList(j['media']);
+    final primaryMedia = media.isNotEmpty ? media.first : null;
 
-    final mediaType = _asString(j['mediaType']) ??
-        primaryMedia?.type ??
-        'NONE';
+    final translations = _readTranslations(
+      j['translations'] ?? j['availableTranslations'],
+    );
 
-    final mediaUrl = _asString(j['mediaUrl']) ?? primaryMedia?.bestUrl;
-    final mediaThumbUrl =
-        _asString(j['mediaThumbUrl']) ?? primaryMedia?.bestThumbUrl;
-    final mediaWidth = _asInt(j['mediaWidth']) ?? primaryMedia?.width;
-    final mediaHeight = _asInt(j['mediaHeight']) ?? primaryMedia?.height;
-    final mediaDuration =
-        _asInt(j['mediaDuration']) ?? primaryMedia?.duration;
-    final caption = _asString(j['caption']) ?? primaryMedia?.caption;
+    final translatedText = _readString(
+      j['translatedText'] ?? j['translationText'] ?? j['viewerText'],
+    );
+
+    final translatedLanguage = _readString(
+      j['translatedLanguage'] ?? j['targetLanguage'] ?? j['viewerLanguage'],
+    );
+
+    final mediaType =
+        _readString(j['mediaType']) ?? primaryMedia?.type ?? 'NONE';
 
     return Post(
-      id: (j['id'] ?? '').toString(),
+      id: _readString(j['id']) ?? '',
       authorId: authorId,
-      text: (j['text'] ?? '').toString(),
-      createdAt: DateTime.tryParse((j['createdAt'] ?? '').toString()) ??
+      text: _readString(j['text']) ?? '',
+      createdAt: DateTime.tryParse(_readString(j['createdAt']) ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      replyToPostId: _asString(j['replyToPostId']),
-      repostOfPostId: _asString(j['repostOfPostId']),
-      visibility: (j['visibility'] ?? 'public').toString(),
-      author: a,
-
+      replyToPostId: _readString(j['replyToPostId']),
+      repostOfPostId: _readString(j['repostOfPostId']),
+      visibility: _readString(j['visibility']) ?? 'public',
+      author: author,
       media: media,
-
       mediaType: mediaType,
-      mediaUrl: mediaUrl,
-      mediaThumbUrl: mediaThumbUrl,
-      mediaWidth: mediaWidth,
-      mediaHeight: mediaHeight,
-      mediaDuration: mediaDuration,
-      caption: caption,
-
-      linkTitle: _asString(j['linkTitle']),
-      linkDescription:
-          _asString(j['linkDescription']) ?? _asString(j['linkSubtitle']),
+      mediaUrl: _readString(j['mediaUrl']) ?? primaryMedia?.bestUrl,
+      mediaThumbUrl:
+          _readString(j['mediaThumbUrl']) ?? primaryMedia?.bestThumbUrl,
+      mediaWidth: _readInt(j['mediaWidth']) ?? primaryMedia?.width,
+      mediaHeight: _readInt(j['mediaHeight']) ?? primaryMedia?.height,
+      mediaDuration: _readInt(j['mediaDuration']) ?? primaryMedia?.duration,
+      caption: _readString(j['caption']) ?? primaryMedia?.caption,
+      linkTitle: _readString(j['linkTitle']) ?? _readString(j['title']),
+      linkDescription: _readString(
+            j['linkDescription'] ?? j['linkSubtitle'] ?? j['description'],
+          ) ??
+          _readString(j['subtitle']),
       linkImageUrl:
-          _asString(j['linkImageUrl']) ?? _asString(j['linkThumbUrl']),
+          _readString(j['linkImageUrl']) ?? _readString(j['linkThumbUrl']),
+      originalLanguage: _readString(
+        j['originalLanguage'] ?? j['sourceLanguage'] ?? j['language'],
+      ),
+      translatedLanguage: translatedLanguage,
+      translatedText: translatedText,
+      translationStatus: _readString(j['translationStatus']),
+      availableTranslations: translations,
     );
   }
 
@@ -344,9 +391,7 @@ class Post {
         'repostOfPostId': repostOfPostId,
         'visibility': visibility,
         'author': author?.toJson(),
-
         'media': media.map((e) => e.toJson()).toList(),
-
         'mediaType': mediaType,
         'mediaUrl': mediaUrl,
         'mediaThumbUrl': mediaThumbUrl,
@@ -354,9 +399,84 @@ class Post {
         'mediaHeight': mediaHeight,
         'mediaDuration': mediaDuration,
         'caption': caption,
-
         'linkTitle': linkTitle,
         'linkDescription': linkDescription,
         'linkImageUrl': linkImageUrl,
+        'originalLanguage': originalLanguage,
+        'translatedLanguage': translatedLanguage,
+        'translatedText': translatedText,
+        'translationStatus': translationStatus,
+        'translations': availableTranslations.map((e) => e.toJson()).toList(),
       };
+}
+
+Map<String, dynamic>? _readMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return null;
+}
+
+String? _readString(dynamic value) {
+  if (value == null) return null;
+  final text = value.toString().trim();
+  return text.isEmpty ? null : text;
+}
+
+int? _readInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  final text = _readString(value);
+  if (text == null) return null;
+  return int.tryParse(text);
+}
+
+bool _readBool(dynamic value) {
+  if (value is bool) return value;
+  final text = _readString(value)?.toLowerCase();
+  return text == 'true' || text == '1';
+}
+
+List<PostMediaItem> _readMediaList(dynamic value) {
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((item) => PostMediaItem.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  if (value is Map) {
+    return [PostMediaItem.fromJson(Map<String, dynamic>.from(value))];
+  }
+
+  return const <PostMediaItem>[];
+}
+
+List<PostTranslation> _readTranslations(dynamic value) {
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((item) => PostTranslation.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.isUsable)
+        .toList();
+  }
+
+  if (value is Map) {
+    final map = Map<String, dynamic>.from(value);
+    final items = <PostTranslation>[];
+    map.forEach((key, rawValue) {
+      if (rawValue is Map) {
+        final merged = <String, dynamic>{'language': key, ...Map<String, dynamic>.from(rawValue)};
+        final item = PostTranslation.fromJson(merged);
+        if (item.isUsable) items.add(item);
+      } else {
+        final text = _readString(rawValue);
+        if (text != null && text.isNotEmpty) {
+          items.add(PostTranslation(language: key, text: text));
+        }
+      }
+    });
+    return items;
+  }
+
+  return const <PostTranslation>[];
 }

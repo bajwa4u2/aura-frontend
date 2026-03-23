@@ -10,7 +10,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 
-import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 
@@ -115,8 +114,7 @@ _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
   }
 
   final m = _unwrapMap(raw);
-  final fallback = _PinnedAnnouncement.tryFrom(m);
-  return fallback;
+  return _PinnedAnnouncement.tryFrom(m);
 }
 
 final pinnedAnnouncementProvider =
@@ -150,7 +148,11 @@ final latestHeldProvider =
 class MemberHomeScreen extends ConsumerWidget {
   const MemberHomeScreen({super.key});
 
-  Future<void> _openCompose(BuildContext context, WidgetRef ref, {String? heldId}) async {
+  Future<void> _openCompose(
+    BuildContext context,
+    WidgetRef ref, {
+    String? heldId,
+  }) async {
     final target = (heldId ?? '').trim().isNotEmpty
         ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}'
         : '/compose';
@@ -159,10 +161,16 @@ class MemberHomeScreen extends ConsumerWidget {
     ref.invalidate(latestHeldProvider);
   }
 
+  Future<void> _refresh(WidgetRef ref) async {
+    ref.invalidate(latestHeldProvider);
+    ref.invalidate(pinnedAnnouncementProvider);
+    await ref.read(feedControllerProvider.notifier).loadInitial();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthed = ref.watch(isAuthedProvider);
-    final worksAsync = ref.watch(feedProvider);
+    final feedState = ref.watch(feedControllerProvider);
 
     final heldAsync = isAuthed
         ? ref.watch(latestHeldProvider)
@@ -170,72 +178,107 @@ class MemberHomeScreen extends ConsumerWidget {
 
     return AuraScaffold(
       showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s12,
-          AuraSpace.s16,
-          AuraSpace.s24,
-        ),
-        children: [
-          const _PinnedAnnouncementBanner(),
-          const SizedBox(height: AuraSpace.s16),
+      body: RefreshIndicator(
+        onRefresh: () => _refresh(ref),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16,
+                AuraSpace.s12,
+                AuraSpace.s16,
+                AuraSpace.s28,
+              ),
+              children: [
+                const _PinnedAnnouncementBanner(),
+                const SizedBox(height: AuraSpace.s16),
+                heldAsync.when(
+                  data: (held) {
+                    final heldMap = _asMap(held);
+                    final hasHeld = heldMap.isNotEmpty;
+                    final heldId = heldMap['id']?.toString();
 
-          heldAsync.when(
-            data: (held) {
-              final hasHeld = held != null;
-              final heldId = _asMap(held)['id']?.toString();
-              return _ComposerEntryCard(
-                hasHeld: hasHeld,
-                onTap: () => _openCompose(context, ref, heldId: heldId),
-              );
-            },
-            loading: () => _ComposerEntryCard(
-              hasHeld: false,
-              onTap: () => _openCompose(context, ref),
-            ),
-            error: (_, __) => _ComposerEntryCard(
-              hasHeld: false,
-              onTap: () => _openCompose(context, ref),
-            ),
-          ),
-
-          const SizedBox(height: AuraSpace.s16),
-
-          worksAsync.when(
-            data: (posts) {
-              final top = posts.take(6).toList();
-
-              if (top.isEmpty) {
-                return AuraCard(
-                  child: Text('No works yet.', style: AuraText.body),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionTitle(title: 'Works'),
-                  const SizedBox(height: AuraSpace.s12),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: top.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AuraSpace.s16),
-                    itemBuilder: (context, i) {
-                      return PostCard(post: top[i]);
-                    },
+                    return _ComposerEntryCard(
+                      hasHeld: hasHeld,
+                      heldText: heldMap['text']?.toString(),
+                      onTap: () => _openCompose(context, ref, heldId: heldId),
+                    );
+                  },
+                  loading: () => _ComposerEntryCard(
+                    hasHeld: false,
+                    onTap: () => _openCompose(context, ref),
                   ),
-                ],
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text('Could not load works: $e', style: AuraText.body),
+                  error: (_, __) => _ComposerEntryCard(
+                    hasHeld: false,
+                    onTap: () => _openCompose(context, ref),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s24),
+                if (feedState.isLoading && feedState.items.isEmpty)
+                  const _LoadingCard()
+                else if (feedState.error != null && feedState.items.isEmpty)
+                  AuraCard(
+                    child: Text(
+                      'Could not load works.',
+                      style: AuraText.body,
+                    ),
+                  )
+                else if (feedState.items.isEmpty)
+                  const _EmptyWorksCard()
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: 'Works',
+                        subtitle: '${feedState.items.length} in view',
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: feedState.items.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AuraSpace.s18),
+                        itemBuilder: (context, i) {
+                          return PostCard(post: feedState.items[i]);
+                        },
+                      ),
+                      const SizedBox(height: AuraSpace.s20),
+                      if (feedState.isLoadingMore)
+                        const Padding(
+                          padding: EdgeInsets.only(top: AuraSpace.s4),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
+                      if (feedState.nextCursor != null &&
+                          feedState.nextCursor!.trim().isNotEmpty &&
+                          !feedState.isLoadingMore) ...[
+                        const SizedBox(height: AuraSpace.s4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () {
+                              ref
+                                  .read(feedControllerProvider.notifier)
+                                  .loadMore();
+                            },
+                            child: const Text('Load more'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -245,13 +288,24 @@ class _ComposerEntryCard extends StatelessWidget {
   const _ComposerEntryCard({
     required this.hasHeld,
     required this.onTap,
+    this.heldText,
   });
 
   final bool hasHeld;
+  final String? heldText;
   final VoidCallback onTap;
+
+  String _preview(String value) {
+    final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (text.isEmpty) return '';
+    if (text.length <= 140) return text;
+    return '${text.substring(0, 140).trim()}…';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final preview = _preview(heldText ?? '');
+
     return AuraCard(
       onTap: onTap,
       child: Column(
@@ -268,6 +322,15 @@ class _ComposerEntryCard extends StatelessWidget {
                 : 'Start a new work.',
             style: AuraText.body,
           ),
+          if (hasHeld && preview.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              preview,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.small.copyWith(height: 1.45),
+            ),
+          ],
         ],
       ),
     );
@@ -341,16 +404,44 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+  });
 
   final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+        Text(
+          subtitle,
+          style: AuraText.small,
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyWorksCard extends StatelessWidget {
+  const _EmptyWorksCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Text(
+        'No works yet.',
+        style: AuraText.body,
+      ),
     );
   }
 }
@@ -363,7 +454,9 @@ class _LoadingCard extends StatelessWidget {
     return AuraCard(
       child: Padding(
         padding: const EdgeInsets.all(AuraSpace.s16),
-        child: const Center(child: CircularProgressIndicator()),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
       ),
     );
   }

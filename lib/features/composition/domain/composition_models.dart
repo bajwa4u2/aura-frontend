@@ -1,166 +1,69 @@
-import 'package:flutter/foundation.dart';
-
 enum CompositionSurface {
-  composer,
+  post,
+  message,
+  announcement,
   space,
-  dm,
 }
 
-extension CompositionSurfaceX on CompositionSurface {
-  String get apiValue {
-    switch (this) {
-      case CompositionSurface.composer:
-        return 'composer';
-      case CompositionSurface.space:
-        return 'space';
-      case CompositionSurface.dm:
-        return 'dm';
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case CompositionSurface.composer:
-        return 'Composer';
-      case CompositionSurface.space:
-        return 'Space';
-      case CompositionSurface.dm:
-        return 'Direct message';
-    }
-  }
-
-  static CompositionSurface? tryParse(String? raw) {
-    final value = (raw ?? '').trim().toLowerCase();
-    switch (value) {
-      case 'COMPOSER':
-      case 'COMPOSE':
-      case 'POST':
-        return CompositionSurface.composer;
-      case 'SPACE':
-      case 'SPACES':
-        return CompositionSurface.space;
-      case 'DM':
-      case 'DIRECT':
-      case 'DIRECT_MESSAGE':
-      case 'REPLY':
-        return CompositionSurface.dm;
-      default:
-        return null;
-    }
-  }
-}
-
-@immutable
-class CompositionFinding {
-  const CompositionFinding({
-    required this.id,
-    required this.chapter,
-    required this.state,
-    required this.message,
-    required this.suggestion,
-    required this.actionType,
-    required this.actionLabel,
-    required this.raw,
-  });
-
+class CompositionSuggestion {
   final String id;
-  final String chapter;
-  final String state;
   final String message;
-  final String suggestion;
-  final String actionType;
-  final String actionLabel;
-  final Map<String, dynamic> raw;
+  final String replacement;
+  final bool canApply;
 
-  String get chapterLabel {
-    final value = chapter.trim();
-    if (value.isEmpty) return 'General';
-    return value[0].toUpperCase() + value.substring(1).toLowerCase();
-  }
-
-  String get stateLabel {
-    final value = state.trim();
-    if (value.isEmpty) return 'Open';
-    return value[0].toUpperCase() + value.substring(1).toLowerCase();
-  }
-
-  bool get isResolved {
-    final value = state.trim().toUpperCase();
-    return value == 'OK' || value == 'RESOLVED' || value == 'PASS';
-  }
-
-  bool get isWarning {
-    final value = state.trim().toUpperCase();
-    return value == 'WARN' || value == 'WARNING' || value == 'NEEDS_ATTENTION';
-  }
-
-  bool get isActionable {
-    if (actionType.trim().isNotEmpty) return true;
-    if (suggestion.trim().isNotEmpty) return true;
-    return false;
-  }
-}
-
-@immutable
-class CompositionReviewResult {
-  const CompositionReviewResult({
-    required this.sessionId,
-    required this.surface,
-    required this.findings,
-    required this.allowApply,
-    required this.allowTranslation,
-    required this.intensity,
-    required this.summary,
-    required this.raw,
+  CompositionSuggestion({
+    required this.id,
+    required this.message,
+    required this.replacement,
+    this.canApply = true,
   });
 
-  final String sessionId;
-  final CompositionSurface surface;
-  final List<CompositionFinding> findings;
-  final bool allowApply;
-  final bool allowTranslation;
-  final String intensity;
-  final String summary;
-  final Map<String, dynamic> raw;
-
-  String get intensityLabel {
-    final value = intensity.trim();
-    if (value.isEmpty) return '';
-    return value[0].toUpperCase() + value.substring(1).toLowerCase();
-  }
-
-  CompositionReviewResult copyWith({
-    String? sessionId,
-    CompositionSurface? surface,
-    List<CompositionFinding>? findings,
-    bool? allowApply,
-    bool? allowTranslation,
-    String? intensity,
-    String? summary,
-    Map<String, dynamic>? raw,
-  }) {
-    return CompositionReviewResult(
-      sessionId: sessionId ?? this.sessionId,
-      surface: surface ?? this.surface,
-      findings: findings ?? this.findings,
-      allowApply: allowApply ?? this.allowApply,
-      allowTranslation: allowTranslation ?? this.allowTranslation,
-      intensity: intensity ?? this.intensity,
-      summary: summary ?? this.summary,
-      raw: raw ?? this.raw,
+  factory CompositionSuggestion.fromJson(Map<String, dynamic> json) {
+    return CompositionSuggestion(
+      id: json['id'] ?? '',
+      message: json['message'] ?? '',
+      replacement: json['replacement'] ?? '',
+      canApply: json['canApply'] ?? true,
     );
   }
 }
 
-@immutable
-class CompositionApplyResult {
-  const CompositionApplyResult({
-    required this.text,
-    this.review,
-    required this.raw,
+class CompositionReviewResult {
+  final String sessionId;
+  final List<CompositionSuggestion> suggestions;
+
+  CompositionReviewResult({
+    required this.sessionId,
+    required this.suggestions,
   });
 
-  final String text;
-  final CompositionReviewResult? review;
-  final Map<String, dynamic> raw;
+  factory CompositionReviewResult.fromJson(Map<String, dynamic> json) {
+    final findings = json['findings'] as List? ?? [];
+
+    return CompositionReviewResult(
+      sessionId: json['sessionId'] ?? '',
+      suggestions: findings
+          .map((e) => CompositionSuggestion.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class CompositionTranslationResult {
+  final String translatedText;
+  final String targetLanguage;
+
+  CompositionTranslationResult({
+    required this.translatedText,
+    required this.targetLanguage,
+  });
+
+  factory CompositionTranslationResult.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return CompositionTranslationResult(
+      translatedText: json['translatedText'] ?? '',
+      targetLanguage: json['targetLanguage'] ?? '',
+    );
+  }
 }

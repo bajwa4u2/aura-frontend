@@ -321,9 +321,22 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   final _picker = ImagePicker();
 
   final List<_DraftAttachment> _attachments = [];
+  final Set<String> _dismissedSuggestionIds = <String>{};
+  final Set<String> _applyingSuggestionIds = <String>{};
 
   bool _sending = false;
   bool _recordingAudio = false;
+  bool _assistBusy = false;
+  String? _assistError;
+  String? _assistSessionId;
+  String? _assistSnapshot;
+  List<Map<String, dynamic>> _suggestions = const [];
+
+  bool _translationBusy = false;
+  String? _translationError;
+  String? _translationPreview;
+  String? _translationSnapshot;
+  String _translationTargetLanguage = 'ur';
 
   @override
   void dispose() {
@@ -336,6 +349,19 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     if (_sending) return false;
     if (_attachments.any((a) => a.uploading)) return false;
     return _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
+  }
+
+  bool get _hasText => _controller.text.trim().isNotEmpty;
+
+  List<Map<String, dynamic>> get _visibleSuggestions {
+    final out = <Map<String, dynamic>>[];
+    for (final suggestion in _suggestions) {
+      final id = _firstNonEmpty(suggestion, const ['id', 'findingId']);
+      if (id.isNotEmpty && _dismissedSuggestionIds.contains(id)) continue;
+      out.add(suggestion);
+      if (out.length >= 2) break;
+    }
+    return out;
   }
 
   Future<void> _pickImageFromGallery() async {
@@ -629,6 +655,195 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     attachment.error = null;
   }
 
+  Future<void> _runAssist() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _assistBusy) return;
+
+    setState(() {
+      _assistBusy = true;
+      _assistError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post(
+        '/v1/composition/review',
+        data: {
+          'text': text,
+          'surface': 'dm',
+        },
+      );
+
+      final root = _unwrapDataMap(res.data);
+      final findings = _extractFindings(root);
+      final sessionId = _pickDeepString(root, const [
+        ['sessionId'],
+        ['review', 'sessionId'],
+        ['data', 'sessionId'],
+        ['session', 'id'],
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _assistBusy = false;
+        _assistSessionId = sessionId;
+        _assistSnapshot = text;
+        _suggestions = findings;
+        _dismissedSuggestionIds.clear();
+        _assistError = findings.isEmpty ? 'Nothing urgent to revise.' : null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _assistBusy = false;
+        _assistError = 'Could not review this draft right now.';
+      });
+    }
+  }
+
+  Future<void> _applySuggestion(Map<String, dynamic> suggestion) async {
+    final suggestionId = _firstNonEmpty(suggestion, const ['id', 'findingId']);
+    final sessionId = (_assistSessionId ?? '').trim();
+    if (suggestionId.isEmpty || sessionId.isEmpty) return;
+
+    setState(() {
+      _applyingSuggestionIds.add(suggestionId);
+      _assistError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final currentText = _controller.text;
+      final res = await dio.post(
+        '/v1/composition/apply',
+        data: {
+          'sessionId': sessionId,
+          'findingId': suggestionId,
+          'currentText': currentText,
+        },
+      );
+
+      final root = _unwrapDataMap(res.data);
+      final nextText = _pickDeepString(root, const [
+        ['text'],
+        ['updatedText'],
+        ['data', 'text'],
+        ['data', 'updatedText'],
+        ['result', 'text'],
+      ], fallback: currentText);
+
+      final selection = TextSelection.collapsed(offset: nextText.length);
+      _controller.value = TextEditingValue(
+        text: nextText,
+        selection: selection,
+        composing: TextRange.empty,
+      );
+
+      final findings = _extractFindings(root);
+
+      if (!mounted) return;
+      setState(() {
+        _assistSnapshot = nextText;
+        _suggestions = findings.isNotEmpty ? findings : _suggestions.where((item) {
+          final id = _firstNonEmpty(item, const ['id', 'findingId']);
+          return id != suggestionId;
+        }).toList();
+        _dismissedSuggestionIds.remove(suggestionId);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _assistError = 'Could not apply that suggestion.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _applyingSuggestionIds.remove(suggestionId);
+        });
+      }
+    }
+  }
+
+  Future<void> _translateDraft() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _translationBusy) return;
+
+    setState(() {
+      _translationBusy = true;
+      _translationError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post(
+        '/v1/composition/translate',
+        data: {
+          'text': text,
+          'targetLanguage': _translationTargetLanguage,
+        },
+      );
+
+      final root = _unwrapDataMap(res.data);
+      final translatedText = _pickDeepString(root, const [
+        ['translatedText'],
+        ['translation', 'text'],
+        ['data', 'translatedText'],
+        ['data', 'text'],
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _translationBusy = false;
+        _translationSnapshot = text;
+        _translationPreview = translatedText;
+        if (translatedText.isEmpty) {
+          _translationError = 'Translation was empty.';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _translationBusy = false;
+        _translationError = 'Could not translate this draft right now.';
+      });
+    }
+  }
+
+  void _applyTranslation() {
+    final translatedText = (_translationPreview ?? '').trim();
+    if (translatedText.isEmpty) return;
+
+    _controller.value = TextEditingValue(
+      text: translatedText,
+      selection: TextSelection.collapsed(offset: translatedText.length),
+      composing: TextRange.empty,
+    );
+
+    setState(() {
+      _translationPreview = null;
+      _translationError = null;
+      _assistSnapshot = null;
+      _suggestions = const [];
+      _dismissedSuggestionIds.clear();
+    });
+  }
+
+  void _restoreBeforeTranslation() {
+    final snapshot = (_translationSnapshot ?? '').trim();
+    if (snapshot.isEmpty) return;
+
+    _controller.value = TextEditingValue(
+      text: snapshot,
+      selection: TextSelection.collapsed(offset: snapshot.length),
+      composing: TextRange.empty,
+    );
+
+    setState(() {
+      _translationPreview = null;
+      _translationError = null;
+    });
+  }
+
   Future<void> _submit() async {
     if (!_canSend) return;
 
@@ -652,7 +867,16 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
       if (!mounted) return;
       widget.onSent();
-      setState(() {});
+      setState(() {
+        _suggestions = const [];
+        _assistSnapshot = null;
+        _assistError = null;
+        _assistSessionId = null;
+        _dismissedSuggestionIds.clear();
+        _translationPreview = null;
+        _translationSnapshot = null;
+        _translationError = null;
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -748,6 +972,31 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
               ),
               const SizedBox(height: AuraSpace.s10),
             ],
+            if (_visibleSuggestions.isNotEmpty || _assistError != null) ...[
+              _ComposerAssistPanel(
+                suggestions: _visibleSuggestions,
+                errorText: _assistError,
+                applyingIds: _applyingSuggestionIds,
+                onApply: _applySuggestion,
+                onDismiss: (suggestion) {
+                  final id = _firstNonEmpty(suggestion, const ['id', 'findingId']);
+                  if (id.isEmpty) return;
+                  setState(() => _dismissedSuggestionIds.add(id));
+                },
+              ),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+            if (_translationPreview != null || _translationError != null) ...[
+              _ComposerTranslationPanel(
+                targetLanguage: _translationTargetLanguage,
+                preview: _translationPreview,
+                errorText: _translationError,
+                busy: _translationBusy,
+                onApply: _translationPreview == null ? null : _applyTranslation,
+                onRestore: _translationSnapshot == null ? null : _restoreBeforeTranslation,
+              ),
+              const SizedBox(height: AuraSpace.s10),
+            ],
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -757,16 +1006,78 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                   tooltip: 'Add attachment',
                 ),
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    minLines: 1,
-                    maxLines: 6,
-                    decoration: InputDecoration(
-                      hintText: _recordingAudio
-                          ? 'Recording audio...'
-                          : 'Write a message',
-                    ),
-                    onChanged: (_) => setState(() {}),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _controller,
+                        minLines: 1,
+                        maxLines: 6,
+                        decoration: InputDecoration(
+                          hintText: _recordingAudio
+                              ? 'Recording audio...'
+                              : 'Write a message',
+                        ),
+                        onChanged: (_) {
+                          setState(() {
+                            if ((_assistSnapshot ?? '') != _controller.text.trim()) {
+                              _suggestions = const [];
+                              _assistError = null;
+                              _assistSessionId = null;
+                              _dismissedSuggestionIds.clear();
+                            }
+                            if ((_translationSnapshot ?? '') != _controller.text.trim()) {
+                              _translationPreview = null;
+                              _translationError = null;
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(height: AuraSpace.s8),
+                      Row(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: !_hasText || _assistBusy ? null : _runAssist,
+                            icon: _assistBusy
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.auto_fix_high_outlined, size: 16),
+                            label: const Text('Polish'),
+                          ),
+                          const SizedBox(width: AuraSpace.s8),
+                          DropdownButton<String>(
+                            value: _translationTargetLanguage,
+                            items: const [
+                              DropdownMenuItem(value: 'ur', child: Text('Urdu')),
+                              DropdownMenuItem(value: 'en', child: Text('English')),
+                              DropdownMenuItem(value: 'ar', child: Text('Arabic')),
+                            ],
+                            onChanged: _translationBusy
+                                ? null
+                                : (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      _translationTargetLanguage = value;
+                                    });
+                                  },
+                          ),
+                          const SizedBox(width: AuraSpace.s8),
+                          OutlinedButton.icon(
+                            onPressed: !_hasText || _translationBusy ? null : _translateDraft,
+                            icon: _translationBusy
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.translate_outlined, size: 16),
+                            label: const Text('Translate'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s10),
@@ -789,6 +1100,161 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   }
 }
 
+class _ComposerAssistPanel extends StatelessWidget {
+  const _ComposerAssistPanel({
+    required this.suggestions,
+    required this.errorText,
+    required this.applyingIds,
+    required this.onApply,
+    required this.onDismiss,
+  });
+
+  final List<Map<String, dynamic>> suggestions;
+  final String? errorText;
+  final Set<String> applyingIds;
+  final void Function(Map<String, dynamic> suggestion) onApply;
+  final void Function(Map<String, dynamic> suggestion) onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Writing support', style: AuraText.title),
+          if (errorText != null && errorText!.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(errorText!, style: AuraText.body),
+          ],
+          for (final suggestion in suggestions) ...[
+            const SizedBox(height: AuraSpace.s10),
+            _ComposerSuggestionTile(
+              suggestion: suggestion,
+              busy: applyingIds.contains(
+                _firstNonEmpty(suggestion, const ['id', 'findingId']),
+              ),
+              onApply: () => onApply(suggestion),
+              onDismiss: () => onDismiss(suggestion),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerSuggestionTile extends StatelessWidget {
+  const _ComposerSuggestionTile({
+    required this.suggestion,
+    required this.busy,
+    required this.onApply,
+    required this.onDismiss,
+  });
+
+  final Map<String, dynamic> suggestion;
+  final bool busy;
+  final VoidCallback onApply;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = _firstNonEmpty(suggestion, const ['message', 'title', 'finding']);
+    final detail = _firstNonEmpty(suggestion, const ['suggestion', 'detail', 'description']);
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (message.isNotEmpty)
+            Text(message, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          if (detail.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(detail, style: AuraText.body),
+          ],
+          const SizedBox(height: AuraSpace.s10),
+          Row(
+            children: [
+              TextButton(
+                onPressed: busy ? null : onDismiss,
+                child: const Text('Dismiss'),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              FilledButton(
+                onPressed: busy ? null : onApply,
+                child: Text(busy ? 'Applying...' : 'Apply'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerTranslationPanel extends StatelessWidget {
+  const _ComposerTranslationPanel({
+    required this.targetLanguage,
+    required this.preview,
+    required this.errorText,
+    required this.busy,
+    required this.onApply,
+    required this.onRestore,
+  });
+
+  final String targetLanguage;
+  final String? preview;
+  final String? errorText;
+  final bool busy;
+  final VoidCallback? onApply;
+  final VoidCallback? onRestore;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (targetLanguage) {
+      'ur' => 'Urdu',
+      'ar' => 'Arabic',
+      _ => 'English',
+    };
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Translation preview', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text('Target language: $label', style: AuraText.small),
+          if (errorText != null && errorText!.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(errorText!, style: AuraText.body),
+          ],
+          if ((preview ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(preview!, style: AuraText.body),
+            const SizedBox(height: AuraSpace.s10),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: busy ? null : onRestore,
+                  child: const Text('Restore original'),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                FilledButton(
+                  onPressed: busy ? null : onApply,
+                  child: const Text('Use translation'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 class _AttachmentPreviewRow extends StatelessWidget {
   const _AttachmentPreviewRow({
     required this.attachments,
@@ -2114,6 +2580,51 @@ Map<String, dynamic> _asMap(dynamic raw) {
 List<Map<String, dynamic>> _listOfMap(dynamic raw) {
   if (raw is! List) return const [];
   return raw.map((e) => _asMap(e)).toList();
+}
+
+
+List<Map<String, dynamic>> _extractFindings(Map<String, dynamic> root) {
+  for (final path in const [
+    ['findings'],
+    ['review', 'findings'],
+    ['data', 'findings'],
+    ['result', 'findings'],
+    ['items'],
+    ['data', 'items'],
+  ]) {
+    final value = _valueAtPath(root, path);
+    if (value is List) {
+      return value.map(_asMap).where((item) {
+        final id = _firstNonEmpty(item, const ['id', 'findingId']);
+        final message = _firstNonEmpty(item, const ['message', 'title', 'finding']);
+        final detail = _firstNonEmpty(item, const ['suggestion', 'detail', 'description']);
+        return id.isNotEmpty || message.isNotEmpty || detail.isNotEmpty;
+      }).toList();
+    }
+  }
+  return const [];
+}
+
+dynamic _valueAtPath(Map<String, dynamic> map, List<String> path) {
+  dynamic current = map;
+  for (final segment in path) {
+    if (current is! Map) return null;
+    current = current[segment];
+  }
+  return current;
+}
+
+String _pickDeepString(
+  Map<String, dynamic> map,
+  List<List<String>> paths, {
+  String fallback = '',
+}) {
+  for (final path in paths) {
+    final value = _valueAtPath(map, path);
+    final text = _str(value);
+    if (text.isNotEmpty) return text;
+  }
+  return fallback;
 }
 
 String _str(dynamic value) => (value ?? '').toString().trim();

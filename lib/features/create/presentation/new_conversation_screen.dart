@@ -11,7 +11,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../composition/data/composition_repository.dart';
 import '../../composition/domain/composition_models.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
@@ -39,6 +38,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final Set<String> _selectedIds = <String>{};
+  final Set<String> _applyingSuggestionIds = <String>{};
+  final Set<String> _dismissedSuggestionIds = <String>{};
 
   List<_DirectoryEntry> _allEntries = const [];
   bool _loading = true;
@@ -49,12 +50,19 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   String? _submitError;
   String _spaceType = 'CIRCLE';
 
-  CompositionReviewResult? _spaceCompositionReview;
-  String? _spaceCompositionError;
-  bool _spaceCompositionReviewing = false;
-  final Set<String> _applyingFindingIds = <String>{};
-
   Timer? _searchDebounce;
+  Timer? _suggestionDebounce;
+
+  bool _suggestionsBusy = false;
+  String? _suggestionsError;
+  CompositionReviewResult? _spaceSuggestions;
+  String? _reviewedSnapshot;
+
+  bool _translationBusy = false;
+  String? _translationError;
+  String _translationTargetLanguage = 'ur';
+  CompositionTranslationResult? _translationPreview;
+  String? _translationSourceSnapshot;
 
   bool get _isSharedSpaceMode => widget.isSharedSpaceMode;
 
@@ -89,32 +97,71 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }).toList(growable: false);
   }
 
+  List<CompositionSuggestion> get _visibleSuggestions {
+    final review = _spaceSuggestions;
+    if (review == null) return const [];
+
+    final out = <CompositionSuggestion>[];
+    for (final suggestion in review.suggestions) {
+      if (_dismissedSuggestionIds.contains(suggestion.id)) continue;
+      out.add(suggestion);
+      if (out.length >= 2) break;
+    }
+    return out;
+  }
+
   @override
   void initState() {
     super.initState();
     unawaited(_loadDirectory());
     _searchController.addListener(_handleSearchChanged);
-    _titleController.addListener(_onDetailsChanged);
-    _titleController.addListener(_handleCompositionInputChanged);
-    _descriptionController.addListener(_handleCompositionInputChanged);
+    _titleController.addListener(_onSpaceDraftChanged);
+    _descriptionController.addListener(_onSpaceDraftChanged);
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _suggestionDebounce?.cancel();
     _searchController.removeListener(_handleSearchChanged);
-    _titleController.removeListener(_onDetailsChanged);
+    _titleController.removeListener(_onSpaceDraftChanged);
+    _descriptionController.removeListener(_onSpaceDraftChanged);
     _searchController.dispose();
-    _titleController.removeListener(_handleCompositionInputChanged);
-    _descriptionController.removeListener(_handleCompositionInputChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
-  void _onDetailsChanged() {
-    if (!mounted) return;
-    setState(() {});
+  void _onSpaceDraftChanged() {
+    if (!mounted || !_isSharedSpaceMode) return;
+
+    final current = _spaceDraftText();
+
+    if (_reviewedSnapshot != null &&
+        _normalizeText(_reviewedSnapshot!) != _normalizeText(current)) {
+      setState(() {
+        _spaceSuggestions = null;
+        _suggestionsError = null;
+        _dismissedSuggestionIds.clear();
+      });
+    }
+
+    if (_translationSourceSnapshot != null &&
+        _normalizeText(_translationSourceSnapshot!) != _normalizeText(current)) {
+      setState(() {
+        _translationPreview = null;
+        _translationError = null;
+      });
+    }
+
+    _suggestionDebounce?.cancel();
+    _suggestionDebounce = Timer(const Duration(milliseconds: 550), () {
+      if (!mounted || !_isSharedSpaceMode) return;
+      if (_spaceDraftText().trim().isEmpty) return;
+      unawaited(_refreshSuggestions(silent: true));
+    });
+
+    if (mounted) setState(() {});
   }
 
   void _handleSearchChanged() {
@@ -198,23 +245,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }) async {
     try {
       final res = await dio.get(path, queryParameters: query);
-      return _deepFirstList(res.data);
+      return _deepListOfMaps(res.data);
     } on DioException catch (e) {
-      final status = e.response?.statusCode ?? 0;
-      if (status == 401 || status == 403 || status == 404) {
-        return const <Map<String, dynamic>>[];
-      }
+      if (e.response?.statusCode == 404) return const <Map<String, dynamic>>[];
       rethrow;
     }
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchRequiredList(
-    Dio dio,
-    String path, {
-    Map<String, dynamic>? query,
-  }) async {
-    final res = await dio.get(path, queryParameters: query);
-    return _deepFirstList(res.data);
   }
 
   void _applyInitialSelectionIfNeeded() {
@@ -295,23 +330,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     });
   }
 
-  void _handleCompositionInputChanged() {
-    if (!mounted) return;
-    if (_spaceCompositionReview == null && _spaceCompositionError == null) return;
-    setState(() {
-      _spaceCompositionReview = null;
-      _spaceCompositionError = null;
-    });
-  }
-
-  bool get _canRunCreateCompositionReview {
-    if (!_isSharedSpaceMode || _submitting || _loading || _spaceCompositionReviewing) {
-      return false;
-    }
-    return _createSpaceCompositeText().trim().isNotEmpty;
-  }
-
-  String _createSpaceCompositeText() {
+  String _spaceDraftText() {
     return [
       'Title:',
       _titleController.text.trim(),
@@ -321,272 +340,210 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     ].join('\n');
   }
 
-  void _setCreateSpaceCompositeText(String text) {
+  void _applySpaceDraftText(String text) {
     final normalized = text.replaceAll('\r\n', '\n').trim();
-    final reg = RegExp(r'Title:\s*\n([\s\S]*?)\n\s*Description:\s*\n([\s\S]*)$', multiLine: true);
+    final reg = RegExp(
+      r'Title:\s*\n([\s\S]*?)\n\s*Description:\s*\n([\s\S]*)$',
+      multiLine: true,
+    );
     final match = reg.firstMatch(normalized);
+
     if (match != null) {
-      _titleController.text = (match.group(1) ?? '').trim();
-      _descriptionController.text = (match.group(2) ?? '').trim();
+      final title = (match.group(1) ?? '').trim();
+      final description = (match.group(2) ?? '').trim();
+      _replaceControllerText(_titleController, title);
+      _replaceControllerText(_descriptionController, description);
       return;
     }
 
-    _descriptionController.text = normalized;
+    _replaceControllerText(_descriptionController, normalized);
   }
 
-  Future<void> _runCreateCompositionReview() async {
-    if (!_canRunCreateCompositionReview) return;
+  Future<void> _refreshSuggestions({bool silent = false}) async {
+    if (!_isSharedSpaceMode) return;
 
-    setState(() {
-      _spaceCompositionReviewing = true;
-      _spaceCompositionError = null;
-      _spaceCompositionReview = null;
-    });
+    final draft = _spaceDraftText();
+    if (draft.trim().isEmpty) return;
+
+    if (!silent) {
+      setState(() {
+        _suggestionsBusy = true;
+        _suggestionsError = null;
+      });
+    } else if (!_suggestionsBusy) {
+      setState(() {
+        _suggestionsBusy = true;
+      });
+    }
 
     try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final review = await repo.review(
-        text: _createSpaceCompositeText(),
-        surface: CompositionSurface.space,
+      final dio = ref.read(dioProvider);
+      final response = await dio.post(
+        '/v1/composition/review',
+        data: {
+          'text': draft,
+          'surface': 'space',
+        },
       );
 
+      final parsed = _parseLightReview(_firstMap(response.data));
       if (!mounted) return;
       setState(() {
-        _spaceCompositionReview = review;
+        _spaceSuggestions = parsed;
+        _reviewedSnapshot = draft;
+        _dismissedSuggestionIds.clear();
+        _suggestionsError = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _spaceCompositionError = 'Review could not be completed: $e';
+        _suggestionsError = silent ? null : 'Suggestions could not be loaded: $e';
       });
     } finally {
-      if (mounted) {
-        setState(() => _spaceCompositionReviewing = false);
-      }
+      if (!mounted) return;
+      setState(() {
+        _suggestionsBusy = false;
+      });
     }
   }
 
-  Future<void> _applyCreateCompositionFinding(CompositionFinding finding) async {
-    final review = _spaceCompositionReview;
-    if (review == null || finding.id.trim().isEmpty) return;
+  Future<void> _applySuggestion(CompositionSuggestion suggestion) async {
+    final review = _spaceSuggestions;
+    if (review == null || suggestion.id.trim().isEmpty) return;
+
+    final currentDraft = _spaceDraftText();
 
     setState(() {
-      _applyingFindingIds.add(finding.id);
-      _spaceCompositionError = null;
+      _applyingSuggestionIds.add(suggestion.id);
+      _submitError = null;
+      _suggestionsError = null;
     });
 
     try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final applied = await repo.apply(
-        sessionId: review.sessionId,
-        findingId: finding.id,
-        text: _createSpaceCompositeText(),
-        surface: CompositionSurface.space,
+      final dio = ref.read(dioProvider);
+      final response = await dio.post(
+        '/v1/composition/apply',
+        data: {
+          'sessionId': review.sessionId,
+          'findingId': suggestion.id,
+          'currentText': currentDraft,
+        },
       );
 
-      if (!mounted) return;
-      if (applied.text.trim().isNotEmpty) {
-        _setCreateSpaceCompositeText(applied.text);
+      final root = _firstMap(response.data);
+      final nextText = _firstNonEmptyString(root, const [
+        ['text'],
+        ['updatedText'],
+        ['resultText'],
+        ['revisedText'],
+        ['content'],
+        ['data', 'text'],
+        ['data', 'updatedText'],
+      ]);
+
+      if (nextText.trim().isNotEmpty) {
+        _applySpaceDraftText(nextText);
       }
+
+      final refreshed = _safeParseLightReview(root);
+
+      if (!mounted) return;
       setState(() {
-        _spaceCompositionReview = applied.review ?? review;
+        _reviewedSnapshot = _spaceDraftText();
+        if (refreshed != null) {
+          _spaceSuggestions = refreshed;
+          _dismissedSuggestionIds.clear();
+        } else {
+          _dismissedSuggestionIds.add(suggestion.id);
+        }
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _spaceCompositionError = 'Apply failed: $e';
+        _suggestionsError = 'Suggestion could not be applied: $e';
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _applyingFindingIds.remove(finding.id);
-        });
-      }
-    }
-  }
-
-  Map<String, List<CompositionFinding>> _groupCreateFindings(
-    List<CompositionFinding> findings,
-  ) {
-    final grouped = <String, List<CompositionFinding>>{};
-    for (final finding in findings) {
-      grouped.putIfAbsent(finding.chapterLabel, () => <CompositionFinding>[]).add(finding);
-    }
-    return grouped;
-  }
-
-  Widget _buildSpaceCompositionCard() {
-    final review = _spaceCompositionReview;
-    final grouped = review == null
-        ? const <String, List<CompositionFinding>>{}
-        : _groupCreateFindings(review.findings);
-    final allowApply = review?.allowApply ?? false;
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Review',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(
-                      'Review before creating the space.',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: _canRunCreateCompositionReview ? _runCreateCompositionReview : null,
-                icon: _spaceCompositionReviewing
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_fix_high_outlined),
-                label: Text(_spaceCompositionReviewing ? 'Reviewing...' : 'Review'),
-              ),
-            ],
-          ),
-          if (review != null) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                _MetaChip(label: 'Surface: ${review.surface.label}'),
-                if (review.intensityLabel.isNotEmpty)
-                  _MetaChip(label: 'Intensity: ${review.intensityLabel}'),
-                _MetaChip(label: 'Findings: ${review.findings.length}'),
-              ],
-            ),
-          ],
-          if ((review?.summary ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(review!.summary, style: AuraText.body),
-          ],
-          if ((_spaceCompositionError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              _spaceCompositionError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-          if (review != null && review.findings.isEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              'No findings returned for this space draft.',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          for (final entry in grouped.entries) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              entry.key,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            for (final finding in entry.value) ...[
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-                padding: const EdgeInsets.all(AuraSpace.s12),
-                decoration: BoxDecoration(
-                  color: AuraSurface.page,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      children: [
-                        Text(
-                          finding.message,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        _MetaChip(label: finding.stateLabel),
-                      ],
-                    ),
-                    if (finding.suggestion.trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(finding.suggestion, style: AuraText.body),
-                    ],
-                    if (allowApply) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton.icon(
-                          onPressed: _applyingFindingIds.contains(finding.id)
-                              ? null
-                              : () => _applyCreateCompositionFinding(finding),
-                          icon: _applyingFindingIds.contains(finding.id)
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.rule_folder_outlined),
-                          label: Text(
-                            _applyingFindingIds.contains(finding.id)
-                                ? 'Applying...'
-                                : (finding.actionLabel.trim().isNotEmpty
-                                    ? finding.actionLabel
-                                    : 'Apply'),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-
-
-  Future<bool> _ensureCreateReviewed() async {
-    if (!_isSharedSpaceMode) return true;
-
-    if (_spaceCompositionReviewing) return false;
-
-    if (_spaceCompositionReview == null) {
-      await _runCreateCompositionReview();
-    }
-
-    if (!mounted) return false;
-
-    if (_spaceCompositionReview == null) {
+      if (!mounted) return;
       setState(() {
-        _submitError = (_spaceCompositionError ?? '').trim().isNotEmpty
-            ? _spaceCompositionError
-            : 'Review is required before creating the space.';
+        _applyingSuggestionIds.remove(suggestion.id);
       });
-      return false;
     }
+  }
 
-    return true;
+  void _dismissSuggestion(String id) {
+    setState(() {
+      _dismissedSuggestionIds.add(id);
+    });
+  }
+
+  Future<void> _translateDraft() async {
+    if (!_isSharedSpaceMode) return;
+
+    final draft = _spaceDraftText();
+    if (draft.trim().isEmpty) return;
+
+    setState(() {
+      _translationBusy = true;
+      _translationError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.post(
+        '/v1/composition/translate',
+        data: {
+          'text': draft,
+          'targetLanguage': _translationTargetLanguage,
+        },
+      );
+
+      final root = _firstMap(response.data);
+      final translatedText = _firstNonEmptyString(root, const [
+        ['translatedText'],
+        ['text'],
+        ['translation'],
+        ['data', 'translatedText'],
+        ['data', 'text'],
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _translationPreview = CompositionTranslationResult(
+          translatedText: translatedText,
+          targetLanguage: _translationTargetLanguage,
+        );
+        _translationSourceSnapshot = draft;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _translationError = 'Translation could not be prepared: $e';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _translationBusy = false;
+      });
+    }
+  }
+
+  void _applyTranslation() {
+    final preview = _translationPreview;
+    if (preview == null || preview.translatedText.trim().isEmpty) return;
+
+    _applySpaceDraftText(preview.translatedText);
+    setState(() {
+      _translationSourceSnapshot = _spaceDraftText();
+      _translationPreview = null;
+      _suggestionsError = null;
+      _spaceSuggestions = null;
+      _dismissedSuggestionIds.clear();
+      _reviewedSnapshot = null;
+    });
   }
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
-
-    final reviewed = await _ensureCreateReviewed();
-    if (!reviewed || !mounted) return;
 
     setState(() {
       _submitting = true;
@@ -840,67 +797,59 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isSharedSpaceMode ? 'Selection' : 'Conversation',
+            _isSharedSpaceMode ? 'Selection' : 'Member',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s8),
           Text(
             _isSharedSpaceMode
-                ? '${_selectedMemberCount.toString()} selected'
-                : (_selectedEntries.isEmpty ? 'No member selected' : 'One member selected'),
+                ? 'Choose who belongs in this space and set its details.'
+                : 'Choose the member you want to write to.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
-          if (_selectedEntries.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s14),
+          if (_selectedEntries.isEmpty)
+            Text(
+              _isSharedSpaceMode
+                  ? 'No members selected yet.'
+                  : 'No member selected yet.',
+              style: AuraText.body,
+            )
+          else
             Wrap(
               spacing: AuraSpace.s8,
               runSpacing: AuraSpace.s8,
               children: [
                 for (final entry in _selectedEntries)
-                  _SelectedEntryChip(
+                  _SelectedChip(
                     label: entry.displayName,
                     onRemoved: () => _removeSelected(entry.id),
                   ),
               ],
             ),
-          ],
           if (_isSharedSpaceMode) ...[
             const SizedBox(height: AuraSpace.s16),
-            Container(
-              height: 1,
-              color: AuraSurface.divider,
-            ),
+            Container(height: 1, color: AuraSurface.divider),
             const SizedBox(height: AuraSpace.s16),
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-              ),
+              decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: AuraSpace.s12),
             TextField(
               controller: _descriptionController,
               minLines: 3,
               maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-              ),
+              decoration: const InputDecoration(labelText: 'Description'),
             ),
             const SizedBox(height: AuraSpace.s12),
             DropdownButtonFormField<String>(
               value: _spaceType,
-              decoration: const InputDecoration(
-                labelText: 'Type',
-              ),
+              decoration: const InputDecoration(labelText: 'Type'),
               items: const [
-                DropdownMenuItem(
-                  value: 'CIRCLE',
-                  child: Text('Circle'),
-                ),
-                DropdownMenuItem(
-                  value: 'STUDIO',
-                  child: Text('Studio'),
-                ),
+                DropdownMenuItem(value: 'CIRCLE', child: Text('Circle')),
+                DropdownMenuItem(value: 'WORKROOM', child: Text('Workroom')),
+                DropdownMenuItem(value: 'SALON', child: Text('Salon')),
               ],
               onChanged: (value) {
                 if (value == null) return;
@@ -908,7 +857,169 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               },
             ),
             const SizedBox(height: AuraSpace.s16),
-            _buildSpaceCompositionCard(),
+            _buildWritingAssistCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWritingAssistCard() {
+    final suggestions = _visibleSuggestions;
+    final hasDraft = _spaceDraftText().trim().isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Writing assist',
+                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: AuraSpace.s6),
+                    Text(
+                      'Light suggestions only. Writing stays here.',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: hasDraft && !_suggestionsBusy ? () => _refreshSuggestions() : null,
+                icon: _suggestionsBusy
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high_outlined),
+                label: Text(_suggestionsBusy ? 'Checking...' : 'Check'),
+              ),
+            ],
+          ),
+          if ((_suggestionsError ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              _suggestionsError!,
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
+          ],
+          if (suggestions.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            for (final suggestion in suggestions) ...[
+              _SuggestionTile(
+                suggestion: suggestion,
+                applying: _applyingSuggestionIds.contains(suggestion.id),
+                onApply: suggestion.canApply
+                    ? () => _applySuggestion(suggestion)
+                    : null,
+                onDismiss: () => _dismissSuggestion(suggestion.id),
+              ),
+              if (suggestion != suggestions.last)
+                const SizedBox(height: AuraSpace.s10),
+            ],
+          ] else if (!_suggestionsBusy && hasDraft) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              'No suggestions right now.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+          const SizedBox(height: AuraSpace.s14),
+          Container(height: 1, color: AuraSurface.divider),
+          const SizedBox(height: AuraSpace.s14),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _translationTargetLanguage,
+                  decoration: const InputDecoration(labelText: 'Translate to'),
+                  items: const [
+                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
+                    DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'ar', child: Text('Arabic')),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _translationTargetLanguage = value;
+                      _translationPreview = null;
+                      _translationError = null;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              OutlinedButton.icon(
+                onPressed: hasDraft && !_translationBusy ? _translateDraft : null,
+                icon: _translationBusy
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.translate),
+                label: Text(_translationBusy ? 'Preparing...' : 'Preview'),
+              ),
+            ],
+          ),
+          if ((_translationError ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              _translationError!,
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
+          ],
+          if (_translationPreview != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              decoration: BoxDecoration(
+                color: AuraSurface.elevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Preview',
+                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                  Text(
+                    _translationPreview!.translatedText.trim().isEmpty
+                        ? 'No translated text returned.'
+                        : _translationPreview!.translatedText,
+                    style: AuraText.body,
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton(
+                      onPressed: _translationPreview!.translatedText.trim().isEmpty
+                          ? null
+                          : _applyTranslation,
+                      child: const Text('Use translation'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -991,28 +1102,361 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       ),
     );
   }
+
+  CompositionReviewResult _parseLightReview(Map<String, dynamic> root) {
+    final sessionId = _firstNonEmptyString(root, const [
+      ['sessionId'],
+      ['session', 'id'],
+      ['review', 'sessionId'],
+      ['review', 'session', 'id'],
+      ['data', 'sessionId'],
+      ['data', 'session', 'id'],
+    ]);
+
+    final rawFindings = _findRawFindings(root);
+    final suggestions = <CompositionSuggestion>[];
+
+    for (var i = 0; i < rawFindings.length; i++) {
+      final item = rawFindings[i];
+      final id = _firstNonEmptyString(item, const [
+        ['id'],
+        ['findingId'],
+        ['key'],
+      ], fallback: 'suggestion_$i');
+      final message = _firstNonEmptyString(item, const [
+        ['message'],
+        ['title'],
+        ['summary'],
+      ]);
+      final replacement = _firstNonEmptyString(item, const [
+        ['replacement'],
+        ['suggestion'],
+        ['text'],
+        ['body'],
+      ]);
+      final canApply = _boolAt(item, const ['canApply']) ??
+          _boolAt(item, const ['allowApply']) ??
+          replacement.trim().isNotEmpty;
+
+      if (message.trim().isEmpty && replacement.trim().isEmpty) continue;
+
+      suggestions.add(
+        CompositionSuggestion(
+          id: id,
+          message: message.trim().isEmpty ? 'Suggested refinement' : message,
+          replacement: replacement,
+          canApply: canApply,
+        ),
+      );
+    }
+
+    return CompositionReviewResult(
+      sessionId: sessionId,
+      suggestions: suggestions,
+    );
+  }
+
+  CompositionReviewResult? _safeParseLightReview(Map<String, dynamic> root) {
+    try {
+      final parsed = _parseLightReview(root);
+      if (parsed.sessionId.trim().isEmpty && parsed.suggestions.isEmpty) {
+        return null;
+      }
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Map<String, dynamic>> _findRawFindings(Map<String, dynamic> root) {
+    for (final path in const [
+      ['findings'],
+      ['review', 'findings'],
+      ['data', 'findings'],
+      ['result', 'findings'],
+      ['items'],
+      ['data', 'items'],
+    ]) {
+      final value = _valueAtPath(root, path);
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      if (value is Map) {
+        final flattened = <Map<String, dynamic>>[];
+        value.forEach((_, grouped) {
+          if (grouped is List) {
+            flattened.addAll(
+              grouped
+                  .whereType<Map>()
+                  .map((e) => Map<String, dynamic>.from(e)),
+            );
+          }
+        });
+        if (flattened.isNotEmpty) return flattened;
+      }
+    }
+    return const [];
+  }
+
+  dynamic _valueAtPath(Map<String, dynamic> root, List<String> path) {
+    dynamic current = root;
+    for (final segment in path) {
+      if (current is! Map) return null;
+      current = current[segment];
+    }
+    return current;
+  }
+
+  bool? _boolAt(Map<String, dynamic> root, List<String> path) {
+    final value = _valueAtPath(root, path);
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+        return false;
+      }
+    }
+    return null;
+  }
+
+  String _firstNonEmptyString(
+    Map<String, dynamic> root,
+    List<List<String>> paths, {
+    String fallback = '',
+  }) {
+    for (final path in paths) {
+      final value = _valueAtPath(root, path);
+      final s = (value ?? '').toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    return fallback;
+  }
+
+  void _replaceControllerText(TextEditingController controller, String text) {
+    final selection = controller.selection;
+    final targetOffset = selection.baseOffset >= 0
+        ? selection.baseOffset.clamp(0, text.length)
+        : text.length;
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: targetOffset),
+      composing: TextRange.empty,
+    );
+  }
+
+  String _normalizeText(String input) {
+    return input.replaceAll('\r\n', '\n').trim();
+  }
+
+  Map<String, dynamic> _firstMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return <String, dynamic>{};
+  }
+
+  Map<String, dynamic> _deepFirstMap(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      if (data['data'] is Map) {
+        return _deepFirstMap(data['data']);
+      }
+      return data;
+    }
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      if (map['data'] is Map) {
+        return _deepFirstMap(map['data']);
+      }
+      return map;
+    }
+    return <String, dynamic>{};
+  }
+
+  List<Map<String, dynamic>> _deepListOfMaps(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      for (final key in const ['data', 'items', 'results', 'rows']) {
+        final value = map[key];
+        if (value is List) {
+          return value
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+      }
+      for (final value in map.values) {
+        if (value is List) {
+          final out = value
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+          if (out.isNotEmpty) return out;
+        }
+      }
+    }
+    return const [];
+  }
+
+  List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
+    final seen = <String>{};
+    final out = <_DirectoryEntry>[];
+    for (final entry in entries) {
+      final key = entry.userId.trim().isNotEmpty
+          ? 'user:${entry.userId.trim()}'
+          : 'handle:${_normalizeHandle(entry.handle)}';
+      if (seen.add(key)) {
+        out.add(entry);
+      }
+    }
+    return out;
+  }
+
+  _DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> map) {
+    final id = _pickString(map, const ['id', '_id', 'userId']);
+    final userId = _pickString(map, const ['userId', 'id', '_id']);
+    final handle = _pickString(map, const ['handle', 'username']);
+    final name = _pickString(map, const ['displayName', 'name', 'fullName']);
+    final avatarUrl = _pickString(map, const ['avatarUrl', 'avatar', 'image']);
+
+    final displayName = name.isNotEmpty
+        ? name
+        : (handle.isNotEmpty ? handle.replaceFirst('@', '') : 'Member');
+
+    final subtitle =
+        handle.isNotEmpty ? '@${handle.replaceFirst('@', '')}' : 'Member';
+    final profileRoute = handle.isNotEmpty ? '/$handle' : null;
+
+    final stableId = id.isNotEmpty
+        ? id
+        : (userId.isNotEmpty
+            ? userId
+            : handle.isNotEmpty
+                ? handle
+                : displayName);
+
+    if (stableId.trim().isEmpty) return null;
+
+    return _DirectoryEntry(
+      id: stableId,
+      userId: userId,
+      handle: handle,
+      displayName: displayName,
+      subtitle: subtitle,
+      avatarUrl: avatarUrl,
+      profileRoute: profileRoute,
+    );
+  }
+
+  String _pickString(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final value = map[key];
+      final s = (value ?? '').toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    return '';
+  }
+
+  String _normalizeHandle(String? handle) {
+    final value = (handle ?? '').trim().toLowerCase();
+    if (value.startsWith('@')) return value.substring(1);
+    return value;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchRequiredList(Dio dio, String path) async {
+    final res = await dio.get(path);
+    return _deepListOfMaps(res.data);
+  }
+
+  String _extractSpaceId(dynamic data) {
+    final map = _deepFirstMap(data);
+    return _pickString(map, const ['id', '_id', 'spaceId']);
+  }
+
+  String _extractThreadId(dynamic data) {
+    final map = _deepFirstMap(data);
+    return _pickString(map, const ['threadId', 'id', '_id']);
+  }
 }
 
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.label});
+class _SuggestionTile extends StatelessWidget {
+  const _SuggestionTile({
+    required this.suggestion,
+    required this.applying,
+    required this.onApply,
+    required this.onDismiss,
+  });
 
-  final String label;
+  final CompositionSuggestion suggestion;
+  final bool applying;
+  final VoidCallback? onApply;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  suggestion.message,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Dismiss',
+                onPressed: onDismiss,
+                icon: const Icon(Icons.close, size: 18),
+              ),
+            ],
+          ),
+          if (suggestion.replacement.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              suggestion.replacement,
+              style: AuraText.body.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+          if (onApply != null) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: applying ? null : onApply,
+                icon: applying
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline),
+                label: Text(applying ? 'Applying...' : 'Apply'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1102,10 +1546,9 @@ class _DirectoryRow extends StatelessWidget {
               ),
             ),
             if (onOpenProfile != null)
-              IconButton(
-                tooltip: 'Open profile',
+              TextButton(
                 onPressed: onOpenProfile,
-                icon: const Icon(Icons.north_east, size: 18),
+                child: const Text('View'),
               ),
             trailing,
           ],
@@ -1115,8 +1558,8 @@ class _DirectoryRow extends StatelessWidget {
   }
 }
 
-class _SelectedEntryChip extends StatelessWidget {
-  const _SelectedEntryChip({
+class _SelectedChip extends StatelessWidget {
+  const _SelectedChip({
     required this.label,
     required this.onRemoved,
   });
@@ -1211,7 +1654,7 @@ class _DirectoryEntry {
     required this.handle,
     required this.displayName,
     required this.subtitle,
-    required this.avatarLetter,
+    required this.avatarUrl,
     required this.profileRoute,
   });
 
@@ -1221,7 +1664,7 @@ class _DirectoryEntry {
         handle = '',
         displayName = '',
         subtitle = '',
-        avatarLetter = '?',
+        avatarUrl = '',
         profileRoute = null;
 
   final String id;
@@ -1229,263 +1672,13 @@ class _DirectoryEntry {
   final String handle;
   final String displayName;
   final String subtitle;
-  final String avatarLetter;
+  final String avatarUrl;
   final String? profileRoute;
-}
 
-_DirectoryEntry? _memberEntryFromMap(Map<String, dynamic> raw) {
-  final user = _unwrapNestedUser(raw);
-
-  final id = _pickString(user, const ['id', '_id', 'userId']);
-  final handle = _normalizeHandle(
-    _pickString(user, const ['handle', 'username']),
-  );
-  final displayName = _pickString(
-    user,
-    const ['displayName', 'name', 'fullName', 'title'],
-  );
-
-  if (id.isEmpty && handle.isEmpty && displayName.isEmpty) return null;
-
-  final resolvedName = displayName.isNotEmpty
-      ? displayName
-      : (handle.isNotEmpty ? handle : 'Member');
-
-  final subtitleParts = <String>[];
-  if (handle.isNotEmpty) subtitleParts.add('@$handle');
-
-  final bio = _pickString(user, const ['bio', 'headline', 'summary']);
-  if (bio.isNotEmpty) subtitleParts.add(bio);
-
-  return _DirectoryEntry(
-    id: 'member:${id.isNotEmpty ? id : handle}',
-    userId: id,
-    handle: handle,
-    displayName: resolvedName,
-    subtitle: subtitleParts.isEmpty ? 'Member' : subtitleParts.join(' · '),
-    avatarLetter: _avatarLetterFrom(resolvedName),
-    profileRoute: handle.isNotEmpty ? '/author/$handle' : null,
-  );
-}
-
-List<_DirectoryEntry> _dedupeEntries(List<_DirectoryEntry> entries) {
-  final byId = <String, _DirectoryEntry>{};
-
-  for (final entry in entries) {
-    byId.putIfAbsent(entry.id, () => entry);
+  String get avatarLetter {
+    final base =
+        displayName.trim().isNotEmpty ? displayName.trim() : handle.trim();
+    if (base.isEmpty) return '?';
+    return base.characters.first.toUpperCase();
   }
-
-  return byId.values.toList(growable: false);
-}
-
-Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> raw) {
-  const nestedKeys = [
-    'user',
-    'profile',
-    'member',
-    'account',
-    'author',
-    'follower',
-    'following',
-  ];
-
-  for (final key in nestedKeys) {
-    final value = raw[key];
-    if (value is Map) {
-      return Map<String, dynamic>.from(value);
-    }
-  }
-
-  return raw;
-}
-
-Map<String, dynamic> _deepFirstMap(dynamic raw) {
-  if (raw is Map<String, dynamic>) {
-    final direct = raw;
-    const candidateKeys = [
-      'data',
-      'item',
-      'result',
-      'space',
-      'thread',
-      'payload',
-    ];
-
-    for (final key in candidateKeys) {
-      final nested = direct[key];
-      if (nested is Map) {
-        return _deepFirstMap(Map<String, dynamic>.from(nested));
-      }
-    }
-
-    return direct;
-  }
-
-  if (raw is Map) {
-    return _deepFirstMap(Map<String, dynamic>.from(raw));
-  }
-
-  return <String, dynamic>{};
-}
-
-List<Map<String, dynamic>> _deepFirstList(dynamic raw) {
-  if (raw is Map) {
-    final map = Map<String, dynamic>.from(raw);
-
-    const candidateKeys = [
-      'items',
-      'results',
-      'list',
-      'users',
-      'followers',
-      'following',
-      'threads',
-      'data',
-    ];
-
-    for (final key in candidateKeys) {
-      final value = map[key];
-      if (value is List) {
-        return value
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      }
-      if (value is Map) {
-        final nested = _deepFirstList(Map<String, dynamic>.from(value));
-        if (nested.isNotEmpty) return nested;
-      }
-    }
-  }
-
-  if (raw is List) {
-    return raw
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
-
-  return const <Map<String, dynamic>>[];
-}
-
-String _extractSpaceId(dynamic raw) {
-  if (raw is Map) {
-    final map = Map<String, dynamic>.from(raw);
-
-    final direct = _pickString(map, const [
-      'id',
-      '_id',
-      'spaceId',
-    ]);
-    if (direct.isNotEmpty) return direct;
-
-    const nestedKeys = [
-      'data',
-      'item',
-      'result',
-      'space',
-      'payload',
-    ];
-
-    for (final key in nestedKeys) {
-      final nested = map[key];
-      final candidate = _extractSpaceId(nested);
-      if (candidate.isNotEmpty) return candidate;
-    }
-  }
-
-  if (raw is List) {
-    for (final item in raw) {
-      final candidate = _extractSpaceId(item);
-      if (candidate.isNotEmpty) return candidate;
-    }
-  }
-
-  return '';
-}
-
-String _extractThreadId(dynamic raw) {
-  if (raw is Map) {
-    final map = Map<String, dynamic>.from(raw);
-
-    final direct = _pickString(map, const [
-      'threadId',
-      'defaultThreadId',
-      'id',
-      '_id',
-    ]);
-    if (direct.isNotEmpty &&
-        (map.containsKey('threadId') ||
-            map.containsKey('defaultThreadId') ||
-            map.containsKey('thread') ||
-            map.containsKey('threads'))) {
-      return direct;
-    }
-
-    final thread = map['thread'];
-    if (thread is Map) {
-      final id = _pickString(
-        Map<String, dynamic>.from(thread),
-        const ['id', '_id', 'threadId'],
-      );
-      if (id.isNotEmpty) return id;
-    }
-
-    final threads = map['threads'];
-    if (threads is List && threads.isNotEmpty) {
-      final first = threads.first;
-      if (first is Map) {
-        final id = _pickString(
-          Map<String, dynamic>.from(first),
-          const ['id', '_id', 'threadId'],
-        );
-        if (id.isNotEmpty) return id;
-      }
-    }
-
-    const nestedKeys = [
-      'data',
-      'item',
-      'result',
-      'payload',
-      'space',
-    ];
-
-    for (final key in nestedKeys) {
-      final nested = map[key];
-      final candidate = _extractThreadId(nested);
-      if (candidate.isNotEmpty) return candidate;
-    }
-  }
-
-  if (raw is List) {
-    for (final item in raw) {
-      final candidate = _extractThreadId(item);
-      if (candidate.isNotEmpty) return candidate;
-    }
-  }
-
-  return '';
-}
-
-String _pickString(Map<String, dynamic> map, List<String> keys) {
-  for (final key in keys) {
-    final value = map[key];
-    if (value == null) continue;
-    final text = value.toString().trim();
-    if (text.isNotEmpty) return text;
-  }
-  return '';
-}
-
-String _avatarLetterFrom(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) return '?';
-  return trimmed.characters.first.toUpperCase();
-}
-
-String _normalizeHandle(String? value) {
-  final trimmed = (value ?? '').trim();
-  if (trimmed.isEmpty) return '';
-  return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
 }

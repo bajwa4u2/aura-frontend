@@ -48,6 +48,17 @@ String _canonicalPostUrl(String postId) {
   return '$base/posts/$postId';
 }
 
+TextDirection _detectDirection(String text) {
+  final rtlPattern = RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]');
+  return rtlPattern.hasMatch(text) ? TextDirection.rtl : TextDirection.ltr;
+}
+
+String _detectLanguage(String text) {
+  final rtlPattern = RegExp(r'[\u0600-\u06FF]');
+  if (rtlPattern.hasMatch(text)) return 'ur';
+  return 'en';
+}
+
 String _linkedInShareUrl(String postUrl) {
   final u = Uri.encodeComponent(postUrl);
   return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
@@ -985,6 +996,9 @@ class _PostCardState extends ConsumerState<PostCard> {
               const SizedBox(height: AuraSpace.s12),
               LayoutBuilder(
                 builder: (context, c) {
+                  final direction = _detectDirection(text);
+                  final lang = _detectLanguage(text);
+
                   final showToggle = _willOverflow(
                     text: text,
                     style: bodyTextStyle,
@@ -997,15 +1011,21 @@ class _PostCardState extends ConsumerState<PostCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        text,
-                        maxLines: maxLines,
-                        overflow: maxLines == null
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                        style: bodyTextStyle,
+                      Directionality(
+                        textDirection: direction,
+                        child: Semantics(
+                          label: 'Post body language: $lang',
+                          child: Text(
+                            text,
+                            maxLines: maxLines,
+                            overflow: maxLines == null
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                            style: bodyTextStyle,
+                          ),
+                        ),
                       ),
-                      if (showToggle) ...[
+                      if (showToggle && !_expanded) ...[
                         const SizedBox(height: AuraSpace.s8),
                         InkWell(
                           onTap: _toggleExpanded,
@@ -1016,7 +1036,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                               vertical: AuraSpace.s6,
                             ),
                             child: Text(
-                              _expanded ? 'Collapse' : 'Open',
+                              'Open',
                               style: AuraText.small.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: AuraSurface.muted,

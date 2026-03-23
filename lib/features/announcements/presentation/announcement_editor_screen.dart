@@ -1,14 +1,10 @@
-
-import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
+import '../../../config.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -24,55 +20,6 @@ import 'announcement_distribution.dart';
 enum AnnouncementEditorScope {
   platform,
   institution,
-}
-
-enum _AttachmentType { image, video }
-enum _AttachmentSource { camera, gallery }
-
-class _AnnouncementAttachment {
-  _AnnouncementAttachment({
-    required this.localId,
-    required this.type,
-    required this.source,
-    required this.captionController,
-    this.localFile,
-    this.localBytes,
-    this.width,
-    this.height,
-    this.durationMs,
-    this.mediaId,
-    this.url,
-    this.thumbUrl,
-    this.uploading = false,
-    this.error,
-  });
-
-  final String localId;
-  final _AttachmentType type;
-  final _AttachmentSource source;
-  final TextEditingController captionController;
-
-  XFile? localFile;
-  Uint8List? localBytes;
-
-  int? width;
-  int? height;
-  int? durationMs;
-
-  String? mediaId;
-  String? url;
-  String? thumbUrl;
-
-  bool uploading;
-  String? error;
-
-  bool get isImage => type == _AttachmentType.image;
-  bool get isVideo => type == _AttachmentType.video;
-  bool get isUploaded => (mediaId ?? '').trim().isNotEmpty;
-
-  void dispose() {
-    captionController.dispose();
-  }
 }
 
 class AnnouncementEditorScreen extends ConsumerStatefulWidget {
@@ -100,7 +47,17 @@ class _AnnouncementEditorScreenState
   bool _publishToTikTok = false;
 
   bool _submitting = false;
-  bool _uploadingMedia = false;
+  String? _submitError;
+
+  bool _reviewing = false;
+  String? _reviewError;
+  CompositionReviewResult? _reviewResult;
+  final Set<String> _applyingSuggestionIds = <String>{};
+
+  bool _translating = false;
+  String? _translationError;
+  String _targetLanguage = 'Urdu';
+  _AnnouncementTranslationPreview? _translationPreview;
 
   bool _tiktokLoading = false;
   bool _tiktokConnected = false;
@@ -112,1073 +69,299 @@ class _AnnouncementEditorScreenState
   String _linkedinAccountLabel = '';
   String? _linkedinError;
 
-  String _currentUserId = '';
-  final List<_AnnouncementAttachment> _attachments = [];
-
-  CompositionReviewResult? _compositionReview;
-  String? _compositionError;
-  bool _compositionReviewing = false;
-  final Set<String> _applyingFindingIds = <String>{};
+  static const List<String> _targetLanguages = <String>[
+    'Urdu',
+    'English',
+    'Arabic',
+    'Spanish',
+    'French',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _titleController.addListener(_handleAnnouncementInputChanged);
-    _summaryController.addListener(_handleAnnouncementInputChanged);
-    _bodyController.addListener(_handleAnnouncementInputChanged);
-    if (widget.scope == AnnouncementEditorScope.platform) {
+    _titleController.addListener(_handleDraftChanged);
+    _summaryController.addListener(_handleDraftChanged);
+    _bodyController.addListener(_handleDraftChanged);
+    if (_isPlatformMode) {
       _loadExternalConnections();
     }
   }
 
   @override
   void dispose() {
-    _titleController.removeListener(_handleAnnouncementInputChanged);
-    _summaryController.removeListener(_handleAnnouncementInputChanged);
-    _bodyController.removeListener(_handleAnnouncementInputChanged);
+    _titleController.removeListener(_handleDraftChanged);
+    _summaryController.removeListener(_handleDraftChanged);
+    _bodyController.removeListener(_handleDraftChanged);
     _titleController.dispose();
     _summaryController.dispose();
     _bodyController.dispose();
-    for (final attachment in _attachments) {
-      attachment.dispose();
-    }
     super.dispose();
   }
 
-  String get _scopeLabel {
-    switch (widget.scope) {
-      case AnnouncementEditorScope.platform:
-        return 'Platform';
-      case AnnouncementEditorScope.institution:
-        return 'Institution';
-    }
-  }
+  bool get _isPlatformMode => widget.scope == AnnouncementEditorScope.platform;
 
-  String get _pageTitle {
-    switch (widget.scope) {
-      case AnnouncementEditorScope.platform:
-        return 'Platform announcement';
-      case AnnouncementEditorScope.institution:
-        return 'Institution announcement';
-    }
-  }
-
-  String get _introText {
-    switch (widget.scope) {
-      case AnnouncementEditorScope.platform:
-        return 'Use this surface for official platform notices.';
-      case AnnouncementEditorScope.institution:
-        return 'Institution publishing is not wired yet. This surface remains for structure only.';
-    }
-  }
-
-  bool get _institutionMode =>
-      widget.scope == AnnouncementEditorScope.institution;
-
-  bool get _hasTikTokVideo => _attachments.any((a) {
-        final url = (a.url ?? '').trim();
-        return a.isVideo && a.isUploaded && !a.uploading && url.isNotEmpty;
-      });
-
-  _AnnouncementAttachment? get _primaryTikTokVideoAttachment {
-    for (final attachment in _attachments) {
-      final url = (attachment.url ?? '').trim();
-      if (attachment.isVideo &&
-          attachment.isUploaded &&
-          !attachment.uploading &&
-          url.isNotEmpty) {
-        return attachment;
-      }
-    }
-    return null;
-  }
-
-  bool get _canPublishPlatform {
-    if (_submitting || _uploadingMedia) return false;
+  bool get _canSubmit {
+    if (_submitting) return false;
+    if (!_publishToAura) return false;
     if (_titleController.text.trim().isEmpty) return false;
     if (_summaryController.text.trim().isEmpty) return false;
     if (_bodyController.text.trim().isEmpty) return false;
+    if (!_isPlatformMode) return false;
     return true;
   }
 
-  String _str(dynamic v) => (v ?? '').toString().trim();
+  String get _pageTitle => _isPlatformMode
+      ? 'Platform announcement'
+      : 'Institution announcement';
 
-  Map<String, dynamic> _asMap(dynamic v) {
-    if (v == null) return <String, dynamic>{};
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return Map<String, dynamic>.from(v);
-    if (v is String) {
-      final s = v.trim();
-      if (s.isEmpty) return <String, dynamic>{};
-      try {
-        final decoded = jsonDecode(s);
-        if (decoded is Map) return Map<String, dynamic>.from(decoded);
-      } catch (_) {}
-    }
-    return <String, dynamic>{};
+  String get _introText => _isPlatformMode
+      ? 'Write once. Let the system support clarity without taking over the surface.'
+      : 'Institution announcement publishing is not wired yet. This surface is kept aligned so the writing flow does not drift.';
+
+  CompositionRepository _compositionRepo() {
+    final token = ref.read(tokenStoreProvider).accessToken ?? '';
+    return CompositionRepository(
+      baseUrl: AppConfig.apiBaseUrl,
+      token: token,
+    );
   }
 
-  Map<String, dynamic> _unwrapDataMap(dynamic v) {
-    Map<String, dynamic> cur = _asMap(v);
-    while (cur.containsKey('ok') &&
-        cur.containsKey('data') &&
-        cur['data'] is Map) {
-      cur = Map<String, dynamic>.from(cur['data'] as Map);
-    }
-    return cur;
-  }
-
-  String _firstNonEmpty(List<String?> values, {String fallback = ''}) {
-    for (final value in values) {
-      final s = (value ?? '').trim();
-      if (s.isNotEmpty) return s;
-    }
-    return fallback;
-  }
-
-  Future<Response<dynamic>?> _safeGet(
-    Dio dio,
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      return await dio.get(path, queryParameters: queryParameters);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Map<String, dynamic> _unwrapUser(dynamic raw) {
-    if (raw is Map) {
-      final map = Map<String, dynamic>.from(raw);
-      final user = map['user'];
-      if (user is Map) return Map<String, dynamic>.from(user);
-      final data = map['data'];
-      if (data is Map) {
-        final nestedData = Map<String, dynamic>.from(data);
-        final nestedUser = nestedData['user'];
-        if (nestedUser is Map) return Map<String, dynamic>.from(nestedUser);
-        return nestedData;
-      }
-      return map;
-    }
-    return <String, dynamic>{};
-  }
-
-  Map<String, dynamic> _unwrapTikTokAccount(dynamic raw) {
-    if (raw is! Map) return <String, dynamic>{};
-    final root = Map<String, dynamic>.from(raw);
-    final account = root['account'];
-    if (account is Map) {
-      return Map<String, dynamic>.from(account);
-    }
-    final data = root['data'];
-    if (data is Map) {
-      final nested = Map<String, dynamic>.from(data);
-      final nestedAccount = nested['account'];
-      if (nestedAccount is Map) return Map<String, dynamic>.from(nestedAccount);
-      return nested;
-    }
-    return root;
-  }
-
-  Map<String, dynamic> _unwrapLinkedInAccount(dynamic raw) {
-    if (raw is! Map) return <String, dynamic>{};
-
-    final root = Map<String, dynamic>.from(raw);
-    final data = _asMap(root['data']);
-    final nestedData = _asMap(data['data']);
-    final account = _asMap(root['account']);
-    final nestedAccount = _asMap(data['account']);
-    final deepAccount = _asMap(nestedData['account']);
-
-    for (final map in [deepAccount, nestedAccount, account, nestedData, data, root]) {
-      if (map.isNotEmpty) return map;
-    }
-    return <String, dynamic>{};
-  }
-
-  bool _readTikTokConnected(Map<String, dynamic> account) {
-    final connected = account['connected'];
-    if (connected is bool) return connected;
-    final platformUserId = _str(account['platformUserId']);
-    final username = _str(account['username']);
-    return platformUserId.isNotEmpty || username.isNotEmpty;
-  }
-
-  String _readTikTokAccountLabel(Map<String, dynamic> account) {
-    return _firstNonEmpty([
-      _str(account['username']),
-      _str(account['platformUserId']),
-      _str(account['id']),
-    ]);
-  }
-
-  bool _readLinkedInConnected(Map<String, dynamic> account) {
-    final connected = account['connected'];
-    if (connected is bool) return connected;
-
-    return _firstNonEmpty([
-      _str(account['linkedinMemberId']),
-      _str(account['memberId']),
-      _str(account['id']),
-      _str(account['sub']),
-      _str(account['name']),
-      _str(account['email']),
-    ]).isNotEmpty;
-  }
-
-  String _readLinkedInAccountLabel(Map<String, dynamic> account) {
-    return _firstNonEmpty([
-      _str(account['name']),
-      _str(account['localizedFirstName']),
-      _str(account['email']),
-      _str(account['linkedinMemberId']),
-      _str(account['memberId']),
-    ]);
-  }
-
-  Future<void> _loadExternalConnections() async {
+  void _handleDraftChanged() {
     if (!mounted) return;
     setState(() {
-      _tiktokLoading = true;
-      _linkedinLoading = true;
-      _tiktokError = null;
-      _linkedinError = null;
-    });
-
-    try {
-      final dio = ref.read(dioProvider);
-
-      final meRes = await dio.get('/v1/users/me');
-      final user = _unwrapUser(meRes.data);
-      final userId = _str(user['id']);
-
-      if (userId.isEmpty) {
-        throw Exception('User id is missing.');
-      }
-
-      final results = await Future.wait<dynamic>([
-        _safeGet(
-          dio,
-          '/v1/integrations/tiktok/account',
-          queryParameters: {'userId': userId},
-        ),
-        _safeGet(
-          dio,
-          '/v1/integrations/linkedin/account',
-          queryParameters: {'userId': userId},
-        ),
-        _safeGet(
-          dio,
-          '/integrations/linkedin/account',
-          queryParameters: {'userId': userId},
-        ),
-      ]);
-
-      final tiktokAccount = _unwrapTikTokAccount(results[0]?.data);
-      final linkedinAccount = _unwrapLinkedInAccount(
-        results[1]?.data ?? results[2]?.data,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _currentUserId = userId;
-        _tiktokConnected = _readTikTokConnected(tiktokAccount);
-        _tiktokAccountLabel = _readTikTokAccountLabel(tiktokAccount);
-        _linkedinConnected = _readLinkedInConnected(linkedinAccount);
-        _linkedinAccountLabel = _readLinkedInAccountLabel(linkedinAccount);
-        if (!_linkedinConnected) _publishToLinkedIn = false;
-        if (!_tiktokConnected) _publishToTikTok = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _tiktokError = e.toString();
-        _linkedinError = e.toString();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _tiktokLoading = false;
-          _linkedinLoading = false;
-        });
-      }
-    }
-  }
-
-  String _buildExcerpt(String summary) {
-    final clean = summary.trim();
-    if (clean.length <= 180) return clean;
-    return '${clean.substring(0, 177).trimRight()}...';
-  }
-
-  String _inferMime(String fileName) {
-    final lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.mp4')) return 'video/mp4';
-    if (lower.endsWith('.mov')) return 'video/quicktime';
-    if (lower.endsWith('.webm')) return 'video/webm';
-    return 'application/octet-stream';
-  }
-
-  Dio _cleanUploadDio() {
-    return Dio(
-      BaseOptions(
-        responseType: ResponseType.plain,
-        followRedirects: true,
-      ),
-    );
-  }
-
-  Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    final img = frame.image;
-    return {'width': img.width, 'height': img.height};
-  }
-
-  Future<void> _pickImageFromGallery() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
-    await _addPickedFile(
-      file,
-      type: _AttachmentType.image,
-      source: _AttachmentSource.gallery,
-    );
-  }
-
-  Future<void> _pickImageFromCamera() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.camera);
-    if (file == null) return;
-    await _addPickedFile(
-      file,
-      type: _AttachmentType.image,
-      source: _AttachmentSource.camera,
-    );
-  }
-
-  Future<void> _pickVideoFromGallery() async {
-    final picker = ImagePicker();
-    final file = await picker.pickVideo(source: ImageSource.gallery);
-    if (file == null) return;
-    await _addPickedFile(
-      file,
-      type: _AttachmentType.video,
-      source: _AttachmentSource.gallery,
-    );
-  }
-
-  Future<void> _pickVideoFromCamera() async {
-    final picker = ImagePicker();
-    final file = await picker.pickVideo(
-      source: ImageSource.camera,
-      maxDuration: const Duration(seconds: 30),
-    );
-    if (file == null) return;
-    await _addPickedFile(
-      file,
-      type: _AttachmentType.video,
-      source: _AttachmentSource.camera,
-    );
-  }
-
-  Future<void> _addPickedFile(
-    XFile file, {
-    required _AttachmentType type,
-    required _AttachmentSource source,
-  }) async {
-    Uint8List? bytes;
-    int? width;
-    int? height;
-
-    if (type == _AttachmentType.image) {
-      bytes = await file.readAsBytes();
-      try {
-        final size = await _decodeImageSize(bytes);
-        width = size?['width'];
-        height = size?['height'];
-      } catch (_) {}
-    }
-
-    final attachment = _AnnouncementAttachment(
-      localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}',
-      type: type,
-      source: source,
-      captionController: TextEditingController(),
-      localFile: file,
-      localBytes: bytes,
-      width: width,
-      height: height,
-      uploading: true,
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _attachments.add(attachment);
-      _uploadingMedia = true;
-      if (!_hasTikTokVideo) _publishToTikTok = false;
-    });
-
-    try {
-      await _uploadAttachment(attachment);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        attachment.error = e.toString();
-      });
-      _showMessage('Could not upload attachment: $e', error: true);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _uploadingMedia = _attachments.any((a) => a.uploading);
-          if (!_hasTikTokVideo) _publishToTikTok = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _uploadAttachment(_AnnouncementAttachment attachment) async {
-    final dio = ref.read(dioProvider);
-    final file = attachment.localFile;
-    if (file == null) throw Exception('Attachment file missing.');
-
-    final bytes = await file.readAsBytes();
-    final mime = _inferMime(file.name);
-
-    final pres = await dio.post(
-      '/media/presign',
-      data: {
-        'fileName': file.name,
-        'mimeType': mime,
-        'bytes': bytes.length,
-        'kind': attachment.isImage ? 'IMAGE' : 'VIDEO',
-        'source':
-            attachment.source == _AttachmentSource.camera ? 'CAMERA' : 'GALLERY',
-        if (attachment.isImage) 'width': attachment.width,
-        if (attachment.isImage) 'height': attachment.height,
-        if (attachment.isVideo && attachment.durationMs != null)
-          'duration': attachment.durationMs,
-      },
-    );
-
-    final presigned = _unwrapDataMap(pres.data);
-    final mediaMap = _asMap(presigned['media']);
-    final mediaId = _str(mediaMap['id']);
-    final upload = _asMap(presigned['upload']);
-    final uploadUrl = _str(upload['url']);
-    final headers = _asMap(upload['headers']);
-
-    if (mediaId.isEmpty) {
-      throw Exception('Media ID missing from presign response.');
-    }
-    if (uploadUrl.isEmpty) {
-      throw Exception('Upload URL missing from presign response.');
-    }
-
-    final uploadDio = _cleanUploadDio();
-    final uploadHeaders = <String, String>{};
-    headers.forEach((k, v) {
-      if (v == null) return;
-      uploadHeaders[k.toString()] = v.toString();
-    });
-    if (!uploadHeaders.containsKey('Content-Type')) {
-      uploadHeaders['Content-Type'] = mime;
-    }
-
-    await uploadDio.put(
-      uploadUrl,
-      data: bytes,
-      options: Options(
-        headers: uploadHeaders,
-        contentType: uploadHeaders['Content-Type'],
-        responseType: ResponseType.plain,
-        followRedirects: true,
-        validateStatus: (code) => code != null && code >= 200 && code < 300,
-      ),
-    );
-
-    await dio.post('/media/$mediaId/confirm');
-    await dio.post('/media/$mediaId/ready');
-
-    final patch = await dio.patch(
-      '/media/$mediaId',
-      data: {
-        'caption': attachment.captionController.text.trim().isEmpty
-            ? null
-            : attachment.captionController.text.trim(),
-        'editDisclosure': false,
-        if (attachment.width != null) 'width': attachment.width,
-        if (attachment.height != null) 'height': attachment.height,
-      },
-    );
-
-    final patched = _unwrapDataMap(patch.data);
-
-    if (!mounted) return;
-    setState(() {
-      attachment.mediaId = mediaId;
-      attachment.url = _str(patched['displayUrl']).isNotEmpty
-          ? _str(patched['displayUrl'])
-          : (_str(patched['url']).isNotEmpty ? _str(patched['url']) : null);
-      attachment.thumbUrl = _str(patched['thumbnailUrl']).isNotEmpty
-          ? _str(patched['thumbnailUrl'])
-          : (_str(patched['thumbUrl']).isNotEmpty
-              ? _str(patched['thumbUrl'])
-              : null);
-      attachment.uploading = false;
-      attachment.error = null;
+      _submitError = null;
+      _reviewError = null;
+      _translationError = null;
+      _reviewResult = null;
+      _translationPreview = null;
     });
   }
 
-  Future<void> _persistAttachmentMetadata(_AnnouncementAttachment attachment) async {
-    final mediaId = _str(attachment.mediaId);
-    if (mediaId.isEmpty) return;
+  String _trimmedOrEmpty(String text) => text.trim();
 
-    try {
-      final dio = ref.read(dioProvider);
-      await dio.patch(
-        '/media/$mediaId',
-        data: {
-          'caption': attachment.captionController.text.trim().isEmpty
-              ? null
-              : attachment.captionController.text.trim(),
-        },
-      );
-    } catch (_) {}
-  }
-
-  Future<void> _removeAttachment(_AnnouncementAttachment attachment) async {
-    if (_submitting) return;
-    final mediaId = _str(attachment.mediaId);
-
-    if (!mounted) return;
-    setState(() {
-      _attachments.removeWhere((a) => a.localId == attachment.localId);
-      _uploadingMedia = _attachments.any((a) => a.uploading);
-      if (!_hasTikTokVideo) _publishToTikTok = false;
-    });
-
-    attachment.dispose();
-
-    if (mediaId.isNotEmpty) {
-      try {
-        final dio = ref.read(dioProvider);
-        await dio.delete('/media/$mediaId');
-      } catch (_) {}
+  String _excerptFromDraft() {
+    final summary = _summaryController.text.trim();
+    if (summary.isNotEmpty) {
+      return summary.length <= 180 ? summary : '${summary.substring(0, 180).trim()}…';
     }
+    final body = _bodyController.text.trim();
+    if (body.isEmpty) return '';
+    return body.length <= 180 ? body : '${body.substring(0, 180).trim()}…';
   }
 
-  Future<void> _showAddAttachmentSheet() async {
-    if (_submitting) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AuraSurface.page,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Add attachment', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s12),
-                _AttachmentActionButton(
-                  icon: Icons.camera_alt_outlined,
-                  label: 'Take photo',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickImageFromCamera();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.photo_library_outlined,
-                  label: 'Choose photo',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickImageFromGallery();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.videocam_outlined,
-                  label: 'Record video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromCamera();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
-                  icon: Icons.video_library_outlined,
-                  label: 'Choose video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromGallery();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _handleAnnouncementInputChanged() {
-    if (!mounted) return;
-    if (_compositionReview == null && _compositionError == null) return;
-    setState(() {
-      _compositionReview = null;
-      _compositionError = null;
-    });
-  }
-
-  bool get _canRunAnnouncementReview {
-    if (_institutionMode || _submitting || _uploadingMedia || _compositionReviewing) {
-      return false;
-    }
-    return _announcementCompositeText().trim().isNotEmpty;
-  }
-
-  String _announcementCompositeText() {
-    return [
-      'Title:',
+  String _reviewText() {
+    final parts = <String>[
       _titleController.text.trim(),
-      '',
-      'Summary:',
       _summaryController.text.trim(),
-      '',
-      'Body:',
       _bodyController.text.trim(),
-    ].join('\n');
+    ].where((e) => e.isNotEmpty).toList();
+    return parts.join('\n\n');
   }
 
-  void _setAnnouncementCompositeText(String text) {
-    final normalized = text.replaceAll('\r\n', '\n').trim();
-    final reg = RegExp(r'Title:\s*\n([\s\S]*?)\n\s*Summary:\s*\n([\s\S]*?)\n\s*Body:\s*\n([\s\S]*)$', multiLine: true);
-    final match = reg.firstMatch(normalized);
-
-    if (match != null) {
-      _titleController.text = (match.group(1) ?? '').trim();
-      _summaryController.text = (match.group(2) ?? '').trim();
-      _bodyController.text = (match.group(3) ?? '').trim();
-      return;
-    }
-
-    _bodyController.text = normalized;
-  }
-
-  Future<void> _runAnnouncementReview() async {
-    if (!_canRunAnnouncementReview) return;
+  Future<void> _reviewAnnouncement() async {
+    final text = _reviewText();
+    if (text.isEmpty) return;
 
     setState(() {
-      _compositionReviewing = true;
-      _compositionError = null;
-      _compositionReview = null;
+      _reviewing = true;
+      _reviewError = null;
+      _reviewResult = null;
     });
 
     try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final review = await repo.review(
-        text: _announcementCompositeText(),
-        surface: CompositionSurface.composer,
+      final result = await _compositionRepo().review(
+        text: text,
+        surface: CompositionSurface.announcement,
       );
-
       if (!mounted) return;
       setState(() {
-        _compositionReview = review;
+        _reviewResult = CompositionReviewResult(
+          sessionId: result.sessionId,
+          suggestions: result.suggestions.take(2).toList(growable: false),
+        );
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _compositionError = 'Review could not be completed: $e';
+        _reviewError = '$e';
       });
     } finally {
       if (mounted) {
-        setState(() => _compositionReviewing = false);
+        setState(() => _reviewing = false);
       }
     }
   }
 
-  Future<void> _applyAnnouncementFinding(CompositionFinding finding) async {
-    final review = _compositionReview;
-    if (review == null) return;
-    if (finding.id.trim().isEmpty) return;
+  Future<void> _applySuggestion(CompositionSuggestion suggestion) async {
+    final review = _reviewResult;
+    if (review == null || !suggestion.canApply) return;
 
     setState(() {
-      _applyingFindingIds.add(finding.id);
-      _compositionError = null;
+      _applyingSuggestionIds.add(suggestion.id);
+      _reviewError = null;
     });
 
     try {
-      final repo = ref.read(compositionRepositoryProvider);
-      final applied = await repo.apply(
+      final updatedText = await _compositionRepo().apply(
         sessionId: review.sessionId,
-        findingId: finding.id,
-        text: _announcementCompositeText(),
-        surface: CompositionSurface.composer,
+        suggestionId: suggestion.id,
+        currentText: _bodyController.text,
       );
 
       if (!mounted) return;
 
-      if (applied.text.trim().isNotEmpty) {
-        _setAnnouncementCompositeText(applied.text);
-      }
+      final selection = TextSelection.collapsed(
+        offset: updatedText.length.clamp(0, updatedText.length),
+      );
+
+      _bodyController.value = TextEditingValue(
+        text: updatedText,
+        selection: selection,
+        composing: TextRange.empty,
+      );
 
       setState(() {
-        _compositionReview = applied.review ?? review;
+        _reviewResult = CompositionReviewResult(
+          sessionId: review.sessionId,
+          suggestions: review.suggestions
+              .where((item) => item.id != suggestion.id)
+              .toList(growable: false),
+        );
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _compositionError = 'Apply failed: $e';
+        _reviewError = '$e';
       });
     } finally {
       if (mounted) {
         setState(() {
-          _applyingFindingIds.remove(finding.id);
+          _applyingSuggestionIds.remove(suggestion.id);
         });
       }
     }
   }
 
-  Map<String, List<CompositionFinding>> _groupAnnouncementFindings(
-    List<CompositionFinding> findings,
-  ) {
-    final grouped = <String, List<CompositionFinding>>{};
-    for (final finding in findings) {
-      final key = finding.chapterLabel;
-      grouped.putIfAbsent(key, () => <CompositionFinding>[]).add(finding);
-    }
-    return grouped;
-  }
-
-  Widget _compositionCard() {
-    final review = _compositionReview;
-    final grouped = review == null
-        ? const <String, List<CompositionFinding>>{}
-        : _groupAnnouncementFindings(review.findings);
-    final allowApply = review?.allowApply ?? false;
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Review', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(
-                      'Review before publishing.',
-                      style: AuraText.body,
-                    ),
-                  ],
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: _canRunAnnouncementReview ? _runAnnouncementReview : null,
-                icon: _compositionReviewing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_fix_high_outlined),
-                label: Text(_compositionReviewing ? 'Reviewing...' : 'Review'),
-              ),
-            ],
-          ),
-          if (review != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                _EditorChip(label: 'Surface: ${review.surface.label}'),
-                if (review.intensityLabel.isNotEmpty)
-                  _EditorChip(label: 'Intensity: ${review.intensityLabel}'),
-                _EditorChip(label: 'Findings: ${review.findings.length}'),
-                _EditorChip(label: review.allowApply ? 'Apply enabled' : 'Apply limited'),
-              ],
-            ),
-          ],
-          if ((review?.summary ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(review!.summary, style: AuraText.body),
-          ],
-          if ((_compositionError ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              _compositionError!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-          if (review != null && review.findings.isEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              'No findings returned for this announcement.',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          for (final entry in grouped.entries) ...[
-            const SizedBox(height: AuraSpace.s14),
-            Text(
-              entry.key,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            for (final finding in entry.value) ...[
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-                padding: const EdgeInsets.all(AuraSpace.s12),
-                decoration: BoxDecoration(
-                  color: AuraSurface.page,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          finding.message,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        _EditorChip(label: finding.stateLabel),
-                      ],
-                    ),
-                    if (finding.suggestion.trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(finding.suggestion, style: AuraText.body),
-                    ],
-                    if (allowApply) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton.icon(
-                          onPressed: _applyingFindingIds.contains(finding.id)
-                              ? null
-                              : () => _applyAnnouncementFinding(finding),
-                          icon: _applyingFindingIds.contains(finding.id)
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.rule_folder_outlined),
-                          label: Text(
-                            _applyingFindingIds.contains(finding.id)
-                                ? 'Applying...'
-                                : (finding.actionLabel.trim().isNotEmpty
-                                    ? finding.actionLabel
-                                    : 'Apply'),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showMessage(String message, {bool error = false}) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
-      ),
-    );
-  }
-
-  Future<void> _publishToLinkedInNow(String announcementId) async {
-    final dio = ref.read(dioProvider);
-
-    final payload = {
-      'announcementId': announcementId,
-      'text': _summaryController.text.trim().isNotEmpty
-          ? _summaryController.text.trim()
-          : _titleController.text.trim(),
-    };
-
-    DioException? lastDioError;
-    for (final path in [
-      '/v1/integrations/linkedin/publish/announcement',
-      '/integrations/linkedin/publish/announcement',
-    ]) {
-      try {
-        await dio.post(path, data: payload);
-        return;
-      } on DioException catch (e) {
-        lastDioError = e;
-        if (e.response?.statusCode != 404) rethrow;
-      }
-    }
-
-    if (lastDioError != null) throw lastDioError;
-    throw Exception('LinkedIn publish endpoint was not available.');
-  }
-
-  Future<void> _publishToTikTokNow(String announcementId) async {
-    final attachment = _primaryTikTokVideoAttachment;
-    if (attachment == null) {
-      throw Exception('Add and upload a video first.');
-    }
-
-    final mediaUrl = _str(attachment.url);
-    if (mediaUrl.isEmpty) {
-      throw Exception('Uploaded video URL is missing.');
-    }
-
-    final dio = ref.read(dioProvider);
-
-    await dio.post(
-      '/v1/integrations/tiktok/publish/video/announcement',
-      data: {
-        'announcementId': announcementId,
-        'mediaUrl': mediaUrl,
-        'caption': _summaryController.text.trim().isNotEmpty
-            ? _summaryController.text.trim()
-            : _titleController.text.trim(),
-      },
-    );
-  }
-
-
-  Future<bool> _ensureAnnouncementReviewed() async {
-    if (_institutionMode) return true;
-
-    if (_compositionReviewing) return false;
-
-    if (_compositionReview == null) {
-      await _runAnnouncementReview();
-    }
-
-    if (!mounted) return false;
-
-    if (_compositionReview == null) {
-      final message = (_compositionError ?? '').trim().isNotEmpty
-          ? _compositionError!
-          : 'Review is required before publish.';
-      _showMessage(message, error: true);
-      return false;
-    }
-
-    return true;
-  }
-
-  Future<void> _handlePublish() async {
-    if (_institutionMode) {
-      _showMessage('Institution announcement publishing is not wired yet.', error: true);
+  Future<void> _translateDraft() async {
+    if (_titleController.text.trim().isEmpty &&
+        _summaryController.text.trim().isEmpty &&
+        _bodyController.text.trim().isEmpty) {
       return;
     }
 
-    if (!_canPublishPlatform) {
-      _showMessage('Title, summary, and body are required.', error: true);
-      return;
-    }
-
-    final reviewed = await _ensureAnnouncementReviewed();
-    if (!reviewed || !mounted) return;
-
-    setState(() => _submitting = true);
+    setState(() {
+      _translating = true;
+      _translationError = null;
+      _translationPreview = null;
+    });
 
     try {
-      for (final attachment in _attachments) {
-        await _persistAttachmentMetadata(attachment);
+      final repo = _compositionRepo();
+      final title = _titleController.text.trim();
+      final summary = _summaryController.text.trim();
+      final body = _bodyController.text.trim();
+
+      final translatedTitle = title.isEmpty
+          ? ''
+          : (await repo.translate(text: title, targetLanguage: _targetLanguage))
+              .translatedText;
+      final translatedSummary = summary.isEmpty
+          ? ''
+          : (await repo.translate(text: summary, targetLanguage: _targetLanguage))
+              .translatedText;
+      final translatedBody = body.isEmpty
+          ? ''
+          : (await repo.translate(text: body, targetLanguage: _targetLanguage))
+              .translatedText;
+
+      if (!mounted) return;
+      setState(() {
+        _translationPreview = _AnnouncementTranslationPreview(
+          language: _targetLanguage,
+          title: translatedTitle,
+          summary: translatedSummary,
+          body: translatedBody,
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _translationError = '$e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _translating = false);
+      }
+    }
+  }
+
+  void _applyTranslationPreview() {
+    final preview = _translationPreview;
+    if (preview == null) return;
+
+    _titleController.value = TextEditingValue(
+      text: preview.title,
+      selection: TextSelection.collapsed(offset: preview.title.length),
+    );
+    _summaryController.value = TextEditingValue(
+      text: preview.summary,
+      selection: TextSelection.collapsed(offset: preview.summary.length),
+    );
+    _bodyController.value = TextEditingValue(
+      text: preview.body,
+      selection: TextSelection.collapsed(offset: preview.body.length),
+    );
+
+    setState(() {
+      _translationPreview = null;
+    });
+  }
+
+  Future<void> _submitAnnouncement() async {
+    if (!_canSubmit) return;
+
+    setState(() {
+      _submitting = true;
+      _submitError = null;
+    });
+
+    try {
+      if (!_isPlatformMode) {
+        throw Exception('Institution announcement publishing is not ready yet.');
       }
 
       final repo = ref.read(announcementsRepoProvider);
-      final mediaIds = _attachments
-          .map((a) => _str(a.mediaId))
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-      final created = await repo.createDraft(
+      final draft = await repo.createDraft(
         title: _titleController.text.trim(),
         summary: _summaryController.text.trim(),
-        excerpt: _buildExcerpt(_summaryController.text.trim()),
+        excerpt: _excerptFromDraft(),
         bodyMarkdown: _bodyController.text.trim(),
-        mediaIds: mediaIds,
       );
 
-      await repo.publish(created.id);
-
       if (_pinNotice) {
-        await repo.pin(created.id);
+        await repo.pin(draft.id);
       }
 
-      final queuedTargets = <String>[];
-      final failedTargets = <String>[];
-
-      if (_publishToLinkedIn && _linkedinConnected) {
-        try {
-          await _publishToLinkedInNow(created.id);
-          queuedTargets.add('LinkedIn');
-        } catch (e) {
-          failedTargets.add('LinkedIn ($e)');
-        }
+      if (_publishToAura) {
+        await repo.publish(draft.id);
       }
-
-      if (_publishToTikTok && _tiktokConnected && _hasTikTokVideo) {
-        try {
-          await _publishToTikTokNow(created.id);
-          queuedTargets.add('TikTok');
-        } catch (e) {
-          failedTargets.add('TikTok ($e)');
-        }
-      }
-
-      ref.invalidate(announcementsProvider);
-      ref.invalidate(pinnedAnnouncementsProvider);
-      ref.invalidate(announcementBySlugProvider(created.slug));
 
       if (!mounted) return;
-
-      if (queuedTargets.isNotEmpty && failedTargets.isEmpty) {
-        _showMessage(
-          'Platform notice published in Aura and shared to ${queuedTargets.join(' and ')}.',
-        );
-      } else if (queuedTargets.isNotEmpty && failedTargets.isNotEmpty) {
-        _showMessage(
-          'Platform notice published in Aura. Shared to ${queuedTargets.join(' and ')}. ${failedTargets.join(', ')} could not be queued.',
-        );
-      } else if (failedTargets.isNotEmpty) {
-        _showMessage(
-          'Platform notice published in Aura. ${failedTargets.join(', ')} could not be queued.',
-        );
-      } else {
-        _showMessage('Platform notice published.');
-      }
-
-      context.go('/announcements/${created.slug}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Announcement published.')),
+      );
+      context.pop();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitError = _readDioError(e);
+      });
     } catch (e) {
       if (!mounted) return;
-      _showMessage('Failed to publish platform notice: $e', error: true);
+      setState(() {
+        _submitError = '$e';
+      });
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -1186,588 +369,532 @@ class _AnnouncementEditorScreenState
     }
   }
 
-  Map<String, dynamic> _mapOrEmpty(dynamic value) {
+  Future<void> _loadExternalConnections() async {
+    await Future.wait<void>([
+      _loadTikTokConnection(),
+      _loadLinkedInConnection(),
+    ]);
+  }
+
+  Future<void> _loadTikTokConnection() async {
+    setState(() {
+      _tiktokLoading = true;
+      _tiktokError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/social/tiktok/account');
+      final data = _asMap(res.data);
+      if (!mounted) return;
+      setState(() {
+        _tiktokConnected = data['connected'] == true;
+        _tiktokAccountLabel = _firstNonEmpty([
+          data['displayName']?.toString(),
+          data['username']?.toString(),
+          data['accountLabel']?.toString(),
+        ]);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _tiktokConnected = false;
+        _tiktokAccountLabel = '';
+        _tiktokError = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _tiktokLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadLinkedInConnection() async {
+    setState(() {
+      _linkedinLoading = true;
+      _linkedinError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/social/linkedin/account');
+      final data = _asMap(res.data);
+      if (!mounted) return;
+      setState(() {
+        _linkedinConnected = data['connected'] == true;
+        _linkedinAccountLabel = _firstNonEmpty([
+          data['displayName']?.toString(),
+          data['username']?.toString(),
+          data['accountLabel']?.toString(),
+        ]);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _linkedinConnected = false;
+        _linkedinAccountLabel = '';
+        _linkedinError = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _linkedinLoading = false);
+      }
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
     return <String, dynamic>{};
   }
 
-  String _institutionName() {
-    final access = ref.read(institutionAccessProvider).maybeWhen(
-          data: (value) => value,
-          orElse: () => null,
-        );
-
-    if (access == null) return 'Institution';
-
-    final institution = _mapOrEmpty(access.institution);
-    final fromInstitution = (institution['name'] ?? '').toString().trim();
-    if (fromInstitution.isNotEmpty) return fromInstitution;
-
-    final request = _mapOrEmpty(access.request);
-    final fromRequest = (request['organizationName'] ?? '').toString().trim();
-    if (fromRequest.isNotEmpty) return fromRequest;
-
-    return 'Institution';
+  String _firstNonEmpty(List<String?> values) {
+    for (final value in values) {
+      final candidate = (value ?? '').trim();
+      if (candidate.isNotEmpty) return candidate;
+    }
+    return '';
   }
 
-  Widget _textField({
-    required String label,
-    required TextEditingController controller,
-    int maxLines = 1,
-    String? hint,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: AuraSpace.s8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
+  String _readDioError(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final message = _firstNonEmpty([
+        data['message']?.toString(),
+        data['error']?.toString(),
+      ]);
+      if (message.isNotEmpty) return message;
+    }
+    return e.message ?? 'Request failed';
+  }
+
+  Widget _buildSuggestionStrip() {
+    final review = _reviewResult;
+    if (_reviewing) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: LinearProgressIndicator(minHeight: 2),
+      );
+    }
+
+    if (_reviewError != null && _reviewError!.trim().isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          _reviewError!,
+          style: const TextStyle(color: Colors.redAccent),
         ),
-      ],
-    );
-  }
+      );
+    }
 
-  Widget _metadataCard() {
-    return AuraCard(
+    if (review == null || review.suggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Controls', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
           Text(
-            'Pinned notices should be used sparingly.',
-            style: AuraText.body,
+            'Suggestions',
+            style: AuraText.sectionTitle,
           ),
-          const SizedBox(height: AuraSpace.s12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Pin this notice'),
-            subtitle: const Text('Keep visible at the top of announcement surfaces'),
-            value: _pinNotice,
-            onChanged: _submitting
-                ? null
-                : (value) {
-                    setState(() => _pinNotice = value);
-                  },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _attachmentsCard() {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Attachments', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Images and videos upload through the Aura media system and attach to the announcement record.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          OutlinedButton.icon(
-            onPressed: _submitting ? null : _showAddAttachmentSheet,
-            icon: const Icon(Icons.add),
-            label: const Text('Add attachment'),
-          ),
-          if (_attachments.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth < 700
-                    ? 1
-                    : (constraints.maxWidth < 1080 ? 2 : 3);
-                final gap = AuraSpace.s12;
-                final itemWidth =
-                    (constraints.maxWidth - ((columns - 1) * gap)) / columns;
-
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: _attachments.map((attachment) {
-                    return SizedBox(
-                      width: itemWidth,
-                      child: _AttachmentCard(
-                        attachment: attachment,
-                        busy: _submitting,
-                        onRemove: () => _removeAttachment(attachment),
+          const SizedBox(height: 10),
+          ...review.suggestions.map((suggestion) {
+            final applying = _applyingSuggestionIds.contains(suggestion.id);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE6E0D8)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: SizedBox.shrink(),
+                    ),
+                    Expanded(
+                      flex: 12,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            suggestion.message,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (suggestion.replacement.trim().isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              suggestion.replacement,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF5E584F),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.tonal(
+                      onPressed: applying || !suggestion.canApply
+                          ? null
+                          : () => _applySuggestion(suggestion),
+                      child: Text(applying ? 'Applying' : 'Apply'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _distributionCard() {
-    if (_institutionMode) {
-      return AuraCard(
+  Widget _buildTranslationPreview() {
+    final preview = _translationPreview;
+    if (_translating) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: LinearProgressIndicator(minHeight: 2),
+      );
+    }
+
+    if (_translationError != null && _translationError!.trim().isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          _translationError!,
+          style: const TextStyle(color: Colors.redAccent),
+        ),
+      );
+    }
+
+    if (preview == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFCF7),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE6E0D8)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Distribution', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              'Institution distribution is not wired yet.',
-              style: AuraText.body,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Translation preview · ${preview.language}',
+                    style: AuraText.sectionTitle,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _translationPreview = null),
+                  child: const Text('Dismiss'),
+                ),
+              ],
+            ),
+            if (preview.title.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                preview.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            if (preview.summary.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                preview.summary,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF5E584F),
+                ),
+              ),
+            ],
+            if (preview.body.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                preview.body,
+                style: const TextStyle(fontSize: 15, height: 1.55),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: _applyTranslationPreview,
+                child: const Text('Apply translation'),
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    final linkedinHelper = (_linkedinError ?? '').trim();
-    final tiktokHelper = (_tiktokError ?? '').trim();
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnnouncementDistribution(
-            linkedinConnected: _linkedinConnected && !_linkedinLoading,
-            tiktokConnected: _tiktokConnected && !_tiktokLoading,
-            tiktokEnabled: _hasTikTokVideo,
-            initialAura: _publishToAura,
-            initialLinkedin: _publishToLinkedIn,
-            initialTiktok: _publishToTikTok,
-            onChanged: ({
-              required bool aura,
-              required bool linkedin,
-              required bool tiktok,
-            }) {
-              setState(() {
-                _publishToAura = aura;
-                _publishToLinkedIn = linkedin;
-                _publishToTikTok = tiktok;
-              });
-            },
-          ),
-          if (_linkedinLoading || _tiktokLoading) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              'Checking external connections…',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          if (_linkedinAccountLabel.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              'LinkedIn: $_linkedinAccountLabel',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          if (_tiktokAccountLabel.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s4),
-            Text(
-              'TikTok: $_tiktokAccountLabel',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-          if (linkedinHelper.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              linkedinHelper,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-          if (tiktokHelper.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s4),
-            Text(
-              tiktokHelper,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _actionCard() {
-    return AuraCard(
-      child: Wrap(
-        spacing: AuraSpace.s10,
-        runSpacing: AuraSpace.s10,
-        children: [
-          FilledButton.icon(
-            onPressed: _institutionMode
-                ? null
-                : (_canPublishPlatform ? _handlePublish : null),
-            icon: _submitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.publish_outlined),
-            label: Text(
-              _institutionMode ? 'Institution publishing unavailable' : 'Publish platform notice',
-            ),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final institutionName = _institutionName();
+    final institutionAccess = ref.watch(institutionAccessProvider);
 
     return AuraScaffold(
-      title: _pageTitle,
-      showHomeAction: true,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s12,
-          AuraSpace.s16,
-          AuraSpace.s24,
-        ),
-        children: [
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_pageTitle, style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
-                Text(_introText, style: AuraText.body),
-                const SizedBox(height: AuraSpace.s12),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
+      maxWidth: 980,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_pageTitle, style: AuraText.display),
+            const SizedBox(height: 8),
+            Text(
+              _introText,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Color(0xFF5E584F),
+              ),
+            ),
+            const SizedBox(height: 20),
+            AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _EditorChip(label: 'Scope: $_scopeLabel'),
-                    if (_institutionMode) _EditorChip(label: institutionName),
-                    if (_institutionMode) const _EditorChip(label: 'Publishing unavailable'),
-                    if (!_institutionMode && _currentUserId.isNotEmpty)
-                      _EditorChip(label: 'Admin ready'),
+                    Text('Writing', style: AuraText.sectionTitle),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Title',
+                        hintText: 'What needs to be said clearly?',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _summaryController,
+                      maxLines: 3,
+                      minLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Summary',
+                        hintText: 'Keep it brief and plain.',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _bodyController,
+                      maxLines: 14,
+                      minLines: 10,
+                      decoration: const InputDecoration(
+                        labelText: 'Announcement body',
+                        hintText: 'Write the full notice here.',
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    _buildSuggestionStrip(),
+                    _buildTranslationPreview(),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 18),
+            AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Writing support', style: AuraText.sectionTitle),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: _reviewing ? null : _reviewAnnouncement,
+                          child: Text(_reviewing ? 'Reviewing' : 'Review wording'),
+                        ),
+                        SizedBox(
+                          width: 180,
+                          child: DropdownButtonFormField<String>(
+                            value: _targetLanguage,
+                            decoration: const InputDecoration(
+                              labelText: 'Translate to',
+                              isDense: true,
+                            ),
+                            items: _targetLanguages
+                                .map(
+                                  (language) => DropdownMenuItem<String>(
+                                    value: language,
+                                    child: Text(language),
+                                  ),
+                                )
+                                .toList(growable: false),
+                            onChanged: _translating
+                                ? null
+                                : (value) {
+                                    if (value == null || value == _targetLanguage) {
+                                      return;
+                                    }
+                                    setState(() {
+                                      _targetLanguage = value;
+                                      _translationPreview = null;
+                                    });
+                                  },
+                          ),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: _translating ? null : _translateDraft,
+                          child: Text(_translating ? 'Translating' : 'Preview translation'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Review stays light. Translation previews before it changes your draft.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B6358),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Distribution', style: AuraText.sectionTitle),
+                    const SizedBox(height: 12),
+                    AnnouncementDistribution(
+                      linkedinConnected: _linkedinConnected,
+                      tiktokConnected: _tiktokConnected,
+                      tiktokEnabled: _tiktokConnected,
+                      initialAura: _publishToAura,
+                      initialLinkedin: _publishToLinkedIn,
+                      initialTiktok: _publishToTikTok,
+                      onChanged: ({
+                        required bool aura,
+                        required bool linkedin,
+                        required bool tiktok,
+                      }) {
+                        setState(() {
+                          _publishToAura = aura;
+                          _publishToLinkedIn = linkedin;
+                          _publishToTikTok = tiktok;
+                        });
+                      },
+                    ),
+                    if (_linkedinLoading || _tiktokLoading) ...[
+                      const SizedBox(height: 8),
+                      const LinearProgressIndicator(minHeight: 2),
+                    ],
+                    if (_linkedinAccountLabel.trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text('LinkedIn: $_linkedinAccountLabel'),
+                    ],
+                    if (_tiktokAccountLabel.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text('TikTok: $_tiktokAccountLabel'),
+                    ],
+                    if ((_linkedinError ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _linkedinError!,
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    ],
+                    if ((_tiktokError ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _tiktokError!,
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _pinNotice,
+                      onChanged: _isPlatformMode
+                          ? (value) => setState(() => _pinNotice = value ?? false)
+                          : null,
+                      title: const Text('Pin this notice'),
+                      subtitle: const Text('Keep it visible at the top after publication.'),
+                    ),
+                    if (!_isPlatformMode) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        institutionAccess.when(
+                          data: (value) => 'Institution state: ${value.name}',
+                          loading: () => 'Checking institution access…',
+                          error: (_, __) => 'Institution access could not be read.',
+                        ),
+                        style: const TextStyle(color: Color(0xFF6B6358)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if ((_submitError ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                _submitError!,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ],
+            const SizedBox(height: 22),
+            Row(
               children: [
-                _textField(
-                  label: 'Title',
-                  controller: _titleController,
-                  hint: 'Write the formal notice title',
+                OutlinedButton(
+                  onPressed: _submitting ? null : () => context.pop(),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: AuraSpace.s16),
-                _textField(
-                  label: 'Summary',
-                  controller: _summaryController,
-                  maxLines: 3,
-                  hint: 'Short orientation line for archive and detail views',
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                _textField(
-                  label: 'Body',
-                  controller: _bodyController,
-                  maxLines: 12,
-                  hint: 'Write the full announcement body',
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _canSubmit ? _submitAnnouncement : null,
+                  child: Text(_submitting ? 'Publishing' : 'Publish announcement'),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          _compositionCard(),
-          const SizedBox(height: AuraSpace.s12),
-          _metadataCard(),
-          const SizedBox(height: AuraSpace.s12),
-          _attachmentsCard(),
-          const SizedBox(height: AuraSpace.s12),
-          _distributionCard(),
-          const SizedBox(height: AuraSpace.s12),
-          _actionCard(),
-        ],
-      ),
-    );
-  }
-}
-
-class _AttachmentActionButton extends StatelessWidget {
-  const _AttachmentActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(label),
+            const SizedBox(height: AuraSpace.xl),
+          ],
         ),
       ),
     );
   }
 }
 
-class _AttachmentCard extends StatelessWidget {
-  const _AttachmentCard({
-    required this.attachment,
-    required this.busy,
-    required this.onRemove,
+class _AnnouncementTranslationPreview {
+  const _AnnouncementTranslationPreview({
+    required this.language,
+    required this.title,
+    required this.summary,
+    required this.body,
   });
 
-  final _AnnouncementAttachment attachment;
-  final bool busy;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  attachment.isImage ? 'Image' : 'Video',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (attachment.uploading)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                IconButton(
-                  onPressed: busy ? null : onRemove,
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Remove',
-                ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          _AttachmentPreview(attachment: attachment),
-          const SizedBox(height: AuraSpace.s10),
-          Container(
-            decoration: BoxDecoration(
-              color: AuraSurface.card,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s10,
-              vertical: AuraSpace.s8,
-            ),
-            child: TextField(
-              controller: attachment.captionController,
-              enabled: !busy && !attachment.uploading,
-              maxLines: null,
-              minLines: 2,
-              style: AuraText.body,
-              decoration: InputDecoration(
-                hintText: 'Caption for this attachment (optional)',
-                hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          if ((attachment.error ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              attachment.error!,
-              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({
-    required this.attachment,
-  });
-
-  final _AnnouncementAttachment attachment;
-
-  double _aspectRatio() {
-    final w = attachment.width;
-    final h = attachment.height;
-    if (w != null && h != null && w > 0 && h > 0) {
-      var ratio = w / h;
-      if (ratio < 0.7) ratio = 0.7;
-      if (ratio > 1.8) ratio = 1.8;
-      return ratio;
-    }
-    return attachment.isVideo ? 16 / 9 : 4 / 3;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (attachment.isImage) {
-      if (attachment.localBytes != null) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: _aspectRatio(),
-            child: Image.memory(
-              attachment.localBytes!,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-          ),
-        );
-      }
-
-      final imageUrl = (attachment.thumbUrl ?? attachment.url ?? '').trim();
-      if (imageUrl.isNotEmpty) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: _aspectRatio(),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              errorBuilder: (_, __, ___) => _fallbackPreview(),
-            ),
-          ),
-        );
-      }
-
-      return _fallbackPreview();
-    }
-
-    final thumbUrl = (attachment.thumbUrl ?? '').trim();
-    if (thumbUrl.isNotEmpty) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                thumbUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => _videoFallback(),
-              ),
-            ),
-          ),
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.45),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white),
-          ),
-        ],
-      );
-    }
-
-    return _videoFallback();
-  }
-
-  Widget _fallbackPreview() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        Icons.image_outlined,
-        color: AuraSurface.muted,
-        size: 36,
-      ),
-    );
-  }
-
-  Widget _videoFallback() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.videocam_outlined,
-            color: AuraSurface.muted,
-            size: 36,
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            attachment.localFile?.name ?? 'Video attachment',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditorChip extends StatelessWidget {
-  const _EditorChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
+  final String language;
+  final String title;
+  final String summary;
+  final String body;
 }
