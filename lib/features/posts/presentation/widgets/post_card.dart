@@ -13,6 +13,7 @@ import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
+import '../../../../core/ui/aura_text_block.dart';
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
 import '../../../saves/saves_repository.dart';
@@ -48,16 +49,6 @@ String _canonicalPostUrl(String postId) {
   return '$base/posts/$postId';
 }
 
-TextDirection _detectDirection(String text) {
-  final rtlPattern = RegExp(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]');
-  return rtlPattern.hasMatch(text) ? TextDirection.rtl : TextDirection.ltr;
-}
-
-String _detectLanguage(String text) {
-  final rtlPattern = RegExp(r'[\u0600-\u06FF]');
-  if (rtlPattern.hasMatch(text)) return 'ur';
-  return 'en';
-}
 
 String _linkedInShareUrl(String postUrl) {
   final u = Uri.encodeComponent(postUrl);
@@ -996,9 +987,6 @@ class _PostCardState extends ConsumerState<PostCard> {
               const SizedBox(height: AuraSpace.s12),
               LayoutBuilder(
                 builder: (context, c) {
-                  final direction = _detectDirection(text);
-                  final lang = _detectLanguage(text);
-
                   final showToggle = _willOverflow(
                     text: text,
                     style: bodyTextStyle,
@@ -1011,19 +999,15 @@ class _PostCardState extends ConsumerState<PostCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Directionality(
-                        textDirection: direction,
-                        child: Semantics(
-                          label: 'Post body language: $lang',
-                          child: Text(
-                            text,
-                            maxLines: maxLines,
-                            overflow: maxLines == null
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
-                            style: bodyTextStyle,
-                          ),
-                        ),
+                      AuraTextBlock(
+                        text,
+                        languageCode: post.languageCode,
+                        style: bodyTextStyle,
+                        maxLines: maxLines,
+                        overflow: maxLines == null
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        semanticsLabel: 'Post body',
                       ),
                       if (showToggle && !_expanded) ...[
                         const SizedBox(height: AuraSpace.s8),

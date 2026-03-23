@@ -10,6 +10,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 
 class InviteMemberScreen extends ConsumerStatefulWidget {
   const InviteMemberScreen({
@@ -179,7 +180,12 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invite sent to ${selected.name}.'),
+          content: AuraTextBlock(
+            'Invite sent to ${selected.name}.',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.body,
+          ),
         ),
       );
 
@@ -276,6 +282,7 @@ class _InviteMemberScreenState extends ConsumerState<InviteMemberScreen> {
                     const SizedBox(height: AuraSpace.s12),
                     _SelectedInviteChip(
                       label: _selectedPerson!.name,
+                      languageCode: _selectedPerson!.languageCode,
                       onRemoved: () {
                         setState(() => _selectedPerson = null);
                       },
@@ -435,15 +442,21 @@ class _InvitePersonRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AuraTextBlock(
                     person.name,
+                    languageCode: person.languageCode,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  AuraTextBlock(
                     person.handle.isEmpty
                         ? person.subtitle
                         : '${person.handle} · ${person.subtitle}',
+                    languageCode: person.languageCode,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: AuraText.small,
                   ),
                 ],
@@ -471,9 +484,11 @@ class _SelectedInviteChip extends StatelessWidget {
   const _SelectedInviteChip({
     required this.label,
     required this.onRemoved,
+    this.languageCode,
   });
 
   final String label;
+  final String? languageCode;
   final VoidCallback onRemoved;
 
   @override
@@ -490,7 +505,13 @@ class _SelectedInviteChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: AuraText.small),
+          AuraTextBlock(
+            label,
+            languageCode: languageCode,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.small,
+          ),
           const SizedBox(width: AuraSpace.s8),
           InkWell(
             onTap: onRemoved,
@@ -524,8 +545,10 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(
+          child: AuraTextBlock(
             value,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: AuraText.body,
           ),
         ),
@@ -576,7 +599,12 @@ class _InlineErrorBlock extends StatelessWidget {
           style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AuraSpace.s6),
-        Text(body, style: AuraText.small),
+        AuraTextBlock(
+          body,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+          style: AuraText.small,
+        ),
         const SizedBox(height: AuraSpace.s12),
         OutlinedButton(
           onPressed: onRetry,
@@ -596,6 +624,7 @@ class _InviteCandidate {
     required this.subtitle,
     required this.searchBlob,
     required this.profileRoute,
+    required this.languageCode,
   });
 
   final String id;
@@ -605,6 +634,7 @@ class _InviteCandidate {
   final String subtitle;
   final String searchBlob;
   final String? profileRoute;
+  final String? languageCode;
 }
 
 _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
@@ -622,6 +652,11 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
   if (userId.isEmpty && cleanHandle.isEmpty && name.isEmpty) {
     return null;
   }
+
+  final languageCode = _pickString(
+    user,
+    const ['languageCode', 'language', 'locale', 'preferredLanguage'],
+  );
 
   final relationship = _pickString(
     item,
@@ -652,6 +687,7 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
     subtitle: subtitleParts.isEmpty ? 'Connected' : subtitleParts.join(' · '),
     searchBlob: [resolvedName, cleanHandle, relationship, bio].join(' '),
     profileRoute: cleanHandle.isEmpty ? null : '/u/$cleanHandle',
+    languageCode: languageCode.isEmpty ? null : languageCode,
   );
 }
 

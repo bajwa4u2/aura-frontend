@@ -14,6 +14,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/profile_header.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
@@ -616,7 +617,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                      AuraTextBlock(
                         _error!,
                         style: AuraText.body,
                         textAlign: TextAlign.center,
@@ -1010,30 +1011,36 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AuraTextBlock(
                     title,
                     style: AuraText.body.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (subtitle != null && subtitle.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
+                    AuraTextBlock(
                       subtitle.trim(),
                       style: AuraText.small.copyWith(
                         color: AuraSurface.muted,
                         height: 1.4,
                       ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                   if (trailingLabel != null && trailingLabel.trim().isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(
+                    AuraTextBlock(
                       trailingLabel.trim(),
                       style: AuraText.small.copyWith(
                         color: AuraSurface.muted,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -1354,19 +1361,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AuraTextBlock(
                       label,
                       style: AuraText.body.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null && subtitle.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text(
+                      AuraTextBlock(
                         subtitle.trim(),
                         style: AuraText.small.copyWith(
                           color: AuraSurface.muted,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
@@ -1410,12 +1421,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: Text(
+      child: AuraTextBlock(
         label,
         style: AuraText.small.copyWith(
           fontWeight: FontWeight.w700,
           color: AuraSurface.muted,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

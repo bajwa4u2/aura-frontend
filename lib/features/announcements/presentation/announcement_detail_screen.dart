@@ -1,4 +1,3 @@
-// CLEANED: read-only surface (no distribution controls)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +5,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../providers.dart';
 
 class AnnouncementDetailScreen extends ConsumerWidget {
@@ -14,8 +14,8 @@ class AnnouncementDetailScreen extends ConsumerWidget {
 
   String _fmtDate(DateTime dt) {
     final d = dt.toLocal();
-    return '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')} '
-           '${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
+        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -44,22 +44,31 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AuraText.h1),
+                    AuraTextBlock(
+                      title,
+                      style: AuraText.h1,
+                    ),
                     const SizedBox(height: AuraSpace.s8),
-
                     if (a.publishedAt != null)
-                      Text('Published: ${_fmtDate(a.publishedAt!)}',
-                          style: AuraText.small),
-
+                      Text(
+                        'Published: ${_fmtDate(a.publishedAt!)}',
+                        style: AuraText.small,
+                      ),
                     if (summary.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s12),
-                      Text(summary,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
+                      AuraTextBlock(
+                        summary,
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
-
                     if (body.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s16),
-                      Text(body, style: AuraText.body),
+                      AuraTextBlock(
+                        body,
+                        style: AuraText.body,
+                      ),
                     ],
                   ],
                 ),

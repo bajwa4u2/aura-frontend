@@ -9,6 +9,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
@@ -324,11 +325,11 @@ class _ComposerEntryCard extends StatelessWidget {
           ),
           if (hasHeld && preview.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
-            Text(
+            AuraTextBlock(
               preview,
+              style: AuraText.small.copyWith(height: 1.45),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: AuraText.small.copyWith(height: 1.45),
             ),
           ],
         ],
@@ -381,7 +382,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AuraSpace.s10),
-              Text(
+              AuraTextBlock(
                 title,
                 style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
               ),
@@ -394,7 +395,10 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
               ],
               if (summary.isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s10),
-                Text(summary, style: AuraText.body),
+                AuraTextBlock(
+                  summary,
+                  style: AuraText.body,
+                ),
               ],
             ],
           ),

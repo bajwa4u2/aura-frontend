@@ -17,6 +17,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 
@@ -1566,7 +1567,7 @@ class _MessageTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (body.isNotEmpty) ...[
-                    Text(
+                    AuraTextBlock(
                       body,
                       style: AuraText.body.copyWith(color: textColor),
                     ),
@@ -1588,10 +1589,10 @@ class _MessageTile extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (createdAt.isNotEmpty)
+                      if (_formatMessageTimestamp(createdAt).isNotEmpty)
                         Flexible(
                           child: Text(
-                            createdAt,
+                            _formatMessageTimestamp(createdAt),
                             overflow: TextOverflow.ellipsis,
                             style: AuraText.small.copyWith(color: metaColor),
                           ),
@@ -2737,6 +2738,43 @@ bool _isSameSender(Map<String, dynamic> current, Map<String, dynamic>? previous)
   if (currentSender.isEmpty || previousSender.isEmpty) return false;
   return currentSender == previousSender;
 }
+
+
+String _formatMessageTimestamp(String raw) {
+  final value = raw.trim();
+  if (value.isEmpty) return '';
+
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null) return value;
+
+  final local = parsed.toLocal();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final targetDay = DateTime(local.year, local.month, local.day);
+  final diffDays = today.difference(targetDay).inDays;
+
+  String formatTime(DateTime dt) {
+    final hour = dt.hour == 0
+        ? 12
+        : dt.hour > 12
+            ? dt.hour - 12
+            : dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $ampm';
+  }
+
+  if (diffDays == 0) return formatTime(local);
+  if (diffDays == 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays < 7) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return weekdays[local.weekday - 1];
+  }
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return '${months[local.month - 1]} ${local.day}';
+}
+
 
 String _formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';

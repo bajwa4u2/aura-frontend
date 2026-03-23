@@ -6,6 +6,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../data/spaces_repository.dart';
 import '../data/threads_repository.dart';
 
@@ -549,9 +550,11 @@ class _SpaceHeaderCard extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
+              AuraTextBlock(
                 name.isEmpty ? 'Untitled space' : name,
                 style: AuraText.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               if (visibility.isNotEmpty)
                 _Pill(label: visibility.replaceAll('_', ' ')),
@@ -559,7 +562,10 @@ class _SpaceHeaderCard extends StatelessWidget {
           ),
           if (description.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(description, style: AuraText.body),
+            AuraTextBlock(
+              description,
+              style: AuraText.body,
+            ),
           ],
           const SizedBox(height: AuraSpace.s12),
           Wrap(
@@ -744,9 +750,11 @@ class _ThreadTile extends StatelessWidget {
                 spacing: AuraSpace.s8,
                 runSpacing: AuraSpace.s8,
                 children: [
-                  Text(
+                  AuraTextBlock(
                     title.isEmpty ? 'Untitled thread' : title,
                     style: AuraText.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (kind.isNotEmpty) _Pill(label: kind),
                   if (archived) _Pill(label: 'ARCHIVED'),
@@ -754,7 +762,7 @@ class _ThreadTile extends StatelessWidget {
               ),
               if (preview.isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s8),
-                Text(
+                AuraTextBlock(
                   preview,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -792,9 +800,11 @@ class _InviteTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AuraTextBlock(
             userId.isEmpty ? 'Invite' : userId,
             style: AuraText.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AuraSpace.s8),
           Wrap(
@@ -837,9 +847,11 @@ class _MemberTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AuraTextBlock(
             name.isEmpty ? 'Member' : name,
             style: AuraText.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AuraSpace.s8),
           Wrap(

@@ -8,6 +8,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../correspondence/data/spaces_repository.dart';
 import '../../correspondence/data/threads_repository.dart';
 
@@ -389,7 +390,7 @@ class _ConversationRow extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: AuraTextBlock(
                           item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -411,7 +412,7 @@ class _ConversationRow extends StatelessWidget {
                   ),
                   if (item.preview.isNotEmpty) ...[
                     const SizedBox(height: AuraSpace.s6),
-                    Text(
+                    AuraTextBlock(
                       item.preview,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -814,20 +815,33 @@ String _formatTimestamp(String raw) {
 
   final local = parsed.toLocal();
   final now = DateTime.now();
+  final diff = now.difference(local);
+
+  if (diff.inSeconds < 45) return 'Now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+  if (diff.inHours < 24 && now.day == local.day && now.month == local.month && now.year == local.year) {
+    return '${diff.inHours}h';
+  }
+
   final today = DateTime(now.year, now.month, now.day);
   final target = DateTime(local.year, local.month, local.day);
   final dayDiff = today.difference(target).inDays;
 
-  final hour = local.hour == 0
-      ? 12
-      : local.hour > 12
-          ? local.hour - 12
-          : local.hour;
-  final minute = local.minute.toString().padLeft(2, '0');
-  final ampm = local.hour >= 12 ? 'PM' : 'AM';
-
-  if (dayDiff == 0) return '$hour:$minute $ampm';
   if (dayDiff == 1) return 'Yesterday';
+
+  const weekdays = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
+
+  if (dayDiff >= 0 && dayDiff < 7) {
+    return weekdays[local.weekday - 1];
+  }
 
   const months = [
     'Jan',

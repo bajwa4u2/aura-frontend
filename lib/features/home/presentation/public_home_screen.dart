@@ -7,6 +7,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 
@@ -387,7 +388,7 @@ class _PublicWorkPreview extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s10),
               Expanded(
-                child: Text(
+                child: AuraTextBlock(
                   byline.isEmpty ? 'Work' : byline,
                   style: AuraText.small.copyWith(
                     fontWeight: FontWeight.w700,
@@ -404,7 +405,7 @@ class _PublicWorkPreview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s10),
-          Text(
+          AuraTextBlock(
             preview.isEmpty ? '—' : preview,
             style: AuraText.body.copyWith(height: 1.45),
           ),

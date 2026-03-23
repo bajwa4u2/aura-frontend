@@ -4,6 +4,7 @@ import 'aura_card.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
+import 'aura_text_block.dart';
 
 class PresenceHeaderAction {
   final String label;
@@ -130,7 +131,7 @@ class _PresenceIdentity extends StatelessWidget {
     final textBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AuraTextBlock(
           displayName,
           style: AuraText.title.copyWith(
             fontSize: isNarrow ? 28 : 32,
@@ -138,6 +139,8 @@ class _PresenceIdentity extends StatelessWidget {
             height: 1.05,
             color: AuraSurface.ink,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: AuraSpace.s6),
         Text(
@@ -151,7 +154,7 @@ class _PresenceIdentity extends StatelessWidget {
           const SizedBox(height: AuraSpace.s14),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
-            child: Text(
+            child: AuraTextBlock(
               bio,
               style: AuraText.body.copyWith(
                 height: 1.5,

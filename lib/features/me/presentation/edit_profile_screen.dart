@@ -11,6 +11,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -804,7 +805,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget _buildIdentityPreview() {
     return Column(
       children: [
-        Text(
+        AuraTextBlock(
           _displayName,
           textAlign: TextAlign.center,
           style: AuraText.title.copyWith(
@@ -827,7 +828,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SizedBox(height: AuraSpace.s12),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: Text(
+            child: AuraTextBlock(
               _bio,
               textAlign: TextAlign.center,
               style: AuraText.body.copyWith(height: 1.45),
@@ -1165,7 +1166,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: Text(
+      child: AuraTextBlock(
         label,
         style: AuraText.muted.copyWith(fontSize: 13),
       ),
@@ -1188,11 +1189,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(width: AuraSpace.s16),
           Flexible(
-            child: Text(
+            child: AuraTextBlock(
               value,
               textAlign: TextAlign.right,
               style: AuraText.muted,
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
@@ -1261,7 +1263,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         horizontal: AuraSpace.s16,
         vertical: AuraSpace.s14,
       ),
-      child: Text(
+      child: AuraTextBlock(
         _errorText ?? '',
         style: AuraText.body.copyWith(
           color: AuraSurface.dangerInk,

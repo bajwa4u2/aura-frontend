@@ -7,6 +7,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 
 class CorrespondenceHubScreen extends ConsumerWidget {
   const CorrespondenceHubScreen({super.key});
@@ -68,7 +69,11 @@ class _PageHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: AuraText.title);
+    return AuraTextBlock(
+      title,
+      style: AuraText.title,
+      maxLines: 2,
+    );
   }
 }
 
@@ -106,9 +111,10 @@ class _ActionBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AuraTextBlock(
                   title,
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 2,
                 ),
                 const SizedBox(height: AuraSpace.s12),
                 OutlinedButton(
@@ -141,9 +147,10 @@ class _StateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AuraTextBlock(
             title,
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            maxLines: 3,
           ),
           if (primaryLabel != null && onPrimary != null) ...[
             const SizedBox(height: AuraSpace.s12),

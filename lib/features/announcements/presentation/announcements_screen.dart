@@ -8,6 +8,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 
@@ -554,7 +555,7 @@ class _AnnouncementRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AuraTextBlock(
                     title,
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
                   ),

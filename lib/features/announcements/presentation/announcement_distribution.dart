@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+
+import '../../../core/ui/aura_text_block.dart';
 
 class AnnouncementDistribution extends StatefulWidget {
   const AnnouncementDistribution({
@@ -73,8 +74,18 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
   }) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: AuraTextBlock(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: AuraTextBlock(
+        subtitle,
+        style: const TextStyle(fontSize: 13),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       value: value,
       onChanged: onChanged,
     );
@@ -85,7 +96,10 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Distribution', style: TextStyle(fontWeight: FontWeight.w700)),
+        const AuraTextBlock(
+          'Distribution',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         _row(
           title: 'Aura',

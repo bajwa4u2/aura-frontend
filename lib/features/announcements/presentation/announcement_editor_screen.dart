@@ -12,6 +12,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../composition/data/composition_repository.dart';
 import '../../composition/domain/composition_models.dart';
 import '../providers.dart';
@@ -142,6 +143,23 @@ class _AnnouncementEditorScreenState
   }
 
   String _trimmedOrEmpty(String text) => text.trim();
+
+  String? _languageCodeFor(String language) {
+    switch (language.trim().toLowerCase()) {
+      case 'urdu':
+        return 'ur';
+      case 'english':
+        return 'en';
+      case 'arabic':
+        return 'ar';
+      case 'spanish':
+        return 'es';
+      case 'french':
+        return 'fr';
+      default:
+        return null;
+    }
+  }
 
   String _excerptFromDraft() {
     final summary = _summaryController.text.trim();
@@ -611,8 +629,9 @@ class _AnnouncementEditorScreenState
             ),
             if (preview.title.trim().isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
+              AuraTextBlock(
                 preview.title,
+                languageCode: _languageCodeFor(preview.language),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -621,8 +640,9 @@ class _AnnouncementEditorScreenState
             ],
             if (preview.summary.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(
+              AuraTextBlock(
                 preview.summary,
+                languageCode: _languageCodeFor(preview.language),
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF5E584F),
@@ -631,8 +651,9 @@ class _AnnouncementEditorScreenState
             ],
             if (preview.body.trim().isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
+              AuraTextBlock(
                 preview.body,
+                languageCode: _languageCodeFor(preview.language),
                 style: const TextStyle(fontSize: 15, height: 1.55),
               ),
             ],
