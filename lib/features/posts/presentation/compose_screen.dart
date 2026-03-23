@@ -1551,9 +1551,19 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 child: DropdownButtonFormField<String>(
                   value: _translationTargetLanguage,
                   items: const [
-                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
                     DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'ur', child: Text('Urdu')),
                     DropdownMenuItem(value: 'ar', child: Text('Arabic')),
+                    DropdownMenuItem(value: 'tr', child: Text('Turkish')),
+                    DropdownMenuItem(value: 'fa', child: Text('Persian')),
+                    DropdownMenuItem(value: 'fr', child: Text('French')),
+                    DropdownMenuItem(value: 'es', child: Text('Spanish')),
+                    DropdownMenuItem(value: 'de', child: Text('German')),
+                    DropdownMenuItem(value: 'it', child: Text('Italian')),
+                    DropdownMenuItem(value: 'pt', child: Text('Portuguese')),
+                    DropdownMenuItem(value: 'hi', child: Text('Hindi')),
+                    DropdownMenuItem(value: 'bn', child: Text('Bengali')),
+                    DropdownMenuItem(value: 'pa', child: Text('Punjabi')),
                   ],
                   onChanged: _translationBusy || _posting
                       ? null
@@ -1574,7 +1584,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Translate the current draft without leaving the editor.',
+            'Preview the draft in another language without leaving the record.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
           if (hasError) ...[
@@ -1644,29 +1654,23 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatusRow(),
-          const SizedBox(height: AuraSpace.s12),
-          _divider(),
-          const SizedBox(height: AuraSpace.s12),
-          if (!_isReply) ...[
-            _buildAudienceBlock(),
-            const SizedBox(height: AuraSpace.s12),
-            _divider(),
-            const SizedBox(height: AuraSpace.s12),
-          ],
+          const SizedBox(height: AuraSpace.s14),
+          _buildIntentCard(),
+          const SizedBox(height: AuraSpace.s16),
           _buildComposerBox(),
           const SizedBox(height: AuraSpace.s8),
           _buildCharacterLine(),
-          const SizedBox(height: AuraSpace.s12),
+          if (!_isReply) ...[
+            const SizedBox(height: AuraSpace.s16),
+            _buildAudienceBlock(),
+          ],
+          const SizedBox(height: AuraSpace.s16),
           _buildSuggestionsCard(),
           const SizedBox(height: AuraSpace.s12),
           _buildTranslationCard(),
           const SizedBox(height: AuraSpace.s12),
-          _divider(),
-          const SizedBox(height: AuraSpace.s12),
           _buildAttachmentsBlock(),
           if (!_isReply) ...[
-            const SizedBox(height: AuraSpace.s12),
-            _divider(),
             const SizedBox(height: AuraSpace.s12),
             _buildExternalPublishingBlock(),
           ],
@@ -2585,14 +2589,13 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           label: const Text('Back'),
         ),
         Text(
-          _isReply ? 'Reply' : 'Compose',
+          _isReply ? 'Respond to record' : 'Add to record',
           style: AuraText.title,
         ),
-        if (!_isReply)
-          Text(
-            _savedLine(),
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
+        Text(
+          _savedLine(),
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
       ],
     );
   }
@@ -2602,15 +2605,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
       children: [
-        OutlinedButton(
+        OutlinedButton.icon(
           onPressed: (_posting || _compositionBusy) ? null : () => _runCompositionReview(),
-          child: Text(_compositionBusy ? 'Checking…' : 'Review writing'),
+          icon: const Icon(Icons.fact_check_outlined),
+          label: Text(_compositionBusy ? 'Reviewing…' : 'Review'),
         ),
-        OutlinedButton(
+        OutlinedButton.icon(
           onPressed: (_posting || _translationBusy) ? null : _translateDraft,
-          child: Text(_translationBusy ? 'Translating…' : 'Translate'),
+          icon: const Icon(Icons.translate_outlined),
+          label: Text(_translationBusy ? 'Translating…' : 'Translate'),
         ),
-        OutlinedButton(
+        TextButton(
           onPressed: _posting ? null : _discardAndClose,
           child: const Text('Discard'),
         ),
@@ -2624,9 +2629,23 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       runSpacing: AuraSpace.s10,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(
-          _isReply ? 'Writing reply' : 'Writing',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s10,
+            vertical: AuraSpace.s6,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.elevated,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Text(
+            _isReply ? 'Response' : 'Record',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
         Text(
           _savedLine(),
@@ -2636,12 +2655,48 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     );
   }
 
+  Widget _buildIntentCard() {
+    final title = _isReply ? 'Your response will stay with the same record.' : 'What you place here can remain visible, reviewable, and accountable over time.';
+    final subtitle = _isReply
+        ? 'Respond with care. Your words become part of the public thread around this work.'
+        : 'Write for the record first. Publishing elsewhere, translation, and review stay available as supporting tools.';
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isReply ? 'Response context' : 'Record context',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            title,
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            subtitle,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAudienceBlock() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Audience',
+          'Visibility',
           style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AuraSpace.s8),
@@ -2671,25 +2726,27 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     return Container(
       decoration: BoxDecoration(
         color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AuraSurface.divider),
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s10,
+        horizontal: AuraSpace.s14,
+        vertical: AuraSpace.s12,
       ),
       child: TextField(
         controller: _textController,
         maxLines: null,
-        minLines: 6,
+        minLines: 10,
         textCapitalization: TextCapitalization.sentences,
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
-        style: AuraText.body,
+        style: AuraText.body.copyWith(height: 1.55),
         textDirection: _editorDirection(),
         textAlign: _editorTextAlign(),
         decoration: InputDecoration(
-          hintText: _isReply ? 'Write your reply…' : 'Write your post…',
+          hintText: _isReply
+              ? 'Add your response with care.'
+              : 'What should this record carry?',
           hintStyle: AuraText.small.copyWith(
             color: AuraSurface.muted,
           ),
@@ -2826,7 +2883,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'External publishing',
+          'Publish elsewhere',
           style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AuraSpace.s8),
@@ -3025,7 +3082,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   ? (_isReply
                       ? 'Publishing reply…'
                       : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
-                  : (_isReply ? 'Publish reply' : 'Publish to record'),
+                  : (_isReply ? 'Publish response' : 'Publish to record'),
             ),
           ),
         ],
