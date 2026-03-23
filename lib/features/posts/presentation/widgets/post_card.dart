@@ -1201,8 +1201,8 @@ class _PostCardState extends ConsumerState<PostCard> {
                             borderRadius: BorderRadius.circular(999),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s2,
-                                vertical: AuraSpace.s2,
+                                horizontal: AuraSpace.s6,
+                                vertical: AuraSpace.s6,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1265,8 +1265,8 @@ class _PostCardState extends ConsumerState<PostCard> {
                               borderRadius: BorderRadius.circular(999),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s2,
-                                  vertical: AuraSpace.s2,
+                                  horizontal: AuraSpace.s6,
+                                  vertical: AuraSpace.s6,
                                 ),
                                 child: Text(
                                   'Hide translation',
