@@ -165,41 +165,41 @@ class _InstitutionDashboardScreenState
   }
 
   String _nextStepTitle() {
-    if (_isPending) return 'Request under review';
+    if (_isPending) return 'Under review';
     if (_canManageDomains) {
       if (_domainVerified) return 'Institution active';
-      return 'Next step: verify domain ownership';
+      return 'Next step';
     }
     if (_isRejected) return 'Request outcome';
     if (_isSuspended) return 'Standing suspended';
-    return 'Begin institutional access';
+    return 'Begin institutional standing';
   }
 
   String _nextStepBody() {
     if (_isPending) {
       final org = _requestData['organizationName']?.toString().trim() ?? '';
       if (org.isNotEmpty) {
-        return 'Your institutional account request for $org is under review. No further action is required right now.';
+        return 'Your institutional account request for $org is under review. There is nothing you need to do right now.';
       }
-      return 'Your institutional account request is under review. No further action is required right now.';
+      return 'Your institutional account request is under review. There is nothing you need to do right now.';
     }
 
     if (_canManageDomains) {
       if (_domainVerified) {
-        return 'Institutional standing is active. You can now use the institutional surfaces below.';
+        return 'Institutional standing is active. Official institutional surfaces are now available.';
       }
-      return 'Your institution exists and your membership is active. Verify domain ownership next so institutional trust can be completed.';
+      return 'Your institution and membership are in place. Verify domain ownership next to complete institutional trust.';
     }
 
     if (_isRejected) {
-      return 'This institutional request was rejected. Review the request details and submit a fresh institutional account request when ready.';
+      return 'This institutional request was rejected. Review the request details below, then submit a fresh institutional account request when ready.';
     }
 
     if (_isSuspended) {
-      return 'This institutional standing is currently suspended. Institutional actions are unavailable until standing is restored.';
+      return 'This institutional standing is currently suspended. Institutional actions remain unavailable until standing is restored.';
     }
 
-    return 'Create an institutional account to begin verification and establish institutional standing inside Aura.';
+    return 'Create an institutional account to begin verification and establish standing inside Aura.';
   }
 
   String? _primaryActionLabel() {
@@ -231,14 +231,20 @@ class _InstitutionDashboardScreenState
     );
   }
 
-  Widget _buildStatusCard() {
+  String _displayInstitutionName() {
     final name = _institution?['name']?.toString().trim() ?? '';
+    final requestOrg = _requestData['organizationName']?.toString().trim() ?? '';
+    if (name.isNotEmpty) return name;
+    if (requestOrg.isNotEmpty) return requestOrg;
+    return 'Institution';
+  }
+
+  Widget _buildStatusCard() {
+    final displayName = _displayInstitutionName();
     final slug = _institution?['slug']?.toString().trim() ?? '';
     final domain = _institution?['domain']?.toString().trim() ?? '';
-    final requestOrg = _requestData['organizationName']?.toString().trim() ?? '';
-    final displayName = name.isNotEmpty
-        ? name
-        : (requestOrg.isNotEmpty ? requestOrg : 'Institution');
+    final website = _institution?['website']?.toString().trim() ?? '';
+    final role = _membership?['role']?.toString().trim() ?? '';
 
     return AuraCard(
       child: Column(
@@ -255,17 +261,21 @@ class _InstitutionDashboardScreenState
           ),
           const SizedBox(height: AuraSpace.s8),
           Text('Standing: ${_standingLabel()}'),
+          if (role.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text('Role: $role'),
+          ],
           if (slug.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
-            Text('Slug: $slug'),
+            Text('Public path: /institutions/$slug'),
           ],
           if (domain.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text('Domain: $domain'),
           ],
-          if (_membership?['role'] != null) ...[
+          if (website.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
-            Text('Role: ${_membership!['role']}'),
+            Text('Website: $website'),
           ],
           if (_membership?['canSpeakOfficially'] == true) ...[
             const SizedBox(height: AuraSpace.s6),
@@ -314,19 +324,19 @@ class _InstitutionDashboardScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Institution onboarding pipeline',
+            'Institution standing',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s12),
           _pipelineRow(
             title: 'Request submitted',
-            subtitle: 'Institutional account request entered into review.',
+            subtitle: 'Institutional account request has entered review.',
             isDone: step1Done,
             isCurrent: !step1Done,
           ),
           _pipelineRow(
-            title: 'Under review',
-            subtitle: 'Identity, email, and institutional standing are reviewed.',
+            title: 'Review',
+            subtitle: 'Identity, role, and institutional standing are reviewed.',
             isDone: step2Done,
             isCurrent: _isPending,
           ),
@@ -337,14 +347,14 @@ class _InstitutionDashboardScreenState
             isCurrent: _hasInstitution && !step4Done,
           ),
           _pipelineRow(
-            title: 'Domain verification',
+            title: 'Domain verified',
             subtitle: 'Domain ownership is confirmed through DNS verification.',
             isDone: step4Done,
             isCurrent: _canManageDomains && !step4Done,
           ),
           _pipelineRow(
             title: 'Institution active',
-            subtitle: 'Institutional tools become usable with verified standing.',
+            subtitle: 'Official institutional tools become available.',
             isDone: step5Done,
             isCurrent: step4Done && _canUseInstitutionTools,
             isLast: true,
@@ -417,7 +427,7 @@ class _InstitutionDashboardScreenState
           if (org.isNotEmpty) Text('Institution: $org'),
           if (status.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
-            Text('Request status: $status'),
+            Text('Status: $status'),
           ],
           if (workEmail.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
@@ -486,7 +496,7 @@ class _InstitutionDashboardScreenState
         _buildToolCard(
           title: 'Official posts',
           body:
-              'Institutional statements, notices, and official communication surfaces.',
+              'Publish institutional statements, notices, and official public communication.',
           enabled: _canUseInstitutionTools,
           onTap: () => _go('/announcements'),
         ),
@@ -494,7 +504,7 @@ class _InstitutionDashboardScreenState
         _buildToolCard(
           title: 'Representatives',
           body:
-              'Institutional people, roles, and speaking authority inside the platform.',
+              'Define institutional people, roles, and speaking authority inside Aura.',
           enabled: _canUseInstitutionTools,
           onTap: null,
         ),
@@ -510,7 +520,7 @@ class _InstitutionDashboardScreenState
         _buildToolCard(
           title: 'Institution record',
           body:
-              'Institution identity, description, public record, and standing-related data.',
+              'Maintain public identity, description, standing, and institutional profile surfaces.',
           enabled: _canUseInstitutionTools,
           onTap: null,
         ),
@@ -549,9 +559,9 @@ class _InstitutionDashboardScreenState
       children: [
         Doc.title('Institution dashboard'),
         const SizedBox(height: AuraSpace.s10),
-        Doc.meta('Institutional standing, next steps, and governance surfaces.'),
+        Doc.meta('Institutional standing, review state, and official surfaces.'),
         Doc.lede(
-          'A clear view of institutional status, verification progress, and available institutional tools.',
+          'A working view of institutional status, verification progress, and the public record surfaces attached to that standing.',
         ),
         const SizedBox(height: AuraSpace.s12),
         _buildStatusCard(),

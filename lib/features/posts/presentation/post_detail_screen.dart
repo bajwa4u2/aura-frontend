@@ -153,8 +153,17 @@ class PostDetailScreen extends ConsumerWidget {
                   _TopBar(postId: postId),
                   const SizedBox(height: AuraSpace.s16),
 
-                  const _SectionLabel(title: 'Work'),
+                  const _SectionLabel(title: 'Public Record'),
                   const SizedBox(height: AuraSpace.s10),
+
+                  Text(
+                    'This work is part of a public record that remains accessible and accountable over time.',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+
+                  const SizedBox(height: AuraSpace.s14),
 
                   postAsync.when(
                     data: (post) {
@@ -172,7 +181,7 @@ class PostDetailScreen extends ConsumerWidget {
                             children: [
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.reply_outlined),
-                                label: const Text('Reply'),
+                                label: const Text('Respond'),
                                 onPressed: () =>
                                     context.push('/compose?replyTo=$postId'),
                               ),
@@ -207,7 +216,7 @@ class PostDetailScreen extends ConsumerWidget {
                   const SizedBox(height: AuraSpace.s10),
 
                   Text(
-                    'Responses remain with the work.',
+                    'Responses become part of the same record.',
                     style: AuraText.small.copyWith(
                       color: AuraSurface.muted,
                     ),
@@ -232,7 +241,7 @@ class PostDetailScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: AuraSpace.s8),
                                 Text(
-                                  'No response has been added yet.',
+                                  'Be the first to respond to this work.',
                                   style: AuraText.small.copyWith(
                                     color: AuraSurface.muted,
                                   ),
@@ -240,7 +249,7 @@ class PostDetailScreen extends ConsumerWidget {
                                 const SizedBox(height: AuraSpace.s12),
                                 OutlinedButton.icon(
                                   icon: const Icon(Icons.reply_outlined),
-                                  label: const Text('Add response'),
+                                  label: const Text('Respond'),
                                   onPressed: () =>
                                       context.push('/compose?replyTo=$postId'),
                                 ),
@@ -299,13 +308,13 @@ class _TopBar extends StatelessWidget {
               context.pop();
               return;
             }
-            context.go('/works');
+            context.go('/search');
           },
           icon: const Icon(Icons.arrow_back),
           label: const Text('Back'),
         ),
         Text(
-          'Work',
+          'Record',
           style: AuraText.title,
         ),
       ],

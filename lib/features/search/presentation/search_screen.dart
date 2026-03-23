@@ -8,7 +8,9 @@ import 'package:aura/core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../feed/domain/post.dart';
 import '../providers.dart';
 import '../search_repository.dart';
@@ -212,7 +214,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final byline =
         handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
 
-    final text = (p.text ?? '').trim();
+    final text = p.text.trim();
     final preview = text.length <= 220 ? text : '${text.substring(0, 220)}…';
 
     return Padding(
@@ -223,19 +225,160 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (byline.isNotEmpty)
-              Text(
+              AuraTextBlock(
                 byline,
                 style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             if (byline.isNotEmpty) const SizedBox(height: AuraSpace.s8),
-            Text(
+            AuraTextBlock(
               preview.isEmpty ? '—' : preview,
-              style: AuraText.body,
+              style: AuraText.body.copyWith(height: 1.45),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _searchInput() {
+    return AuraCard(
+      child: TextField(
+        controller: _controller,
+        decoration: const InputDecoration(
+          hintText: 'Search people, institutions, or public work…',
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.search),
+        ),
+        textInputAction: TextInputAction.search,
+        onChanged: _onQueryChanged,
+      ),
+    );
+  }
+
+  Widget _publicIntroCard(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Explore public work',
+            style: AuraText.title,
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'Search is open so anyone can discover creators, institutions, and work already present in Aura.',
+            style: AuraText.body,
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text(
+            'Create an account when you are ready to publish, respond, save, and build your own record.',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              FilledButton(
+                onPressed: () => context.go('/register?redirect=%2Fsearch'),
+                child: const Text('Start Publishing'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/login?redirect=%2Fsearch'),
+                child: const Text('Login'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptySearchCard() {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Search the public record',
+            style: AuraText.title,
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            'Start with a name, handle, institution, phrase, or theme.',
+            style: AuraText.body,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchResults(AsyncValue<SearchResult> results) {
+    return results.when(
+      data: (r) {
+        final hasAny =
+            r.users.isNotEmpty || r.institutions.isNotEmpty || r.posts.isNotEmpty;
+
+        if (!hasAny) {
+          return AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('No matches yet.', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  'Try a different name, phrase, handle, or institution.',
+                  style: AuraText.body,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (r.users.isNotEmpty) ...[
+              const _SectionHeader(
+                title: 'Authors',
+                subtitle: 'People publishing through Aura.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              ...r.users.take(8).map((u) => _authorCard(context, u)),
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            if (r.institutions.isNotEmpty) ...[
+              const _SectionHeader(
+                title: 'Institutions',
+                subtitle: 'Organizations present in the public record.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              ...r.institutions.take(8).map((i) => _institutionCard(context, i)),
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            if (r.posts.isNotEmpty) ...[
+              const _SectionHeader(
+                title: 'Public Work',
+                subtitle: 'Writing and creations matching your search.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              ...r.posts.take(12).map((p) => _postCard(context, p)),
+            ],
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (e, _) => AuraCard(
+        child: Text('Search failed: $e', style: AuraText.body),
       ),
     );
   }
@@ -248,8 +391,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _syncControllerToQuery(q);
 
     if (!isAuthed) {
+      final publicResults = ref.watch(searchResultProvider);
+
       return AuraScaffold(
-        title: 'Find people and work',
+        title: 'Search',
         actions: [
           TextButton(
             onPressed: () => context.go('/login?redirect=%2Fsearch'),
@@ -264,50 +409,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             AuraSpace.s24,
           ),
           children: [
-            AuraCard(
-              child: TextField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'Search authors, institutions, or work…',
-                  border: InputBorder.none,
-                ),
-                onChanged: _onQueryChanged,
-              ),
-            ),
+            _searchInput(),
             const SizedBox(height: AuraSpace.s14),
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Search becomes real after login.',
-                    style: AuraText.title,
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    'Aura keeps discovery tied to identity. This protects writers, institutions, and responsible participation.',
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: () =>
-                            context.go('/register?redirect=%2Fsearch'),
-                        child: const Text('Create account'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () =>
-                            context.go('/login?redirect=%2Fsearch'),
-                        child: const Text('Login'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _publicIntroCard(context),
+            const SizedBox(height: AuraSpace.s14),
+            if (q.trim().isEmpty) _emptySearchCard() else _searchResults(publicResults),
           ],
         ),
       );
@@ -325,74 +431,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           AuraSpace.s24,
         ),
         children: [
-          AuraCard(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                hintText: 'Search authors, institutions, or work…',
-                border: InputBorder.none,
-              ),
-              onChanged: _onQueryChanged,
-            ),
-          ),
+          _searchInput(),
           const SizedBox(height: AuraSpace.s14),
-          if (q.trim().isEmpty)
-            AuraCard(
-              child: Text(
-                'Start with a name, handle, institution, phrase, or theme.',
-                style: AuraText.body,
-              ),
-            )
-          else
-            results.when(
-              data: (r) {
-                final hasAny = r.users.isNotEmpty ||
-                    r.institutions.isNotEmpty ||
-                    r.posts.isNotEmpty;
-
-                if (!hasAny) {
-                  return AuraCard(
-                    child: Text('No matches yet.', style: AuraText.body),
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (r.users.isNotEmpty) ...[
-                      Text('Authors', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      ...r.users.take(8).map((u) => _authorCard(context, u)),
-                      const SizedBox(height: AuraSpace.s18),
-                    ],
-                    if (r.institutions.isNotEmpty) ...[
-                      Text('Institutions', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      ...r.institutions
-                          .take(8)
-                          .map((i) => _institutionCard(context, i)),
-                      const SizedBox(height: AuraSpace.s18),
-                    ],
-                    if (r.posts.isNotEmpty) ...[
-                      Text('Work', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      ...r.posts.take(12).map((p) => _postCard(context, p)),
-                    ],
-                  ],
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (e, _) => AuraCard(
-                child: Text('Search failed: $e', style: AuraText.body),
-              ),
-            ),
+          if (q.trim().isEmpty) _emptySearchCard() else _searchResults(results),
         ],
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AuraText.title),
+        const SizedBox(height: AuraSpace.s8),
+        Text(subtitle, style: AuraText.muted),
+      ],
     );
   }
 }
