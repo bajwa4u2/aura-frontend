@@ -160,7 +160,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/institution/sign-in' ||
         path == kInstitutionCreateRoute ||
         path == '/patrons' ||
-        path == '/supporters') {
+        path == '/supporters' ||
+        path == '/search' ||
+        path.startsWith('/posts/') ||
+        path.startsWith('/u/') ||
+        path.startsWith('/author/') ||
+        path.startsWith('/support/')) {
       return true;
     }
 
@@ -172,7 +177,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isMemberPath(String path) {
     return path == '/home' ||
-        path == '/search' ||
         path == '/saved' ||
         path == '/updates' ||
         path == '/conversations' ||
@@ -196,11 +200,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == kInstitutionAnnouncementsRoute ||
         path == kInstitutionCorrespondenceRoute ||
         path == kEnterInstitutionRoute ||
-        path == '/compose' ||
-        path.startsWith('/posts/') ||
-        path.startsWith('/u/') ||
-        path.startsWith('/author/') ||
-        path.startsWith('/support/');
+        path == '/compose';
   }
 
   bool requiresAuth(String path) => isMemberPath(path);
@@ -445,6 +445,44 @@ final routerProvider = Provider<GoRouter>((ref) {
           slug: state.pathParameters['slug'] ?? '',
         ),
       ),
+      GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+      GoRoute(
+        path: '/posts/:id',
+        builder: (context, state) => PostDetailScreen(
+          postId: state.pathParameters['id'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/author/:handle',
+        redirect: (context, state) {
+          final handle = state.pathParameters['handle'] ?? '';
+          return '/u/$handle';
+        },
+      ),
+      GoRoute(
+        path: '/u/:handle',
+        builder: (context, state) => AuthorProfileScreen(
+          handle: state.pathParameters['handle'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/u/:handle/followers',
+        builder: (context, state) => FollowersScreen(
+          handle: state.pathParameters['handle'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/u/:handle/following',
+        builder: (context, state) => FollowingScreen(
+          handle: state.pathParameters['handle'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/support/:handle',
+        builder: (context, state) => SupportFallbackScreen(
+          handle: state.pathParameters['handle'] ?? '',
+        ),
+      ),
 
       // Auth routes
       GoRoute(
@@ -493,7 +531,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
-          GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
           GoRoute(
@@ -574,43 +611,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               replyToPostId: state.uri.queryParameters['replyTo'],
               heldPostId: state.uri.queryParameters['held'],
               surface: state.uri.queryParameters['surface'],
-            ),
-          ),
-          GoRoute(
-            path: '/posts/:id',
-            builder: (context, state) => PostDetailScreen(
-              postId: state.pathParameters['id'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/author/:handle',
-            redirect: (context, state) {
-              final handle = state.pathParameters['handle'] ?? '';
-              return '/u/$handle';
-            },
-          ),
-          GoRoute(
-            path: '/u/:handle',
-            builder: (context, state) => AuthorProfileScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/u/:handle/followers',
-            builder: (context, state) => FollowersScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/u/:handle/following',
-            builder: (context, state) => FollowingScreen(
-              handle: state.pathParameters['handle'] ?? '',
-            ),
-          ),
-          GoRoute(
-            path: '/support/:handle',
-            builder: (context, state) => SupportFallbackScreen(
-              handle: state.pathParameters['handle'] ?? '',
             ),
           ),
           GoRoute(
