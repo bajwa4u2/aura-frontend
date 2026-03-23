@@ -415,6 +415,41 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     super.dispose();
   }
 
+
+  String _currentComposeRedirect() {
+    final params = <String, String>{};
+    if (_replyToPostId.isNotEmpty) {
+      params['replyTo'] = _replyToPostId;
+    }
+    if (_heldPostId.isNotEmpty) {
+      params['held'] = _heldPostId;
+    }
+    final surface = (widget.surface ?? '').trim();
+    if (surface.isNotEmpty) {
+      params['surface'] = surface;
+    }
+
+    final uri = Uri(path: '/compose', queryParameters: params.isEmpty ? null : params);
+    return uri.toString();
+  }
+
+  Future<bool> _ensureSignedIn() async {
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.get('/v1/users/me');
+      return true;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 0;
+      if (status == 401 || status == 403) {
+        if (!mounted) return false;
+        final redirect = Uri.encodeComponent(_currentComposeRedirect());
+        context.go('/login?redirect=$redirect');
+        return false;
+      }
+      rethrow;
+    }
+  }
+
   Future<void> _loadExternalConnections() async {
     if (_isReply) return;
 
@@ -1045,41 +1080,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_isReply) {
       return 'Replies publish directly and do not use the main draft yet.';
     }
-
-  String _composeRedirectTarget() {
-    final query = <String, String>{};
-    if (_replyToPostId.isNotEmpty) {
-      query['replyTo'] = _replyToPostId;
-    }
-    if (_heldPostId.isNotEmpty) {
-      query['heldPostId'] = _heldPostId;
-    }
-    final surface = (widget.surface ?? '').trim();
-    if (surface.isNotEmpty) {
-      query['surface'] = surface;
-    }
-
-    if (query.isEmpty) return '/compose';
-    return Uri(path: '/compose', queryParameters: query).toString();
-  }
-
-  Future<bool> _ensureSignedIn() async {
-    try {
-      final dio = ref.read(dioProvider);
-      await dio.get('/v1/users/me');
-      return true;
-    } on DioException catch (e) {
-      final code = e.response?.statusCode ?? 0;
-      if (code == 401 || code == 403) {
-        if (!mounted) return false;
-        final redirect = Uri.encodeComponent(_composeRedirectTarget());
-        context.go('/login?redirect=$redirect');
-        return false;
-      }
-      rethrow;
-    }
-  }
-
     if (_uploadingMedia) return 'Uploading attachments…';
     if (_publishingToTikTok) return 'Queuing TikTok publish…';
     if (_saving) return 'Holding…';
@@ -1964,9 +1964,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   Future<void> _publish() async {
     if (_posting) return;
 
-    final signedIn = await _ensureSignedIn();
-    if (!signedIn) return;
-
     if (!_hasText) {
       setState(() => _showTextError = true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2012,6 +2009,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
 
     if (!_canPublish) return;
+
+    final signedIn = await _ensureSignedIn();
+    if (!signedIn) return;
 
     _autosaveDebounce?.cancel();
 
