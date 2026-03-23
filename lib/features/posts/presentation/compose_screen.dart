@@ -623,6 +623,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       final mediaItems = _listOfMap(draft['media']);
 
+      if (text.trim().isEmpty && mediaItems.isEmpty) {
+        return;
+      }
+
       final loadedAttachments = <_ComposeAttachment>[];
       for (final item in mediaItems) {
         final typeRaw = _str(item['type']).toUpperCase();
@@ -1061,11 +1065,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     for (final attempt in attempts) {
       try {
         await attempt();
-        if (mounted) {
-          setState(() {
-            _lastSavedAt = null;
-          });
-        }
+        if (!mounted) return;
+        setState(() {
+          _lastSavedAt = null;
+        });
         return;
       } catch (e) {
         lastError = e;
@@ -1078,7 +1081,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       );
     }
   }
-
 
   Future<void> _saveDraft({
     bool silent = false,
@@ -1133,21 +1135,21 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
 
-  CompositionSurface get _compositionSurface {
+  String get _compositionSurfaceApiValue {
     final explicit = (widget.surface ?? '').trim().toLowerCase();
     switch (explicit) {
-      case 'message':
       case 'dm':
+      case 'message':
       case 'thread':
-        return CompositionSurface.message;
-      case 'announcement':
-        return CompositionSurface.announcement;
+        return 'dm';
       case 'space':
       case 'conversation':
-        return CompositionSurface.space;
+        return 'space';
+      case 'composer':
+      case 'compose':
       case 'post':
       default:
-        return _isReply ? CompositionSurface.message : CompositionSurface.post;
+        return 'composer';
     }
   }
 
@@ -1197,7 +1199,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         '/v1/composition/review',
         data: {
           'text': text,
-          'surface': _compositionSurface.name,
+          'surface': _compositionSurfaceApiValue,
         },
       );
 
@@ -1365,6 +1367,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         );
         _translationSnapshot = text;
       });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final message = e.response?.statusCode == 404
+          ? 'Translation is not available on this backend yet.'
+          : e.toString();
+      setState(() {
+        _translationError = message;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -2458,7 +2471,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (_posting) return;
 
     _autosaveDebounce?.cancel();
-
     await _clearHeldDraft(silent: true);
 
     for (final attachment in _attachments) {
@@ -2477,7 +2489,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       _uploadingMedia = false;
       _publishToTikTok = false;
       _publishToLinkedIn = false;
-      _lastSavedAt = null;
       _compositionReview = null;
       _compositionError = null;
       _compositionSnapshot = null;
@@ -2485,6 +2496,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       _translationPreview = null;
       _translationError = null;
       _translationSnapshot = null;
+      _lastSavedAt = null;
     });
 
     if (!mounted) return;
@@ -2621,6 +2633,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                     _translationPreview = null;
                     _translationError = null;
                     _translationSnapshot = null;
+                    _lastSavedAt = null;
                   });
                   await _clearHeldDraft(silent: false);
                 },
