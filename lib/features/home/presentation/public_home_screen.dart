@@ -39,8 +39,8 @@ class PublicHomeScreen extends ConsumerWidget {
               const _PublicAccessBand(),
               const SizedBox(height: AuraSpace.s20),
               const _SectionHeader(
-                title: 'Works',
-                subtitle: 'Published works.',
+                title: 'Public Work',
+                subtitle: 'Recent writing and creations from the network.',
               ),
               const SizedBox(height: AuraSpace.s12),
               worksAsync.when(
@@ -48,7 +48,7 @@ class PublicHomeScreen extends ConsumerWidget {
                   if (posts.isEmpty) {
                     return const AuraCard(
                       child: Text(
-                        'No public works yet.',
+                        'No public work yet.',
                         style: AuraText.body,
                       ),
                     );
@@ -67,7 +67,7 @@ class PublicHomeScreen extends ConsumerWidget {
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton(
                           onPressed: () => context.go('/search'),
-                          child: const Text('More works'),
+                          child: const Text('Explore more'),
                         ),
                       ),
                     ],
@@ -76,7 +76,7 @@ class PublicHomeScreen extends ConsumerWidget {
                 loading: () => const AuraCard(child: _LoadingBlock()),
                 error: (e, _) => AuraCard(
                   child: Text(
-                    'Could not load works right now. ($e)',
+                    'Could not load work right now. ($e)',
                     style: AuraText.body,
                   ),
                 ),
@@ -139,55 +139,55 @@ class _PublicWorksHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'A civic layer for accountable public writing.',
+            'Build a public record of work that earns real consideration',
             style: AuraText.title,
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Aura is a public and member environment for people and institutions that want continuity, accountability, and a quieter form of presence online.',
+            'Aura is where creators publish writing and creations that can be discovered, evaluated, and taken seriously by others and institutions.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s14),
           Text(
-            'Read the public record, search the work, or enter through the member and institution paths beside this surface.',
+            'No noise. Just structured, accountable work that holds weight over time.',
             style: AuraText.small.copyWith(
               color: AuraSurface.muted,
             ),
           ),
           const SizedBox(height: AuraSpace.s16),
+
+          /// 🔥 Primary actions
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              FilledButton(
+                onPressed: () => context.go('/search'),
+                child: const Text('Explore Public Work'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/register'),
+                child: const Text('Start Publishing'),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AuraSpace.s16),
+
+          /// 🔑 Reduced navigation
           Wrap(
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
               _Pill(
-                label: 'Mission',
-                icon: Icons.flag_outlined,
-                onTap: () => context.go('/mission'),
-              ),
-              _Pill(
-                label: 'Founder',
-                icon: Icons.person_outline,
-                onTap: () => context.go('/founder'),
+                label: 'Search',
+                icon: Icons.search,
+                onTap: () => context.go('/search'),
               ),
               _Pill(
                 label: 'Institutions',
                 icon: Icons.apartment_outlined,
                 onTap: () => context.go('/institutions'),
-              ),
-              _Pill(
-                label: 'Investors',
-                icon: Icons.assured_workload_outlined,
-                onTap: () => context.go('/investors'),
-              ),
-              _Pill(
-                label: 'Contact',
-                icon: Icons.mail_outline,
-                onTap: () => context.go('/contact'),
-              ),
-              _Pill(
-                label: 'Search',
-                icon: Icons.search,
-                onTap: () => context.go('/search'),
               ),
             ],
           ),
@@ -212,7 +212,7 @@ class _AccessPanel extends StatelessWidget {
           _CompactAccessCard(
             title: 'Members',
             subtitle:
-                'Enter your member account.',
+                'Publish your work and build your public record.',
             primaryLabel: 'Login',
             primaryRoute: '/login',
             secondaryLabel: 'Register',
@@ -223,7 +223,7 @@ class _AccessPanel extends StatelessWidget {
           _CompactAccessCard(
             title: 'Institutions',
             subtitle:
-                'Enter an institutional account.',
+                'Discover and evaluate work from the public record.',
             primaryLabel: 'Login',
             primaryRoute: '/institution/sign-in',
             secondaryLabel: 'Register',
@@ -252,7 +252,7 @@ class _AccessPanelHeader extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s8),
         Text(
-          'Member and institutional entry.',
+          'Continue as a member or institution.',
           style: AuraText.small.copyWith(
             color: AuraSurface.muted,
           ),
