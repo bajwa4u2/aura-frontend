@@ -61,6 +61,36 @@ String _emailShareUrl(String postUrl) {
   return 'mailto:?subject=$subject&body=$body';
 }
 
+const Map<String, String> _translationLanguageLabels = {
+  'en': 'English',
+  'ur': 'Urdu',
+  'ar': 'Arabic',
+  'es': 'Spanish',
+  'fr': 'French',
+  'de': 'German',
+  'it': 'Italian',
+  'pt': 'Portuguese',
+  'tr': 'Turkish',
+  'fa': 'Persian',
+  'hi': 'Hindi',
+  'bn': 'Bengali',
+  'zh': 'Chinese',
+  'ja': 'Japanese',
+  'ko': 'Korean',
+  'ru': 'Russian',
+};
+
+String _languageLabel(String code) {
+  final key = code.trim().toLowerCase();
+  return _translationLanguageLabels[key] ?? key.toUpperCase();
+}
+
+String _defaultTranslationLanguage(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.trim().toLowerCase();
+  if (_translationLanguageLabels.containsKey(code)) return code;
+  return 'en';
+}
+
 bool _extractBool(dynamic data, List<String> keys) {
   if (data is! Map) return false;
 
@@ -325,30 +355,85 @@ class PostCard extends ConsumerStatefulWidget {
 class _PostCardState extends ConsumerState<PostCard> {
   bool _expanded = false;
   bool _translationBusy = false;
-  String? _translationError;
+  bool _showTranslation = false;
   String? _translatedText;
-  String _translationTargetLanguage = 'en';
+  String? _translationError;
+  String? _translationTargetLanguage;
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
-  Map<String, dynamic> _translationMap(dynamic v) {
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return Map<String, dynamic>.from(v);
-    return <String, dynamic>{};
+  Future<void> _pickTranslationLanguage(BuildContext context) async {
+    final current = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AuraSurface.page,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s8,
+              AuraSpace.s16,
+              AuraSpace.s20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Translate to',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: _translationLanguageLabels.entries.map((entry) {
+                    final active = entry.key == current;
+                    return InkWell(
+                      onTap: () => Navigator.of(ctx).pop(entry.key),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AuraSpace.s12,
+                          vertical: AuraSpace.s8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? AuraSurface.elevated : AuraSurface.page,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AuraSurface.divider),
+                        ),
+                        child: Text(
+                          entry.value,
+                          style: AuraText.small.copyWith(
+                            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null || selected.trim().isEmpty) return;
+    setState(() {
+      _translationTargetLanguage = selected.trim().toLowerCase();
+      _translationError = null;
+    });
   }
 
-  String _translationString(dynamic v) => (v ?? '').toString().trim();
+  Future<void> _translatePostText(BuildContext context, String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _translationBusy) return;
 
-  String _firstTranslationValue(List<String> values) {
-    for (final value in values) {
-      if (value.trim().isNotEmpty) return value.trim();
-    }
-    return '';
-  }
-
-  Future<void> _runTranslation(String text) async {
-    final source = text.trim();
-    if (source.isEmpty || _translationBusy) return;
+    final target = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
 
     setState(() {
       _translationBusy = true;
@@ -360,27 +445,32 @@ class _PostCardState extends ConsumerState<PostCard> {
       final response = await dio.post(
         '/v1/composition/translate',
         data: {
-          'text': source,
-          'targetLanguage': _translationTargetLanguage,
+          'text': trimmed,
+          'targetLanguage': target,
         },
       );
 
-      if (!mounted) return;
+      final root = _asMap(response.data);
+      final data = _asMap(root['data']);
 
-      final root = _translationMap(response.data);
-      final translatedText = _firstTranslationValue([
-        _translationString(root['translatedText']),
-        _translationString(root['text']),
-        _translationString(_translationMap(root['data'])['translatedText']),
-        _translationString(_translationMap(root['data'])['text']),
-      ]);
+      final translatedText = _readString(
+        root['translatedText'] ?? root['text'] ?? data['translatedText'] ?? data['text'],
+      );
 
       if (translatedText.isEmpty) {
         throw Exception('Translation response was empty.');
       }
 
+      if (!mounted) return;
+
       setState(() {
         _translatedText = translatedText;
+        _showTranslation = true;
+        _translationTargetLanguage = _readString(
+          root['targetLanguage'] ?? data['targetLanguage'] ?? target,
+        ).toLowerCase().isEmpty
+            ? target
+            : _readString(root['targetLanguage'] ?? data['targetLanguage'] ?? target).toLowerCase();
       });
     } catch (e) {
       if (!mounted) return;
@@ -391,18 +481,9 @@ class _PostCardState extends ConsumerState<PostCard> {
         SnackBar(content: Text('Translation could not run: $e')),
       );
     } finally {
-      if (mounted) {
-        setState(() => _translationBusy = false);
-      }
+      if (!mounted) return;
+      setState(() => _translationBusy = false);
     }
-  }
-
-  void _clearTranslation() {
-    if (!mounted) return;
-    setState(() {
-      _translatedText = null;
-      _translationError = null;
-    });
   }
 
   String? _resolveMediaUrl(WidgetRef ref, String? raw) {
@@ -1001,6 +1082,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     final postId = post.id;
     final postUrl = _canonicalPostUrl(postId);
     final text = (post.text).trim();
+    _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
     final headerName = displayName.isNotEmpty
         ? displayName
@@ -1106,89 +1188,106 @@ class _PostCardState extends ConsumerState<PostCard> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: AuraSpace.s8),
+                      const SizedBox(height: AuraSpace.s10),
                       Wrap(
                         spacing: AuraSpace.s10,
                         runSpacing: AuraSpace.s10,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          if (_translationBusy)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                const SizedBox(width: AuraSpace.s8),
-                                Text(
-                                  'Translating…',
-                                  style: AuraText.small.copyWith(
-                                    color: AuraSurface.muted,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            )
-                          else if ((_translatedText ?? '').trim().isEmpty)
-                            InkWell(
-                              onTap: () => _runTranslation(text),
-                              borderRadius: BorderRadius.circular(999),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s10,
-                                  vertical: AuraSpace.s6,
-                                ),
-                                child: Text(
-                                  'Translate',
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AuraSurface.muted,
-                                  ),
-                                ),
+                          InkWell(
+                            onTap: _translationBusy
+                                ? null
+                                : () => _translatePostText(context, text),
+                            borderRadius: BorderRadius.circular(999),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s2,
+                                vertical: AuraSpace.s2,
                               ),
-                            )
-                          else ...[
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_translationBusy) ...[
+                                    const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    const SizedBox(width: AuraSpace.s8),
+                                  ],
+                                  Text(
+                                    _translationBusy
+                                        ? 'Translating...'
+                                        : (_showTranslation ? 'Refresh translation' : 'Translate'),
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AuraSurface.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _pickTranslationLanguage(context),
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s10,
+                                vertical: AuraSpace.s6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AuraSurface.elevated,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: AuraSurface.divider),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.translate, size: 14, color: AuraSurface.muted),
+                                  const SizedBox(width: AuraSpace.s6),
+                                  Text(
+                                    _languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context)),
+                                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_showTranslation)
                             InkWell(
-                              onTap: _clearTranslation,
+                              onTap: () {
+                                setState(() {
+                                  _showTranslation = false;
+                                  _translationError = null;
+                                });
+                              },
                               borderRadius: BorderRadius.circular(999),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s10,
-                                  vertical: AuraSpace.s6,
+                                  horizontal: AuraSpace.s2,
+                                  vertical: AuraSpace.s2,
                                 ),
                                 child: Text(
                                   'Hide translation',
                                   style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     color: AuraSurface.muted,
                                   ),
                                 ),
                               ),
                             ),
-                            InkWell(
-                              onTap: () => _runTranslation(text),
-                              borderRadius: BorderRadius.circular(999),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s10,
-                                  vertical: AuraSpace.s6,
-                                ),
-                                child: Text(
-                                  'Refresh',
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AuraSurface.muted,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
-                      if ((_translatedText ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s10),
+                      if ((_translationError ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s8),
+                        Text(
+                          _translationError!,
+                          style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                        ),
+                      ],
+                      if (_showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s12),
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(AuraSpace.s12),
@@ -1201,7 +1300,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Translation',
+                                'Translation · ${_languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context))}',
                                 style: AuraText.small.copyWith(
                                   color: AuraSurface.muted,
                                   fontWeight: FontWeight.w700,
@@ -1209,20 +1308,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                               ),
                               const SizedBox(height: AuraSpace.s8),
                               AuraTextBlock(
-                                _translatedText!.trim(),
+                                _translatedText!,
                                 style: bodyTextStyle,
-                                semanticsLabel: 'Translated post body',
                               ),
                             ],
-                          ),
-                        ),
-                      ],
-                      if ((_translationError ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          _translationError!,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
                           ),
                         ),
                       ],
