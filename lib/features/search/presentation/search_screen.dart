@@ -247,7 +247,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: TextField(
         controller: _controller,
         decoration: const InputDecoration(
-          hintText: 'Search people, institutions, or public work…',
+          hintText: 'Search creators, institutions, or public work…',
           border: InputBorder.none,
           prefixIcon: Icon(Icons.search),
         ),
@@ -257,42 +257,40 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _publicIntroCard(BuildContext context) {
+  Widget _publicDiscoveryCard(BuildContext context, bool isAuthed) {
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Explore public work',
+            'Public discovery',
             style: AuraText.title,
           ),
           const SizedBox(height: AuraSpace.s10),
           Text(
-            'Search is open so anyone can discover creators, institutions, and work already present in Aura.',
+            'Search across creators, institutions, and public work already present in Aura.',
             style: AuraText.body,
           ),
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s12),
           Text(
-            'Create an account when you are ready to publish, respond, save, and build your own record.',
+            'View is open. Publishing, responding, saving, and following begin after sign in.',
             style: AuraText.small.copyWith(
               color: AuraSurface.muted,
             ),
           ),
-          const SizedBox(height: AuraSpace.s16),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              FilledButton(
-                onPressed: () => context.go('/register?redirect=%2Fsearch'),
-                child: const Text('Start Publishing'),
-              ),
-              OutlinedButton(
-                onPressed: () => context.go('/login?redirect=%2Fsearch'),
-                child: const Text('Login'),
-              ),
-            ],
-          ),
+          if (!isAuthed) ...[
+            const SizedBox(height: AuraSpace.s16),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                OutlinedButton(
+                  onPressed: () => context.go('/login?redirect=%2Fsearch'),
+                  child: const Text('Sign in to contribute'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -328,10 +326,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('No matches yet.', style: AuraText.title),
+                Text('No matches found.', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  'Try a different name, phrase, handle, or institution.',
+                  'Try a different name, handle, phrase, institution, or theme.',
                   style: AuraText.body,
                 ),
               ],
@@ -344,8 +342,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             if (r.users.isNotEmpty) ...[
               const _SectionHeader(
-                title: 'Authors',
-                subtitle: 'People publishing through Aura.',
+                title: 'Creators',
+                subtitle: 'People with public presence in Aura.',
               ),
               const SizedBox(height: AuraSpace.s10),
               ...r.users.take(8).map((u) => _authorCard(context, u)),
@@ -378,7 +376,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
       ),
       error: (e, _) => AuraCard(
-        child: Text('Search failed: $e', style: AuraText.body),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Search is unavailable right now.',
+              style: AuraText.title,
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              '$e',
+              style: AuraText.body,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -387,42 +398,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
     final q = ref.watch(searchQueryProvider);
+    final results = ref.watch(searchResultProvider);
 
     _syncControllerToQuery(q);
 
-    if (!isAuthed) {
-      final publicResults = ref.watch(searchResultProvider);
-
-      return AuraScaffold(
-        title: 'Search',
-        actions: [
-          TextButton(
-            onPressed: () => context.go('/login?redirect=%2Fsearch'),
-            child: const Text('Login'),
-          ),
-        ],
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AuraSpace.s16,
-            AuraSpace.s12,
-            AuraSpace.s16,
-            AuraSpace.s24,
-          ),
-          children: [
-            _searchInput(),
-            const SizedBox(height: AuraSpace.s14),
-            _publicIntroCard(context),
-            const SizedBox(height: AuraSpace.s14),
-            if (q.trim().isEmpty) _emptySearchCard() else _searchResults(publicResults),
-          ],
-        ),
-      );
-    }
-
-    final results = ref.watch(searchResultProvider);
-
     return AuraScaffold(
       title: 'Search',
+      actions: isAuthed
+          ? null
+          : [
+              TextButton(
+                onPressed: () => context.go('/login?redirect=%2Fsearch'),
+                child: const Text('Sign in'),
+              ),
+            ],
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
@@ -433,7 +422,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         children: [
           _searchInput(),
           const SizedBox(height: AuraSpace.s14),
-          if (q.trim().isEmpty) _emptySearchCard() else _searchResults(results),
+          if (q.trim().isEmpty) ...[
+            _publicDiscoveryCard(context, isAuthed),
+            const SizedBox(height: AuraSpace.s14),
+            _emptySearchCard(),
+          ] else ...[
+            const _SectionHeader(
+              title: 'Search results',
+              subtitle: 'Public creators, institutions, and work.',
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            _searchResults(results),
+          ],
         ],
       ),
     );
