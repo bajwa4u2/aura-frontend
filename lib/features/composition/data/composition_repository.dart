@@ -40,8 +40,7 @@ class CompositionRepository {
       data: {
         'sessionId': sessionId,
         'findingId': findingId,
-        'text': text,
-        'surface': surface.apiValue,
+        'currentText': text,
       },
     );
 
@@ -98,7 +97,7 @@ class CompositionRepository {
 
     final allowApply = _firstBool(policy, const ['allowApply']) ??
         _firstBool(root, const ['allowApply']) ??
-        true;
+        false;
 
     final allowTranslation = _firstBool(policy, const ['allowTranslation']) ??
         _firstBool(root, const ['allowTranslation']) ??
