@@ -391,147 +391,146 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: kRouterBootRoute,
         builder: (_, __) => const _RouterBootScreen(),
       ),
-
-      GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
-      GoRoute(path: '/auth', redirect: (_, __) => '/login'),
-
-      // Public routes
-      GoRoute(path: '/public', builder: (_, __) => const PublicHomeScreen()),
-      GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
-      GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
-      GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
-      GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
-      GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
-      GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
-      GoRoute(
-        path: '/account-deletion',
-        builder: (_, __) => const AccountDeletionScreen(),
-      ),
-      GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
-      GoRoute(
-        path: '/institutions',
-        builder: (_, __) => const InstitutionsHubScreen(),
-      ),
-      GoRoute(
-        path: '/institutions/:slug',
-        builder: (context, state) => InstitutionDetailScreen(
-          slug: state.pathParameters['slug'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: '/institution/sign-in',
-        builder: (_, __) => const InstitutionSignInScreen(),
-      ),
-      GoRoute(
-        path: kInstitutionCreateRoute,
-        builder: (_, __) => const InstitutionRequestVerificationScreen(),
-      ),
-      GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
-      GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
-      GoRoute(
-        path: '/announcements',
-        builder: (_, __) => const AnnouncementsScreen(),
-      ),
-      GoRoute(
-        path: '/announcements/create',
-        builder: (context, state) {
-          final scope = (state.uri.queryParameters['scope'] ?? '').trim().toLowerCase();
-          final editorScope = scope == 'institution'
-              ? AnnouncementEditorScope.institution
-              : AnnouncementEditorScope.platform;
-          return AnnouncementEditorScreen(scope: editorScope);
-        },
-      ),
-      GoRoute(
-        path: '/announcements/:slug',
-        builder: (context, state) => AnnouncementDetailScreen(
-          slug: state.pathParameters['slug'] ?? '',
-        ),
-      ),
-      GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
-      GoRoute(
-        path: '/posts/:id',
-        builder: (context, state) => PostDetailScreen(
-          postId: state.pathParameters['id'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: '/author/:handle',
-        redirect: (context, state) {
-          final handle = state.pathParameters['handle'] ?? '';
-          return '/u/$handle';
-        },
-      ),
-      GoRoute(
-        path: '/u/:handle',
-        builder: (context, state) => AuthorProfileScreen(
-          handle: state.pathParameters['handle'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: '/u/:handle/followers',
-        builder: (context, state) => FollowersScreen(
-          handle: state.pathParameters['handle'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: '/u/:handle/following',
-        builder: (context, state) => FollowingScreen(
-          handle: state.pathParameters['handle'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: '/support/:handle',
-        builder: (context, state) => SupportFallbackScreen(
-          handle: state.pathParameters['handle'] ?? '',
-        ),
-      ),
-
-      // Auth routes
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => AuthScreen(
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => RegisterScreen(
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/reset-password',
-        builder: (context, state) => ResetPasswordScreen(
-          token: state.uri.queryParameters['token'],
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/verify-email',
-        builder: (context, state) => VerifyEmailScreen(
-          token: state.uri.queryParameters['token'],
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-      GoRoute(
-        path: '/verify-pending',
-        builder: (context, state) => VerifyPendingScreen(
-          email: state.uri.queryParameters['email'],
-          redirectTo: state.uri.queryParameters['redirect'],
-        ),
-      ),
-
-      // Member shell
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
+          GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
+          GoRoute(path: '/auth', redirect: (_, __) => '/login'),
+
+          // Public routes
+          GoRoute(path: '/public', builder: (_, __) => const PublicHomeScreen()),
+          GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
+          GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
+          GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
+          GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
+          GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
+          GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
+          GoRoute(
+            path: '/account-deletion',
+            builder: (_, __) => const AccountDeletionScreen(),
+          ),
+          GoRoute(path: '/investors', builder: (_, __) => const InvestorsHubScreen()),
+          GoRoute(
+            path: '/institutions',
+            builder: (_, __) => const InstitutionsHubScreen(),
+          ),
+          GoRoute(
+            path: '/institutions/:slug',
+            builder: (context, state) => InstitutionDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/sign-in',
+            builder: (_, __) => const InstitutionSignInScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionCreateRoute,
+            builder: (_, __) => const InstitutionRequestVerificationScreen(),
+          ),
+          GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
+          GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
+          GoRoute(
+            path: '/announcements',
+            builder: (_, __) => const AnnouncementsScreen(),
+          ),
+          GoRoute(
+            path: '/announcements/create',
+            builder: (context, state) {
+              final scope = (state.uri.queryParameters['scope'] ?? '').trim().toLowerCase();
+              final editorScope = scope == 'institution'
+                  ? AnnouncementEditorScope.institution
+                  : AnnouncementEditorScope.platform;
+              return AnnouncementEditorScreen(scope: editorScope);
+            },
+          ),
+          GoRoute(
+            path: '/announcements/:slug',
+            builder: (context, state) => AnnouncementDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+          GoRoute(
+            path: '/posts/:id',
+            builder: (context, state) => PostDetailScreen(
+              postId: state.pathParameters['id'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/author/:handle',
+            redirect: (context, state) {
+              final handle = state.pathParameters['handle'] ?? '';
+              return '/u/$handle';
+            },
+          ),
+          GoRoute(
+            path: '/u/:handle',
+            builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/u/:handle/followers',
+            builder: (context, state) => FollowersScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/u/:handle/following',
+            builder: (context, state) => FollowingScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/support/:handle',
+            builder: (context, state) => SupportFallbackScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+
+          // Auth routes
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => AuthScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/register',
+            builder: (context, state) => RegisterScreen(
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            builder: (_, __) => const ForgotPasswordScreen(),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            builder: (context, state) => ResetPasswordScreen(
+              token: state.uri.queryParameters['token'],
+              email: state.uri.queryParameters['email'],
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/verify-email',
+            builder: (context, state) => VerifyEmailScreen(
+              token: state.uri.queryParameters['token'],
+              email: state.uri.queryParameters['email'],
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+          GoRoute(
+            path: '/verify-pending',
+            builder: (context, state) => VerifyPendingScreen(
+              email: state.uri.queryParameters['email'],
+              redirectTo: state.uri.queryParameters['redirect'],
+            ),
+          ),
+
+          // Member + institution routes
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
