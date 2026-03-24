@@ -1336,20 +1336,6 @@ class _ShellFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Aura',
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s6),
-                Text(
-                  'Reference only. Quiet routes for mission, policy, and institutional entry.',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s12),
                 Wrap(
                   spacing: AuraSpace.s8,
                   runSpacing: AuraSpace.s8,
