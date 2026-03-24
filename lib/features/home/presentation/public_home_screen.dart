@@ -136,8 +136,79 @@ class _PublicWorksHeader extends StatelessWidget {
   }
 }
 
+class _PublicWorkPreview extends StatelessWidget {
+  const _PublicWorkPreview({required this.post});
+
+  final Post post;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = post.author;
+    final authorMap = _asMap(a);
+    final name = ((authorMap['displayName'] ?? a?.displayName ?? '') as String)
+        .trim();
+    final handle =
+        ((authorMap['handle'] ?? a?.handle ?? '') as String).trim();
+
+    final byline =
+        handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
+
+    final text = post.text.trim();
+    final previewLength = MediaQuery.of(context).size.width < 600 ? 160 : 240;
+    final preview = text.length <= previewLength
+        ? text
+        : '${text.substring(0, previewLength)}…';
+
+    return AuraCard(
+      onTap: () => context.push('/posts/${post.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: AuraTextBlock(
+                  byline.isEmpty ? 'Work' : byline,
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AuraSurface.muted,
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          AuraTextBlock(
+            preview.isEmpty ? '—' : preview,
+            style: AuraText.body.copyWith(height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.subtitle});
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+  });
 
   final String title;
   final String subtitle;
@@ -148,69 +219,9 @@ class _SectionHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: AuraText.title),
-        const SizedBox(height: AuraSpace.s6),
-        Text(
-          subtitle,
-          style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-          ),
-        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(subtitle, style: AuraText.muted),
       ],
-    );
-  }
-}
-
-class _PublicWorkPreview extends StatelessWidget {
-  const _PublicWorkPreview({required this.post});
-
-  final Post post;
-
-  @override
-  Widget build(BuildContext context) {
-    final authorMeta = _asMap(post.authorMeta);
-    final authorName = (authorMeta['name'] ?? '').toString().trim();
-    final handle = (authorMeta['handle'] ?? '').toString().trim();
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (authorName.isNotEmpty || handle.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-              child: Text(
-                authorName.isNotEmpty && handle.isNotEmpty
-                    ? '$authorName · @$handle'
-                    : authorName.isNotEmpty
-                        ? authorName
-                        : '@$handle',
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
-                ),
-              ),
-            ),
-          AuraTextBlock(
-            text: post.text,
-            maxLines: 8,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              OutlinedButton(
-                onPressed: () => context.go('/posts/${post.id}'),
-                child: const Text('Open'),
-              ),
-              if (handle.isNotEmpty)
-                OutlinedButton(
-                  onPressed: () => context.go('/u/$handle'),
-                  child: const Text('View profile'),
-                ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
@@ -220,13 +231,13 @@ class _LoadingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
-      child: Center(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s18),
+      child: const Center(
         child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.2),
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );
