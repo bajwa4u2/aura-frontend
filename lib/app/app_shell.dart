@@ -330,7 +330,7 @@ class _PublicHeader extends StatelessWidget {
     final horizontalPadding = isDesktop
         ? AuraSpace.s32
         : isTablet
-            ? AuraSpace.s40
+            ? AuraSpace.s32
             : AuraSpace.s16;
 
     return Container(
@@ -400,7 +400,7 @@ class _PublicNavigation extends StatelessWidget {
     final horizontalPadding = isDesktop
         ? AuraSpace.s32
         : isTablet
-            ? AuraSpace.s40
+            ? AuraSpace.s32
             : AuraSpace.s16;
 
     return Container(
@@ -462,7 +462,7 @@ class _MemberHeader extends StatelessWidget {
     final horizontalPadding = isDesktop
         ? AuraSpace.s32
         : isTablet
-            ? AuraSpace.s40
+            ? AuraSpace.s32
             : AuraSpace.s16;
 
     return Container(
@@ -514,7 +514,7 @@ class _InstitutionHeader extends StatelessWidget {
     final horizontalPadding = isDesktop
         ? AuraSpace.s32
         : isTablet
-            ? AuraSpace.s40
+            ? AuraSpace.s32
             : AuraSpace.s16;
 
     return Container(
@@ -1350,7 +1350,7 @@ class _ShellFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final padding = compact
         ? const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, AuraSpace.s10)
-        : const EdgeInsets.fromLTRB(AuraSpace.s40, AuraSpace.s16, AuraSpace.s40, AuraSpace.s18);
+        : const EdgeInsets.fromLTRB(AuraSpace.s32, AuraSpace.s16, AuraSpace.s32, AuraSpace.s18);
 
     return Container(
       width: double.infinity,
