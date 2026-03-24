@@ -84,6 +84,21 @@ String _defaultTranslationLanguage(BuildContext context) {
   return 'en';
 }
 
+bool _hasRtlScript(String text) {
+  final value = text.trim();
+  if (value.isEmpty) return false;
+  final rtl = RegExp(r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]');
+  return rtl.hasMatch(value);
+}
+
+TextDirection _directionForText(String text) {
+  return _hasRtlScript(text) ? TextDirection.rtl : TextDirection.ltr;
+}
+
+TextAlign _alignForText(String text) {
+  return _hasRtlScript(text) ? TextAlign.right : TextAlign.left;
+}
+
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -1265,7 +1280,14 @@ class _ComposerTranslationPanel extends StatelessWidget {
           ],
           if ((preview ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(preview!, style: AuraText.body),
+            Directionality(
+              textDirection: _directionForText(preview!),
+              child: Text(
+                preview!,
+                textAlign: _alignForText(preview!),
+                style: AuraText.body,
+              ),
+            ),
             const SizedBox(height: AuraSpace.s10),
             Row(
               children: [
@@ -1693,23 +1715,38 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          author,
-                          style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w700,
+                        Directionality(
+                          textDirection: _directionForText(author),
+                          child: Text(
+                            author,
+                            textAlign: _alignForText(author),
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         if (handle.isNotEmpty) ...[
                           const SizedBox(height: AuraSpace.s4),
-                          Text('@$handle', style: AuraText.small),
+                          Directionality(
+                            textDirection: _directionForText(handle),
+                            child: Text(
+                              '@$handle',
+                              textAlign: _alignForText(handle),
+                              style: AuraText.small,
+                            ),
+                          ),
                         ],
                         if (contextLine.isNotEmpty) ...[
                           const SizedBox(height: AuraSpace.s4),
-                          Text(
-                            contextLine,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.small,
+                          Directionality(
+                            textDirection: _directionForText(contextLine),
+                            child: Text(
+                              contextLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: _alignForText(contextLine),
+                              style: AuraText.small,
+                            ),
                           ),
                         ],
                       ],
@@ -1738,9 +1775,13 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (body.isNotEmpty) ...[
-                    AuraTextBlock(
-                      body,
-                      style: AuraText.body.copyWith(color: textColor),
+                    Directionality(
+                      textDirection: _directionForText(body),
+                      child: AuraTextBlock(
+                        body,
+                        textAlign: _alignForText(body),
+                        style: AuraText.body.copyWith(color: textColor),
+                      ),
                     ),
                     const SizedBox(height: AuraSpace.s8),
                     Wrap(
@@ -1875,9 +1916,13 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                               ),
                             ),
                             const SizedBox(height: AuraSpace.s6),
-                            AuraTextBlock(
-                              _translatedText!,
-                              style: AuraText.body.copyWith(color: translatedTextColor),
+                            Directionality(
+                              textDirection: _directionForText(_translatedText!),
+                              child: AuraTextBlock(
+                                _translatedText!,
+                                textAlign: _alignForText(_translatedText!),
+                                style: AuraText.body.copyWith(color: translatedTextColor),
+                              ),
                             ),
                           ],
                         ),

@@ -36,6 +36,21 @@ class AnnouncementEditorScreen extends ConsumerStatefulWidget {
       _AnnouncementEditorScreenState();
 }
 
+bool _announcementEditorHasRtlScript(String text) {
+  final value = text.trim();
+  if (value.isEmpty) return false;
+  final rtl = RegExp(r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]');
+  return rtl.hasMatch(value);
+}
+
+TextDirection _announcementEditorDirectionFor(String text) {
+  return _announcementEditorHasRtlScript(text) ? TextDirection.rtl : TextDirection.ltr;
+}
+
+TextAlign _announcementEditorAlignFor(String text) {
+  return _announcementEditorHasRtlScript(text) ? TextAlign.right : TextAlign.left;
+}
+
 class _AnnouncementEditorScreenState
     extends ConsumerState<AnnouncementEditorScreen> {
   final _titleController = TextEditingController();
@@ -683,32 +698,44 @@ class _AnnouncementEditorScreenState
             ),
             if (preview.title.trim().isNotEmpty) ...[
               const SizedBox(height: 8),
-              AuraTextBlock(
-                preview.title,
-                languageCode: _languageCodeFor(preview.language),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              Directionality(
+                textDirection: _announcementEditorDirectionFor(preview.title),
+                child: AuraTextBlock(
+                  preview.title,
+                  textAlign: _announcementEditorAlignFor(preview.title),
+                  languageCode: _languageCodeFor(preview.language),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
             if (preview.summary.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
-              AuraTextBlock(
-                preview.summary,
-                languageCode: _languageCodeFor(preview.language),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF5E584F),
+              Directionality(
+                textDirection: _announcementEditorDirectionFor(preview.summary),
+                child: AuraTextBlock(
+                  preview.summary,
+                  textAlign: _announcementEditorAlignFor(preview.summary),
+                  languageCode: _languageCodeFor(preview.language),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF5E584F),
+                  ),
                 ),
               ),
             ],
             if (preview.body.trim().isNotEmpty) ...[
               const SizedBox(height: 12),
-              AuraTextBlock(
-                preview.body,
-                languageCode: _languageCodeFor(preview.language),
-                style: const TextStyle(fontSize: 15, height: 1.55),
+              Directionality(
+                textDirection: _announcementEditorDirectionFor(preview.body),
+                child: AuraTextBlock(
+                  preview.body,
+                  textAlign: _announcementEditorAlignFor(preview.body),
+                  languageCode: _languageCodeFor(preview.language),
+                  style: const TextStyle(fontSize: 15, height: 1.55),
+                ),
               ),
             ],
             const SizedBox(height: 14),
@@ -755,33 +782,66 @@ class _AnnouncementEditorScreenState
                   children: [
                     Text('Writing', style: _sectionTitleStyle),
                     const SizedBox(height: 14),
-                    TextField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'What needs to be said clearly?',
-                      ),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _titleController,
+                      builder: (context, value, _) {
+                        final text = value.text;
+                        return Directionality(
+                          textDirection: _announcementEditorDirectionFor(text),
+                          child: TextField(
+                            controller: _titleController,
+                            textDirection: _announcementEditorDirectionFor(text),
+                            textAlign: _announcementEditorAlignFor(text),
+                            decoration: const InputDecoration(
+                              labelText: 'Title',
+                              hintText: 'What needs to be said clearly?',
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _summaryController,
-                      maxLines: 3,
-                      minLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Summary',
-                        hintText: 'Keep it brief and plain.',
-                      ),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _summaryController,
+                      builder: (context, value, _) {
+                        final text = value.text;
+                        return Directionality(
+                          textDirection: _announcementEditorDirectionFor(text),
+                          child: TextField(
+                            controller: _summaryController,
+                            maxLines: 3,
+                            minLines: 2,
+                            textDirection: _announcementEditorDirectionFor(text),
+                            textAlign: _announcementEditorAlignFor(text),
+                            decoration: const InputDecoration(
+                              labelText: 'Summary',
+                              hintText: 'Keep it brief and plain.',
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _bodyController,
-                      maxLines: 14,
-                      minLines: 10,
-                      decoration: const InputDecoration(
-                        labelText: 'Announcement body',
-                        hintText: 'Write the full notice here.',
-                        alignLabelWithHint: true,
-                      ),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _bodyController,
+                      builder: (context, value, _) {
+                        final text = value.text;
+                        return Directionality(
+                          textDirection: _announcementEditorDirectionFor(text),
+                          child: TextField(
+                            controller: _bodyController,
+                            maxLines: 14,
+                            minLines: 10,
+                            textDirection: _announcementEditorDirectionFor(text),
+                            textAlign: _announcementEditorAlignFor(text),
+                            decoration: const InputDecoration(
+                              labelText: 'Announcement body',
+                              hintText: 'Write the full notice here.',
+                              alignLabelWithHint: true,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     _buildSuggestionStrip(),
                     _buildTranslationPreview(),

@@ -67,6 +67,21 @@ String _announcementDeepString(Map<String, dynamic> root, List<List<String>> can
   return '';
 }
 
+bool _announcementHasRtlScript(String text) {
+  final value = text.trim();
+  if (value.isEmpty) return false;
+  final rtl = RegExp(r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]');
+  return rtl.hasMatch(value);
+}
+
+TextDirection _announcementDirectionFor(String text) {
+  return _announcementHasRtlScript(text) ? TextDirection.rtl : TextDirection.ltr;
+}
+
+TextAlign _announcementAlignFor(String text) {
+  return _announcementHasRtlScript(text) ? TextAlign.right : TextAlign.left;
+}
+
 class AnnouncementDetailScreen extends ConsumerStatefulWidget {
   const AnnouncementDetailScreen({super.key, required this.slug});
   final String slug;
@@ -261,9 +276,13 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AuraTextBlock(
-                      title,
-                      style: AuraText.h1,
+                    Directionality(
+                      textDirection: _announcementDirectionFor(title),
+                      child: AuraTextBlock(
+                        title,
+                        textAlign: _announcementAlignFor(title),
+                        style: AuraText.h1,
+                      ),
                     ),
                     const SizedBox(height: AuraSpace.s8),
                     if (a.publishedAt != null)
@@ -273,18 +292,26 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                       ),
                     if (summary.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s12),
-                      AuraTextBlock(
-                        summary,
-                        style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w600,
+                      Directionality(
+                        textDirection: _announcementDirectionFor(summary),
+                        child: AuraTextBlock(
+                          summary,
+                          textAlign: _announcementAlignFor(summary),
+                          style: AuraText.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                     if (body.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s16),
-                      AuraTextBlock(
-                        body,
-                        style: AuraText.body,
+                      Directionality(
+                        textDirection: _announcementDirectionFor(body),
+                        child: AuraTextBlock(
+                          body,
+                          textAlign: _announcementAlignFor(body),
+                          style: AuraText.body,
+                        ),
                       ),
                     ],
                     if (summary.isNotEmpty || body.isNotEmpty) ...[
@@ -415,18 +442,26 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                             ),
                             if ((_translatedSummary ?? '').trim().isNotEmpty) ...[
                               const SizedBox(height: AuraSpace.s8),
-                              AuraTextBlock(
-                                _translatedSummary!,
-                                style: AuraText.body.copyWith(
-                                  fontWeight: FontWeight.w600,
+                              Directionality(
+                                textDirection: _announcementDirectionFor(_translatedSummary!),
+                                child: AuraTextBlock(
+                                  _translatedSummary!,
+                                  textAlign: _announcementAlignFor(_translatedSummary!),
+                                  style: AuraText.body.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
                             if ((_translatedBody ?? '').trim().isNotEmpty) ...[
                               const SizedBox(height: AuraSpace.s12),
-                              AuraTextBlock(
-                                _translatedBody!,
-                                style: AuraText.body,
+                              Directionality(
+                                textDirection: _announcementDirectionFor(_translatedBody!),
+                                child: AuraTextBlock(
+                                  _translatedBody!,
+                                  textAlign: _announcementAlignFor(_translatedBody!),
+                                  style: AuraText.body,
+                                ),
                               ),
                             ],
                           ],
