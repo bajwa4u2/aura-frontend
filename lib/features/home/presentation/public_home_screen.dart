@@ -227,6 +227,41 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.icon, required this.onTap});
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AuraSurface.muted),
+            const SizedBox(width: AuraSpace.s8),
+            Text(label, style: AuraText.small),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingBlock extends StatelessWidget {
   const _LoadingBlock();
 
