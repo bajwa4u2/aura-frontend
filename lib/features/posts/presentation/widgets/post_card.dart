@@ -472,13 +472,37 @@ class _PostCardState extends ConsumerState<PostCard> {
             ? target
             : _readString(root['targetLanguage'] ?? data['targetLanguage'] ?? target).toLowerCase();
       });
-    } catch (e) {
+    } on DioException catch (e) {
       if (!mounted) return;
+      final status = e.response?.statusCode;
+      final authRequired = status == 401 || status == 403;
+      final message = authRequired
+          ? 'Sign in to translate this post.'
+          : 'Translation could not run right now.';
       setState(() {
-        _translationError = e.toString();
+        _translationError = message;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Translation could not run: $e')),
+        SnackBar(
+          content: Text(
+            authRequired ? 'Sign in to use translation.' : message,
+          ),
+          action: authRequired
+              ? SnackBarAction(
+                  label: 'Sign in',
+                  onPressed: () => context.go('/login'),
+                )
+              : null,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      const message = 'Translation could not run right now.';
+      setState(() {
+        _translationError = message;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(message)),
       );
     } finally {
       if (!mounted) return;
