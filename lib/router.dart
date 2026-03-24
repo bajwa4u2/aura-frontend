@@ -68,6 +68,7 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/account_deletion_screen.dart';
+import 'screens/terms_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -150,6 +151,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     if (path == '/mission' ||
         path == '/white-paper' ||
+        path == '/terms' ||
         path == '/founder' ||
         path == '/privacy' ||
         path == '/contact' ||
@@ -399,6 +401,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/white-paper', builder: (_, __) => const WhitePaperScreen()),
       GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
+      GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
       GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
       GoRoute(
         path: '/account-deletion',
