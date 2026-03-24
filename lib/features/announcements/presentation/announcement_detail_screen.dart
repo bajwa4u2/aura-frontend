@@ -235,7 +235,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final async = ref.watch(announcementBySlugProvider(widget.slug));
 
     return AuraScaffold(
