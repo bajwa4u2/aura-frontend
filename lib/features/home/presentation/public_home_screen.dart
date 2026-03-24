@@ -25,18 +25,21 @@ class PublicHomeScreen extends ConsumerWidget {
     final worksAsync = ref.watch(feedProvider);
 
     return AuraScaffold(
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s16,
-          AuraSpace.s16,
-          AuraSpace.s24,
-        ),
-        children: [
-              const _PublicAccessBand(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s16,
+              AuraSpace.s24,
+            ),
+            children: [
+              const _PublicHero(),
               const SizedBox(height: AuraSpace.s20),
               const _SectionHeader(
-                title: 'Public Work',
+                title: 'Public work',
                 subtitle: 'Recent writing and creations from the network.',
               ),
               const SizedBox(height: AuraSpace.s12),
@@ -78,53 +81,16 @@ class PublicHomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _PublicAccessBand extends StatelessWidget {
-  const _PublicAccessBand();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final stacked = constraints.maxWidth < 820;
-
-        if (stacked) {
-          return const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _PublicWorksHeader(),
-              SizedBox(height: AuraSpace.s16),
-              _AccessPanel(),
-            ],
-          );
-        }
-
-        return const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 6,
-              child: _PublicWorksHeader(),
-            ),
-            SizedBox(width: AuraSpace.s16),
-            Expanded(
-              flex: 4,
-              child: _AccessPanel(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _PublicWorksHeader extends StatelessWidget {
-  const _PublicWorksHeader();
+class _PublicHero extends StatelessWidget {
+  const _PublicHero();
 
   @override
   Widget build(BuildContext context) {
@@ -150,168 +116,17 @@ class _PublicWorksHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s16),
-
-          /// 🔥 Primary actions
           Wrap(
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
               FilledButton(
                 onPressed: () => context.go('/search'),
-                child: const Text('Explore Public Work'),
+                child: const Text('Explore public work'),
               ),
               OutlinedButton(
-                onPressed: () => context.go('/register'),
-                child: const Text('Start Publishing'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AccessPanel extends StatelessWidget {
-  const _AccessPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          _AccessPanelHeader(),
-          SizedBox(height: AuraSpace.s14),
-          _CompactAccessCard(
-            title: 'Members',
-            subtitle:
-                'Publish your work and build your public record.',
-            primaryLabel: 'Login',
-            primaryRoute: '/login',
-            secondaryLabel: 'Register',
-            secondaryRoute: '/register',
-            icon: Icons.person_outline,
-          ),
-          SizedBox(height: AuraSpace.s12),
-          _CompactAccessCard(
-            title: 'Institutions',
-            subtitle:
-                'Discover and evaluate work from the public record.',
-            primaryLabel: 'Login',
-            primaryRoute: '/institution/sign-in',
-            secondaryLabel: 'Register',
-            secondaryRoute: '/institution/create',
-            icon: Icons.apartment_outlined,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AccessPanelHeader extends StatelessWidget {
-  const _AccessPanelHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Enter Aura',
-          style: AuraText.body.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Text(
-          'Continue as a member or institution.',
-          style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CompactAccessCard extends StatelessWidget {
-  const _CompactAccessCard({
-    required this.title,
-    required this.subtitle,
-    required this.primaryLabel,
-    required this.primaryRoute,
-    required this.secondaryLabel,
-    required this.secondaryRoute,
-    required this.icon,
-  });
-
-  final String title;
-  final String subtitle;
-  final String primaryLabel;
-  final String primaryRoute;
-  final String secondaryLabel;
-  final String secondaryRoute;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: AuraSurface.muted,
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            subtitle,
-            style: AuraText.small.copyWith(height: 1.4),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              FilledButton(
-                onPressed: () => context.go(primaryRoute),
-                child: Text(primaryLabel),
-              ),
-              OutlinedButton(
-                onPressed: () => context.go(secondaryRoute),
-                child: Text(secondaryLabel),
+                onPressed: () => context.go('/institutions'),
+                child: const Text('View institutions'),
               ),
             ],
           ),
@@ -408,41 +223,6 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(height: AuraSpace.s8),
         Text(subtitle, style: AuraText.muted),
       ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.icon, required this.onTap});
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s10,
-        ),
-        decoration: BoxDecoration(
-          color: AuraSurface.card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: AuraSurface.muted),
-            const SizedBox(width: AuraSpace.s8),
-            Text(label, style: AuraText.small),
-          ],
-        ),
-      ),
     );
   }
 }
