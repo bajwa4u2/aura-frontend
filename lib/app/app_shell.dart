@@ -12,6 +12,50 @@ import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 
+class AppShell extends StatelessWidget {
+  const AppShell({super.key, required this.child});
+
+  final Widget child;
+
+  static bool _isInstitutionPath(String path) {
+    return path == '/enter-institution' ||
+        path.startsWith('/institution') ||
+        path.startsWith('/institutions/');
+  }
+
+  static bool _isMemberPath(String path) {
+    return path == '/home' ||
+        path == '/compose' ||
+        path == '/saved' ||
+        path == '/updates' ||
+        path == '/activity' ||
+        path == '/me' ||
+        path.startsWith('/me/') ||
+        path == '/conversations' ||
+        path.startsWith('/conversations/') ||
+        path == '/search' ||
+        path.startsWith('/search') ||
+        path == '/explore' ||
+        path.startsWith('/explore') ||
+        path == '/ai/claim-audit' ||
+        path.startsWith('/posts/') ||
+        path.startsWith('/u/');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final path = GoRouterState.of(context).uri.path;
+    if (_isInstitutionPath(path)) {
+      return InstitutionShell(child: child);
+    }
+    if (_isMemberPath(path)) {
+      return MemberShell(child: child);
+    }
+    return PublicShell(child: child);
+  }
+}
+
+
 class PublicShell extends StatelessWidget {
   const PublicShell({super.key, required this.child});
 
@@ -284,9 +328,9 @@ class _PublicHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s24
+        ? AuraSpace.s44
         : isTablet
-            ? AuraSpace.s20
+            ? AuraSpace.s40
             : AuraSpace.s16;
 
     return Container(
@@ -354,9 +398,9 @@ class _PublicNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
     final horizontalPadding = isDesktop
-        ? AuraSpace.s24
+        ? AuraSpace.s44
         : isTablet
-            ? AuraSpace.s20
+            ? AuraSpace.s40
             : AuraSpace.s16;
 
     return Container(
@@ -416,9 +460,9 @@ class _MemberHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s24
+        ? AuraSpace.s44
         : isTablet
-            ? AuraSpace.s20
+            ? AuraSpace.s40
             : AuraSpace.s16;
 
     return Container(
@@ -468,9 +512,9 @@ class _InstitutionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s24
+        ? AuraSpace.s44
         : isTablet
-            ? AuraSpace.s20
+            ? AuraSpace.s40
             : AuraSpace.s16;
 
     return Container(
@@ -739,7 +783,7 @@ class _HeaderAccountButton extends StatelessWidget {
                 ),
                 child: const Icon(
                   Icons.person_outline,
-                  color: AuraSurface.foreground,
+                  color: AuraSurface.ink,
                 ),
               )
             : Container(
@@ -758,7 +802,7 @@ class _HeaderAccountButton extends StatelessWidget {
                     Icon(
                       Icons.person_outline,
                       size: 18,
-                      color: AuraSurface.foreground,
+                      color: AuraSurface.ink,
                     ),
                     SizedBox(width: AuraSpace.s8),
                     Text(
@@ -809,7 +853,7 @@ class _HeaderPillButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color: AuraSurface.foreground,
+                  color: AuraSurface.ink,
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Text(
@@ -856,7 +900,7 @@ class _HeaderIconButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 20,
-              color: AuraSurface.foreground,
+              color: AuraSurface.ink,
             ),
           ),
         ),
@@ -878,7 +922,7 @@ class _AccountMenuItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AuraSurface.foreground),
+        Icon(icon, size: 18, color: AuraSurface.ink),
         const SizedBox(width: AuraSpace.s10),
         Text(label, style: AuraText.small),
       ],
@@ -1026,7 +1070,7 @@ class _SideNavTile extends StatelessWidget {
                 selected ? item.selectedIcon : item.icon,
                 size: 20,
                 color: selected
-                    ? AuraSurface.foreground
+                    ? AuraSurface.ink
                     : AuraSurface.muted,
               ),
               const SizedBox(width: AuraSpace.s12),
@@ -1035,7 +1079,7 @@ class _SideNavTile extends StatelessWidget {
                   item.label,
                   style: AuraText.small.copyWith(
                     color: selected
-                        ? AuraSurface.foreground
+                        ? AuraSurface.ink
                         : AuraSurface.muted,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -1109,14 +1153,14 @@ class _BottomNavButton extends StatelessWidget {
     final icon = selected ? item.selectedIcon : item.icon;
     final labelStyle = AuraText.small.copyWith(
       fontSize: compact ? 11.5 : 12,
-      color: selected ? AuraSurface.foreground : AuraSurface.muted,
+      color: selected ? AuraSurface.ink : AuraSurface.muted,
       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
     );
 
     final iconWidget = Icon(
       icon,
       size: item.isPrimary ? 23 : 21,
-      color: selected ? AuraSurface.foreground : AuraSurface.muted,
+      color: selected ? AuraSurface.ink : AuraSurface.muted,
     );
 
     return Material(
@@ -1178,7 +1222,7 @@ class _HeaderTextLink extends StatelessWidget {
     return TextButton(
       onPressed: onTap,
       style: TextButton.styleFrom(
-        foregroundColor: AuraSurface.foreground,
+        foregroundColor: AuraSurface.ink,
         padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s8,
           vertical: AuraSpace.s10,
@@ -1272,7 +1316,7 @@ class _PublicNavPill extends StatelessWidget {
           child: Text(
             label,
             style: AuraText.small.copyWith(
-              color: selected ? AuraSurface.foreground : AuraSurface.muted,
+              color: selected ? AuraSurface.ink : AuraSurface.muted,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
@@ -1306,7 +1350,7 @@ class _ShellFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final padding = compact
         ? const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, AuraSpace.s10)
-        : const EdgeInsets.fromLTRB(AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, AuraSpace.s18);
+        : const EdgeInsets.fromLTRB(AuraSpace.s40, AuraSpace.s16, AuraSpace.s40, AuraSpace.s18);
 
     return Container(
       width: double.infinity,
@@ -1399,8 +1443,8 @@ class _FooterButton extends StatelessWidget {
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? AuraSpace.s4 : AuraSpace.s2,
-          vertical: compact ? AuraSpace.s2 : AuraSpace.s4,
+          horizontal: compact ? AuraSpace.s4 : AuraSpace.s4,
+          vertical: compact ? AuraSpace.s4 : AuraSpace.s4,
         ),
       ),
       child: Text(
