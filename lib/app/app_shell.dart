@@ -328,7 +328,7 @@ class _PublicHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s44
+        ? AuraSpace.s32
         : isTablet
             ? AuraSpace.s40
             : AuraSpace.s16;
@@ -398,7 +398,7 @@ class _PublicNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
     final horizontalPadding = isDesktop
-        ? AuraSpace.s44
+        ? AuraSpace.s32
         : isTablet
             ? AuraSpace.s40
             : AuraSpace.s16;
@@ -460,7 +460,7 @@ class _MemberHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s44
+        ? AuraSpace.s32
         : isTablet
             ? AuraSpace.s40
             : AuraSpace.s16;
@@ -512,7 +512,7 @@ class _InstitutionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = isDesktop
-        ? AuraSpace.s44
+        ? AuraSpace.s32
         : isTablet
             ? AuraSpace.s40
             : AuraSpace.s16;
