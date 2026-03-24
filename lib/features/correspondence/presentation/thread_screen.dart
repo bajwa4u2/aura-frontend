@@ -54,6 +54,36 @@ final _currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return _unwrapResponseMap(res.data);
 });
 
+const Map<String, String> _translationLanguageLabels = {
+  'en': 'English',
+  'ur': 'Urdu',
+  'ar': 'Arabic',
+  'es': 'Spanish',
+  'fr': 'French',
+  'de': 'German',
+  'it': 'Italian',
+  'pt': 'Portuguese',
+  'tr': 'Turkish',
+  'fa': 'Persian',
+  'hi': 'Hindi',
+  'bn': 'Bengali',
+  'zh': 'Chinese',
+  'ja': 'Japanese',
+  'ko': 'Korean',
+  'ru': 'Russian',
+};
+
+String _languageLabel(String code) {
+  final key = code.trim().toLowerCase();
+  return _translationLanguageLabels[key] ?? key.toUpperCase();
+}
+
+String _defaultTranslationLanguage(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.trim().toLowerCase();
+  if (_translationLanguageLabels.containsKey(code)) return code;
+  return 'en';
+}
+
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -1452,7 +1482,7 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
   }
 }
 
-class _MessageTile extends StatelessWidget {
+class _MessageTile extends ConsumerStatefulWidget {
   const _MessageTile({
     required this.message,
     required this.currentUserId,
@@ -1468,7 +1498,143 @@ class _MessageTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
+  ConsumerState<_MessageTile> createState() => _MessageTileState();
+}
+
+class _MessageTileState extends ConsumerState<_MessageTile> {
+  bool _translationBusy = false;
+  bool _showTranslation = false;
+  String? _translatedText;
+  String? _translationError;
+  String? _translationTargetLanguage;
+
+  Future<void> _pickTranslationLanguage(BuildContext context) async {
+    final current = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Translate to',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: _translationLanguageLabels.entries.map((entry) {
+                    final active = entry.key == current;
+                    return InkWell(
+                      onTap: () => Navigator.of(ctx).pop(entry.key),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AuraSpace.s12,
+                          vertical: AuraSpace.s8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? Colors.black : Colors.transparent,
+                          border: Border.all(color: Colors.black12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          entry.value,
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: active ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null || selected.trim().isEmpty) return;
+    setState(() {
+      _translationTargetLanguage = selected.trim().toLowerCase();
+      _translationError = null;
+    });
+  }
+
+  Future<void> _translateMessage(BuildContext context, String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _translationBusy) return;
+
+    final target = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+
+    setState(() {
+      _translationBusy = true;
+      _translationError = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post(
+        '/v1/composition/translate',
+        data: {
+          'text': trimmed,
+          'targetLanguage': target,
+        },
+      );
+
+      final root = _unwrapDataMap(res.data);
+      final translatedText = _pickDeepString(root, const [
+        ['translatedText'],
+        ['translation', 'text'],
+        ['data', 'translatedText'],
+        ['data', 'text'],
+      ]);
+
+      if (!mounted) return;
+
+      if (translatedText.trim().isEmpty) {
+        setState(() {
+          _translationError = 'Translation was empty.';
+          _translationBusy = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _translatedText = translatedText;
+        _showTranslation = true;
+        _translationTargetLanguage = target;
+        _translationBusy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _translationBusy = false;
+        _translationError = 'Could not translate this message right now.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not translate this message right now.')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final message = widget.message;
+    final currentUserId = widget.currentUserId;
+    final showAuthorHeader = widget.showAuthorHeader;
+    final onEdit = widget.onEdit;
+    final onDelete = widget.onDelete;
+
     final body = _pickString(message, const ['body', 'text', 'content']);
     final authorMap = _extractAuthorMap(message);
     final author = _pickString(
@@ -1496,6 +1662,11 @@ class _MessageTile extends StatelessWidget {
     final bubbleBorderColor = isMine ? Colors.black : Colors.black12;
     final textColor = isMine ? Colors.white : Colors.black87;
     final metaColor = isMine ? Colors.white70 : Colors.black54;
+    final translatedTextColor = isMine ? Colors.white : Colors.black87;
+    final translatedSurfaceColor =
+        isMine ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03);
+
+    _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
@@ -1513,7 +1684,7 @@ class _MessageTile extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap:
-                      handle.isEmpty ? null : () => context.push('/author/$handle'),
+                      handle.isEmpty ? null : () => context.push('/u/$handle'),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
@@ -1571,6 +1742,147 @@ class _MessageTile extends StatelessWidget {
                       body,
                       style: AuraText.body.copyWith(color: textColor),
                     ),
+                    const SizedBox(height: AuraSpace.s8),
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        InkWell(
+                          onTap: _translationBusy
+                              ? null
+                              : () => _translateMessage(context, body),
+                          borderRadius: BorderRadius.circular(999),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AuraSpace.s6,
+                              vertical: AuraSpace.s6,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_translationBusy) ...[
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        isMine ? Colors.white70 : Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AuraSpace.s8),
+                                ],
+                                Text(
+                                  _translationBusy
+                                      ? 'Translating...'
+                                      : (_showTranslation ? 'Refresh translation' : 'Translate'),
+                                  style: AuraText.small.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: metaColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => _pickTranslationLanguage(context),
+                          borderRadius: BorderRadius.circular(999),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AuraSpace.s10,
+                              vertical: AuraSpace.s6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isMine ? Colors.white.withOpacity(0.06) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: isMine ? Colors.white24 : Colors.black12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.translate,
+                                  size: 14,
+                                  color: metaColor,
+                                ),
+                                const SizedBox(width: AuraSpace.s6),
+                                Text(
+                                  _languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context)),
+                                  style: AuraText.small.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: isMine ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_showTranslation)
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _showTranslation = false;
+                                _translationError = null;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(999),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s6,
+                                vertical: AuraSpace.s6,
+                              ),
+                              child: Text(
+                                'Hide translation',
+                                style: AuraText.small.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: metaColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if ((_translationError ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(
+                        _translationError!,
+                        style: AuraText.small.copyWith(
+                          color: isMine ? Colors.white70 : Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                    if (_showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AuraSpace.s10),
+                        decoration: BoxDecoration(
+                          color: translatedSurfaceColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: isMine ? Colors.white24 : Colors.black12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Translation · ${_languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context))}',
+                              style: AuraText.small.copyWith(
+                                color: metaColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: AuraSpace.s6),
+                            AuraTextBlock(
+                              _translatedText!,
+                              style: AuraText.body.copyWith(color: translatedTextColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
                   ],
                   if (attachments.isNotEmpty) ...[

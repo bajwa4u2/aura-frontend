@@ -71,16 +71,28 @@ class _AnnouncementEditorScreenState
   String? _linkedinError;
 
   static const List<String> _targetLanguages = <String>[
-    'Urdu',
     'English',
+    'Urdu',
     'Arabic',
     'Spanish',
     'French',
+    'German',
+    'Italian',
+    'Portuguese',
+    'Turkish',
+    'Persian',
+    'Hindi',
+    'Bengali',
+    'Chinese',
+    'Japanese',
+    'Korean',
+    'Russian',
   ];
 
   @override
   void initState() {
     super.initState();
+    _targetLanguage = _preferredTargetLanguage();
     _titleController.addListener(_handleDraftChanged);
     _summaryController.addListener(_handleDraftChanged);
     _bodyController.addListener(_handleDraftChanged);
@@ -143,6 +155,48 @@ class _AnnouncementEditorScreenState
   }
 
   String _trimmedOrEmpty(String text) => text.trim();
+
+  String _preferredTargetLanguage() {
+    final code = WidgetsBinding.instance.platformDispatcher.locale.languageCode
+        .trim()
+        .toLowerCase();
+
+    switch (code) {
+      case 'ur':
+        return 'Urdu';
+      case 'ar':
+        return 'Arabic';
+      case 'es':
+        return 'Spanish';
+      case 'fr':
+        return 'French';
+      case 'de':
+        return 'German';
+      case 'it':
+        return 'Italian';
+      case 'pt':
+        return 'Portuguese';
+      case 'tr':
+        return 'Turkish';
+      case 'fa':
+        return 'Persian';
+      case 'hi':
+        return 'Hindi';
+      case 'bn':
+        return 'Bengali';
+      case 'zh':
+        return 'Chinese';
+      case 'ja':
+        return 'Japanese';
+      case 'ko':
+        return 'Korean';
+      case 'ru':
+        return 'Russian';
+      case 'en':
+      default:
+        return 'English';
+    }
+  }
 
   String? _languageCodeFor(String language) {
     switch (language.trim().toLowerCase()) {
