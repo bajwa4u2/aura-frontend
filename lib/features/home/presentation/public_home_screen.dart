@@ -115,21 +115,6 @@ class _PublicWorksHeader extends StatelessWidget {
               color: AuraSurface.muted,
             ),
           ),
-          const SizedBox(height: AuraSpace.s16),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              FilledButton(
-                onPressed: () => context.go('/search'),
-                child: const Text('Explore Public Work'),
-              ),
-              OutlinedButton(
-                onPressed: () => context.go('/mission'),
-                child: const Text('Read Mission'),
-              ),
-            ],
-          ),
         ],
       ),
     );
