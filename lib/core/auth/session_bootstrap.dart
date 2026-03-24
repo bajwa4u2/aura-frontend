@@ -13,6 +13,7 @@ import 'auth_providers.dart';
 /// Web:
 /// - Attempts /auth/refresh once per app load using the HttpOnly cookie.
 /// - Request transport is configured separately so browser credentials are sent.
+/// - Skips refresh entirely when the app boots on clearly public/auth surfaces.
 ///
 /// Non-web:
 /// - Uses the stored refresh token only when access token is missing.
@@ -41,6 +42,10 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     } catch (_) {}
 
     if (store.isAuthed) return;
+
+    if (kIsWeb && _shouldSkipWebBootstrapForPath(Uri.base.path)) {
+      return;
+    }
 
     final bootstrapDio = Dio(
       BaseOptions(
@@ -154,6 +159,37 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     if (c != null && !c.isCompleted) c.complete();
   }
 });
+
+bool _shouldSkipWebBootstrapForPath(String path) {
+  const exactPublicPaths = <String>{
+    '/',
+    '/public',
+    '/mission',
+    '/privacy',
+    '/terms',
+    '/contact',
+    '/investors',
+    '/patrons',
+    '/supporters',
+    '/white-paper',
+    '/founder',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/verify-pending',
+    '/search',
+    '/announcements',
+  };
+
+  if (exactPublicPaths.contains(path)) return true;
+  if (path.startsWith('/institutions')) return true;
+  if (path.startsWith('/announcements/')) return true;
+  if (path.startsWith('/u/')) return true;
+
+  return false;
+}
 
 bool _bootstrapDone = false;
 Completer<void>? _bootstrapInFlight;
