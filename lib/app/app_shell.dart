@@ -24,6 +24,7 @@ class AppShell extends ConsumerWidget {
   static const double _headerHeight = 72;
   static const double _subnavHeight = 52;
   static const double _logoHeight = 44;
+  static const double _mobileBottomNavReservedHeight = 88;
   static const double _desktopBreakpoint = 1100;
   static const double _tabletBreakpoint = 760;
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
@@ -384,15 +385,20 @@ class _MemberShellBody extends StatelessWidget {
                   child: Column(
                     children: [
                       Expanded(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: AppShell._memberContentWidth,
-                            ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: child,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            bottom: isDesktop ? 0 : AppShell._mobileBottomNavReservedHeight,
+                          ),
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: AppShell._memberContentWidth,
+                              ),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: child,
+                              ),
                             ),
                           ),
                         ),
@@ -459,15 +465,20 @@ class _InstitutionShellBody extends StatelessWidget {
                     width: 276,
                   ),
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: AppShell._memberContentWidth,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: child,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: isDesktop ? 0 : AppShell._mobileBottomNavReservedHeight,
+                    ),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: AppShell._memberContentWidth,
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: child,
+                        ),
                       ),
                     ),
                   ),
@@ -534,7 +545,7 @@ class _PublicHeader extends StatelessWidget {
                 if (isDesktop)
                   _PublicHeaderActions(isAuthed: isAuthed)
                 else
-                  _PublicHeaderMenu(isAuthed: isAuthed),
+                  _PublicHeaderCompactActions(isAuthed: isAuthed),
               ],
             ),
           ),
@@ -933,6 +944,56 @@ class _PublicHeaderActions extends StatelessWidget {
         const SizedBox(width: AuraSpace.s8),
         FilledButton(
           onPressed: () => context.go('/register'),
+          child: const Text('Join'),
+        ),
+      ],
+    );
+  }
+}
+
+
+class _PublicHeaderCompactActions extends StatelessWidget {
+  const _PublicHeaderCompactActions({required this.isAuthed});
+
+  final bool isAuthed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isAuthed) {
+      return OutlinedButton(
+        onPressed: () => context.go('/home'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s10,
+          ),
+        ),
+        child: const Text('Workspace'),
+      );
+    }
+
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        OutlinedButton(
+          onPressed: () => context.go('/login'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s10,
+            ),
+          ),
+          child: const Text('Sign in'),
+        ),
+        FilledButton(
+          onPressed: () => context.go('/register'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s10,
+            ),
+          ),
           child: const Text('Join'),
         ),
       ],

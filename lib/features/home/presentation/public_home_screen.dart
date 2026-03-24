@@ -25,17 +25,14 @@ class PublicHomeScreen extends ConsumerWidget {
     final worksAsync = ref.watch(feedProvider);
 
     return AuraScaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 920),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s24,
-            ),
-            children: [
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s16,
+          AuraSpace.s16,
+          AuraSpace.s24,
+        ),
+        children: [
               const _PublicAccessBand(),
               const SizedBox(height: AuraSpace.s20),
               const _SectionHeader(
@@ -81,9 +78,7 @@ class PublicHomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -168,26 +163,6 @@ class _PublicWorksHeader extends StatelessWidget {
               OutlinedButton(
                 onPressed: () => context.go('/register'),
                 child: const Text('Start Publishing'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AuraSpace.s16),
-
-          /// 🔑 Reduced navigation
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              _Pill(
-                label: 'Search',
-                icon: Icons.search,
-                onTap: () => context.go('/search'),
-              ),
-              _Pill(
-                label: 'Institutions',
-                icon: Icons.apartment_outlined,
-                onTap: () => context.go('/institutions'),
               ),
             ],
           ),
