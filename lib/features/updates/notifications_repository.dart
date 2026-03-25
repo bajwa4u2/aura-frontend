@@ -140,12 +140,10 @@ _NotificationsPayload _normalizePayload(dynamic raw) {
   final candidates = <dynamic>[
     root['items'],
     root['notifications'],
-    root['communications'],
     root['results'],
     root['data'],
     data['items'],
     data['notifications'],
-    data['communications'],
     data['results'],
     data['data'],
   ];
@@ -155,7 +153,7 @@ _NotificationsPayload _normalizePayload(dynamic raw) {
     if (candidate is List) {
       items = candidate
           .whereType<Map>()
-          .map((e) => _normalizeItem(Map<String, dynamic>.from(e)))
+          .map((e) => Map<String, dynamic>.from(e))
           .toList(growable: false);
       break;
     }
@@ -169,167 +167,45 @@ _NotificationsPayload _normalizePayload(dynamic raw) {
   ]);
 
   return _NotificationsPayload(
-    items: items,
+    items: items.map(_normalizeNotificationItem).toList(growable: false),
     nextCursor: nextCursor.isEmpty ? null : nextCursor,
   );
 }
 
-Map<String, dynamic> _normalizeItem(Map<String, dynamic> raw) {
-  final actor = _extractActor(raw);
-  final data = _extractData(raw);
-  final post = _extractPost(raw);
+Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
+  final item = Map<String, dynamic>.from(raw);
+  final data = _mapOf(item['data']);
 
-  final normalized = <String, dynamic>{
-    ...raw,
-    'id': _firstNonEmpty([
-      _stringOf(raw['id']),
-      _stringOf(raw['notificationId']),
-      _stringOf(raw['communicationId']),
-    ]),
-    'type': _firstNonEmpty([
-      _stringOf(raw['type']),
-      _stringOf(raw['eventType']),
-      _stringOf(raw['kind']),
-      _stringOf(data['type']),
-      _stringOf(data['eventType']),
-    ]).toUpperCase(),
-    'createdAt': _firstNonEmpty([
-      _stringOf(raw['createdAt']),
-      _stringOf(raw['sentAt']),
-      _stringOf(raw['updatedAt']),
-    ]),
-    'readAt': _firstNonEmpty([
-      _stringOf(raw['readAt']),
-      _stringOf(raw['openedAt']),
-      _stringOf(raw['seenAt']),
-    ]),
-    'actor': actor,
-    'data': data,
-    'post': post,
-    'postId': _firstNonEmpty([
-      _stringOf(raw['postId']),
-      _stringOf(post['id']),
-      _stringOf(data['postId']),
-      _stringOf(data['targetPostId']),
-    ]),
-    'spaceId': _firstNonEmpty([
-      _stringOf(raw['spaceId']),
-      _stringOf(data['spaceId']),
-      _stringOf(data['targetSpaceId']),
-    ]),
-    'threadId': _firstNonEmpty([
-      _stringOf(raw['threadId']),
-      _stringOf(data['threadId']),
-      _stringOf(data['targetThreadId']),
-    ]),
-    'announcementId': _firstNonEmpty([
-      _stringOf(raw['announcementId']),
-      _stringOf(data['announcementId']),
-      _stringOf(data['targetAnnouncementId']),
-    ]),
-    'targetUrl': _firstNonEmpty([
-      _stringOf(raw['targetUrl']),
-      _stringOf(data['targetUrl']),
-      _stringOf(data['url']),
-      _stringOf(data['path']),
-    ]),
+  final announcementId = _firstNonEmpty([
+    _stringOf(item['announcementId']),
+    _stringOf(data['announcementId']),
+  ]);
+  final announcementSlug = _firstNonEmpty([
+    _stringOf(item['announcementSlug']),
+    _stringOf(data['announcementSlug']),
+    _stringOf(data['slug']),
+  ]);
+  final deeplink = _firstNonEmpty([
+    _stringOf(item['deeplink']),
+    _stringOf(data['deeplink']),
+    announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
+    announcementId.isNotEmpty ? '/announcements/$announcementId' : '',
+  ]);
+
+  final mergedData = <String, dynamic>{
+    ...data,
+    if (announcementId.isNotEmpty) 'announcementId': announcementId,
+    if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
+    if (deeplink.isNotEmpty) 'deeplink': deeplink,
   };
 
-  return normalized;
-}
-
-Map<String, dynamic> _extractActor(Map<String, dynamic> raw) {
-  final actorCandidates = <Map<String, dynamic>>[];
-
-  for (final key in const ['actor', 'sender', 'author', 'user', 'profile']) {
-    final value = raw[key];
-    if (value is Map) {
-      actorCandidates.add(Map<String, dynamic>.from(value));
-    }
-  }
-
-  final data = _extractData(raw);
-  final fallbackActor = <String, dynamic>{
-    'displayName': _firstNonEmpty([
-      _stringOf(data['actorName']),
-      _stringOf(data['senderName']),
-      _stringOf(data['displayName']),
-    ]),
-    'handle': _firstNonEmpty([
-      _stringOf(data['actorHandle']),
-      _stringOf(data['senderHandle']),
-      _stringOf(data['handle']),
-    ]),
-    'avatarUrl': _firstNonEmpty([
-      _stringOf(data['actorAvatarUrl']),
-      _stringOf(data['senderAvatarUrl']),
-      _stringOf(data['avatarUrl']),
-    ]),
+  return {
+    ...item,
+    if (announcementId.isNotEmpty) 'announcementId': announcementId,
+    if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
+    if (deeplink.isNotEmpty) 'deeplink': deeplink,
+    'data': mergedData,
   };
-
-  if (_hasAnyText(fallbackActor.values)) {
-    actorCandidates.add(fallbackActor);
-  }
-
-  for (final actor in actorCandidates) {
-    final displayName = _firstNonEmpty([
-      _stringOf(actor['displayName']),
-      _stringOf(actor['name']),
-      _stringOf(actor['fullName']),
-      _stringOf(actor['title']),
-      _stringOf(actor['handle']),
-    ]);
-
-    final handle = _firstNonEmpty([
-      _stringOf(actor['handle']),
-      _stringOf(actor['username']),
-      _stringOf(actor['slug']),
-    ]);
-
-    final avatarUrl = _firstNonEmpty([
-      _stringOf(actor['avatarUrl']),
-      _stringOf(actor['imageUrl']),
-      _stringOf(actor['photoUrl']),
-    ]);
-
-    if (displayName.isNotEmpty || handle.isNotEmpty || avatarUrl.isNotEmpty) {
-      return <String, dynamic>{
-        'displayName': displayName,
-        'handle': handle,
-        'avatarUrl': avatarUrl,
-      };
-    }
-  }
-
-  return const <String, dynamic>{
-    'displayName': '',
-    'handle': '',
-    'avatarUrl': '',
-  };
-}
-
-Map<String, dynamic> _extractData(Map<String, dynamic> raw) {
-  final direct = _mapOf(raw['data']);
-  if (direct.isNotEmpty) return direct;
-
-  final payload = _mapOf(raw['payload']);
-  if (payload.isNotEmpty) return payload;
-
-  final metadata = _mapOf(raw['metadata']);
-  if (metadata.isNotEmpty) return metadata;
-
-  return const {};
-}
-
-Map<String, dynamic> _extractPost(Map<String, dynamic> raw) {
-  final post = _mapOf(raw['post']);
-  if (post.isNotEmpty) return post;
-
-  final data = _extractData(raw);
-  final nestedPost = _mapOf(data['post']);
-  if (nestedPost.isNotEmpty) return nestedPost;
-
-  return const {};
 }
 
 Map<String, dynamic> _mapOf(dynamic value) {
@@ -350,13 +226,6 @@ String _firstNonEmpty(List<String> values) {
     if (value.trim().isNotEmpty) return value.trim();
   }
   return '';
-}
-
-bool _hasAnyText(Iterable<dynamic> values) {
-  for (final value in values) {
-    if (_stringOf(value).isNotEmpty) return true;
-  }
-  return false;
 }
 
 bool _hasText(String? value) => value != null && value.trim().isNotEmpty;

@@ -171,6 +171,52 @@ class _AnnouncementEditorScreenState
 
   String _trimmedOrEmpty(String text) => text.trim();
 
+  Future<String> _currentUserId() async {
+    final dio = ref.read(dioProvider);
+    final res = await dio.get('/v1/users/me');
+    final root = _asMap(res.data);
+    final data = _asMap(root['data']);
+    final user = _asMap(data.isNotEmpty ? data['user'] ?? data : root['user'] ?? root);
+    return _firstNonEmpty([
+      user['id']?.toString(),
+    ]);
+  }
+
+  Map<String, dynamic> _unwrapConnectedAccount(dynamic raw) {
+    final root = _asMap(raw);
+    final data = _asMap(root['data']);
+    final nestedData = _asMap(data['data']);
+
+    final candidates = <Map<String, dynamic>>[
+      _asMap(root['account']),
+      _asMap(data['account']),
+      _asMap(nestedData['account']),
+      nestedData,
+      data,
+      root,
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate.isEmpty) continue;
+      final copy = Map<String, dynamic>.from(candidate);
+      final connected = copy['connected'] == true ||
+          _firstNonEmpty([
+            copy['displayName']?.toString(),
+            copy['username']?.toString(),
+            copy['name']?.toString(),
+            copy['email']?.toString(),
+            copy['platformUserId']?.toString(),
+            copy['linkedinMemberId']?.toString(),
+            copy['memberId']?.toString(),
+            copy['id']?.toString(),
+          ]).isNotEmpty;
+      copy['connected'] = connected;
+      return copy;
+    }
+
+    return <String, dynamic>{};
+  }
+
   String _preferredTargetLanguage() {
     final code = WidgetsBinding.instance.platformDispatcher.locale.languageCode
         .trim()
@@ -443,7 +489,7 @@ class _AnnouncementEditorScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Announcement published.')),
       );
-      _leaveEditorAfterSuccess();
+      _leaveEditorAfterSuccess(draft.slug);
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -461,15 +507,15 @@ class _AnnouncementEditorScreenState
     }
   }
 
-  void _leaveEditorAfterSuccess() {
+  void _leaveEditorAfterSuccess(String slug) {
     Future.microtask(() {
       if (!mounted) return;
-      final router = GoRouter.of(context);
-      if (router.canPop()) {
-        context.pop();
-      } else {
-        context.go('/updates');
+      final cleanSlug = slug.trim();
+      if (cleanSlug.isNotEmpty) {
+        context.go('/announcements/$cleanSlug');
+        return;
       }
+      context.go('/announcements');
     });
   }
 
@@ -478,20 +524,21 @@ class _AnnouncementEditorScreenState
     final router = GoRouter.of(context);
     if (router.canPop()) {
       context.pop();
-    } else {
-      context.go('/updates');
+      return;
     }
+    context.go('/announcements');
   }
 
   Future<Response<dynamic>> _getFirstSuccessful(
     Dio dio,
-    List<String> paths,
-  ) async {
+    List<String> paths, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     DioException? lastDioError;
 
     for (final path in paths) {
       try {
-        return await dio.get(path);
+        return await dio.get(path, queryParameters: queryParameters);
       } on DioException catch (e) {
         lastDioError = e;
         if (e.response?.statusCode != 404) {
@@ -524,16 +571,17 @@ class _AnnouncementEditorScreenState
     });
 
     try {
+      final userId = await _currentUserId();
       final dio = ref.read(dioProvider);
       final res = await _getFirstSuccessful(
         dio,
         const [
           '/v1/integrations/tiktok/account',
           '/integrations/tiktok/account',
-          '/social/tiktok/account',
         ],
+        queryParameters: userId.isNotEmpty ? {'userId': userId} : null,
       );
-      final data = _asMap(res.data);
+      final data = _unwrapConnectedAccount(res.data);
       if (!mounted) return;
       setState(() {
         _tiktokConnected = data['connected'] == true;
@@ -541,9 +589,10 @@ class _AnnouncementEditorScreenState
           data['displayName']?.toString(),
           data['username']?.toString(),
           data['accountLabel']?.toString(),
+          data['platformUserId']?.toString(),
         ]);
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _tiktokConnected = false;
@@ -564,16 +613,17 @@ class _AnnouncementEditorScreenState
     });
 
     try {
+      final userId = await _currentUserId();
       final dio = ref.read(dioProvider);
       final res = await _getFirstSuccessful(
         dio,
         const [
           '/v1/integrations/linkedin/account',
           '/integrations/linkedin/account',
-          '/social/linkedin/account',
         ],
+        queryParameters: userId.isNotEmpty ? {'userId': userId} : null,
       );
-      final data = _asMap(res.data);
+      final data = _unwrapConnectedAccount(res.data);
       if (!mounted) return;
       setState(() {
         _linkedinConnected = data['connected'] == true;
@@ -581,9 +631,12 @@ class _AnnouncementEditorScreenState
           data['displayName']?.toString(),
           data['username']?.toString(),
           data['accountLabel']?.toString(),
+          data['name']?.toString(),
+          data['email']?.toString(),
+          data['linkedinMemberId']?.toString(),
         ]);
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _linkedinConnected = false;

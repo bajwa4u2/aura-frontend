@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
+import '../features/updates/notifications_repository.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -567,6 +568,33 @@ class _HeaderTools extends ConsumerStatefulWidget {
 
 class _HeaderToolsState extends ConsumerState<_HeaderTools> {
   bool _busyLogout = false;
+  int _unreadCount = 0;
+  Timer? _activityPollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadCount();
+    _activityPollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted) return;
+      _loadUnreadCount();
+    });
+  }
+
+  @override
+  void dispose() {
+    _activityPollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final repo = NotificationsRepository(ref.read(dioProvider));
+      final count = await repo.unreadCount(forceRefresh: true);
+      if (!mounted) return;
+      setState(() => _unreadCount = count);
+    } catch (_) {}
+  }
 
   Future<void> _handleAccountAction(String value) async {
     switch (value) {
@@ -630,11 +658,16 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             onTap: () => context.push(widget.searchPath),
           ),
           const SizedBox(width: AuraSpace.s8),
-          _HeaderPillButton(
+          _HeaderActivityPillButton(
             tooltip: 'Activity',
             icon: Icons.notifications_none,
             label: 'Activity',
-            onTap: () => context.push(widget.activityPath),
+            unreadCount: _unreadCount,
+            onTap: () async {
+              await context.push(widget.activityPath);
+              if (!mounted) return;
+              _loadUnreadCount();
+            },
           ),
           const SizedBox(width: AuraSpace.s8),
           _HeaderAccountButton(
@@ -655,10 +688,15 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
           onTap: () => context.push(widget.searchPath),
         ),
         const SizedBox(width: AuraSpace.s8),
-        _HeaderIconButton(
+        _HeaderActivityIconButton(
           tooltip: 'Activity',
           icon: Icons.notifications_none,
-          onTap: () => context.push(widget.activityPath),
+          unreadCount: _unreadCount,
+          onTap: () async {
+            await context.push(widget.activityPath);
+            if (!mounted) return;
+            _loadUnreadCount();
+          },
         ),
         const SizedBox(width: AuraSpace.s8),
         _HeaderAccountButton(
@@ -668,6 +706,159 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
         ),
         if (widget.isTablet) const SizedBox(width: AuraSpace.s4),
       ],
+    );
+  }
+}
+
+
+class _HeaderActivityIconButton extends StatelessWidget {
+  const _HeaderActivityIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: AuraSurface.muted,
+                ),
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: 1,
+                  top: 1,
+                  child: _UnreadBadge(count: unreadCount),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderActivityPillButton extends StatelessWidget {
+  const _HeaderActivityPillButton({
+    required this.tooltip,
+    required this.icon,
+    required this.label,
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final String label;
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: AuraSurface.muted,
+                  ),
+                  if (unreadCount > 0)
+                    const Positioned(
+                      right: -6,
+                      top: -5,
+                      child: SizedBox.shrink(),
+                    ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -8,
+                      top: -7,
+                      child: _UnreadBadge(count: unreadCount),
+                    ),
+                ],
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Text(
+                label,
+                style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AuraSurface.muted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = count > 99 ? '99+' : '$count';
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: AuraSurface.ink,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.page, width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: AuraText.small.copyWith(
+          color: AuraSurface.page,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }
