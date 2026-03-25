@@ -16,7 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/profile_header.dart';
-import './communication_preferences_repository.dart';
+import '../../communications/communication_preferences_repository.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
