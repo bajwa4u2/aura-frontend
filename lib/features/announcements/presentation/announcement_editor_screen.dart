@@ -443,7 +443,7 @@ class _AnnouncementEditorScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Announcement published.')),
       );
-      context.pop();
+      _leaveEditorAfterSuccess();
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -461,6 +461,55 @@ class _AnnouncementEditorScreenState
     }
   }
 
+  void _leaveEditorAfterSuccess() {
+    Future.microtask(() {
+      if (!mounted) return;
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        context.pop();
+      } else {
+        context.go('/updates');
+      }
+    });
+  }
+
+  Future<void> _cancelEditor() async {
+    if (_submitting) return;
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      context.pop();
+    } else {
+      context.go('/updates');
+    }
+  }
+
+  Future<Response<dynamic>> _getFirstSuccessful(
+    Dio dio,
+    List<String> paths,
+  ) async {
+    DioException? lastDioError;
+
+    for (final path in paths) {
+      try {
+        return await dio.get(path);
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) {
+          rethrow;
+        }
+      }
+    }
+
+    if (lastDioError != null) {
+      throw lastDioError;
+    }
+
+    throw DioException(
+      requestOptions: RequestOptions(path: paths.isEmpty ? '' : paths.first),
+      error: 'No endpoint available.',
+    );
+  }
+
   Future<void> _loadExternalConnections() async {
     await Future.wait<void>([
       _loadTikTokConnection(),
@@ -476,7 +525,14 @@ class _AnnouncementEditorScreenState
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.get('/social/tiktok/account');
+      final res = await _getFirstSuccessful(
+        dio,
+        const [
+          '/v1/integrations/tiktok/account',
+          '/integrations/tiktok/account',
+          '/social/tiktok/account',
+        ],
+      );
       final data = _asMap(res.data);
       if (!mounted) return;
       setState(() {
@@ -509,7 +565,14 @@ class _AnnouncementEditorScreenState
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.get('/social/linkedin/account');
+      final res = await _getFirstSuccessful(
+        dio,
+        const [
+          '/v1/integrations/linkedin/account',
+          '/integrations/linkedin/account',
+          '/social/linkedin/account',
+        ],
+      );
       final data = _asMap(res.data);
       if (!mounted) return;
       setState(() {
@@ -1016,7 +1079,7 @@ class _AnnouncementEditorScreenState
             Row(
               children: [
                 OutlinedButton(
-                  onPressed: _submitting ? null : () => context.pop(),
+                  onPressed: _submitting ? null : _cancelEditor,
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 12),
