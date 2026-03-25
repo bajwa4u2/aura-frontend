@@ -8,6 +8,7 @@ import '../../config.dart';
 import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
+import '../errors/app_error_mapper.dart';
 import 'platform_http_adapter.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -178,6 +179,45 @@ final dioProvider = Provider<Dio>((ref) {
     return true;
   }
 
+  String? _featureFromRequest(RequestOptions req) {
+    final path = _normalizePath(req.path).toLowerCase();
+    if (path.contains('/translate') || path.contains('/translation')) {
+      return 'translate this post';
+    }
+    if (path.contains('/repost')) {
+      return 'repost this work';
+    }
+    if (path.contains('/save') || path.contains('/saved')) {
+      return 'save this work';
+    }
+    if (path.contains('/follow')) {
+      return 'follow this account';
+    }
+    if (path.contains('/compose')) {
+      return 'continue';
+    }
+    return null;
+  }
+
+  DioException _mapDioException(
+    DioException err, {
+    RequestOptions? requestOptions,
+  }) {
+    final req = requestOptions ?? err.requestOptions;
+    final mapped = AppErrorMapper.from(
+      err,
+      feature: _featureFromRequest(req),
+    );
+
+    return DioException(
+      requestOptions: req,
+      response: err.response,
+      type: err.type,
+      error: mapped,
+      message: mapped.message,
+    );
+  }
+
   Dio buildRefreshDio() {
     final refreshDio = Dio(
       BaseOptions(
@@ -304,22 +344,22 @@ final dioProvider = Provider<Dio>((ref) {
         final req = err.requestOptions;
 
         if (status != 401 || isAuthEndpoint(req)) {
-          handler.next(err);
+          handler.reject(_mapDioException(err));
           return;
         }
 
         if (!_shouldAttemptRefreshForRequest(req)) {
-          handler.next(err);
+          handler.reject(_mapDioException(err));
           return;
         }
 
         if (!canAttemptRefreshNow()) {
-          handler.next(err);
+          handler.reject(_mapDioException(err));
           return;
         }
 
         if (req.extra['__retried_after_refresh'] == true) {
-          handler.next(err);
+          handler.reject(_mapDioException(err));
           return;
         }
 
@@ -364,11 +404,11 @@ final dioProvider = Provider<Dio>((ref) {
 
           if (_isSafeSessionResetStatus(refreshStatus)) {
             await _clearSessionState();
-            handler.next(err);
+            handler.reject(_mapDioException(err));
             return;
           }
 
-          handler.next(err);
+          handler.reject(_mapDioException(err));
         }
       },
     ),
