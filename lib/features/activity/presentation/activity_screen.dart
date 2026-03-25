@@ -207,30 +207,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   }
 
   void _navigateFromActivity(Map<String, dynamic> item) {
-    final type = _stringOf(item['type']).toUpperCase();
+    final type = _notificationType(item);
     final actor = _mapOf(item['actor']);
     final data = _mapOf(item['data']);
 
     final actorHandle = _stringOf(actor['handle']);
-    final targetHandle = _stringOf(data['targetHandle']);
+    final targetHandle = _firstNonEmpty([
+      _stringOf(data['targetHandle']),
+      _stringOf(data['handle']),
+      _stringOf(data['actorHandle']),
+    ]);
     final handle = targetHandle.isNotEmpty ? targetHandle : actorHandle;
 
-    final postId = _firstNonEmpty([
-      _stringOf(item['postId']),
-      _stringOf(data['postId']),
-      _stringOf(data['targetPostId']),
-      _stringOf(data['replyPostId']),
-    ]);
-
-    final spaceId = _firstNonEmpty([
-      _stringOf(data['spaceId']),
-      _stringOf(item['spaceId']),
-    ]);
-
-    final threadId = _firstNonEmpty([
-      _stringOf(data['threadId']),
-      _stringOf(item['threadId']),
-    ]);
+    final postId = _targetPostId(item);
+    final spaceId = _targetSpaceId(item);
+    final threadId = _targetThreadId(item);
+    final announcementId = _targetAnnouncementId(item);
 
     switch (type) {
       case 'FOLLOW_REQUEST':
@@ -255,8 +247,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       case 'POST_PUBLISH_FAILED':
         context.push('/presence');
         return;
+      case 'MESSAGE_RECEIVED':
+      case 'THREAD_MESSAGE_RECEIVED':
+        if (spaceId.isNotEmpty && threadId.isNotEmpty) {
+          context.push('/me/correspondence/$spaceId/thread/$threadId');
+          return;
+        }
+        if (spaceId.isNotEmpty) {
+          context.push('/me/correspondence/$spaceId');
+          return;
+        }
+        return;
       case 'SPACE_INVITE':
       case 'INVITE_ACCEPTED':
+      case 'INVITE_DECLINED':
+      case 'INVITE_REVOKED':
+      case 'INVITE_RECEIVED':
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
         return;
       case 'THREAD_INVITE':
@@ -265,6 +271,27 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           return;
         }
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
+        return;
+      case 'ANNOUNCEMENT_PUBLISHED':
+        if (announcementId.isNotEmpty) {
+          context.push('/announcements/$announcementId');
+          return;
+        }
+        context.push('/updates');
+        return;
+      case 'SYSTEM':
+      case 'SYSTEM_NOTICE':
+      case 'WELCOME':
+        final targetUrl = _firstNonEmpty([
+          _stringOf(item['targetUrl']),
+          _stringOf(data['targetUrl']),
+          _stringOf(data['path']),
+          _stringOf(data['url']),
+        ]);
+        if (targetUrl.isNotEmpty) {
+          context.push(targetUrl);
+          return;
+        }
         return;
       default:
         if (postId.isNotEmpty) {
@@ -365,6 +392,58 @@ String _firstNonEmpty(List<String> values) {
   return '';
 }
 
+String _notificationType(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  return _firstNonEmpty([
+    _stringOf(item['type']),
+    _stringOf(item['eventType']),
+    _stringOf(data['type']),
+    _stringOf(data['eventType']),
+    _stringOf(data['kind']),
+  ]).toUpperCase();
+}
+
+String _targetPostId(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  final post = _mapOf(item['post']);
+  return _firstNonEmpty([
+    _stringOf(item['postId']),
+    _stringOf(post['id']),
+    _stringOf(data['postId']),
+    _stringOf(data['targetPostId']),
+    _stringOf(data['replyPostId']),
+    _stringOf(data['targetId']),
+  ]);
+}
+
+String _targetSpaceId(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  return _firstNonEmpty([
+    _stringOf(item['spaceId']),
+    _stringOf(data['spaceId']),
+    _stringOf(data['targetSpaceId']),
+  ]);
+}
+
+String _targetThreadId(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  return _firstNonEmpty([
+    _stringOf(item['threadId']),
+    _stringOf(data['threadId']),
+    _stringOf(data['targetThreadId']),
+  ]);
+}
+
+String _targetAnnouncementId(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  return _firstNonEmpty([
+    _stringOf(item['announcementId']),
+    _stringOf(data['announcementId']),
+    _stringOf(data['targetAnnouncementId']),
+    _stringOf(data['slug']),
+  ]);
+}
+
 class _ActivityHeader extends StatelessWidget {
   const _ActivityHeader({
     required this.unreadCount,
@@ -409,10 +488,10 @@ class _ActivityLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
-        children: const [
+        children: [
           SizedBox(
             width: 28,
             height: 28,
@@ -480,7 +559,7 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actor = _mapOf(item['actor']);
-    final type = _stringOf(item['type']).toUpperCase();
+    final type = _notificationType(item);
     final title = _buildTitle(item);
     final subtitle = _buildSubtitle(item);
     final timeLabel = _timeAgoLabel(item['createdAt']);
@@ -578,11 +657,23 @@ class _ActivityLeadingIcon extends StatelessWidget {
       case 'SPACE_INVITE':
       case 'THREAD_INVITE':
       case 'INVITE_ACCEPTED':
+      case 'INVITE_DECLINED':
+      case 'INVITE_REVOKED':
+      case 'INVITE_RECEIVED':
         return Icons.mail_outline;
+      case 'MESSAGE_RECEIVED':
+      case 'THREAD_MESSAGE_RECEIVED':
+        return Icons.chat_bubble_outline;
+      case 'ANNOUNCEMENT_PUBLISHED':
+        return Icons.campaign_outlined;
       case 'POST_PUBLISHED':
         return Icons.check_circle_outline;
       case 'POST_PUBLISH_FAILED':
         return Icons.error_outline;
+      case 'SYSTEM':
+      case 'SYSTEM_NOTICE':
+      case 'WELCOME':
+        return Icons.info_outline;
       default:
         return Icons.notifications_none;
     }
@@ -636,12 +727,14 @@ class _ActivityLeadingIcon extends StatelessWidget {
 }
 
 String _buildTitle(Map<String, dynamic> item) {
-  final type = _stringOf(item['type']).toUpperCase();
+  final type = _notificationType(item);
   final actor = _mapOf(item['actor']);
   final data = _mapOf(item['data']);
   final actorName = _firstNonEmpty([
     _stringOf(actor['displayName']),
     _stringOf(actor['handle']),
+    _stringOf(data['actorName']),
+    _stringOf(data['senderName']),
     'Someone',
   ]);
 
@@ -663,25 +756,40 @@ String _buildTitle(Map<String, dynamic> item) {
     case 'MENTION':
       return '$actorName mentioned you';
     case 'SPACE_INVITE':
+    case 'INVITE_RECEIVED':
       return '$actorName invited you to a space';
     case 'THREAD_INVITE':
       return '$actorName invited you to a thread';
     case 'INVITE_ACCEPTED':
       return '$actorName accepted your invitation';
+    case 'INVITE_DECLINED':
+      return '$actorName declined your invitation';
+    case 'INVITE_REVOKED':
+      return '$actorName withdrew an invitation';
+    case 'MESSAGE_RECEIVED':
+    case 'THREAD_MESSAGE_RECEIVED':
+      return '$actorName sent you a message';
+    case 'ANNOUNCEMENT_PUBLISHED':
+      return 'A new announcement was published';
     case 'POST_PUBLISHED':
       return 'Your work was published';
     case 'POST_PUBLISH_FAILED':
       return 'A work could not be published';
+    case 'WELCOME':
+      return 'Welcome to Aura';
     case 'SYSTEM':
+    case 'SYSTEM_NOTICE':
       final title = _stringOf(data['title']);
       return title.isNotEmpty ? title : 'System activity';
     default:
+      final title = _stringOf(data['title']);
+      if (title.isNotEmpty) return title;
       return 'Activity';
   }
 }
 
 String _buildSubtitle(Map<String, dynamic> item) {
-  final type = _stringOf(item['type']).toUpperCase();
+  final type = _notificationType(item);
   final post = _mapOf(item['post']);
   final data = _mapOf(item['data']);
 
@@ -689,10 +797,17 @@ String _buildSubtitle(Map<String, dynamic> item) {
     _stringOf(data['secondaryText']),
     _stringOf(data['message']),
     _stringOf(data['body']),
+    _stringOf(data['preview']),
+    _stringOf(data['threadTitle']),
+    _stringOf(data['spaceTitle']),
+    _stringOf(data['announcementTitle']),
   ]);
-  if (customMessage.isNotEmpty) return customMessage;
+  if (customMessage.isNotEmpty) return _truncate(customMessage, 120);
 
-  final postText = _stringOf(post['text']);
+  final postText = _firstNonEmpty([
+    _stringOf(post['text']),
+    _stringOf(post['title']),
+  ]);
   if (postText.isNotEmpty) return _truncate(postText, 120);
 
   switch (type) {
@@ -709,13 +824,22 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'POST_PUBLISHED':
       return 'Open work';
     case 'SPACE_INVITE':
+    case 'INVITE_RECEIVED':
       return 'Open space';
     case 'THREAD_INVITE':
+    case 'MESSAGE_RECEIVED':
+    case 'THREAD_MESSAGE_RECEIVED':
       return 'Open thread';
     case 'INVITE_ACCEPTED':
+    case 'INVITE_DECLINED':
+    case 'INVITE_REVOKED':
       return 'Open correspondence';
+    case 'ANNOUNCEMENT_PUBLISHED':
+      return 'Open announcement';
     case 'POST_PUBLISH_FAILED':
       return 'Return to presence';
+    case 'WELCOME':
+      return 'Open Aura';
     default:
       return '';
   }

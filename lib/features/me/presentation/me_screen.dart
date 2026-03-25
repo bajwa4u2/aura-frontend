@@ -16,6 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/profile_header.dart';
+import './communication_preferences_repository.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -25,6 +26,9 @@ class MeScreen extends ConsumerStatefulWidget {
 }
 
 class _MeScreenState extends ConsumerState<MeScreen> {
+  CommunicationPreferencesRepository get _communicationRepo =>
+      CommunicationPreferencesRepository(ref.read(dioProvider));
+
   Map<String, dynamic>? _user;
   bool _loading = true;
   String? _error;
@@ -43,6 +47,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   bool _linkedinActionBusy = false;
   bool _handledLinkedInRedirect = false;
 
+  Map<String, dynamic>? _communicationPreferences;
+  bool _communicationLoading = false;
+  final Set<String> _communicationSavingKeys = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +65,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       setState(() {
         _loading = true;
         _error = null;
+        _communicationLoading = true;
       });
     }
 
@@ -98,6 +107,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           )
         else
           Future.value(null),
+              _safeGet(dio, '/communications/preferences/me'),
       ]);
 
       final followersRes = futures[0];
@@ -107,6 +117,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final tiktokRes = futures[4];
       final linkedinRes = futures[5];
       final linkedinAltRes = futures[6];
+      final communicationRes = futures[7];
 
       if (!mounted) return;
 
@@ -120,18 +131,22 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _linkedinAccount = _unwrapLinkedInAccount(
           linkedinRes?.data ?? linkedinAltRes?.data,
         );
+        _communicationPreferences = _unwrapCommunicationPreferences(communicationRes?.data);
+        _communicationLoading = false;
         _loading = false;
       });
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
         _error = _readApiError(e, fallback: 'Could not load your presence.');
+        _communicationLoading = false;
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Could not load your presence.';
+        _communicationLoading = false;
         _loading = false;
       });
     }
@@ -836,6 +851,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     _tiktokBlock(),
                   ],
                 ),
+                const SizedBox(height: AuraSpace.lg),
+                _section(
+                  title: 'Communication',
+                  children: _buildCommunicationPreferenceItems(),
+                ),
               ],
             ),
           ),
@@ -1272,6 +1292,273 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         ],
       ),
     );
+  }
+
+
+  List<Widget> _buildCommunicationPreferenceItems() {
+    final prefs = _communicationPreferences;
+
+    if (_communicationLoading && prefs == null) {
+      return [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: AuraSpace.s12),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+
+    if (prefs == null) {
+      return [
+        _item(
+          label: 'Communication settings unavailable',
+          icon: Icons.tune_outlined,
+          subtitle: 'Could not load your communication preferences.',
+          onTap: _reloadCommunicationPreferences,
+        ),
+      ];
+    }
+
+    final emailEnabled = _prefBool('emailEnabled', fallback: true);
+
+    return [
+      _toggleItem(
+        keyName: 'emailEnabled',
+        label: 'Email notifications',
+        subtitle: 'Master control for email delivery',
+        icon: Icons.mail_outline,
+        value: emailEnabled,
+      ),
+      _toggleItem(
+        keyName: 'emailMessageReceived',
+        label: 'Messages',
+        subtitle: 'When someone writes to you',
+        icon: Icons.chat_bubble_outline,
+        value: _prefBool('emailMessageReceived', fallback: true),
+        enabled: emailEnabled,
+      ),
+      _toggleItem(
+        keyName: 'emailInviteReceived',
+        label: 'Invites',
+        subtitle: 'When you are invited into a space or thread',
+        icon: Icons.person_add_alt_1_outlined,
+        value: _prefBool('emailInviteReceived', fallback: true),
+        enabled: emailEnabled,
+      ),
+      _toggleItem(
+        keyName: 'emailInviteResponded',
+        label: 'Invite responses',
+        subtitle: 'Accepted, declined, or revoked',
+        icon: Icons.reply_outlined,
+        value: _prefBool('emailInviteResponded', fallback: true),
+        enabled: emailEnabled,
+      ),
+      _toggleItem(
+        keyName: 'emailAnnouncementPublished',
+        label: 'Announcements',
+        subtitle: 'Published notices and broad updates',
+        icon: Icons.campaign_outlined,
+        value: _prefBool('emailAnnouncementPublished', fallback: true),
+        enabled: emailEnabled,
+      ),
+      _toggleItem(
+        keyName: 'emailSystem',
+        label: 'System',
+        subtitle: 'Welcome and essential service notices',
+        icon: Icons.settings_suggest_outlined,
+        value: _prefBool('emailSystem', fallback: true),
+        enabled: emailEnabled,
+      ),
+    ];
+  }
+
+  bool _prefBool(String key, {required bool fallback}) {
+    final prefs = _communicationPreferences ?? const <String, dynamic>{};
+    final raw = prefs[key];
+    if (raw is bool) return raw;
+    if (raw is num) return raw != 0;
+    final text = (raw ?? '').toString().trim().toLowerCase();
+    if (text == 'true' || text == '1' || text == 'yes' || text == 'on') return true;
+    if (text == 'false' || text == '0' || text == 'no' || text == 'off') return false;
+    return fallback;
+  }
+
+  Widget _toggleItem({
+    required String keyName,
+    required String label,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    bool enabled = true,
+  }) {
+    final busy = _communicationSavingKeys.contains(keyName);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: AuraSpace.s12,
+        horizontal: AuraSpace.s4,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AuraSurface.ink),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AuraTextBlock(
+                  label,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: enabled ? AuraSurface.ink : AuraSurface.muted,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                AuraTextBlock(
+                  subtitle,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          if (busy)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Switch.adaptive(
+              value: value,
+              onChanged: enabled ? (next) => _updateCommunicationPreference(keyName, next) : null,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reloadCommunicationPreferences() async {
+    if (mounted) {
+      setState(() {
+        _communicationLoading = true;
+      });
+    }
+
+    try {
+      final prefs = await _communicationRepo.load();
+      if (!mounted) return;
+      setState(() {
+        _communicationPreferences = prefs;
+      });
+    } catch (_) {
+      if (!mounted) return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _communicationLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateCommunicationPreference(String key, bool value) async {
+    final previous = Map<String, dynamic>.from(
+      _communicationPreferences ?? const <String, dynamic>{},
+    );
+
+    final next = Map<String, dynamic>.from(previous)..[key] = value;
+    if (key == 'emailEnabled' && value == false) {
+      next['emailMessageReceived'] = false;
+      next['emailInviteReceived'] = false;
+      next['emailInviteResponded'] = false;
+      next['emailAnnouncementPublished'] = false;
+      next['emailSystem'] = false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _communicationPreferences = next;
+        _communicationSavingKeys.add(key);
+      });
+    }
+
+    try {
+      final saved = await _communicationRepo.save({key: value});
+      if (!mounted) return;
+      setState(() {
+        _communicationPreferences = saved;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _communicationPreferences = previous;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _readApiError(e, fallback: 'Could not update communication preferences.'),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _communicationPreferences = previous;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not update communication preferences.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _communicationSavingKeys.remove(key);
+        });
+      }
+    }
+  }
+
+  Map<String, dynamic>? _unwrapCommunicationPreferences(dynamic raw) {
+    try {
+      return _communicationRepo.loadFromRaw(raw);
+    } catch (_) {
+      final root = _asMap(raw);
+      final data = _asMap(root['data']);
+      final prefs = _asMap(root['preferences']).isNotEmpty
+          ? _asMap(root['preferences'])
+          : _asMap(data['preferences']).isNotEmpty
+              ? _asMap(data['preferences'])
+              : data.isNotEmpty
+                  ? data
+                  : root;
+      if (prefs.isEmpty) return null;
+      return <String, dynamic>{
+        'inAppEnabled': _coerceBool(prefs['inAppEnabled'], fallback: true),
+        'emailEnabled': _coerceBool(prefs['emailEnabled'], fallback: true),
+        'emailMessageReceived': _coerceBool(prefs['emailMessageReceived'], fallback: true),
+        'emailInviteReceived': _coerceBool(prefs['emailInviteReceived'], fallback: true),
+        'emailInviteResponded': _coerceBool(prefs['emailInviteResponded'], fallback: true),
+        'emailAnnouncementPublished': _coerceBool(prefs['emailAnnouncementPublished'], fallback: true),
+        'emailSystem': _coerceBool(_firstNonNull([prefs['emailSystem'], prefs['emailSystemNotice'], prefs['emailWelcome']]), fallback: true),
+      };
+    }
+  }
+
+  bool _coerceBool(dynamic raw, {required bool fallback}) {
+    if (raw is bool) return raw;
+    if (raw is num) return raw != 0;
+    final text = (raw ?? '').toString().trim().toLowerCase();
+    if (text == 'true' || text == '1' || text == 'yes' || text == 'on') return true;
+    if (text == 'false' || text == '0' || text == 'no' || text == 'off') return false;
+    return fallback;
   }
 
   Widget _buildStateCard({required Widget child}) {
