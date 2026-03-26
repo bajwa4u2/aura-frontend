@@ -19,7 +19,15 @@ class AppShell extends StatelessWidget {
   final Widget child;
 
   static bool _isInstitutionPath(String path) {
-    return path == '/enter-institution' || path.startsWith('/institution');
+    return path == '/enter-institution' ||
+        path == '/institution/sign-in' ||
+        path == '/institution/create' ||
+        path == '/institution/dashboard' ||
+        path == '/institution/domains' ||
+        path == '/institution/profile' ||
+        path == '/institution/request-verification' ||
+        path == '/institution/announcements' ||
+        path == '/institution/correspondence';
   }
 
   static bool _isMemberPath(String path) {
@@ -36,6 +44,9 @@ class AppShell extends StatelessWidget {
         path == '/me/edit' ||
         path == '/security' ||
         path == '/me/follow-requests' ||
+        path == '/me/invitations' ||
+        path == '/invite' ||
+        path == '/invite/create' ||
         path == '/me/correspondence' ||
         path == '/me/correspondence/create/conversation' ||
         path == '/me/correspondence/create/space' ||

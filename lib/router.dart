@@ -172,7 +172,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path.startsWith('/u/') ||
         path.startsWith('/author/') ||
         path.startsWith('/support/') ||
-        path.startsWith('/invite/accept')) {
+        path == '/invite/accept') {
       return true;
     }
 
