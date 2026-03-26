@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
+import 'core/navigation/route_classification.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
@@ -172,7 +173,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path.startsWith('/u/') ||
         path.startsWith('/author/') ||
         path.startsWith('/support/') ||
-        path == '/invite/accept') {
+        isPublicInviteAcceptPath(path)) {
       return true;
     }
 
@@ -182,36 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     return false;
   }
 
-  bool isMemberPath(String path) {
-    return path == '/home' ||
-        path == '/saved' ||
-        path == '/updates' ||
-        path == '/conversations' ||
-        path == '/activity' ||
-        path == '/create' ||
-        path == '/announcements/create' ||
-        path == '/ai/claim-audit' ||
-        path == '/me' ||
-        path == '/me/edit' ||
-        path == '/security' ||
-        path == '/me/follow-requests' ||
-        path == '/me/invitations' ||
-        path == '/invite' ||
-        path == '/invite/create' ||
-        path == kCorrespondenceHubRoute ||
-        path == kCreateConversationRoute ||
-        path == kCreateSpaceRoute ||
-        path == kAdminWorkspaceRoute ||
-        path.startsWith('$kCorrespondenceHubRoute/') ||
-        path == kInstitutionDashboardRoute ||
-        path == kInstitutionDomainsRoute ||
-        path == kInstitutionProfileRoute ||
-        path == kInstitutionVerificationRoute ||
-        path == kInstitutionAnnouncementsRoute ||
-        path == kInstitutionCorrespondenceRoute ||
-        path == kEnterInstitutionRoute ||
-        path == '/compose';
-  }
+  bool isMemberPath(String path) => isMemberShellPath(path);
 
   bool requiresAuth(String path) => isMemberPath(path);
 

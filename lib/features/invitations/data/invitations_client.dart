@@ -23,23 +23,11 @@ class InvitationsClient {
   }
 
   Future<List<Map<String, dynamic>>> loadSent() async {
-    final res = await _getFirstSuccessful([
-      '/invites/sent',
-      '/v1/invites/sent',
-      '/invites/outbox',
-      '/v1/invites/outbox',
-    ]);
-    return _extractList(res.data);
+    return const <Map<String, dynamic>>[];
   }
 
   Future<List<Map<String, dynamic>>> loadApprovals() async {
-    final res = await _getFirstSuccessful([
-      '/invites/approvals',
-      '/v1/invites/approvals',
-      '/invites/pending-approval',
-      '/v1/invites/pending-approval',
-    ]);
-    return _extractList(res.data);
+    return const <Map<String, dynamic>>[];
   }
 
   Future<Map<String, dynamic>> inspectToken(String token) async {

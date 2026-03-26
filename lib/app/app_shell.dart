@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/navigation/route_classification.dart';
+
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
@@ -18,50 +20,14 @@ class AppShell extends StatelessWidget {
 
   final Widget child;
 
-  static bool _isInstitutionPath(String path) {
-    return path == '/enter-institution' ||
-        path == '/institution/sign-in' ||
-        path == '/institution/create' ||
-        path == '/institution/dashboard' ||
-        path == '/institution/domains' ||
-        path == '/institution/profile' ||
-        path == '/institution/request-verification' ||
-        path == '/institution/announcements' ||
-        path == '/institution/correspondence';
-  }
-
-  static bool _isMemberPath(String path) {
-    return path == '/home' ||
-        path == '/saved' ||
-        path == '/updates' ||
-        path == '/conversations' ||
-        path == '/activity' ||
-        path == '/create' ||
-        path == '/compose' ||
-        path == '/announcements/create' ||
-        path == '/ai/claim-audit' ||
-        path == '/me' ||
-        path == '/me/edit' ||
-        path == '/security' ||
-        path == '/me/follow-requests' ||
-        path == '/me/invitations' ||
-        path == '/invite' ||
-        path == '/invite/create' ||
-        path == '/me/correspondence' ||
-        path == '/me/correspondence/create/conversation' ||
-        path == '/me/correspondence/create/space' ||
-        path.startsWith('/me/correspondence/') ||
-        path == '/admin';
-  }
-
   @override
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
 
-    if (_isInstitutionPath(path)) {
+    if (isInstitutionShellPath(path)) {
       return InstitutionShell(child: child);
     }
-    if (_isMemberPath(path)) {
+    if (isMemberShellPath(path)) {
       return MemberShell(child: child);
     }
     return PublicShell(child: child);
