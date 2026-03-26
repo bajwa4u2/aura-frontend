@@ -203,7 +203,7 @@ class AnnouncementsRepository {
   Future<void> pin(String id) async {
     await _dio.post(
       '/admin/announcements/$id/pin',
-      data: const {'pinned': true},
+      data: {'pinned': true},
     );
     _invalidateCache();
   }
@@ -211,7 +211,7 @@ class AnnouncementsRepository {
   Future<void> unpin(String id) async {
     await _dio.post(
       '/admin/announcements/$id/pin',
-      data: const {'pinned': false},
+      data: {'pinned': false},
     );
     _invalidateCache();
   }

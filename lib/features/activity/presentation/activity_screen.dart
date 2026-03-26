@@ -215,11 +215,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final targetHandle = _stringOf(data['targetHandle']);
     final handle = targetHandle.isNotEmpty ? targetHandle : actorHandle;
 
-    final postId = _firstNonEmpty([
-      _stringOf(item['postId']),
-      _stringOf(data['postId']),
-      _stringOf(data['targetPostId']),
-      _stringOf(data['replyPostId']),
+    final deeplink = _firstNonEmpty([
+      _stringOf(item['deeplink']),
+      _stringOf(data['deeplink']),
+      _stringOf(data['link']),
+      _stringOf(data['url']),
     ]);
 
     final announcementSlug = _firstNonEmpty([
@@ -228,10 +228,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       _stringOf(data['slug']),
     ]);
 
-    final deeplink = _firstNonEmpty([
-      _stringOf(item['deeplink']),
-      _stringOf(data['deeplink']),
-      announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
+    final announcementId = _firstNonEmpty([
+      _stringOf(item['announcementId']),
+      _stringOf(data['announcementId']),
+    ]);
+
+    final postId = _firstNonEmpty([
+      _stringOf(item['postId']),
+      _stringOf(data['postId']),
+      _stringOf(data['targetPostId']),
+      _stringOf(data['replyPostId']),
     ]);
 
     final spaceId = _firstNonEmpty([
@@ -243,6 +249,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       _stringOf(data['threadId']),
       _stringOf(item['threadId']),
     ]);
+
+    if (deeplink.isNotEmpty) {
+      context.push(deeplink);
+      return;
+    }
 
     switch (type) {
       case 'FOLLOW_REQUEST':
@@ -268,41 +279,35 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         context.push('/me');
         return;
       case 'ANNOUNCEMENT_PUBLISHED':
-        if (deeplink.isNotEmpty) {
-          context.push(deeplink);
-          return;
-        }
         if (announcementSlug.isNotEmpty) {
           context.push('/announcements/$announcementSlug');
           return;
         }
-        return;
-      case 'MESSAGE_RECEIVED':
-        if (threadId.isNotEmpty) {
-          if (spaceId.isNotEmpty) {
-            context.push('/me/correspondence/$spaceId/thread/$threadId');
-            return;
-          }
-          context.push('/conversations');
+        if (announcementId.isNotEmpty) {
+          context.push('/announcements/$announcementId');
           return;
         }
+        context.push('/announcements');
         return;
       case 'SPACE_INVITE':
       case 'INVITE_ACCEPTED':
+      case 'INVITE_DECLINED':
+      case 'INVITE_REVOKED':
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
         return;
       case 'THREAD_INVITE':
+      case 'MESSAGE_RECEIVED':
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {
           context.push('/me/correspondence/$spaceId/thread/$threadId');
+          return;
+        }
+        if (threadId.isNotEmpty) {
+          context.push('/conversations');
           return;
         }
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
         return;
       default:
-        if (deeplink.isNotEmpty) {
-          context.push(deeplink);
-          return;
-        }
         if (postId.isNotEmpty) {
           context.push('/posts/$postId');
           return;
@@ -617,6 +622,10 @@ class _ActivityLeadingIcon extends StatelessWidget {
         return Icons.mail_outline;
       case 'POST_PUBLISHED':
         return Icons.check_circle_outline;
+      case 'ANNOUNCEMENT_PUBLISHED':
+        return Icons.campaign_outlined;
+      case 'MESSAGE_RECEIVED':
+        return Icons.mail_outline;
       case 'POST_PUBLISH_FAILED':
         return Icons.error_outline;
       default:
@@ -702,16 +711,24 @@ String _buildTitle(Map<String, dynamic> item) {
       return '$actorName invited you to a space';
     case 'THREAD_INVITE':
       return '$actorName invited you to a thread';
+    case 'MESSAGE_RECEIVED':
+      return '$actorName sent you a message';
     case 'INVITE_ACCEPTED':
       return '$actorName accepted your invitation';
+    case 'INVITE_DECLINED':
+      return '$actorName declined your invitation';
+    case 'INVITE_REVOKED':
+      return '$actorName revoked an invitation';
+    case 'ANNOUNCEMENT_PUBLISHED':
+      final title = _firstNonEmpty([
+        _stringOf(item['title']),
+        _stringOf(data['title']),
+      ]);
+      return title.isNotEmpty ? title : 'New announcement';
     case 'POST_PUBLISHED':
       return 'Your work was published';
     case 'POST_PUBLISH_FAILED':
       return 'A work could not be published';
-    case 'ANNOUNCEMENT_PUBLISHED':
-      return 'A new announcement was published';
-    case 'MESSAGE_RECEIVED':
-      return '$actorName sent you a message';
     case 'SYSTEM':
       final title = _stringOf(data['title']);
       return title.isNotEmpty ? title : 'System activity';
@@ -751,15 +768,16 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'SPACE_INVITE':
       return 'Open space';
     case 'THREAD_INVITE':
-      return 'Open thread';
-    case 'INVITE_ACCEPTED':
-      return 'Open correspondence';
-    case 'POST_PUBLISH_FAILED':
-      return 'Return to presence';
-    case 'ANNOUNCEMENT_PUBLISHED':
-      return 'Read announcement';
     case 'MESSAGE_RECEIVED':
       return 'Open conversation';
+    case 'INVITE_ACCEPTED':
+    case 'INVITE_DECLINED':
+    case 'INVITE_REVOKED':
+      return 'Open correspondence';
+    case 'ANNOUNCEMENT_PUBLISHED':
+      return 'Read announcement';
+    case 'POST_PUBLISH_FAILED':
+      return 'Return to presence';
     default:
       return '';
   }
