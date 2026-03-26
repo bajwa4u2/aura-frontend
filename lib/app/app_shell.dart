@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/navigation/route_classification.dart';
+import 'route_classification.dart';
 
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
