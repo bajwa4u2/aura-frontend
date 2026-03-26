@@ -220,7 +220,7 @@ class _AnnouncementEditorScreenState
     for (final file in result.files) {
       final bytes = file.bytes;
       if (bytes == null || bytes.isEmpty) continue;
-      final mime = (file.mimeType ?? '').trim().isNotEmpty ? file.mimeType!.trim() : _inferMime(file.name);
+      final mime = _inferMime(file.name);
       picked.add(
         _AnnouncementEditorMediaAttachment(
           localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
