@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +18,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../composition/data/composition_repository.dart';
 import '../../composition/domain/composition_models.dart';
+import '../domain/announcement.dart';
 import '../providers.dart';
 import 'announcement_distribution.dart';
 
@@ -85,6 +89,9 @@ class _AnnouncementEditorScreenState
   String _linkedinAccountLabel = '';
   String? _linkedinError;
 
+  final List<_AnnouncementEditorMediaAttachment> _attachments = <_AnnouncementEditorMediaAttachment>[];
+  bool _mediaUploading = false;
+
   static const List<String> _targetLanguages = <String>[
     'English',
     'Urdu',
@@ -131,7 +138,6 @@ class _AnnouncementEditorScreenState
 
   bool get _canSubmit {
     if (_submitting) return false;
-    if (!_publishToAura) return false;
     if (_titleController.text.trim().isEmpty) return false;
     if (_summaryController.text.trim().isEmpty) return false;
     if (_bodyController.text.trim().isEmpty) return false;
@@ -176,45 +182,302 @@ class _AnnouncementEditorScreenState
     final res = await dio.get('/v1/users/me');
     final root = _asMap(res.data);
     final data = _asMap(root['data']);
-    final user = _asMap(data.isNotEmpty ? data['user'] ?? data : root['user'] ?? root);
+    final user = _asMap(data.isNotEmpty ? (data['user'] ?? data) : (root['user'] ?? root));
     return _firstNonEmpty([
       user['id']?.toString(),
     ]);
   }
 
-  Map<String, dynamic> _unwrapConnectedAccount(dynamic raw) {
-    final root = _asMap(raw);
-    final data = _asMap(root['data']);
-    final nestedData = _asMap(data['data']);
+  String _inferMime(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    return 'application/octet-stream';
+  }
 
-    final candidates = <Map<String, dynamic>>[
-      _asMap(root['account']),
-      _asMap(data['account']),
-      _asMap(nestedData['account']),
-      nestedData,
-      data,
-      root,
-    ];
+  String _mediaKindForMime(String mime) {
+    return mime.toLowerCase().startsWith('video/') ? 'VIDEO' : 'IMAGE';
+  }
 
-    for (final candidate in candidates) {
-      if (candidate.isEmpty) continue;
-      final copy = Map<String, dynamic>.from(candidate);
-      final connected = copy['connected'] == true ||
-          _firstNonEmpty([
-            copy['displayName']?.toString(),
-            copy['username']?.toString(),
-            copy['name']?.toString(),
-            copy['email']?.toString(),
-            copy['platformUserId']?.toString(),
-            copy['linkedinMemberId']?.toString(),
-            copy['memberId']?.toString(),
-            copy['id']?.toString(),
-          ]).isNotEmpty;
-      copy['connected'] = connected;
-      return copy;
+  Future<void> _pickMedia() async {
+    if (_submitting || _mediaUploading) return;
+
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final picked = <_AnnouncementEditorMediaAttachment>[];
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) continue;
+      final mime = (file.mimeType ?? '').trim().isNotEmpty ? file.mimeType!.trim() : _inferMime(file.name);
+      picked.add(
+        _AnnouncementEditorMediaAttachment(
+          localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
+          name: file.name,
+          bytes: bytes,
+          mimeType: mime,
+          kind: _mediaKindForMime(mime),
+          uploading: true,
+        ),
+      );
     }
 
-    return <String, dynamic>{};
+    if (picked.isEmpty) return;
+
+    setState(() {
+      _attachments.addAll(picked);
+      _mediaUploading = true;
+      _submitError = null;
+    });
+
+    for (final attachment in picked) {
+      await _uploadAttachment(attachment);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _mediaUploading = _attachments.any((item) => item.uploading);
+    });
+  }
+
+  Future<void> _uploadAttachment(_AnnouncementEditorMediaAttachment attachment) async {
+    final dio = ref.read(dioProvider);
+
+    try {
+      final presign = await dio.post('/media/presign', data: {
+        'fileName': attachment.name,
+        'mimeType': attachment.mimeType,
+        'bytes': attachment.bytes.length,
+        'kind': attachment.kind,
+      });
+
+      final root = _asMap(presign.data);
+      final data = _asMap(root['data']).isNotEmpty ? _asMap(root['data']) : root;
+      final media = _asMap(data['media']);
+      final upload = _asMap(data['upload']);
+
+      final mediaId = _firstNonEmpty([
+        media['id']?.toString(),
+        data['id']?.toString(),
+      ]);
+      final uploadUrl = _firstNonEmpty([
+        upload['url']?.toString(),
+        data['uploadUrl']?.toString(),
+      ]);
+
+      if (mediaId.isEmpty || uploadUrl.isEmpty) {
+        throw Exception('Media upload could not be initialized.');
+      }
+
+      final uploadHeaders = <String, String>{};
+      final rawHeaders = _asMap(upload['headers']);
+      rawHeaders.forEach((key, value) {
+        if (value == null) return;
+        uploadHeaders[key.toString()] = value.toString();
+      });
+      if (!uploadHeaders.containsKey('Content-Type')) {
+        uploadHeaders['Content-Type'] = attachment.mimeType;
+      }
+
+      final uploadDio = Dio(
+        BaseOptions(
+          responseType: ResponseType.plain,
+          followRedirects: true,
+        ),
+      );
+
+      await uploadDio.put(
+        uploadUrl,
+        data: attachment.bytes,
+        options: Options(
+          headers: uploadHeaders,
+          contentType: uploadHeaders['Content-Type'],
+          responseType: ResponseType.plain,
+          followRedirects: true,
+          validateStatus: (code) => code != null && code >= 200 && code < 300,
+        ),
+      );
+
+      await dio.post('/media/$mediaId/confirm');
+      await dio.post('/media/$mediaId/ready');
+
+      final patched = await dio.patch('/media/$mediaId', data: {
+        'caption': null,
+      });
+      final patchRoot = _asMap(patched.data);
+      final patchData = _asMap(patchRoot['data']).isNotEmpty ? _asMap(patchRoot['data']) : patchRoot;
+
+      if (!mounted) return;
+      setState(() {
+        attachment.mediaId = mediaId;
+        attachment.url = _firstNonEmpty([
+          patchData['displayUrl']?.toString(),
+          patchData['url']?.toString(),
+        ]);
+        attachment.thumbUrl = _firstNonEmpty([
+          patchData['thumbnailUrl']?.toString(),
+          patchData['thumbUrl']?.toString(),
+        ]);
+        attachment.uploading = false;
+        attachment.error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        attachment.error = e.toString();
+      });
+    }
+  }
+
+  void _removeAttachment(_AnnouncementEditorMediaAttachment attachment) {
+    setState(() {
+      _attachments.removeWhere((item) => item.localId == attachment.localId);
+      _mediaUploading = _attachments.any((item) => item.uploading);
+    });
+  }
+
+  String _canonicalAnnouncementUrl(String slug) {
+    final cleanSlug = slug.trim();
+    if (cleanSlug.isEmpty) return '';
+    return '${Uri.base.origin}/announcements/$cleanSlug';
+  }
+
+  String _buildLinkedInAnnouncementCommentary() {
+    return _firstNonEmpty([
+      _trimmedOrEmpty(_summaryController.text),
+      _trimmedOrEmpty(_bodyController.text),
+      _trimmedOrEmpty(_titleController.text),
+    ]);
+  }
+
+  String _buildTikTokAnnouncementCaption() {
+    final base = _firstNonEmpty([
+      _trimmedOrEmpty(_titleController.text),
+      _trimmedOrEmpty(_summaryController.text),
+    ]);
+    if (base.length <= 150) return base;
+    return '${base.substring(0, 147).trim()}...';
+  }
+
+  Future<void> _publishAnnouncementToLinkedIn({
+    required String announcementId,
+    required String slug,
+  }) async {
+    final dio = ref.read(dioProvider);
+    final payload = {
+      'announcementId': announcementId,
+      'commentary': _buildLinkedInAnnouncementCommentary(),
+      'canonicalUrl': _canonicalAnnouncementUrl(slug),
+    };
+
+    final attempts = <String>[
+      '/v1/integrations/linkedin/publish/announcement',
+      '/integrations/linkedin/publish/announcement',
+    ];
+
+    DioException? lastDioError;
+    Object? lastError;
+
+    for (final path in attempts) {
+      try {
+        await dio.post(path, data: payload);
+        return;
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    if (lastError != null) throw Exception(lastError.toString());
+    throw Exception('LinkedIn announcement endpoint was not available.');
+  }
+
+  Future<void> _publishAnnouncementToTikTok({
+    required String announcementId,
+    required Announcement announcement,
+  }) async {
+    final dio = ref.read(dioProvider);
+    final video = announcement.media.cast<Map<String, dynamic>>().firstWhere(
+      (item) => (item['type'] ?? '').toString().toUpperCase().contains('VIDEO'),
+      orElse: () => <String, dynamic>{},
+    );
+
+    final mediaUrl = _firstNonEmpty([
+      video['url']?.toString(),
+      video['displayUrl']?.toString(),
+    ]);
+
+    if (mediaUrl.isEmpty) {
+      throw Exception('TikTok announcement publishing requires one uploaded video.');
+    }
+
+    final payload = {
+      'announcementId': announcementId,
+      'mediaUrl': mediaUrl,
+      'caption': _buildTikTokAnnouncementCaption(),
+      'canonicalUrl': _canonicalAnnouncementUrl(announcement.slug),
+    };
+
+    final attempts = <String>[
+      '/v1/integrations/tiktok/publish/video/announcement',
+      '/integrations/tiktok/publish/video/announcement',
+    ];
+
+    DioException? lastDioError;
+    Object? lastError;
+
+    for (final path in attempts) {
+      try {
+        await dio.post(path, data: payload);
+        return;
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) rethrow;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    if (lastError != null) throw Exception(lastError.toString());
+    throw Exception('TikTok announcement endpoint was not available.');
+  }
+
+  void _leaveEditorAfterSuccess(String slug) {
+    Future.microtask(() {
+      if (!mounted) return;
+      final cleanSlug = slug.trim();
+      if (cleanSlug.isNotEmpty) {
+        context.go('/announcements/$cleanSlug');
+        return;
+      }
+      context.go('/announcements');
+    });
+  }
+
+  Future<void> _cancelEditor() async {
+    if (_submitting) return;
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/announcements');
   }
 
   String _preferredTargetLanguage() {
@@ -469,27 +732,74 @@ class _AnnouncementEditorScreenState
         throw Exception('Institution announcement publishing is not ready yet.');
       }
 
+      if (_publishToTikTok) {
+        final hasVideo = _attachments.any((item) => item.isReady && item.isVideo);
+        if (!hasVideo) {
+          throw Exception('TikTok announcement publishing requires one uploaded video.');
+        }
+      }
+
       final repo = ref.read(announcementsRepoProvider);
+      final mediaIds = _attachments
+          .map((item) => (item.mediaId ?? '').trim())
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
+
       final draft = await repo.createDraft(
         title: _titleController.text.trim(),
         summary: _summaryController.text.trim(),
         excerpt: _excerptFromDraft(),
         bodyMarkdown: _bodyController.text.trim(),
+        mediaIds: mediaIds,
       );
-
-      if (_pinNotice) {
-        await repo.pin(draft.id);
-      }
 
       if (_publishToAura) {
         await repo.publish(draft.id);
       }
 
+      if (_pinNotice) {
+        await repo.pin(draft.id);
+      }
+
+      final published = await repo.getBySlug(draft.slug) ?? draft;
+
+      final completed = <String>['Aura'];
+      final failed = <String>[];
+
+      if (_publishToLinkedIn) {
+        try {
+          await _publishAnnouncementToLinkedIn(
+            announcementId: published.id,
+            slug: published.slug,
+          );
+          completed.add('LinkedIn');
+        } catch (e) {
+          failed.add('LinkedIn ($e)');
+        }
+      }
+
+      if (_publishToTikTok) {
+        try {
+          await _publishAnnouncementToTikTok(
+            announcementId: published.id,
+            announcement: published,
+          );
+          completed.add('TikTok');
+        } catch (e) {
+          failed.add('TikTok ($e)');
+        }
+      }
+
       if (!mounted) return;
+
+      final message = failed.isEmpty
+          ? 'Announcement published to ${completed.join(', ')}.'
+          : 'Announcement published to ${completed.join(', ')}. ${failed.join(', ')} could not be queued.';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Announcement published.')),
+        SnackBar(content: Text(message)),
       );
-      _leaveEditorAfterSuccess(draft.slug);
+      _leaveEditorAfterSuccess(published.slug);
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -505,56 +815,6 @@ class _AnnouncementEditorScreenState
         setState(() => _submitting = false);
       }
     }
-  }
-
-  void _leaveEditorAfterSuccess(String slug) {
-    Future.microtask(() {
-      if (!mounted) return;
-      final cleanSlug = slug.trim();
-      if (cleanSlug.isNotEmpty) {
-        context.go('/announcements/$cleanSlug');
-        return;
-      }
-      context.go('/announcements');
-    });
-  }
-
-  Future<void> _cancelEditor() async {
-    if (_submitting) return;
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      context.pop();
-      return;
-    }
-    context.go('/announcements');
-  }
-
-  Future<Response<dynamic>> _getFirstSuccessful(
-    Dio dio,
-    List<String> paths, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    DioException? lastDioError;
-
-    for (final path in paths) {
-      try {
-        return await dio.get(path, queryParameters: queryParameters);
-      } on DioException catch (e) {
-        lastDioError = e;
-        if (e.response?.statusCode != 404) {
-          rethrow;
-        }
-      }
-    }
-
-    if (lastDioError != null) {
-      throw lastDioError;
-    }
-
-    throw DioException(
-      requestOptions: RequestOptions(path: paths.isEmpty ? '' : paths.first),
-      error: 'No endpoint available.',
-    );
   }
 
   Future<void> _loadExternalConnections() async {
@@ -648,6 +908,66 @@ class _AnnouncementEditorScreenState
         setState(() => _linkedinLoading = false);
       }
     }
+  }
+
+  Future<Response<dynamic>> _getFirstSuccessful(
+    Dio dio,
+    List<String> paths, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    DioException? lastDioError;
+
+    for (final path in paths) {
+      try {
+        return await dio.get(path, queryParameters: queryParameters);
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (e.response?.statusCode != 404) {
+          rethrow;
+        }
+      }
+    }
+
+    if (lastDioError != null) throw lastDioError;
+    throw DioException(
+      requestOptions: RequestOptions(path: paths.isEmpty ? '' : paths.first),
+      error: 'No endpoint available.',
+    );
+  }
+
+  Map<String, dynamic> _unwrapConnectedAccount(dynamic raw) {
+    final root = _asMap(raw);
+    final data = _asMap(root['data']);
+    final nestedData = _asMap(data['data']);
+
+    final candidates = <Map<String, dynamic>>[
+      _asMap(root['account']),
+      _asMap(data['account']),
+      _asMap(nestedData['account']),
+      nestedData,
+      data,
+      root,
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate.isEmpty) continue;
+      final copy = Map<String, dynamic>.from(candidate);
+      final connected = copy['connected'] == true ||
+          _firstNonEmpty([
+            copy['displayName']?.toString(),
+            copy['username']?.toString(),
+            copy['name']?.toString(),
+            copy['email']?.toString(),
+            copy['platformUserId']?.toString(),
+            copy['linkedinMemberId']?.toString(),
+            copy['memberId']?.toString(),
+            copy['id']?.toString(),
+          ]).isNotEmpty;
+      copy['connected'] = connected;
+      return copy;
+    }
+
+    return <String, dynamic>{};
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -1044,6 +1364,84 @@ class _AnnouncementEditorScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text('Media', style: _sectionTitleStyle),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: (_submitting || _mediaUploading) ? null : _pickMedia,
+                      icon: const Icon(Icons.attach_file),
+                      label: Text(_mediaUploading ? 'Uploading...' : 'Add image or video'),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Attach media to the announcement. TikTok announcement publishing requires one uploaded video.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B6358),
+                      ),
+                    ),
+                    if (_attachments.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ..._attachments.map(
+                        (attachment) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFCF7),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE6E0D8)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                attachment.isVideo ? Icons.videocam_outlined : Icons.image_outlined,
+                                size: 18,
+                                color: const Color(0xFF5E584F),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      attachment.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      attachment.uploading
+                                          ? 'Uploading...'
+                                          : ((attachment.error ?? '').trim().isNotEmpty
+                                              ? attachment.error!
+                                              : 'Ready'),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF6B6358),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _submitting ? null : () => _removeAttachment(attachment),
+                                icon: const Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            AuraCard(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text('Distribution', style: _sectionTitleStyle),
                     const SizedBox(height: 12),
                     AnnouncementDistribution(
@@ -1150,6 +1548,35 @@ class _AnnouncementEditorScreenState
       ),
     );
   }
+}
+
+class _AnnouncementEditorMediaAttachment {
+  _AnnouncementEditorMediaAttachment({
+    required this.localId,
+    required this.name,
+    required this.bytes,
+    required this.mimeType,
+    required this.kind,
+    this.mediaId,
+    this.url,
+    this.thumbUrl,
+    this.uploading = false,
+    this.error,
+  });
+
+  final String localId;
+  final String name;
+  final Uint8List bytes;
+  final String mimeType;
+  final String kind;
+  String? mediaId;
+  String? url;
+  String? thumbUrl;
+  bool uploading;
+  String? error;
+
+  bool get isVideo => kind == 'VIDEO';
+  bool get isReady => (mediaId ?? '').trim().isNotEmpty && !uploading;
 }
 
 class _AnnouncementTranslationPreview {
