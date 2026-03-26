@@ -111,8 +111,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         else
           Future.value(null),
         _safeGet(dio, '/invites'),
-        _safeGet(dio, '/invites/sent'),
-        _safeGet(dio, '/invites/approvals'),
         _safeGet(dio, '/communications/preferences/me'),
       ]);
 
@@ -124,9 +122,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final linkedinRes = futures[5];
       final linkedinAltRes = futures[6];
       final inviteInboxRes = futures[7];
-      final inviteSentRes = futures[8];
-      final inviteApprovalsRes = futures[9];
-      final communicationRes = futures[10];
+      final communicationRes = futures[8];
 
       if (!mounted) return;
 
@@ -137,8 +133,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _incomingRequestsCount = _countItemsFromPayload(inboxRes?.data);
         _outgoingRequestsCount = _countItemsFromPayload(outboxRes?.data);
         _incomingInvitesCount = _countItemsFromPayload(inviteInboxRes?.data);
-        _sentInvitesCount = _countItemsFromPayload(inviteSentRes?.data);
-        _approvalInvitesCount = _countItemsFromPayload(inviteApprovalsRes?.data);
+        _sentInvitesCount = 0;
+        _approvalInvitesCount = 0;
         _tiktokAccount = _unwrapTikTokAccount(tiktokRes?.data);
         _linkedinAccount = _unwrapLinkedInAccount(
           linkedinRes?.data ?? linkedinAltRes?.data,
