@@ -9,7 +9,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
-import 'invitations_screen.dart' show _destinationRoute;
 
 final _inviteInspectProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, token) async {
   return ref.watch(invitationsClientProvider).inspectToken(token);
@@ -226,8 +225,8 @@ class _LoadingBlock extends StatelessWidget {
     return Row(
       children: [
         const SizedBox(
-          width: 18,
           height: 18,
+          width: 18,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
         const SizedBox(width: AuraSpace.s10),
@@ -244,14 +243,19 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = label.trim().isEmpty ? '—' : label.trim();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(text, style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -268,14 +272,59 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
   for (final path in paths) {
     dynamic current = map;
     for (final key in path) {
-      if (current is! Map) {
+      if (current is Map && current[key] != null) {
+        current = current[key];
+      } else {
         current = null;
         break;
       }
-      current = current[key];
     }
     final text = (current ?? '').toString().trim();
     if (text.isNotEmpty) return text;
   }
   return '';
+}
+
+String _destinationRoute(Map<String, dynamic> invite) {
+  final destinationType = _pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
+  final spaceId = _pickNested(invite, const [
+    ['space', 'id'],
+    ['destination', 'spaceId'],
+  ]).isNotEmpty
+      ? _pickNested(invite, const [
+          ['space', 'id'],
+          ['destination', 'spaceId'],
+        ])
+      : _pickString(invite, const ['spaceId', 'space_id']);
+
+  final threadId = _pickNested(invite, const [
+    ['thread', 'id'],
+    ['destination', 'threadId'],
+  ]).isNotEmpty
+      ? _pickNested(invite, const [
+          ['thread', 'id'],
+          ['destination', 'threadId'],
+        ])
+      : _pickString(invite, const ['threadId', 'thread_id', 'destinationId', 'destination_id']);
+
+  switch (destinationType) {
+    case 'JOIN_THREAD':
+    case 'START_1_TO_1':
+      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
+        return '/me/correspondence/$spaceId/thread/$threadId';
+      }
+      if (threadId.isNotEmpty) return '/me/invitations';
+      return '/me/invitations';
+    case 'JOIN_SPACE':
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+      return '/me/correspondence';
+    case 'JOIN_AURA':
+      return '/home';
+    default:
+      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
+        return '/me/correspondence/$spaceId/thread/$threadId';
+      }
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+      return '/home';
+  }
 }
