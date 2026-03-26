@@ -54,6 +54,10 @@ import 'features/correspondence/presentation/thread_screen.dart';
 import 'features/correspondence/presentation/invite_member_screen.dart';
 import 'features/create/presentation/new_conversation_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
+import 'features/invitations/presentation/invite_hub_screen.dart';
+import 'features/invitations/presentation/invitations_screen.dart';
+import 'features/invitations/presentation/invite_accept_screen.dart';
+import 'features/invitations/presentation/invite_create_screen.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -167,7 +171,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path.startsWith('/posts/') ||
         path.startsWith('/u/') ||
         path.startsWith('/author/') ||
-        path.startsWith('/support/')) {
+        path.startsWith('/support/') ||
+        path.startsWith('/invite/accept')) {
       return true;
     }
 
@@ -190,6 +195,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/me/edit' ||
         path == '/security' ||
         path == '/me/follow-requests' ||
+        path == '/me/invitations' ||
+        path == '/invite' ||
+        path == '/invite/create' ||
         path == kCorrespondenceHubRoute ||
         path == kCreateConversationRoute ||
         path == kCreateSpaceRoute ||
@@ -559,6 +567,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/me/follow-requests',
             builder: (_, __) => const FollowRequestsScreen(),
+          ),
+          GoRoute(
+            path: '/me/invitations',
+            builder: (_, __) => const InvitationsScreen(),
+          ),
+          GoRoute(
+            path: '/invite',
+            builder: (context, state) => InviteHubScreen(
+              spaceId: state.uri.queryParameters['spaceId'],
+              threadId: state.uri.queryParameters['threadId'],
+            ),
+          ),
+          GoRoute(
+            path: '/invite/create',
+            builder: (context, state) => InviteCreateScreen(
+              destinationType: (state.uri.queryParameters['destinationType'] ?? 'JOIN_AURA').trim().toUpperCase(),
+              spaceId: state.uri.queryParameters['spaceId'],
+              threadId: state.uri.queryParameters['threadId'],
+            ),
+          ),
+          GoRoute(
+            path: '/invite/accept',
+            builder: (context, state) => InviteAcceptScreen(
+              token: state.uri.queryParameters['token'] ?? '',
+            ),
           ),
           GoRoute(
             path: kAdminWorkspaceRoute,

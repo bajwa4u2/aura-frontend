@@ -177,6 +177,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         if (spaceId.isEmpty) return;
                         context.push('/me/correspondence/$spaceId');
                       },
+                      onInvite: () {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        final threadId = _pickString(thread, const ['id', 'threadId']);
+                        context.push(
+                          '/invite?spaceId=${Uri.encodeComponent(spaceId)}&threadId=${Uri.encodeComponent(threadId)}',
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
@@ -292,10 +299,12 @@ class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
     required this.onOpenSpace,
+    required this.onInvite,
   });
 
   final Map<String, dynamic> thread;
   final VoidCallback onOpenSpace;
+  final VoidCallback onInvite;
 
   @override
   Widget build(BuildContext context) {
@@ -335,13 +344,22 @@ class _ThreadHeaderCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s8),
             Text(description, style: AuraText.body),
           ],
-          if (spaceId.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            OutlinedButton(
-              onPressed: onOpenSpace,
-              child: const Text('Open space'),
-            ),
-          ],
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              if (spaceId.isNotEmpty)
+                OutlinedButton(
+                  onPressed: onOpenSpace,
+                  child: const Text('Open space'),
+                ),
+              OutlinedButton(
+                onPressed: onInvite,
+                child: const Text('Invite into thread'),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -441,6 +441,7 @@ class _MemberHeader extends StatelessWidget {
                   isDesktop: isDesktop,
                   searchPath: '/search',
                   activityPath: '/activity',
+                  invitePath: '/invite',
                 ),
               ],
             ),
@@ -510,6 +511,7 @@ class _InstitutionHeader extends StatelessWidget {
                   isDesktop: isDesktop,
                   searchPath: '/search',
                   activityPath: '/institution/correspondence',
+                  invitePath: '/invite',
                 ),
               ],
             ),
@@ -555,12 +557,14 @@ class _HeaderTools extends ConsumerStatefulWidget {
     required this.isDesktop,
     required this.searchPath,
     required this.activityPath,
+    required this.invitePath,
   });
 
   final bool isTablet;
   final bool isDesktop;
   final String searchPath;
   final String activityPath;
+  final String invitePath;
 
   @override
   ConsumerState<_HeaderTools> createState() => _HeaderToolsState();
@@ -670,6 +674,13 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             },
           ),
           const SizedBox(width: AuraSpace.s8),
+          _HeaderPillButton(
+            tooltip: 'Invite',
+            icon: Icons.outbound_outlined,
+            label: 'Invite',
+            onTap: () => context.push(widget.invitePath),
+          ),
+          const SizedBox(width: AuraSpace.s8),
           _HeaderAccountButton(
             compact: false,
             busy: _busyLogout,
@@ -697,6 +708,12 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             if (!mounted) return;
             _loadUnreadCount();
           },
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        _HeaderIconButton(
+          tooltip: 'Invite',
+          icon: Icons.outbound_outlined,
+          onTap: () => context.push(widget.invitePath),
         ),
         const SizedBox(width: AuraSpace.s8),
         _HeaderAccountButton(

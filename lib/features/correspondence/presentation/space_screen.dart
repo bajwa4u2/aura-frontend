@@ -199,7 +199,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   }
 
   Future<void> _openInviteScreen(BuildContext context) async {
-    await context.push('/me/correspondence/${widget.spaceId}/invite');
+    await context.push('/invite?spaceId=${Uri.encodeComponent(widget.spaceId)}');
   }
 }
 
@@ -374,13 +374,13 @@ class _InvitesTab extends StatelessWidget {
                     Text('No invites yet', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
-                      'Invite someone into this space.',
+                      'Create or review invitations connected to this space.',
                       style: AuraText.body,
                     ),
                     const SizedBox(height: AuraSpace.s12),
                     OutlinedButton(
                       onPressed: onInviteMember,
-                      child: const Text('Invite member'),
+                      child: const Text('Open invite flow'),
                     ),
                   ],
                 ),
@@ -587,7 +587,7 @@ class _SpaceHeaderCard extends StatelessWidget {
               ),
               OutlinedButton(
                 onPressed: onInviteMember,
-                child: const Text('Invite member'),
+                child: const Text('Open invite flow'),
               ),
   
             ],

@@ -37,6 +37,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   int _followingCount = 0;
   int _incomingRequestsCount = 0;
   int _outgoingRequestsCount = 0;
+  int _incomingInvitesCount = 0;
+  int _sentInvitesCount = 0;
+  int _approvalInvitesCount = 0;
 
   Map<String, dynamic>? _tiktokAccount;
   bool _tiktokLoading = false;
@@ -107,7 +110,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           )
         else
           Future.value(null),
-              _safeGet(dio, '/communications/preferences/me'),
+        _safeGet(dio, '/invites'),
+        _safeGet(dio, '/invites/sent'),
+        _safeGet(dio, '/invites/approvals'),
+        _safeGet(dio, '/communications/preferences/me'),
       ]);
 
       final followersRes = futures[0];
@@ -117,7 +123,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final tiktokRes = futures[4];
       final linkedinRes = futures[5];
       final linkedinAltRes = futures[6];
-      final communicationRes = futures[7];
+      final inviteInboxRes = futures[7];
+      final inviteSentRes = futures[8];
+      final inviteApprovalsRes = futures[9];
+      final communicationRes = futures[10];
 
       if (!mounted) return;
 
@@ -127,6 +136,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _followingCount = _countItemsFromPayload(followingRes?.data);
         _incomingRequestsCount = _countItemsFromPayload(inboxRes?.data);
         _outgoingRequestsCount = _countItemsFromPayload(outboxRes?.data);
+        _incomingInvitesCount = _countItemsFromPayload(inviteInboxRes?.data);
+        _sentInvitesCount = _countItemsFromPayload(inviteSentRes?.data);
+        _approvalInvitesCount = _countItemsFromPayload(inviteApprovalsRes?.data);
         _tiktokAccount = _unwrapTikTokAccount(tiktokRes?.data);
         _linkedinAccount = _unwrapLinkedInAccount(
           linkedinRes?.data ?? linkedinAltRes?.data,
@@ -733,6 +745,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               : 'Requests $_incomingRequestsCount',
           onTap: () => context.push('/me/follow-requests'),
         ),
+      if (_incomingInvitesCount > 0 || _sentInvitesCount > 0 || _approvalInvitesCount > 0)
+        _metaLinkChip(
+          label: 'Invitations $_incomingInvitesCount / $_sentInvitesCount',
+          onTap: () => context.push('/me/invitations'),
+        ),
       if (isAppAdmin) _metaChip(label: 'Platform admin'),
       if (institutionLabel.isNotEmpty) _metaChip(label: institutionLabel),
     ];
@@ -803,6 +820,26 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         subtitle: '@$handle',
                         onTap: () => context.push('/u/$handle'),
                       ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.lg),
+                _section(
+                  title: 'Invitations',
+                  children: [
+                    _item(
+                      label: 'Open invitation center',
+                      icon: Icons.outbound_outlined,
+                      subtitle: (_incomingInvitesCount > 0 || _sentInvitesCount > 0 || _approvalInvitesCount > 0)
+                          ? 'Incoming $_incomingInvitesCount · Sent $_sentInvitesCount · Approval $_approvalInvitesCount'
+                          : 'Create, review, and manage invitation flow',
+                      onTap: () => context.push('/me/invitations'),
+                    ),
+                    _item(
+                      label: 'New invite',
+                      icon: Icons.add_link_outlined,
+                      subtitle: 'Create a new invitation into Aura, a space, a thread, or a direct correspondence path',
+                      onTap: () => context.push('/invite'),
+                    ),
                   ],
                 ),
                 if (_publicationsFromUser(user).isNotEmpty) ...[

@@ -54,6 +54,20 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             icon: Icons.groups_outlined,
             route: '/me/correspondence/create/space',
           ),
+          SizedBox(height: AuraSpace.s12),
+          _ActionBlock(
+            title: 'Invite',
+            buttonLabel: 'Open invite flow',
+            icon: Icons.outbound_outlined,
+            route: '/invite',
+          ),
+          SizedBox(height: AuraSpace.s12),
+          _ActionBlock(
+            title: 'Invitations',
+            buttonLabel: 'Open invitation center',
+            icon: Icons.inbox_outlined,
+            route: '/me/invitations',
+          ),
         ],
       ),
     );
