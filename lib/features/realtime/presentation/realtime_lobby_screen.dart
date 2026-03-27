@@ -19,7 +19,9 @@ class RealtimeLobbyScreen extends ConsumerStatefulWidget {
 class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
   final _surfaceIdController = TextEditingController(text: 'proof-room');
   final _existingSessionController = TextEditingController();
-  String _surfaceType = 'space';
+
+  String _surfaceType = 'SPACE';
+  String _kind = 'MIXED';
 
   @override
   void dispose() {
@@ -78,13 +80,39 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'space', child: Text('Space')),
-                      DropdownMenuItem(value: 'dm', child: Text('Direct message')),
-                      DropdownMenuItem(value: 'institution', child: Text('Institution')),
+                      DropdownMenuItem(value: 'SPACE', child: Text('Space')),
+                      DropdownMenuItem(value: 'DM', child: Text('Direct message')),
+                      DropdownMenuItem(
+                        value: 'INSTITUTION_ROOM',
+                        child: Text('Institution'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'EVENT_ROOM',
+                        child: Text('Event'),
+                      ),
+                      DropdownMenuItem(value: 'THREAD', child: Text('Thread')),
                     ],
                     onChanged: (value) {
                       if (value == null) return;
                       setState(() => _surfaceType = value);
+                    },
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _kind,
+                    decoration: const InputDecoration(
+                      labelText: 'Kind',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'MIXED', child: Text('Mixed')),
+                      DropdownMenuItem(value: 'AUDIO', child: Text('Audio')),
+                      DropdownMenuItem(value: 'VIDEO', child: Text('Video')),
+                      DropdownMenuItem(value: 'SCREEN', child: Text('Screen')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _kind = value);
                     },
                   ),
                   const SizedBox(height: AuraSpace.s12),
@@ -105,6 +133,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                             final id = await controller.createSession(
                               surfaceType: _surfaceType,
                               surfaceId: _surfaceIdController.text.trim(),
+                              kind: _kind,
                             );
                             if (!context.mounted) return;
                             router.go('/realtime/$id?action=join');
