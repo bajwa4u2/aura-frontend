@@ -445,7 +445,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'join:approved':
         state = state.copyWith(
-          joinState: RealtimeJoinState.approved,
+          joinState: RealtimeJoinState.joined,
           infoMessage: 'Your entry request was approved.',
           lastSocketEvent: event.name,
         );

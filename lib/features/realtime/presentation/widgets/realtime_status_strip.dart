@@ -36,8 +36,6 @@ class RealtimeStatusStrip extends StatelessWidget {
         return 'Entering';
       case 'requested':
         return 'Request pending';
-      case 'approved':
-        return 'Approved';
       case 'rejected':
         return 'Declined';
       case 'removed':
@@ -60,11 +58,11 @@ class RealtimeStatusStrip extends StatelessWidget {
       if (state.policy?.waitingRoomEnabled == true) const _StatusBit('Entry', 'Requests on'),
       if (state.recordings.isNotEmpty)
         _StatusBit('Recording', state.recordings.first.status.name),
-      else if (state.policy != null && state.policy!.canRecord == false)
+      if (state.recordings.isEmpty && state.policy?.canRecord == false)
         const _StatusBit('Recording', 'Unavailable'),
       if (state.transcripts.isNotEmpty)
         _StatusBit('Live notes', state.transcripts.first.status.name),
-      else if (state.policy != null && state.policy!.canTranscribe == false)
+      if (state.transcripts.isEmpty && state.policy?.canTranscribe == false)
         const _StatusBit('Live notes', 'Unavailable'),
     ];
 
