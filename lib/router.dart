@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
+import 'app/route_normalizer.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
@@ -236,7 +237,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
       final redirectDest = _normalizeRedirectDest(
-        state.uri.queryParameters['redirect'],
+        normalizeAppLocation(
+          state.uri.queryParameters['redirect'],
+          fallback: defaultRedirect,
+        ),
         fallback: defaultRedirect,
       );
 

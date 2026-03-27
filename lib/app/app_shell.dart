@@ -611,12 +611,6 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
       // Local logout should still complete even if server logout fails.
     }
 
-    if (mounted) {
-      context.go('/public');
-    }
-
-    await Future<void>.delayed(Duration.zero);
-
     try {
       await container.read(tokenStoreProvider).clear();
       container.invalidate(emailVerifiedProvider);
@@ -624,6 +618,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
       container.invalidate(isAuthedProvider);
     } finally {
       if (mounted) {
+        context.go('/public');
         setState(() => _busyLogout = false);
       }
     }
