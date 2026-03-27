@@ -61,6 +61,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Future<String> createSession({
     required String surfaceType,
     required String surfaceId,
+    required String kind,
     Map<String, dynamic>? metadata,
   }) async {
     state = state.copyWith(
@@ -73,6 +74,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       final bundle = await _repository.createSession(
         surfaceType: surfaceType,
         surfaceId: surfaceId,
+        kind: kind,
         metadata: metadata,
       );
       _applyBundle(bundle);

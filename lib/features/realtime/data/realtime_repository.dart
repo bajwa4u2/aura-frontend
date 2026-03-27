@@ -41,6 +41,7 @@ class RealtimeRepository {
   Future<RealtimeSessionSnapshot> createSession({
     required String surfaceType,
     required String surfaceId,
+    required String kind,
     Map<String, dynamic>? metadata,
   }) async {
     final res = await _dio.post(
@@ -48,6 +49,7 @@ class RealtimeRepository {
       data: <String, dynamic>{
         'surfaceType': surfaceType,
         'surfaceId': surfaceId,
+        'kind': kind,
         if (metadata != null && metadata.isNotEmpty) 'metadata': metadata,
       },
     );
