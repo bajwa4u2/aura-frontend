@@ -11,14 +11,34 @@ class RealtimeParticipantList extends StatelessWidget {
     required this.participants,
     required this.canModerate,
     required this.onRemove,
+    this.currentUserId,
+    this.hostUserId,
   });
 
   final List<RealtimeParticipant> participants;
   final bool canModerate;
   final ValueChanged<String> onRemove;
+  final String? currentUserId;
+  final String? hostUserId;
+
+  String _displayName(RealtimeParticipant participant, int index) {
+    final me = (currentUserId ?? '').trim();
+    if (me.isNotEmpty && participant.userId == me) return 'You';
+    if (participant.isHost || ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
+      return 'Room host';
+    }
+    if (participant.isModerator) {
+      return 'Moderator ${_ordinal(index)}';
+    }
+    return 'Member ${_ordinal(index)}';
+  }
+
+  String _ordinal(int index) => '${index + 1}';
 
   String _roleLabel(RealtimeParticipant participant) {
-    if (participant.isHost) return 'Room host';
+    if (participant.isHost || ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
+      return 'Room host';
+    }
     if (participant.isModerator) return 'Moderator';
     switch (participant.role.name) {
       case 'guest':
@@ -37,21 +57,32 @@ class RealtimeParticipantList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Members', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s12),
-          if (participants.isEmpty)
-            Text('No one is in the room yet.', style: AuraText.muted)
-          else
-            ...participants.map(
-              (participant) => Padding(
-                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            participants.isEmpty
+                ? 'No one is in the room yet.'
+                : participants.length == 1
+                    ? '1 person is here.'
+                    : '${participants.length} people are here.',
+            style: AuraText.muted,
+          ),
+          if (participants.isNotEmpty) const SizedBox(height: AuraSpace.s12),
+          if (participants.isNotEmpty)
+            ...List.generate(participants.length, (index) {
+              final participant = participants[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == participants.length - 1 ? 0 : AuraSpace.s10,
+                ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            participant.userId,
+                            _displayName(participant, index),
                             style: AuraText.body.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -70,15 +101,17 @@ class RealtimeParticipantList extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (canModerate && participant.userId.isNotEmpty)
+                    if (canModerate &&
+                        participant.userId.isNotEmpty &&
+                        participant.userId != (currentUserId ?? '').trim())
                       OutlinedButton(
                         onPressed: () => onRemove(participant.userId),
                         child: const Text('Remove'),
                       ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
         ],
       ),
     );

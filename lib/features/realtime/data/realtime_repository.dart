@@ -139,6 +139,21 @@ class RealtimeRepository {
     );
   }
 
+
+  Future<void> createInvite(
+    String sessionId, {
+    required String invitedUserId,
+    String? note,
+  }) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/invites',
+      data: <String, dynamic>{
+        'invitedUserId': invitedUserId,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+    );
+  }
+
   Future<void> removeParticipant(String sessionId, String targetUserId) async {
     await _dio.post('/realtime/sessions/$sessionId/remove/$targetUserId');
   }

@@ -17,6 +17,8 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
   final ValueChanged<String> onApprove;
   final ValueChanged<String> onReject;
 
+  String _requestLabel(int index) => 'Member ${index + 1}';
+
   @override
   Widget build(BuildContext context) {
     return AuraCard(
@@ -24,18 +26,26 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Entry requests', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s12),
-          if (requests.isEmpty)
-            Text('No one is waiting right now.', style: AuraText.muted)
-          else
-            ...requests.map(
-              (request) => Padding(
-                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            requests.isEmpty
+                ? 'No one is waiting right now.'
+                : 'Review who can enter next.',
+            style: AuraText.muted,
+          ),
+          if (requests.isNotEmpty) const SizedBox(height: AuraSpace.s12),
+          if (requests.isNotEmpty)
+            ...List.generate(requests.length, (index) {
+              final request = requests[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == requests.length - 1 ? 0 : AuraSpace.s10,
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
-                        request.userId,
+                        _requestLabel(index),
                         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -50,8 +60,8 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
         ],
       ),
     );

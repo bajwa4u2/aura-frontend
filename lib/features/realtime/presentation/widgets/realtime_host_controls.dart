@@ -29,10 +29,10 @@ class RealtimeHostControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final waitingRoom = policy?.waitingRoomEnabled ?? false;
-    final locked = session?.isLocked ?? policy?.isLocked ?? false;
-    final canRecord = policy?.canRecord ?? false;
-    final canTranscribe = policy?.canTranscribe ?? false;
+    final waitingRoom = policy?.waitingRoomEnabled == true;
+    final locked = session?.isLocked == true || policy?.isLocked == true;
+    final canRecord = policy?.canRecord == true;
+    final canTranscribe = policy?.canTranscribe == true;
 
     return AuraCard(
       child: Column(
@@ -41,7 +41,7 @@ class RealtimeHostControls extends StatelessWidget {
           Text('Room controls', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Manage entry, room access, and what this room is allowed to produce.',
+            'Manage access and room behavior.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -49,15 +49,19 @@ class RealtimeHostControls extends StatelessWidget {
             value: waitingRoom,
             contentPadding: EdgeInsets.zero,
             title: const Text('Entry requests'),
-            subtitle: const Text('Review who enters before they join the room.'),
+            subtitle: Text(
+              waitingRoom
+                  ? 'New entries wait for approval before joining.'
+                  : 'Anyone with access can enter directly.',
+            ),
             onChanged: onToggleWaitingRoom,
           ),
           SwitchListTile(
             value: locked,
             contentPadding: EdgeInsets.zero,
-            title: const Text('Close room'),
+            title: Text(locked ? 'Room is closed' : 'Room is open'),
             subtitle: Text(
-              locked ? 'New entries are currently blocked.' : 'Anyone with access can still enter.',
+              locked ? 'New entries are blocked.' : 'Anyone with access can enter.',
             ),
             onChanged: onToggleLock,
           ),
@@ -70,14 +74,20 @@ class RealtimeHostControls extends StatelessWidget {
                 onPressed: onRequestConsent,
                 child: const Text('Request consent'),
               ),
-              OutlinedButton(
-                onPressed: canRecord ? onRequestRecording : null,
-                child: Text(canRecord ? 'Request recording' : 'Recording unavailable'),
-              ),
-              OutlinedButton(
-                onPressed: canTranscribe ? onRequestTranscript : null,
-                child: Text(canTranscribe ? 'Request live notes' : 'Live notes unavailable'),
-              ),
+              if (canRecord)
+                OutlinedButton(
+                  onPressed: onRequestRecording,
+                  child: const Text('Request recording'),
+                )
+              else
+                _PassivePill(label: 'Recording unavailable'),
+              if (canTranscribe)
+                OutlinedButton(
+                  onPressed: onRequestTranscript,
+                  child: const Text('Request live notes'),
+                )
+              else
+                _PassivePill(label: 'Live notes unavailable'),
               OutlinedButton(
                 onPressed: onRefresh,
                 child: const Text('Refresh room'),
@@ -85,6 +95,33 @@ class RealtimeHostControls extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PassivePill extends StatelessWidget {
+  const _PassivePill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          color: AuraText.muted.color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

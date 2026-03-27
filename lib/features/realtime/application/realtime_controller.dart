@@ -319,6 +319,26 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     state = state.copyWith(infoMessage: 'Entry request declined.');
   }
 
+
+  Future<void> inviteMember({
+    required String invitedUserId,
+    String? note,
+  }) async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    await _repository.createInvite(
+      sessionId,
+      invitedUserId: invitedUserId,
+      note: note,
+    );
+
+    state = state.copyWith(
+      infoMessage: 'Invitation sent.',
+      clearErrorMessage: true,
+    );
+  }
+
   Future<void> removeParticipant(String targetUserId) async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
