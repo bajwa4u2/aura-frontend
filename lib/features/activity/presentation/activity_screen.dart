@@ -215,6 +215,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final targetHandle = _stringOf(data['targetHandle']);
     final handle = targetHandle.isNotEmpty ? targetHandle : actorHandle;
 
+    final realtimeType = _firstNonEmpty([
+      _stringOf(data['realtimeType']).toUpperCase(),
+      _stringOf(data['notificationKind']).toUpperCase(),
+    ]);
+
     final deeplink = _firstNonEmpty([
       _stringOf(item['deeplink']),
       _stringOf(data['deeplink']),
@@ -249,6 +254,33 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       _stringOf(data['threadId']),
       _stringOf(item['threadId']),
     ]);
+
+    final realtimeSessionId = _firstNonEmpty([
+      _stringOf(data['sessionId']),
+      _stringOf(item['sessionId']),
+    ]);
+
+    final isRealtimeActivity = realtimeType.startsWith('REALTIME_') ||
+        deeplink.startsWith('/realtime') ||
+        realtimeSessionId.isNotEmpty;
+
+    if (isRealtimeActivity) {
+      final target = deeplink.isNotEmpty
+          ? deeplink
+          : realtimeSessionId.isNotEmpty
+              ? '/realtime/$realtimeSessionId?action=join'
+              : '';
+
+      if (target.isNotEmpty) {
+        context.push(target);
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This live room is no longer available.')),
+      );
+      return;
+    }
 
     if (deeplink.isNotEmpty) {
       context.push(deeplink);
@@ -602,6 +634,9 @@ class _ActivityLeadingIcon extends StatelessWidget {
   final bool unread;
 
   IconData _iconForType() {
+    if (type == 'SYSTEM') {
+      return Icons.videocam_outlined;
+    }
     switch (type) {
       case 'FOLLOW':
       case 'FOLLOW_REQUEST':
@@ -689,6 +724,14 @@ String _buildTitle(Map<String, dynamic> item) {
     _stringOf(actor['handle']),
     'Someone',
   ]);
+  final realtimeType = _firstNonEmpty([
+    _stringOf(data['realtimeType']).toUpperCase(),
+    _stringOf(data['notificationKind']).toUpperCase(),
+  ]);
+
+  if (realtimeType == 'REALTIME_INVITE') {
+    return '$actorName invited you to a live room';
+  }
 
   switch (type) {
     case 'FOLLOW_REQUEST':
@@ -741,6 +784,10 @@ String _buildSubtitle(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
   final post = _mapOf(item['post']);
   final data = _mapOf(item['data']);
+  final realtimeType = _firstNonEmpty([
+    _stringOf(data['realtimeType']).toUpperCase(),
+    _stringOf(data['notificationKind']).toUpperCase(),
+  ]);
 
   final customMessage = _firstNonEmpty([
     _stringOf(data['secondaryText']),
@@ -751,6 +798,14 @@ String _buildSubtitle(Map<String, dynamic> item) {
 
   final postText = _stringOf(post['text']);
   if (postText.isNotEmpty) return _truncate(postText, 120);
+
+  if (realtimeType == 'REALTIME_INVITE') {
+    final roomTitle = _firstNonEmpty([
+      _stringOf(data['roomTitle']),
+      _stringOf(item['title']),
+    ]);
+    return roomTitle.isNotEmpty ? 'Open $roomTitle' : 'Open live room';
+  }
 
   switch (type) {
     case 'FOLLOW_REQUEST':

@@ -233,6 +233,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Future<void> toggleMicrophone() async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
+    if (state.isMediaBusy) return;
+    if (!state.isMediaReady) {
+      state = state.copyWith(
+        infoMessage: 'Your microphone is not ready yet.',
+        clearErrorMessage: true,
+      );
+      return;
+    }
+
     final enabled = !state.microphoneEnabled;
     await _mediaService.setMicrophoneEnabled(enabled);
     await _socketService.emitAck('session:audio.set', <String, dynamic>{
@@ -245,6 +254,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Future<void> toggleCamera() async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
+    if (state.isMediaBusy) return;
+    if (!state.isMediaReady) {
+      state = state.copyWith(
+        infoMessage: 'Your camera is not ready yet.',
+        clearErrorMessage: true,
+      );
+      return;
+    }
+
     final enabled = !state.cameraEnabled;
     await _mediaService.setCameraEnabled(enabled);
     await _socketService.emitAck('session:video.set', <String, dynamic>{
@@ -497,6 +515,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       state = state.copyWith(
         isMediaBusy: false,
         mediaError: error.toString(),
+        infoMessage: 'You are in the room, but browser media is not active yet.',
       );
     }
   }

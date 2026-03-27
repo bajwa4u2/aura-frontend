@@ -419,6 +419,7 @@ class _MemberHeader extends StatelessWidget {
                   searchPath: '/search',
                   activityPath: '/activity',
                   invitePath: '/invite',
+                  liveRoomsPath: '/realtime',
                 ),
               ],
             ),
@@ -535,6 +536,7 @@ class _HeaderTools extends ConsumerStatefulWidget {
     required this.searchPath,
     required this.activityPath,
     required this.invitePath,
+    this.liveRoomsPath,
   });
 
   final bool isTablet;
@@ -542,6 +544,7 @@ class _HeaderTools extends ConsumerStatefulWidget {
   final String searchPath;
   final String activityPath;
   final String invitePath;
+  final String? liveRoomsPath;
 
   @override
   ConsumerState<_HeaderTools> createState() => _HeaderToolsState();
@@ -650,6 +653,15 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
               _loadUnreadCount();
             },
           ),
+          if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
+            const SizedBox(width: AuraSpace.s8),
+            _HeaderPillButton(
+              tooltip: 'Live Rooms',
+              icon: Icons.videocam_outlined,
+              label: 'Live Rooms',
+              onTap: () => context.push(widget.liveRoomsPath!),
+            ),
+          ],
           const SizedBox(width: AuraSpace.s8),
           _HeaderPillButton(
             tooltip: 'Invite',
@@ -686,6 +698,14 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             _loadUnreadCount();
           },
         ),
+        if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
+          const SizedBox(width: AuraSpace.s8),
+          _HeaderIconButton(
+            tooltip: 'Live Rooms',
+            icon: Icons.videocam_outlined,
+            onTap: () => context.push(widget.liveRoomsPath!),
+          ),
+        ],
         const SizedBox(width: AuraSpace.s8),
         _HeaderIconButton(
           tooltip: 'Invite',

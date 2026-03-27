@@ -211,9 +211,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final roomIsClosed = state.session?.isLocked == true || policy?.isLocked == true;
     final roomTitle = _roomTitle(state.session);
     final roomSubtitle = _roomSubtitle(state.session, state.joinState);
-    final memberCountLabel = state.participants.length == 1
-        ? '1 in the room'
-        : '${state.participants.length} in the room';
+    final participantCount = state.participants.length;
+    final memberCountLabel = participantCount == 1
+        ? '1 listed for this room'
+        : '$participantCount listed for this room';
+    final presentCount = state.participants.where((participant) => participant.isPresent).length;
+    final mediaActiveCount = state.participants
+        .where((participant) => participant.audioOn || participant.videoOn || participant.screenOn)
+        .length;
 
     return AuraScaffold(
       body: ListView(
@@ -246,7 +251,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             remoteRenderers: state.remoteRenderers,
             microphoneEnabled: state.microphoneEnabled,
             cameraEnabled: state.cameraEnabled,
+            isMediaReady: state.isMediaReady,
             isMediaBusy: state.isMediaBusy,
+            mediaError: state.mediaError,
             onToggleMicrophone: controller.toggleMicrophone,
             onToggleCamera: controller.toggleCamera,
           ),
@@ -254,7 +261,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           _RoomOverviewCard(
             session: state.session,
             policy: policy,
-            participantCount: state.participants.length,
+            participantCount: participantCount,
+            presentCount: presentCount,
+            mediaActiveCount: mediaActiveCount,
           ),
           const SizedBox(height: AuraSpace.s12),
           RealtimeConsentSheet(
@@ -460,7 +469,9 @@ class _MediaStageCard extends StatelessWidget {
     required this.remoteRenderers,
     required this.microphoneEnabled,
     required this.cameraEnabled,
+    required this.isMediaReady,
     required this.isMediaBusy,
+    required this.mediaError,
     required this.onToggleMicrophone,
     required this.onToggleCamera,
   });
@@ -469,7 +480,9 @@ class _MediaStageCard extends StatelessWidget {
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final bool microphoneEnabled;
   final bool cameraEnabled;
+  final bool isMediaReady;
   final bool isMediaBusy;
+  final String? mediaError;
   final VoidCallback onToggleMicrophone;
   final VoidCallback onToggleCamera;
 
@@ -480,18 +493,41 @@ class _MediaStageCard extends StatelessWidget {
       ...remoteRenderers.entries,
     ];
 
+    final mediaStateLabel = isMediaBusy
+        ? 'Preparing media'
+        : isMediaReady
+            ? 'Media ready'
+            : (mediaError ?? '').trim().isNotEmpty
+                ? 'Media unavailable'
+                : 'Waiting for browser media';
+
+    final mediaHelpText = isMediaBusy
+        ? 'Aura is requesting access to your camera and microphone.'
+        : isMediaReady
+            ? 'Your preview and connected participants appear here.'
+            : (mediaError ?? '').trim().isNotEmpty
+                ? 'You joined the room, but this browser did not start media.'
+                : 'Your browser has not started camera or microphone yet.';
+
+    final controlsEnabled = isMediaReady && !isMediaBusy;
+
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Live media', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
-          Text(
-            renderers.isEmpty
-                ? 'Camera and microphone will appear here when media is active.'
-                : 'Local preview and connected participants appear here.',
-            style: AuraText.muted,
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              _MetaPill(label: mediaStateLabel),
+              if (localRenderer != null) const _MetaPill(label: 'Local preview on'),
+              if (remoteRenderers.isNotEmpty) _MetaPill(label: '${remoteRenderers.length} remote feed${remoteRenderers.length == 1 ? '' : 's'}'),
+            ],
           ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(mediaHelpText, style: AuraText.muted),
           const SizedBox(height: AuraSpace.s12),
           if (renderers.isEmpty)
             Container(
@@ -501,8 +537,16 @@ class _MediaStageCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
               child: Text(
-                'Media not started yet',
+                isMediaBusy
+                    ? 'Waiting for browser permission'
+                    : isMediaReady
+                        ? 'Media is ready, but no preview is showing yet'
+                        : (mediaError ?? '').trim().isNotEmpty
+                            ? 'Media did not start in this browser'
+                            : 'Camera and microphone have not started yet',
+                textAlign: TextAlign.center,
                 style: AuraText.body.copyWith(color: Colors.white70),
               ),
             )
@@ -528,11 +572,11 @@ class _MediaStageCard extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             children: [
               FilledButton.tonal(
-                onPressed: isMediaBusy ? null : onToggleMicrophone,
+                onPressed: controlsEnabled ? onToggleMicrophone : null,
                 child: Text(microphoneEnabled ? 'Mute microphone' : 'Turn mic on'),
               ),
               FilledButton.tonal(
-                onPressed: isMediaBusy ? null : onToggleCamera,
+                onPressed: controlsEnabled ? onToggleCamera : null,
                 child: Text(cameraEnabled ? 'Turn camera off' : 'Turn camera on'),
               ),
             ],
@@ -584,11 +628,15 @@ class _RoomOverviewCard extends StatelessWidget {
     required this.session,
     required this.policy,
     required this.participantCount,
+    required this.presentCount,
+    required this.mediaActiveCount,
   });
 
   final RealtimeSession? session;
   final RealtimePolicy? policy;
   final int participantCount;
+  final int presentCount;
+  final int mediaActiveCount;
 
   @override
   Widget build(BuildContext context) {
@@ -608,7 +656,21 @@ class _RoomOverviewCard extends StatelessWidget {
           Text(isClosed ? 'Closed to new entries' : 'Open to members', style: AuraText.body),
           Text(requestsOn ? 'Entry requests enabled' : 'Direct entry available', style: AuraText.body),
           Text(
-            participantCount == 1 ? '1 in the room' : '$participantCount in the room',
+            participantCount == 1
+                ? '1 member is listed for this room'
+                : '$participantCount members are listed for this room',
+            style: AuraText.body,
+          ),
+          Text(
+            presentCount == 1
+                ? '1 participant currently appears present'
+                : '$presentCount participants currently appear present',
+            style: AuraText.body,
+          ),
+          Text(
+            mediaActiveCount == 1
+                ? '1 participant is publishing media'
+                : '$mediaActiveCount participants are publishing media',
             style: AuraText.body,
           ),
         ],
