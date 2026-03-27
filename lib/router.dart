@@ -59,6 +59,8 @@ import 'features/invitations/presentation/invite_hub_screen.dart';
 import 'features/invitations/presentation/invitations_screen.dart';
 import 'features/invitations/presentation/invite_accept_screen.dart';
 import 'features/invitations/presentation/invite_create_screen.dart';
+import 'features/realtime/presentation/realtime_lobby_screen.dart';
+import 'features/realtime/presentation/realtime_room_screen.dart';
 
 // Static screens
 import 'screens/support_fallback_screen.dart';
@@ -609,6 +611,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/me/correspondence/:spaceId/thread/:threadId',
             builder: (context, state) => ThreadScreen(
               threadId: state.pathParameters['threadId'] ?? '',
+            ),
+          ),
+
+
+          GoRoute(
+            path: '/realtime',
+            builder: (_, __) => const RealtimeLobbyScreen(),
+          ),
+          GoRoute(
+            path: '/realtime/:sessionId',
+            builder: (context, state) => RealtimeRoomScreen(
+              sessionId: state.pathParameters['sessionId'] ?? '',
+              action: state.uri.queryParameters['action'],
             ),
           ),
 

@@ -6,8 +6,8 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../providers.dart';
 import '../domain/profile.dart';
+import '../providers.dart';
 
 final followingProvider =
     FutureProvider.family<List<ProfileListItem>, String>((ref, handle) async {
@@ -56,7 +56,7 @@ class FollowingScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final person = items[index];
               final displayName = (person.displayName ?? '').trim();
-              final handleText = person.handle.trim();
+              final handleText = (person.handle ?? '').trim();
               final avatarUrl = (person.avatarUrl ?? '').trim();
 
               return AuraCard(

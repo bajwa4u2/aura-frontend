@@ -18,6 +18,7 @@ dependencies:
 
   # Networking
   dio: ^5.7.0
+  socket_io_client: ^3.0.2
 
   # Local persistence
   shared_preferences: ^2.2.3

@@ -28,6 +28,8 @@ bool isMemberShellPath(String path) {
       path == '/invite' ||
       path == '/invite/create' ||
       path == '/admin' ||
+      path == '/realtime' ||
+      path.startsWith('/realtime/') ||
       path == '/me/correspondence' ||
       path == '/me/correspondence/create/conversation' ||
       path == '/me/correspondence/create/space' ||
