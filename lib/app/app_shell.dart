@@ -174,7 +174,7 @@ class MemberShell extends StatelessWidget {
                             Expanded(
                               child: child,
                             ),
-                            const _ShellFooter(),
+                            if (!path.startsWith('/realtime')) const _ShellFooter(),
                           ],
                         ),
                       ),

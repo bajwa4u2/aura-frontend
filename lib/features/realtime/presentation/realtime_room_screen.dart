@@ -101,16 +101,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final canModerate = myParticipant?.isModerator ?? false;
     final policy = state.policy;
     final roomIsClosed = state.session?.isLocked == true || policy?.isLocked == true;
+    final roomTitle = _roomTitle(state.session);
+    final roomSubtitle = _roomSubtitle(state.session, state.joinState);
 
     return AuraScaffold(
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Live room', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
+          Text(roomTitle, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s4),
           Text(
-            state.sessionId ?? widget.sessionId,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            roomSubtitle,
+            style: AuraText.small.copyWith(color: Colors.grey),
           ),
           const SizedBox(height: AuraSpace.s12),
           RealtimeStatusStrip(state: state),
@@ -201,6 +203,28 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       ),
     );
   }
+
+  String _roomTitle(RealtimeSession? session) {
+    if (session == null) return 'Live Room';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'Live Correspondence';
+      case RealtimeSurfaceType.space:
+        return 'Live Space';
+      case RealtimeSurfaceType.institution:
+        return 'Institution Room';
+      case RealtimeSurfaceType.unknown:
+        return 'Live Room';
+    }
+  }
+
+  String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
+    if (joinState == RealtimeJoinState.joined) return 'You are in the room.';
+    if (joinState == RealtimeJoinState.requested) return 'Your entry request is pending.';
+    if (session?.isActive == false) return 'This room has ended.';
+    if (session?.isLocked == true) return 'Closed to new entries.';
+    return 'Active now.';
+  }
 }
 
 class _RoomOverviewCard extends StatelessWidget {
@@ -216,20 +240,31 @@ class _RoomOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = session?.isActive == false ? 'Ended' : 'Live';
-    final access = session?.isLocked == true ? 'Closed' : 'Open';
-    final entry = policy?.waitingRoomEnabled == true ? 'Requests on' : 'Direct entry';
+    final isLive = session?.isActive != false;
+    final isClosed = session?.isLocked == true;
+    final requestsOn = policy?.waitingRoomEnabled == true;
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Room overview', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            isLive ? 'Room is live' : 'Room has ended',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: AuraSpace.s8),
-          Text('Status: $status', style: AuraText.body),
-          Text('Access: $access', style: AuraText.body),
-          Text('Entry: $entry', style: AuraText.body),
-          Text('Members in room: $participantCount', style: AuraText.body),
+          Text(
+            isClosed ? 'Closed to new entries' : 'Open to members',
+            style: AuraText.body,
+          ),
+          Text(
+            requestsOn ? 'Entry requests enabled' : 'Direct entry available',
+            style: AuraText.body,
+          ),
+          Text(
+            participantCount == 1 ? '1 in the room' : '$participantCount in the room',
+            style: AuraText.body,
+          ),
         ],
       ),
     );

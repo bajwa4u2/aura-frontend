@@ -37,11 +37,11 @@ class RealtimeStatusStrip extends StatelessWidget {
       case 'requested':
         return 'Request pending';
       case 'rejected':
-        return 'Declined';
+        return 'Entry declined';
       case 'removed':
         return 'Removed';
       case 'locked':
-        return 'Closed';
+        return 'Room closed';
       case 'failed':
         return 'Unavailable';
       default:
@@ -51,41 +51,31 @@ class RealtimeStatusStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bits = <_StatusBit>[
-      _StatusBit('Connection', _connectionLabel()),
-      _StatusBit('Room', _entryLabel()),
-      if (state.session?.isLocked == true) const _StatusBit('Access', 'Closed'),
-      if (state.policy?.waitingRoomEnabled == true) const _StatusBit('Entry', 'Requests on'),
-      if (state.recordings.isNotEmpty)
-        _StatusBit('Recording', state.recordings.first.status.name),
-      if (state.recordings.isEmpty && state.policy?.canRecord == false)
-        const _StatusBit('Recording', 'Unavailable'),
-      if (state.transcripts.isNotEmpty)
-        _StatusBit('Live notes', state.transcripts.first.status.name),
-      if (state.transcripts.isEmpty && state.policy?.canTranscribe == false)
-        const _StatusBit('Live notes', 'Unavailable'),
+    final bits = <String>[
+      _connectionLabel(),
+      _entryLabel(),
+      if (state.session?.isLocked == true) 'Closed to new entries',
+      if (state.policy?.waitingRoomEnabled == true) 'Entry requests on',
+      if (state.recordings.isNotEmpty) 'Recording ${state.recordings.first.status.name}',
+      if (state.recordings.isEmpty && state.policy?.canRecord == false) 'Recording unavailable',
+      if (state.transcripts.isNotEmpty) 'Live notes ${state.transcripts.first.status.name}',
+      if (state.transcripts.isEmpty && state.policy?.canTranscribe == false) 'Live notes unavailable',
     ];
 
     return AuraCard(
       child: Wrap(
         spacing: AuraSpace.s8,
         runSpacing: AuraSpace.s8,
-        children: bits.map((bit) => _Chip(bit: bit)).toList(),
+        children: bits.map((bit) => _Chip(label: bit)).toList(),
       ),
     );
   }
 }
 
-class _StatusBit {
-  const _StatusBit(this.label, this.value);
-  final String label;
-  final String value;
-}
-
 class _Chip extends StatelessWidget {
-  const _Chip({required this.bit});
+  const _Chip({required this.label});
 
-  final _StatusBit bit;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -98,17 +88,9 @@ class _Chip extends StatelessWidget {
         border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: RichText(
-        text: TextSpan(
-          style: AuraText.small,
-          children: [
-            TextSpan(
-              text: '${bit.label}: ',
-              style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-            ),
-            TextSpan(text: bit.value),
-          ],
-        ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
