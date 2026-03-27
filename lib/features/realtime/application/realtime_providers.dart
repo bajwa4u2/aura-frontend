@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/net/dio_provider.dart';
+import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
 import '../data/realtime_socket_service.dart';
 import '../domain/realtime_state.dart';
@@ -18,15 +19,25 @@ final realtimeSocketServiceProvider = Provider<RealtimeSocketService>((ref) {
   return service;
 });
 
+final realtimeMediaServiceProvider = Provider<RealtimeMediaService>((ref) {
+  final service = RealtimeMediaService();
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
+});
+
 final realtimeControllerProvider =
     StateNotifierProvider<RealtimeController, RealtimeState>((ref) {
   final repository = ref.watch(realtimeRepositoryProvider);
   final socketService = ref.watch(realtimeSocketServiceProvider);
+  final mediaService = ref.watch(realtimeMediaServiceProvider);
   final tokenStore = ref.watch(tokenStoreProvider);
 
   return RealtimeController(
     repository,
     socketService,
+    mediaService,
     tokenStore,
   );
 });

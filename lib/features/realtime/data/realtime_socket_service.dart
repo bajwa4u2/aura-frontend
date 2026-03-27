@@ -14,6 +14,7 @@ class RealtimeSocketService {
   Stream<RealtimeParsedEvent> get events => _eventsController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
+  String? get socketId => _socket?.id;
 
   Future<void> connect({required String accessToken}) async {
     await disconnect();
@@ -87,6 +88,7 @@ class RealtimeSocketService {
 
     const names = <String>[
       'session:participant.joined',
+      'session:participant.resumed',
       'session:participant.left',
       'session:track.updated',
       'session:offer',

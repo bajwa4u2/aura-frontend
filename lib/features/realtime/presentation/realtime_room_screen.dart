@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -229,23 +230,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           RealtimeStatusStrip(state: state),
           const SizedBox(height: AuraSpace.s12),
           if ((state.errorMessage ?? '').isNotEmpty) ...[
-            AuraCard(
-              child: Text(
-                state.errorMessage!,
-                style: AuraText.body,
-              ),
-            ),
+            AuraCard(child: Text(state.errorMessage!, style: AuraText.body)),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          if ((state.mediaError ?? '').isNotEmpty) ...[
+            AuraCard(child: Text(state.mediaError!, style: AuraText.body)),
             const SizedBox(height: AuraSpace.s12),
           ],
           if ((state.infoMessage ?? '').isNotEmpty) ...[
-            AuraCard(
-              child: Text(
-                state.infoMessage!,
-                style: AuraText.small,
-              ),
-            ),
+            AuraCard(child: Text(state.infoMessage!, style: AuraText.small)),
             const SizedBox(height: AuraSpace.s12),
           ],
+          _MediaStageCard(
+            localRenderer: state.localRenderer,
+            remoteRenderers: state.remoteRenderers,
+            microphoneEnabled: state.microphoneEnabled,
+            cameraEnabled: state.cameraEnabled,
+            isMediaBusy: state.isMediaBusy,
+            onToggleMicrophone: controller.toggleMicrophone,
+            onToggleCamera: controller.toggleCamera,
+          ),
+          const SizedBox(height: AuraSpace.s12),
           _RoomOverviewCard(
             session: state.session,
             policy: policy,
@@ -295,6 +300,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             canModerate: canModerate,
             currentUserId: myUserId,
             hostUserId: state.session?.startedByUserId,
+            remoteRenderers: state.remoteRenderers,
             onRemove: (value) => controller.removeParticipant(value),
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -402,10 +408,7 @@ class _RoomHeaderCard extends StatelessWidget {
         children: [
           Text(title, style: AuraText.title),
           const SizedBox(height: AuraSpace.s4),
-          Text(
-            subtitle,
-            style: AuraText.small,
-          ),
+          Text(subtitle, style: AuraText.small),
           const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s8,
@@ -430,7 +433,6 @@ class _RoomHeaderCard extends StatelessWidget {
 
 class _MetaPill extends StatelessWidget {
   const _MetaPill({required this.label});
-
   final String label;
 
   @override
@@ -448,6 +450,131 @@ class _MetaPill extends StatelessWidget {
         label,
         style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
       ),
+    );
+  }
+}
+
+class _MediaStageCard extends StatelessWidget {
+  const _MediaStageCard({
+    required this.localRenderer,
+    required this.remoteRenderers,
+    required this.microphoneEnabled,
+    required this.cameraEnabled,
+    required this.isMediaBusy,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
+  });
+
+  final RTCVideoRenderer? localRenderer;
+  final Map<String, RTCVideoRenderer> remoteRenderers;
+  final bool microphoneEnabled;
+  final bool cameraEnabled;
+  final bool isMediaBusy;
+  final VoidCallback onToggleMicrophone;
+  final VoidCallback onToggleCamera;
+
+  @override
+  Widget build(BuildContext context) {
+    final renderers = <MapEntry<String, RTCVideoRenderer>>[
+      if (localRenderer != null) MapEntry<String, RTCVideoRenderer>('local', localRenderer!),
+      ...remoteRenderers.entries,
+    ];
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Live media', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            renderers.isEmpty
+                ? 'Camera and microphone will appear here when media is active.'
+                : 'Local preview and connected participants appear here.',
+            style: AuraText.muted,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          if (renderers.isEmpty)
+            Container(
+              height: 220,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'Media not started yet',
+                style: AuraText.body.copyWith(color: Colors.white70),
+              ),
+            )
+          else
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: renderers.map((entry) {
+                final isLocal = entry.key == 'local';
+                return SizedBox(
+                  width: 260,
+                  child: _VideoTile(
+                    label: isLocal ? 'You' : 'Connected participant',
+                    renderer: entry.value,
+                    mirror: isLocal,
+                  ),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              FilledButton.tonal(
+                onPressed: isMediaBusy ? null : onToggleMicrophone,
+                child: Text(microphoneEnabled ? 'Mute microphone' : 'Turn mic on'),
+              ),
+              FilledButton.tonal(
+                onPressed: isMediaBusy ? null : onToggleCamera,
+                child: Text(cameraEnabled ? 'Turn camera off' : 'Turn camera on'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoTile extends StatelessWidget {
+  const _VideoTile({
+    required this.label,
+    required this.renderer,
+    this.mirror = false,
+  });
+
+  final String label;
+  final RTCVideoRenderer renderer;
+  final bool mirror;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: RTCVideoView(
+            renderer,
+            mirror: mirror,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+      ],
     );
   }
 }
@@ -478,14 +605,8 @@ class _RoomOverviewCard extends StatelessWidget {
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(
-            isClosed ? 'Closed to new entries' : 'Open to members',
-            style: AuraText.body,
-          ),
-          Text(
-            requestsOn ? 'Entry requests enabled' : 'Direct entry available',
-            style: AuraText.body,
-          ),
+          Text(isClosed ? 'Closed to new entries' : 'Open to members', style: AuraText.body),
+          Text(requestsOn ? 'Entry requests enabled' : 'Direct entry available', style: AuraText.body),
           Text(
             participantCount == 1 ? '1 in the room' : '$participantCount in the room',
             style: AuraText.body,
@@ -557,15 +678,9 @@ class _RoomInviteCard extends StatelessWidget {
               child: LinearProgressIndicator(),
             )
           else if (searchController.text.trim().isEmpty)
-            Text(
-              'Search to invite people already on Aura.',
-              style: AuraText.small,
-            )
+            Text('Search to invite people already on Aura.', style: AuraText.small)
           else if (results.isEmpty)
-            Text(
-              'No matching members found.',
-              style: AuraText.small,
-            )
+            Text('No matching members found.', style: AuraText.small)
           else
             ...results.map((user) {
               final id = (user['id'] ?? '').toString();
@@ -593,16 +708,10 @@ class _RoomInviteCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            title,
-                            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                          ),
+                          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
                           if (subtitle.isNotEmpty) ...[
                             const SizedBox(height: AuraSpace.s4),
-                            Text(
-                              subtitle,
-                              style: AuraText.small,
-                            ),
+                            Text(subtitle, style: AuraText.small),
                           ],
                         ],
                       ),
@@ -647,10 +756,7 @@ class _ArtifactBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Room output',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
+          Text('Room output', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: AuraSpace.s8),
           Text(recordingLabel, style: AuraText.small),
           Text(transcriptLabel, style: AuraText.small),

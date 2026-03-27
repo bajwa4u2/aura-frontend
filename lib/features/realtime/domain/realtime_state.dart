@@ -1,3 +1,5 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import 'realtime_enums.dart';
 import 'realtime_models.dart';
 
@@ -17,6 +19,13 @@ class RealtimeState {
     required this.infoMessage,
     required this.lastSocketEvent,
     required this.isBusy,
+    required this.isMediaReady,
+    required this.isMediaBusy,
+    required this.localRenderer,
+    required this.remoteRenderers,
+    required this.microphoneEnabled,
+    required this.cameraEnabled,
+    required this.mediaError,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -33,6 +42,13 @@ class RealtimeState {
   final String? infoMessage;
   final String? lastSocketEvent;
   final bool isBusy;
+  final bool isMediaReady;
+  final bool isMediaBusy;
+  final RTCVideoRenderer? localRenderer;
+  final Map<String, RTCVideoRenderer> remoteRenderers;
+  final bool microphoneEnabled;
+  final bool cameraEnabled;
+  final String? mediaError;
 
   factory RealtimeState.initial() {
     return const RealtimeState(
@@ -50,6 +66,13 @@ class RealtimeState {
       infoMessage: null,
       lastSocketEvent: null,
       isBusy: false,
+      isMediaReady: false,
+      isMediaBusy: false,
+      localRenderer: null,
+      remoteRenderers: <String, RTCVideoRenderer>{},
+      microphoneEnabled: true,
+      cameraEnabled: true,
+      mediaError: null,
     );
   }
 
@@ -74,6 +97,16 @@ class RealtimeState {
     String? lastSocketEvent,
     bool clearLastSocketEvent = false,
     bool? isBusy,
+    bool? isMediaReady,
+    bool? isMediaBusy,
+    RTCVideoRenderer? localRenderer,
+    bool clearLocalRenderer = false,
+    Map<String, RTCVideoRenderer>? remoteRenderers,
+    bool clearRemoteRenderers = false,
+    bool? microphoneEnabled,
+    bool? cameraEnabled,
+    String? mediaError,
+    bool clearMediaError = false,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -90,6 +123,15 @@ class RealtimeState {
       infoMessage: clearInfoMessage ? null : (infoMessage ?? this.infoMessage),
       lastSocketEvent: clearLastSocketEvent ? null : (lastSocketEvent ?? this.lastSocketEvent),
       isBusy: isBusy ?? this.isBusy,
+      isMediaReady: isMediaReady ?? this.isMediaReady,
+      isMediaBusy: isMediaBusy ?? this.isMediaBusy,
+      localRenderer: clearLocalRenderer ? null : (localRenderer ?? this.localRenderer),
+      remoteRenderers: clearRemoteRenderers
+          ? <String, RTCVideoRenderer>{}
+          : (remoteRenderers ?? this.remoteRenderers),
+      microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
+      cameraEnabled: cameraEnabled ?? this.cameraEnabled,
+      mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
     );
   }
 

@@ -87,6 +87,14 @@ class RealtimeRepository {
     );
   }
 
+  Future<Map<String, dynamic>> issueTurnCredentials(String sessionId) async {
+    final res = await _dio.post(
+      '/realtime/turn-credentials',
+      data: <String, dynamic>{'sessionId': sessionId},
+    );
+    return _unwrapMap(res.data);
+  }
+
   Future<RealtimePolicy> getPolicy(String sessionId) async {
     final res = await _dio.get('/realtime/sessions/$sessionId/policy');
     return RealtimePolicy.fromJson(_unwrapMap(res.data));
@@ -100,18 +108,10 @@ class RealtimeRepository {
     bool? screenAllowed,
   }) async {
     final payload = <String, dynamic>{};
-    if (waitingRoomEnabled != null) {
-      payload['waitingRoomEnabled'] = waitingRoomEnabled;
-    }
-    if (audioAllowed != null) {
-      payload['audioAllowed'] = audioAllowed;
-    }
-    if (videoAllowed != null) {
-      payload['videoAllowed'] = videoAllowed;
-    }
-    if (screenAllowed != null) {
-      payload['screenAllowed'] = screenAllowed;
-    }
+    if (waitingRoomEnabled != null) payload['waitingRoomEnabled'] = waitingRoomEnabled;
+    if (audioAllowed != null) payload['audioAllowed'] = audioAllowed;
+    if (videoAllowed != null) payload['videoAllowed'] = videoAllowed;
+    if (screenAllowed != null) payload['screenAllowed'] = screenAllowed;
 
     final res = await _dio.patch('/realtime/sessions/$sessionId/policy', data: payload);
     return RealtimePolicy.fromJson(_unwrapMap(res.data));
@@ -138,7 +138,6 @@ class RealtimeRepository {
       data: <String, dynamic>{'decision': decision},
     );
   }
-
 
   Future<void> createInvite(
     String sessionId, {

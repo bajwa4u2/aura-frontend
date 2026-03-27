@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -11,6 +12,7 @@ class RealtimeParticipantList extends StatelessWidget {
     required this.participants,
     required this.canModerate,
     required this.onRemove,
+    required this.remoteRenderers,
     this.currentUserId,
     this.hostUserId,
   });
@@ -18,6 +20,7 @@ class RealtimeParticipantList extends StatelessWidget {
   final List<RealtimeParticipant> participants;
   final bool canModerate;
   final ValueChanged<String> onRemove;
+  final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? currentUserId;
   final String? hostUserId;
 
@@ -28,12 +31,10 @@ class RealtimeParticipantList extends StatelessWidget {
       return 'Room host';
     }
     if (participant.isModerator) {
-      return 'Moderator ${_ordinal(index)}';
+      return 'Moderator ${index + 1}';
     }
-    return 'Member ${_ordinal(index)}';
+    return 'Member ${index + 1}';
   }
-
-  String _ordinal(int index) => '${index + 1}';
 
   String _roleLabel(RealtimeParticipant participant) {
     if (participant.isHost || ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
@@ -43,8 +44,6 @@ class RealtimeParticipantList extends StatelessWidget {
     switch (participant.role.name) {
       case 'guest':
         return 'Guest';
-      case 'participant':
-        return 'Member';
       default:
         return 'Member';
     }
@@ -70,6 +69,7 @@ class RealtimeParticipantList extends StatelessWidget {
           if (participants.isNotEmpty)
             ...List.generate(participants.length, (index) {
               final participant = participants[index];
+              final renderer = remoteRenderers[participant.userId];
               return Padding(
                 padding: EdgeInsets.only(
                   bottom: index == participants.length - 1 ? 0 : AuraSpace.s10,
@@ -77,6 +77,21 @@ class RealtimeParticipantList extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (renderer != null)
+                      Container(
+                        width: 92,
+                        height: 68,
+                        margin: const EdgeInsets.only(right: AuraSpace.s12),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: RTCVideoView(
+                          renderer,
+                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                        ),
+                      ),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +107,7 @@ class RealtimeParticipantList extends StatelessWidget {
                             [
                               _roleLabel(participant),
                               if (participant.audioOn) 'audio on',
-                              if (participant.videoOn) 'video on',
+                              if (participant.videoOn) 'camera on',
                               if (participant.screenOn) 'screen on',
                               if (!participant.isPresent) 'away',
                             ].join(' • '),

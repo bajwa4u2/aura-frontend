@@ -41,6 +41,7 @@ RealtimeSurfaceType _readSurfaceType(dynamic value) {
     case 'space':
       return RealtimeSurfaceType.space;
     case 'institution':
+    case 'institution_room':
       return RealtimeSurfaceType.institution;
     default:
       return RealtimeSurfaceType.unknown;
@@ -153,6 +154,7 @@ class RealtimeParticipant {
   const RealtimeParticipant({
     required this.id,
     required this.userId,
+    required this.runtimeDeviceId,
     required this.role,
     required this.isPresent,
     required this.audioOn,
@@ -164,6 +166,7 @@ class RealtimeParticipant {
 
   final String id;
   final String userId;
+  final String? runtimeDeviceId;
   final RealtimeParticipantRole role;
   final bool isPresent;
   final bool audioOn;
@@ -175,6 +178,32 @@ class RealtimeParticipant {
   bool get isHost => role == RealtimeParticipantRole.host;
   bool get isModerator => role == RealtimeParticipantRole.moderator || isHost;
 
+  RealtimeParticipant copyWith({
+    String? id,
+    String? userId,
+    String? runtimeDeviceId,
+    RealtimeParticipantRole? role,
+    bool? isPresent,
+    bool? audioOn,
+    bool? videoOn,
+    bool? screenOn,
+    DateTime? joinedAt,
+    DateTime? leftAt,
+  }) {
+    return RealtimeParticipant(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      runtimeDeviceId: runtimeDeviceId ?? this.runtimeDeviceId,
+      role: role ?? this.role,
+      isPresent: isPresent ?? this.isPresent,
+      audioOn: audioOn ?? this.audioOn,
+      videoOn: videoOn ?? this.videoOn,
+      screenOn: screenOn ?? this.screenOn,
+      joinedAt: joinedAt ?? this.joinedAt,
+      leftAt: leftAt ?? this.leftAt,
+    );
+  }
+
   factory RealtimeParticipant.fromJson(Map<String, dynamic> json) {
     final audio = (json['audioState'] ?? '').toString().toUpperCase() == 'ON';
     final video = (json['videoState'] ?? '').toString().toUpperCase() == 'ON';
@@ -183,6 +212,7 @@ class RealtimeParticipant {
     return RealtimeParticipant(
       id: (json['id'] ?? '').toString(),
       userId: (json['userId'] ?? '').toString(),
+      runtimeDeviceId: _readString(json['runtimeDeviceId']),
       role: _readRole(json['role']),
       isPresent: _readBool(json['isPresent'], fallback: true),
       audioOn: audio,
