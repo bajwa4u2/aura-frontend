@@ -31,23 +31,34 @@ class RealtimeHostControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final waitingRoom = policy?.waitingRoomEnabled ?? false;
     final locked = session?.isLocked ?? policy?.isLocked ?? false;
+    final canRecord = policy?.canRecord ?? false;
+    final canTranscribe = policy?.canTranscribe ?? false;
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Host controls', style: AuraText.title),
+          Text('Room controls', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Manage entry, room access, and what this room is allowed to produce.',
+            style: AuraText.muted,
+          ),
           const SizedBox(height: AuraSpace.s12),
           SwitchListTile(
             value: waitingRoom,
             contentPadding: EdgeInsets.zero,
-            title: const Text('Waiting room'),
+            title: const Text('Entry requests'),
+            subtitle: const Text('Review who enters before they join the room.'),
             onChanged: onToggleWaitingRoom,
           ),
           SwitchListTile(
             value: locked,
             contentPadding: EdgeInsets.zero,
-            title: const Text('Lock session'),
+            title: const Text('Close room'),
+            subtitle: Text(
+              locked ? 'New entries are currently blocked.' : 'Anyone with access can still enter.',
+            ),
             onChanged: onToggleLock,
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -60,16 +71,16 @@ class RealtimeHostControls extends StatelessWidget {
                 child: const Text('Request consent'),
               ),
               OutlinedButton(
-                onPressed: onRequestRecording,
-                child: const Text('Request recording'),
+                onPressed: canRecord ? onRequestRecording : null,
+                child: Text(canRecord ? 'Request recording' : 'Recording unavailable'),
               ),
               OutlinedButton(
-                onPressed: onRequestTranscript,
-                child: const Text('Request transcript'),
+                onPressed: canTranscribe ? onRequestTranscript : null,
+                child: Text(canTranscribe ? 'Request live notes' : 'Live notes unavailable'),
               ),
               OutlinedButton(
                 onPressed: onRefresh,
-                child: const Text('Refresh'),
+                child: const Text('Refresh room'),
               ),
             ],
           ),

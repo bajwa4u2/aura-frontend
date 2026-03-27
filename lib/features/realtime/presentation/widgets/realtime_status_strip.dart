@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
-import '../../domain/realtime_models.dart';
 import '../../domain/realtime_state.dart';
 
 class RealtimeStatusStrip extends StatelessWidget {
@@ -14,20 +13,59 @@ class RealtimeStatusStrip extends StatelessWidget {
 
   final RealtimeState state;
 
+  String _connectionLabel() {
+    switch (state.connectionStatus.name) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting';
+      case 'reconnecting':
+        return 'Reconnecting';
+      case 'error':
+        return 'Connection issue';
+      default:
+        return 'Offline';
+    }
+  }
+
+  String _entryLabel() {
+    switch (state.joinState.name) {
+      case 'joined':
+        return 'In room';
+      case 'joining':
+        return 'Entering';
+      case 'requested':
+        return 'Request pending';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Declined';
+      case 'removed':
+        return 'Removed';
+      case 'locked':
+        return 'Closed';
+      case 'failed':
+        return 'Unavailable';
+      default:
+        return 'Not entered';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bits = <_StatusBit>[
-      _StatusBit('Connection', state.connectionStatus.name),
-      _StatusBit('Join', state.joinState.name),
-      if (state.session?.isLocked == true) const _StatusBit('Session', 'Locked'),
-      if (state.policy?.waitingRoomEnabled == true)
-        const _StatusBit('Entry', 'Waiting room'),
+      _StatusBit('Connection', _connectionLabel()),
+      _StatusBit('Room', _entryLabel()),
+      if (state.session?.isLocked == true) const _StatusBit('Access', 'Closed'),
+      if (state.policy?.waitingRoomEnabled == true) const _StatusBit('Entry', 'Requests on'),
       if (state.recordings.isNotEmpty)
         _StatusBit('Recording', state.recordings.first.status.name),
+      else if (state.policy != null && state.policy!.canRecord == false)
+        const _StatusBit('Recording', 'Unavailable'),
       if (state.transcripts.isNotEmpty)
-        _StatusBit('Transcript', state.transcripts.first.status.name),
-      if (state.lastSocketEvent != null && state.lastSocketEvent!.trim().isNotEmpty)
-        _StatusBit('Event', state.lastSocketEvent!),
+        _StatusBit('Live notes', state.transcripts.first.status.name),
+      else if (state.policy != null && state.policy!.canTranscribe == false)
+        const _StatusBit('Live notes', 'Unavailable'),
     ];
 
     return AuraCard(

@@ -17,7 +17,7 @@ class RealtimeLobbyScreen extends ConsumerStatefulWidget {
 }
 
 class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
-  final _surfaceIdController = TextEditingController(text: 'proof-room');
+  final _surfaceIdController = TextEditingController(text: 'room-1');
   final _existingSessionController = TextEditingController();
 
   String _surfaceType = 'SPACE';
@@ -30,6 +30,36 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
     super.dispose();
   }
 
+  String _surfaceLabel(String value) {
+    switch (value) {
+      case 'SPACE':
+        return 'Space';
+      case 'DM':
+        return 'Direct conversation';
+      case 'INSTITUTION_ROOM':
+        return 'Institution';
+      case 'EVENT_ROOM':
+        return 'Event';
+      case 'THREAD':
+        return 'Thread';
+      default:
+        return value;
+    }
+  }
+
+  String _kindLabel(String value) {
+    switch (value) {
+      case 'AUDIO':
+        return 'Audio';
+      case 'VIDEO':
+        return 'Video';
+      case 'SCREEN':
+        return 'Screen';
+      default:
+        return 'Mixed';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final realtime = ref.watch(realtimeControllerProvider);
@@ -39,10 +69,10 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Realtime proofing', style: AuraText.title),
+          Text('Live rooms', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'This surface is for backend proofing. Create a session, join an existing one, or resume one you already entered.',
+            'Start a room, enter an existing one, or reopen a room you already joined.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -57,7 +87,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'Realtime proofing needs an authenticated member session.',
+                    'You need an active member session before entering a live room.',
                     style: AuraText.muted,
                   ),
                 ],
@@ -69,19 +99,24 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Create a proof session',
+                    'Start live room',
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                  Text(
+                    'Choose where this room belongs and how it will open.',
+                    style: AuraText.muted,
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   DropdownButtonFormField<String>(
                     initialValue: _surfaceType,
                     decoration: const InputDecoration(
-                      labelText: 'Surface type',
+                      labelText: 'Room context',
                       border: OutlineInputBorder(),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'SPACE', child: Text('Space')),
-                      DropdownMenuItem(value: 'DM', child: Text('Direct message')),
+                      DropdownMenuItem(value: 'DM', child: Text('Direct conversation')),
                       DropdownMenuItem(
                         value: 'INSTITUTION_ROOM',
                         child: Text('Institution'),
@@ -101,7 +136,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _kind,
                     decoration: const InputDecoration(
-                      labelText: 'Kind',
+                      labelText: 'Live format',
                       border: OutlineInputBorder(),
                     ),
                     items: const [
@@ -118,10 +153,15 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _surfaceIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Surface id',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: '${_surfaceLabel(_surfaceType)} id',
+                      border: const OutlineInputBorder(),
                     ),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(
+                    'This room will open as ${_kindLabel(_kind).toLowerCase()} in ${_surfaceLabel(_surfaceType).toLowerCase()}.',
+                    style: AuraText.small,
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   FilledButton(
@@ -138,7 +178,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                             if (!context.mounted) return;
                             router.go('/realtime/$id?action=join');
                           },
-                    child: const Text('Create and open'),
+                    child: const Text('Start and enter'),
                   ),
                 ],
               ),
@@ -149,14 +189,19 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Open an existing session',
+                    'Open existing room',
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                  Text(
+                    'Use a room id to enter, reopen, or inspect the current room state.',
+                    style: AuraText.muted,
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _existingSessionController,
                     decoration: const InputDecoration(
-                      labelText: 'Session id',
+                      labelText: 'Room id',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -171,7 +216,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=join');
                         },
-                        child: const Text('Join'),
+                        child: const Text('Enter room'),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -179,7 +224,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=resume');
                         },
-                        child: const Text('Resume'),
+                        child: const Text('Reopen room'),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -187,7 +232,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id');
                         },
-                        child: const Text('Inspect'),
+                        child: const Text('View room'),
                       ),
                     ],
                   ),

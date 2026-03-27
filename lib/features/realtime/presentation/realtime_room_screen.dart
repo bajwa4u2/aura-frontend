@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -98,12 +99,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
 
     final canModerate = myParticipant?.isModerator ?? false;
+    final policy = state.policy;
+    final roomIsClosed = state.session?.isLocked == true || policy?.isLocked == true;
 
     return AuraScaffold(
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Realtime room', style: AuraText.title),
+          Text('Live room', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
             state.sessionId ?? widget.sessionId,
@@ -113,13 +116,19 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           RealtimeStatusStrip(state: state),
           const SizedBox(height: AuraSpace.s12),
           if ((state.errorMessage ?? '').isNotEmpty) ...[
-            Text(state.errorMessage!, style: AuraText.body),
+            AuraCard(child: Text(state.errorMessage!, style: AuraText.body)),
             const SizedBox(height: AuraSpace.s12),
           ],
           if ((state.infoMessage ?? '').isNotEmpty) ...[
-            Text(state.infoMessage!, style: AuraText.small),
+            AuraCard(child: Text(state.infoMessage!, style: AuraText.small)),
             const SizedBox(height: AuraSpace.s12),
           ],
+          _RoomOverviewCard(
+            session: state.session,
+            policy: policy,
+            participantCount: state.participants.length,
+          ),
+          const SizedBox(height: AuraSpace.s12),
           RealtimeConsentSheet(
             currentUserId: myUserId.isEmpty ? null : myUserId,
             consents: state.consents,
@@ -128,7 +137,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           if (canModerate) ...[
             RealtimeHostControls(
               session: state.session,
-              policy: state.policy,
+              policy: policy,
               onToggleWaitingRoom: controller.setWaitingRoom,
               onToggleLock: controller.setLocked,
               onRequestConsent: controller.requestConsent,
@@ -138,7 +147,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             ),
             const SizedBox(height: AuraSpace.s12),
             RealtimeJoinRequestsPanel(
-              requests: state.policy?.joinRequests ?? const [],
+              requests: policy?.joinRequests ?? const [],
               onApprove: controller.approveJoinRequest,
               onReject: controller.rejectJoinRequest,
             ),
@@ -151,6 +160,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           ),
           const SizedBox(height: AuraSpace.s12),
           _ArtifactBlock(
+            policy: policy,
             recordingCount: state.recordings.length,
             transcriptCount: state.transcripts.length,
             artifactCount: state.artifacts.length,
@@ -166,19 +176,24 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               ),
               OutlinedButton(
                 onPressed: controller.leave,
-                child: const Text('Leave'),
+                child: const Text('Leave room'),
               ),
               if (state.joinState != RealtimeJoinState.joined)
                 FilledButton(
                   onPressed: () => controller.join(widget.sessionId),
-                  child: const Text('Join now'),
+                  child: const Text('Enter room'),
                 ),
               if (state.joinState == RealtimeJoinState.locked ||
                   state.joinState == RealtimeJoinState.rejected ||
-                  state.joinState == RealtimeJoinState.failed)
+                  state.joinState == RealtimeJoinState.failed ||
+                  roomIsClosed)
                 OutlinedButton(
                   onPressed: () => controller.requestJoin(widget.sessionId),
-                  child: const Text('Request join'),
+                  child: Text(
+                    policy?.waitingRoomEnabled == true || roomIsClosed
+                        ? 'Request entry'
+                        : 'Try again',
+                  ),
                 ),
             ],
           ),
@@ -188,36 +203,73 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 }
 
+class _RoomOverviewCard extends StatelessWidget {
+  const _RoomOverviewCard({
+    required this.session,
+    required this.policy,
+    required this.participantCount,
+  });
+
+  final RealtimeSession? session;
+  final RealtimePolicy? policy;
+  final int participantCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = session?.isActive == false ? 'Ended' : 'Live';
+    final access = session?.isLocked == true ? 'Closed' : 'Open';
+    final entry = policy?.waitingRoomEnabled == true ? 'Requests on' : 'Direct entry';
+
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Room overview', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AuraSpace.s8),
+          Text('Status: $status', style: AuraText.body),
+          Text('Access: $access', style: AuraText.body),
+          Text('Entry: $entry', style: AuraText.body),
+          Text('Members in room: $participantCount', style: AuraText.body),
+        ],
+      ),
+    );
+  }
+}
+
 class _ArtifactBlock extends StatelessWidget {
   const _ArtifactBlock({
+    required this.policy,
     required this.recordingCount,
     required this.transcriptCount,
     required this.artifactCount,
   });
 
+  final RealtimePolicy? policy;
   final int recordingCount;
   final int transcriptCount;
   final int artifactCount;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(14),
-      ),
+    final recordingLabel = policy?.canRecord == true
+        ? 'Recordings: $recordingCount'
+        : 'Recording unavailable in this room';
+    final transcriptLabel = policy?.canTranscribe == true
+        ? 'Live notes: $transcriptCount'
+        : 'Live notes unavailable in this room';
+
+    return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Artifacts',
+            'Room output',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text('Recordings: $recordingCount', style: AuraText.small),
-          Text('Transcripts: $transcriptCount', style: AuraText.small),
-          Text('Artifacts: $artifactCount', style: AuraText.small),
+          Text(recordingLabel, style: AuraText.small),
+          Text(transcriptLabel, style: AuraText.small),
+          Text('Saved artifacts: $artifactCount', style: AuraText.small),
         ],
       ),
     );

@@ -37,7 +37,7 @@ class RealtimeConsentSheet extends ConsumerWidget {
           Text('Consent requested', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'The host requested a fresh consent decision for this session.',
+            'The room host is asking for a fresh consent decision before continuing.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),

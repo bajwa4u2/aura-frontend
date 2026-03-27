@@ -98,7 +98,6 @@ class RealtimeRepository {
     bool? audioAllowed,
     bool? videoAllowed,
     bool? screenAllowed,
-    bool? isLocked,
   }) async {
     final payload = <String, dynamic>{};
     if (waitingRoomEnabled != null) {
@@ -113,11 +112,15 @@ class RealtimeRepository {
     if (screenAllowed != null) {
       payload['screenAllowed'] = screenAllowed;
     }
-    if (isLocked != null) {
-      payload['isLocked'] = isLocked;
-    }
 
     final res = await _dio.patch('/realtime/sessions/$sessionId/policy', data: payload);
+    return RealtimePolicy.fromJson(_unwrapMap(res.data));
+  }
+
+  Future<RealtimePolicy> setLocked(String sessionId, {required bool locked}) async {
+    final res = await _dio.post(
+      '/realtime/sessions/$sessionId/${locked ? 'lock' : 'unlock'}',
+    );
     return RealtimePolicy.fromJson(_unwrapMap(res.data));
   }
 

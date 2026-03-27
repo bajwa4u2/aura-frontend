@@ -23,10 +23,10 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Join requests', style: AuraText.title),
+          Text('Entry requests', style: AuraText.title),
           const SizedBox(height: AuraSpace.s12),
           if (requests.isEmpty)
-            Text('No pending requests.', style: AuraText.muted)
+            Text('No one is waiting right now.', style: AuraText.muted)
           else
             ...requests.map(
               (request) => Padding(
@@ -41,12 +41,12 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
                     ),
                     OutlinedButton(
                       onPressed: () => onReject(request.userId),
-                      child: const Text('Reject'),
+                      child: const Text('Decline'),
                     ),
                     const SizedBox(width: AuraSpace.s8),
                     FilledButton(
                       onPressed: () => onApprove(request.userId),
-                      child: const Text('Approve'),
+                      child: const Text('Allow in'),
                     ),
                   ],
                 ),

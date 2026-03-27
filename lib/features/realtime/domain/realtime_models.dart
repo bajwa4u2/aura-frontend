@@ -217,6 +217,8 @@ class RealtimePolicy {
     required this.audioAllowed,
     required this.videoAllowed,
     required this.screenAllowed,
+    required this.canRecord,
+    required this.canTranscribe,
     required this.isLocked,
     required this.joinRequests,
     required this.bannedUserIds,
@@ -226,6 +228,8 @@ class RealtimePolicy {
   final bool audioAllowed;
   final bool videoAllowed;
   final bool screenAllowed;
+  final bool canRecord;
+  final bool canTranscribe;
   final bool isLocked;
   final List<RealtimeJoinRequest> joinRequests;
   final List<String> bannedUserIds;
@@ -257,6 +261,8 @@ class RealtimePolicy {
         json['screenAllowed'] ?? json['allowScreenShare'] ?? true,
         fallback: true,
       ),
+      canRecord: _readBool(json['canRecord'], fallback: false),
+      canTranscribe: _readBool(json['canTranscribe'], fallback: false),
       isLocked: _readBool(json['isLocked']),
       joinRequests: joinRequests,
       bannedUserIds: banned,

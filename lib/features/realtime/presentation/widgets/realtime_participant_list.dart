@@ -17,16 +17,29 @@ class RealtimeParticipantList extends StatelessWidget {
   final bool canModerate;
   final ValueChanged<String> onRemove;
 
+  String _roleLabel(RealtimeParticipant participant) {
+    if (participant.isHost) return 'Room host';
+    if (participant.isModerator) return 'Moderator';
+    switch (participant.role.name) {
+      case 'guest':
+        return 'Guest';
+      case 'participant':
+        return 'Member';
+      default:
+        return 'Member';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Participants', style: AuraText.title),
+          Text('Members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s12),
           if (participants.isEmpty)
-            Text('No participants yet.', style: AuraText.muted)
+            Text('No one is in the room yet.', style: AuraText.muted)
           else
             ...participants.map(
               (participant) => Padding(
@@ -46,11 +59,11 @@ class RealtimeParticipantList extends StatelessWidget {
                           const SizedBox(height: AuraSpace.s4),
                           Text(
                             [
-                              participant.role.name,
+                              _roleLabel(participant),
                               if (participant.audioOn) 'audio on',
                               if (participant.videoOn) 'video on',
                               if (participant.screenOn) 'screen on',
-                              if (!participant.isPresent) 'not present',
+                              if (!participant.isPresent) 'away',
                             ].join(' • '),
                             style: AuraText.small,
                           ),

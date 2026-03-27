@@ -41,14 +41,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       await _tokenStore.load();
       final token = _tokenStore.accessToken?.trim() ?? '';
       if (token.isEmpty) {
-        throw StateError('You need to sign in before using realtime.');
+        throw StateError('You need to sign in before entering a live room.');
       }
 
       await _socketService.connect(accessToken: token);
 
       state = state.copyWith(
         connectionStatus: RealtimeConnectionStatus.connected,
-        infoMessage: 'Realtime connected.',
+        infoMessage: 'Live connection ready.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -82,7 +82,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         isBusy: false,
         sessionId: bundle.session.id,
         joinState: RealtimeJoinState.idle,
-        infoMessage: 'Realtime session created.',
+        infoMessage: 'Live room started.',
       );
       return bundle.session.id;
     } catch (error) {
@@ -118,7 +118,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       _applyBundle(bundle);
       state = state.copyWith(
         isBusy: false,
-        infoMessage: 'Realtime session loaded.',
+        infoMessage: 'Live room loaded.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -150,7 +150,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
-        infoMessage: 'Joined realtime session.',
+        infoMessage: 'You entered the live room.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -182,7 +182,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
-        infoMessage: 'Realtime session resumed.',
+        infoMessage: 'Your live room was restored.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -212,7 +212,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       recordings: const <RealtimeRecording>[],
       transcripts: const <RealtimeTranscriptJob>[],
       artifacts: const <RealtimeArtifact>[],
-      infoMessage: 'Left realtime session.',
+      infoMessage: 'You left the live room.',
     );
   }
 
@@ -221,7 +221,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     state = state.copyWith(
       sessionId: sessionId,
       joinState: RealtimeJoinState.requested,
-      infoMessage: 'Join request sent.',
+      infoMessage: 'Entry request sent.',
       clearErrorMessage: true,
     );
   }
@@ -258,20 +258,35 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       sessionId,
       waitingRoomEnabled: enabled,
     );
-    state = state.copyWith(policy: policy, infoMessage: 'Waiting room updated.');
+    state = state.copyWith(
+      policy: policy,
+      infoMessage: enabled ? 'Entry requests turned on.' : 'Entry requests turned off.',
+    );
   }
 
   Future<void> setLocked(bool locked) async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
 
-    final policy = await _repository.updatePolicy(
-      sessionId,
-      isLocked: locked,
-    );
+    final policy = await _repository.setLocked(sessionId, locked: locked);
+    final session = state.session;
+
     state = state.copyWith(
+      session: session == null
+          ? null
+          : RealtimeSession(
+              id: session.id,
+              surfaceType: session.surfaceType,
+              surfaceId: session.surfaceId,
+              startedByUserId: session.startedByUserId,
+              isActive: session.isActive,
+              isLocked: locked,
+              waitingRoomEnabled: session.waitingRoomEnabled,
+              createdAt: session.createdAt,
+              updatedAt: DateTime.now(),
+            ),
       policy: policy,
-      infoMessage: locked ? 'Session locked.' : 'Session unlocked.',
+      infoMessage: locked ? 'Room closed to new entries.' : 'Room opened to new entries.',
     );
   }
 
@@ -287,7 +302,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     await refreshPolicy();
     await hydrateSession(sessionId);
-    state = state.copyWith(infoMessage: 'Join request approved.');
+    state = state.copyWith(infoMessage: 'Entry request approved.');
   }
 
   Future<void> rejectJoinRequest(String requestUserId) async {
@@ -301,7 +316,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     await refreshPolicy();
-    state = state.copyWith(infoMessage: 'Join request rejected.');
+    state = state.copyWith(infoMessage: 'Entry request declined.');
   }
 
   Future<void> removeParticipant(String targetUserId) async {
@@ -310,7 +325,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     await _repository.removeParticipant(sessionId, targetUserId);
     await hydrateSession(sessionId);
-    state = state.copyWith(infoMessage: 'Participant removed.');
+    state = state.copyWith(infoMessage: 'Member removed from the room.');
   }
 
   Future<void> requestConsent() async {
@@ -321,7 +336,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final consents = await _repository.listConsents(sessionId);
     state = state.copyWith(
       consents: consents,
-      infoMessage: 'Consent requested.',
+      infoMessage: 'Fresh consent requested.',
     );
   }
 
@@ -360,7 +375,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final transcripts = await _repository.listTranscripts(sessionId);
     state = state.copyWith(
       transcripts: transcripts,
-      infoMessage: 'Transcript requested.',
+      infoMessage: 'Live notes requested.',
     );
   }
 
@@ -409,7 +424,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:replaced':
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.reconnecting,
-          infoMessage: 'This session moved to a new connection.',
+          infoMessage: 'This room moved to a new connection.',
           lastSocketEvent: event.name,
         );
         return;
@@ -417,27 +432,56 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'realtime:removed':
         state = state.copyWith(
           joinState: RealtimeJoinState.removed,
-          infoMessage: 'You were removed from this realtime session.',
+          infoMessage: 'You were removed from this live room.',
           lastSocketEvent: event.name,
         );
         return;
-      case 'session:participant.joined':
-      case 'session:participant.left':
-      case 'session:track.updated':
-        final sessionId = state.sessionId;
-        if (sessionId != null && sessionId.isNotEmpty) {
-          unawaited(hydrateSession(sessionId));
-        }
-        state = state.copyWith(lastSocketEvent: event.name);
+      case 'join:requested':
+        state = state.copyWith(
+          joinState: RealtimeJoinState.requested,
+          infoMessage: 'Your entry request is pending.',
+          lastSocketEvent: event.name,
+        );
+        return;
+      case 'join:approved':
+        state = state.copyWith(
+          joinState: RealtimeJoinState.approved,
+          infoMessage: 'Your entry request was approved.',
+          lastSocketEvent: event.name,
+        );
+        return;
+      case 'join:rejected':
+        state = state.copyWith(
+          joinState: RealtimeJoinState.rejected,
+          infoMessage: 'Your entry request was declined.',
+          lastSocketEvent: event.name,
+        );
+        return;
+      case 'session:state':
+      case 'participants:updated':
+      case 'policy:updated':
+      case 'session:policyUpdated':
+      case 'session:updated':
+      case 'session:participantUpdated':
+      case 'session:participantRemoved':
+      case 'consent:updated':
+      case 'recording:updated':
+      case 'transcript:updated':
+      case 'artifact:updated':
+        final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
+        state = merged.copyWith(lastSocketEvent: event.name);
         return;
       default:
         state = state.copyWith(lastSocketEvent: event.name);
+        return;
     }
   }
 
   RealtimeJoinState _mapJoinError(Object error) {
     final text = error.toString().toLowerCase();
-    if (text.contains('banned')) return RealtimeJoinState.banned;
+    if (text.contains('approval') || text.contains('waiting room')) {
+      return RealtimeJoinState.requested;
+    }
     if (text.contains('locked')) return RealtimeJoinState.locked;
     if (text.contains('reject')) return RealtimeJoinState.rejected;
     return RealtimeJoinState.failed;
