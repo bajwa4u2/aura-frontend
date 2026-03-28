@@ -6,6 +6,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 
@@ -22,10 +23,12 @@ class CorrespondenceHubScreen extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const _PageHeading(
-              title: 'Correspondence',
+            const _HeroCard(
+              eyebrow: 'Aura correspondence',
+              title: 'A calmer place for private exchange.',
               body:
-                  'Start private exchange, create shared space, and manage entry without losing your place.',
+                  'Threads, shared rooms, and invitations belong to one system. Enter once and stay oriented.',
+              pills: ['Direct threads', 'Shared spaces', 'Invitations'],
             ),
             const SizedBox(height: AuraSpace.s16),
             _StateCard(
@@ -45,68 +48,76 @@ class CorrespondenceHubScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          const _PageHeading(
-            title: 'Correspondence',
+          const _HeroCard(
+            eyebrow: 'Aura correspondence',
+            title: 'One communication system, held in order.',
             body:
-                'One calm place to continue what is active, begin something new, and bring others in when needed.',
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          const _SectionHeading(
-            title: 'Continue',
-            body: 'Ongoing threads, spaces, and anything waiting on you.',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          const _ActionBlock(
-            title: 'Conversations',
-            body:
-                'Open private threads and shared spaces already in motion.',
-            buttonLabel: 'Open conversations',
-            icon: Icons.forum_outlined,
-            route: '/conversations',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          const _ActionBlock(
-            title: 'Invitations',
-            body:
-                'Review invites you sent, what is still pending, and what reached you.',
-            buttonLabel: 'Open invitations',
-            icon: Icons.inbox_outlined,
-            route: '/me/invitations',
+                'Continue what is active, begin what matters, and bring others in without losing the thread.',
+            pills: ['Continue', 'Begin', 'Bring someone in'],
           ),
           const SizedBox(height: AuraSpace.s18),
           const _SectionHeading(
-            title: 'Start',
-            body: 'Begin direct exchange or open a new shared room for a group.',
+            title: 'Continue',
+            body: 'Ongoing exchange, pending invitations, and active rooms.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          const _ActionBlock(
+          const _ActionPanel(
+            title: 'Conversations',
+            body:
+                'Open direct threads and shared rooms already carrying weight.',
+            buttonLabel: 'Open conversations',
+            icon: Icons.forum_outlined,
+            route: '/conversations',
+            tag: 'Active',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          const _ActionPanel(
+            title: 'Invitations',
+            body:
+                'See what reached you, what is pending, and what still needs a response.',
+            buttonLabel: 'Review invitations',
+            icon: Icons.mark_email_unread_outlined,
+            route: '/me/invitations',
+            tag: 'Pending',
+          ),
+          const SizedBox(height: AuraSpace.s18),
+          const _SectionHeading(
+            title: 'Begin',
+            body: 'Start direct exchange or open a durable room for a group.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          const _ActionPanel(
             title: 'New conversation',
             body: 'Start a direct thread with one Aura member.',
             buttonLabel: 'Start conversation',
             icon: Icons.chat_bubble_outline,
             route: '/me/correspondence/create/conversation',
+            tag: 'Direct',
           ),
           const SizedBox(height: AuraSpace.s12),
-          const _ActionBlock(
+          const _ActionPanel(
             title: 'Create space',
-            body: 'Open a shared space for a circle, project, or ongoing group exchange.',
+            body:
+                'Open a shared room for a circle, project, or continuing group exchange.',
             buttonLabel: 'Create space',
-            icon: Icons.groups_outlined,
+            icon: Icons.groups_2_outlined,
             route: '/me/correspondence/create/space',
+            tag: 'Shared',
           ),
           const SizedBox(height: AuraSpace.s18),
           const _SectionHeading(
             title: 'Bring someone in',
-            body: 'Use invites only when you need to open a path for someone specific.',
+            body: 'Use invitations when a specific path of entry matters.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          const _ActionBlock(
+          const _ActionPanel(
             title: 'Create invitation',
             body:
-                'Invite someone into Aura, a space, or a conversation with the right level of access.',
-            buttonLabel: 'Open invite options',
+                'Open a clean path into Aura, a space, or a direct thread with the right access from the start.',
+            buttonLabel: 'Open invite flow',
             icon: Icons.outbound_outlined,
             route: '/invite',
+            tag: 'Entry',
           ),
         ],
       ),
@@ -114,30 +125,51 @@ class CorrespondenceHubScreen extends ConsumerWidget {
   }
 }
 
-class _PageHeading extends StatelessWidget {
-  const _PageHeading({
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.eyebrow,
     required this.title,
     required this.body,
+    required this.pills,
   });
 
+  final String eyebrow;
   final String title;
   final String body;
+  final List<String> pills;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AuraTextBlock(
-          title,
-          style: AuraText.title,
-          maxLines: 2,
-        ),
-        if (body.trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s6),
+    return AuraCard(
+      color: AuraSurface.elevated,
+      borderColor: AuraSurface.accentSoft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            eyebrow.toUpperCase(),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          AuraTextBlock(
+            title,
+            style: AuraText.title.copyWith(fontSize: 24, height: 1.2),
+            maxLines: 3,
+          ),
+          const SizedBox(height: AuraSpace.s8),
           AuraTextBlock(body, style: AuraText.body),
+          const SizedBox(height: AuraSpace.s14),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: pills.map((label) => _SignalPill(label: label)).toList(),
+          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -162,19 +194,20 @@ class _SectionHeading extends StatelessWidget {
           maxLines: 1,
         ),
         const SizedBox(height: AuraSpace.s4),
-        AuraTextBlock(body, style: AuraText.small.copyWith(color: Colors.black54)),
+        AuraTextBlock(body, style: AuraText.small),
       ],
     );
   }
 }
 
-class _ActionBlock extends StatelessWidget {
-  const _ActionBlock({
+class _ActionPanel extends StatelessWidget {
+  const _ActionPanel({
     required this.title,
     required this.body,
     required this.buttonLabel,
     required this.icon,
     required this.route,
+    required this.tag,
   });
 
   final String title;
@@ -182,44 +215,86 @@ class _ActionBlock extends StatelessWidget {
   final String buttonLabel;
   final IconData icon;
   final String route;
+  final String tag;
 
   @override
   Widget build(BuildContext context) {
     return AuraCard(
+      onTap: () => context.push(route),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 46,
+            height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.black12),
+              color: AuraSurface.accentSoft,
+              border: Border.all(color: AuraSurface.accentSoft),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Icon(icon, size: 18),
+            child: Icon(icon, size: 20, color: AuraSurface.ink),
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AuraTextBlock(
-                  title,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                  maxLines: 2,
+                Row(
+                  children: [
+                    Expanded(
+                      child: AuraTextBlock(
+                        title,
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        maxLines: 2,
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                    _SignalPill(label: tag),
+                  ],
                 ),
                 const SizedBox(height: AuraSpace.s6),
                 AuraTextBlock(body, style: AuraText.body),
                 const SizedBox(height: AuraSpace.s12),
-                OutlinedButton(
-                  onPressed: () => context.push(route),
-                  child: Text(buttonLabel),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton(
+                    onPressed: () => context.push(route),
+                    child: Text(buttonLabel),
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SignalPill extends StatelessWidget {
+  const _SignalPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.accentSoft),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          color: AuraSurface.ink,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

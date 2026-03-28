@@ -7,6 +7,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../correspondence/data/spaces_repository.dart';
@@ -159,7 +160,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             const _PageIntro(
               title: 'Conversations',
               body:
-                  'Ongoing direct threads and shared spaces stay here. Start something new from Correspondence when you need to.',
+                  'Ongoing direct threads and shared rooms stay here. Start something new from Correspondence when you need to.',
             ),
             const SizedBox(height: AuraSpace.s18),
             _StateCard(
@@ -202,7 +203,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             children: [
               const _PageIntro(
                 title: 'Conversations',
-                body: 'Could not load your conversation list.',
+                body: 'Could not load your ongoing correspondence.',
               ),
               const SizedBox(height: AuraSpace.s18),
               _StateCard(
@@ -229,7 +230,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                 const _PageIntro(
                   title: 'Conversations',
                   body:
-                      'Ongoing direct threads and shared spaces.',
+                      'A living record of direct threads and shared rooms already in motion.',
                 ),
                 const SizedBox(height: AuraSpace.s14),
                 const _ConversationQuickActions(),
@@ -263,6 +264,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   }
 }
 
+
 class _PageIntro extends StatelessWidget {
   const _PageIntro({
     required this.title,
@@ -274,19 +276,34 @@ class _PageIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AuraText.title),
-        if (body.trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s6),
-          Text(body, style: AuraText.body),
+    return AuraCard(
+      color: AuraSurface.elevated,
+      borderColor: AuraSurface.accentSoft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CONVERSATIONS',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            title,
+            style: AuraText.title.copyWith(fontSize: 24, height: 1.2),
+          ),
+          if (body.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(body, style: AuraText.body),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
-
 
 class _ConversationQuickActions extends StatelessWidget {
   const _ConversationQuickActions();
@@ -297,18 +314,21 @@ class _ConversationQuickActions extends StatelessWidget {
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
       children: const [
-        _QuickActionChip(
+        _QuickActionCard(
           label: 'New conversation',
+          subtitle: 'Start direct exchange',
           icon: Icons.chat_bubble_outline,
           route: '/me/correspondence/create/conversation',
         ),
-        _QuickActionChip(
+        _QuickActionCard(
           label: 'Create space',
+          subtitle: 'Open a shared room',
           icon: Icons.groups_outlined,
           route: '/me/correspondence/create/space',
         ),
-        _QuickActionChip(
+        _QuickActionCard(
           label: 'Invitations',
+          subtitle: 'Manage entry paths',
           icon: Icons.inbox_outlined,
           route: '/me/invitations',
         ),
@@ -317,23 +337,59 @@ class _ConversationQuickActions extends StatelessWidget {
   }
 }
 
-class _QuickActionChip extends StatelessWidget {
-  const _QuickActionChip({
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({
     required this.label,
+    required this.subtitle,
     required this.icon,
     required this.route,
   });
 
   final String label;
+  final String subtitle;
   final IconData icon;
   final String route;
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: () => context.push(route),
-      icon: Icon(icon, size: 18),
-      label: Text(label),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
+      child: AuraCard(
+        onTap: () => context.push(route),
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AuraSurface.accentSoft,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AuraSurface.accentSoft),
+              ),
+              child: Icon(icon, size: 18, color: AuraSurface.ink),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s2),
+                  Text(subtitle, style: AuraText.small),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -359,12 +415,12 @@ class _FilterRow extends StatelessWidget {
           onTap: () => onFilterChanged(_ConversationFilter.all),
         ),
         _FilterPill(
-          label: 'Private',
+          label: 'Direct',
           selected: filter == _ConversationFilter.private,
           onTap: () => onFilterChanged(_ConversationFilter.private),
         ),
         _FilterPill(
-          label: 'Spaces',
+          label: 'Shared rooms',
           selected: filter == _ConversationFilter.spaces,
           onTap: () => onFilterChanged(_ConversationFilter.spaces),
         ),
@@ -386,9 +442,9 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : Colors.black87;
-    final background = selected ? Colors.black : Colors.transparent;
-    final borderColor = selected ? Colors.black : Colors.black12;
+    final foreground = selected ? AuraSurface.ink : AuraSurface.muted;
+    final background = selected ? AuraSurface.accentSoft : Colors.transparent;
+    final borderColor = selected ? AuraSurface.accentSoft : AuraSurface.divider;
 
     return InkWell(
       onTap: onTap,
@@ -428,11 +484,8 @@ class _ConversationList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(18),
-      ),
+    return AuraCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[
@@ -441,7 +494,8 @@ class _ConversationList extends StatelessWidget {
               opening: openingConversationId == items[i].id,
               onTap: () => onOpenConversation(items[i]),
             ),
-            if (i != items.length - 1) const Divider(height: 1),
+            if (i != items.length - 1)
+              const Divider(height: 1, color: AuraSurface.divider),
           ],
         ],
       ),
@@ -500,6 +554,7 @@ class _ConversationRow extends StatelessWidget {
                           item.timestamp,
                           style: AuraText.small.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: AuraSurface.muted,
                           ),
                         ),
                       ],
@@ -511,7 +566,7 @@ class _ConversationRow extends StatelessWidget {
                       item.preview,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AuraText.small,
+                      style: AuraText.small.copyWith(color: AuraSurface.ink),
                     ),
                   ],
                   if (item.meta.isNotEmpty) ...[
@@ -522,7 +577,7 @@ class _ConversationRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AuraText.small.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.black54,
+                        color: AuraSurface.muted,
                       ),
                     ),
                   ],
@@ -536,7 +591,7 @@ class _ConversationRow extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.chevron_right, size: 18),
+                : const Icon(Icons.chevron_right, size: 18, color: AuraSurface.muted),
           ],
         ),
       ),
@@ -560,17 +615,19 @@ class _ConversationBadge extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
+        color: AuraSurface.accentSoft,
+        border: Border.all(color: AuraSurface.accentSoft),
         borderRadius: BorderRadius.circular(999),
       ),
       child: badge.isNotEmpty
           ? Text(
               badge,
               style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
                 fontWeight: FontWeight.w700,
               ),
             )
-          : Icon(icon, size: 18),
+          : Icon(icon, size: 18, color: AuraSurface.ink),
     );
   }
 }
@@ -624,7 +681,7 @@ class _FilterRowSkeleton extends StatelessWidget {
       children: const [
         _SkeletonPill(width: 52),
         _SkeletonPill(width: 72),
-        _SkeletonPill(width: 66),
+        _SkeletonPill(width: 102),
       ],
     );
   }
@@ -643,7 +700,7 @@ class _SkeletonPill extends StatelessWidget {
       width: width,
       height: 34,
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: AuraSurface.divider,
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -655,19 +712,16 @@ class _ConversationListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(18),
-      ),
+    return AuraCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: const [
           _ConversationRowSkeleton(),
-          Divider(height: 1),
+          Divider(height: 1, color: AuraSurface.divider),
           _ConversationRowSkeleton(),
-          Divider(height: 1),
+          Divider(height: 1, color: AuraSurface.divider),
           _ConversationRowSkeleton(),
-          Divider(height: 1),
+          Divider(height: 1, color: AuraSurface.divider),
           _ConversationRowSkeleton(),
         ],
       ),
@@ -689,7 +743,7 @@ class _ConversationRowSkeleton extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: Colors.black12,
+              color: AuraSurface.divider,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -698,11 +752,11 @@ class _ConversationRowSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(height: 14, width: 170, color: Colors.black12),
+                Container(height: 14, width: 170, color: AuraSurface.divider),
                 const SizedBox(height: AuraSpace.s8),
-                Container(height: 12, width: double.infinity, color: Colors.black12),
+                Container(height: 12, width: double.infinity, color: AuraSurface.divider),
                 const SizedBox(height: AuraSpace.s6),
-                Container(height: 12, width: 150, color: Colors.black12),
+                Container(height: 12, width: 150, color: AuraSurface.divider),
               ],
             ),
           ),
@@ -713,6 +767,7 @@ class _ConversationRowSkeleton extends StatelessWidget {
 }
 
 class _ConversationItem {
+
   const _ConversationItem({
     required this.id,
     required this.title,

@@ -9,6 +9,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
@@ -363,10 +364,24 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           AuraCard(
+            color: AuraSurface.elevated,
+            borderColor: AuraSurface.accentSoft,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_titleForDestination(_destinationType), style: AuraText.title),
+                Text(
+                  'INVITATION',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                Text(
+                  _titleForDestination(_destinationType),
+                  style: AuraText.title.copyWith(fontSize: 24, height: 1.2),
+                ),
                 const SizedBox(height: AuraSpace.s8),
                 AuraTextBlock(
                   _bodyForDestination(
@@ -375,6 +390,19 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     threadId: widget.threadId,
                   ),
                   style: AuraText.body,
+                ),
+                const SizedBox(height: AuraSpace.s14),
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  children: [
+                    _ContextPill(label: _labelForInviteMode(_inviteMode)),
+                    _ContextPill(label: _labelForAccessPolicy(_accessPolicy)),
+                    if (widget.spaceId != null && widget.spaceId!.trim().isNotEmpty)
+                      const _ContextPill(label: 'Space context'),
+                    if (widget.threadId != null && widget.threadId!.trim().isNotEmpty)
+                      const _ContextPill(label: 'Thread context'),
+                  ],
                 ),
               ],
             ),
@@ -385,6 +413,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Entry method', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s6),
+                Text(
+                  'Decide who this path is for before you define access.',
+                  style: AuraText.small,
+                ),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
                   value: _inviteMode,
@@ -398,7 +431,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 const SizedBox(height: AuraSpace.s10),
                 AuraTextBlock(
                   _inviteModeDescription(_destinationType, _inviteMode),
-                  style: AuraText.small.copyWith(color: Colors.black54),
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
               ],
             ),
@@ -410,6 +443,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Choose member', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    'Search across Aura members, then choose the exact person you want to bring in.',
+                    style: AuraText.small,
+                  ),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
@@ -446,7 +484,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                             selected: _selected?.id == filtered[i].id,
                             onTap: () => setState(() => _selected = filtered[i]),
                           ),
-                          if (i != filtered.length - 1) const Divider(height: 1),
+                          if (i != filtered.length - 1)
+                            const Divider(height: 1, color: AuraSurface.divider),
                         ],
                       ],
                     ),
@@ -459,7 +498,12 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Access', style: AuraText.title),
+                Text('Access and delivery', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s6),
+                Text(
+                  'Shape how someone arrives, what they can do, and how the invitation is delivered.',
+                  style: AuraText.small,
+                ),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
                   value: _accessPolicy,
@@ -530,13 +574,13 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 const SizedBox(height: AuraSpace.s10),
                 AuraTextBlock(
                   _accessPolicyHint(_destinationType, _accessPolicy),
-                  style: AuraText.small.copyWith(color: Colors.black54),
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
                 if (_submitError != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Text(
                     _submitError!,
-                    style: AuraText.small.copyWith(color: Colors.red.shade700),
+                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
                   ),
                 ],
               ],
@@ -583,7 +627,7 @@ class _SelectedCandidateChip extends StatelessWidget {
         vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: AuraSurface.divider),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -599,7 +643,7 @@ class _SelectedCandidateChip extends StatelessWidget {
             const SizedBox(width: AuraSpace.s6),
             AuraTextBlock(
               '@${candidate.handle}',
-              style: AuraText.small.copyWith(color: Colors.black54),
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -772,6 +816,61 @@ List<DropdownMenuItem<String>> _accessPolicyItems(String destinationType) {
       return const [
         DropdownMenuItem(value: 'OPEN', child: Text('Open')),
       ];
+  }
+}
+
+
+String _labelForInviteMode(String value) {
+  switch (value.trim().toUpperCase()) {
+    case 'KNOWN_MEMBER':
+      return 'Known member';
+    case 'SHAREABLE':
+      return 'Shareable';
+    default:
+      return value.trim().isEmpty ? 'Invite' : value.trim();
+  }
+}
+
+String _labelForAccessPolicy(String value) {
+  switch (value.trim().toUpperCase()) {
+    case 'OPEN':
+      return 'Open';
+    case 'FOLLOW_REQUIRED':
+      return 'Follow required';
+    case 'APPROVAL_REQUIRED':
+      return 'Approval required';
+    case 'FOLLOW_AND_APPROVAL':
+      return 'Follow and approval';
+    default:
+      return value.trim().isEmpty ? 'Access' : value.trim();
+  }
+}
+
+class _ContextPill extends StatelessWidget {
+  const _ContextPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        border: Border.all(color: AuraSurface.accentSoft),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          color: AuraSurface.ink,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }
 
