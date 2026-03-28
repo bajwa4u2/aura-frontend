@@ -172,7 +172,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         _searchCandidates = const <_InviteCandidate>[];
         _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
         _loading = false;
-        _loadError = 'Member search is unavailable right now. Please try again.';
+        _loadError = 'Member search is unavailable right now. Please try again in a moment.';
       });
     }
   }
@@ -285,7 +285,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
     if (_showsInternalRecipientPicker && _selected == null) {
       setState(() {
-        _submitError = 'Choose the Aura member you want to invite.';
+        _submitError = 'Choose the member you want to invite.';
       });
       return;
     }
@@ -384,7 +384,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite mode', style: AuraText.title),
+                Text('Entry method', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
                   value: _inviteMode,
@@ -393,7 +393,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     if (value == null) return;
                     _changeInviteMode(value);
                   },
-                  decoration: const InputDecoration(labelText: 'How to create this invite'),
+                  decoration: const InputDecoration(labelText: 'Who should receive it'),
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 AuraTextBlock(
@@ -409,14 +409,14 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Choose Aura member', style: AuraText.title),
+                  Text('Choose member', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
                     decoration: const InputDecoration(
-                      labelText: 'Search members',
-                      hintText: 'Search name or handle',
+                      labelText: 'Find a member',
+                      hintText: 'Search by name or handle',
                       prefixIcon: Icon(Icons.search),
                     ),
                   ),
@@ -459,7 +459,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite settings', style: AuraText.title),
+                Text('Access', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
                   value: _accessPolicy,
@@ -468,7 +468,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     if (value == null) return;
                     setState(() => _accessPolicy = value);
                   },
-                  decoration: const InputDecoration(labelText: 'Access policy'),
+                  decoration: const InputDecoration(labelText: 'How entry works'),
                 ),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
@@ -478,7 +478,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     if (value == null) return;
                     setState(() => _deliveryChannel = value);
                   },
-                  decoration: const InputDecoration(labelText: 'Delivery'),
+                  decoration: const InputDecoration(labelText: 'How it is delivered'),
                 ),
                 if (!_showsInternalRecipientPicker) ...[
                   const SizedBox(height: AuraSpace.s12),
@@ -804,13 +804,13 @@ String _defaultRecipientTypeForMode(String inviteMode) {
 String _titleForDestination(String destinationType) {
   switch (destinationType) {
     case 'JOIN_AURA':
-      return 'Invite to Aura';
+      return 'Invite into Aura';
     case 'START_1_TO_1':
-      return 'Invite to 1:1';
+      return 'Start direct conversation';
     case 'JOIN_SPACE':
-      return 'Invite to space';
+      return 'Invite into space';
     case 'JOIN_THREAD':
-      return 'Invite to thread';
+      return 'Invite into thread';
     default:
       return 'Create invite';
   }
@@ -823,9 +823,9 @@ String _bodyForDestination(
 }) {
   switch (destinationType) {
     case 'JOIN_AURA':
-      return 'Create an outward path into Aura itself. This is for people who are not yet inside the system.';
+      return 'Create a clean entry path for someone who is not yet inside Aura.';
     case 'START_1_TO_1':
-      return 'Create an invitation into direct correspondence. The thread will only exist after acceptance.';
+      return 'Invite someone into direct correspondence. The thread opens only after they accept.';
     case 'JOIN_SPACE':
       return (spaceId ?? '').trim().isNotEmpty
           ? 'Create an invitation into this space.'
@@ -843,19 +843,19 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
   if (inviteMode == 'KNOWN_MEMBER') {
     switch (destinationType) {
       case 'START_1_TO_1':
-        return 'Choose a member directly and let the invitation carry the rest.';
+        return 'Choose the member directly and let the invitation carry the rest.';
       case 'JOIN_SPACE':
-        return 'Choose a member directly for this space.';
+        return 'Choose the member directly for this space.';
       case 'JOIN_THREAD':
-        return 'Choose a member directly for this conversation.';
+        return 'Choose the member directly for this conversation.';
       default:
-        return 'Choose an Aura member directly.';
+        return 'Choose the member directly inside Aura.';
     }
   }
 
   switch (destinationType) {
     case 'JOIN_AURA':
-      return 'Create a shareable invitation link that can travel outside Aura.';
+      return 'Create a shareable link that can travel outside Aura.';
     case 'START_1_TO_1':
       return 'Create a shareable path into a direct conversation. Access rules still apply when they arrive.';
     case 'JOIN_SPACE':

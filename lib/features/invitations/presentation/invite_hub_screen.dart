@@ -31,35 +31,39 @@ class InviteHubScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite', style: AuraText.title),
+                Text('Bring someone in', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s8),
                 AuraTextBlock(
-                  'Choose how someone should enter. You can invite them into Aura, into a shared space, or into a specific conversation without losing structure.',
+                  _contextBody(),
                   style: AuraText.body,
                 ),
+                if (_hasSpaceContext || _hasThreadContext) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    runSpacing: AuraSpace.s8,
+                    children: [
+                      if (_hasSpaceContext) _ContextPill(label: 'Space ready'),
+                      if (_hasThreadContext) _ContextPill(label: 'Thread ready'),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: AuraSpace.s14),
           _InviteOptionCard(
-            title: 'Invite to Aura',
-            subtitle: 'Bring someone into Aura with a clean entry path.',
-            icon: Icons.public_outlined,
-            onTap: () => context.push('/invite/create?destinationType=JOIN_AURA'),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          _InviteOptionCard(
-            title: 'Invite to 1:1',
-            subtitle: 'Start a direct conversation with a specific member.',
+            title: 'Direct conversation',
+            subtitle: 'Open a path into a 1:1 exchange with one member.',
             icon: Icons.chat_outlined,
             onTap: () => context.push('/invite/create?destinationType=START_1_TO_1'),
           ),
           const SizedBox(height: AuraSpace.s12),
           _InviteOptionCard(
-            title: 'Invite to space',
+            title: 'Shared space',
             subtitle: _hasSpaceContext
-                ? 'Create an invitation into this space.'
-                : 'Bring someone into a shared space with the right access from the start.',
+                ? 'Invite someone into this space with the right role from the start.'
+                : 'Invite someone into a shared space without sending them into the wrong room.',
             icon: Icons.groups_outlined,
             onTap: () => context.push(
               '/invite/create?destinationType=JOIN_SPACE${_hasSpaceContext ? '&spaceId=${Uri.encodeComponent(spaceId!.trim())}' : ''}',
@@ -67,10 +71,10 @@ class InviteHubScreen extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s12),
           _InviteOptionCard(
-            title: 'Invite to thread',
+            title: 'Specific thread',
             subtitle: _hasThreadContext
-                ? 'Create an invitation into this thread.'
-                : 'Bring someone straight into a specific ongoing conversation.',
+                ? 'Send someone into this thread instead of making them hunt for it.'
+                : 'Invite someone into a live thread when the exact conversation matters.',
             icon: Icons.forum_outlined,
             onTap: () => context.push(
               '/invite/create?destinationType=JOIN_THREAD'
@@ -78,14 +82,31 @@ class InviteHubScreen extends StatelessWidget {
               '${_hasThreadContext ? '&threadId=${Uri.encodeComponent(threadId!.trim())}' : ''}',
             ),
           ),
+          const SizedBox(height: AuraSpace.s12),
+          _InviteOptionCard(
+            title: 'Into Aura',
+            subtitle: 'Create an entry path for someone who is still outside the platform.',
+            icon: Icons.public_outlined,
+            onTap: () => context.push('/invite/create?destinationType=JOIN_AURA'),
+          ),
           const SizedBox(height: AuraSpace.s14),
           OutlinedButton(
             onPressed: () => context.push('/me/invitations'),
-            child: const Text('Open invitations'),
+            child: const Text('Open invitation history'),
           ),
         ],
       ),
     );
+  }
+
+  String _contextBody() {
+    if (_hasThreadContext) {
+      return 'You are inviting someone into an existing conversation. Choose the cleanest entry point and keep the thread intact.';
+    }
+    if (_hasSpaceContext) {
+      return 'You are inviting someone into a shared space. Choose how they should arrive and what kind of access they should receive.';
+    }
+    return 'Choose the kind of entry you need. Direct conversation, shared space, exact thread, or Aura itself.';
   }
 }
 
@@ -146,6 +167,30 @@ class _InviteOptionCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ContextPill extends StatelessWidget {
+  const _ContextPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

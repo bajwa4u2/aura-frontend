@@ -159,7 +159,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             const _PageIntro(
               title: 'Conversations',
               body:
-                  'Ongoing private and shared exchange settles here.',
+                  'Ongoing direct threads and shared spaces stay here. Start something new from Correspondence when you need to.',
             ),
             const SizedBox(height: AuraSpace.s18),
             _StateCard(
@@ -189,7 +189,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             children: const [
               _PageIntro(
                 title: 'Conversations',
-                body: 'Loading conversations.',
+                body: 'Loading active conversations and spaces.',
               ),
               SizedBox(height: AuraSpace.s14),
               _FilterRowSkeleton(),
@@ -202,7 +202,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             children: [
               const _PageIntro(
                 title: 'Conversations',
-                body: 'Could not load conversations.',
+                body: 'Could not load your conversation list.',
               ),
               const SizedBox(height: AuraSpace.s18),
               _StateCard(
@@ -229,8 +229,10 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                 const _PageIntro(
                   title: 'Conversations',
                   body:
-                      'Active private and shared continuity.',
+                      'Ongoing direct threads and shared spaces.',
                 ),
+                const SizedBox(height: AuraSpace.s14),
+                const _ConversationQuickActions(),
                 const SizedBox(height: AuraSpace.s14),
                 _FilterRow(
                   filter: _filter,
@@ -281,6 +283,57 @@ class _PageIntro extends StatelessWidget {
           Text(body, style: AuraText.body),
         ],
       ],
+    );
+  }
+}
+
+
+class _ConversationQuickActions extends StatelessWidget {
+  const _ConversationQuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s10,
+      runSpacing: AuraSpace.s10,
+      children: const [
+        _QuickActionChip(
+          label: 'New conversation',
+          icon: Icons.chat_bubble_outline,
+          route: '/me/correspondence/create/conversation',
+        ),
+        _QuickActionChip(
+          label: 'Create space',
+          icon: Icons.groups_outlined,
+          route: '/me/correspondence/create/space',
+        ),
+        _QuickActionChip(
+          label: 'Invitations',
+          icon: Icons.inbox_outlined,
+          route: '/me/invitations',
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionChip extends StatelessWidget {
+  const _QuickActionChip({
+    required this.label,
+    required this.icon,
+    required this.route,
+  });
+
+  final String label;
+  final IconData icon;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () => context.push(route),
+      icon: Icon(icon, size: 18),
+      label: Text(label),
     );
   }
 }
@@ -917,11 +970,11 @@ String _emptyTitleForFilter(_ConversationFilter filter) {
 String _emptyBodyForFilter(_ConversationFilter filter) {
   switch (filter) {
     case _ConversationFilter.all:
-      return 'Active continuity will appear here.';
+      return 'Start a conversation, open a space, or wait for the first reply. Ongoing exchange will appear here.';
     case _ConversationFilter.private:
-      return 'Your direct exchanges will appear here.';
+      return 'Direct threads will appear here once you start one or someone writes to you.';
     case _ConversationFilter.spaces:
-      return 'Your shared spaces will appear here.';
+      return 'Shared spaces will appear here once you create one or join one.';
   }
 }
 
