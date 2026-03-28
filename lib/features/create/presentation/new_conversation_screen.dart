@@ -1477,17 +1477,18 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }
 
   String _extractThreadId(dynamic data) {
-  final map = _deepFirstMap(data);
+    final map = _deepFirstMap(data);
 
-  final id = _pickString(map, const [
-    'threadId',
-    'thread_id',
-    'defaultThreadId',
-    'mainThreadId',
-    'primaryThreadId',
-  ]);
+    final id = _pickString(map, const [
+      'threadId',
+      'thread_id',
+      'defaultThreadId',
+      'mainThreadId',
+      'primaryThreadId',
+    ]);
 
-  return id;
+    return id;
+  }
 }
 
 class _SuggestionTile extends StatelessWidget {
