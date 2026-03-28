@@ -352,8 +352,10 @@ class _ThreadHeaderCard extends StatelessWidget {
             children: [
               if (kind.isNotEmpty) _Pill(label: kind.replaceAll('_', ' ')),
               if (archived) const _Pill(label: 'ARCHIVED'),
-              if (memberCount > 0) _Pill(label: 'Members $memberCount'),
-              if (messageCount > 0) _Pill(label: 'Messages $messageCount'),
+              if ((memberCount ?? 0) > 0)
+                _Pill(label: 'Members ${memberCount ?? 0}'),
+              if ((messageCount ?? 0) > 0)
+                _Pill(label: 'Messages ${messageCount ?? 0}'),
             ],
           ),
           if (description.isNotEmpty) ...[
