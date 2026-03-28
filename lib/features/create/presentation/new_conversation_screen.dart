@@ -689,38 +689,6 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return preferredExistingThreadId;
     }
 
-    final res = await dio.post(
-      '/spaces/$spaceId/threads',
-      data: <String, dynamic>{
-        'title': member.displayName.trim().isEmpty
-            ? 'Conversation'
-            : member.displayName.trim(),
-        'kind': 'DIRECT',
-        if (member.userId.trim().isNotEmpty) 'memberIds': [member.userId.trim()],
-      },
-    );
-
-    final createdThreadId = _extractThreadId(res.data);
-    if (createdThreadId.isNotEmpty) {
-      return createdThreadId;
-    }
-
-    final createdThreadMap = _deepFirstMap(res.data);
-    final directId = _pickString(
-      createdThreadMap,
-      const ['id', '_id', 'threadId'],
-    );
-    if (directId.isNotEmpty) {
-      return directId;
-    }
-
-    final refreshedThreads =
-        await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
-    final preferredRefreshedThreadId = _pickPreferredThreadId(refreshedThreads);
-    if (preferredRefreshedThreadId.isNotEmpty) {
-      return preferredRefreshedThreadId;
-    }
-
     throw Exception(
       'Conversation space was created, but no usable thread could be opened.',
     );
@@ -732,7 +700,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     for (final thread in threads) {
       final kind = _pickString(thread, const ['kind', 'type']).toUpperCase();
       final id = _pickString(thread, const ['id', '_id', 'threadId']);
-      if (id.isNotEmpty && kind == 'DIRECT') {
+      if (id.isNotEmpty && kind == 'MAIN') {
+        return id;
+      }
+    }
+
+    for (final thread in threads) {
+      final kind = _pickString(thread, const ['kind', 'type']).toUpperCase();
+      final id = _pickString(thread, const ['id', '_id', 'threadId']);
+      if (id.isNotEmpty && kind == 'PRIVATE') {
         return id;
       }
     }
