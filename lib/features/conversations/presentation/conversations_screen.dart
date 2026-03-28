@@ -42,6 +42,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   _ConversationFilter _filter = _ConversationFilter.all;
   Timer? _pollTimer;
   String _openingConversationId = '';
+  String _handledThreadId = '';
 
   @override
   void initState() {
@@ -106,6 +107,42 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
           _openingConversationId = '';
         });
       }
+    }
+  }
+
+
+  Future<void> _openRequestedThreadIfNeeded(
+    List<Map<String, dynamic>> spaces,
+  ) async {
+    final uri = GoRouterState.of(context).uri;
+    final requestedThreadId = (uri.queryParameters['threadId'] ?? '').trim();
+
+    if (requestedThreadId.isEmpty ||
+        _handledThreadId == requestedThreadId ||
+        _openingConversationId.isNotEmpty) {
+      return;
+    }
+
+    _handledThreadId = requestedThreadId;
+
+    try {
+      final thread = await ref.read(threadsRepositoryProvider).getThread(requestedThreadId);
+      if (!mounted) return;
+
+      final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+      if (spaceId.isNotEmpty) {
+        context.push('/me/correspondence/$spaceId/thread/$requestedThreadId');
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That conversation is no longer available.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That conversation could not be opened.')),
+      );
     }
   }
 
@@ -178,6 +215,11 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
           ),
           data: (spaces) {
             final normalized = [...spaces]..sort(_sortSpacesByActivity);
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              unawaited(_openRequestedThreadIfNeeded(normalized));
+            });
             final visible = _filterSpaces(normalized, _filter);
             final items = _buildConversationItems(visible);
 

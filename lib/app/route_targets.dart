@@ -28,6 +28,23 @@ String normalizeMemberFacingRoute(
     normalizedPath = '/me/correspondence';
   } else if (normalizedPath.startsWith('/correspondence/')) {
     normalizedPath = '/me$normalizedPath';
+  } else if (normalizedPath.startsWith('/spaces/')) {
+    normalizedPath = '/me/correspondence/${normalizedPath.substring('/spaces/'.length)}';
+  } else if (normalizedPath.startsWith('/threads/')) {
+    final threadId = normalizedPath.substring('/threads/'.length).trim();
+    if (threadId.isNotEmpty) {
+      normalizedPath = '/conversations';
+      final mergedQuery = <String, String>{
+        ...uri.queryParameters,
+        'threadId': threadId,
+      };
+      final normalizedUri = uri.replace(
+        path: normalizedPath,
+        queryParameters: mergedQuery,
+      );
+      final result = normalizedUri.toString().trim();
+      return result.isEmpty ? fallback : result;
+    }
   } else if (normalizedPath.startsWith('/author/')) {
     normalizedPath = '/u/${normalizedPath.substring('/author/'.length)}';
   }

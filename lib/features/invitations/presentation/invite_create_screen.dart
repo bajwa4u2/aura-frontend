@@ -172,7 +172,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         _searchCandidates = const <_InviteCandidate>[];
         _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
         _loading = false;
-        _loadError = 'Aura member search could not be loaded: $e';
+        _loadError = 'Member search is unavailable right now. Please try again.';
       });
     }
   }
@@ -434,7 +434,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     AuraTextBlock(_loadError!, style: AuraText.body)
                   else if (filtered.isEmpty)
                     AuraTextBlock(
-                      'No Aura members matched your search yet.',
+                      'No members matched that search.',
                       style: AuraText.body,
                     )
                   else
@@ -843,11 +843,11 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
   if (inviteMode == 'KNOWN_MEMBER') {
     switch (destinationType) {
       case 'START_1_TO_1':
-        return 'Choose an Aura member directly. Entry still follows the access policy after the invite reaches them.';
+        return 'Choose a member directly and let the invitation carry the rest.';
       case 'JOIN_SPACE':
-        return 'Choose an Aura member directly for this space. This is one mode, not the only mode.';
+        return 'Choose a member directly for this space.';
       case 'JOIN_THREAD':
-        return 'Choose an Aura member directly for this thread. Entry still follows the access policy.';
+        return 'Choose a member directly for this conversation.';
       default:
         return 'Choose an Aura member directly.';
     }
@@ -857,7 +857,7 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
     case 'JOIN_AURA':
       return 'Create a shareable invitation link that can travel outside Aura.';
     case 'START_1_TO_1':
-      return 'Create a shareable path into a direct correspondence invitation. Follow or approval can still be enforced at entry.';
+      return 'Create a shareable path into a direct conversation. Access rules still apply when they arrive.';
     case 'JOIN_SPACE':
       return 'Create a shareable path into this space. Access is decided when the invite is opened, not when it is created.';
     case 'JOIN_THREAD':

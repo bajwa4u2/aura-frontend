@@ -11,6 +11,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../updates/notifications_repository.dart';
+import '../../correspondence/data/threads_repository.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
@@ -204,10 +205,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       } catch (_) {}
     }
     if (!mounted) return;
-    _navigateFromActivity(item);
+    await _navigateFromActivity(item);
   }
 
-  void _navigateFromActivity(Map<String, dynamic> item) {
+  Future<void> _navigateFromActivity(Map<String, dynamic> item) async {
     final type = _stringOf(item['type']).toUpperCase();
     final actor = _mapOf(item['actor']);
     final data = _mapOf(item['data']);
@@ -287,6 +288,25 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     }
 
     if (deeplink.isNotEmpty) {
+      if (deeplink.startsWith('/threads/')) {
+        final idFromLink = deeplink.substring('/threads/'.length).split('?').first.trim();
+        if (idFromLink.isNotEmpty) {
+          await _openThreadTarget(
+            threadId: idFromLink,
+            spaceIdHint: spaceId,
+          );
+          return;
+        }
+      }
+
+      if (deeplink.startsWith('/spaces/')) {
+        final idFromLink = deeplink.substring('/spaces/'.length).split('?').first.trim();
+        if (idFromLink.isNotEmpty) {
+          context.push('/me/correspondence/$idFromLink');
+          return;
+        }
+      }
+
       context.push(deeplink);
       return;
     }
@@ -333,15 +353,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return;
       case 'THREAD_INVITE':
       case 'MESSAGE_RECEIVED':
-        if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId/thread/$threadId');
-          return;
-        }
         if (threadId.isNotEmpty) {
-          context.push('/conversations');
+          await _openThreadTarget(
+            threadId: threadId,
+            spaceIdHint: spaceId,
+          );
           return;
         }
-        if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
+        if (spaceId.isNotEmpty) {
+          context.push('/me/correspondence/$spaceId');
+        }
         return;
       default:
         if (postId.isNotEmpty) {
@@ -358,6 +379,42 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         }
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
     }
+  }
+
+  Future<void> _openThreadTarget({
+    required String threadId,
+    String? spaceIdHint,
+  }) async {
+    final cleanThreadId = threadId.trim();
+    final cleanSpaceId = (spaceIdHint ?? '').trim();
+
+    if (cleanThreadId.isEmpty) {
+      context.push('/conversations');
+      return;
+    }
+
+    if (cleanSpaceId.isNotEmpty) {
+      context.push('/me/correspondence/$cleanSpaceId/thread/$cleanThreadId');
+      return;
+    }
+
+    try {
+      final thread = await ref.read(threadsRepositoryProvider).getThread(cleanThreadId);
+      if (!mounted) return;
+
+      final resolvedSpaceId = _firstNonEmpty([
+        _stringOf(thread['spaceId']),
+        _stringOf(thread['space_id']),
+      ]);
+
+      if (resolvedSpaceId.isNotEmpty) {
+        context.push('/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId');
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    context.push('/conversations?threadId=$cleanThreadId');
   }
 
   @override
