@@ -318,13 +318,13 @@ class _ConversationQuickActions extends StatelessWidget {
           label: 'New conversation',
           subtitle: 'Start direct exchange',
           icon: Icons.chat_bubble_outline,
-          route: '/me/correspondence/create/conversation',
+          route: '/me/correspondence?start=private',
         ),
         _QuickActionCard(
           label: 'Create space',
           subtitle: 'Open a shared room',
           icon: Icons.groups_outlined,
-          route: '/me/correspondence/create/space',
+          route: '/me/correspondence?start=space',
         ),
         _QuickActionCard(
           label: 'Invitations',

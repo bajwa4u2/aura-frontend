@@ -54,7 +54,6 @@ import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
 import 'features/correspondence/presentation/thread_screen.dart';
 import 'features/correspondence/presentation/invite_member_screen.dart';
-import 'features/create/presentation/new_conversation_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
 import 'features/invitations/presentation/invite_hub_screen.dart';
 import 'features/invitations/presentation/invitations_screen.dart';
@@ -580,21 +579,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kCreateConversationRoute,
-            builder: (context, state) => NewConversationScreen(
-              isSharedSpaceMode: false,
-              initialUserId: state.uri.queryParameters['userId'],
-              initialHandle: state.uri.queryParameters['handle'],
-              initialName: state.uri.queryParameters['name'],
-            ),
+            redirect: (context, state) {
+              final query = <String, String>{...state.uri.queryParameters};
+              query['start'] = 'private';
+              return Uri(
+                path: kCorrespondenceHubRoute,
+                queryParameters: query,
+              ).toString();
+            },
           ),
           GoRoute(
             path: kCreateSpaceRoute,
-            builder: (context, state) => NewConversationScreen(
-              isSharedSpaceMode: true,
-              initialUserId: state.uri.queryParameters['userId'],
-              initialHandle: state.uri.queryParameters['handle'],
-              initialName: state.uri.queryParameters['name'],
-            ),
+            redirect: (context, state) {
+              final query = <String, String>{...state.uri.queryParameters};
+              query['start'] = 'space';
+              return Uri(
+                path: kCorrespondenceHubRoute,
+                queryParameters: query,
+              ).toString();
+            },
           ),
           GoRoute(
             path: '/me/correspondence/:spaceId',

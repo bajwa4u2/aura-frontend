@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../create/presentation/new_conversation_screen.dart';
 
 class CorrespondenceHubScreen extends ConsumerWidget {
   const CorrespondenceHubScreen({super.key});
@@ -15,6 +16,8 @@ class CorrespondenceHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authStatusProvider);
+    final uri = GoRouterState.of(context).uri;
+    final start = (uri.queryParameters['start'] ?? '').trim().toLowerCase();
 
     if (auth != AuthStatus.authed) {
       return AuraScaffold(
@@ -40,6 +43,15 @@ class CorrespondenceHubScreen extends ConsumerWidget {
       );
     }
 
+    if (start == 'private' || start == 'space') {
+      return NewConversationScreen(
+        isSharedSpaceMode: start == 'space',
+        initialUserId: uri.queryParameters['userId'],
+        initialHandle: uri.queryParameters['handle'],
+        initialName: uri.queryParameters['name'],
+      );
+    }
+
     return AuraScaffold(
       title: 'Correspondence',
       body: ListView(
@@ -56,7 +68,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             body: 'Choose one member and begin directly.',
             buttonLabel: 'Start privately',
             icon: Icons.chat_bubble_outline,
-            route: '/me/correspondence/create/conversation',
+            route: '/me/correspondence?start=private',
           ),
           SizedBox(height: AuraSpace.s12),
           _ActionBlock(
@@ -64,7 +76,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             body: 'Bring together a circle, workroom, or salon with clear membership from the start.',
             buttonLabel: 'Create space',
             icon: Icons.groups_outlined,
-            route: '/me/correspondence/create/space',
+            route: '/me/correspondence?start=space',
           ),
           SizedBox(height: AuraSpace.s12),
           _ActionBlock(
