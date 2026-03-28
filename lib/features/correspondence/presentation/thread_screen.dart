@@ -16,7 +16,6 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
@@ -188,13 +187,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
-                  const _SectionIntroCard(
-                    eyebrow: 'CORRESPONDENCE',
-                    title: 'Messages',
-                    body:
-                        'What is said here should feel held, readable, and worth returning to.',
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
+                  Text('Messages', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
                   messagesAsync.when(
                     loading: () => const AuraCard(
                       child: _LoadingBlock(label: 'Loading messages...'),
@@ -323,100 +317,49 @@ class _ThreadHeaderCard extends StatelessWidget {
       const ['description', 'summary', 'subtitle'],
     );
     final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-    final memberCount = _pickInt(thread, const ['memberCount', 'participantsCount']);
-    final messageCount = _pickInt(thread, const ['messageCount', 'messagesCount']);
 
     return AuraCard(
-      color: AuraSurface.elevated,
-      borderColor: AuraSurface.accentSoft,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'THREAD',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+            'Thread',
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            title.isEmpty ? 'Untitled thread' : title,
-            style: AuraText.title.copyWith(fontSize: 24, height: 1.2),
-          ),
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s8),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (kind.isNotEmpty) _Pill(label: kind.replaceAll('_', ' ')),
-              if (archived) const _Pill(label: 'ARCHIVED'),
-              if ((memberCount ?? 0) > 0)
-                _Pill(label: 'Members ${memberCount ?? 0}'),
-              if ((messageCount ?? 0) > 0)
-                _Pill(label: 'Messages ${messageCount ?? 0}'),
+              Text(
+                title.isEmpty ? 'Untitled thread' : title,
+                style: AuraText.title,
+              ),
+              if (kind.isNotEmpty) _Pill(label: kind),
+              if (archived) _Pill(label: 'ARCHIVED'),
             ],
           ),
           if (description.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
+            const SizedBox(height: AuraSpace.s8),
             Text(description, style: AuraText.body),
           ],
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
               if (spaceId.isNotEmpty)
-                OutlinedButton.icon(
+                OutlinedButton(
                   onPressed: onOpenSpace,
-                  icon: const Icon(Icons.forum_outlined, size: 16),
-                  label: const Text('Open space'),
+                  child: const Text('Open space'),
                 ),
-              OutlinedButton.icon(
+              OutlinedButton(
                 onPressed: onInvite,
-                icon: const Icon(Icons.person_add_alt_outlined, size: 16),
-                label: const Text('Add to conversation'),
+                child: const Text('Invite into thread'),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionIntroCard extends StatelessWidget {
-  const _SectionIntroCard({
-    required this.eyebrow,
-    required this.title,
-    required this.body,
-  });
-
-  final String eyebrow;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      color: AuraSurface.page,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            eyebrow,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: AuraSpace.s6),
-          Text(body, style: AuraText.small.copyWith(color: AuraSurface.muted)),
         ],
       ),
     );
@@ -1078,13 +1021,12 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
     return SafeArea(
       top: false,
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        child: AuraCard(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-          color: AuraSurface.elevated,
-          borderColor: AuraSurface.divider,
-          child: Column(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Colors.black12)),
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_attachments.isNotEmpty) ...[
@@ -1137,7 +1079,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                         decoration: InputDecoration(
                           hintText: _recordingAudio
                               ? 'Recording audio...'
-                              : 'Write into the thread',
+                              : 'Write a message',
                         ),
                         onChanged: (_) {
                           setState(() {
@@ -1166,7 +1108,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
                                 : const Icon(Icons.auto_fix_high_outlined, size: 16),
-                            label: const Text('Refine'),
+                            label: const Text('Polish'),
                           ),
                           const SizedBox(width: AuraSpace.s8),
                           DropdownButton<String>(
@@ -1195,7 +1137,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
                                 : const Icon(Icons.translate_outlined, size: 16),
-                            label: const Text('Preview translation'),
+                            label: const Text('Translate'),
                           ),
                         ],
                       ),
@@ -1216,7 +1158,6 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
               ],
             ),
           ],
-        ),
         ),
       ),
     );

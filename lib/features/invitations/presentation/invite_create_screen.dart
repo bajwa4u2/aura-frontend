@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -33,14 +32,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
-  List<_InviteCandidate> _relationshipCandidates = const <_InviteCandidate>[];
-  List<_InviteCandidate> _searchCandidates = const <_InviteCandidate>[];
   List<_InviteCandidate> _allCandidates = const <_InviteCandidate>[];
   _InviteCandidate? _selected;
-
-  String? _currentUserId;
-  String? _currentUserHandle;
-  Timer? _searchDebounce;
 
   bool _loading = false;
   bool _submitting = false;
@@ -66,7 +59,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     _recipientType = _collapsedMemberFlow
         ? 'KNOWN_AURA_USER'
         : _defaultRecipientTypeForMode(_inviteMode);
-    _searchController.addListener(_handleSearchChanged);
     if (_showsInternalRecipientPicker) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadCandidates();
@@ -76,8 +68,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -86,7 +76,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   String get _destinationType => widget.destinationType.trim().toUpperCase();
 
   bool get _collapsedMemberFlow {
-    return (_destinationType == 'JOIN_THREAD' || _destinationType == 'JOIN_SPACE') &&
+    return (_destinationType == 'JOIN_SPACE' || _destinationType == 'JOIN_THREAD') &&
         (widget.spaceId ?? '').trim().isNotEmpty;
   }
 
@@ -125,115 +115,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     }).toList(growable: false);
   }
 
-  void _handleSearchChanged() {
-    _searchDebounce?.cancel();
-
-    final query = _searchController.text.trim();
-    if (!_showsInternalRecipientPicker) return;
-
-    if (query.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _searchCandidates = const <_InviteCandidate>[];
-          _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
-          _loadError = null;
-        });
-      }
-      return;
-    }
-
-    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
-      if (!mounted) return;
-      unawaited(_runMemberSearch(query));
-    });
-  }
-
-  Future<void> _runMemberSearch(String rawQuery) async {
-    final query = rawQuery.trim();
-    if (query.isEmpty) return;
-
-    if (mounted) {
-      setState(() {
-        _loading = true;
-        _loadError = null;
-      });
-    }
-
-    try {
-      final dio = ref.read(dioProvider);
-      final res = await dio.get(
-        '/search',
-        queryParameters: {
-          'q': query,
-          'limit': 12,
-        },
-      );
-
-      final root = _extractMap(res.data);
-      final data = _extractMap(root['data']);
-      final rawUsers = _extractList(data['users']);
-
-      final found = <_InviteCandidate>[];
-      for (final item in rawUsers) {
-        final candidate = _candidateFromMap(item);
-        if (candidate == null) continue;
-
-        final sameId = (_currentUserId ?? '').isNotEmpty &&
-            candidate.userId.trim() == (_currentUserId ?? '');
-        final sameHandle = (_currentUserHandle ?? '').isNotEmpty &&
-            _normalizeHandle(candidate.handle) == (_currentUserHandle ?? '');
-
-        if (sameId || sameHandle) continue;
-        found.add(candidate);
-      }
-
-      if (!mounted || _searchController.text.trim() != query) return;
-      setState(() {
-        _searchCandidates = _dedupeCandidates(found);
-        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted || _searchController.text.trim() != query) return;
-      setState(() {
-        _searchCandidates = const <_InviteCandidate>[];
-        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
-        _loading = false;
-        _loadError = 'Member search is unavailable right now. Please try again.';
-      });
-    }
-  }
-
-  List<_InviteCandidate> _mergeCandidates(
-    List<_InviteCandidate> primary,
-    List<_InviteCandidate> secondary,
-  ) {
-    return _dedupeCandidates([
-      ...primary,
-      ...secondary,
-    ]);
-  }
-
-  List<_InviteCandidate> _dedupeCandidates(List<_InviteCandidate> input) {
-    final seen = <String>{};
-    final out = <_InviteCandidate>[];
-    for (final candidate in input) {
-      final key = candidate.userId.isNotEmpty
-          ? 'id:${candidate.userId}'
-          : 'handle:${_normalizeHandle(candidate.handle)}';
-      if (key.trim().isEmpty || seen.contains(key)) continue;
-      seen.add(key);
-      out.add(candidate);
-    }
-    out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return out;
-  }
-
-  String _normalizeHandle(String? value) {
-    final handle = (value ?? '').trim().toLowerCase();
-    return handle.startsWith('@') ? handle.substring(1) : handle;
-  }
-
   Future<void> _loadCandidates() async {
     if (!_showsInternalRecipientPicker) return;
 
@@ -247,8 +128,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       final meRes = await dio.get('/users/me');
       final me = _extractMap(meRes.data);
       final handle = _pickString(me, const ['handle', 'username']);
-      final meId = _pickString(me, const ['id', 'userId']);
-      final normalizedHandle = _normalizeHandle(handle);
       if (handle.isEmpty) {
         throw Exception('Could not identify the current member.');
       }
@@ -260,20 +139,19 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         ..._extractList(followingRes?.data),
       ];
 
-      final candidates = <_InviteCandidate>[];
+      final items = <String, _InviteCandidate>{};
       for (final item in merged) {
         final candidate = _candidateFromMap(item);
         if (candidate == null) continue;
-        candidates.add(candidate);
+        final key = candidate.userId.isNotEmpty ? candidate.userId : candidate.handle;
+        if (key.isEmpty) continue;
+        items[key] = candidate;
       }
 
       if (!mounted) return;
       setState(() {
-        _currentUserId = meId.isEmpty ? null : meId;
-        _currentUserHandle = normalizedHandle.isEmpty ? null : normalizedHandle;
-        _relationshipCandidates = _dedupeCandidates(candidates);
-        _searchCandidates = const <_InviteCandidate>[];
-        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
+        _allCandidates = items.values.toList(growable: false)
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _loading = false;
       });
     } catch (e) {
@@ -296,11 +174,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       _searchController.clear();
       _loadError = null;
       _submitError = null;
-      if (value != 'KNOWN_MEMBER') {
-        _relationshipCandidates = const <_InviteCandidate>[];
-        _searchCandidates = const <_InviteCandidate>[];
-        _allCandidates = const <_InviteCandidate>[];
-      }
+      _allCandidates = value == 'KNOWN_MEMBER' ? _allCandidates : const <_InviteCandidate>[];
     });
 
     if (value == 'KNOWN_MEMBER') {
@@ -351,13 +225,13 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
       final destinationMessage = _collapsedMemberFlow
           ? (_destinationType == 'JOIN_THREAD'
-              ? 'Member added through the conversation path.'
-              : 'Member added through the space path.')
+              ? 'Member added to the conversation path.'
+              : 'Member added to the space path.')
           : switch (_destinationType) {
               'JOIN_AURA' => 'Aura invitation ready.',
               'START_1_TO_1' => '1:1 invitation ready.',
               'JOIN_SPACE' => 'Space invitation ready.',
-              'JOIN_THREAD' => 'Thread invitation ready.',
+              'JOIN_THREAD' => 'Conversation invitation ready.',
               _ => 'Invitation created.',
             };
 
@@ -405,11 +279,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
           ? 'Add to conversation'
           : 'Add to space';
       final body = _destinationType == 'JOIN_THREAD'
-          ? 'Choose one member and add them through the parent space. This keeps the conversation path simple.'
+          ? 'Choose one member and add them through the parent space. This keeps the conversation system coherent.'
           : 'Choose one member and add them into this space.';
       final actionNote = _destinationType == 'JOIN_THREAD'
-          ? 'The member is added at space level so the thread stays part of one coherent conversation system.'
-          : 'Membership is handled at space level so access stays coherent everywhere inside it.';
+          ? 'Access is handled at space level so the thread stays part of one coherent conversation path.'
+          : 'Access is handled at space level so membership stays coherent everywhere inside it.';
 
       return AuraScaffold(
         title: title,
@@ -451,7 +325,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   ],
                   const SizedBox(height: AuraSpace.s12),
                   if (_loading)
-                    const _LoadingRow(label: 'Loading Aura members...')
+                    const _LoadingRow(label: 'Loading connected Aura members...')
                   else if (_loadError != null)
                     AuraTextBlock(
                       'Members could not be loaded right now.',
@@ -459,7 +333,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     )
                   else if (filtered.isEmpty)
                     AuraTextBlock(
-                      'No members matched that search.',
+                      'No connected Aura members matched that search.',
                       style: AuraText.body,
                     )
                   else
@@ -471,8 +345,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                             selected: _selected?.id == filtered[i].id,
                             onTap: () => setState(() => _selected = filtered[i]),
                           ),
-                          if (i != filtered.length - 1)
-                            const Divider(height: 1),
+                          if (i != filtered.length - 1) const Divider(height: 1),
                         ],
                       ],
                     ),
@@ -605,12 +478,12 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   ],
                   const SizedBox(height: AuraSpace.s12),
                   if (_loading)
-                    const _LoadingRow(label: 'Loading Aura members...')
+                    const _LoadingRow(label: 'Loading connected Aura members...')
                   else if (_loadError != null)
                     AuraTextBlock(_loadError!, style: AuraText.body)
                   else if (filtered.isEmpty)
                     AuraTextBlock(
-                      'No members matched that search.',
+                      'No connected Aura members are available yet from your current graph.',
                       style: AuraText.body,
                     )
                   else
@@ -1019,11 +892,11 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
   if (inviteMode == 'KNOWN_MEMBER') {
     switch (destinationType) {
       case 'START_1_TO_1':
-        return 'Choose a member directly and let the invitation carry the rest.';
+        return 'Choose an Aura member directly. Entry still follows the access policy after the invite reaches them.';
       case 'JOIN_SPACE':
-        return 'Choose a member directly for this space.';
+        return 'Choose an Aura member directly for this space. This is one mode, not the only mode.';
       case 'JOIN_THREAD':
-        return 'Choose a member directly for this conversation.';
+        return 'Choose an Aura member directly for this thread. Entry still follows the access policy.';
       default:
         return 'Choose an Aura member directly.';
     }
@@ -1033,7 +906,7 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
     case 'JOIN_AURA':
       return 'Create a shareable invitation link that can travel outside Aura.';
     case 'START_1_TO_1':
-      return 'Create a shareable path into a direct conversation. Access rules still apply when they arrive.';
+      return 'Create a shareable path into a direct correspondence invitation. Follow or approval can still be enforced at entry.';
     case 'JOIN_SPACE':
       return 'Create a shareable path into this space. Access is decided when the invite is opened, not when it is created.';
     case 'JOIN_THREAD':
