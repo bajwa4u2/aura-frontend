@@ -70,51 +70,42 @@ class InvitationsClient {
     int? maxUses,
     DateTime? expiresAt,
   }) async {
-    final normalizedDestination = destinationType.trim().toUpperCase();
-    final normalizedSpaceId = spaceId?.trim() ?? '';
-    final normalizedThreadId = threadId?.trim() ?? '';
-    final normalizedRecipientUserId = recipientUserId?.trim() ?? '';
-
-    final useSpaceMembershipFlow =
-        normalizedSpaceId.isNotEmpty &&
-        normalizedRecipientUserId.isNotEmpty &&
-        (normalizedDestination == 'JOIN_SPACE' || normalizedDestination == 'JOIN_THREAD');
-
-    if (useSpaceMembershipFlow) {
-      final membershipBody = <String, dynamic>{
-        'invitedUserId': normalizedRecipientUserId,
-        'roleOffered': (_nonEmpty(roleToGrant) ? roleToGrant!.trim() : 'MEMBER'),
-        if (_nonEmpty(message)) 'message': message!.trim(),
-      };
-
-      final res = await _postFirstSuccessful([
-        '/spaces/$normalizedSpaceId/invites',
-        '/v1/spaces/$normalizedSpaceId/invites',
-      ], data: membershipBody);
-
-      return _extractMap(res.data);
-    }
-
     final body = <String, dynamic>{
-      'destinationType': normalizedDestination,
-      if (normalizedSpaceId.isNotEmpty) 'spaceId': normalizedSpaceId,
-      if (normalizedThreadId.isNotEmpty) 'threadId': normalizedThreadId,
+      'destinationType': destinationType,
+      if (_nonEmpty(spaceId)) 'spaceId': spaceId!.trim(),
+      if (_nonEmpty(threadId)) 'threadId': threadId!.trim(),
       if (_nonEmpty(accessPolicy)) 'accessPolicy': accessPolicy!.trim(),
       if (_nonEmpty(deliveryChannel)) 'deliveryChannel': deliveryChannel!.trim(),
       if (_nonEmpty(recipientType)) 'recipientType': recipientType!.trim(),
       if (_nonEmpty(message)) 'message': message!.trim(),
-      if (normalizedRecipientUserId.isNotEmpty) 'directRecipientId': normalizedRecipientUserId,
+      if (_nonEmpty(recipientUserId)) 'directRecipientId': recipientUserId!.trim(),
       if (_nonEmpty(recipientHandle)) 'recipientHandle': recipientHandle!.trim(),
       if (_nonEmpty(roleToGrant)) 'roleToGrant': roleToGrant!.trim(),
       if (maxUses != null) 'maxUses': maxUses,
       if (expiresAt != null) 'expiresAt': expiresAt.toUtc().toIso8601String(),
     };
 
-    final res = await _postFirstSuccessful([
-      '/invites',
-      '/v1/invites',
-    ], data: body);
-    return _extractMap(res.data);
+    try {
+      final res = await _postFirstSuccessful([
+        '/invites',
+        '/v1/invites',
+      ], data: body);
+      return _extractMap(res.data);
+    } on DioException {
+      if (destinationType.trim().toUpperCase() == 'JOIN_SPACE' &&
+          _nonEmpty(spaceId) &&
+          _nonEmpty(recipientUserId)) {
+        final legacy = await _postFirstSuccessful([
+          '/spaces/${spaceId!.trim()}/invites',
+          '/v1/spaces/${spaceId.trim()}/invites',
+        ], data: {
+          'invitedUserId': recipientUserId!.trim(),
+          'roleOffered': (_nonEmpty(roleToGrant) ? roleToGrant!.trim() : 'MEMBER'),
+        });
+        return _extractMap(legacy.data);
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> respond({
