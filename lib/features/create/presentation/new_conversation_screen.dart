@@ -784,7 +784,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredEntries = _filteredEntries;
-    final pageTitle = _isSharedSpaceMode ? 'Create space' : 'New conversation';
+    final pageTitle = _isSharedSpaceMode ? 'Create space' : 'Start a private conversation';
 
     return AuraScaffold(
       title: pageTitle,
@@ -802,8 +802,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               _LeadCard(
                 title: pageTitle,
                 subtitle: _isSharedSpaceMode
-                    ? 'Select members and set the space.'
-                    : 'Select one member.',
+                    ? 'Choose the members first, then name the room.'
+                    : 'Choose one member and start directly.' ,
               ),
               const SizedBox(height: AuraSpace.s16),
               LayoutBuilder(
@@ -811,6 +811,16 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   final stacked = constraints.maxWidth < 860;
                   final directory = _buildDirectoryCard(context, filteredEntries);
                   final side = _buildSelectionRail(context);
+
+                  if (!_isSharedSpaceMode) {
+                    return Column(
+                      children: [
+                        directory,
+                        const SizedBox(height: AuraSpace.s14),
+                        side,
+                      ],
+                    );
+                  }
 
                   if (stacked) {
                     return Column(
@@ -879,14 +889,14 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isSharedSpaceMode ? 'Selection' : 'Member',
+            _isSharedSpaceMode ? 'Selection' : 'Ready to start',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
             _isSharedSpaceMode
                 ? 'Choose who belongs in this space and set its details.'
-                : 'Choose the member you want to write to.',
+                : 'Pick one member above. Once selected, you can start immediately.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
           const SizedBox(height: AuraSpace.s14),
@@ -894,7 +904,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             Text(
               _isSharedSpaceMode
                   ? 'No members selected yet.'
-                  : 'No member selected yet.',
+                  : 'No member selected yet. Search above and choose one person.',
               style: AuraText.body,
             )
           else
@@ -1630,7 +1640,7 @@ class _DirectoryRow extends StatelessWidget {
             if (onOpenProfile != null)
               TextButton(
                 onPressed: onOpenProfile,
-                child: const Text('View'),
+                child: const Text('Profile'),
               ),
             trailing,
           ],
