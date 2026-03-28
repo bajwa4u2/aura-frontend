@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'route_classification.dart';
+import 'route_targets.dart';
 
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
@@ -15,19 +16,20 @@ import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final path = GoRouterState.of(context).uri.path;
+    final isAuthed = ref.watch(isAuthedProvider);
 
     if (isInstitutionShellPath(path)) {
       return InstitutionShell(child: child);
     }
-    if (isMemberShellPath(path)) {
+    if (isMemberShellPath(path) || (isAuthed && shouldUseMemberShellForAuthed(path))) {
       return MemberShell(child: child);
     }
     return PublicShell(child: child);
@@ -619,6 +621,8 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
     } finally {
       if (mounted) {
         context.go('/public');
+      }
+      if (mounted) {
         setState(() => _busyLogout = false);
       }
     }

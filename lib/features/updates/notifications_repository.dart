@@ -1,8 +1,7 @@
+import '../../app/route_targets.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-
-import '../../app/route_normalizer.dart';
 
 class NotificationsRepository {
   NotificationsRepository(this._dio);
@@ -187,15 +186,15 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     _stringOf(data['announcementSlug']),
     _stringOf(data['slug']),
   ]);
-  final rawDeeplink = _firstNonEmpty([
-    _stringOf(item['deeplink']),
-    _stringOf(data['deeplink']),
-    announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
-    announcementId.isNotEmpty ? '/announcements/$announcementId' : '',
-  ]);
-  final deeplink = rawDeeplink.isEmpty
-      ? ''
-      : normalizeAppLocation(rawDeeplink, fallback: '/activity');
+  final deeplink = normalizeMemberFacingRoute(
+    _firstNonEmpty([
+      _stringOf(item['deeplink']),
+      _stringOf(data['deeplink']),
+      announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
+      announcementId.isNotEmpty ? '/announcements/$announcementId' : '',
+    ]),
+    fallback: '',
+  );
 
   final mergedData = <String, dynamic>{
     ...data,

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
-import 'app/route_normalizer.dart';
+import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
@@ -101,7 +101,7 @@ String _normalizeRedirectDest(
   if (trimmed.isEmpty || trimmed == '/') return fallback;
   if (!trimmed.startsWith('/')) return fallback;
   if (trimmed == kRouterBootRoute) return fallback;
-  return trimmed;
+  return normalizeMemberFacingRoute(trimmed, fallback: fallback);
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -237,10 +237,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
       final redirectDest = _normalizeRedirectDest(
-        normalizeAppLocation(
-          state.uri.queryParameters['redirect'],
-          fallback: defaultRedirect,
-        ),
+        state.uri.queryParameters['redirect'],
         fallback: defaultRedirect,
       );
 

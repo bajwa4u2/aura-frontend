@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/route_normalizer.dart';
+import '../../../app/route_targets.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -221,15 +221,15 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       _stringOf(data['notificationKind']).toUpperCase(),
     ]);
 
-    final rawDeeplink = _firstNonEmpty([
-      _stringOf(item['deeplink']),
-      _stringOf(data['deeplink']),
-      _stringOf(data['link']),
-      _stringOf(data['url']),
-    ]);
-    final deeplink = rawDeeplink.isEmpty
-        ? ''
-        : normalizeAppLocation(rawDeeplink, fallback: '/activity');
+    final deeplink = normalizeMemberFacingRoute(
+      _firstNonEmpty([
+        _stringOf(item['deeplink']),
+        _stringOf(data['deeplink']),
+        _stringOf(data['link']),
+        _stringOf(data['url']),
+      ]),
+      fallback: '',
+    );
 
     final announcementSlug = _firstNonEmpty([
       _stringOf(item['announcementSlug']),

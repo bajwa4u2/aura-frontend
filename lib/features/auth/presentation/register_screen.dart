@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../auth/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -232,6 +233,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         handle: handle,
         displayName: displayName,
       );
+
+      ref.invalidate(emailVerifiedProvider);
+      ref.invalidate(authStatusProvider);
+      ref.invalidate(isAuthedProvider);
 
       if (!mounted) return;
 
