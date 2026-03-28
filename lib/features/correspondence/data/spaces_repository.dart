@@ -85,8 +85,8 @@ class SpacesRepository {
     String? role,
   }) async {
     final body = <String, dynamic>{
-      'userId': userId.trim(),
-      if (_hasText(role)) 'role': role!.trim(),
+      'invitedUserId': userId.trim(),
+      'roleOffered': _hasText(role) ? role!.trim() : 'MEMBER',
     };
 
     final res = await _dio.post('/spaces/$spaceId/invites', data: body);
