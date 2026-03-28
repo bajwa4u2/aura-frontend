@@ -180,9 +180,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       },
                       onInvite: () {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-                        final threadId = _pickString(thread, const ['id', 'threadId']);
+                        if (spaceId.isEmpty) return;
                         context.push(
-                          '/invite?spaceId=${Uri.encodeComponent(spaceId)}&threadId=${Uri.encodeComponent(threadId)}',
+                          '/invite/create?destinationType=JOIN_SPACE&spaceId=${Uri.encodeComponent(spaceId)}',
                         );
                       },
                     ),
@@ -353,9 +353,10 @@ class _ThreadHeaderCard extends StatelessWidget {
               if (kind.isNotEmpty) _Pill(label: kind.replaceAll('_', ' ')),
               if (archived) const _Pill(label: 'ARCHIVED'),
               if ((memberCount ?? 0) > 0)
-                _Pill(label: 'Members ${memberCount ?? 0}'),
+               _Pill(label: 'Members ${memberCount ?? 0}'),
+
               if ((messageCount ?? 0) > 0)
-                _Pill(label: 'Messages ${messageCount ?? 0}'),
+               _Pill(label: 'Messages ${messageCount ?? 0}'),
             ],
           ),
           if (description.isNotEmpty) ...[
@@ -376,7 +377,7 @@ class _ThreadHeaderCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onInvite,
                 icon: const Icon(Icons.person_add_alt_outlined, size: 16),
-                label: const Text('Bring someone in'),
+                label: const Text('Add to conversation'),
               ),
             ],
           ),

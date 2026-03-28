@@ -49,13 +49,21 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
   String _inviteMode = 'SHAREABLE';
   String _accessPolicy = 'OPEN';
+  String _deliveryChannel = 'LINK';
+  String _recipientType = 'OPEN_LINK';
   String _roleToGrant = 'MEMBER';
 
   @override
   void initState() {
     super.initState();
-    _accessPolicy = _defaultAccessPolicyForDestination(_destinationType);
-    _inviteMode = _defaultInviteModeForDestination(_destinationType);
+    _accessPolicy = _collapsedMemberFlow
+        ? 'OPEN'
+        : _defaultAccessPolicyForDestination(_destinationType);
+    _inviteMode = _collapsedMemberFlow
+        ? 'KNOWN_MEMBER'
+        : _defaultInviteModeForDestination(_destinationType);
+    _deliveryChannel = _collapsedMemberFlow ? 'INTERNAL' : 'LINK';
+    _recipientType = _defaultRecipientTypeForMode(_inviteMode);
     _searchController.addListener(_handleSearchChanged);
     if (_showsInternalRecipientPicker) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,40 +83,45 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
   String get _destinationType => widget.destinationType.trim().toUpperCase();
 
-  bool get _isSpaceInvite => _destinationType == 'JOIN_SPACE';
-  bool get _isThreadInvite => _destinationType == 'JOIN_THREAD';
-  bool get _isDirectInvite => _destinationType == 'START_1_TO_1';
-  bool get _isAuraInvite => _destinationType == 'JOIN_AURA';
-
-  bool get _supportsMemberPicker => _isSpaceInvite || _isThreadInvite || _isDirectInvite;
-
-  bool get _forceKnownMemberMode => _isDirectInvite || _isThreadInvite;
-
-  String get _effectiveInviteMode {
-    if (_forceKnownMemberMode) return 'KNOWN_MEMBER';
-    if (_isAuraInvite) return 'SHAREABLE';
-    return _inviteMode;
+  String get _effectiveDestinationType {
+    if (_destinationType == 'JOIN_THREAD' && (widget.spaceId ?? '').trim().isNotEmpty) {
+      return 'JOIN_SPACE';
+    }
+    return _destinationType;
   }
 
-  bool get _showsModeSelector => _isSpaceInvite;
+  bool get _collapsedMemberFlow {
+    return _destinationType == 'JOIN_THREAD' || _destinationType == 'JOIN_SPACE';
+  }
+
+  String get _primaryActionLabel {
+    switch (_destinationType) {
+      case 'JOIN_THREAD':
+        return 'Add to conversation';
+      case 'JOIN_SPACE':
+        return 'Add to space';
+      default:
+        return 'Create invite';
+    }
+  }
+
+  bool get _supportsInternalAuraMemberMode {
+    return _destinationType == 'JOIN_SPACE' ||
+        _destinationType == 'JOIN_THREAD' ||
+        _destinationType == 'START_1_TO_1';
+  }
 
   bool get _showsInternalRecipientPicker {
-    return _supportsMemberPicker && _effectiveInviteMode == 'KNOWN_MEMBER';
-  }
-
-  bool get _showsAccessPolicy {
-    return _isSpaceInvite && _effectiveInviteMode == 'SHAREABLE';
-  }
-
-  bool get _showsRoleToGrant {
-    return _isSpaceInvite;
+    if (_collapsedMemberFlow) return true;
+    return _supportsInternalAuraMemberMode && _inviteMode == 'KNOWN_MEMBER';
   }
 
   List<_InviteCandidate> get _filteredCandidates {
     final q = _searchController.text.trim().toLowerCase();
     if (q.isEmpty) return _allCandidates;
     return _allCandidates.where((candidate) {
-      final hay = '${candidate.name} ${candidate.handle} ${candidate.subtitle}'.toLowerCase();
+      final hay =
+          '${candidate.name} ${candidate.handle} ${candidate.subtitle}'.toLowerCase();
       return hay.contains(q);
     }).toList(growable: false);
   }
@@ -181,7 +194,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted || _searchController.text.trim() != query) return;
       setState(() {
         _searchCandidates = const <_InviteCandidate>[];
@@ -196,7 +209,10 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     List<_InviteCandidate> primary,
     List<_InviteCandidate> secondary,
   ) {
-    return _dedupeCandidates([...primary, ...secondary]);
+    return _dedupeCandidates([
+      ...primary,
+      ...secondary,
+    ]);
   }
 
   List<_InviteCandidate> _dedupeCandidates(List<_InviteCandidate> input) {
@@ -271,10 +287,12 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   }
 
   void _changeInviteMode(String value) {
+    if (_collapsedMemberFlow) return;
     if (value == _inviteMode) return;
 
     setState(() {
       _inviteMode = value;
+      _recipientType = _defaultRecipientTypeForMode(value);
       _selected = null;
       _searchController.clear();
       _loadError = null;
@@ -296,7 +314,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
     if (_showsInternalRecipientPicker && _selected == null) {
       setState(() {
-        _submitError = 'Choose the Aura member you want to bring in.';
+        _submitError = _collapsedMemberFlow
+            ? 'Choose the member you want to add.'
+            : 'Choose the Aura member you want to invite.';
       });
       return;
     }
@@ -307,19 +327,20 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     });
 
     try {
-      final effectiveMode = _effectiveInviteMode;
       final invite = await ref.read(invitationsClientProvider).createInvite(
-            destinationType: _destinationType,
-            accessPolicy: _showsAccessPolicy ? _accessPolicy : _defaultAccessPolicyForDestination(_destinationType),
-            deliveryChannel: 'LINK',
-            recipientType: effectiveMode == 'KNOWN_MEMBER' ? 'KNOWN_AURA_USER' : 'OPEN_LINK',
+            destinationType: _effectiveDestinationType,
+            accessPolicy: _collapsedMemberFlow ? 'OPEN' : _accessPolicy,
+            deliveryChannel: _collapsedMemberFlow ? 'INTERNAL' : _deliveryChannel,
+            recipientType: _showsInternalRecipientPicker
+                ? 'KNOWN_AURA_USER'
+                : _recipientType,
             message: _messageController.text.trim(),
             recipientUserId: _selected?.userId,
             recipientHandle: _selected?.handle,
             spaceId: widget.spaceId,
-            threadId: widget.threadId,
-            roleToGrant: _showsRoleToGrant ? _roleToGrant : null,
-            maxUses: effectiveMode == 'KNOWN_MEMBER' ? 1 : 1,
+            threadId: _collapsedMemberFlow ? null : widget.threadId,
+            roleToGrant: _effectiveDestinationType == 'JOIN_SPACE' ? _roleToGrant : null,
+            maxUses: _collapsedMemberFlow ? 1 : 1,
           );
 
       if (!mounted) return;
@@ -329,18 +350,22 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
           ? ''
           : '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
 
-      final destinationMessage = switch (_destinationType) {
-        'JOIN_AURA' => 'Aura invitation ready.',
-        'START_1_TO_1' => 'Direct invitation ready.',
-        'JOIN_SPACE' => 'Space invitation ready.',
-        'JOIN_THREAD' => 'Thread invitation ready.',
-        _ => 'Invitation created.',
-      };
+      final successMessage = _collapsedMemberFlow
+          ? '${_selected?.name ?? 'Member'} can now be added through this conversation path.'
+          : switch (_destinationType) {
+              'JOIN_AURA' => 'Aura invitation ready.',
+              'START_1_TO_1' => '1:1 invitation ready.',
+              'JOIN_SPACE' => 'Space invitation ready.',
+              'JOIN_THREAD' => 'Conversation invitation ready.',
+              _ => 'Invitation created.',
+            };
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            link.isNotEmpty ? '$destinationMessage Link created.' : destinationMessage,
+            link.isNotEmpty && !_collapsedMemberFlow
+                ? '$successMessage Link created.'
+                : successMessage,
           ),
         ),
       );
@@ -349,12 +374,17 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
-        _submitError = _readApiError(e, fallback: 'Could not create invitation.');
+        final fallback = _collapsedMemberFlow
+            ? 'Could not add this member right now.'
+            : 'Could not create invitation.';
+        _submitError = _humanizeInviteError(e, fallback: fallback);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _submitError = '$e';
+        _submitError = _collapsedMemberFlow
+            ? 'Could not add this member right now.'
+            : '$e';
       });
     } finally {
       if (mounted) {
@@ -366,9 +396,24 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredCandidates;
+    final title = _collapsedMemberFlow
+        ? (_destinationType == 'JOIN_THREAD'
+            ? 'Add to conversation'
+            : 'Add to space')
+        : _titleForDestination(_destinationType);
+
+    final body = _collapsedMemberFlow
+        ? (_destinationType == 'JOIN_THREAD'
+            ? 'Choose one member and add them through the conversation’s parent space. No separate thread invite is needed.'
+            : 'Choose one member and add them into this space.')
+        : _bodyForDestination(
+            _destinationType,
+            spaceId: widget.spaceId,
+            threadId: widget.threadId,
+          );
 
     return AuraScaffold(
-      title: _titleForDestination(_destinationType),
+      title: title,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
@@ -376,68 +421,58 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_titleForDestination(_destinationType), style: AuraText.title),
+                Text(title, style: AuraText.title),
                 const SizedBox(height: AuraSpace.s8),
-                AuraTextBlock(
-                  _bodyForDestination(
-                    _destinationType,
-                    spaceId: widget.spaceId,
-                    threadId: widget.threadId,
-                  ),
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                AuraTextBlock(
-                  _pathSummary,
-                  style: AuraText.small,
-                ),
+                AuraTextBlock(body, style: AuraText.body),
               ],
             ),
           ),
-          if (_showsModeSelector) ...[
-            const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s14),
+          if (!_collapsedMemberFlow) ...[
             AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('How should they enter?', style: AuraText.title),
+                  Text('Invite mode', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   DropdownButtonFormField<String>(
                     value: _inviteMode,
-                    items: const [
-                      DropdownMenuItem(value: 'KNOWN_MEMBER', child: Text('Aura member')),
-                      DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable link')),
-                    ],
+                    items: _inviteModeItems(_destinationType),
                     onChanged: (value) {
                       if (value == null) return;
                       _changeInviteMode(value);
                     },
-                    decoration: const InputDecoration(labelText: 'Entry path'),
+                    decoration: const InputDecoration(
+                      labelText: 'How to create this invite',
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s10),
                   AuraTextBlock(
-                    _inviteModeDescription(_destinationType, _effectiveInviteMode),
-                    style: AuraText.small,
+                    _inviteModeDescription(_destinationType, _inviteMode),
+                    style: AuraText.small.copyWith(color: Colors.black54),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: AuraSpace.s14),
           ],
           if (_showsInternalRecipientPicker) ...[
-            const SizedBox(height: AuraSpace.s14),
             AuraCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Choose member', style: AuraText.title),
+                  Text(
+                    _collapsedMemberFlow ? 'Choose member' : 'Choose Aura member',
+                    style: AuraText.title,
+                  ),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: 'Search Aura members',
+                    decoration: InputDecoration(
+                      labelText: _collapsedMemberFlow ? 'Search member' : 'Search members',
                       hintText: 'Search name or handle',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search),
                     ),
                   ),
                   if (_selected != null) ...[
@@ -451,7 +486,12 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   if (_loading)
                     const _LoadingRow(label: 'Loading Aura members...')
                   else if (_loadError != null)
-                    AuraTextBlock(_loadError!, style: AuraText.body)
+                    AuraTextBlock(
+                      _collapsedMemberFlow
+                          ? 'Members could not be loaded right now.'
+                          : _loadError!,
+                      style: AuraText.body,
+                    )
                   else if (filtered.isEmpty)
                     AuraTextBlock(
                       'No members matched that search.',
@@ -466,83 +506,113 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                             selected: _selected?.id == filtered[i].id,
                             onTap: () => setState(() => _selected = filtered[i]),
                           ),
-                          if (i != filtered.length - 1) const Divider(height: 1),
+                          if (i != filtered.length - 1)
+                            const Divider(height: 1),
                         ],
                       ],
                     ),
                 ],
               ),
             ),
-          ],
-          if (_showsAccessPolicy || _showsRoleToGrant) ...[
             const SizedBox(height: AuraSpace.s14),
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Invite settings', style: AuraText.title),
-                  if (_showsAccessPolicy) ...[
+          ],
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _collapsedMemberFlow ? 'Optional note' : 'Invite settings',
+                  style: AuraText.title,
+                ),
+                if (!_collapsedMemberFlow) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  DropdownButtonFormField<String>(
+                    value: _accessPolicy,
+                    items: _accessPolicyItems(_destinationType),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _accessPolicy = value);
+                    },
+                    decoration: const InputDecoration(labelText: 'Access policy'),
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  DropdownButtonFormField<String>(
+                    value: _deliveryChannel,
+                    items: _deliveryItems(_inviteMode),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _deliveryChannel = value);
+                    },
+                    decoration: const InputDecoration(labelText: 'Delivery'),
+                  ),
+                  if (!_showsInternalRecipientPicker) ...[
                     const SizedBox(height: AuraSpace.s12),
                     DropdownButtonFormField<String>(
-                      value: _accessPolicy,
-                      items: _accessPolicyItems(_destinationType),
+                      value: _recipientType,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'OPEN_LINK',
+                          child: Text('Open link'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'EXTERNAL_CONTACT',
+                          child: Text('External contact'),
+                        ),
+                      ],
                       onChanged: (value) {
                         if (value == null) return;
-                        setState(() => _accessPolicy = value);
+                        setState(() => _recipientType = value);
                       },
-                      decoration: const InputDecoration(labelText: 'Access'),
+                      decoration: const InputDecoration(labelText: 'Recipient type'),
                     ),
-                    const SizedBox(height: AuraSpace.s10),
-                    AuraTextBlock(
-                      _accessPolicyHint(_destinationType, _accessPolicy),
-                      style: AuraText.small,
-                    ),
-                  ],
-                  if (_showsRoleToGrant) ...[
+                  ),
+                  if (_effectiveDestinationType == 'JOIN_SPACE') ...[
                     const SizedBox(height: AuraSpace.s12),
                     DropdownButtonFormField<String>(
                       value: _roleToGrant,
                       items: const [
                         DropdownMenuItem(value: 'MEMBER', child: Text('Member')),
-                        DropdownMenuItem(value: 'MODERATOR', child: Text('Moderator')),
+                        DropdownMenuItem(value: 'EDITOR', child: Text('Editor')),
+                        DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
                         setState(() => _roleToGrant = value);
                       },
-                      decoration: const InputDecoration(labelText: 'Role on entry'),
+                      decoration: const InputDecoration(labelText: 'Role to grant'),
                     ),
                   ],
                 ],
-              ),
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Optional note', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 TextField(
                   controller: _messageController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Message',
-                    hintText: 'Add a short note if you want context to travel with the invite.',
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    labelText: _collapsedMemberFlow ? 'Message' : 'Message',
+                    hintText: _collapsedMemberFlow
+                        ? 'Add a short note if you want'
+                        : 'Add context to this invitation',
                   ),
                 ),
+                if (!_collapsedMemberFlow) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  AuraTextBlock(
+                    _accessPolicyHint(_destinationType, _accessPolicy),
+                    style: AuraText.small.copyWith(color: Colors.black54),
+                  ),
+                ],
+                if (_submitError != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(
+                    _submitError!,
+                    style: AuraText.small.copyWith(color: Colors.red.shade700),
+                  ),
+                ],
               ],
             ),
           ),
-          if (_submitError != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            AuraTextBlock(
-              _submitError!,
-              style: AuraText.body.copyWith(color: Colors.red.shade700),
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s16),
+          const SizedBox(height: AuraSpace.s18),
           Row(
             children: [
               Expanded(
@@ -555,7 +625,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               Expanded(
                 child: FilledButton(
                   onPressed: _submitting ? null : _submit,
-                  child: Text(_submitting ? 'Creating...' : _submitLabel),
+                  child: Text(_submitting ? 'Working...' : _primaryActionLabel),
                 ),
               ),
             ],
@@ -565,35 +635,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     );
   }
 
-  String get _pathSummary {
-    if (_isDirectInvite) {
-      return 'This path is direct. Choose the member and send the invitation without extra routing choices.';
-    }
-    if (_isThreadInvite) {
-      return 'This invitation is anchored to one ongoing thread, not to the whole room around it.';
-    }
-    if (_isSpaceInvite) {
-      return _effectiveInviteMode == 'KNOWN_MEMBER'
-          ? 'Choose one Aura member and bring them into this shared room directly.'
-          : 'Create one clean link for this space. Access is decided here, before the invite travels.';
-    }
-    return 'This creates a clean outward path into Aura itself.';
-  }
-
-  String get _submitLabel {
-    switch (_destinationType) {
-      case 'START_1_TO_1':
-        return 'Send direct invite';
-      case 'JOIN_SPACE':
-        return 'Create space invite';
-      case 'JOIN_THREAD':
-        return 'Create thread invite';
-      case 'JOIN_AURA':
-        return 'Create Aura invite';
-      default:
-        return 'Create invite';
-    }
-  }
 }
 
 class _SelectedCandidateChip extends StatelessWidget {
@@ -607,14 +648,10 @@ class _SelectedCandidateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = candidate.handle.isNotEmpty
-        ? '@${candidate.handle}${candidate.subtitle.isNotEmpty ? ' · ${candidate.subtitle}' : ''}'
-        : candidate.subtitle;
-
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s10,
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
@@ -623,13 +660,26 @@ class _SelectedCandidateChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(candidate.name, style: AuraText.small),
-          if (subtitle.isNotEmpty) ...[
+          AuraTextBlock(
+            candidate.name,
+            style: AuraText.small,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (candidate.handle.isNotEmpty) ...[
             const SizedBox(width: AuraSpace.s6),
-            Text(subtitle, style: AuraText.small),
+            AuraTextBlock(
+              '@${candidate.handle}',
+              style: AuraText.small.copyWith(color: Colors.black54),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
           const SizedBox(width: AuraSpace.s8),
-          InkWell(onTap: onClear, child: const Icon(Icons.close, size: 16)),
+          InkWell(
+            onTap: onClear,
+            child: const Icon(Icons.close, size: 16),
+          ),
         ],
       ),
     );
@@ -723,14 +773,71 @@ class _LoadingRow extends StatelessWidget {
   }
 }
 
+List<DropdownMenuItem<String>> _inviteModeItems(String destinationType) {
+  switch (destinationType) {
+    case 'JOIN_AURA':
+      return const [
+        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+      ];
+    case 'START_1_TO_1':
+    case 'JOIN_SPACE':
+    case 'JOIN_THREAD':
+      return const [
+        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+        DropdownMenuItem(value: 'KNOWN_MEMBER', child: Text('Aura member')),
+      ];
+    default:
+      return const [
+        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+      ];
+  }
+}
+
+List<DropdownMenuItem<String>> _deliveryItems(String inviteMode) {
+  if (inviteMode == 'KNOWN_MEMBER') {
+    return const [
+      DropdownMenuItem(value: 'LINK', child: Text('Link')),
+      DropdownMenuItem(value: 'COPY_LINK', child: Text('Copy link')),
+    ];
+  }
+
+  return const [
+    DropdownMenuItem(value: 'LINK', child: Text('Link')),
+    DropdownMenuItem(value: 'COPY_LINK', child: Text('Copy link')),
+    DropdownMenuItem(value: 'LINKEDIN_SHARE', child: Text('LinkedIn share')),
+    DropdownMenuItem(value: 'TIKTOK_SHARE', child: Text('TikTok share')),
+  ];
+}
+
 List<DropdownMenuItem<String>> _accessPolicyItems(String destinationType) {
   switch (destinationType) {
+    case 'START_1_TO_1':
+      return const [
+        DropdownMenuItem(
+          value: 'FOLLOW_INVITER_REQUIRED',
+          child: Text('Follow inviter required'),
+        ),
+        DropdownMenuItem(
+          value: 'FOLLOW_THEN_APPROVAL',
+          child: Text('Follow then approval'),
+        ),
+      ];
+    case 'JOIN_THREAD':
     case 'JOIN_SPACE':
       return const [
         DropdownMenuItem(value: 'OPEN', child: Text('Open')),
-        DropdownMenuItem(value: 'APPROVAL_REQUIRED', child: Text('Approval required')),
-        DropdownMenuItem(value: 'FOLLOW_INVITER_REQUIRED', child: Text('Follow inviter required')),
-        DropdownMenuItem(value: 'FOLLOW_THEN_APPROVAL', child: Text('Follow then approval')),
+        DropdownMenuItem(
+          value: 'FOLLOW_INVITER_REQUIRED',
+          child: Text('Follow inviter required'),
+        ),
+        DropdownMenuItem(
+          value: 'APPROVAL_REQUIRED',
+          child: Text('Approval required'),
+        ),
+        DropdownMenuItem(
+          value: 'FOLLOW_THEN_APPROVAL',
+          child: Text('Follow then approval'),
+        ),
       ];
     default:
       return const [
@@ -741,19 +848,19 @@ List<DropdownMenuItem<String>> _accessPolicyItems(String destinationType) {
 
 String _defaultInviteModeForDestination(String destinationType) {
   switch (destinationType) {
-    case 'JOIN_SPACE':
-      return 'KNOWN_MEMBER';
     case 'JOIN_AURA':
       return 'SHAREABLE';
+    case 'START_1_TO_1':
+    case 'JOIN_SPACE':
+    case 'JOIN_THREAD':
+      return 'SHAREABLE';
     default:
-      return 'KNOWN_MEMBER';
+      return 'SHAREABLE';
   }
 }
 
 String _defaultAccessPolicyForDestination(String destinationType) {
   switch (destinationType) {
-    case 'JOIN_SPACE':
-      return 'OPEN';
     case 'START_1_TO_1':
       return 'FOLLOW_INVITER_REQUIRED';
     default:
@@ -761,16 +868,20 @@ String _defaultAccessPolicyForDestination(String destinationType) {
   }
 }
 
+String _defaultRecipientTypeForMode(String inviteMode) {
+  return inviteMode == 'KNOWN_MEMBER' ? 'KNOWN_AURA_USER' : 'OPEN_LINK';
+}
+
 String _titleForDestination(String destinationType) {
   switch (destinationType) {
     case 'JOIN_AURA':
       return 'Invite to Aura';
     case 'START_1_TO_1':
-      return 'Bring someone into a private conversation';
+      return 'Invite to 1:1';
     case 'JOIN_SPACE':
-      return 'Bring someone into this space';
+      return 'Invite to space';
     case 'JOIN_THREAD':
-      return 'Bring someone into this thread';
+      return 'Add to conversation';
     default:
       return 'Create invite';
   }
@@ -783,17 +894,17 @@ String _bodyForDestination(
 }) {
   switch (destinationType) {
     case 'JOIN_AURA':
-      return 'Create a simple outward path into Aura for someone who is not yet inside.';
+      return 'Create an outward path into Aura itself. This is for people who are not yet inside the system.';
     case 'START_1_TO_1':
-      return 'Choose one Aura member and create a direct private path. This should feel like one clear action, not a separate subsystem.';
+      return 'Create an invitation into direct correspondence. The thread will only exist after acceptance.';
     case 'JOIN_SPACE':
       return (spaceId ?? '').trim().isNotEmpty
-          ? 'Bring someone into this shared space either directly as a member or through a shareable link.'
-          : 'Bring someone into a shared space.';
+          ? 'Create an invitation into this space.'
+          : 'Create an invitation into a shared space.';
     case 'JOIN_THREAD':
       return (threadId ?? '').trim().isNotEmpty
-          ? 'Bring someone into this exact thread without widening access beyond what is needed.'
-          : 'Bring someone into a specific thread.';
+          ? 'Add a member through this conversation’s parent space.'
+          : 'Add a member into the conversation path.';
     default:
       return 'Create a structured invitation.';
   }
@@ -802,40 +913,79 @@ String _bodyForDestination(
 String _inviteModeDescription(String destinationType, String inviteMode) {
   if (inviteMode == 'KNOWN_MEMBER') {
     switch (destinationType) {
-      case 'JOIN_SPACE':
-        return 'Choose a specific Aura member and let them enter this space directly.';
-      case 'JOIN_THREAD':
-        return 'Choose the member who should enter this thread.';
       case 'START_1_TO_1':
-        return 'Choose the member you want to speak with directly.';
+        return 'Choose a member directly and let the invitation carry the rest.';
+      case 'JOIN_SPACE':
+        return 'Choose a member directly for this space.';
+      case 'JOIN_THREAD':
+        return 'Choose a member directly for this conversation.';
       default:
-        return 'Choose a specific Aura member.';
+        return 'Choose an Aura member directly.';
     }
   }
 
   switch (destinationType) {
-    case 'JOIN_SPACE':
-      return 'Create one link for this space and decide the access rules now.';
     case 'JOIN_AURA':
-      return 'Create one clean entry link into Aura.';
+      return 'Create a shareable invitation link that can travel outside Aura.';
+    case 'START_1_TO_1':
+      return 'Create a shareable path into a direct conversation. Access rules still apply when they arrive.';
+    case 'JOIN_SPACE':
+      return 'Create a shareable path into this space. Access is decided when the invite is opened, not when it is created.';
+    case 'JOIN_THREAD':
+      return 'Create a shareable path into this thread. Access is decided when the invite is opened.';
     default:
-      return 'Create a shareable link.';
+      return 'Create a shareable invitation path.';
   }
 }
 
 String _accessPolicyHint(String destinationType, String accessPolicy) {
+  if (destinationType == 'START_1_TO_1') {
+    switch (accessPolicy) {
+      case 'FOLLOW_INVITER_REQUIRED':
+        return 'The invitee will need to follow you before they can enter this 1:1 path.';
+      case 'FOLLOW_THEN_APPROVAL':
+        return 'The invitee will need to follow you first, then wait for approval.';
+    }
+  }
+
   switch (accessPolicy) {
     case 'OPEN':
-      return 'Anyone holding this link can enter directly.';
+      return 'Anyone holding this invite can enter directly.';
     case 'FOLLOW_INVITER_REQUIRED':
-      return 'They will need to follow the inviter before entry.';
+      return 'The invitee will need to follow the inviter before entry.';
     case 'APPROVAL_REQUIRED':
-      return 'They will wait for approval before entry.';
+      return 'The invitee will need approval before entry.';
     case 'FOLLOW_THEN_APPROVAL':
-      return 'They will need to follow first, then wait for approval.';
+      return 'The invitee will need to follow first, then wait for approval.';
     default:
       return '';
   }
+}
+
+String _humanizeInviteError(DioException error, {required String fallback}) {
+  final data = error.response?.data;
+  final text = data is Map
+      ? [
+          data['message'],
+          data['error'],
+          (data['details'] is Map ? (data['details'] as Map)['issues'] : null),
+        ].whereType<Object>().join(' ').trim()
+      : '';
+
+  final raw = text.isNotEmpty ? text : (error.message ?? '').trim();
+  final normalized = raw.toLowerCase();
+
+  if (normalized.contains('validation')) {
+    return 'Could not add this member with the current invite settings.';
+  }
+  if (normalized.contains('not found')) {
+    return 'This conversation path is no longer available.';
+  }
+  if (normalized.contains('forbidden') || normalized.contains('permission')) {
+    return 'You do not have permission to add members here.';
+  }
+
+  return fallback;
 }
 
 class _InviteCandidate {
@@ -862,7 +1012,8 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
     user,
     const ['displayName', 'name', 'fullName', 'username', 'handle'],
   );
-  final state = _pickString(item, const ['state', 'status', 'relationship']).replaceAll('_', ' ');
+  final state = _pickString(item, const ['state', 'status', 'relationship'])
+      .replaceAll('_', ' ');
 
   if (id.isEmpty && handle.isEmpty && name.isEmpty) return null;
 
@@ -899,18 +1050,32 @@ Map<String, dynamic> _extractMap(dynamic raw) {
 
 List<Map<String, dynamic>> _extractList(dynamic raw) {
   if (raw is List) {
-    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList(growable: false);
   }
   if (raw is Map) {
     final map = Map<String, dynamic>.from(raw);
-    const keys = ['items', 'results', 'list', 'users', 'followers', 'following', 'data'];
+    const keys = [
+      'items',
+      'results',
+      'list',
+      'users',
+      'followers',
+      'following',
+      'data',
+    ];
     for (final key in keys) {
       final nested = map[key];
       if (nested is List) {
-        return nested.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+        return nested
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(growable: false);
       }
       if (nested is Map) {
-        final list = _extractList(nested);
+        final list = _extractList(Map<String, dynamic>.from(nested));
         if (list.isNotEmpty) return list;
       }
     }
@@ -919,39 +1084,49 @@ List<Map<String, dynamic>> _extractList(dynamic raw) {
 }
 
 Map<String, dynamic> _unwrapNestedUser(Map<String, dynamic> item) {
-  final nested = item['user'];
-  if (nested is Map) return Map<String, dynamic>.from(nested);
+  const keys = [
+    'user',
+    'member',
+    'profile',
+    'author',
+    'follower',
+    'following',
+    'requester',
+    'target',
+  ];
+  for (final key in keys) {
+    final value = item[key];
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+  }
   return item;
+}
+
+String _cleanHandle(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return '';
+  return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
 }
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
-    final value = map[key];
-    if (value is String && value.trim().isNotEmpty) return value.trim();
+    final value = (map[key] ?? '').toString().trim();
+    if (value.isNotEmpty) return value;
   }
   return '';
 }
 
-String _cleanHandle(String value) {
-  final out = value.trim();
-  if (out.startsWith('@')) return out.substring(1);
-  return out;
-}
-
-String _readApiError(DioException error, {required String fallback}) {
-  final data = error.response?.data;
+String _readApiError(DioException e, {required String fallback}) {
+  final data = e.response?.data;
   if (data is Map) {
-    final map = Map<String, dynamic>.from(data);
-    final message = map['message'];
-    if (message is String && message.trim().isNotEmpty) return message.trim();
-    final err = map['error'];
-    if (err is Map) {
-      final nested = Map<String, dynamic>.from(err);
-      final nestedMessage = nested['message'];
-      if (nestedMessage is String && nestedMessage.trim().isNotEmpty) {
-        return nestedMessage.trim();
-      }
+    final message = (data['message'] ?? '').toString().trim();
+    if (message.isNotEmpty) return message;
+    final error = data['error'];
+    if (error is Map) {
+      final nested = (error['message'] ?? '').toString().trim();
+      if (nested.isNotEmpty) return nested;
     }
   }
-  return fallback;
+  final direct = e.message?.trim() ?? '';
+  return direct.isNotEmpty ? direct : fallback;
 }
