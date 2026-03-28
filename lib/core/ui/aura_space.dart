@@ -9,6 +9,7 @@ class AuraSpace {
   AuraSpace._();
 
   // Legacy fixed tokens (existing code depends on these)
+  static const double s2 = 2;
   static const double s4 = 4;
   static const double s6 = 6;
   static const double s8 = 8;
