@@ -1478,7 +1478,15 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
   String _extractThreadId(dynamic data) {
     final map = _deepFirstMap(data);
-    return _pickString(map, const ['threadId', 'id', '_id']);
+    return _pickString(map, const [
+      'threadId',
+      'thread_id',
+      'defaultThreadId',
+      'mainThreadId',
+      'primaryThreadId',
+  ]);
+
+  return id;
   }
 }
 
