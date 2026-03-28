@@ -100,7 +100,7 @@ class InvitationsClient {
           '/v1/spaces/${spaceId.trim()}/invites',
         ], data: {
           'invitedUserId': recipientUserId!.trim(),
-          'roleOffered': (_nonEmpty(roleToGrant) ? roleToGrant!.trim() : 'MEMBER'),
+          'roleOffered': _nonEmpty(roleToGrant) ? roleToGrant!.trim() : 'MEMBER',
         });
         return _extractMap(legacy.data);
       }
