@@ -41,6 +41,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   final Set<String> _applyingSuggestionIds = <String>{};
   final Set<String> _dismissedSuggestionIds = <String>{};
 
+  List<_DirectoryEntry> _relationshipEntries = const [];
+  List<_DirectoryEntry> _searchEntries = const [];
   List<_DirectoryEntry> _allEntries = const [];
   bool _loading = true;
   bool _searching = false;
@@ -63,6 +65,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   String _translationTargetLanguage = 'ur';
   CompositionTranslationResult? _translationPreview;
   String? _translationSourceSnapshot;
+
+  String? _currentUserId;
+  String? _currentUserHandle;
 
   bool get _isSharedSpaceMode => widget.isSharedSpaceMode;
 
@@ -167,11 +172,13 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   void _handleSearchChanged() {
     _searchDebounce?.cancel();
 
-    setState(() => _searching = true);
+    final query = _searchController.text.trim();
 
-    _searchDebounce = Timer(const Duration(milliseconds: 160), () {
+    setState(() => _searching = query.isNotEmpty);
+
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
       if (!mounted) return;
-      setState(() => _searching = false);
+      unawaited(_runMemberSearch(query));
     });
   }
 
@@ -198,10 +205,17 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               ),
         );
 
+      final meId = _pickString(me, const ['id', 'userId']);
+      final meHandle = _normalizeHandle(_pickString(me, const ['handle', 'username']));
+
       if (!mounted) return;
 
       setState(() {
-        _allEntries = deduped;
+        _currentUserId = meId.isEmpty ? null : meId;
+        _currentUserHandle = meHandle.isEmpty ? null : meHandle;
+        _relationshipEntries = deduped;
+        _searchEntries = const [];
+        _allEntries = _mergeEntries(_relationshipEntries, _searchEntries);
         _loading = false;
       });
 
@@ -250,6 +264,74 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       if (e.response?.statusCode == 404) return const <Map<String, dynamic>>[];
       rethrow;
     }
+  }
+
+  Future<void> _runMemberSearch(String rawQuery) async {
+    final query = rawQuery.trim();
+
+    if (query.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _searchEntries = const [];
+        _allEntries = _mergeEntries(_relationshipEntries, _searchEntries);
+        _searching = false;
+      });
+      return;
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.get(
+        '/search',
+        queryParameters: {
+          'q': query,
+          'limit': 12,
+        },
+      );
+
+      final root = _firstMap(response.data);
+      final data = _firstMap(root['data']);
+      final users = _deepListOfMaps(data['users']);
+
+      final found = users
+          .map(_memberEntryFromMap)
+          .whereType<_DirectoryEntry>()
+          .where((entry) {
+            final sameId = (_currentUserId ?? '').isNotEmpty &&
+                entry.userId.trim() == (_currentUserId ?? '');
+            final sameHandle = (_currentUserHandle ?? '').isNotEmpty &&
+                _normalizeHandle(entry.handle) == (_currentUserHandle ?? '');
+            return !sameId && !sameHandle;
+          })
+          .toList(growable: false);
+
+      if (!mounted || _searchController.text.trim() != query) return;
+
+      setState(() {
+        _searchEntries = found;
+        _allEntries = _mergeEntries(_relationshipEntries, _searchEntries);
+        _searching = false;
+        _loadError = null;
+      });
+    } catch (e) {
+      if (!mounted || _searchController.text.trim() != query) return;
+      setState(() {
+        _searchEntries = const [];
+        _allEntries = _mergeEntries(_relationshipEntries, _searchEntries);
+        _searching = false;
+        _loadError = 'Aura member search could not be loaded: $e';
+      });
+    }
+  }
+
+  List<_DirectoryEntry> _mergeEntries(
+    List<_DirectoryEntry> primary,
+    List<_DirectoryEntry> secondary,
+  ) {
+    return _dedupeEntries([
+      ...primary,
+      ...secondary,
+    ]);
   }
 
   void _applyInitialSelectionIfNeeded() {

@@ -1,3 +1,4 @@
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +33,14 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
+  List<_InviteCandidate> _relationshipCandidates = const <_InviteCandidate>[];
+  List<_InviteCandidate> _searchCandidates = const <_InviteCandidate>[];
   List<_InviteCandidate> _allCandidates = const <_InviteCandidate>[];
   _InviteCandidate? _selected;
+
+  String? _currentUserId;
+  String? _currentUserHandle;
+  Timer? _searchDebounce;
 
   bool _loading = false;
   bool _submitting = false;
@@ -52,6 +59,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     _accessPolicy = _defaultAccessPolicyForDestination(_destinationType);
     _inviteMode = _defaultInviteModeForDestination(_destinationType);
     _recipientType = _defaultRecipientTypeForMode(_inviteMode);
+    _searchController.addListener(_handleSearchChanged);
     if (_showsInternalRecipientPicker) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadCandidates();
@@ -61,6 +69,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -88,6 +98,115 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     }).toList(growable: false);
   }
 
+  void _handleSearchChanged() {
+    _searchDebounce?.cancel();
+
+    final query = _searchController.text.trim();
+    if (!_showsInternalRecipientPicker) return;
+
+    if (query.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _searchCandidates = const <_InviteCandidate>[];
+          _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
+          _loadError = null;
+        });
+      }
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
+      if (!mounted) return;
+      unawaited(_runMemberSearch(query));
+    });
+  }
+
+  Future<void> _runMemberSearch(String rawQuery) async {
+    final query = rawQuery.trim();
+    if (query.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadError = null;
+      });
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get(
+        '/search',
+        queryParameters: {
+          'q': query,
+          'limit': 12,
+        },
+      );
+
+      final root = _extractMap(res.data);
+      final data = _extractMap(root['data']);
+      final rawUsers = _extractList(data['users']);
+
+      final found = <_InviteCandidate>[];
+      for (final item in rawUsers) {
+        final candidate = _candidateFromMap(item);
+        if (candidate == null) continue;
+
+        final sameId = (_currentUserId ?? '').isNotEmpty &&
+            candidate.userId.trim() == (_currentUserId ?? '');
+        final sameHandle = (_currentUserHandle ?? '').isNotEmpty &&
+            _normalizeHandle(candidate.handle) == (_currentUserHandle ?? '');
+
+        if (sameId || sameHandle) continue;
+        found.add(candidate);
+      }
+
+      if (!mounted || _searchController.text.trim() != query) return;
+      setState(() {
+        _searchCandidates = _dedupeCandidates(found);
+        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted || _searchController.text.trim() != query) return;
+      setState(() {
+        _searchCandidates = const <_InviteCandidate>[];
+        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
+        _loading = false;
+        _loadError = 'Aura member search could not be loaded: $e';
+      });
+    }
+  }
+
+  List<_InviteCandidate> _mergeCandidates(
+    List<_InviteCandidate> primary,
+    List<_InviteCandidate> secondary,
+  ) {
+    return _dedupeCandidates([
+      ...primary,
+      ...secondary,
+    ]);
+  }
+
+  List<_InviteCandidate> _dedupeCandidates(List<_InviteCandidate> input) {
+    final seen = <String>{};
+    final out = <_InviteCandidate>[];
+    for (final candidate in input) {
+      final key = candidate.userId.isNotEmpty
+          ? 'id:${candidate.userId}'
+          : 'handle:${_normalizeHandle(candidate.handle)}';
+      if (key.trim().isEmpty || seen.contains(key)) continue;
+      seen.add(key);
+      out.add(candidate);
+    }
+    out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return out;
+  }
+
+  String _normalizeHandle(String? value) {
+    final handle = (value ?? '').trim().toLowerCase();
+    return handle.startsWith('@') ? handle.substring(1) : handle;
+  }
+
   Future<void> _loadCandidates() async {
     if (!_showsInternalRecipientPicker) return;
 
@@ -101,6 +220,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       final meRes = await dio.get('/users/me');
       final me = _extractMap(meRes.data);
       final handle = _pickString(me, const ['handle', 'username']);
+      final meId = _pickString(me, const ['id', 'userId']);
+      final normalizedHandle = _normalizeHandle(handle);
       if (handle.isEmpty) {
         throw Exception('Could not identify the current member.');
       }
@@ -112,19 +233,20 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         ..._extractList(followingRes?.data),
       ];
 
-      final items = <String, _InviteCandidate>{};
+      final candidates = <_InviteCandidate>[];
       for (final item in merged) {
         final candidate = _candidateFromMap(item);
         if (candidate == null) continue;
-        final key = candidate.userId.isNotEmpty ? candidate.userId : candidate.handle;
-        if (key.isEmpty) continue;
-        items[key] = candidate;
+        candidates.add(candidate);
       }
 
       if (!mounted) return;
       setState(() {
-        _allCandidates = items.values.toList(growable: false)
-          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _currentUserId = meId.isEmpty ? null : meId;
+        _currentUserHandle = normalizedHandle.isEmpty ? null : normalizedHandle;
+        _relationshipCandidates = _dedupeCandidates(candidates);
+        _searchCandidates = const <_InviteCandidate>[];
+        _allCandidates = _mergeCandidates(_relationshipCandidates, _searchCandidates);
         _loading = false;
       });
     } catch (e) {
@@ -146,7 +268,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       _searchController.clear();
       _loadError = null;
       _submitError = null;
-      _allCandidates = value == 'KNOWN_MEMBER' ? _allCandidates : const <_InviteCandidate>[];
+      if (value != 'KNOWN_MEMBER') {
+        _relationshipCandidates = const <_InviteCandidate>[];
+        _searchCandidates = const <_InviteCandidate>[];
+        _allCandidates = const <_InviteCandidate>[];
+      }
     });
 
     if (value == 'KNOWN_MEMBER') {
@@ -303,12 +429,12 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   ],
                   const SizedBox(height: AuraSpace.s12),
                   if (_loading)
-                    const _LoadingRow(label: 'Loading connected Aura members...')
+                    const _LoadingRow(label: 'Loading Aura members...')
                   else if (_loadError != null)
                     AuraTextBlock(_loadError!, style: AuraText.body)
                   else if (filtered.isEmpty)
                     AuraTextBlock(
-                      'No connected Aura members are available yet from your current graph.',
+                      'No Aura members matched your search yet.',
                       style: AuraText.body,
                     )
                   else
