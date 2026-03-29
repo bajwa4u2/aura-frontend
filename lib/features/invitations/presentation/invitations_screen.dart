@@ -248,8 +248,8 @@ class _IncomingInviteCard extends ConsumerWidget {
     final subtitle = _inviteSubtitle(invite);
     final status = _inviteStateLabel(invite);
 
-    Future<Map<String, dynamic>> respond(String action) async {
-      final result = await ref.read(invitationsClientProvider).respond(
+    Future<void> respond(String action) async {
+      await ref.read(invitationsClientProvider).respond(
             inviteId: inviteId,
             token: token,
             action: action,
@@ -257,7 +257,6 @@ class _IncomingInviteCard extends ConsumerWidget {
       ref.invalidate(_inviteInboxProvider);
       ref.invalidate(_inviteSentProvider);
       ref.invalidate(_inviteApprovalsProvider);
-      return result;
     }
 
     return AuraCard(
@@ -298,10 +297,9 @@ class _IncomingInviteCard extends ConsumerWidget {
               FilledButton(
                 onPressed: () async {
                   try {
-                    final result = await respond('ACCEPT');
+                    await respond('ACCEPT');
                     if (context.mounted) {
-                      final resolvedInvite = result.isEmpty ? invite : result;
-                      final route = _destinationRoute(resolvedInvite);
+                      final route = _destinationRoute(invite);
                       if (route.isNotEmpty) context.go(route);
                     }
                   } catch (e) {
