@@ -189,6 +189,20 @@ class CorrespondenceIdentity {
 
   static String inviteTitle(Map<String, dynamic> invite) {
     final destinationType = pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
+    final deeplink = pickString(invite, const ['deeplink', 'targetUrl', 'target_url']);
+    final sessionId = pickNested(invite, const [
+      ['session', 'id'],
+      ['realtimeSession', 'id'],
+      ['destination', 'sessionId'],
+      ['data', 'sessionId'],
+    ]).isNotEmpty
+        ? pickNested(invite, const [
+            ['session', 'id'],
+            ['realtimeSession', 'id'],
+            ['destination', 'sessionId'],
+            ['data', 'sessionId'],
+          ])
+        : pickString(invite, const ['sessionId', 'realtimeSessionId', 'realtime_session_id']);
     final threadTitle = pickNested(invite, const [
       ['thread', 'title'],
       ['thread', 'name'],
@@ -197,12 +211,29 @@ class CorrespondenceIdentity {
       ['space', 'title'],
       ['space', 'name'],
     ]).isNotEmpty ? pickNested(invite, const [['space', 'title'], ['space', 'name']]) : pickString(invite, const ['spaceTitle', 'spaceName', 'space_title']);
+    final roomTitle = pickNested(invite, const [
+      ['session', 'title'],
+      ['realtimeSession', 'title'],
+      ['data', 'roomTitle'],
+    ]).isNotEmpty
+        ? pickNested(invite, const [
+            ['session', 'title'],
+            ['realtimeSession', 'title'],
+            ['data', 'roomTitle'],
+          ])
+        : pickString(invite, const ['roomTitle', 'sessionTitle', 'title', 'name']);
     final inviterName = pickNested(invite, const [
       ['invitedBy', 'displayName'],
       ['inviter', 'displayName'],
       ['invitedBy', 'handle'],
       ['inviter', 'handle'],
     ]);
+
+    final pointsToRealtime = deeplink.startsWith('/realtime') || sessionId.isNotEmpty || destinationType == 'REALTIME_INVITE';
+    if (pointsToRealtime) {
+      if (roomTitle.isNotEmpty) return 'Invitation to $roomTitle';
+      return inviterName.isNotEmpty ? '$inviterName invited you to a live room' : 'Live room invitation';
+    }
 
     switch (destinationType) {
       case 'JOIN_SPACE':
@@ -271,6 +302,29 @@ class CorrespondenceIdentity {
   }
 
   static String inviteDestinationRoute(Map<String, dynamic> invite) {
+    final deeplink = pickString(invite, const ['deeplink', 'targetUrl', 'target_url']);
+    if (deeplink.isNotEmpty) {
+      return deeplink;
+    }
+
+    final sessionId = pickNested(invite, const [
+      ['session', 'id'],
+      ['realtimeSession', 'id'],
+      ['destination', 'sessionId'],
+      ['data', 'sessionId'],
+    ]).isNotEmpty
+        ? pickNested(invite, const [
+            ['session', 'id'],
+            ['realtimeSession', 'id'],
+            ['destination', 'sessionId'],
+            ['data', 'sessionId'],
+          ])
+        : pickString(invite, const ['sessionId', 'realtimeSessionId', 'realtime_session_id']);
+
+    if (sessionId.isNotEmpty) {
+      return '/realtime/$sessionId?action=join';
+    }
+
     final threadId = pickString(invite, const ['threadId', 'thread_id']);
     final spaceId = pickString(invite, const ['spaceId', 'space_id']);
     final destinationType = pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
@@ -278,6 +332,12 @@ class CorrespondenceIdentity {
     if (threadId.isNotEmpty && spaceId.isNotEmpty) {
       return '/me/correspondence/$spaceId/thread/$threadId';
     }
+    if (spaceId.isNotEmpty) {
+      return '/me/correspondence/$spaceId';
+    }
+    if (destinationType == 'JOIN_AURA') return '/home';
+    return '/me/invitations';
+  }
     if (spaceId.isNotEmpty) {
       return '/me/correspondence/$spaceId';
     }

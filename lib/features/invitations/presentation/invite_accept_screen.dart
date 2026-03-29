@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
+import '../../correspondence/data/correspondence_identity.dart';
 
 final _inviteInspectProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, token) async {
   return ref.watch(invitationsClientProvider).inspectToken(token);
@@ -286,45 +287,5 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
 }
 
 String _destinationRoute(Map<String, dynamic> invite) {
-  final destinationType = _pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
-  final spaceId = _pickNested(invite, const [
-    ['space', 'id'],
-    ['destination', 'spaceId'],
-  ]).isNotEmpty
-      ? _pickNested(invite, const [
-          ['space', 'id'],
-          ['destination', 'spaceId'],
-        ])
-      : _pickString(invite, const ['spaceId', 'space_id']);
-
-  final threadId = _pickNested(invite, const [
-    ['thread', 'id'],
-    ['destination', 'threadId'],
-  ]).isNotEmpty
-      ? _pickNested(invite, const [
-          ['thread', 'id'],
-          ['destination', 'threadId'],
-        ])
-      : _pickString(invite, const ['threadId', 'thread_id', 'destinationId', 'destination_id']);
-
-  switch (destinationType) {
-    case 'JOIN_THREAD':
-    case 'START_1_TO_1':
-      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-        return '/me/correspondence/$spaceId/thread/$threadId';
-      }
-      if (threadId.isNotEmpty) return '/me/invitations';
-      return '/me/invitations';
-    case 'JOIN_SPACE':
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-      return '/me/correspondence';
-    case 'JOIN_AURA':
-      return '/home';
-    default:
-      if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-        return '/me/correspondence/$spaceId/thread/$threadId';
-      }
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-      return '/home';
-  }
+  return CorrespondenceIdentity.inviteDestinationRoute(invite);
 }
