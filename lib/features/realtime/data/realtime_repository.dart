@@ -38,6 +38,21 @@ class RealtimeRepository {
     return _asList(value);
   }
 
+  Future<Response<dynamic>?> _safeGet(
+    String path, {
+    List<int> toleratedStatusCodes = const <int>[403, 404],
+  }) async {
+    try {
+      return await _dio.get(path);
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode != null && toleratedStatusCodes.contains(statusCode)) {
+        return error.response;
+      }
+      rethrow;
+    }
+  }
+
   Future<RealtimeSessionSnapshot> createSession({
     required String surfaceType,
     required String surfaceId,
@@ -58,21 +73,23 @@ class RealtimeRepository {
   }
 
   Future<RealtimeSessionSnapshot> loadSessionBundle(String sessionId) async {
-    final results = await Future.wait<dynamic>(<Future<dynamic>>[
-      _dio.get('/realtime/sessions/$sessionId'),
-      _dio.get('/realtime/sessions/$sessionId/policy'),
-      _dio.get('/realtime/sessions/$sessionId/consents'),
-      _dio.get('/realtime/sessions/$sessionId/recordings'),
-      _dio.get('/realtime/sessions/$sessionId/transcripts'),
-      _dio.get('/realtime/sessions/$sessionId/artifacts'),
-    ]);
+    final sessionRes = await _dio.get('/realtime/sessions/$sessionId');
 
-    final sessionMap = _unwrapMap((results[0] as Response).data);
-    final policyMap = _unwrapMap((results[1] as Response).data);
-    final consents = _unwrapList((results[2] as Response).data);
-    final recordings = _unwrapList((results[3] as Response).data);
-    final transcripts = _unwrapList((results[4] as Response).data);
-    final artifacts = _unwrapList((results[5] as Response).data);
+    final policyRes = await _safeGet('/realtime/sessions/$sessionId/policy');
+    final consentsRes = await _safeGet('/realtime/sessions/$sessionId/consents');
+    final recordingsRes = await _safeGet('/realtime/sessions/$sessionId/recordings');
+    final transcriptsRes = await _safeGet('/realtime/sessions/$sessionId/transcripts');
+    final artifactsRes = await _safeGet('/realtime/sessions/$sessionId/artifacts');
+
+    final sessionMap = _unwrapMap(sessionRes.data);
+    final policyMap = policyRes == null ? <String, dynamic>{} : _unwrapMap(policyRes.data);
+    final consents = consentsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(consentsRes.data);
+    final recordings =
+        recordingsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(recordingsRes.data);
+    final transcripts =
+        transcriptsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(transcriptsRes.data);
+    final artifacts =
+        artifactsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(artifactsRes.data);
 
     return RealtimeSessionSnapshot.fromJson(
       <String, dynamic>{
