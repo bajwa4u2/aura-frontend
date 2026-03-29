@@ -180,15 +180,18 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         if (spaceId.isEmpty) return;
                         context.push('/me/correspondence/$spaceId');
                       },
-                      onInvite: () {
+                      onInvite: () async {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
-                        context.push(
+                        await context.push(
                           '/invite/create?destinationType=JOIN_SPACE'
                           '&spaceId=${Uri.encodeComponent(spaceId)}'
                           '&threadId=${Uri.encodeComponent(threadId)}'
                           '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
                         );
+                        if (!context.mounted) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
+                        ref.invalidate(_messagesProvider(widget.threadId));
                       },
                     ),
                   ),
@@ -314,7 +317,7 @@ class _ThreadHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _pickString(thread, const ['title', 'name']);
+    final title = _threadScreenTitle(thread);
     final kind = _pickString(thread, const ['kind', 'type']);
     final archived =
         thread['archived'] == true || thread['archivedAt'] != null;
@@ -323,6 +326,10 @@ class _ThreadHeaderCard extends StatelessWidget {
       const ['description', 'summary', 'subtitle'],
     );
     final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+    final participants = _extractParticipants(thread);
+    final participantSummary = _participantSummary(participants);
+    final roles = _participantRoleSummary(participants);
+    final recentWeight = _threadRecentWeight(thread);
 
     return AuraCard(
       child: Column(
@@ -332,24 +339,58 @@ class _ThreadHeaderCard extends StatelessWidget {
             'Conversation',
             style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s8),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          const SizedBox(height: AuraSpace.s10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title.isEmpty ? 'Untitled thread' : title,
-                style: AuraText.title,
+              _IdentityAvatar(
+                label: title,
+                imageUrl: _threadAvatarUrl(thread),
+                radius: 22,
               ),
-              if (kind.isNotEmpty) _Pill(label: kind),
-              if (archived) _Pill(label: 'ARCHIVED'),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AuraSpace.s8,
+                      runSpacing: AuraSpace.s8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(title, style: AuraText.title),
+                        if (kind.isNotEmpty) _Pill(label: _humanizeLabel(kind)),
+                        if (archived) _StatusPill(label: 'Archived', tone: _StatusTone.neutral),
+                        if (recentWeight.isNotEmpty) _StatusPill(label: recentWeight, tone: _StatusTone.accent),
+                      ],
+                    ),
+                    if (participantSummary.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s6),
+                      AuraTextBlock(
+                        participantSummary,
+                        style: AuraText.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (roles.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      AuraTextBlock(
+                        roles,
+                        style: AuraText.small.copyWith(color: Colors.black54),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(description, style: AuraText.body),
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
-          if (description.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(description, style: AuraText.body),
-          ],
           const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s10,
@@ -362,7 +403,7 @@ class _ThreadHeaderCard extends StatelessWidget {
                 ),
               OutlinedButton(
                 onPressed: onInvite,
-                child: const Text('Invite into thread'),
+                child: const Text('Add member'),
               ),
             ],
           ),
@@ -376,45 +417,195 @@ String _threadScreenTitle(Map<String, dynamic> thread) {
   final explicit = _pickString(thread, const ['title', 'name']);
   if (explicit.isNotEmpty) return explicit;
 
-  final participantNames = _extractParticipantNames(thread);
-  if (participantNames.isNotEmpty) {
-    if (participantNames.length == 1) return participantNames.first;
-    if (participantNames.length == 2) return '${participantNames.first} and ${participantNames.last}';
-    return '${participantNames.first}, ${participantNames[1]} +${participantNames.length - 2}';
+  final participants = _extractParticipants(thread);
+  final names = participants.map(_identityLabel).where((e) => e.isNotEmpty).toList(growable: false);
+  final preview = _threadPreview(thread);
+  final spaceTitle = _pickNested(thread, const [
+    ['space', 'title'],
+    ['space', 'name'],
+  ]);
+
+  if (names.isNotEmpty) {
+    if (names.length == 1) return names.first;
+    if (names.length == 2) return '${names.first} and ${names.last}';
+    final base = '${names.first}, ${names[1]} +${names.length - 2}';
+    if (spaceTitle.isNotEmpty) return '$base · $spaceTitle';
+    return base;
   }
 
-  final preview = _pickString(
-    thread,
-    const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary'],
-  );
-  if (preview.isNotEmpty) return _truncateLabel(preview, max: 42);
+  if (preview.isNotEmpty) {
+    if (spaceTitle.isNotEmpty) return '$spaceTitle · ${_truncateLabel(preview, max: 28)}';
+    return _truncateLabel(preview, max: 42);
+  }
 
+  if (spaceTitle.isNotEmpty) return '$spaceTitle conversation';
   return 'Conversation';
 }
 
-List<String> _extractParticipantNames(Map<String, dynamic> thread) {
+List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> thread) {
   const keys = ['participants', 'members', 'participantList', 'memberList', 'users'];
-  final out = <String>[];
+  final out = <Map<String, dynamic>>[];
   for (final key in keys) {
     final value = thread[key];
     if (value is! List) continue;
     for (final raw in value) {
       if (raw is! Map) continue;
-      final map = Map<String, dynamic>.from(raw);
-      final name = _pickString(
-        map,
-        const ['displayName', 'fullName', 'name', 'username', 'handle'],
-      );
-      if (name.isNotEmpty && !out.contains(name)) out.add(name);
+      out.add(Map<String, dynamic>.from(raw));
     }
   }
   return out;
+}
+
+String _participantSummary(List<Map<String, dynamic>> participants) {
+  final labels = participants.map((p) => _identityLine(p, preferHandle: false)).where((e) => e.isNotEmpty).toList(growable: false);
+  if (labels.isEmpty) return '';
+  if (labels.length <= 3) return labels.join(' · ');
+  return '${labels.take(3).join(' · ')} +${labels.length - 3}';
+}
+
+String _participantRoleSummary(List<Map<String, dynamic>> participants) {
+  final roles = <String>[];
+  for (final participant in participants) {
+    final role = _pickString(participant, const ['role', 'memberRole', 'spaceRole']);
+    if (role.isEmpty) continue;
+    final label = _identityLabel(participant);
+    final entry = label.isNotEmpty ? '$label ${_humanizeLabel(role).toLowerCase()}' : _humanizeLabel(role);
+    if (!roles.contains(entry)) roles.add(entry);
+  }
+  return roles.take(2).join(' · ');
+}
+
+String _threadPreview(Map<String, dynamic> thread) {
+  return _pickString(thread, const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary']);
+}
+
+String _threadRecentWeight(Map<String, dynamic> thread) {
+  final updatedAt = _pickString(thread, const ['updatedAt', 'lastMessageAt', 'lastActivityAt']);
+  if (updatedAt.isEmpty) return '';
+  final parsed = DateTime.tryParse(updatedAt);
+  if (parsed == null) return '';
+  final diff = DateTime.now().difference(parsed.toLocal());
+  if (diff.inMinutes < 2) return 'Active now';
+  if (diff.inHours < 1) return 'Active this hour';
+  if (diff.inDays < 1) return 'Active today';
+  if (diff.inDays < 7) return 'Active this week';
+  return '';
+}
+
+String _identityLabel(Map<String, dynamic> entity) {
+  final display = _pickString(entity, const ['displayName', 'fullName', 'name']);
+  if (display.isNotEmpty) return display;
+  final handle = _pickString(entity, const ['handle', 'username']);
+  if (handle.isNotEmpty) return '@${handle.startsWith('@') ? handle.substring(1) : handle}';
+  final id = _pickString(entity, const ['id', '_id', 'userId', 'memberId']);
+  if (id.isNotEmpty) return 'Member ${_truncateLabel(id, max: 12)}';
+  return '';
+}
+
+String _identityLine(Map<String, dynamic> entity, {bool preferHandle = true}) {
+  final label = _identityLabel(entity);
+  final handle = _pickString(entity, const ['handle', 'username']);
+  final cleanHandle = handle.startsWith('@') ? handle : (handle.isEmpty ? '' : '@$handle');
+  if (preferHandle && cleanHandle.isNotEmpty && label != cleanHandle) {
+    return '$label · $cleanHandle';
+  }
+  return label;
+}
+
+String _threadAvatarUrl(Map<String, dynamic> thread) {
+  for (final participant in _extractParticipants(thread)) {
+    final url = _pickString(participant, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+    if (url.isNotEmpty) return url;
+  }
+  return '';
+}
+
+String _humanizeLabel(String value) {
+  final text = value.trim();
+  if (text.isEmpty) return '';
+  return text
+      .replaceAll('_', ' ')
+      .split(RegExp(r'\s+'))
+      .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+      .join(' ');
+}
+
+class _IdentityAvatar extends StatelessWidget {
+  const _IdentityAvatar({required this.label, this.imageUrl = '', this.radius = 20});
+
+  final String label;
+  final String imageUrl;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _initials(label);
+    if (imageUrl.trim().isNotEmpty) {
+      return CircleAvatar(radius: radius, backgroundImage: NetworkImage(imageUrl.trim()));
+    }
+    return CircleAvatar(
+      radius: radius,
+      child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+enum _StatusTone { neutral, accent, positive, negative }
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.tone});
+
+  final String label;
+  final _StatusTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = switch (tone) {
+      _StatusTone.positive => (border: Colors.green.shade200, text: Colors.green.shade800, fill: Colors.green.shade50),
+      _StatusTone.negative => (border: Colors.red.shade200, text: Colors.red.shade800, fill: Colors.red.shade50),
+      _StatusTone.accent => (border: Colors.blue.shade200, text: Colors.blue.shade800, fill: Colors.blue.shade50),
+      _StatusTone.neutral => (border: Colors.black12, text: Colors.black87, fill: Colors.transparent),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      decoration: BoxDecoration(
+        color: palette.fill,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
+    );
+  }
 }
 
 String _truncateLabel(String value, {int max = 48}) {
   final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (text.length <= max) return text;
   return '${text.substring(0, max - 1).trimRight()}…';
+}
+
+String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
+  for (final path in paths) {
+    dynamic current = map;
+    for (final key in path) {
+      if (current is! Map) {
+        current = null;
+        break;
+      }
+      current = current[key];
+    }
+    final text = (current ?? '').toString().trim();
+    if (text.isNotEmpty) return text;
+  }
+  return '';
+}
+
+String _initials(String value) {
+  final parts = value.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList(growable: false);
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 class _ComposerBar extends ConsumerStatefulWidget {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -211,7 +212,7 @@ class _IncomingInviteCard extends ConsumerWidget {
     final token = _pickString(invite, const ['token', 'inviteToken']);
     final title = _inviteTitle(invite);
     final subtitle = _inviteSubtitle(invite);
-    final status = _pickString(invite, const ['status']);
+    final status = _inviteStateLabel(invite);
 
     Future<void> respond(String action) async {
       await ref.read(invitationsClientProvider).respond(
@@ -228,16 +229,30 @@ class _IncomingInviteCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuraTextBlock(title, style: AuraText.title, maxLines: 2),
-          const SizedBox(height: AuraSpace.s6),
-          AuraTextBlock(subtitle, style: AuraText.body),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _IdentityAvatar(label: title, imageUrl: _inviteAvatarUrl(invite)),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AuraTextBlock(title, style: AuraText.title, maxLines: 2),
+                    const SizedBox(height: AuraSpace.s6),
+                    AuraTextBlock(subtitle, style: AuraText.body),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              if (status.isNotEmpty) _Pill(label: status),
-              _Pill(label: _pickString(invite, const ['destinationType', 'destination_type']).replaceAll('_', ' ')),
+              _StatusPill(label: status, tone: _inviteTone(invite)),
+              _Pill(label: _humanizeLabel(_pickString(invite, const ['destinationType', 'destination_type']))),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -302,17 +317,31 @@ class _SentInviteCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuraTextBlock(title, style: AuraText.title, maxLines: 2),
-          const SizedBox(height: AuraSpace.s6),
-          AuraTextBlock(subtitle, style: AuraText.body),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _IdentityAvatar(label: title, imageUrl: _inviteAvatarUrl(invite)),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AuraTextBlock(title, style: AuraText.title, maxLines: 2),
+                    const SizedBox(height: AuraSpace.s6),
+                    AuraTextBlock(subtitle, style: AuraText.body),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              _Pill(label: _pickString(invite, const ['status']).replaceAll('_', ' ')),
+              _StatusPill(label: _inviteStateLabel(invite), tone: _inviteTone(invite)),
               if (_pickString(invite, const ['deliveryChannel', 'delivery_channel']).isNotEmpty)
-                _Pill(label: _pickString(invite, const ['deliveryChannel', 'delivery_channel']).replaceAll('_', ' ')),
+                _Pill(label: _humanizeLabel(_pickString(invite, const ['deliveryChannel', 'delivery_channel']))),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -320,18 +349,20 @@ class _SentInviteCard extends ConsumerWidget {
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
-              if (token.isNotEmpty)
+              if (token.isNotEmpty && _inviteIsActive(invite))
                 OutlinedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final link = Uri.base.origin + '/invite/accept?token=${Uri.encodeComponent(token)}';
+                    await Clipboard.setData(ClipboardData(text: link));
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Invite link: $link')),
+                      const SnackBar(content: Text('Invite link copied.')),
                     );
                   },
                   child: const Text('Copy link'),
                 ),
               OutlinedButton(
-                onPressed: inviteId.isEmpty
+                onPressed: inviteId.isEmpty || !_inviteIsActive(invite)
                     ? null
                     : () async {
                         try {
@@ -366,16 +397,31 @@ class _ApprovalInviteCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuraTextBlock(_inviteTitle(invite), style: AuraText.title, maxLines: 2),
-          const SizedBox(height: AuraSpace.s6),
-          AuraTextBlock(_inviteSubtitle(invite), style: AuraText.body),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _IdentityAvatar(label: _inviteTitle(invite), imageUrl: _inviteAvatarUrl(invite)),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AuraTextBlock(_inviteTitle(invite), style: AuraText.title, maxLines: 2),
+                    const SizedBox(height: AuraSpace.s6),
+                    AuraTextBlock(_inviteSubtitle(invite), style: AuraText.body),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              _Pill(label: _pickString(invite, const ['status']).replaceAll('_', ' ')),
-              _Pill(label: _pickString(invite, const ['accessPolicy', 'access_policy']).replaceAll('_', ' ')),
+              _StatusPill(label: _inviteStateLabel(invite), tone: _inviteTone(invite)),
+              if (_pickString(invite, const ['accessPolicy', 'access_policy']).isNotEmpty)
+                _Pill(label: _humanizeLabel(_pickString(invite, const ['accessPolicy', 'access_policy']))),
             ],
           ),
         ],
@@ -420,6 +466,55 @@ class _Pill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(text, style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+enum _StatusTone { neutral, accent, positive, negative }
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.tone});
+
+  final String label;
+  final _StatusTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = switch (tone) {
+      _StatusTone.positive => (border: Colors.green.shade200, text: Colors.green.shade800, fill: Colors.green.shade50),
+      _StatusTone.negative => (border: Colors.red.shade200, text: Colors.red.shade800, fill: Colors.red.shade50),
+      _StatusTone.accent => (border: Colors.blue.shade200, text: Colors.blue.shade800, fill: Colors.blue.shade50),
+      _StatusTone.neutral => (border: Colors.black12, text: Colors.black87, fill: Colors.transparent),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      decoration: BoxDecoration(
+        color: palette.fill,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
+    );
+  }
+}
+
+class _IdentityAvatar extends StatelessWidget {
+  const _IdentityAvatar({required this.label, this.imageUrl = '', this.radius = 20});
+
+  final String label;
+  final String imageUrl;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _initials(label);
+    if (imageUrl.trim().isNotEmpty) {
+      return CircleAvatar(radius: radius, backgroundImage: NetworkImage(imageUrl.trim()));
+    }
+    return CircleAvatar(
+      radius: radius,
+      child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
     );
   }
 }
@@ -481,6 +576,60 @@ String _inviteSubtitle(Map<String, dynamic> invite) {
     if (inviterName.isNotEmpty) 'From: $inviterName',
   ];
   return parts.isEmpty ? 'Invitation in progress.' : parts.join(' · ');
+}
+
+
+String _inviteStateLabel(Map<String, dynamic> invite) {
+  final status = _pickString(invite, const ['status']);
+  return status.isEmpty ? 'Pending' : _humanizeLabel(status);
+}
+
+bool _inviteIsActive(Map<String, dynamic> invite) {
+  final status = _pickString(invite, const ['status']).toUpperCase();
+  return status.isEmpty || status == 'PENDING' || status == 'SENT' || status == 'CREATED' || status == 'OPEN' || status == 'OPENED';
+}
+
+_StatusTone _inviteTone(Map<String, dynamic> invite) {
+  final status = _pickString(invite, const ['status']).toUpperCase();
+  switch (status) {
+    case 'ACCEPTED':
+      return _StatusTone.positive;
+    case 'REVOKED':
+    case 'DECLINED':
+    case 'EXPIRED':
+      return _StatusTone.negative;
+    case 'OPENED':
+      return _StatusTone.accent;
+    default:
+      return _StatusTone.neutral;
+  }
+}
+
+String _humanizeLabel(String value) {
+  final text = value.trim();
+  if (text.isEmpty) return '';
+  return text
+      .replaceAll('_', ' ')
+      .split(RegExp(r'\s+'))
+      .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+      .join(' ');
+}
+
+String _inviteAvatarUrl(Map<String, dynamic> invite) {
+  return _pickNested(invite, const [
+    ['recipient', 'avatarUrl'],
+    ['recipientUser', 'avatarUrl'],
+    ['invitedUser', 'avatarUrl'],
+    ['recipientProfile', 'avatarUrl'],
+    ['inviter', 'avatarUrl'],
+  ]);
+}
+
+String _initials(String value) {
+  final parts = value.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList(growable: false);
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 String _destinationRoute(Map<String, dynamic> invite) {
