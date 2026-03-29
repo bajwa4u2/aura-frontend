@@ -12,6 +12,8 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/spaces_repository.dart';
 import '../data/threads_repository.dart';
+import '../data/correspondence_identity.dart';
+import '../data/correspondence_live_service.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
@@ -65,21 +67,37 @@ class SpaceScreen extends ConsumerStatefulWidget {
 class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   bool _redirectingToThread = false;
   Timer? _pollTimer;
+  StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
 
   @override
   void initState() {
     super.initState();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
       ref.invalidate(_threadsProvider(widget.spaceId));
       ref.invalidate(_invitesProvider(widget.spaceId));
+    });
+
+    Future.microtask(() async {
+      final live = ref.read(correspondenceLiveServiceProvider);
+      await live.joinSpace(widget.spaceId);
+      _liveSubscription = live.events.listen((event) {
+        if (!mounted) return;
+        if (event.matchesSpace(widget.spaceId) || event.name.startsWith('invite:') || event.name.startsWith('thread:')) {
+          ref.invalidate(_spaceDetailProvider(widget.spaceId));
+          ref.invalidate(_threadsProvider(widget.spaceId));
+          ref.invalidate(_invitesProvider(widget.spaceId));
+        }
+      });
     });
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    unawaited(ref.read(correspondenceLiveServiceProvider).leaveSpace(widget.spaceId));
+    _liveSubscription?.cancel();
     super.dispose();
   }
 
@@ -1001,153 +1019,39 @@ class _MemberTile extends StatelessWidget {
 }
 
 String _threadDisplayTitle(Map<String, dynamic> thread) {
-  final explicit = _pickString(thread, const ['title', 'name']);
-  if (explicit.isNotEmpty) return explicit;
-
-  final participantNames = _extractDisplayNames(
-    thread,
-    const ['participants', 'members', 'participantList', 'memberList', 'users'],
-  );
-  final preview = _threadPreview(thread);
-  final spaceTitle = _pickNested(thread, const [
-    ['space', 'title'],
-    ['space', 'name'],
-  ]);
-
-  if (participantNames.isNotEmpty) {
-    if (participantNames.length == 1) return participantNames.first;
-    if (participantNames.length == 2) return '${participantNames.first} and ${participantNames.last}';
-    final base = '${participantNames.first}, ${participantNames[1]} +${participantNames.length - 2}';
-    if (spaceTitle.isNotEmpty) return '$base · $spaceTitle';
-    return base;
-  }
-
-  if (preview.isNotEmpty) {
-    if (spaceTitle.isNotEmpty) {
-      return '$spaceTitle · ${_truncateLabel(preview, max: 28)}';
-    }
-    return _truncateLabel(preview, max: 42);
-  }
-
-  if (spaceTitle.isNotEmpty) return '$spaceTitle conversation';
-  return 'Conversation';
+  return CorrespondenceIdentity.threadTitle(thread);
 }
 
 String _threadPreview(Map<String, dynamic> thread) {
-  final preview = _pickString(
-    thread,
-    const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary'],
-  );
-  return preview.isNotEmpty ? _truncateLabel(preview, max: 120) : '';
+  return CorrespondenceIdentity.threadPreview(thread);
 }
 
 String _threadParticipantSummary(Map<String, dynamic> thread) {
-  final participants = _extractParticipants(thread);
-  if (participants.isEmpty) return '';
-  final labels = participants
-      .map((p) => _identityLine(p, preferHandle: false))
-      .where((v) => v.isNotEmpty)
-      .toList(growable: false);
-  if (labels.isEmpty) return '';
-  if (labels.length <= 3) return labels.join(' · ');
-  return '${labels.take(3).join(' · ')} +${labels.length - 3}';
+  return CorrespondenceIdentity.threadParticipantSummary(thread);
 }
 
 String _threadParticipantRoleSummary(Map<String, dynamic> thread) {
-  final participants = _extractParticipants(thread);
-  final roles = <String>[];
-  for (final participant in participants) {
-    final role = _pickString(participant, const ['role', 'memberRole', 'spaceRole']);
-    if (role.isEmpty) continue;
-    final label = _identityLabel(participant);
-    final entry = label.isNotEmpty ? '$label ${_humanizeLabel(role).toLowerCase()}' : _humanizeLabel(role);
-    if (!roles.contains(entry)) roles.add(entry);
-  }
-  if (roles.isEmpty) return '';
-  return roles.take(2).join(' · ');
+  return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
 }
 
 String _threadRecentWeight(Map<String, dynamic> thread) {
-  final updatedAt = _pickString(thread, const ['updatedAt', 'lastMessageAt', 'lastActivityAt']);
-  if (updatedAt.isEmpty) return '';
-  final parsed = DateTime.tryParse(updatedAt);
-  if (parsed == null) return '';
-  final diff = DateTime.now().difference(parsed.toLocal());
-  if (diff.inMinutes < 2) return 'Active now';
-  if (diff.inHours < 1) return 'Active this hour';
-  if (diff.inDays < 1) return 'Active today';
-  if (diff.inDays < 7) return 'Active this week';
-  return '';
+  return CorrespondenceIdentity.threadRecentWeight(thread);
 }
 
 String _memberDisplayName(Map<String, dynamic> member) {
-  final value = _pickString(
-    member,
-    const ['displayName', 'fullName', 'name', 'username', 'handle'],
-  );
-  return value.isEmpty ? 'Member' : value;
+  return CorrespondenceIdentity.memberDisplayName(member);
 }
 
 String _memberSubtitle(Map<String, dynamic> member) {
-  final parts = <String>[
-    _pickString(member, const ['headline', 'bio', 'summary']),
-    _pickString(member, const ['email']),
-  ].where((e) => e.isNotEmpty).toList(growable: false);
-  return parts.isEmpty ? '' : parts.first;
+  return CorrespondenceIdentity.memberSubtitle(member);
 }
 
 String _inviteDisplayTitle(Map<String, dynamic> invite) {
-  final targetName = _pickNested(
-    invite,
-    const [
-      ['recipient', 'displayName'],
-      ['recipient', 'fullName'],
-      ['recipient', 'name'],
-      ['recipientUser', 'displayName'],
-      ['recipientUser', 'name'],
-      ['invitedUser', 'displayName'],
-      ['invitedUser', 'name'],
-      ['recipientProfile', 'displayName'],
-    ],
-  );
-  if (targetName.isNotEmpty) return targetName;
-
-  final handle = _pickString(
-    invite,
-    const ['recipientHandle', 'recipient_handle', 'handle'],
-  );
-  if (handle.isNotEmpty) return '@$handle';
-
-  final recipientId = _pickString(invite, const ['recipientUserId', 'invitedUserId', 'directRecipientId', 'userId']);
-  if (recipientId.isNotEmpty) return 'Member ${_truncateLabel(recipientId, max: 14)}';
-
-  final destination = _pickString(invite, const ['destinationType', 'destination_type']).replaceAll('_', ' ');
-  if (destination.isNotEmpty) return _humanizeLabel(destination);
-
-  return 'Invite';
+  return CorrespondenceIdentity.inviteTitle(invite);
 }
 
 String _inviteDisplaySubtitle(Map<String, dynamic> invite) {
-  final note = _pickString(invite, const ['message']);
-  if (note.isNotEmpty) return note;
-
-  final inviter = _pickNested(
-    invite,
-    const [
-      ['invitedBy', 'displayName'],
-      ['inviter', 'displayName'],
-      ['createdBy', 'displayName'],
-      ['sender', 'displayName'],
-    ],
-  );
-  final destination = _pickString(invite, const ['destinationType', 'destination_type']);
-  final sentAt = _pickString(invite, const ['sentAt', 'createdAt', 'updatedAt']);
-  final parts = <String>[
-    if (destination.isNotEmpty) _humanizeLabel(destination),
-    if (inviter.isNotEmpty) 'From $inviter',
-    if (sentAt.isNotEmpty) _inviteTimeLabel(sentAt),
-  ];
-  return parts.isEmpty ? 'Pending invitation.' : parts.join(' · ');
+  return CorrespondenceIdentity.inviteSubtitle(invite);
 }
 
 bool _inviteIsActive(Map<String, dynamic> invite) {
@@ -1184,33 +1088,15 @@ List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> source, {Li
 }
 
 String _identityLabel(Map<String, dynamic> entity) {
-  final display = _pickString(entity, const ['displayName', 'fullName', 'name']);
-  if (display.isNotEmpty) return display;
-  final handle = _pickString(entity, const ['handle', 'username']);
-  if (handle.isNotEmpty) return '@${handle.startsWith('@') ? handle.substring(1) : handle}';
-  final id = _pickString(entity, const ['id', 'userId', '_id']);
-  if (id.isNotEmpty) return 'Member ${_truncateLabel(id, max: 12)}';
-  return '';
+  return CorrespondenceIdentity.identityLabel(entity);
 }
 
 String _identityLine(Map<String, dynamic> entity, {bool preferHandle = true}) {
-  final label = _identityLabel(entity);
-  final handle = _pickString(entity, const ['handle', 'username']);
-  final cleanHandle = handle.startsWith('@') ? handle : (handle.isEmpty ? '' : '@$handle');
-  if (preferHandle && cleanHandle.isNotEmpty && label != cleanHandle) {
-    return '$label · $cleanHandle';
-  }
-  return label;
+  return CorrespondenceIdentity.identityLine(entity, preferHandle: preferHandle);
 }
 
 String _humanizeLabel(String value) {
-  final text = value.trim();
-  if (text.isEmpty) return '';
-  return text
-      .replaceAll('_', ' ')
-      .split(RegExp(r'\s+'))
-      .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
-      .join(' ');
+  return CorrespondenceIdentity.humanize(value);
 }
 
 String _inviteStateLabel(Map<String, dynamic> invite) {

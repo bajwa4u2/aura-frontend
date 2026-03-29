@@ -9,6 +9,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
+import '../../correspondence/data/correspondence_identity.dart';
+import '../../correspondence/data/correspondence_live_service.dart';
 
 final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return ref.watch(invitationsClientProvider).loadInbox();
@@ -22,11 +24,42 @@ final _inviteApprovalsProvider = FutureProvider<List<Map<String, dynamic>>>((ref
   return ref.watch(invitationsClientProvider).loadApprovals();
 });
 
-class InvitationsScreen extends ConsumerWidget {
+class InvitationsScreen extends ConsumerStatefulWidget {
   const InvitationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InvitationsScreen> createState() => _InvitationsScreenState();
+}
+
+class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
+  StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final live = ref.read(correspondenceLiveServiceProvider);
+      await live.ensureConnected();
+      _liveSubscription = live.events.listen((event) {
+        if (!mounted) return;
+        if (event.name.startsWith('invite:') || event.name.startsWith('thread:') || event.name.startsWith('space:member.')) {
+          ref.invalidate(_inviteInboxProvider);
+          ref.invalidate(_inviteSentProvider);
+          ref.invalidate(_inviteApprovalsProvider);
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final inboxAsync = ref.watch(_inviteInboxProvider);
     final sentAsync = ref.watch(_inviteSentProvider);
     final approvalsAsync = ref.watch(_inviteApprovalsProvider);
@@ -520,73 +553,20 @@ class _IdentityAvatar extends StatelessWidget {
 }
 
 String _inviteTitle(Map<String, dynamic> invite) {
-  final destinationType = _pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
-  final threadTitle = _pickString(invite, const ['threadTitle', 'threadName', 'thread_title']);
-  final spaceTitle = _pickString(invite, const ['spaceTitle', 'spaceName', 'space_title']);
-  final inviterName = _pickNested(invite, const [
-    ['invitedBy', 'displayName'],
-    ['inviter', 'displayName'],
-    ['invitedBy', 'handle'],
-    ['inviter', 'handle'],
-  ]);
-
-  switch (destinationType) {
-    case 'JOIN_SPACE':
-      return spaceTitle.isNotEmpty
-          ? 'Invitation to $spaceTitle'
-          : inviterName.isNotEmpty
-              ? '$inviterName invited you into a space'
-              : 'Space invitation';
-    case 'JOIN_THREAD':
-      return threadTitle.isNotEmpty
-          ? 'Invitation to $threadTitle'
-          : 'Thread invitation';
-    case 'START_1_TO_1':
-      return inviterName.isNotEmpty
-          ? '$inviterName invited you to correspond'
-          : 'Direct invitation';
-    case 'JOIN_AURA':
-      return 'Invitation to Aura';
-    default:
-      return 'Invitation';
-  }
+  return CorrespondenceIdentity.inviteTitle(invite);
 }
 
 String _inviteSubtitle(Map<String, dynamic> invite) {
-  final message = _pickString(invite, const ['message']);
-  if (message.isNotEmpty) return message;
-
-  final policy = _pickString(invite, const ['accessPolicy', 'access_policy']).replaceAll('_', ' ');
-  final recipientName = _pickNested(invite, const [
-    ['recipient', 'displayName'],
-    ['recipientUser', 'displayName'],
-    ['invitedUser', 'displayName'],
-    ['recipientProfile', 'displayName'],
-  ]);
-  final recipientHandle = _pickString(invite, const ['recipientHandle', 'recipient_handle']);
-  final inviterName = _pickNested(invite, const [
-    ['invitedBy', 'displayName'],
-    ['inviter', 'displayName'],
-    ['createdBy', 'displayName'],
-  ]);
-  final parts = <String>[
-    if (policy.isNotEmpty) 'Access: $policy',
-    if (recipientName.isNotEmpty) 'For: $recipientName',
-    if (recipientHandle.isNotEmpty) 'For: @$recipientHandle',
-    if (inviterName.isNotEmpty) 'From: $inviterName',
-  ];
-  return parts.isEmpty ? 'Invitation in progress.' : parts.join(' · ');
+  return CorrespondenceIdentity.inviteSubtitle(invite);
 }
 
 
 String _inviteStateLabel(Map<String, dynamic> invite) {
-  final status = _pickString(invite, const ['status']);
-  return status.isEmpty ? 'Pending' : _humanizeLabel(status);
+  return CorrespondenceIdentity.inviteStateLabel(invite);
 }
 
 bool _inviteIsActive(Map<String, dynamic> invite) {
-  final status = _pickString(invite, const ['status']).toUpperCase();
-  return status.isEmpty || status == 'PENDING' || status == 'SENT' || status == 'CREATED' || status == 'OPEN' || status == 'OPENED';
+  return CorrespondenceIdentity.inviteIsActive(invite);
 }
 
 _StatusTone _inviteTone(Map<String, dynamic> invite) {
@@ -606,45 +586,19 @@ _StatusTone _inviteTone(Map<String, dynamic> invite) {
 }
 
 String _humanizeLabel(String value) {
-  final text = value.trim();
-  if (text.isEmpty) return '';
-  return text
-      .replaceAll('_', ' ')
-      .split(RegExp(r'\s+'))
-      .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
-      .join(' ');
+  return CorrespondenceIdentity.humanize(value);
 }
 
 String _inviteAvatarUrl(Map<String, dynamic> invite) {
-  return _pickNested(invite, const [
-    ['recipient', 'avatarUrl'],
-    ['recipientUser', 'avatarUrl'],
-    ['invitedUser', 'avatarUrl'],
-    ['recipientProfile', 'avatarUrl'],
-    ['inviter', 'avatarUrl'],
-  ]);
+  return CorrespondenceIdentity.inviteAvatarUrl(invite);
 }
 
 String _initials(String value) {
-  final parts = value.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList(growable: false);
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first[0].toUpperCase();
-  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  return CorrespondenceIdentity.initials(value);
 }
 
 String _destinationRoute(Map<String, dynamic> invite) {
-  final threadId = _pickString(invite, const ['threadId', 'thread_id']);
-  final spaceId = _pickString(invite, const ['spaceId', 'space_id']);
-  final destinationType = _pickString(invite, const ['destinationType', 'destination_type']).toUpperCase();
-
-  if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-    return '/me/correspondence/$spaceId/thread/$threadId';
-  }
-  if (spaceId.isNotEmpty) {
-    return '/me/correspondence/$spaceId';
-  }
-  if (destinationType == 'JOIN_AURA') return '/home';
-  return '/me/invitations';
+  return CorrespondenceIdentity.inviteDestinationRoute(invite);
 }
 
 String _pickString(Map<String, dynamic> map, List<String> keys) {

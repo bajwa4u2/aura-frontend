@@ -20,6 +20,8 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
+import '../data/correspondence_identity.dart';
+import '../data/correspondence_live_service.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
@@ -110,20 +112,35 @@ class ThreadScreen extends ConsumerStatefulWidget {
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Timer? _pollTimer;
+  StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
 
   @override
   void initState() {
     super.initState();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       ref.invalidate(_threadDetailProvider(widget.threadId));
       ref.invalidate(_messagesProvider(widget.threadId));
+    });
+
+    Future.microtask(() async {
+      final live = ref.read(correspondenceLiveServiceProvider);
+      await live.joinThread(widget.threadId);
+      _liveSubscription = live.events.listen((event) {
+        if (!mounted) return;
+        if (event.matchesThread(widget.threadId) || event.name.startsWith('invite:') || event.name.startsWith('space:member.')) {
+          ref.invalidate(_threadDetailProvider(widget.threadId));
+          ref.invalidate(_messagesProvider(widget.threadId));
+        }
+      });
     });
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    unawaited(ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId));
+    _liveSubscription?.cancel();
     super.dispose();
   }
 
@@ -414,120 +431,44 @@ class _ThreadHeaderCard extends StatelessWidget {
 }
 
 String _threadScreenTitle(Map<String, dynamic> thread) {
-  final explicit = _pickString(thread, const ['title', 'name']);
-  if (explicit.isNotEmpty) return explicit;
-
-  final participants = _extractParticipants(thread);
-  final names = participants.map(_identityLabel).where((e) => e.isNotEmpty).toList(growable: false);
-  final preview = _threadPreview(thread);
-  final spaceTitle = _pickNested(thread, const [
-    ['space', 'title'],
-    ['space', 'name'],
-  ]);
-
-  if (names.isNotEmpty) {
-    if (names.length == 1) return names.first;
-    if (names.length == 2) return '${names.first} and ${names.last}';
-    final base = '${names.first}, ${names[1]} +${names.length - 2}';
-    if (spaceTitle.isNotEmpty) return '$base · $spaceTitle';
-    return base;
-  }
-
-  if (preview.isNotEmpty) {
-    if (spaceTitle.isNotEmpty) return '$spaceTitle · ${_truncateLabel(preview, max: 28)}';
-    return _truncateLabel(preview, max: 42);
-  }
-
-  if (spaceTitle.isNotEmpty) return '$spaceTitle conversation';
-  return 'Conversation';
+  return CorrespondenceIdentity.threadTitle(thread);
 }
 
 List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> thread) {
-  const keys = ['participants', 'members', 'participantList', 'memberList', 'users'];
-  final out = <Map<String, dynamic>>[];
-  for (final key in keys) {
-    final value = thread[key];
-    if (value is! List) continue;
-    for (final raw in value) {
-      if (raw is! Map) continue;
-      out.add(Map<String, dynamic>.from(raw));
-    }
-  }
-  return out;
+  return CorrespondenceIdentity.extractParticipants(thread);
 }
 
 String _participantSummary(List<Map<String, dynamic>> participants) {
-  final labels = participants.map((p) => _identityLine(p, preferHandle: false)).where((e) => e.isNotEmpty).toList(growable: false);
-  if (labels.isEmpty) return '';
-  if (labels.length <= 3) return labels.join(' · ');
-  return '${labels.take(3).join(' · ')} +${labels.length - 3}';
+  return CorrespondenceIdentity.threadParticipantSummaryFromParticipants(participants);
 }
 
 String _participantRoleSummary(List<Map<String, dynamic>> participants) {
-  final roles = <String>[];
-  for (final participant in participants) {
-    final role = _pickString(participant, const ['role', 'memberRole', 'spaceRole']);
-    if (role.isEmpty) continue;
-    final label = _identityLabel(participant);
-    final entry = label.isNotEmpty ? '$label ${_humanizeLabel(role).toLowerCase()}' : _humanizeLabel(role);
-    if (!roles.contains(entry)) roles.add(entry);
-  }
-  return roles.take(2).join(' · ');
+  final thread = <String, dynamic>{'participants': participants};
+  return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
 }
 
 String _threadPreview(Map<String, dynamic> thread) {
-  return _pickString(thread, const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary']);
+  return CorrespondenceIdentity.threadPreview(thread);
 }
 
 String _threadRecentWeight(Map<String, dynamic> thread) {
-  final updatedAt = _pickString(thread, const ['updatedAt', 'lastMessageAt', 'lastActivityAt']);
-  if (updatedAt.isEmpty) return '';
-  final parsed = DateTime.tryParse(updatedAt);
-  if (parsed == null) return '';
-  final diff = DateTime.now().difference(parsed.toLocal());
-  if (diff.inMinutes < 2) return 'Active now';
-  if (diff.inHours < 1) return 'Active this hour';
-  if (diff.inDays < 1) return 'Active today';
-  if (diff.inDays < 7) return 'Active this week';
-  return '';
+  return CorrespondenceIdentity.threadRecentWeight(thread);
 }
 
 String _identityLabel(Map<String, dynamic> entity) {
-  final display = _pickString(entity, const ['displayName', 'fullName', 'name']);
-  if (display.isNotEmpty) return display;
-  final handle = _pickString(entity, const ['handle', 'username']);
-  if (handle.isNotEmpty) return '@${handle.startsWith('@') ? handle.substring(1) : handle}';
-  final id = _pickString(entity, const ['id', '_id', 'userId', 'memberId']);
-  if (id.isNotEmpty) return 'Member ${_truncateLabel(id, max: 12)}';
-  return '';
+  return CorrespondenceIdentity.identityLabel(entity);
 }
 
 String _identityLine(Map<String, dynamic> entity, {bool preferHandle = true}) {
-  final label = _identityLabel(entity);
-  final handle = _pickString(entity, const ['handle', 'username']);
-  final cleanHandle = handle.startsWith('@') ? handle : (handle.isEmpty ? '' : '@$handle');
-  if (preferHandle && cleanHandle.isNotEmpty && label != cleanHandle) {
-    return '$label · $cleanHandle';
-  }
-  return label;
+  return CorrespondenceIdentity.identityLine(entity, preferHandle: preferHandle);
 }
 
 String _threadAvatarUrl(Map<String, dynamic> thread) {
-  for (final participant in _extractParticipants(thread)) {
-    final url = _pickString(participant, const ['avatarUrl', 'imageUrl', 'photoUrl']);
-    if (url.isNotEmpty) return url;
-  }
-  return '';
+  return CorrespondenceIdentity.threadAvatarUrl(thread);
 }
 
 String _humanizeLabel(String value) {
-  final text = value.trim();
-  if (text.isEmpty) return '';
-  return text
-      .replaceAll('_', ' ')
-      .split(RegExp(r'\s+'))
-      .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
-      .join(' ');
+  return CorrespondenceIdentity.humanize(value);
 }
 
 class _IdentityAvatar extends StatelessWidget {
