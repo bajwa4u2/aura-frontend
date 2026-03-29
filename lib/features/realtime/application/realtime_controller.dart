@@ -29,7 +29,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   StreamSubscription<RealtimeParsedEvent>? _subscription;
   StreamSubscription<RealtimeMediaSnapshot>? _mediaSubscription;
+
   Map<String, dynamic>? _rtcConfiguration;
+  String? _rtcConfigurationSessionId;
 
   Future<void> connect() async {
     if (state.connectionStatus == RealtimeConnectionStatus.connected ||
@@ -103,6 +105,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Future<void> disconnect() async {
     await _mediaService.disposeAllPeers();
     await _socketService.disconnect();
+    _clearRtcConfiguration();
+
     state = state.copyWith(
       connectionStatus: RealtimeConnectionStatus.disconnected,
       joinState: RealtimeJoinState.idle,
@@ -143,6 +147,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (trimmed.isEmpty) return;
 
     await connect();
+    _clearRtcConfiguration();
 
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
@@ -157,7 +162,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       });
 
       await hydrateSession(trimmed);
-      await _ensureMediaReady(trimmed);
+      await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
 
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
@@ -176,6 +181,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (trimmed.isEmpty) return;
 
     await connect();
+    _clearRtcConfiguration();
 
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
@@ -190,7 +196,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       });
 
       await hydrateSession(trimmed);
-      await _ensureMediaReady(trimmed);
+      await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
 
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
@@ -215,6 +221,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     } catch (_) {}
 
     await _mediaService.disposeAllPeers();
+    _clearRtcConfiguration();
 
     state = state.copyWith(
       joinState: RealtimeJoinState.idle,
@@ -474,8 +481,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
   }
 
-  Future<void> _ensureMediaReady(String sessionId) async {
-    if (state.isMediaReady || state.isMediaBusy) return;
+  Future<void> _ensureMediaReady(
+    String sessionId, {
+    bool refreshTurnCredentials = false,
+  }) async {
+    if (state.isMediaBusy) return;
 
     state = state.copyWith(
       isMediaBusy: true,
@@ -483,17 +493,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
-      _rtcConfiguration ??= await _repository.issueTurnCredentials(sessionId);
-      final rawIceServers = _rtcConfiguration?['iceServers'];
-      final configuration = <String, dynamic>{
-        'iceServers': rawIceServers is List ? rawIceServers : const <dynamic>[],
-        'sdpSemantics': 'unified-plan',
-      };
-
-      await _mediaService.ensureLocalMedia(
-        audio: state.policy?.audioAllowed ?? true,
-        video: state.policy?.videoAllowed ?? true,
+      final configuration = await _resolveRtcConfiguration(
+        sessionId,
+        refreshTurnCredentials: refreshTurnCredentials,
       );
+
+      if (!state.isMediaReady) {
+        await _mediaService.ensureLocalMedia(
+          audio: state.policy?.audioAllowed ?? true,
+          video: state.policy?.videoAllowed ?? true,
+        );
+      }
 
       await _socketService.emitAck('session:audio.set', <String, dynamic>{
         'sessionId': sessionId,
@@ -509,8 +519,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         isMediaReady: true,
       );
 
-      // Existing participants will initiate to this socket when they see the joined event.
       _rtcConfiguration = configuration;
+      _rtcConfigurationSessionId = sessionId;
     } catch (error) {
       state = state.copyWith(
         isMediaBusy: false,
@@ -518,6 +528,33 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         infoMessage: 'You are in the room, but browser media is not active yet.',
       );
     }
+  }
+
+  Future<Map<String, dynamic>> _resolveRtcConfiguration(
+    String sessionId, {
+    bool refreshTurnCredentials = false,
+  }) async {
+    if (!refreshTurnCredentials &&
+        _rtcConfiguration != null &&
+        _rtcConfigurationSessionId == sessionId) {
+      return _rtcConfiguration!;
+    }
+
+    final issued = await _repository.issueTurnCredentials(sessionId);
+    final rawIceServers = issued['iceServers'];
+    final configuration = <String, dynamic>{
+      'iceServers': rawIceServers is List ? rawIceServers : const <dynamic>[],
+      'sdpSemantics': 'unified-plan',
+    };
+
+    _rtcConfiguration = configuration;
+    _rtcConfigurationSessionId = sessionId;
+    return configuration;
+  }
+
+  void _clearRtcConfiguration() {
+    _rtcConfiguration = null;
+    _rtcConfigurationSessionId = null;
   }
 
   void _handleMediaSnapshot(RealtimeMediaSnapshot snapshot) {
@@ -536,8 +573,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     required String targetSocketId,
   }) async {
     final sessionId = state.sessionId;
-    final configuration = _rtcConfiguration;
-    if (sessionId == null || sessionId.isEmpty || configuration == null) return;
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    final configuration = await _resolveRtcConfiguration(sessionId);
 
     final offer = await _mediaService.createOffer(
       peerKey: peerKey,
@@ -634,9 +672,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:offer':
         unawaited(() async {
           final sessionId = state.sessionId;
-          final configuration = _rtcConfiguration;
-          if (sessionId == null || configuration == null) return;
+          if (sessionId == null || sessionId.isEmpty) return;
+
           await _ensureMediaReady(sessionId);
+          final configuration = _rtcConfiguration;
+          if (configuration == null) return;
+
           final peerKey = event.payload['userId']?.toString() ?? event.payload['fromSocketId']?.toString() ?? '';
           final fromSocketId = event.payload['fromSocketId']?.toString();
           if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) return;
