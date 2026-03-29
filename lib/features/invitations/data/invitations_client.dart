@@ -29,7 +29,10 @@ class InvitationsClient {
       '/invites/sent',
       '/v1/invites/sent',
     ]);
-    return _extractScopedInviteList(res.data, preferredKeys: const ['sent']);
+    return _extractScopedInviteList(
+      res.data,
+      preferredKeys: const ['sent'],
+    );
   }
 
   Future<List<Map<String, dynamic>>> loadApprovals() async {
@@ -39,7 +42,10 @@ class InvitationsClient {
       '/invites/approvals',
       '/v1/invites/approvals',
     ]);
-    return _extractScopedInviteList(res.data, preferredKeys: const ['approvals']);
+    return _extractScopedInviteList(
+      res.data,
+      preferredKeys: const ['approvals'],
+    );
   }
 
   Future<Map<String, dynamic>> inspectToken(String token) async {
@@ -248,18 +254,37 @@ List<Map<String, dynamic>> _extractInboxList(dynamic raw) {
   if (raw is Map) {
     final map = Map<String, dynamic>.from(raw);
     final data = map['data'];
+
     if (data is Map) {
       final nested = Map<String, dynamic>.from(data);
-      final merged = <Map<String, dynamic>>[];
-      for (final key in const ['received', 'sent', 'approvals', 'items', 'results', 'list', 'invites']) {
-        final value = nested[key];
-        if (value is List) {
-          merged.addAll(value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)));
-        }
-      }
-      if (merged.isNotEmpty) return merged;
+
+      final received = _extractList(nested['received']);
+      if (received.isNotEmpty) return received;
+
+      final actionable = _extractList(nested['approvals']);
+      if (actionable.isNotEmpty) return actionable;
     }
   }
+
+  if (raw is Map) {
+    final map = Map<String, dynamic>.from(raw);
+
+    if (map.containsKey('received')) {
+      final received = _extractList(map['received']);
+      if (received.isNotEmpty) return received;
+    }
+
+    if (map.containsKey('approvals')) {
+      final approvals = _extractList(map['approvals']);
+      if (approvals.isNotEmpty) return approvals;
+    }
+
+    for (final key in const ['items', 'results', 'list', 'invites']) {
+      final fallback = _extractList(map[key]);
+      if (fallback.isNotEmpty) return fallback;
+    }
+  }
+
   return _extractList(raw);
 }
 
@@ -275,8 +300,21 @@ List<Map<String, dynamic>> _extractScopedInviteList(
       for (final key in preferredKeys) {
         final value = nested[key];
         if (value is List) {
-          return value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+          return value
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(growable: false);
         }
+      }
+    }
+
+    for (final key in preferredKeys) {
+      final value = map[key];
+      if (value is List) {
+        return value
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(growable: false);
       }
     }
   }
@@ -285,7 +323,10 @@ List<Map<String, dynamic>> _extractScopedInviteList(
 
 List<Map<String, dynamic>> _extractList(dynamic raw) {
   if (raw is List) {
-    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList(growable: false);
   }
   if (raw is Map) {
     final map = Map<String, dynamic>.from(raw);
@@ -293,7 +334,10 @@ List<Map<String, dynamic>> _extractList(dynamic raw) {
     for (final key in keys) {
       final nested = map[key];
       if (nested is List) {
-        return nested.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
+        return nested
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(growable: false);
       }
       if (nested is Map) {
         final list = _extractList(Map<String, dynamic>.from(nested));
