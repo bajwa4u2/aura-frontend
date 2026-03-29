@@ -12,13 +12,36 @@ class InviteHubScreen extends StatelessWidget {
     super.key,
     this.spaceId,
     this.threadId,
+    this.returnTo,
   });
 
   final String? spaceId;
   final String? threadId;
+  final String? returnTo;
 
   bool get _hasSpaceContext => (spaceId ?? '').trim().isNotEmpty;
   bool get _hasThreadContext => (threadId ?? '').trim().isNotEmpty;
+  String get _returnTo {
+    final explicit = (returnTo ?? '').trim();
+    if (explicit.isNotEmpty) return explicit;
+    if (_hasThreadContext && _hasSpaceContext) {
+      return '/me/correspondence/${spaceId!.trim()}/thread/${threadId!.trim()}';
+    }
+    if (_hasSpaceContext) return '/me/correspondence/${spaceId!.trim()}';
+    return '/me/invitations';
+  }
+
+  String _withReturnTo(String path) {
+    final uri = Uri.parse(path);
+    final query = <String, String>{
+      ...uri.queryParameters,
+      'returnTo': _returnTo,
+    };
+    return Uri(
+      path: uri.path,
+      queryParameters: query,
+    ).toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +54,11 @@ class InviteHubScreen extends StatelessWidget {
           subtitle: 'Invite a specific Aura member directly into this conversation.',
           icon: Icons.forum_outlined,
           onTap: () => context.push(
-            '/invite/create?destinationType=JOIN_THREAD'
-            '${_hasSpaceContext ? '&spaceId=${Uri.encodeComponent(spaceId!.trim())}' : ''}'
-            '&threadId=${Uri.encodeComponent(threadId!.trim())}',
+            _withReturnTo(
+              '/invite/create?destinationType=JOIN_THREAD'
+              '${_hasSpaceContext ? '&spaceId=${Uri.encodeComponent(spaceId!.trim())}' : ''}'
+              '&threadId=${Uri.encodeComponent(threadId!.trim())}',
+            ),
           ),
         ),
       );
@@ -46,7 +71,9 @@ class InviteHubScreen extends StatelessWidget {
           subtitle: 'Invite into the shared room instead of a single thread when they should belong more broadly.',
           icon: Icons.groups_outlined,
           onTap: () => context.push(
-            '/invite/create?destinationType=JOIN_SPACE&spaceId=${Uri.encodeComponent(spaceId!.trim())}',
+            _withReturnTo(
+              '/invite/create?destinationType=JOIN_SPACE&spaceId=${Uri.encodeComponent(spaceId!.trim())}',
+            ),
           ),
         ),
       );
@@ -58,7 +85,7 @@ class InviteHubScreen extends StatelessWidget {
           title: 'Invite into Aura',
           subtitle: 'Create a clean entry path for someone who is not yet inside the platform.',
           icon: Icons.public_outlined,
-          onTap: () => context.push('/invite/create?destinationType=JOIN_AURA'),
+          onTap: () => context.push(_withReturnTo('/invite/create?destinationType=JOIN_AURA')),
         ),
         _InviteOptionData(
           title: 'Start a private conversation instead',

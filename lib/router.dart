@@ -551,6 +551,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => InviteHubScreen(
               spaceId: state.uri.queryParameters['spaceId'],
               threadId: state.uri.queryParameters['threadId'],
+              returnTo: state.uri.queryParameters['returnTo'],
             ),
           ),
           GoRoute(
@@ -559,6 +560,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               destinationType: (state.uri.queryParameters['destinationType'] ?? 'JOIN_AURA').trim().toUpperCase(),
               spaceId: state.uri.queryParameters['spaceId'],
               threadId: state.uri.queryParameters['threadId'],
+              returnTo: state.uri.queryParameters['returnTo'],
             ),
           ),
           GoRoute(

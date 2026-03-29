@@ -53,7 +53,7 @@ class InvitationsScreen extends ConsumerWidget {
                   Text('Invitations', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s8),
                   AuraTextBlock(
-                    'Track the invitations you sent, the invitations waiting on you, and anything that still needs approval or response.',
+                    'See what is waiting on you, what you have already sent, and anything that still needs a decision.',
                     style: AuraText.body,
                   ),
                   const SizedBox(height: AuraSpace.s12),
@@ -276,7 +276,7 @@ class _IncomingInviteCard extends ConsumerWidget {
               if (token.isNotEmpty)
                 OutlinedButton(
                   onPressed: () => context.push('/invite/accept?token=${Uri.encodeComponent(token)}'),
-                  child: const Text('Open'),
+                  child: const Text('Open invite'),
                 ),
             ],
           ),
@@ -311,7 +311,8 @@ class _SentInviteCard extends ConsumerWidget {
             runSpacing: AuraSpace.s8,
             children: [
               _Pill(label: _pickString(invite, const ['status']).replaceAll('_', ' ')),
-              _Pill(label: _pickString(invite, const ['deliveryChannel', 'delivery_channel']).replaceAll('_', ' ')),
+              if (_pickString(invite, const ['deliveryChannel', 'delivery_channel']).isNotEmpty)
+                _Pill(label: _pickString(invite, const ['deliveryChannel', 'delivery_channel']).replaceAll('_', ' ')),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -327,7 +328,7 @@ class _SentInviteCard extends ConsumerWidget {
                       SnackBar(content: Text('Invite link: $link')),
                     );
                   },
-                  child: const Text('Show link'),
+                  child: const Text('Copy link'),
                 ),
               OutlinedButton(
                 onPressed: inviteId.isEmpty
@@ -344,7 +345,7 @@ class _SentInviteCard extends ConsumerWidget {
                           }
                         }
                       },
-                child: const Text('Revoke'),
+                child: const Text('Cancel invite'),
               ),
             ],
           ),
@@ -461,10 +462,23 @@ String _inviteSubtitle(Map<String, dynamic> invite) {
   if (message.isNotEmpty) return message;
 
   final policy = _pickString(invite, const ['accessPolicy', 'access_policy']).replaceAll('_', ' ');
-  final recipient = _pickString(invite, const ['recipientHandle', 'recipient_handle', 'recipientUserId', 'recipient_user_id']);
+  final recipientName = _pickNested(invite, const [
+    ['recipient', 'displayName'],
+    ['recipientUser', 'displayName'],
+    ['invitedUser', 'displayName'],
+    ['recipientProfile', 'displayName'],
+  ]);
+  final recipientHandle = _pickString(invite, const ['recipientHandle', 'recipient_handle']);
+  final inviterName = _pickNested(invite, const [
+    ['invitedBy', 'displayName'],
+    ['inviter', 'displayName'],
+    ['createdBy', 'displayName'],
+  ]);
   final parts = <String>[
     if (policy.isNotEmpty) 'Access: $policy',
-    if (recipient.isNotEmpty) 'Recipient: $recipient',
+    if (recipientName.isNotEmpty) 'For: $recipientName',
+    if (recipientHandle.isNotEmpty) 'For: @$recipientHandle',
+    if (inviterName.isNotEmpty) 'From: $inviterName',
   ];
   return parts.isEmpty ? 'Invitation in progress.' : parts.join(' · ');
 }

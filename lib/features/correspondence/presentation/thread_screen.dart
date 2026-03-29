@@ -138,7 +138,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final meAsync = ref.watch(_currentUserProvider);
 
     return AuraScaffold(
-      title: 'Thread',
+      title: threadAsync.maybeWhen(
+        data: (thread) => _threadScreenTitle(thread),
+        orElse: () => 'Conversation',
+      ),
       body: Column(
         children: [
           Expanded(
@@ -181,7 +184,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
                         context.push(
-                          '/invite/create?destinationType=JOIN_SPACE&spaceId=${Uri.encodeComponent(spaceId)}',
+                          '/invite/create?destinationType=JOIN_SPACE'
+                          '&spaceId=${Uri.encodeComponent(spaceId)}'
+                          '&threadId=${Uri.encodeComponent(threadId)}'
+                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
                         );
                       },
                     ),
@@ -323,7 +329,7 @@ class _ThreadHeaderCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Thread',
+            'Conversation',
             style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -364,6 +370,51 @@ class _ThreadHeaderCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _threadScreenTitle(Map<String, dynamic> thread) {
+  final explicit = _pickString(thread, const ['title', 'name']);
+  if (explicit.isNotEmpty) return explicit;
+
+  final participantNames = _extractParticipantNames(thread);
+  if (participantNames.isNotEmpty) {
+    if (participantNames.length == 1) return participantNames.first;
+    if (participantNames.length == 2) return '${participantNames.first} and ${participantNames.last}';
+    return '${participantNames.first}, ${participantNames[1]} +${participantNames.length - 2}';
+  }
+
+  final preview = _pickString(
+    thread,
+    const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary'],
+  );
+  if (preview.isNotEmpty) return _truncateLabel(preview, max: 42);
+
+  return 'Conversation';
+}
+
+List<String> _extractParticipantNames(Map<String, dynamic> thread) {
+  const keys = ['participants', 'members', 'participantList', 'memberList', 'users'];
+  final out = <String>[];
+  for (final key in keys) {
+    final value = thread[key];
+    if (value is! List) continue;
+    for (final raw in value) {
+      if (raw is! Map) continue;
+      final map = Map<String, dynamic>.from(raw);
+      final name = _pickString(
+        map,
+        const ['displayName', 'fullName', 'name', 'username', 'handle'],
+      );
+      if (name.isNotEmpty && !out.contains(name)) out.add(name);
+    }
+  }
+  return out;
+}
+
+String _truncateLabel(String value, {int max = 48}) {
+  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (text.length <= max) return text;
+  return '${text.substring(0, max - 1).trimRight()}…';
 }
 
 class _ComposerBar extends ConsumerStatefulWidget {

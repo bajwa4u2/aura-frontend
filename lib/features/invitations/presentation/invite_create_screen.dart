@@ -18,11 +18,13 @@ class InviteCreateScreen extends ConsumerStatefulWidget {
     required this.destinationType,
     this.spaceId,
     this.threadId,
+    this.returnTo,
   });
 
   final String destinationType;
   final String? spaceId;
   final String? threadId;
+  final String? returnTo;
 
   @override
   ConsumerState<InviteCreateScreen> createState() => _InviteCreateScreenState();
@@ -93,6 +95,30 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     }
     return 'Create invite';
   }
+
+  String get _returnRoute {
+    final explicit = (widget.returnTo ?? '').trim();
+    if (explicit.isNotEmpty) return explicit;
+    final spaceId = (widget.spaceId ?? '').trim();
+    final threadId = (widget.threadId ?? '').trim();
+    if (spaceId.isNotEmpty && threadId.isNotEmpty) {
+      return '/me/correspondence/$spaceId/thread/$threadId';
+    }
+    if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    return '/me/invitations';
+  }
+
+  void _leaveInviteFlow() {
+    if (!mounted) return;
+    final target = _returnRoute;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    context.go(target);
+  }
+
 
   bool get _supportsInternalAuraMemberMode {
     return _destinationType == 'JOIN_SPACE' ||
@@ -245,7 +271,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
         ),
       );
 
-      context.go('/me/invitations');
+      _leaveInviteFlow();
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -388,7 +414,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _submitting ? null : () => context.pop(),
+                    onPressed: _submitting ? null : _leaveInviteFlow,
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -596,7 +622,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _submitting ? null : () => context.pop(),
+                  onPressed: _submitting ? null : _leaveInviteFlow,
                   child: const Text('Cancel'),
                 ),
               ),

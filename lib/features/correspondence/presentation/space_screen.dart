@@ -199,7 +199,11 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   }
 
   Future<void> _openInviteScreen(BuildContext context) async {
-    await context.push('/invite?spaceId=${Uri.encodeComponent(widget.spaceId)}');
+    await context.push(
+      '/invite/create?destinationType=JOIN_SPACE'
+      '&spaceId=${Uri.encodeComponent(widget.spaceId)}'
+      '&returnTo=${Uri.encodeComponent('/me/correspondence/${widget.spaceId}')}',
+    );
   }
 }
 
@@ -380,7 +384,7 @@ class _InvitesTab extends StatelessWidget {
                     const SizedBox(height: AuraSpace.s12),
                     OutlinedButton(
                       onPressed: onInviteMember,
-                      child: const Text('Open invite flow'),
+                      child: const Text('Add member'),
                     ),
                   ],
                 ),
@@ -587,7 +591,7 @@ class _SpaceHeaderCard extends StatelessWidget {
               ),
               OutlinedButton(
                 onPressed: onInviteMember,
-                child: const Text('Open invite flow'),
+                child: const Text('Add member'),
               ),
   
             ],
@@ -726,7 +730,7 @@ class _ThreadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final id = _pickString(thread, const ['id', 'threadId']);
-    final title = _pickString(thread, const ['title', 'name']);
+    final title = _threadDisplayTitle(thread);
     final kind = _pickString(thread, const ['kind', 'type']);
     final archived =
         thread['archived'] == true || thread['archivedAt'] != null;
@@ -751,7 +755,7 @@ class _ThreadTile extends StatelessWidget {
                 runSpacing: AuraSpace.s8,
                 children: [
                   AuraTextBlock(
-                    title.isEmpty ? 'Untitled thread' : title,
+title,
                     style: AuraText.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -777,6 +781,7 @@ class _ThreadTile extends StatelessWidget {
   }
 }
 
+
 class _InviteTile extends StatelessWidget {
   const _InviteTile({
     required this.invite,
@@ -788,44 +793,72 @@ class _InviteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final id = _pickString(invite, const ['id', 'inviteId']);
-    final userId = _pickString(
-      invite,
-      const ['userId', 'recipientUserId', 'invitedUserId'],
-    );
-    final role = _pickString(invite, const ['role', 'roleOffered']);
+    final title = _inviteDisplayTitle(invite);
+    final subtitle = _inviteDisplaySubtitle(invite);
+    final role = _pickString(invite, const ['roleOffered', 'role']);
     final status = _pickString(invite, const ['status']);
+    final token = _pickString(invite, const ['token', 'inviteToken']);
+    final delivery = _pickString(invite, const ['deliveryChannel', 'delivery_channel']);
+    final canCopyLink = token.isNotEmpty;
+    final canRevoke = _canRevokeInvite(invite);
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AuraTextBlock(
-            userId.isEmpty ? 'Invite' : userId,
+            title,
             style: AuraText.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AuraSpace.s8),
+          AuraTextBlock(
+            subtitle,
+            style: AuraText.body,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: AuraSpace.s10),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
               if (role.isNotEmpty) _MetaChip(label: 'Role', value: role),
-              if (status.isNotEmpty) _MetaChip(label: 'Status', value: status),
-              if (id.isNotEmpty) _MetaChip(label: 'ID', value: id),
+              if (status.isNotEmpty) _MetaChip(label: 'Status', value: status.replaceAll('_', ' ')),
+              if (delivery.isNotEmpty) _MetaChip(label: 'Delivery', value: delivery.replaceAll('_', ' ')),
             ],
           ),
-          const SizedBox(height: AuraSpace.s12),
-          OutlinedButton(
-            onPressed: onRevoke,
-            child: const Text('Revoke invite'),
-          ),
+          if (canCopyLink || canRevoke) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                if (canCopyLink)
+                  OutlinedButton(
+                    onPressed: () {
+                      final link = '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Invite link ready: $link')),
+                      );
+                    },
+                    child: const Text('Copy link'),
+                  ),
+                if (canRevoke)
+                  OutlinedButton(
+                    onPressed: onRevoke,
+                    child: const Text('Cancel invite'),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
 
 class _MemberTile extends StatelessWidget {
   const _MemberTile({
@@ -836,36 +869,186 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = _pickString(
-      member,
-      const ['name', 'fullName', 'displayName', 'username', 'handle'],
-    );
+    final name = _memberDisplayName(member);
+    final handle = _pickString(member, const ['handle', 'username', 'userHandle']);
     final role = _pickString(member, const ['role', 'memberRole']);
-    final id = _pickString(member, const ['id', 'userId', 'memberId']);
+    final subtitle = _memberSubtitle(member);
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AuraTextBlock(
-            name.isEmpty ? 'Member' : name,
+            name,
             style: AuraText.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (handle.isNotEmpty || subtitle.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            AuraTextBlock(
+              [
+                if (handle.isNotEmpty) '@$handle',
+                if (subtitle.isNotEmpty) subtitle,
+              ].join(' · '),
+              style: AuraText.body,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           const SizedBox(height: AuraSpace.s8),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
               if (role.isNotEmpty) _MetaChip(label: 'Role', value: role),
-              if (id.isNotEmpty) _MetaChip(label: 'ID', value: id),
             ],
           ),
         ],
       ),
     );
   }
+}
+
+
+String _threadDisplayTitle(Map<String, dynamic> thread) {
+  final explicit = _pickString(thread, const ['title', 'name']);
+  if (explicit.isNotEmpty) return explicit;
+
+  final participantNames = _extractDisplayNames(
+    thread,
+    const ['participants', 'members', 'participantList', 'memberList', 'users'],
+  );
+  if (participantNames.isNotEmpty) {
+    if (participantNames.length == 1) return participantNames.first;
+    if (participantNames.length == 2) return '${participantNames.first} and ${participantNames.last}';
+    return '${participantNames.first}, ${participantNames[1]} +${participantNames.length - 2}';
+  }
+
+  final preview = _pickString(
+    thread,
+    const ['lastMessage', 'lastMessageText', 'preview', 'description', 'summary'],
+  );
+  if (preview.isNotEmpty) return _truncateLabel(preview, max: 42);
+
+  return 'Conversation';
+}
+
+String _memberDisplayName(Map<String, dynamic> member) {
+  final value = _pickString(
+    member,
+    const ['displayName', 'fullName', 'name', 'username', 'handle'],
+  );
+  return value.isEmpty ? 'Member' : value;
+}
+
+String _memberSubtitle(Map<String, dynamic> member) {
+  final parts = <String>[
+    _pickString(member, const ['headline', 'bio', 'summary']),
+    _pickString(member, const ['email']),
+  ].where((e) => e.isNotEmpty).toList(growable: false);
+  return parts.isEmpty ? '' : parts.first;
+}
+
+String _inviteDisplayTitle(Map<String, dynamic> invite) {
+  final targetName = _pickNested(
+    invite,
+    const [
+      ['recipient', 'displayName'],
+      ['recipient', 'fullName'],
+      ['recipient', 'name'],
+      ['recipientUser', 'displayName'],
+      ['recipientUser', 'name'],
+      ['invitedUser', 'displayName'],
+      ['invitedUser', 'name'],
+      ['recipientProfile', 'displayName'],
+    ],
+  );
+  if (targetName.isNotEmpty) return targetName;
+
+  final handle = _pickString(
+    invite,
+    const ['recipientHandle', 'recipient_handle', 'handle'],
+  );
+  if (handle.isNotEmpty) return '@$handle';
+
+  final destination = _pickString(invite, const ['destinationType', 'destination_type']).replaceAll('_', ' ');
+  if (destination.isNotEmpty) return destination;
+
+  return 'Invite';
+}
+
+String _inviteDisplaySubtitle(Map<String, dynamic> invite) {
+  final note = _pickString(invite, const ['message']);
+  if (note.isNotEmpty) return note;
+
+  final inviter = _pickNested(
+    invite,
+    const [
+      ['invitedBy', 'displayName'],
+      ['inviter', 'displayName'],
+      ['createdBy', 'displayName'],
+      ['sender', 'displayName'],
+    ],
+  );
+  final recipientId = _pickString(
+    invite,
+    const ['recipientUserId', 'invitedUserId', 'userId'],
+  );
+  final parts = <String>[
+    if (inviter.isNotEmpty) 'From $inviter',
+    if (recipientId.isNotEmpty && _inviteDisplayTitle(invite) == 'Invite') 'Member ${_truncateLabel(recipientId, max: 18)}',
+  ];
+  return parts.isEmpty ? 'Pending invitation.' : parts.join(' · ');
+}
+
+bool _canRevokeInvite(Map<String, dynamic> invite) {
+  final status = _pickString(invite, const ['status']).toUpperCase();
+  return status.isEmpty ||
+      status == 'PENDING' ||
+      status == 'SENT' ||
+      status == 'CREATED' ||
+      status == 'OPEN';
+}
+
+List<String> _extractDisplayNames(Map<String, dynamic> source, List<String> keys) {
+  final out = <String>[];
+  for (final key in keys) {
+    final value = source[key];
+    if (value is! List) continue;
+    for (final raw in value) {
+      if (raw is! Map) continue;
+      final map = Map<String, dynamic>.from(raw);
+      final name = _pickString(
+        map,
+        const ['displayName', 'fullName', 'name', 'username', 'handle'],
+      );
+      if (name.isNotEmpty && !out.contains(name)) out.add(name);
+    }
+  }
+  return out;
+}
+
+String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
+  for (final path in paths) {
+    dynamic current = map;
+    for (final key in path) {
+      if (current is! Map) {
+        current = null;
+        break;
+      }
+      current = current[key];
+    }
+    final text = (current ?? '').toString().trim();
+    if (text.isNotEmpty) return text;
+  }
+  return '';
+}
+
+String _truncateLabel(String value, {int max = 40}) {
+  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (text.length <= max) return text;
+  return '${text.substring(0, max - 1).trimRight()}…';
 }
 
 class _LoadingBlock extends StatelessWidget {
