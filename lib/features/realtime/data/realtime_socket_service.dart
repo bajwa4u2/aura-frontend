@@ -39,8 +39,74 @@ class RealtimeSocketService {
     );
 
     _wireCoreEvents(socket);
-    socket.connect();
     _socket = socket;
+    socket.connect();
+
+    await _waitForConnect(socket);
+  }
+
+  Future<void> _waitForConnect(io.Socket socket) async {
+    if (socket.connected) return;
+
+    final completer = Completer<void>();
+    late void Function(dynamic) onConnect;
+    late void Function(dynamic) onConnectError;
+    late void Function(dynamic) onError;
+    late void Function(dynamic) onDisconnect;
+
+    void cleanup() {
+      socket.off('connect', onConnect);
+      socket.off('connect_error', onConnectError);
+      socket.off('error', onError);
+      socket.off('disconnect', onDisconnect);
+    }
+
+    onConnect = (_) {
+      if (!completer.isCompleted) {
+        cleanup();
+        completer.complete();
+      }
+    };
+
+    onConnectError = (dynamic error) {
+      if (!completer.isCompleted) {
+        cleanup();
+        completer.completeError(
+          StateError('Realtime socket failed to connect: ${error?.toString() ?? 'unknown_error'}'),
+        );
+      }
+    };
+
+    onError = (dynamic error) {
+      if (!completer.isCompleted) {
+        cleanup();
+        completer.completeError(
+          StateError('Realtime socket error: ${error?.toString() ?? 'unknown_error'}'),
+        );
+      }
+    };
+
+    onDisconnect = (dynamic reason) {
+      if (!completer.isCompleted) {
+        cleanup();
+        completer.completeError(
+          StateError('Realtime socket disconnected before connection completed: ${reason?.toString() ?? 'unknown_reason'}'),
+        );
+      }
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('connect_error', onConnectError);
+    socket.on('error', onError);
+    socket.on('disconnect', onDisconnect);
+
+    return completer.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        cleanup();
+        throw TimeoutException('Realtime socket connect timed out.');
+      },
+    );
   }
 
   void _wireCoreEvents(io.Socket socket) {
@@ -111,6 +177,10 @@ class RealtimeSocketService {
     final socket = _socket;
     if (socket == null) {
       throw StateError('Realtime socket is not connected.');
+    }
+
+    if (!socket.connected) {
+      await _waitForConnect(socket);
     }
 
     final completer = Completer<Map<String, dynamic>>();
