@@ -440,33 +440,37 @@ class _ThreadHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _HeaderIconAction(
-                    icon: Icons.call_rounded,
-                    onPressed: () => onStartAudio(),
+              const SizedBox(width: AuraSpace.s12),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AuraSpace.s6,
+                    runSpacing: AuraSpace.s6,
+                    children: [
+                      _HeaderIconAction(
+                        icon: Icons.call_rounded,
+                        onPressed: () => onStartAudio(),
+                      ),
+                      _HeaderIconAction(
+                        icon: Icons.videocam_rounded,
+                        onPressed: () => onStartVideo(),
+                      ),
+                      if (spaceId.isNotEmpty)
+                        _HeaderIconAction(
+                          icon: Icons.group_add_rounded,
+                          onPressed: onInvite,
+                        ),
+                      if (spaceId.isNotEmpty)
+                        _HeaderIconAction(
+                          icon: Icons.open_in_new_rounded,
+                          onPressed: onOpenSpace,
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: AuraSpace.s6),
-                  _HeaderIconAction(
-                    icon: Icons.videocam_rounded,
-                    onPressed: () => onStartVideo(),
-                  ),
-                  if (spaceId.isNotEmpty) ...[
-                    const SizedBox(width: AuraSpace.s6),
-                    _HeaderIconAction(
-                      icon: Icons.group_add_rounded,
-                      onPressed: onInvite,
-                    ),
-                  ],
-                  if (spaceId.isNotEmpty) ...[
-                    const SizedBox(width: AuraSpace.s6),
-                    _HeaderIconAction(
-                      icon: Icons.open_in_new_rounded,
-                      onPressed: onOpenSpace,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ],
           ),
@@ -500,11 +504,11 @@ class _HeaderIconAction extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.white.withOpacity(0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: Colors.white.withOpacity(0.10)),
         ),
-        child: Icon(icon, size: 18, color: Colors.black87),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }

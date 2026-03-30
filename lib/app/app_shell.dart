@@ -176,7 +176,7 @@ class MemberShell extends StatelessWidget {
                             Expanded(
                               child: child,
                             ),
-                            if (!path.startsWith('/realtime')) const _ShellFooter(),
+                            if (_showMemberFooter(path)) const _ShellFooter(),
                           ],
                         ),
                       ),
@@ -197,6 +197,15 @@ class MemberShell extends StatelessWidget {
       },
     );
   }
+}
+
+
+bool _showMemberFooter(String path) {
+  if (path.startsWith('/realtime')) return false;
+  if (path == '/conversations' || path.startsWith('/conversations/')) return false;
+  if (path.startsWith('/me/correspondence/')) return false;
+  if (path.startsWith('/spaces/') || path.startsWith('/space/')) return false;
+  return true;
 }
 
 class InstitutionShell extends StatelessWidget {
