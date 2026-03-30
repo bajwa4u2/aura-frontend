@@ -854,6 +854,7 @@ class _ThreadParticipantChip extends StatelessWidget {
   }
 }
 
+
 class _ThreadVideoStage extends StatelessWidget {
   const _ThreadVideoStage({
     required this.localRenderer,
@@ -877,36 +878,217 @@ class _ThreadVideoStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tiles = <Widget>[];
-    if (localRenderer != null) {
-      tiles.add(_ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true));
-    }
-    remoteRenderers.forEach((key, renderer) {
-      final participant = participants.cast<RealtimeParticipant?>().firstWhere(
-        (p) => p?.runtimeDeviceId == key || p?.userId == key,
-        orElse: () => null,
-      );
-      final label = participant?.isHost == true ? 'Host' : 'Member';
-      tiles.add(_ThreadVideoTile(label: label, renderer: renderer));
-    });
+    final remoteEntries = remoteRenderers.entries.toList(growable: false);
+    final primaryRemote = remoteEntries.isNotEmpty ? remoteEntries.first : null;
+    final extraRemoteEntries =
+        remoteEntries.length > 1 ? remoteEntries.sublist(1) : const <MapEntry<String, RTCVideoRenderer>>[];
+
+    final primaryRenderer = primaryRemote?.value ?? localRenderer;
+    final primaryParticipant = primaryRemote == null
+        ? null
+        : _participantForKey(participants, primaryRemote.key);
+    final primaryLabel = primaryRemote == null
+        ? 'You'
+        : _participantLabel(primaryParticipant, fallback: 'Member');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.count(
-          crossAxisCount: tiles.length <= 1 ? 1 : 2,
-          mainAxisSpacing: AuraSpace.s10,
-          crossAxisSpacing: AuraSpace.s10,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.08,
-          children: tiles,
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: primaryRenderer == null
+                      ? const _ThreadVideoEmptyState()
+                      : _ThreadVideoCanvas(
+                          renderer: primaryRenderer,
+                          mirror: primaryRemote == null,
+                        ),
+                ),
+                Positioned(
+                  left: 12,
+                  top: 12,
+                  child: _ThreadVideoBadge(label: primaryLabel),
+                ),
+                if (localRenderer != null && primaryRemote != null)
+                  Positioned(
+                    right: 14,
+                    bottom: 14,
+                    child: _ThreadInsetPreview(renderer: localRenderer!),
+                  ),
+              ],
+            ),
+          ),
         ),
+        if (extraRemoteEntries.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s10),
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: extraRemoteEntries.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AuraSpace.s10),
+              itemBuilder: (context, index) {
+                final entry = extraRemoteEntries[index];
+                final participant = _participantForKey(participants, entry.key);
+                return SizedBox(
+                  width: 148,
+                  child: _ThreadVideoTile(
+                    label: _participantLabel(participant, fallback: 'Member'),
+                    renderer: entry.value,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
+RealtimeParticipant? _participantForKey(
+  List<RealtimeParticipant> participants,
+  String key,
+) {
+  for (final participant in participants) {
+    if (participant.runtimeDeviceId == key || participant.userId == key) {
+      return participant;
+    }
+  }
+  return null;
+}
+
+String _participantLabel(
+  RealtimeParticipant? participant, {
+  String fallback = 'Member',
+}) {
+  if (participant == null) return fallback;
+  if (participant.isHost) return 'Host';
+  return fallback;
+}
+
+class _ThreadVideoCanvas extends StatelessWidget {
+  const _ThreadVideoCanvas({
+    required this.renderer,
+    required this.mirror,
+  });
+
+  final RTCVideoRenderer renderer;
+  final bool mirror;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: RTCVideoView(
+        renderer,
+        mirror: mirror,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+      ),
+    );
+  }
+}
+
+class _ThreadInsetPreview extends StatelessWidget {
+  const _ThreadInsetPreview({required this.renderer});
+
+  final RTCVideoRenderer renderer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 156,
+      height: 104,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 18,
+            offset: Offset(0, 8),
+            color: Color(0x33000000),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: RTCVideoView(
+              renderer,
+              mirror: true,
+              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+            ),
+          ),
+          const Positioned(
+            left: 10,
+            bottom: 10,
+            child: _ThreadVideoBadge(label: 'You', compact: true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadVideoEmptyState extends StatelessWidget {
+  const _ThreadVideoEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.videocam_off_rounded,
+        size: 28,
+        color: Colors.white.withOpacity(0.55),
+      ),
+    );
+  }
+}
+
+class _ThreadVideoBadge extends StatelessWidget {
+  const _ThreadVideoBadge({
+    required this.label,
+    this.compact = false,
+  });
+
+  final String label;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.48),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
 class _ThreadVideoTile extends StatelessWidget {
   const _ThreadVideoTile({
     required this.label,
@@ -923,34 +1105,28 @@ class _ThreadVideoTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: RTCVideoView(
-              renderer,
-              mirror: mirror,
-              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-            ),
-          ),
-          Positioned(
-            left: 10,
-            bottom: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                label,
-                style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+      child: AspectRatio(
+        aspectRatio: 16 / 10,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: RTCVideoView(
+                renderer,
+                mirror: mirror,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
               ),
             ),
-          ),
-        ],
+            Positioned(
+              left: 10,
+              bottom: 10,
+              child: _ThreadVideoBadge(label: label, compact: true),
+            ),
+          ],
+        ),
       ),
     );
   }
