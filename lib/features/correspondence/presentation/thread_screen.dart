@@ -463,14 +463,19 @@ class _ThreadHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: AuraSpace.s8),
+              _ThreadHeaderActions(
+                thread: thread,
+                liveState: liveState,
+                onStartAudio: onStartAudio,
+                onStartVideo: onStartVideo,
+              ),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
-          _ThreadLiveDock(
+          _ThreadLiveStrip(
             thread: thread,
             liveState: liveState,
-            onStartAudio: onStartAudio,
-            onStartVideo: onStartVideo,
             onJoinLive: onJoinLive,
             onLeaveLive: onLeaveLive,
             onToggleMicrophone: onToggleMicrophone,
@@ -564,12 +569,66 @@ bool _threadMatchesLiveState(RealtimeState liveState, Map<String, dynamic> threa
       (session.surfaceId ?? '').trim() == expectedId;
 }
 
-class _ThreadLiveDock extends StatelessWidget {
-  const _ThreadLiveDock({
+
+class _ThreadHeaderActions extends StatelessWidget {
+  const _ThreadHeaderActions({
     required this.thread,
     required this.liveState,
     required this.onStartAudio,
     required this.onStartVideo,
+  });
+
+  final Map<String, dynamic> thread;
+  final RealtimeState liveState;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    final belongsHere = _threadMatchesLiveState(liveState, thread);
+    final hasLive = belongsHere &&
+        ((liveState.sessionId ?? liveState.session?.id ?? '').trim().isNotEmpty);
+
+    final tone = hasLive
+        ? (liveState.isJoined ? _StatusTone.positive : _StatusTone.accent)
+        : _StatusTone.neutral;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (hasLive)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+            child: _StatusPill(
+              label: liveState.isJoined ? 'Live' : 'Ready',
+              tone: tone,
+            ),
+          ),
+        Wrap(
+          spacing: AuraSpace.s6,
+          runSpacing: AuraSpace.s6,
+          children: [
+            _QuietHeaderAction(
+              tooltip: hasLive ? 'Restart audio live' : 'Start audio live',
+              icon: Icons.call_outlined,
+              onPressed: liveState.isBusy ? null : () => onStartAudio(),
+            ),
+            _QuietHeaderAction(
+              tooltip: hasLive ? 'Restart video live' : 'Start video live',
+              icon: Icons.videocam_outlined,
+              onPressed: liveState.isBusy ? null : () => onStartVideo(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ThreadLiveStrip extends StatelessWidget {
+  const _ThreadLiveStrip({
+    required this.thread,
+    required this.liveState,
     required this.onJoinLive,
     required this.onLeaveLive,
     required this.onToggleMicrophone,
@@ -578,8 +637,6 @@ class _ThreadLiveDock extends StatelessWidget {
 
   final Map<String, dynamic> thread;
   final RealtimeState liveState;
-  final Future<void> Function() onStartAudio;
-  final Future<void> Function() onStartVideo;
   final Future<void> Function() onJoinLive;
   final Future<void> Function() onLeaveLive;
   final Future<void> Function() onToggleMicrophone;
@@ -590,112 +647,146 @@ class _ThreadLiveDock extends StatelessWidget {
     final belongsHere = _threadMatchesLiveState(liveState, thread);
     final hasLive = belongsHere &&
         ((liveState.sessionId ?? liveState.session?.id ?? '').trim().isNotEmpty);
-    final participantCount = belongsHere ? liveState.participants.length : 0;
-    final joinedCount = belongsHere
-        ? liveState.participants.where((p) => p.isPresent).length
-        : 0;
-    final statusLabel = !hasLive
-        ? 'Not live'
-        : liveState.isJoined
-            ? 'Live now'
-            : 'Live available';
+
+    if (!hasLive) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.03),
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.wifi_tethering_rounded, size: 16),
+            const SizedBox(width: AuraSpace.s8),
+            Expanded(
+              child: Text(
+                'Audio and video stay one click away in this conversation.',
+                style: AuraText.small.copyWith(color: Colors.black54),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final participantCount = liveState.participants.length;
+    final joinedCount = liveState.participants.where((p) => p.isPresent).length;
+    final label = liveState.isJoined ? 'Live now' : 'Live available';
+    final detail = joinedCount > 0
+        ? '$joinedCount here${participantCount > joinedCount ? ' • $participantCount listed' : ''}'
+        : 'Waiting for someone to join';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AuraSpace.s12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.03),
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AuraSpace.s10,
+        runSpacing: AuraSpace.s8,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.wifi_tethering_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Live in this conversation', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: AuraSpace.s4),
-                    Text(
-                      hasLive
-                          ? '$statusLabel • $joinedCount joined${participantCount > joinedCount ? ' • $participantCount listed' : ''}'
-                          : 'Start audio or video without leaving the thread.',
-                      style: AuraText.small.copyWith(color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ),
-              if (hasLive)
-                _StatusPill(
-                  label: statusLabel,
-                  tone: liveState.isJoined ? _StatusTone.positive : _StatusTone.accent,
-                ),
+              const Icon(Icons.wifi_tethering_rounded, size: 16),
+              const SizedBox(width: AuraSpace.s8),
+              Text(label, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
             ],
           ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              FilledButton.icon(
-                onPressed: liveState.isBusy ? null : () => onStartAudio(),
-                icon: const Icon(Icons.call_outlined),
-                label: Text(hasLive ? 'Restart audio' : 'Audio call'),
+          Text(detail, style: AuraText.small.copyWith(color: Colors.black54)),
+          if (!liveState.isJoined)
+            OutlinedButton.icon(
+              onPressed: liveState.isBusy ? null : () => onJoinLive(),
+              icon: const Icon(Icons.login),
+              label: const Text('Join'),
+            ),
+          if (liveState.isJoined)
+            OutlinedButton.icon(
+              onPressed: () => onLeaveLive(),
+              icon: const Icon(Icons.logout),
+              label: const Text('Leave'),
+            ),
+          if (liveState.isJoined)
+            OutlinedButton.icon(
+              onPressed: () => onToggleMicrophone(),
+              icon: Icon(
+                liveState.microphoneEnabled
+                    ? Icons.mic_off_outlined
+                    : Icons.mic_outlined,
               ),
-              FilledButton.icon(
-                onPressed: liveState.isBusy ? null : () => onStartVideo(),
-                icon: const Icon(Icons.videocam_outlined),
-                label: Text(hasLive ? 'Restart video' : 'Video call'),
+              label: Text(liveState.microphoneEnabled ? 'Mute' : 'Unmute'),
+            ),
+          if (liveState.isJoined)
+            OutlinedButton.icon(
+              onPressed: () => onToggleCamera(),
+              icon: Icon(
+                liveState.cameraEnabled
+                    ? Icons.videocam_off_outlined
+                    : Icons.videocam_outlined,
               ),
-              if (hasLive && !liveState.isJoined)
-                OutlinedButton.icon(
-                  onPressed: liveState.isBusy ? null : () => onJoinLive(),
-                  icon: const Icon(Icons.login),
-                  label: const Text('Join live'),
-                ),
-              if (hasLive && liveState.isJoined)
-                OutlinedButton.icon(
-                  onPressed: () => onLeaveLive(),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Leave'),
-                ),
-              if (hasLive && liveState.isJoined)
-                OutlinedButton.icon(
-                  onPressed: () => onToggleMicrophone(),
-                  icon: Icon(liveState.microphoneEnabled ? Icons.mic_off_outlined : Icons.mic_outlined),
-                  label: Text(liveState.microphoneEnabled ? 'Mute' : 'Unmute'),
-                ),
-              if (hasLive && liveState.isJoined)
-                OutlinedButton.icon(
-                  onPressed: () => onToggleCamera(),
-                  icon: Icon(liveState.cameraEnabled ? Icons.videocam_off_outlined : Icons.videocam_outlined),
-                  label: Text(liveState.cameraEnabled ? 'Camera off' : 'Camera on'),
-                ),
-            ],
-          ),
-          if (hasLive && (liveState.infoMessage ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(liveState.infoMessage!.trim(), style: AuraText.small.copyWith(color: Colors.black54)),
-          ],
-          if (hasLive && (liveState.errorMessage ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(liveState.errorMessage!.trim(), style: AuraText.small.copyWith(color: Colors.red.shade700)),
-          ],
+              label: Text(liveState.cameraEnabled ? 'Camera off' : 'Camera on'),
+            ),
+          if ((liveState.infoMessage ?? '').trim().isNotEmpty)
+            Text(
+              liveState.infoMessage!.trim(),
+              style: AuraText.small.copyWith(color: Colors.black54),
+            ),
+          if ((liveState.errorMessage ?? '').trim().isNotEmpty)
+            Text(
+              liveState.errorMessage!.trim(),
+              style: AuraText.small.copyWith(color: Colors.red.shade700),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuietHeaderAction extends StatelessWidget {
+  const _QuietHeaderAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(onPressed == null ? 0.03 : 0.05),
+            border: Border.all(color: Colors.black12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: onPressed == null ? Colors.black26 : Colors.black87,
+          ),
+        ),
       ),
     );
   }
