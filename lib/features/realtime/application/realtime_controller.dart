@@ -102,6 +102,59 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
   }
 
+
+  bool isManagingSurface({
+    required String surfaceType,
+    required String surfaceId,
+  }) {
+    final session = state.session;
+    if (session == null) return false;
+    final normalizedType = surfaceType.trim().toLowerCase();
+    final sessionType = session.surfaceType.name.trim().toLowerCase();
+    final targetId = surfaceId.trim();
+    final currentId = (session.surfaceId ?? '').trim();
+    return normalizedType.isNotEmpty &&
+        sessionType == normalizedType &&
+        targetId.isNotEmpty &&
+        currentId == targetId;
+  }
+
+  Future<String> ensureCorrespondenceLive({
+    required String surfaceType,
+    required String surfaceId,
+    required String kind,
+    Map<String, dynamic>? metadata,
+    bool joinAfterCreate = true,
+  }) async {
+    final normalizedType = surfaceType.trim().toUpperCase();
+    final normalizedId = surfaceId.trim();
+    final normalizedKind = kind.trim().toUpperCase();
+    if (normalizedType.isEmpty || normalizedId.isEmpty) {
+      throw StateError('A live surface is required before starting a room.');
+    }
+
+    if (isManagingSurface(surfaceType: normalizedType, surfaceId: normalizedId)) {
+      final existingSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
+      if (existingSessionId.isNotEmpty) {
+        if (joinAfterCreate && state.joinState != RealtimeJoinState.joined) {
+          await join(existingSessionId);
+        }
+        return existingSessionId;
+      }
+    }
+
+    final sessionId = await createSession(
+      surfaceType: normalizedType,
+      surfaceId: normalizedId,
+      kind: normalizedKind,
+      metadata: metadata,
+    );
+    if (joinAfterCreate) {
+      await join(sessionId);
+    }
+    return sessionId;
+  }
+
   Future<void> disconnect() async {
     await _mediaService.disposeAllPeers();
     await _socketService.disconnect();

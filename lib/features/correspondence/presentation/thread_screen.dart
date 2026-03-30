@@ -22,6 +22,7 @@ import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
+import '../../realtime/application/realtime_providers.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
@@ -153,6 +154,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final threadAsync = ref.watch(_threadDetailProvider(threadId));
     final messagesAsync = ref.watch(_messagesProvider(threadId));
     final meAsync = ref.watch(_currentUserProvider);
+    final liveState = ref.watch(realtimeControllerProvider);
 
     return AuraScaffold(
       title: threadAsync.maybeWhen(
@@ -192,6 +194,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     ),
                     data: (thread) => _ThreadHeaderCard(
                       thread: thread,
+                      liveState: liveState,
                       onOpenSpace: () {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
@@ -209,6 +212,45 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         if (!context.mounted) return;
                         ref.invalidate(_threadDetailProvider(widget.threadId));
                         ref.invalidate(_messagesProvider(widget.threadId));
+                      },
+                      onStartAudio: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'AUDIO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onStartVideo: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'VIDEO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onJoinLive: () async {
+                        final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+                        if (sessionId.isEmpty) return;
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.join(sessionId);
+                      },
+                      onLeaveLive: () async {
+                        await ref.read(realtimeControllerProvider.notifier).leave();
+                      },
+                      onToggleMicrophone: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                      },
+                      onToggleCamera: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleCamera();
                       },
                     ),
                   ),
@@ -324,13 +366,27 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
+    required this.liveState,
     required this.onOpenSpace,
     required this.onInvite,
+    required this.onStartAudio,
+    required this.onStartVideo,
+    required this.onJoinLive,
+    required this.onLeaveLive,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
   });
 
   final Map<String, dynamic> thread;
+  final RealtimeState liveState;
   final VoidCallback onOpenSpace;
   final VoidCallback onInvite;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+  final Future<void> Function() onJoinLive;
+  final Future<void> Function() onLeaveLive;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onToggleCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +465,17 @@ class _ThreadHeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
+          _ThreadLiveDock(
+            thread: thread,
+            liveState: liveState,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
+            onJoinLive: onJoinLive,
+            onLeaveLive: onLeaveLive,
+            onToggleMicrophone: onToggleMicrophone,
+            onToggleCamera: onToggleCamera,
+          ),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
@@ -469,6 +536,168 @@ String _threadAvatarUrl(Map<String, dynamic> thread) {
 
 String _humanizeLabel(String value) {
   return CorrespondenceIdentity.humanize(value);
+}
+
+
+String _threadLiveSurfaceType(Map<String, dynamic> thread) {
+  final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+  if (spaceId.isNotEmpty) return 'SPACE';
+  return 'DM';
+}
+
+String _threadLiveSurfaceId(Map<String, dynamic> thread, String threadId) {
+  final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+  if (spaceId.isNotEmpty) return spaceId;
+  return threadId;
+}
+
+bool _threadMatchesLiveState(RealtimeState liveState, Map<String, dynamic> thread) {
+  final session = liveState.session;
+  if (session == null) return false;
+  final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
+  final expectedId = _threadLiveSurfaceId(
+    thread,
+    _pickString(thread, const ['id', 'threadId']),
+  ).trim();
+  return session.surfaceType.name.trim().toLowerCase() == expectedType &&
+      (session.surfaceId ?? '').trim() == expectedId;
+}
+
+class _ThreadLiveDock extends StatelessWidget {
+  const _ThreadLiveDock({
+    required this.thread,
+    required this.liveState,
+    required this.onStartAudio,
+    required this.onStartVideo,
+    required this.onJoinLive,
+    required this.onLeaveLive,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
+  });
+
+  final Map<String, dynamic> thread;
+  final RealtimeState liveState;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+  final Future<void> Function() onJoinLive;
+  final Future<void> Function() onLeaveLive;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onToggleCamera;
+
+  @override
+  Widget build(BuildContext context) {
+    final belongsHere = _threadMatchesLiveState(liveState, thread);
+    final hasLive = belongsHere &&
+        ((liveState.sessionId ?? liveState.session?.id ?? '').trim().isNotEmpty);
+    final participantCount = belongsHere ? liveState.participants.length : 0;
+    final joinedCount = belongsHere
+        ? liveState.participants.where((p) => p.isPresent).length
+        : 0;
+    final statusLabel = !hasLive
+        ? 'Not live'
+        : liveState.isJoined
+            ? 'Live now'
+            : 'Live available';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.03),
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.wifi_tethering_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Live in this conversation', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      hasLive
+                          ? '$statusLabel • $joinedCount joined${participantCount > joinedCount ? ' • $participantCount listed' : ''}'
+                          : 'Start audio or video without leaving the thread.',
+                      style: AuraText.small.copyWith(color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasLive)
+                _StatusPill(
+                  label: statusLabel,
+                  tone: liveState.isJoined ? _StatusTone.positive : _StatusTone.accent,
+                ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              FilledButton.icon(
+                onPressed: liveState.isBusy ? null : () => onStartAudio(),
+                icon: const Icon(Icons.call_outlined),
+                label: Text(hasLive ? 'Restart audio' : 'Audio call'),
+              ),
+              FilledButton.icon(
+                onPressed: liveState.isBusy ? null : () => onStartVideo(),
+                icon: const Icon(Icons.videocam_outlined),
+                label: Text(hasLive ? 'Restart video' : 'Video call'),
+              ),
+              if (hasLive && !liveState.isJoined)
+                OutlinedButton.icon(
+                  onPressed: liveState.isBusy ? null : () => onJoinLive(),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Join live'),
+                ),
+              if (hasLive && liveState.isJoined)
+                OutlinedButton.icon(
+                  onPressed: () => onLeaveLive(),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Leave'),
+                ),
+              if (hasLive && liveState.isJoined)
+                OutlinedButton.icon(
+                  onPressed: () => onToggleMicrophone(),
+                  icon: Icon(liveState.microphoneEnabled ? Icons.mic_off_outlined : Icons.mic_outlined),
+                  label: Text(liveState.microphoneEnabled ? 'Mute' : 'Unmute'),
+                ),
+              if (hasLive && liveState.isJoined)
+                OutlinedButton.icon(
+                  onPressed: () => onToggleCamera(),
+                  icon: Icon(liveState.cameraEnabled ? Icons.videocam_off_outlined : Icons.videocam_outlined),
+                  label: Text(liveState.cameraEnabled ? 'Camera off' : 'Camera on'),
+                ),
+            ],
+          ),
+          if (hasLive && (liveState.infoMessage ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(liveState.infoMessage!.trim(), style: AuraText.small.copyWith(color: Colors.black54)),
+          ],
+          if (hasLive && (liveState.errorMessage ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(liveState.errorMessage!.trim(), style: AuraText.small.copyWith(color: Colors.red.shade700)),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _IdentityAvatar extends StatelessWidget {

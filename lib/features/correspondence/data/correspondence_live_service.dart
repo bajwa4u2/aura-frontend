@@ -121,6 +121,11 @@ class CorrespondenceLiveService {
       'thread:message.updated',
       'thread:message.deleted',
       'thread:read.updated',
+      'session:participant.joined',
+      'session:participant.resumed',
+      'session:participant.left',
+      'session:removed',
+      'realtime:removed',
     ]) {
       onNamed(name);
     }
