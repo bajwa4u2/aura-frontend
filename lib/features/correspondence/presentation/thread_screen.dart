@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -364,6 +365,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 }
 
+
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
@@ -392,28 +394,16 @@ class _ThreadHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = _threadScreenTitle(thread);
-    final kind = _pickString(thread, const ['kind', 'type']);
-    final archived =
-        thread['archived'] == true || thread['archivedAt'] != null;
-    final description = _pickString(
-      thread,
-      const ['description', 'summary', 'subtitle'],
-    );
-    final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
     final participants = _extractParticipants(thread);
-    final participantSummary = _participantSummary(participants);
+    final summary = _participantSummary(participants);
     final roles = _participantRoleSummary(participants);
-    final recentWeight = _threadRecentWeight(thread);
+    final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
 
     return AuraCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Conversation',
-            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -427,21 +417,11 @@ class _ThreadHeaderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(title, style: AuraText.title),
-                        if (kind.isNotEmpty) _Pill(label: _humanizeLabel(kind)),
-                        if (archived) _StatusPill(label: 'Archived', tone: _StatusTone.neutral),
-                        if (recentWeight.isNotEmpty) _StatusPill(label: recentWeight, tone: _StatusTone.accent),
-                      ],
-                    ),
-                    if (participantSummary.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s6),
+                    Text(title, style: AuraText.title),
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
-                        participantSummary,
+                        summary,
                         style: AuraText.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -456,24 +436,41 @@ class _ThreadHeaderCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    if (description.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(description, style: AuraText.body),
-                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: AuraSpace.s8),
-              _ThreadHeaderActions(
-                thread: thread,
-                liveState: liveState,
-                onStartAudio: onStartAudio,
-                onStartVideo: onStartVideo,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _HeaderIconAction(
+                    icon: Icons.call_rounded,
+                    onPressed: () => onStartAudio(),
+                  ),
+                  const SizedBox(width: AuraSpace.s6),
+                  _HeaderIconAction(
+                    icon: Icons.videocam_rounded,
+                    onPressed: () => onStartVideo(),
+                  ),
+                  if (spaceId.isNotEmpty) ...[
+                    const SizedBox(width: AuraSpace.s6),
+                    _HeaderIconAction(
+                      icon: Icons.group_add_rounded,
+                      onPressed: onInvite,
+                    ),
+                  ],
+                  if (spaceId.isNotEmpty) ...[
+                    const SizedBox(width: AuraSpace.s6),
+                    _HeaderIconAction(
+                      icon: Icons.open_in_new_rounded,
+                      onPressed: onOpenSpace,
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
-          _ThreadLiveStrip(
+          _ThreadLiveDock(
             thread: thread,
             liveState: liveState,
             onJoinLive: onJoinLive,
@@ -481,23 +478,32 @@ class _ThreadHeaderCard extends StatelessWidget {
             onToggleMicrophone: onToggleMicrophone,
             onToggleCamera: onToggleCamera,
           ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              if (spaceId.isNotEmpty)
-                OutlinedButton(
-                  onPressed: onOpenSpace,
-                  child: const Text('Open space'),
-                ),
-              OutlinedButton(
-                onPressed: onInvite,
-                child: const Text('Add member'),
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderIconAction extends StatelessWidget {
+  const _HeaderIconAction({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onPressed,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black.withOpacity(0.06)),
+        ),
+        child: Icon(icon, size: 18, color: Colors.black87),
       ),
     );
   }
@@ -569,64 +575,8 @@ bool _threadMatchesLiveState(RealtimeState liveState, Map<String, dynamic> threa
       (session.surfaceId ?? '').trim() == expectedId;
 }
 
-
-class _ThreadHeaderActions extends StatelessWidget {
-  const _ThreadHeaderActions({
-    required this.thread,
-    required this.liveState,
-    required this.onStartAudio,
-    required this.onStartVideo,
-  });
-
-  final Map<String, dynamic> thread;
-  final RealtimeState liveState;
-  final Future<void> Function() onStartAudio;
-  final Future<void> Function() onStartVideo;
-
-  @override
-  Widget build(BuildContext context) {
-    final belongsHere = _threadMatchesLiveState(liveState, thread);
-    final hasLive = belongsHere &&
-        ((liveState.sessionId ?? liveState.session?.id ?? '').trim().isNotEmpty);
-
-    final tone = hasLive
-        ? (liveState.isJoined ? _StatusTone.positive : _StatusTone.accent)
-        : _StatusTone.neutral;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (hasLive)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-            child: _StatusPill(
-              label: liveState.isJoined ? 'Live' : 'Ready',
-              tone: tone,
-            ),
-          ),
-        Wrap(
-          spacing: AuraSpace.s6,
-          runSpacing: AuraSpace.s6,
-          children: [
-            _QuietHeaderAction(
-              tooltip: hasLive ? 'Restart audio live' : 'Start audio live',
-              icon: Icons.call_outlined,
-              onPressed: liveState.isBusy ? null : () => onStartAudio(),
-            ),
-            _QuietHeaderAction(
-              tooltip: hasLive ? 'Restart video live' : 'Start video live',
-              icon: Icons.videocam_outlined,
-              onPressed: liveState.isBusy ? null : () => onStartVideo(),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _ThreadLiveStrip extends StatelessWidget {
-  const _ThreadLiveStrip({
+class _ThreadLiveDock extends StatelessWidget {
+  const _ThreadLiveDock({
     required this.thread,
     required this.liveState,
     required this.onJoinLive,
@@ -645,148 +595,357 @@ class _ThreadLiveStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final belongsHere = _threadMatchesLiveState(liveState, thread);
-    final hasLive = belongsHere &&
-        ((liveState.sessionId ?? liveState.session?.id ?? '').trim().isNotEmpty);
+    final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+    final hasLive = belongsHere && sessionId.isNotEmpty;
+    if (!hasLive) return const SizedBox.shrink();
 
-    if (!hasLive) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s10,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.03),
-          border: Border.all(color: Colors.black12),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.wifi_tethering_rounded, size: 16),
-            const SizedBox(width: AuraSpace.s8),
-            Expanded(
-              child: Text(
-                'Audio and video stay one click away in this conversation.',
-                style: AuraText.small.copyWith(color: Colors.black54),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final participantCount = liveState.participants.length;
     final joinedCount = liveState.participants.where((p) => p.isPresent).length;
-    final label = liveState.isJoined ? 'Live now' : 'Live available';
-    final detail = joinedCount > 0
-        ? '$joinedCount here${participantCount > joinedCount ? ' • $participantCount listed' : ''}'
-        : 'Waiting for someone to join';
+    final hasVideoStage = liveState.isJoined &&
+        (liveState.localRenderer != null || liveState.remoteRenderers.isNotEmpty ||
+            liveState.participants.any((p) => p.videoOn || p.screenOn));
+    final hasAudioState = liveState.isJoined && !hasVideoStage;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ThreadStatusStrip(
+          joinedCount: joinedCount,
+          isJoined: liveState.isJoined,
+          isBusy: liveState.isBusy,
+          microphoneEnabled: liveState.microphoneEnabled,
+          cameraEnabled: liveState.cameraEnabled,
+          onJoin: onJoinLive,
+          onLeave: onLeaveLive,
+          onToggleMicrophone: onToggleMicrophone,
+          onToggleCamera: hasVideoStage ? onToggleCamera : null,
+        ),
+        if (hasAudioState) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _ThreadAudioStage(
+            participants: liveState.participants,
+            microphoneEnabled: liveState.microphoneEnabled,
+            onToggleMicrophone: onToggleMicrophone,
+            onLeave: onLeaveLive,
+          ),
+        ],
+        if (hasVideoStage) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _ThreadVideoStage(
+            localRenderer: liveState.localRenderer,
+            remoteRenderers: liveState.remoteRenderers,
+            participants: liveState.participants,
+            microphoneEnabled: liveState.microphoneEnabled,
+            cameraEnabled: liveState.cameraEnabled,
+            onToggleMicrophone: onToggleMicrophone,
+            onToggleCamera: onToggleCamera,
+            onLeave: onLeaveLive,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ThreadStatusStrip extends StatelessWidget {
+  const _ThreadStatusStrip({
+    required this.joinedCount,
+    required this.isJoined,
+    required this.isBusy,
+    required this.microphoneEnabled,
+    required this.cameraEnabled,
+    required this.onJoin,
+    required this.onLeave,
+    required this.onToggleMicrophone,
+    this.onToggleCamera,
+  });
+
+  final int joinedCount;
+  final bool isJoined;
+  final bool isBusy;
+  final bool microphoneEnabled;
+  final bool cameraEnabled;
+  final Future<void> Function() onJoin;
+  final Future<void> Function() onLeave;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function()? onToggleCamera;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.03),
-        border: Border.all(color: Colors.black12),
+        color: Colors.black,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AuraSpace.s10,
-        runSpacing: AuraSpace.s8,
+      child: Row(
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.wifi_tethering_rounded, size: 16),
-              const SizedBox(width: AuraSpace.s8),
-              Text(label, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-            ],
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: isJoined ? Colors.greenAccent : Colors.white70,
+              shape: BoxShape.circle,
+            ),
           ),
-          Text(detail, style: AuraText.small.copyWith(color: Colors.black54)),
-          if (!liveState.isJoined)
-            OutlinedButton.icon(
-              onPressed: liveState.isBusy ? null : () => onJoinLive(),
-              icon: const Icon(Icons.login),
-              label: const Text('Join'),
-            ),
-          if (liveState.isJoined)
-            OutlinedButton.icon(
-              onPressed: () => onLeaveLive(),
-              icon: const Icon(Icons.logout),
-              label: const Text('Leave'),
-            ),
-          if (liveState.isJoined)
-            OutlinedButton.icon(
-              onPressed: () => onToggleMicrophone(),
-              icon: Icon(
-                liveState.microphoneEnabled
-                    ? Icons.mic_off_outlined
-                    : Icons.mic_outlined,
-              ),
-              label: Text(liveState.microphoneEnabled ? 'Mute' : 'Unmute'),
-            ),
-          if (liveState.isJoined)
-            OutlinedButton.icon(
-              onPressed: () => onToggleCamera(),
-              icon: Icon(
-                liveState.cameraEnabled
-                    ? Icons.videocam_off_outlined
-                    : Icons.videocam_outlined,
-              ),
-              label: Text(liveState.cameraEnabled ? 'Camera off' : 'Camera on'),
-            ),
-          if ((liveState.infoMessage ?? '').trim().isNotEmpty)
+          const SizedBox(width: AuraSpace.s10),
+          Text(
+            isJoined ? 'Live' : 'Calling',
+            style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+          if (joinedCount > 0) ...[
+            const SizedBox(width: AuraSpace.s10),
             Text(
-              liveState.infoMessage!.trim(),
-              style: AuraText.small.copyWith(color: Colors.black54),
+              '$joinedCount',
+              style: AuraText.small.copyWith(color: Colors.white70, fontWeight: FontWeight.w700),
             ),
-          if ((liveState.errorMessage ?? '').trim().isNotEmpty)
-            Text(
-              liveState.errorMessage!.trim(),
-              style: AuraText.small.copyWith(color: Colors.red.shade700),
+          ],
+          const Spacer(),
+          if (!isJoined)
+            _StripIconButton(
+              icon: Icons.login_rounded,
+              enabled: !isBusy,
+              onTap: () => onJoin(),
             ),
+          if (isJoined) ...[
+            _StripIconButton(
+              icon: microphoneEnabled ? Icons.mic_off_rounded : Icons.mic_rounded,
+              onTap: () => onToggleMicrophone(),
+            ),
+            if (onToggleCamera != null) ...[
+              const SizedBox(width: AuraSpace.s8),
+              _StripIconButton(
+                icon: cameraEnabled ? Icons.videocam_off_rounded : Icons.videocam_rounded,
+                onTap: () => onToggleCamera!(),
+              ),
+            ],
+            const SizedBox(width: AuraSpace.s8),
+            _StripIconButton(
+              icon: Icons.call_end_rounded,
+              tone: Colors.redAccent,
+              onTap: () => onLeave(),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _QuietHeaderAction extends StatelessWidget {
-  const _QuietHeaderAction({
-    required this.tooltip,
+class _StripIconButton extends StatelessWidget {
+  const _StripIconButton({
     required this.icon,
-    required this.onPressed,
+    required this.onTap,
+    this.enabled = true,
+    this.tone,
   });
 
-  final String tooltip;
   final IconData icon;
-  final VoidCallback? onPressed;
+  final VoidCallback onTap;
+  final bool enabled;
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(onPressed == null ? 0.03 : 0.05),
-            border: Border.all(color: Colors.black12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: onPressed == null ? Colors.black26 : Colors.black87,
-          ),
+    final color = enabled ? (tone ?? Colors.white) : Colors.white38;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
         ),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+}
+
+class _ThreadAudioStage extends StatelessWidget {
+  const _ThreadAudioStage({
+    required this.participants,
+    required this.microphoneEnabled,
+    required this.onToggleMicrophone,
+    required this.onLeave,
+  });
+
+  final List<RealtimeParticipant> participants;
+  final bool microphoneEnabled;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.035),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: participants.isEmpty
+                ? const <Widget>[]
+                : participants.map((p) => _ThreadParticipantChip(participant: p)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadParticipantChip extends StatelessWidget {
+  const _ThreadParticipantChip({required this.participant});
+
+  final RealtimeParticipant participant;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = participant.isHost ? 'Host' : 'Member';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: participant.isPresent ? Colors.green : Colors.black26,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+          if (participant.audioOn || participant.videoOn || participant.screenOn) ...[
+            const SizedBox(width: 8),
+            Icon(
+              participant.screenOn
+                  ? Icons.screen_share_rounded
+                  : participant.videoOn
+                      ? Icons.videocam_rounded
+                      : Icons.mic_rounded,
+              size: 14,
+              color: Colors.black54,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadVideoStage extends StatelessWidget {
+  const _ThreadVideoStage({
+    required this.localRenderer,
+    required this.remoteRenderers,
+    required this.participants,
+    required this.microphoneEnabled,
+    required this.cameraEnabled,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
+    required this.onLeave,
+  });
+
+  final RTCVideoRenderer? localRenderer;
+  final Map<String, RTCVideoRenderer> remoteRenderers;
+  final List<RealtimeParticipant> participants;
+  final bool microphoneEnabled;
+  final bool cameraEnabled;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onToggleCamera;
+  final Future<void> Function() onLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = <Widget>[];
+    if (localRenderer != null) {
+      tiles.add(_ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true));
+    }
+    remoteRenderers.forEach((key, renderer) {
+      final participant = participants.cast<RealtimeParticipant?>().firstWhere(
+        (p) => p?.runtimeDeviceId == key || p?.userId == key,
+        orElse: () => null,
+      );
+      final label = participant?.isHost == true ? 'Host' : 'Member';
+      tiles.add(_ThreadVideoTile(label: label, renderer: renderer));
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GridView.count(
+          crossAxisCount: tiles.length <= 1 ? 1 : 2,
+          mainAxisSpacing: AuraSpace.s10,
+          crossAxisSpacing: AuraSpace.s10,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.08,
+          children: tiles,
+        ),
+      ],
+    );
+  }
+}
+
+class _ThreadVideoTile extends StatelessWidget {
+  const _ThreadVideoTile({
+    required this.label,
+    required this.renderer,
+    this.mirror = false,
+  });
+
+  final String label;
+  final RTCVideoRenderer renderer;
+  final bool mirror;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: RTCVideoView(
+              renderer,
+              mirror: mirror,
+              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+            ),
+          ),
+          Positioned(
+            left: 10,
+            bottom: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                label,
+                style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

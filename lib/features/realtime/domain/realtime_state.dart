@@ -26,6 +26,8 @@ class RealtimeState {
     required this.microphoneEnabled,
     required this.cameraEnabled,
     required this.mediaError,
+    required this.callMode,
+    required this.incomingCall,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -49,6 +51,8 @@ class RealtimeState {
   final bool microphoneEnabled;
   final bool cameraEnabled;
   final String? mediaError;
+  final String? callMode;
+  final Map<String, dynamic>? incomingCall;
 
   factory RealtimeState.initial() {
     return const RealtimeState(
@@ -73,6 +77,8 @@ class RealtimeState {
       microphoneEnabled: true,
       cameraEnabled: true,
       mediaError: null,
+      callMode: null,
+      incomingCall: null,
     );
   }
 
@@ -107,6 +113,10 @@ class RealtimeState {
     bool? cameraEnabled,
     String? mediaError,
     bool clearMediaError = false,
+    String? callMode,
+    bool clearCallMode = false,
+    Map<String, dynamic>? incomingCall,
+    bool clearIncomingCall = false,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -132,9 +142,14 @@ class RealtimeState {
       microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
       cameraEnabled: cameraEnabled ?? this.cameraEnabled,
       mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
+      callMode: clearCallMode ? null : (callMode ?? this.callMode),
+      incomingCall: clearIncomingCall ? null : (incomingCall ?? this.incomingCall),
     );
   }
 
   bool get isConnected => connectionStatus == RealtimeConnectionStatus.connected;
   bool get isJoined => joinState == RealtimeJoinState.joined;
+  bool get hasIncomingCall => incomingCall != null && incomingCall!.isNotEmpty;
+  bool get isVideoMode => (callMode ?? '').trim().toLowerCase() == 'video';
+  bool get isAudioMode => (callMode ?? '').trim().toLowerCase() == 'audio';
 }
