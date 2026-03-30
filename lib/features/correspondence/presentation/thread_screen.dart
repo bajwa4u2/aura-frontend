@@ -3908,3 +3908,113 @@ String _formatBytes(int bytes) {
   final gb = mb / 1024;
   return '${gb.toStringAsFixed(gb >= 100 ? 0 : 1)} GB';
 }
+
+// ======================
+// ADDED STATE SYSTEM (NON-DESTRUCTIVE INTEGRATION)
+// ======================
+
+import '../domain/communication_state.dart';
+
+class ThreadStateWrapper extends ConsumerWidget {
+  final String threadId;
+  const ThreadStateWrapper({super.key, required this.threadId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // TEMP: default state (will be wired later)
+    final CommunicationState state = CommunicationState.idle;
+
+    switch (state) {
+      case CommunicationState.idle:
+        return ThreadScreen(threadId: threadId);
+
+      case CommunicationState.incoming:
+        return const _IncomingCallView();
+
+      case CommunicationState.joining:
+        return const _JoiningView();
+
+      case CommunicationState.audio:
+        return const _AudioCallView();
+
+      case CommunicationState.video:
+        return const _VideoCallView();
+
+      case CommunicationState.group:
+        return const _GroupLiveView();
+
+      case CommunicationState.ending:
+        return const _EndingView();
+    }
+  }
+}
+
+// ======================
+// STATE VIEWS
+// ======================
+
+class _IncomingCallView extends StatelessWidget {
+  const _IncomingCallView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Incoming Call")),
+    );
+  }
+}
+
+class _JoiningView extends StatelessWidget {
+  const _JoiningView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _AudioCallView extends StatelessWidget {
+  const _AudioCallView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Audio Call Active")),
+    );
+  }
+}
+
+class _VideoCallView extends StatelessWidget {
+  const _VideoCallView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Video Call Active")),
+    );
+  }
+}
+
+class _GroupLiveView extends StatelessWidget {
+  const _GroupLiveView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Group Live Active")),
+    );
+  }
+}
+
+class _EndingView extends StatelessWidget {
+  const _EndingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text("Ending Session")),
+    );
+  }
+}
