@@ -615,7 +615,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/me/correspondence/:spaceId/thread/:threadId',
-            builder: (context, state) => ThreadScreen(
+            builder: (context, state) => ThreadStateWrapper(
               threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
