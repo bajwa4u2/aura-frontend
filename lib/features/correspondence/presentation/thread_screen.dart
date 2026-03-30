@@ -23,6 +23,7 @@ import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../realtime/domain/realtime_state.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
