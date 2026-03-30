@@ -148,7 +148,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final threadId = widget.threadId;
@@ -160,232 +159,193 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final meAsync = ref.watch(_currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
 
-    final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
-    final liveOwnsScreen = threadAsync.maybeWhen(
-      data: (thread) =>
-          sessionId.isNotEmpty && _threadMatchesLiveState(liveState, thread),
-      orElse: () => false,
-    );
-
     return AuraScaffold(
-      title: liveOwnsScreen
-          ? ''
-          : threadAsync.maybeWhen(
-              data: (thread) => _threadScreenTitle(thread),
-              orElse: () => 'Conversation',
-            ),
-      body: liveOwnsScreen
-          ? threadAsync.when(
-              loading: () => const Center(
-                child: _LoadingBlock(label: 'Loading live conversation...'),
-              ),
-              error: (error, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _ErrorBlock(
-                    title: 'Could not load live conversation',
-                    body: '$error',
-                    onRetry: () =>
-                        ref.invalidate(_threadDetailProvider(threadId)),
-                  ),
-                ),
-              ),
-              data: (thread) => _ThreadLiveSurface(
-                thread: thread,
-                liveState: liveState,
-                onLeaveLive: () async {
-                  await ref.read(realtimeControllerProvider.notifier).leave();
-                },
-                onToggleMicrophone: () async {
-                  await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
-                },
-                onToggleCamera: () async {
-                  await ref.read(realtimeControllerProvider.notifier).toggleCamera();
-                },
-              ),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(_threadOpenProvider(threadId));
-                      ref.invalidate(_threadDetailProvider(threadId));
-                      ref.invalidate(_messagesProvider(threadId));
-                      ref.invalidate(_currentUserProvider);
-                      await Future.wait([
-                        ref.read(_threadOpenProvider(threadId).future),
-                        ref.read(_threadDetailProvider(threadId).future),
-                        ref.read(_messagesProvider(threadId).future),
-                        ref.read(_currentUserProvider.future),
-                      ]);
-                    },
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      children: [
-                        threadAsync.when(
-                          loading: () => const AuraCard(
-                            child: _LoadingBlock(label: 'Loading thread...'),
-                          ),
-                          error: (error, _) => AuraCard(
-                            child: _ErrorBlock(
-                              title: 'Could not load thread',
-                              body: '$error',
-                              onRetry: () =>
-                                  ref.invalidate(_threadDetailProvider(threadId)),
-                            ),
-                          ),
-                          data: (thread) => _ThreadHeaderCard(
-                            thread: thread,
-                            liveState: liveState,
-                            onOpenSpace: () {
-                              final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-                              if (spaceId.isEmpty) return;
-                              context.push('/me/correspondence/$spaceId');
-                            },
-                            onInvite: () async {
-                              final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-                              if (spaceId.isEmpty) return;
-                              await context.push(
-                                '/invite/create?destinationType=JOIN_SPACE'
-                                '&spaceId=${Uri.encodeComponent(spaceId)}'
-                                '&threadId=${Uri.encodeComponent(threadId)}'
-                                '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
-                              );
-                              if (!context.mounted) return;
-                              ref.invalidate(_threadDetailProvider(widget.threadId));
-                              ref.invalidate(_messagesProvider(widget.threadId));
-                            },
-                            onStartAudio: () async {
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.ensureCorrespondenceLive(
-                                surfaceType: _threadLiveSurfaceType(thread),
-                                surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                                kind: 'AUDIO',
-                                metadata: <String, dynamic>{
-                                  'threadId': widget.threadId,
-                                  'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                                }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                              );
-                            },
-                            onStartVideo: () async {
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.ensureCorrespondenceLive(
-                                surfaceType: _threadLiveSurfaceType(thread),
-                                surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                                kind: 'VIDEO',
-                                metadata: <String, dynamic>{
-                                  'threadId': widget.threadId,
-                                  'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                                }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                              );
-                            },
-                            onJoinLive: () async {
-                              final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
-                              if (sessionId.isEmpty) return;
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.join(sessionId);
-                            },
-                            onLeaveLive: () async {
-                              await ref.read(realtimeControllerProvider.notifier).leave();
-                            },
-                            onToggleMicrophone: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
-                            },
-                            onToggleCamera: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleCamera();
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s16),
-                        Text('Messages', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s10),
-                        messagesAsync.when(
-                          loading: () => const AuraCard(
-                            child: _LoadingBlock(label: 'Loading messages...'),
-                          ),
-                          error: (error, _) => AuraCard(
-                            child: _ErrorBlock(
-                              title: 'Could not load messages',
-                              body: '$error',
-                              onRetry: () =>
-                                  ref.invalidate(_messagesProvider(threadId)),
-                            ),
-                          ),
-                          data: (messages) {
-                            if (messages.isEmpty) {
-                              return const AuraCard(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('No messages yet', style: AuraText.title),
-                                    SizedBox(height: AuraSpace.s8),
-                                    Text(
-                                      'Nothing has been said here yet.',
-                                      style: AuraText.body,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            final currentUserId = meAsync.maybeWhen(
-                              data: (me) => _pickString(
-                                me,
-                                const ['id', '_id', 'userId'],
-                              ),
-                              orElse: () => '',
-                            );
-
-                            return Column(
-                              children: [
-                                for (var i = 0; i < messages.length; i++) ...[
-                                  _MessageTile(
-                                    message: messages[i],
-                                    currentUserId: currentUserId,
-                                    showAuthorHeader:
-                                        !_isSameSender(
-                                          messages[i],
-                                          i > 0 ? messages[i - 1] : null,
-                                        ),
-                                    onEdit: () => _showEditMessageDialog(
-                                      context,
-                                      ref,
-                                      messages[i],
-                                    ),
-                                    onDelete: () async {
-                                      final messageId = _pickString(
-                                        messages[i],
-                                        const ['id', 'messageId'],
-                                      );
-                                      if (messageId.isEmpty) return;
-                                      await ref
-                                          .read(messagesRepositoryProvider)
-                                          .deleteMessage(messageId);
-                                      ref.invalidate(_threadDetailProvider(widget.threadId));
-                                      ref.invalidate(_messagesProvider(widget.threadId));
-                                    },
-                                  ),
-                                  if (i != messages.length - 1)
-                                    const SizedBox(height: AuraSpace.s10),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
-                      ],
+      title: threadAsync.maybeWhen(
+        data: (thread) => _threadScreenTitle(thread),
+        orElse: () => 'Conversation',
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(_threadOpenProvider(threadId));
+                ref.invalidate(_threadDetailProvider(threadId));
+                ref.invalidate(_messagesProvider(threadId));
+                ref.invalidate(_currentUserProvider);
+                await Future.wait([
+                  ref.read(_threadOpenProvider(threadId).future),
+                  ref.read(_threadDetailProvider(threadId).future),
+                  ref.read(_messagesProvider(threadId).future),
+                  ref.read(_currentUserProvider.future),
+                ]);
+              },
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  threadAsync.when(
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading thread...'),
+                    ),
+                    error: (error, _) => AuraCard(
+                      child: _ErrorBlock(
+                        title: 'Could not load thread',
+                        body: '$error',
+                        onRetry: () =>
+                            ref.invalidate(_threadDetailProvider(threadId)),
+                      ),
+                    ),
+                    data: (thread) => _ThreadHeaderCard(
+                      thread: thread,
+                      liveState: liveState,
+                      onOpenSpace: () {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        context.push('/me/correspondence/$spaceId');
+                      },
+                      onInvite: () async {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        await context.push(
+                          '/invite/create?destinationType=JOIN_SPACE'
+                          '&spaceId=${Uri.encodeComponent(spaceId)}'
+                          '&threadId=${Uri.encodeComponent(threadId)}'
+                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
+                        );
+                        if (!context.mounted) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
+                        ref.invalidate(_messagesProvider(widget.threadId));
+                      },
+                      onStartAudio: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'AUDIO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onStartVideo: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'VIDEO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onJoinLive: () async {
+                        final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+                        if (sessionId.isEmpty) return;
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.join(sessionId);
+                      },
+                      onLeaveLive: () async {
+                        await ref.read(realtimeControllerProvider.notifier).leave();
+                      },
+                      onToggleMicrophone: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                      },
+                      onToggleCamera: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleCamera();
+                      },
                     ),
                   ),
-                ),
-                _ComposerBar(
-                  threadId: threadId,
-                  onSent: () {
-                    ref.invalidate(_threadDetailProvider(widget.threadId));
-                    ref.invalidate(_messagesProvider(widget.threadId));
-                  },
-                ),
-              ],
+                  const SizedBox(height: AuraSpace.s16),
+                  Text('Messages', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
+                  messagesAsync.when(
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading messages...'),
+                    ),
+                    error: (error, _) => AuraCard(
+                      child: _ErrorBlock(
+                        title: 'Could not load messages',
+                        body: '$error',
+                        onRetry: () =>
+                            ref.invalidate(_messagesProvider(threadId)),
+                      ),
+                    ),
+                    data: (messages) {
+                      if (messages.isEmpty) {
+                        return const AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('No messages yet', style: AuraText.title),
+                              SizedBox(height: AuraSpace.s8),
+                              Text(
+                                'Nothing has been said here yet.',
+                                style: AuraText.body,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final currentUserId = meAsync.maybeWhen(
+                        data: (me) => _pickString(
+                          me,
+                          const ['id', '_id', 'userId'],
+                        ),
+                        orElse: () => '',
+                      );
+
+                      return Column(
+                        children: [
+                          for (var i = 0; i < messages.length; i++) ...[
+                            _MessageTile(
+                              message: messages[i],
+                              currentUserId: currentUserId,
+                              showAuthorHeader:
+                                  !_isSameSender(
+                                    messages[i],
+                                    i > 0 ? messages[i - 1] : null,
+                                  ),
+                              onEdit: () => _showEditMessageDialog(
+                                context,
+                                ref,
+                                messages[i],
+                              ),
+                              onDelete: () async {
+                                final messageId = _pickString(
+                                  messages[i],
+                                  const ['id', 'messageId'],
+                                );
+                                if (messageId.isEmpty) return;
+                                await ref
+                                    .read(messagesRepositoryProvider)
+                                    .deleteMessage(messageId);
+                                ref.invalidate(_threadDetailProvider(widget.threadId));
+                                ref.invalidate(_messagesProvider(widget.threadId));
+                              },
+                            ),
+                            if (i != messages.length - 1)
+                              const SizedBox(height: AuraSpace.s10),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+          ),
+          _ComposerBar(
+            threadId: threadId,
+            onSent: () {
+              ref.invalidate(_threadDetailProvider(widget.threadId));
+              ref.invalidate(_messagesProvider(widget.threadId));
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -408,100 +368,28 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
 
 
-
-class _ThreadLiveSurface extends StatelessWidget {
-  const _ThreadLiveSurface({
-    required this.thread,
-    required this.liveState,
-    required this.onLeaveLive,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-  });
-
-  final Map<String, dynamic> thread;
-  final RealtimeState liveState;
-  final Future<void> Function() onLeaveLive;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onToggleCamera;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = _threadScreenTitle(thread);
-    final participants = _extractParticipants(thread);
-    final summary = _participantSummary(participants);
-    final hasVideoStage = liveState.localRenderer != null ||
-        liveState.remoteRenderers.isNotEmpty ||
-        liveState.participants.any((p) => p.videoOn || p.screenOn);
-    final joinedCount = liveState.participants.where((p) => p.isPresent).length;
-
-    return Container(
-      color: Colors.black,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _ThreadLiveTopBar(
-              title: title,
-              summary: summary,
-              joinedCount: joinedCount,
-              hasVideoStage: hasVideoStage,
-              microphoneEnabled: liveState.microphoneEnabled,
-              cameraEnabled: liveState.cameraEnabled,
-              onToggleMicrophone: onToggleMicrophone,
-              onToggleCamera: hasVideoStage ? onToggleCamera : null,
-              onLeave: onLeaveLive,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: hasVideoStage
-                    ? _LiveVideoSurface(
-                        localRenderer: liveState.localRenderer,
-                        remoteRenderers: liveState.remoteRenderers,
-                        participants: liveState.participants,
-                      )
-                    : _LiveAudioSurface(
-                        participants: liveState.participants,
-                        microphoneEnabled: liveState.microphoneEnabled,
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ThreadLiveTopBar extends StatelessWidget {
-  const _ThreadLiveTopBar({
+class _ThreadScreenTopBar extends StatelessWidget {
+  const _ThreadScreenTopBar({
     required this.title,
     required this.summary,
-    required this.joinedCount,
-    required this.hasVideoStage,
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-    required this.onLeave,
+    this.onBack,
   });
 
   final String title;
   final String summary;
-  final int joinedCount;
-  final bool hasVideoStage;
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function()? onToggleCamera;
-  final Future<void> Function() onLeave;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
+          _ThreadRouteIconButton(
+            icon: Icons.arrow_back_rounded,
+            onTap: onBack ?? () => context.pop(),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,40 +398,19 @@ class _ThreadLiveTopBar extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AuraText.title.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AuraText.title.copyWith(fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  summary.isEmpty ? '$joinedCount here' : summary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(
-                    color: Colors.white70,
+                if (summary.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(color: Colors.black54),
                   ),
-                ),
+                ],
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          _LiveHeaderAction(
-            icon: microphoneEnabled ? Icons.mic_off_rounded : Icons.mic_rounded,
-            onTap: () => onToggleMicrophone(),
-          ),
-          if (hasVideoStage && onToggleCamera != null) ...[
-            const SizedBox(width: 8),
-            _LiveHeaderAction(
-              icon: cameraEnabled ? Icons.videocam_off_rounded : Icons.videocam_rounded,
-              onTap: () => onToggleCamera!(),
-            ),
-          ],
-          const SizedBox(width: 8),
-          _LiveHeaderAction(
-            icon: Icons.call_end_rounded,
-            tone: Colors.redAccent,
-            onTap: () => onLeave(),
           ),
         ],
       ),
@@ -551,16 +418,14 @@ class _ThreadLiveTopBar extends StatelessWidget {
   }
 }
 
-class _LiveHeaderAction extends StatelessWidget {
-  const _LiveHeaderAction({
+class _ThreadRouteIconButton extends StatelessWidget {
+  const _ThreadRouteIconButton({
     required this.icon,
     required this.onTap,
-    this.tone,
   });
 
   final IconData icon;
   final VoidCallback onTap;
-  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
@@ -571,172 +436,12 @@ class _LiveHeaderAction extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: (tone ?? Colors.white).withOpacity(tone == null ? 0.08 : 0.16),
+          color: Colors.black.withOpacity(0.04),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.black.withOpacity(0.08)),
         ),
-        child: Icon(icon, size: 19, color: tone ?? Colors.white),
+        child: Icon(icon, size: 20, color: Colors.black87),
       ),
-    );
-  }
-}
-
-class _LiveAudioSurface extends StatelessWidget {
-  const _LiveAudioSurface({
-    required this.participants,
-    required this.microphoneEnabled,
-  });
-
-  final List<RealtimeParticipant> participants;
-  final bool microphoneEnabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final present = participants.where((p) => p.isPresent).toList(growable: false);
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 18,
-              runSpacing: 18,
-              children: [
-                for (final participant in present)
-                  _LiveAudioAvatar(participant: participant),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveAudioAvatar extends StatelessWidget {
-  const _LiveAudioAvatar({required this.participant});
-
-  final RealtimeParticipant participant;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = participant.isHost ? 'Host' : 'Member';
-    return Container(
-      width: 148,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 62,
-            height: 62,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              participant.audioOn ? Icons.mic_rounded : Icons.person_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: AuraText.body.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            participant.isPresent ? 'Here' : 'Waiting',
-            style: AuraText.small.copyWith(color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LiveVideoSurface extends StatelessWidget {
-  const _LiveVideoSurface({
-    required this.localRenderer,
-    required this.remoteRenderers,
-    required this.participants,
-  });
-
-  final RTCVideoRenderer? localRenderer;
-  final Map<String, RTCVideoRenderer> remoteRenderers;
-  final List<RealtimeParticipant> participants;
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = remoteRenderers.entries.toList(growable: false);
-    final isGroup = entries.length > 1;
-    if (isGroup) {
-      final allTiles = <Widget>[
-        if (localRenderer != null)
-          _ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true),
-        for (final entry in entries)
-          _ThreadVideoTile(
-            label: _participantLabel(_participantForKey(participants, entry.key), fallback: 'Member'),
-            renderer: entry.value,
-          ),
-      ];
-      return GridView.count(
-        crossAxisCount: allTiles.length <= 1 ? 1 : (allTiles.length == 2 ? 2 : 2),
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 16 / 10,
-        children: allTiles,
-      );
-    }
-
-    final primaryRemote = entries.isNotEmpty ? entries.first : null;
-    final primaryRenderer = primaryRemote?.value ?? localRenderer;
-    final primaryParticipant =
-        primaryRemote == null ? null : _participantForKey(participants, primaryRemote.key);
-    final primaryLabel =
-        primaryRemote == null ? 'You' : _participantLabel(primaryParticipant, fallback: 'Member');
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white.withOpacity(0.06)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: primaryRenderer == null
-                ? const _ThreadVideoEmptyState()
-                : _ThreadVideoCanvas(
-                    renderer: primaryRenderer,
-                    mirror: primaryRemote == null,
-                  ),
-          ),
-        ),
-        Positioned(
-          left: 16,
-          top: 16,
-          child: _ThreadVideoBadge(label: primaryLabel),
-        ),
-        if (localRenderer != null && primaryRemote != null)
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: _ThreadInsetPreview(renderer: localRenderer!),
-          ),
-      ],
     );
   }
 }
@@ -979,9 +684,10 @@ class _ThreadLiveDock extends StatelessWidget {
     if (!hasLive) return const SizedBox.shrink();
 
     final joinedCount = liveState.participants.where((p) => p.isPresent).length;
-    final hasVideoStage = liveState.isJoined &&
-        (liveState.localRenderer != null || liveState.remoteRenderers.isNotEmpty ||
-            liveState.participants.any((p) => p.videoOn || p.screenOn));
+    final hasVideoStage = liveState.isJoined && (liveState.isVideoMode ||
+        (!liveState.isAudioMode && (liveState.localRenderer != null ||
+            liveState.remoteRenderers.isNotEmpty ||
+            liveState.participants.any((p) => p.videoOn || p.screenOn))));
     final hasAudioState = liveState.isJoined && !hasVideoStage;
 
     return Column(
@@ -1228,7 +934,6 @@ class _ThreadParticipantChip extends StatelessWidget {
   }
 }
 
-
 class _ThreadVideoStage extends StatelessWidget {
   const _ThreadVideoStage({
     required this.localRenderer,
@@ -1252,217 +957,36 @@ class _ThreadVideoStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remoteEntries = remoteRenderers.entries.toList(growable: false);
-    final primaryRemote = remoteEntries.isNotEmpty ? remoteEntries.first : null;
-    final extraRemoteEntries =
-        remoteEntries.length > 1 ? remoteEntries.sublist(1) : const <MapEntry<String, RTCVideoRenderer>>[];
-
-    final primaryRenderer = primaryRemote?.value ?? localRenderer;
-    final primaryParticipant = primaryRemote == null
-        ? null
-        : _participantForKey(participants, primaryRemote.key);
-    final primaryLabel = primaryRemote == null
-        ? 'You'
-        : _participantLabel(primaryParticipant, fallback: 'Member');
+    final tiles = <Widget>[];
+    if (localRenderer != null) {
+      tiles.add(_ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true));
+    }
+    remoteRenderers.forEach((key, renderer) {
+      final participant = participants.cast<RealtimeParticipant?>().firstWhere(
+        (p) => p?.runtimeDeviceId == key || p?.userId == key,
+        orElse: () => null,
+      );
+      final label = participant?.isHost == true ? 'Host' : 'Member';
+      tiles.add(_ThreadVideoTile(label: label, renderer: renderer));
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: primaryRenderer == null
-                      ? const _ThreadVideoEmptyState()
-                      : _ThreadVideoCanvas(
-                          renderer: primaryRenderer,
-                          mirror: primaryRemote == null,
-                        ),
-                ),
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: _ThreadVideoBadge(label: primaryLabel),
-                ),
-                if (localRenderer != null && primaryRemote != null)
-                  Positioned(
-                    right: 14,
-                    bottom: 14,
-                    child: _ThreadInsetPreview(renderer: localRenderer!),
-                  ),
-              ],
-            ),
-          ),
+        GridView.count(
+          crossAxisCount: tiles.length <= 1 ? 1 : 2,
+          mainAxisSpacing: AuraSpace.s10,
+          crossAxisSpacing: AuraSpace.s10,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.08,
+          children: tiles,
         ),
-        if (extraRemoteEntries.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s10),
-          SizedBox(
-            height: 96,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: extraRemoteEntries.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AuraSpace.s10),
-              itemBuilder: (context, index) {
-                final entry = extraRemoteEntries[index];
-                final participant = _participantForKey(participants, entry.key);
-                return SizedBox(
-                  width: 148,
-                  child: _ThreadVideoTile(
-                    label: _participantLabel(participant, fallback: 'Member'),
-                    renderer: entry.value,
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
       ],
     );
   }
 }
 
-RealtimeParticipant? _participantForKey(
-  List<RealtimeParticipant> participants,
-  String key,
-) {
-  for (final participant in participants) {
-    if (participant.runtimeDeviceId == key || participant.userId == key) {
-      return participant;
-    }
-  }
-  return null;
-}
-
-String _participantLabel(
-  RealtimeParticipant? participant, {
-  String fallback = 'Member',
-}) {
-  if (participant == null) return fallback;
-  if (participant.isHost) return 'Host';
-  return fallback;
-}
-
-class _ThreadVideoCanvas extends StatelessWidget {
-  const _ThreadVideoCanvas({
-    required this.renderer,
-    required this.mirror,
-  });
-
-  final RTCVideoRenderer renderer;
-  final bool mirror;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.black,
-      child: RTCVideoView(
-        renderer,
-        mirror: mirror,
-        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-      ),
-    );
-  }
-}
-
-class _ThreadInsetPreview extends StatelessWidget {
-  const _ThreadInsetPreview({required this.renderer});
-
-  final RTCVideoRenderer renderer;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 156,
-      height: 104,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 18,
-            offset: Offset(0, 8),
-            color: Color(0x33000000),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: RTCVideoView(
-              renderer,
-              mirror: true,
-              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-            ),
-          ),
-          const Positioned(
-            left: 10,
-            bottom: 10,
-            child: _ThreadVideoBadge(label: 'You', compact: true),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreadVideoEmptyState extends StatelessWidget {
-  const _ThreadVideoEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      alignment: Alignment.center,
-      child: Icon(
-        Icons.videocam_off_rounded,
-        size: 28,
-        color: Colors.white.withOpacity(0.55),
-      ),
-    );
-  }
-}
-
-class _ThreadVideoBadge extends StatelessWidget {
-  const _ThreadVideoBadge({
-    required this.label,
-    this.compact = false,
-  });
-
-  final String label;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 5 : 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.48),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
 class _ThreadVideoTile extends StatelessWidget {
   const _ThreadVideoTile({
     required this.label,
@@ -1479,28 +1003,34 @@ class _ThreadVideoTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        borderRadius: BorderRadius.circular(18),
       ),
       clipBehavior: Clip.antiAlias,
-      child: AspectRatio(
-        aspectRatio: 16 / 10,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: RTCVideoView(
-                renderer,
-                mirror: mirror,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: RTCVideoView(
+              renderer,
+              mirror: mirror,
+              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+            ),
+          ),
+          Positioned(
+            left: 10,
+            bottom: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                label,
+                style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
               ),
             ),
-            Positioned(
-              left: 10,
-              bottom: 10,
-              child: _ThreadVideoBadge(label: label, compact: true),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

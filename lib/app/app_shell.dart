@@ -143,24 +143,12 @@ class MemberShell extends StatelessWidget {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
     final selectedIndex = _indexForPath(path);
-    final chromeHidden = _hideMemberChrome(path);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final isDesktop = width >= _desktopBreakpoint;
         final isTablet = width >= _tabletBreakpoint;
-
-        if (chromeHidden) {
-          return Scaffold(
-            backgroundColor: AuraSurface.page,
-            body: SafeArea(
-              top: true,
-              bottom: false,
-              child: child,
-            ),
-          );
-        }
 
         return Scaffold(
           backgroundColor: AuraSurface.page,
@@ -218,12 +206,6 @@ bool _showMemberFooter(String path) {
   if (path.startsWith('/me/correspondence/')) return false;
   if (path.startsWith('/spaces/') || path.startsWith('/space/')) return false;
   return true;
-}
-
-bool _hideMemberChrome(String path) {
-  if (path.startsWith('/realtime')) return true;
-  if (path.startsWith('/me/correspondence/') && path.contains('/thread/')) return true;
-  return false;
 }
 
 class InstitutionShell extends StatelessWidget {

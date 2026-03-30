@@ -79,7 +79,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
-      final normalizedKind = kind.trim().toLowerCase();
       final bundle = await _repository.createSession(
         surfaceType: surfaceType,
         surfaceId: surfaceId,
@@ -87,6 +86,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         metadata: metadata,
       );
       _applyBundle(bundle);
+      final normalizedKind = kind.trim().toLowerCase();
       state = state.copyWith(
         isBusy: false,
         sessionId: bundle.session.id,
@@ -158,20 +158,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 
   Future<void> disconnect() async {
-    await _mediaService.disposeAllPeers();
-    await _socketService.disconnect();
-    _clearRtcConfiguration();
+    await _terminateSession(keepSocketConnected: false, infoMessage: null);
 
     state = state.copyWith(
       connectionStatus: RealtimeConnectionStatus.disconnected,
-      joinState: RealtimeJoinState.idle,
       clearInfoMessage: true,
       lastSocketEvent: 'socket:disconnected',
-      isMediaReady: false,
-      clearRemoteRenderers: true,
-      clearLocalRenderer: true,
-      clearIncomingCall: true,
-      clearCallMode: true,
     );
   }
 
@@ -293,7 +285,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       infoMessage: 'You left the live room.',
       clearRemoteRenderers: true,
       isMediaReady: false,
-      clearIncomingCall: true,
     );
   }
 
@@ -322,6 +313,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
     if (state.isMediaBusy) return;
+    if (!state.isVideoMode) {
+      state = state.copyWith(
+        infoMessage: 'Camera is only available in video calls.',
+        clearErrorMessage: true,
+      );
+      return;
+    }
     if (!state.isMediaReady) {
       state = state.copyWith(
         infoMessage: 'Your camera is not ready yet.',
@@ -521,32 +519,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
   }
 
-  void setIncomingCall(Map<String, dynamic>? payload) {
-    if (payload == null || payload.isEmpty) {
-      state = state.copyWith(clearIncomingCall: true);
-      return;
-    }
-
-    final sessionId = payload['sessionId']?.toString().trim();
-    final fromUserId = payload['fromUserId']?.toString().trim();
-    final mode = (payload['mode']?.toString().trim().toLowerCase() == 'video') ? 'video' : 'audio';
-
-    state = state.copyWith(
-      incomingCall: <String, dynamic>{
-        'sessionId': sessionId,
-        'fromUserId': fromUserId,
-        'mode': mode,
-      },
-      callMode: mode,
-      clearErrorMessage: true,
-      clearInfoMessage: true,
-    );
-  }
-
-  void clearIncomingCall() {
-    state = state.copyWith(clearIncomingCall: true);
-  }
-
   void clearMessage() {
     state = state.copyWith(
       clearErrorMessage: true,
@@ -564,6 +536,51 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       recordings: bundle.recordings,
       transcripts: bundle.transcriptJobs,
       artifacts: bundle.artifacts,
+    );
+  }
+
+
+  Future<void> _terminateSession({
+    required bool keepSocketConnected,
+    String? infoMessage,
+  }) async {
+    final sessionId = state.sessionId?.trim() ?? '';
+
+    try {
+      if (sessionId.isNotEmpty && keepSocketConnected) {
+        await _socketService.emitAck('session:leave', <String, dynamic>{
+          'sessionId': sessionId,
+        });
+      }
+    } catch (_) {}
+
+    await _mediaService.disposeAllPeers();
+    if (!keepSocketConnected) {
+      await _socketService.disconnect();
+    }
+    _clearRtcConfiguration();
+
+    state = state.copyWith(
+      joinState: RealtimeJoinState.idle,
+      clearSessionId: true,
+      clearSession: true,
+      participants: const <RealtimeParticipant>[],
+      clearPolicy: true,
+      consents: const <RealtimeConsent>[],
+      recordings: const <RealtimeRecording>[],
+      transcripts: const <RealtimeTranscriptJob>[],
+      artifacts: const <RealtimeArtifact>[],
+      infoMessage: infoMessage,
+      clearErrorMessage: true,
+      clearRemoteRenderers: true,
+      clearLocalRenderer: true,
+      isMediaReady: false,
+      isMediaBusy: false,
+      microphoneEnabled: true,
+      cameraEnabled: true,
+      clearMediaError: true,
+      clearIncomingCall: true,
+      clearCallMode: true,
     );
   }
 
@@ -716,6 +733,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'socket:disconnected':
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.disconnected,
+          joinState: RealtimeJoinState.idle,
+          clearSessionId: true,
+          clearSession: true,
+          clearRemoteRenderers: true,
+          clearLocalRenderer: true,
+          clearIncomingCall: true,
+          clearCallMode: true,
+          isMediaReady: false,
           lastSocketEvent: event.name,
         );
         return;
@@ -724,30 +749,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.error,
           errorMessage: event.payload['message']?.toString(),
-          lastSocketEvent: event.name,
-        );
-        return;
-      case 'call.incoming':
-        setIncomingCall(event.payload);
-        state = state.copyWith(lastSocketEvent: event.name);
-        return;
-      case 'call.accepted':
-        state = state.copyWith(
-          clearIncomingCall: true,
-          infoMessage: 'Call accepted.',
-          lastSocketEvent: event.name,
-        );
-        return;
-      case 'call.declined':
-      case 'call.missed':
-      case 'call.ended':
-        state = state.copyWith(
-          clearIncomingCall: true,
-          infoMessage: event.name == 'call.declined'
-              ? 'Call declined.'
-              : event.name == 'call.missed'
-                  ? 'Call missed.'
-                  : 'Call ended.',
           lastSocketEvent: event.name,
         );
         return;
@@ -875,6 +876,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'realtime:removed':
         state = state.copyWith(
           joinState: RealtimeJoinState.removed,
+          clearIncomingCall: true,
+          clearCallMode: true,
+          clearRemoteRenderers: true,
+          clearLocalRenderer: true,
+          isMediaReady: false,
           infoMessage: 'You were removed from this live room.',
           lastSocketEvent: event.name,
         );
