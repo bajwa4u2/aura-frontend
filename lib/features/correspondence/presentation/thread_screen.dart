@@ -27,6 +27,7 @@ import '../../search/search_repository.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
+import '../domain/communication_state.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
@@ -107,6 +108,17 @@ TextAlign _alignForText(String text) {
 }
 
 
+class ThreadStateWrapper extends ConsumerWidget {
+  const ThreadStateWrapper({super.key, required this.threadId});
+
+  final String threadId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ThreadScreen(threadId: threadId);
+  }
+}
+
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -119,6 +131,311 @@ class ThreadScreen extends ConsumerStatefulWidget {
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Timer? _pollTimer;
   StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
+  final TextEditingController _liveMemberSearchController = TextEditingController();
+  final Set<String> _selectedLiveInviteUserIds = <String>{};
+  Timer? _liveMemberSearchDebounce;
+  List<Map<String, dynamic>> _liveMemberSearchResults = const [];
+  bool _liveMemberSearchBusy = false;
+  bool _invitingLiveMembers = false;
+  String? _resolvedThreadLiveSessionId;
+
+
+  void _syncResolvedLiveSession({
+    required Map<String, dynamic> thread,
+    required RealtimeState liveState,
+  }) {
+    final threadSessionId = _extractThreadLiveSessionId(thread);
+    if (threadSessionId.isEmpty) return;
+    if (_resolvedThreadLiveSessionId == threadSessionId) return;
+
+    final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+    final controller = ref.read(realtimeControllerProvider.notifier);
+
+    _resolvedThreadLiveSessionId = threadSessionId;
+
+    if (currentSessionId == threadSessionId &&
+        _threadMatchesLiveState(liveState, thread)) {
+      return;
+    }
+
+    Future.microtask(() async {
+      try {
+        await controller.hydrateSession(threadSessionId);
+      } catch (_) {}
+    });
+  }
+
+  void _queueLiveMemberSearch({
+    required String query,
+    required String currentUserId,
+    required Map<String, dynamic> thread,
+  }) {
+    _liveMemberSearchDebounce?.cancel();
+    _liveMemberSearchDebounce = Timer(const Duration(milliseconds: 250), () {
+      _searchLiveMembers(
+        query: query,
+        currentUserId: currentUserId,
+        thread: thread,
+      );
+    });
+  }
+
+  Future<void> _searchLiveMembers({
+    required String query,
+    required String currentUserId,
+    required Map<String, dynamic> thread,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _liveMemberSearchBusy = true;
+    });
+
+    try {
+      final repo = SearchRepository(ref.read(dioProvider));
+      final result = await repo.search(trimmed, limit: 12);
+      final existingIds = _extractParticipants(thread)
+          .map((participant) => _pickString(participant, const ['id', '_id', 'userId', 'memberId']))
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final filtered = result.users.where((user) {
+        final id = (user['id'] ?? '').toString().trim();
+        if (id.isEmpty) return false;
+        if (id == currentUserId.trim()) return false;
+        if (existingIds.contains(id)) return false;
+        return true;
+      }).toList(growable: false);
+
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = filtered;
+        _liveMemberSearchBusy = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+    }
+  }
+
+  Future<void> _showAddMembersSheet({
+    required Map<String, dynamic> thread,
+    required String currentUserId,
+    required String sessionId,
+  }) async {
+    _liveMemberSearchController.clear();
+    _selectedLiveInviteUserIds.clear();
+    if (mounted) {
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, sheetSetState) {
+            Future<void> sendInvites() async {
+              if (_selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers) return;
+              sheetSetState(() => _invitingLiveMembers = true);
+              final controller = ref.read(realtimeControllerProvider.notifier);
+
+              try {
+                for (final userId in _selectedLiveInviteUserIds) {
+                  await controller.inviteMember(invitedUserId: userId);
+                }
+                if (!mounted) return;
+                _selectedLiveInviteUserIds.clear();
+                _liveMemberSearchController.clear();
+                setState(() {
+                  _liveMemberSearchResults = const [];
+                });
+                if (Navigator.of(sheetContext).canPop()) {
+                  Navigator.of(sheetContext).pop();
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _invitingLiveMembers = false;
+                  });
+                }
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Add members', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Invite one or many members directly into this live conversation.',
+                      style: AuraText.small,
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    TextField(
+                      controller: _liveMemberSearchController,
+                      onChanged: (value) {
+                        _queueLiveMemberSearch(
+                          query: value,
+                          currentUserId: currentUserId,
+                          thread: thread,
+                        );
+                        sheetSetState(() {});
+                      },
+                      decoration: const InputDecoration(
+                        hintText: 'Search members by name or handle',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    if (_liveMemberSearchBusy)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: LinearProgressIndicator(),
+                      )
+                    else if (_liveMemberSearchController.text.trim().isEmpty)
+                      Text('Search to add members directly from this thread.', style: AuraText.small)
+                    else if (_liveMemberSearchResults.isEmpty)
+                      Text('No matching members found.', style: AuraText.small)
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _liveMemberSearchResults.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s8),
+                          itemBuilder: (context, index) {
+                            final user = _liveMemberSearchResults[index];
+                            final userId = (user['id'] ?? '').toString().trim();
+                            final displayName = (user['displayName'] ?? '').toString().trim();
+                            final handle = (user['handle'] ?? '').toString().trim();
+                            final subtitle = (user['bio'] ?? '').toString().trim();
+                            final selected = _selectedLiveInviteUserIds.contains(userId);
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () {
+                                if (userId.isEmpty) return;
+                                if (_selectedLiveInviteUserIds.contains(userId)) {
+                                  _selectedLiveInviteUserIds.remove(userId);
+                                } else {
+                                  _selectedLiveInviteUserIds.add(userId);
+                                }
+                                sheetSetState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: selected ? Colors.black87 : Colors.black12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: selected ? Colors.black.withOpacity(0.04) : Colors.transparent,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Member'),
+                                            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                                          ),
+                                          if (handle.isNotEmpty && displayName.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text('@$handle', style: AuraText.small),
+                                          ],
+                                          if (subtitle.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              subtitle,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AuraText.small,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    Checkbox(
+                                      value: selected,
+                                      onChanged: (_) {
+                                        if (userId.isEmpty) return;
+                                        if (_selectedLiveInviteUserIds.contains(userId)) {
+                                          _selectedLiveInviteUserIds.remove(userId);
+                                        } else {
+                                          _selectedLiveInviteUserIds.add(userId);
+                                        }
+                                        sheetSetState(() {});
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: AuraSpace.s12),
+                    Row(
+                      children: [
+                        Text(
+                          _selectedLiveInviteUserIds.isEmpty
+                              ? 'No one selected'
+                              : '${_selectedLiveInviteUserIds.length} selected',
+                          style: AuraText.small,
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: _invitingLiveMembers
+                              ? null
+                              : () => Navigator.of(sheetContext).maybePop(),
+                          child: const Text('Close'),
+                        ),
+                        const SizedBox(width: AuraSpace.s8),
+                        FilledButton(
+                          onPressed: _selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers
+                              ? null
+                              : sendInvites,
+                          child: Text(_invitingLiveMembers ? 'Sending...' : 'Add members'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -134,25 +451,15 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       await live.joinThread(widget.threadId);
       _liveSubscription = live.events.listen((event) {
         if (!mounted) return;
-        final eventThreadId = _pickString(event.payload, const ['threadId']);
-        final eventSpaceId = _pickString(event.payload, const ['spaceId']);
-        final sessionId = _pickString(event.payload, const ['sessionId', 'id']);
-        final matchesCurrentThread = event.matchesThread(widget.threadId) ||
-            (eventThreadId.isNotEmpty && eventThreadId == widget.threadId);
-
-        if (matchesCurrentThread || event.name.startsWith('invite:') || event.name.startsWith('space:member.')) {
+        if (event.matchesThread(widget.threadId) || event.name.startsWith('invite:') || event.name.startsWith('space:member.')) {
           ref.invalidate(_threadDetailProvider(widget.threadId));
           ref.invalidate(_messagesProvider(widget.threadId));
-        }
 
-        if (matchesCurrentThread && sessionId.isNotEmpty) {
-          unawaited(
-            ref.read(realtimeControllerProvider.notifier).hydrateSession(sessionId),
-          );
-        }
-
-        if (eventSpaceId.isNotEmpty && event.name.startsWith('session:')) {
-          ref.invalidate(_threadDetailProvider(widget.threadId));
+          final sessionId = _pickString(event.payload, const ['sessionId', 'id']);
+          if (sessionId.isNotEmpty) {
+            _resolvedThreadLiveSessionId = sessionId;
+            unawaited(ref.read(realtimeControllerProvider.notifier).hydrateSession(sessionId));
+          }
         }
       });
     });
@@ -161,6 +468,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _liveMemberSearchDebounce?.cancel();
+    _liveMemberSearchController.dispose();
     unawaited(ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId));
     _liveSubscription?.cancel();
     super.dispose();
@@ -213,27 +522,38 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       child: _ErrorBlock(
                         title: 'Could not load thread',
                         body: '$error',
-                        onRetry: () => ref.invalidate(_threadDetailProvider(threadId)),
+                        onRetry: () =>
+                            ref.invalidate(_threadDetailProvider(threadId)),
                       ),
                     ),
                     data: (thread) {
+                      _syncResolvedLiveSession(
+                        thread: thread,
+                        liveState: liveState,
+                      );
+
                       return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _ThreadHeaderCard(
                             thread: thread,
+                            liveState: liveState,
                             onOpenSpace: () {
                               final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                               if (spaceId.isEmpty) return;
                               context.push('/me/correspondence/$spaceId');
                             },
-                            onAddMembers: () async {
-                              await _showAddMembersSheet(
-                                context: context,
-                                thread: thread,
-                                currentUserId: currentUserId,
-                                liveState: liveState,
+                            onInvite: () async {
+                              final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                              if (spaceId.isEmpty) return;
+                              await context.push(
+                                '/invite/create?destinationType=JOIN_SPACE'
+                                '&spaceId=${Uri.encodeComponent(spaceId)}'
+                                '&threadId=${Uri.encodeComponent(threadId)}'
+                                '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
                               );
+                              if (!context.mounted) return;
+                              ref.invalidate(_threadDetailProvider(widget.threadId));
+                              ref.invalidate(_messagesProvider(widget.threadId));
                             },
                             onStartAudio: () async {
                               final controller = ref.read(realtimeControllerProvider.notifier);
@@ -259,18 +579,29 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
                               );
                             },
+                            onJoinLive: () async {
+                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
+                              if (sessionId.isEmpty) return;
+                              final controller = ref.read(realtimeControllerProvider.notifier);
+                              await controller.join(sessionId);
+                            },
+                            onLeaveLive: () async {
+                              await ref.read(realtimeControllerProvider.notifier).leave();
+                            },
+                            onToggleMicrophone: () async {
+                              await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                            },
+                            onToggleCamera: () async {
+                              await ref.read(realtimeControllerProvider.notifier).toggleCamera();
+                            },
                           ),
                           const SizedBox(height: AuraSpace.s12),
-                          _ThreadLiveBanner(
+                          _ThreadAdaptiveLivePanel(
                             thread: thread,
                             liveState: liveState,
                             currentUserId: currentUserId,
                             onJoinLive: () async {
-                              final sessionId = (
-                                liveState.sessionId ??
-                                liveState.session?.id ??
-                                _pickString(liveState.incomingCall ?? const <String, dynamic>{}, const ['sessionId', 'id'])
-                              ).trim();
+                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
                               if (sessionId.isEmpty) return;
                               await ref.read(realtimeControllerProvider.notifier).join(sessionId);
                             },
@@ -284,11 +615,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               await ref.read(realtimeControllerProvider.notifier).toggleCamera();
                             },
                             onAddMembers: () async {
+                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
+                              if (sessionId.isEmpty) return;
                               await _showAddMembersSheet(
-                                context: context,
                                 thread: thread,
                                 currentUserId: currentUserId,
-                                liveState: liveState,
+                                sessionId: sessionId,
                               );
                             },
                           ),
@@ -327,6 +659,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           ),
                         );
                       }
+
+                      final currentUserId = meAsync.maybeWhen(
+                        data: (me) => _pickString(
+                          me,
+                          const ['id', '_id', 'userId'],
+                        ),
+                        orElse: () => '',
+                      );
 
                       return Column(
                         children: [
@@ -376,53 +716,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             },
           ),
         ],
-      ),
-    );
-  }
-
-
-  Future<void> _showAddMembersSheet({
-    required BuildContext context,
-    required Map<String, dynamic> thread,
-    required String currentUserId,
-    required RealtimeState liveState,
-  }) async {
-    final sessionId = (
-      liveState.sessionId ??
-      liveState.session?.id ??
-      _pickString(liveState.incomingCall ?? const <String, dynamic>{}, const ['sessionId', 'id'])
-    ).trim();
-
-    if (sessionId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Start or receive a live session first.')),
-      );
-      return;
-    }
-
-    final threadParticipants = _extractParticipants(thread);
-    final existingIds = <String>{
-      currentUserId,
-      for (final participant in liveState.participants) participant.userId.trim(),
-      for (final participant in threadParticipants)
-        _pickString(participant, const ['id', '_id', 'userId', 'memberId']),
-    }..removeWhere((value) => value.trim().isEmpty);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.84,
-        child: _ThreadAddMembersSheet(
-          sessionId: sessionId,
-          currentUserId: currentUserId,
-          existingUserIds: existingIds,
-          onInvited: () {
-            ref.invalidate(_threadDetailProvider(widget.threadId));
-            ref.invalidate(_messagesProvider(widget.threadId));
-          },
-        ),
       ),
     );
   }
@@ -525,20 +818,268 @@ class _ThreadRouteIconButton extends StatelessWidget {
 }
 
 
-class _ThreadHeaderCard extends StatelessWidget {
-  const _ThreadHeaderCard({
+
+String _resolveThreadLiveSessionId(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final fromThread = _extractThreadLiveSessionId(thread);
+  if (fromThread.isNotEmpty) return fromThread;
+  if (_threadMatchesLiveState(liveState, thread)) {
+    return (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+  }
+  return '';
+}
+
+String _extractThreadLiveSessionId(Map<String, dynamic> thread) {
+  final direct = _pickString(thread, const [
+    'activeSessionId',
+    'liveSessionId',
+    'sessionId',
+    'realtimeSessionId',
+    'currentSessionId',
+  ]);
+  if (direct.isNotEmpty) return direct;
+  return _pickNested(thread, const [
+    ['live', 'sessionId'],
+    ['activeLive', 'sessionId'],
+    ['realtime', 'sessionId'],
+    ['session', 'id'],
+    ['activeSession', 'id'],
+  ]);
+}
+
+bool _threadHasLiveSignal(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  if (_resolveThreadLiveSessionId(thread, liveState).isNotEmpty) return true;
+  final liveFlag = _pickString(thread, const [
+    'isLive',
+    'live',
+    'liveActive',
+    'hasActiveSession',
+    'hasLiveSession',
+  ]).toLowerCase();
+  if (liveFlag == 'true' || liveFlag == '1' || liveFlag == 'yes') return true;
+  return _threadMatchesLiveState(liveState, thread);
+}
+
+String _extractThreadLiveKind(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final direct = _pickString(thread, const [
+    'liveKind',
+    'callKind',
+    'callMode',
+    'sessionKind',
+    'liveMode',
+  ]);
+  final nested = _pickNested(thread, const [
+    ['live', 'kind'],
+    ['activeLive', 'kind'],
+    ['realtime', 'kind'],
+    ['session', 'kind'],
+  ]);
+  final value = (direct.isNotEmpty ? direct : nested).trim().toLowerCase();
+  if (value == 'video') return 'video';
+  if (value == 'audio') return 'audio';
+  if (liveState.isVideoMode) return 'video';
+  return 'audio';
+}
+
+String _extractThreadStartedByUserId(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final direct = _pickString(thread, const [
+    'startedByUserId',
+    'liveStartedByUserId',
+    'callerUserId',
+    'ownerUserId',
+  ]);
+  if (direct.isNotEmpty) return direct;
+  final nested = _pickNested(thread, const [
+    ['live', 'startedByUserId'],
+    ['activeLive', 'startedByUserId'],
+    ['realtime', 'startedByUserId'],
+  ]);
+  if (nested.isNotEmpty) return nested;
+  return (liveState.session?.startedByUserId ?? '').trim();
+}
+
+int _extractThreadJoinedCount(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final joined = liveState.participants.where((p) => p.isPresent).length;
+  if (joined > 0) return joined;
+  return _pickInt(thread, const [
+        'joinedCount',
+        'liveJoinedCount',
+        'participantJoinedCount',
+      ]) ??
+      0;
+}
+
+class _ThreadAdaptiveLivePanel extends StatelessWidget {
+  const _ThreadAdaptiveLivePanel({
     required this.thread,
-    required this.onOpenSpace,
+    required this.liveState,
+    required this.currentUserId,
+    required this.onJoinLive,
+    required this.onLeaveLive,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
     required this.onAddMembers,
-    required this.onStartAudio,
-    required this.onStartVideo,
   });
 
   final Map<String, dynamic> thread;
+  final RealtimeState liveState;
+  final String currentUserId;
+  final Future<void> Function() onJoinLive;
+  final Future<void> Function() onLeaveLive;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onToggleCamera;
+  final Future<void> Function() onAddMembers;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_threadHasLiveSignal(thread, liveState)) return const SizedBox.shrink();
+
+    final sessionId = _resolveThreadLiveSessionId(thread, liveState);
+    if (sessionId.isEmpty) return const SizedBox.shrink();
+
+    final kind = _extractThreadLiveKind(thread, liveState);
+    final startedByUserId = _extractThreadStartedByUserId(thread, liveState);
+    final participants = _extractParticipants(thread);
+    final starter = participants.cast<Map<String, dynamic>?>().firstWhere(
+      (participant) {
+        if (participant == null) return false;
+        final id = _pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+        return id.isNotEmpty && id == startedByUserId;
+      },
+      orElse: () => null,
+    );
+
+    final startedByName = starter == null
+        ? ''
+        : CorrespondenceIdentity.identityLabel(starter);
+    final joinedCount = _extractThreadJoinedCount(thread, liveState);
+    final isJoined = liveState.isJoined && ((liveState.sessionId ?? '').trim() == sessionId || _threadMatchesLiveState(liveState, thread));
+    final isDm = _threadLiveSurfaceType(thread) == 'DM';
+
+    String title;
+    if (isDm && !isJoined && startedByUserId.isNotEmpty && startedByUserId != currentUserId && startedByName.isNotEmpty) {
+      title = '$startedByName is calling';
+    } else if (startedByUserId.isNotEmpty && startedByUserId == currentUserId) {
+      title = 'You started a $kind call';
+    } else if (startedByName.isNotEmpty) {
+      title = '$startedByName started a $kind call';
+    } else {
+      title = 'Active $kind call';
+    }
+
+    final subtitleParts = <String>[
+      isDm ? 'This $kind call belongs to this thread' : 'This live room belongs to this space thread',
+      if (joinedCount > 0) '$joinedCount joined',
+    ];
+    final subtitle = subtitleParts.join(' · ');
+
+    return AuraCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 560;
+              final controls = Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: isJoined ? onAddMembers : null,
+                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                    label: const Text('Add members'),
+                  ),
+                ],
+              );
+
+              final textBlock = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(subtitle, style: AuraText.body),
+                ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    textBlock,
+                    const SizedBox(height: AuraSpace.s12),
+                    controls,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: textBlock),
+                  const SizedBox(width: AuraSpace.s12),
+                  controls,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _ThreadStatusStrip(
+            joinedCount: joinedCount,
+            isJoined: isJoined,
+            isBusy: liveState.isBusy,
+            microphoneEnabled: liveState.microphoneEnabled,
+            cameraEnabled: liveState.cameraEnabled,
+            onJoin: onJoinLive,
+            onLeave: onLeaveLive,
+            onToggleMicrophone: onToggleMicrophone,
+            onToggleCamera: kind == 'video' ? onToggleCamera : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _ThreadHeaderCard extends StatelessWidget {
+  const _ThreadHeaderCard({
+    required this.thread,
+    required this.liveState,
+    required this.onOpenSpace,
+    required this.onInvite,
+    required this.onStartAudio,
+    required this.onStartVideo,
+    required this.onJoinLive,
+    required this.onLeaveLive,
+    required this.onToggleMicrophone,
+    required this.onToggleCamera,
+  });
+
+  final Map<String, dynamic> thread;
+  final RealtimeState liveState;
   final VoidCallback onOpenSpace;
-  final VoidCallback onAddMembers;
+  final VoidCallback onInvite;
   final Future<void> Function() onStartAudio;
   final Future<void> Function() onStartVideo;
+  final Future<void> Function() onJoinLive;
+  final Future<void> Function() onLeaveLive;
+  final Future<void> Function() onToggleMicrophone;
+  final Future<void> Function() onToggleCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -550,11 +1091,10 @@ class _ThreadHeaderCard extends StatelessWidget {
 
     return AuraCard(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 760;
-
-          final identityBlock = Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _IdentityAvatar(
@@ -573,7 +1113,7 @@ class _ThreadHeaderCard extends StatelessWidget {
                       AuraTextBlock(
                         summary,
                         style: AuraText.body,
-                        maxLines: compact ? 3 : 2,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -582,62 +1122,57 @@ class _ThreadHeaderCard extends StatelessWidget {
                       AuraTextBlock(
                         roles,
                         style: AuraText.small.copyWith(color: Colors.black54),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
                 ),
               ),
-            ],
-          );
-
-          final actions = Wrap(
-            alignment: compact ? WrapAlignment.start : WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AuraSpace.s6,
-            runSpacing: AuraSpace.s6,
-            children: [
-              _HeaderIconAction(
-                icon: Icons.call_rounded,
-                onPressed: () => onStartAudio(),
-              ),
-              _HeaderIconAction(
-                icon: Icons.videocam_rounded,
-                onPressed: () => onStartVideo(),
-              ),
-              _HeaderIconAction(
-                icon: Icons.group_add_rounded,
-                onPressed: onAddMembers,
-              ),
-              if (spaceId.isNotEmpty)
-                _HeaderIconAction(
-                  icon: Icons.open_in_new_rounded,
-                  onPressed: onOpenSpace,
-                ),
-            ],
-          );
-
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                identityBlock,
-                const SizedBox(height: AuraSpace.s12),
-                actions,
-              ],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: identityBlock),
               const SizedBox(width: AuraSpace.s12),
-              Flexible(child: Align(alignment: Alignment.topRight, child: actions)),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AuraSpace.s6,
+                    runSpacing: AuraSpace.s6,
+                    children: [
+                      _HeaderIconAction(
+                        icon: Icons.call_rounded,
+                        onPressed: () => onStartAudio(),
+                      ),
+                      _HeaderIconAction(
+                        icon: Icons.videocam_rounded,
+                        onPressed: () => onStartVideo(),
+                      ),
+                      if (spaceId.isNotEmpty)
+                        _HeaderIconAction(
+                          icon: Icons.group_add_rounded,
+                          onPressed: onInvite,
+                        ),
+                      if (spaceId.isNotEmpty)
+                        _HeaderIconAction(
+                          icon: Icons.open_in_new_rounded,
+                          onPressed: onOpenSpace,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _ThreadLiveDock(
+            thread: thread,
+            liveState: liveState,
+            onJoinLive: onJoinLive,
+            onLeaveLive: onLeaveLive,
+            onToggleMicrophone: onToggleMicrophone,
+            onToggleCamera: onToggleCamera,
+          ),
+        ],
       ),
     );
   }
@@ -734,169 +1269,74 @@ bool _threadMatchesLiveState(RealtimeState liveState, Map<String, dynamic> threa
       (session.surfaceId ?? '').trim() == expectedId;
 }
 
-
-class _ThreadLiveBanner extends StatelessWidget {
-  const _ThreadLiveBanner({
+class _ThreadLiveDock extends StatelessWidget {
+  const _ThreadLiveDock({
     required this.thread,
     required this.liveState,
-    required this.currentUserId,
     required this.onJoinLive,
     required this.onLeaveLive,
     required this.onToggleMicrophone,
     required this.onToggleCamera,
-    required this.onAddMembers,
   });
 
   final Map<String, dynamic> thread;
   final RealtimeState liveState;
-  final String currentUserId;
   final Future<void> Function() onJoinLive;
   final Future<void> Function() onLeaveLive;
   final Future<void> Function() onToggleMicrophone;
   final Future<void> Function() onToggleCamera;
-  final Future<void> Function() onAddMembers;
 
   @override
   Widget build(BuildContext context) {
-    final belongsHere =
-        _threadMatchesLiveState(liveState, thread) ||
-        _incomingCallMatchesThread(liveState, thread);
-    if (!belongsHere) return const SizedBox.shrink();
-
-    final sessionId = (
-      liveState.sessionId ??
-      liveState.session?.id ??
-      _pickString(liveState.incomingCall ?? const <String, dynamic>{}, const ['sessionId', 'id'])
-    ).trim();
-    final hasLive = sessionId.isNotEmpty;
+    final belongsHere = _threadMatchesLiveState(liveState, thread);
+    final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+    final hasLive = belongsHere && sessionId.isNotEmpty;
+    if (!hasLive) return const SizedBox.shrink();
 
     final joinedCount = liveState.participants.where((p) => p.isPresent).length;
-    final listedCount = liveState.participants.length;
-    final waitingCount = listedCount > joinedCount ? listedCount - joinedCount : 0;
-
-    final hasVideoStage = liveState.isJoined &&
-        (liveState.isVideoMode ||
-            (!liveState.isAudioMode &&
-                (liveState.localRenderer != null ||
-                    liveState.remoteRenderers.isNotEmpty ||
-                    liveState.participants.any((p) => p.videoOn || p.screenOn))));
+    final hasVideoStage = liveState.isJoined && (liveState.isVideoMode ||
+        (!liveState.isAudioMode && (liveState.localRenderer != null ||
+            liveState.remoteRenderers.isNotEmpty ||
+            liveState.participants.any((p) => p.videoOn || p.screenOn))));
     final hasAudioState = liveState.isJoined && !hasVideoStage;
 
-    final headline = _threadLiveHeadline(
-      thread: thread,
-      liveState: liveState,
-      currentUserId: currentUserId,
-    );
-    final supportingLine = _threadLiveSupportingLine(
-      thread: thread,
-      liveState: liveState,
-      joinedCount: joinedCount,
-      waitingCount: waitingCount,
-    );
-
-    return AuraCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 760;
-
-              final identity = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    headline,
-                    style: AuraText.title.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  if (supportingLine.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s4),
-                    AuraTextBlock(
-                      supportingLine,
-                      style: AuraText.small.copyWith(color: Colors.black54),
-                      maxLines: compact ? 3 : 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              );
-
-              final quickActions = Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: [
-                  if (hasLive && !liveState.isJoined)
-                    FilledButton.tonal(
-                      onPressed: liveState.isBusy ? null : onJoinLive,
-                      child: const Text('Join'),
-                    ),
-                  if (hasLive)
-                    OutlinedButton.icon(
-                      onPressed: onAddMembers,
-                      icon: const Icon(Icons.group_add_rounded, size: 16),
-                      label: const Text('Add members'),
-                    ),
-                ],
-              );
-
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    identity,
-                    const SizedBox(height: AuraSpace.s12),
-                    quickActions,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: identity),
-                  const SizedBox(width: AuraSpace.s12),
-                  quickActions,
-                ],
-              );
-            },
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ThreadStatusStrip(
+          joinedCount: joinedCount,
+          isJoined: liveState.isJoined,
+          isBusy: liveState.isBusy,
+          microphoneEnabled: liveState.microphoneEnabled,
+          cameraEnabled: liveState.cameraEnabled,
+          onJoin: onJoinLive,
+          onLeave: onLeaveLive,
+          onToggleMicrophone: onToggleMicrophone,
+          onToggleCamera: hasVideoStage ? onToggleCamera : null,
+        ),
+        if (hasAudioState) ...[
           const SizedBox(height: AuraSpace.s12),
-          _ThreadStatusStrip(
-            joinedCount: joinedCount,
-            isJoined: liveState.isJoined,
-            isBusy: liveState.isBusy,
+          _ThreadAudioStage(
+            participants: liveState.participants,
+            microphoneEnabled: liveState.microphoneEnabled,
+            onToggleMicrophone: onToggleMicrophone,
+            onLeave: onLeaveLive,
+          ),
+        ],
+        if (hasVideoStage) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _ThreadVideoStage(
+            localRenderer: liveState.localRenderer,
+            remoteRenderers: liveState.remoteRenderers,
+            participants: liveState.participants,
             microphoneEnabled: liveState.microphoneEnabled,
             cameraEnabled: liveState.cameraEnabled,
-            onJoin: onJoinLive,
-            onLeave: onLeaveLive,
             onToggleMicrophone: onToggleMicrophone,
-            onToggleCamera: hasVideoStage ? onToggleCamera : null,
+            onToggleCamera: onToggleCamera,
+            onLeave: onLeaveLive,
           ),
-          if (hasAudioState) ...[
-            const SizedBox(height: AuraSpace.s12),
-            _ThreadAudioStage(
-              participants: liveState.participants,
-              microphoneEnabled: liveState.microphoneEnabled,
-              onToggleMicrophone: onToggleMicrophone,
-              onLeave: onLeaveLive,
-            ),
-          ],
-          if (hasVideoStage) ...[
-            const SizedBox(height: AuraSpace.s12),
-            _ThreadVideoStage(
-              localRenderer: liveState.localRenderer,
-              remoteRenderers: liveState.remoteRenderers,
-              participants: liveState.participants,
-              microphoneEnabled: liveState.microphoneEnabled,
-              cameraEnabled: liveState.cameraEnabled,
-              onToggleMicrophone: onToggleMicrophone,
-              onToggleCamera: onToggleCamera,
-              onLeave: onLeaveLive,
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }
@@ -1201,342 +1641,6 @@ class _ThreadVideoTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-
-bool _incomingCallMatchesThread(RealtimeState liveState, Map<String, dynamic> thread) {
-  final incoming = liveState.incomingCall;
-  if (incoming == null || incoming.isEmpty) return false;
-
-  final incomingThreadId = _pickString(incoming, const ['threadId']);
-  final expectedThreadId = _pickString(thread, const ['id', 'threadId']);
-  if (incomingThreadId.isNotEmpty && incomingThreadId == expectedThreadId) {
-    return true;
-  }
-
-  final incomingSpaceId = _pickString(incoming, const ['spaceId']);
-  final expectedSpaceId = _pickString(thread, const ['spaceId', 'space_id']);
-  return incomingSpaceId.isNotEmpty &&
-      expectedSpaceId.isNotEmpty &&
-      incomingSpaceId == expectedSpaceId;
-}
-
-String _threadParticipantNameByUserId(Map<String, dynamic> thread, String userId) {
-  final clean = userId.trim();
-  if (clean.isEmpty) return '';
-  for (final participant in _extractParticipants(thread)) {
-    final candidate = _pickString(
-      participant,
-      const ['id', '_id', 'userId', 'memberId'],
-    );
-    if (candidate == clean) {
-      return _identityLabel(participant);
-    }
-  }
-  return '';
-}
-
-String _threadLiveModeLabel(RealtimeState liveState) {
-  if (liveState.isVideoMode) return 'video call';
-  if (liveState.isAudioMode) return 'audio call';
-  return 'live session';
-}
-
-String _threadLiveStarterLabel(Map<String, dynamic> thread, RealtimeState liveState) {
-  final starterId = (liveState.session?.startedByUserId ?? '').trim();
-  if (starterId.isNotEmpty) {
-    final resolved = _threadParticipantNameByUserId(thread, starterId);
-    if (resolved.isNotEmpty) return resolved;
-  }
-
-  for (final participant in liveState.participants) {
-    if (participant.isHost) {
-      final resolved = _threadParticipantNameByUserId(thread, participant.userId);
-      if (resolved.isNotEmpty) return resolved;
-    }
-  }
-
-  return 'Someone';
-}
-
-String _threadLiveHeadline({
-  required Map<String, dynamic> thread,
-  required RealtimeState liveState,
-  required String currentUserId,
-}) {
-  final mode = _threadLiveModeLabel(liveState);
-  final starterId = (liveState.session?.startedByUserId ?? '').trim();
-  final starterLabel = _threadLiveStarterLabel(thread, liveState);
-  final isMine = starterId.isNotEmpty && starterId == currentUserId.trim();
-
-  if (liveState.hasIncomingCall && !liveState.isJoined) {
-    return '$starterLabel is calling';
-  }
-
-  if (isMine) {
-    return 'You started a $mode';
-  }
-
-  if (liveState.isJoined) {
-    return '$starterLabel is live here';
-  }
-
-  return '$starterLabel started a $mode';
-}
-
-String _threadLiveSupportingLine({
-  required Map<String, dynamic> thread,
-  required RealtimeState liveState,
-  required int joinedCount,
-  required int waitingCount,
-}) {
-  final mode = _threadLiveModeLabel(liveState);
-  final parts = <String>[
-    'This $mode belongs to this thread',
-    if (joinedCount > 0) '$joinedCount joined',
-    if (waitingCount > 0) '$waitingCount not in yet',
-  ];
-
-  final others = _extractParticipants(thread)
-      .map((p) => _identityLabel(p))
-      .where((e) => e.isNotEmpty)
-      .take(3)
-      .toList(growable: false);
-
-  if (others.isNotEmpty) {
-    parts.add(others.join(' · '));
-  }
-
-  return parts.join(' · ');
-}
-
-class _ThreadAddMembersSheet extends ConsumerStatefulWidget {
-  const _ThreadAddMembersSheet({
-    required this.sessionId,
-    required this.currentUserId,
-    required this.existingUserIds,
-    required this.onInvited,
-  });
-
-  final String sessionId;
-  final String currentUserId;
-  final Set<String> existingUserIds;
-  final VoidCallback onInvited;
-
-  @override
-  ConsumerState<_ThreadAddMembersSheet> createState() => _ThreadAddMembersSheetState();
-}
-
-class _ThreadAddMembersSheetState extends ConsumerState<_ThreadAddMembersSheet> {
-  final TextEditingController _searchController = TextEditingController();
-  final Set<String> _selectedIds = <String>{};
-  List<Map<String, dynamic>> _results = const [];
-  bool _searching = false;
-  bool _inviting = false;
-  Timer? _debounce;
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
-      _search(value);
-    });
-  }
-
-  Future<void> _search(String raw) async {
-    final query = raw.trim();
-    if (query.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _results = const [];
-        _searching = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _searching = true;
-    });
-
-    try {
-      final repo = SearchRepository(ref.read(dioProvider));
-      final result = await repo.search(query, limit: 12);
-      final filtered = result.users.where((user) {
-        final id = (user['id'] ?? '').toString().trim();
-        if (id.isEmpty) return false;
-        if (id == widget.currentUserId.trim()) return false;
-        if (widget.existingUserIds.contains(id)) return false;
-        return true;
-      }).toList();
-
-      if (!mounted) return;
-      setState(() {
-        _results = filtered;
-        _searching = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _results = const [];
-        _searching = false;
-      });
-    }
-  }
-
-  Future<void> _inviteSelected() async {
-    if (_selectedIds.isEmpty || _inviting) return;
-
-    setState(() {
-      _inviting = true;
-    });
-
-    try {
-      final controller = ref.read(realtimeControllerProvider.notifier);
-      for (final userId in _selectedIds) {
-        await controller.inviteMember(invitedUserId: userId);
-      }
-
-      if (!mounted) return;
-      widget.onInvited();
-      Navigator.of(context).pop();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _inviting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not invite selected members.')),
-      );
-      return;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          8,
-          16,
-          16 + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Add members', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              'Search Aura members and add one or many directly to this live thread.',
-              style: AuraText.small.copyWith(color: Colors.black54),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: const InputDecoration(
-                hintText: 'Search by name, handle, or bio',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            if (_searching)
-              const LinearProgressIndicator()
-            else if (_searchController.text.trim().isEmpty)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'Start typing to find members.',
-                    style: AuraText.small,
-                  ),
-                ),
-              )
-            else if (_results.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'No matching members found.',
-                    style: AuraText.small,
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: ListView.separated(
-                  itemCount: _results.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final user = _results[index];
-                    final userId = (user['id'] ?? '').toString().trim();
-                    final displayName = (user['displayName'] ?? user['name'] ?? '').toString().trim();
-                    final handle = (user['handle'] ?? '').toString().trim();
-                    final bio = (user['bio'] ?? '').toString().trim();
-                    final selected = _selectedIds.contains(userId);
-
-                    return CheckboxListTile(
-                      value: selected,
-                      onChanged: (_) {
-                        setState(() {
-                          if (selected) {
-                            _selectedIds.remove(userId);
-                          } else {
-                            _selectedIds.add(userId);
-                          }
-                        });
-                      },
-                      title: Text(
-                        displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Member'),
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      subtitle: Text(
-                        [
-                          if (handle.isNotEmpty && displayName.isNotEmpty) '@$handle',
-                          if (bio.isNotEmpty) bio,
-                        ].join(' · '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.small,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: AuraSpace.s12),
-            Row(
-              children: [
-                Text(
-                  _selectedIds.isEmpty
-                      ? 'No one selected'
-                      : '${_selectedIds.length} selected',
-                  style: AuraText.small.copyWith(color: Colors.black54),
-                ),
-                const Spacer(),
-                OutlinedButton(
-                  onPressed: _inviting ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: AuraSpace.s8),
-                FilledButton(
-                  onPressed: _selectedIds.isEmpty || _inviting ? null : _inviteSelected,
-                  child: Text(_inviting ? 'Inviting...' : 'Add selected'),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -2683,6 +2787,304 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
   late final TextEditingController _controller;
   bool _saving = false;
   String? _errorText;
+
+
+  void _syncResolvedLiveSession({
+    required Map<String, dynamic> thread,
+    required RealtimeState liveState,
+  }) {
+    final threadSessionId = _extractThreadLiveSessionId(thread);
+    if (threadSessionId.isEmpty) return;
+    if (_resolvedThreadLiveSessionId == threadSessionId) return;
+
+    final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+    final controller = ref.read(realtimeControllerProvider.notifier);
+
+    _resolvedThreadLiveSessionId = threadSessionId;
+
+    if (currentSessionId == threadSessionId &&
+        _threadMatchesLiveState(liveState, thread)) {
+      return;
+    }
+
+    Future.microtask(() async {
+      try {
+        await controller.hydrateSession(threadSessionId);
+      } catch (_) {}
+    });
+  }
+
+  void _queueLiveMemberSearch({
+    required String query,
+    required String currentUserId,
+    required Map<String, dynamic> thread,
+  }) {
+    _liveMemberSearchDebounce?.cancel();
+    _liveMemberSearchDebounce = Timer(const Duration(milliseconds: 250), () {
+      _searchLiveMembers(
+        query: query,
+        currentUserId: currentUserId,
+        thread: thread,
+      );
+    });
+  }
+
+  Future<void> _searchLiveMembers({
+    required String query,
+    required String currentUserId,
+    required Map<String, dynamic> thread,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _liveMemberSearchBusy = true;
+    });
+
+    try {
+      final repo = SearchRepository(ref.read(dioProvider));
+      final result = await repo.search(trimmed, limit: 12);
+      final existingIds = _extractParticipants(thread)
+          .map((participant) => _pickString(participant, const ['id', '_id', 'userId', 'memberId']))
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final filtered = result.users.where((user) {
+        final id = (user['id'] ?? '').toString().trim();
+        if (id.isEmpty) return false;
+        if (id == currentUserId.trim()) return false;
+        if (existingIds.contains(id)) return false;
+        return true;
+      }).toList(growable: false);
+
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = filtered;
+        _liveMemberSearchBusy = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+    }
+  }
+
+  Future<void> _showAddMembersSheet({
+    required Map<String, dynamic> thread,
+    required String currentUserId,
+    required String sessionId,
+  }) async {
+    _liveMemberSearchController.clear();
+    _selectedLiveInviteUserIds.clear();
+    if (mounted) {
+      setState(() {
+        _liveMemberSearchResults = const [];
+        _liveMemberSearchBusy = false;
+      });
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, sheetSetState) {
+            Future<void> sendInvites() async {
+              if (_selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers) return;
+              sheetSetState(() => _invitingLiveMembers = true);
+              final controller = ref.read(realtimeControllerProvider.notifier);
+
+              try {
+                for (final userId in _selectedLiveInviteUserIds) {
+                  await controller.inviteMember(invitedUserId: userId);
+                }
+                if (!mounted) return;
+                _selectedLiveInviteUserIds.clear();
+                _liveMemberSearchController.clear();
+                setState(() {
+                  _liveMemberSearchResults = const [];
+                });
+                if (Navigator.of(sheetContext).canPop()) {
+                  Navigator.of(sheetContext).pop();
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _invitingLiveMembers = false;
+                  });
+                }
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Add members', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      'Invite one or many members directly into this live conversation.',
+                      style: AuraText.small,
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    TextField(
+                      controller: _liveMemberSearchController,
+                      onChanged: (value) {
+                        _queueLiveMemberSearch(
+                          query: value,
+                          currentUserId: currentUserId,
+                          thread: thread,
+                        );
+                        sheetSetState(() {});
+                      },
+                      decoration: const InputDecoration(
+                        hintText: 'Search members by name or handle',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    if (_liveMemberSearchBusy)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: LinearProgressIndicator(),
+                      )
+                    else if (_liveMemberSearchController.text.trim().isEmpty)
+                      Text('Search to add members directly from this thread.', style: AuraText.small)
+                    else if (_liveMemberSearchResults.isEmpty)
+                      Text('No matching members found.', style: AuraText.small)
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _liveMemberSearchResults.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s8),
+                          itemBuilder: (context, index) {
+                            final user = _liveMemberSearchResults[index];
+                            final userId = (user['id'] ?? '').toString().trim();
+                            final displayName = (user['displayName'] ?? '').toString().trim();
+                            final handle = (user['handle'] ?? '').toString().trim();
+                            final subtitle = (user['bio'] ?? '').toString().trim();
+                            final selected = _selectedLiveInviteUserIds.contains(userId);
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () {
+                                if (userId.isEmpty) return;
+                                if (_selectedLiveInviteUserIds.contains(userId)) {
+                                  _selectedLiveInviteUserIds.remove(userId);
+                                } else {
+                                  _selectedLiveInviteUserIds.add(userId);
+                                }
+                                sheetSetState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: selected ? Colors.black87 : Colors.black12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: selected ? Colors.black.withOpacity(0.04) : Colors.transparent,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Member'),
+                                            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                                          ),
+                                          if (handle.isNotEmpty && displayName.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text('@$handle', style: AuraText.small),
+                                          ],
+                                          if (subtitle.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              subtitle,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AuraText.small,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    Checkbox(
+                                      value: selected,
+                                      onChanged: (_) {
+                                        if (userId.isEmpty) return;
+                                        if (_selectedLiveInviteUserIds.contains(userId)) {
+                                          _selectedLiveInviteUserIds.remove(userId);
+                                        } else {
+                                          _selectedLiveInviteUserIds.add(userId);
+                                        }
+                                        sheetSetState(() {});
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: AuraSpace.s12),
+                    Row(
+                      children: [
+                        Text(
+                          _selectedLiveInviteUserIds.isEmpty
+                              ? 'No one selected'
+                              : '${_selectedLiveInviteUserIds.length} selected',
+                          style: AuraText.small,
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: _invitingLiveMembers
+                              ? null
+                              : () => Navigator.of(sheetContext).maybePop(),
+                          child: const Text('Close'),
+                        ),
+                        const SizedBox(width: AuraSpace.s8),
+                        FilledButton(
+                          onPressed: _selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers
+                              ? null
+                              : sendInvites,
+                          child: Text(_invitingLiveMembers ? 'Sending...' : 'Add members'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
