@@ -284,7 +284,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       artifacts: const <RealtimeArtifact>[],
       infoMessage: 'You left the live room.',
       clearRemoteRenderers: true,
+      clearLocalRenderer: true,
       isMediaReady: false,
+      isMediaBusy: false,
+      microphoneEnabled: false,
+      cameraEnabled: false,
+      clearIncomingCall: true,
+      clearCallMode: true,
     );
   }
 
@@ -601,25 +607,30 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         refreshTurnCredentials: refreshTurnCredentials,
       );
 
+      final wantsAudio = state.policy?.audioAllowed ?? true;
+      final wantsVideo = state.isVideoMode && (state.policy?.videoAllowed ?? true);
+
       if (!state.isMediaReady) {
         await _mediaService.ensureLocalMedia(
-          audio: state.policy?.audioAllowed ?? true,
-          video: state.policy?.videoAllowed ?? true,
+          audio: wantsAudio,
+          video: wantsVideo,
         );
       }
 
       await _socketService.emitAck('session:audio.set', <String, dynamic>{
         'sessionId': sessionId,
-        'enabled': state.policy?.audioAllowed ?? true,
+        'enabled': wantsAudio,
       });
       await _socketService.emitAck('session:video.set', <String, dynamic>{
         'sessionId': sessionId,
-        'enabled': state.policy?.videoAllowed ?? true,
+        'enabled': wantsVideo,
       });
 
       state = state.copyWith(
         isMediaBusy: false,
         isMediaReady: true,
+        microphoneEnabled: wantsAudio,
+        cameraEnabled: wantsVideo,
       );
 
       _rtcConfiguration = configuration;
@@ -741,6 +752,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           clearIncomingCall: true,
           clearCallMode: true,
           isMediaReady: false,
+          isMediaBusy: false,
+          microphoneEnabled: false,
+          cameraEnabled: false,
           lastSocketEvent: event.name,
         );
         return;
@@ -881,6 +895,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           clearRemoteRenderers: true,
           clearLocalRenderer: true,
           isMediaReady: false,
+          isMediaBusy: false,
+          microphoneEnabled: false,
+          cameraEnabled: false,
           infoMessage: 'You were removed from this live room.',
           lastSocketEvent: event.name,
         );
@@ -935,6 +952,41 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (text.contains('reject')) return RealtimeJoinState.rejected;
     return RealtimeJoinState.failed;
   }
+
+  bool managesCorrespondenceSurface({
+    required String threadId,
+    String? spaceId,
+  }) {
+    final session = state.session;
+    if (session == null) return false;
+    final surfaceType = session.surfaceType.name.trim().toLowerCase();
+    final surfaceId = (session.surfaceId ?? '').trim();
+    final normalizedThreadId = threadId.trim();
+    final normalizedSpaceId = (spaceId ?? '').trim();
+
+    if (surfaceType == 'dm') {
+      return normalizedThreadId.isNotEmpty && surfaceId == normalizedThreadId;
+    }
+
+    if (surfaceType == 'space') {
+      if (normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId) return true;
+      if (normalizedThreadId.isNotEmpty && surfaceId == normalizedThreadId) return true;
+    }
+
+    return false;
+  }
+
+  String? activeSessionIdForCorrespondence({
+    required String threadId,
+    String? spaceId,
+  }) {
+    if (!managesCorrespondenceSurface(threadId: threadId, spaceId: spaceId)) {
+      return null;
+    }
+    final value = (state.sessionId ?? state.session?.id ?? '').trim();
+    return value.isEmpty ? null : value;
+  }
+
 
   @override
   void dispose() {

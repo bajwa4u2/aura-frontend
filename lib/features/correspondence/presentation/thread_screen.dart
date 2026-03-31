@@ -23,10 +23,10 @@ import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
-import '../../search/search_repository.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
+import '../domain/communication_state.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
@@ -107,6 +107,100 @@ TextAlign _alignForText(String text) {
 }
 
 
+class ThreadStateWrapper extends ConsumerWidget {
+  const ThreadStateWrapper({super.key, required this.threadId});
+
+  final String threadId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const state = CommunicationState.idle;
+
+    switch (state) {
+      case CommunicationState.idle:
+        return ThreadScreen(threadId: threadId);
+      case CommunicationState.incoming:
+        return const _IncomingCallStateView();
+      case CommunicationState.joining:
+        return const _JoiningStateView();
+      case CommunicationState.audio:
+        return const _AudioCallStateView();
+      case CommunicationState.video:
+        return const _VideoCallStateView();
+      case CommunicationState.group:
+        return const _GroupLiveStateView();
+      case CommunicationState.ending:
+        return const _EndingStateView();
+    }
+  }
+}
+
+class _IncomingCallStateView extends StatelessWidget {
+  const _IncomingCallStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Incoming call')),
+    );
+  }
+}
+
+class _JoiningStateView extends StatelessWidget {
+  const _JoiningStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _AudioCallStateView extends StatelessWidget {
+  const _AudioCallStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Audio call')),
+    );
+  }
+}
+
+class _VideoCallStateView extends StatelessWidget {
+  const _VideoCallStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Video call')),
+    );
+  }
+}
+
+class _GroupLiveStateView extends StatelessWidget {
+  const _GroupLiveStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Group live')),
+    );
+  }
+}
+
+class _EndingStateView extends StatelessWidget {
+  const _EndingStateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Ending session')),
+    );
+  }
+}
+
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -119,311 +213,6 @@ class ThreadScreen extends ConsumerStatefulWidget {
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Timer? _pollTimer;
   StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
-  final TextEditingController _liveMemberSearchController = TextEditingController();
-  final Set<String> _selectedLiveInviteUserIds = <String>{};
-  Timer? _liveMemberSearchDebounce;
-  List<Map<String, dynamic>> _liveMemberSearchResults = const [];
-  bool _liveMemberSearchBusy = false;
-  bool _invitingLiveMembers = false;
-  String? _resolvedThreadLiveSessionId;
-
-
-  void _syncResolvedLiveSession({
-    required Map<String, dynamic> thread,
-    required RealtimeState liveState,
-  }) {
-    final threadSessionId = _extractThreadLiveSessionId(thread);
-    if (threadSessionId.isEmpty) return;
-    if (_resolvedThreadLiveSessionId == threadSessionId) return;
-
-    final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
-    final controller = ref.read(realtimeControllerProvider.notifier);
-
-    _resolvedThreadLiveSessionId = threadSessionId;
-
-    if (currentSessionId == threadSessionId &&
-        _threadMatchesLiveState(liveState, thread)) {
-      return;
-    }
-
-    Future.microtask(() async {
-      try {
-        await controller.hydrateSession(threadSessionId);
-      } catch (_) {}
-    });
-  }
-
-  void _queueLiveMemberSearch({
-    required String query,
-    required String currentUserId,
-    required Map<String, dynamic> thread,
-  }) {
-    _liveMemberSearchDebounce?.cancel();
-    _liveMemberSearchDebounce = Timer(const Duration(milliseconds: 250), () {
-      _searchLiveMembers(
-        query: query,
-        currentUserId: currentUserId,
-        thread: thread,
-      );
-    });
-  }
-
-  Future<void> _searchLiveMembers({
-    required String query,
-    required String currentUserId,
-    required Map<String, dynamic> thread,
-  }) async {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _liveMemberSearchResults = const [];
-        _liveMemberSearchBusy = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _liveMemberSearchBusy = true;
-    });
-
-    try {
-      final repo = SearchRepository(ref.read(dioProvider));
-      final result = await repo.search(trimmed, limit: 12);
-      final existingIds = _extractParticipants(thread)
-          .map((participant) => _pickString(participant, const ['id', '_id', 'userId', 'memberId']))
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final filtered = result.users.where((user) {
-        final id = (user['id'] ?? '').toString().trim();
-        if (id.isEmpty) return false;
-        if (id == currentUserId.trim()) return false;
-        if (existingIds.contains(id)) return false;
-        return true;
-      }).toList(growable: false);
-
-      if (!mounted) return;
-      setState(() {
-        _liveMemberSearchResults = filtered;
-        _liveMemberSearchBusy = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _liveMemberSearchResults = const [];
-        _liveMemberSearchBusy = false;
-      });
-    }
-  }
-
-  Future<void> _showAddMembersSheet({
-    required Map<String, dynamic> thread,
-    required String currentUserId,
-    required String sessionId,
-  }) async {
-    _liveMemberSearchController.clear();
-    _selectedLiveInviteUserIds.clear();
-    if (mounted) {
-      setState(() {
-        _liveMemberSearchResults = const [];
-        _liveMemberSearchBusy = false;
-      });
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, sheetSetState) {
-            Future<void> sendInvites() async {
-              if (_selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers) return;
-              sheetSetState(() => _invitingLiveMembers = true);
-              final controller = ref.read(realtimeControllerProvider.notifier);
-
-              try {
-                for (final userId in _selectedLiveInviteUserIds) {
-                  await controller.inviteMember(invitedUserId: userId);
-                }
-                if (!mounted) return;
-                _selectedLiveInviteUserIds.clear();
-                _liveMemberSearchController.clear();
-                setState(() {
-                  _liveMemberSearchResults = const [];
-                });
-                if (Navigator.of(sheetContext).canPop()) {
-                  Navigator.of(sheetContext).pop();
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _invitingLiveMembers = false;
-                  });
-                }
-              }
-            }
-
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 8,
-                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Add members', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(
-                      'Invite one or many members directly into this live conversation.',
-                      style: AuraText.small,
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    TextField(
-                      controller: _liveMemberSearchController,
-                      onChanged: (value) {
-                        _queueLiveMemberSearch(
-                          query: value,
-                          currentUserId: currentUserId,
-                          thread: thread,
-                        );
-                        sheetSetState(() {});
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Search members by name or handle',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    if (_liveMemberSearchBusy)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: LinearProgressIndicator(),
-                      )
-                    else if (_liveMemberSearchController.text.trim().isEmpty)
-                      Text('Search to add members directly from this thread.', style: AuraText.small)
-                    else if (_liveMemberSearchResults.isEmpty)
-                      Text('No matching members found.', style: AuraText.small)
-                    else
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 320),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: _liveMemberSearchResults.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s8),
-                          itemBuilder: (context, index) {
-                            final user = _liveMemberSearchResults[index];
-                            final userId = (user['id'] ?? '').toString().trim();
-                            final displayName = (user['displayName'] ?? '').toString().trim();
-                            final handle = (user['handle'] ?? '').toString().trim();
-                            final subtitle = (user['bio'] ?? '').toString().trim();
-                            final selected = _selectedLiveInviteUserIds.contains(userId);
-
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: () {
-                                if (userId.isEmpty) return;
-                                if (_selectedLiveInviteUserIds.contains(userId)) {
-                                  _selectedLiveInviteUserIds.remove(userId);
-                                } else {
-                                  _selectedLiveInviteUserIds.add(userId);
-                                }
-                                sheetSetState(() {});
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: selected ? Colors.black87 : Colors.black12,
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: selected ? Colors.black.withOpacity(0.04) : Colors.transparent,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Member'),
-                                            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                                          ),
-                                          if (handle.isNotEmpty && displayName.isNotEmpty) ...[
-                                            const SizedBox(height: 4),
-                                            Text('@$handle', style: AuraText.small),
-                                          ],
-                                          if (subtitle.isNotEmpty) ...[
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              subtitle,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: AuraText.small,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                    Checkbox(
-                                      value: selected,
-                                      onChanged: (_) {
-                                        if (userId.isEmpty) return;
-                                        if (_selectedLiveInviteUserIds.contains(userId)) {
-                                          _selectedLiveInviteUserIds.remove(userId);
-                                        } else {
-                                          _selectedLiveInviteUserIds.add(userId);
-                                        }
-                                        sheetSetState(() {});
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: AuraSpace.s12),
-                    Row(
-                      children: [
-                        Text(
-                          _selectedLiveInviteUserIds.isEmpty
-                              ? 'No one selected'
-                              : '${_selectedLiveInviteUserIds.length} selected',
-                          style: AuraText.small,
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: _invitingLiveMembers
-                              ? null
-                              : () => Navigator.of(sheetContext).maybePop(),
-                          child: const Text('Close'),
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                        FilledButton(
-                          onPressed: _selectedLiveInviteUserIds.isEmpty || _invitingLiveMembers
-                              ? null
-                              : sendInvites,
-                          child: Text(_invitingLiveMembers ? 'Sending...' : 'Add members'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
   @override
   void initState() {
@@ -442,12 +231,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         if (event.matchesThread(widget.threadId) || event.name.startsWith('invite:') || event.name.startsWith('space:member.')) {
           ref.invalidate(_threadDetailProvider(widget.threadId));
           ref.invalidate(_messagesProvider(widget.threadId));
-
-          final sessionId = _pickString(event.payload, const ['sessionId', 'id']);
-          if (sessionId.isNotEmpty) {
-            _resolvedThreadLiveSessionId = sessionId;
-            unawaited(ref.read(realtimeControllerProvider.notifier).hydrateSession(sessionId));
-          }
         }
       });
     });
@@ -456,8 +239,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
-    _liveMemberSearchDebounce?.cancel();
-    _liveMemberSearchController.dispose();
     unawaited(ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId));
     _liveSubscription?.cancel();
     super.dispose();
@@ -473,10 +254,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final messagesAsync = ref.watch(_messagesProvider(threadId));
     final meAsync = ref.watch(_currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
-    final currentUserId = meAsync.maybeWhen(
-      data: (me) => _pickString(me, const ['id', '_id', 'userId']),
-      orElse: () => '',
-    );
 
     return AuraScaffold(
       title: threadAsync.maybeWhen(
@@ -514,107 +291,67 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             ref.invalidate(_threadDetailProvider(threadId)),
                       ),
                     ),
-                    data: (thread) {
-                      _syncResolvedLiveSession(
-                        thread: thread,
-                        liveState: liveState,
-                      );
-
-                      return Column(
-                        children: [
-                          _ThreadHeaderCard(
-                            thread: thread,
-                            liveState: liveState,
-                            onOpenSpace: () {
-                              final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-                              if (spaceId.isEmpty) return;
-                              context.push('/me/correspondence/$spaceId');
-                            },
-                            onInvite: () async {
-                              final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-                              if (spaceId.isEmpty) return;
-                              await context.push(
-                                '/invite/create?destinationType=JOIN_SPACE'
-                                '&spaceId=${Uri.encodeComponent(spaceId)}'
-                                '&threadId=${Uri.encodeComponent(threadId)}'
-                                '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
-                              );
-                              if (!context.mounted) return;
-                              ref.invalidate(_threadDetailProvider(widget.threadId));
-                              ref.invalidate(_messagesProvider(widget.threadId));
-                            },
-                            onStartAudio: () async {
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.ensureCorrespondenceLive(
-                                surfaceType: _threadLiveSurfaceType(thread),
-                                surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                                kind: 'AUDIO',
-                                metadata: <String, dynamic>{
-                                  'threadId': widget.threadId,
-                                  'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                                }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                              );
-                            },
-                            onStartVideo: () async {
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.ensureCorrespondenceLive(
-                                surfaceType: _threadLiveSurfaceType(thread),
-                                surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                                kind: 'VIDEO',
-                                metadata: <String, dynamic>{
-                                  'threadId': widget.threadId,
-                                  'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                                }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                              );
-                            },
-                            onJoinLive: () async {
-                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
-                              if (sessionId.isEmpty) return;
-                              final controller = ref.read(realtimeControllerProvider.notifier);
-                              await controller.join(sessionId);
-                            },
-                            onLeaveLive: () async {
-                              await ref.read(realtimeControllerProvider.notifier).leave();
-                            },
-                            onToggleMicrophone: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
-                            },
-                            onToggleCamera: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleCamera();
-                            },
-                          ),
-                          const SizedBox(height: AuraSpace.s12),
-                          _ThreadAdaptiveLivePanel(
-                            thread: thread,
-                            liveState: liveState,
-                            currentUserId: currentUserId,
-                            onJoinLive: () async {
-                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
-                              if (sessionId.isEmpty) return;
-                              await ref.read(realtimeControllerProvider.notifier).join(sessionId);
-                            },
-                            onLeaveLive: () async {
-                              await ref.read(realtimeControllerProvider.notifier).leave();
-                            },
-                            onToggleMicrophone: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
-                            },
-                            onToggleCamera: () async {
-                              await ref.read(realtimeControllerProvider.notifier).toggleCamera();
-                            },
-                            onAddMembers: () async {
-                              final sessionId = _resolveThreadLiveSessionId(thread, liveState);
-                              if (sessionId.isEmpty) return;
-                              await _showAddMembersSheet(
-                                thread: thread,
-                                currentUserId: currentUserId,
-                                sessionId: sessionId,
-                              );
-                            },
-                          ),
-                        ],
-                      );
-                    },
+                    data: (thread) => _ThreadHeaderCard(
+                      thread: thread,
+                      liveState: liveState,
+                      onOpenSpace: () {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        context.push('/me/correspondence/$spaceId');
+                      },
+                      onInvite: () async {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        await context.push(
+                          '/invite/create?destinationType=JOIN_SPACE'
+                          '&spaceId=${Uri.encodeComponent(spaceId)}'
+                          '&threadId=${Uri.encodeComponent(threadId)}'
+                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
+                        );
+                        if (!context.mounted) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
+                        ref.invalidate(_messagesProvider(widget.threadId));
+                      },
+                      onStartAudio: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'AUDIO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onStartVideo: () async {
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.ensureCorrespondenceLive(
+                          surfaceType: _threadLiveSurfaceType(thread),
+                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+                          kind: 'VIDEO',
+                          metadata: <String, dynamic>{
+                            'threadId': widget.threadId,
+                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+                        );
+                      },
+                      onJoinLive: () async {
+                        final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+                        if (sessionId.isEmpty) return;
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.join(sessionId);
+                      },
+                      onLeaveLive: () async {
+                        await ref.read(realtimeControllerProvider.notifier).leave();
+                      },
+                      onToggleMicrophone: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                      },
+                      onToggleCamera: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleCamera();
+                      },
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   Text('Messages', style: AuraText.title),
@@ -804,245 +541,6 @@ class _ThreadRouteIconButton extends StatelessWidget {
     );
   }
 }
-
-
-
-String _resolveThreadLiveSessionId(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  final fromThread = _extractThreadLiveSessionId(thread);
-  if (fromThread.isNotEmpty) return fromThread;
-  if (_threadMatchesLiveState(liveState, thread)) {
-    return (liveState.sessionId ?? liveState.session?.id ?? '').trim();
-  }
-  return '';
-}
-
-String _extractThreadLiveSessionId(Map<String, dynamic> thread) {
-  final direct = _pickString(thread, const [
-    'activeSessionId',
-    'liveSessionId',
-    'sessionId',
-    'realtimeSessionId',
-    'currentSessionId',
-  ]);
-  if (direct.isNotEmpty) return direct;
-  return _pickNested(thread, const [
-    ['live', 'sessionId'],
-    ['activeLive', 'sessionId'],
-    ['realtime', 'sessionId'],
-    ['session', 'id'],
-    ['activeSession', 'id'],
-  ]);
-}
-
-bool _threadHasLiveSignal(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  if (_resolveThreadLiveSessionId(thread, liveState).isNotEmpty) return true;
-  final liveFlag = _pickString(thread, const [
-    'isLive',
-    'live',
-    'liveActive',
-    'hasActiveSession',
-    'hasLiveSession',
-  ]).toLowerCase();
-  if (liveFlag == 'true' || liveFlag == '1' || liveFlag == 'yes') return true;
-  return _threadMatchesLiveState(liveState, thread);
-}
-
-String _extractThreadLiveKind(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  final direct = _pickString(thread, const [
-    'liveKind',
-    'callKind',
-    'callMode',
-    'sessionKind',
-    'liveMode',
-  ]);
-  final nested = _pickNested(thread, const [
-    ['live', 'kind'],
-    ['activeLive', 'kind'],
-    ['realtime', 'kind'],
-    ['session', 'kind'],
-  ]);
-  final value = (direct.isNotEmpty ? direct : nested).trim().toLowerCase();
-  if (value == 'video') return 'video';
-  if (value == 'audio') return 'audio';
-  if (liveState.isVideoMode) return 'video';
-  return 'audio';
-}
-
-String _extractThreadStartedByUserId(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  final direct = _pickString(thread, const [
-    'startedByUserId',
-    'liveStartedByUserId',
-    'callerUserId',
-    'ownerUserId',
-  ]);
-  if (direct.isNotEmpty) return direct;
-  final nested = _pickNested(thread, const [
-    ['live', 'startedByUserId'],
-    ['activeLive', 'startedByUserId'],
-    ['realtime', 'startedByUserId'],
-  ]);
-  if (nested.isNotEmpty) return nested;
-  return (liveState.session?.startedByUserId ?? '').trim();
-}
-
-int _extractThreadJoinedCount(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  final joined = liveState.participants.where((p) => p.isPresent).length;
-  if (joined > 0) return joined;
-  return _pickInt(thread, const [
-        'joinedCount',
-        'liveJoinedCount',
-        'participantJoinedCount',
-      ]) ??
-      0;
-}
-
-class _ThreadAdaptiveLivePanel extends StatelessWidget {
-  const _ThreadAdaptiveLivePanel({
-    required this.thread,
-    required this.liveState,
-    required this.currentUserId,
-    required this.onJoinLive,
-    required this.onLeaveLive,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-    required this.onAddMembers,
-  });
-
-  final Map<String, dynamic> thread;
-  final RealtimeState liveState;
-  final String currentUserId;
-  final Future<void> Function() onJoinLive;
-  final Future<void> Function() onLeaveLive;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onToggleCamera;
-  final Future<void> Function() onAddMembers;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_threadHasLiveSignal(thread, liveState)) return const SizedBox.shrink();
-
-    final sessionId = _resolveThreadLiveSessionId(thread, liveState);
-    if (sessionId.isEmpty) return const SizedBox.shrink();
-
-    final kind = _extractThreadLiveKind(thread, liveState);
-    final startedByUserId = _extractThreadStartedByUserId(thread, liveState);
-    final participants = _extractParticipants(thread);
-    final starter = participants.cast<Map<String, dynamic>?>().firstWhere(
-      (participant) {
-        if (participant == null) return false;
-        final id = _pickString(participant, const ['id', '_id', 'userId', 'memberId']);
-        return id.isNotEmpty && id == startedByUserId;
-      },
-      orElse: () => null,
-    );
-
-    final startedByName = starter == null
-        ? ''
-        : CorrespondenceIdentity.identityLabel(starter);
-    final joinedCount = _extractThreadJoinedCount(thread, liveState);
-    final isJoined = liveState.isJoined && ((liveState.sessionId ?? '').trim() == sessionId || _threadMatchesLiveState(liveState, thread));
-    final isDm = _threadLiveSurfaceType(thread) == 'DM';
-
-    String title;
-    if (isDm && !isJoined && startedByUserId.isNotEmpty && startedByUserId != currentUserId && startedByName.isNotEmpty) {
-      title = '$startedByName is calling';
-    } else if (startedByUserId.isNotEmpty && startedByUserId == currentUserId) {
-      title = 'You started a $kind call';
-    } else if (startedByName.isNotEmpty) {
-      title = '$startedByName started a $kind call';
-    } else {
-      title = 'Active $kind call';
-    }
-
-    final subtitleParts = <String>[
-      isDm ? 'This $kind call belongs to this thread' : 'This live room belongs to this space thread',
-      if (joinedCount > 0) '$joinedCount joined',
-    ];
-    final subtitle = subtitleParts.join(' · ');
-
-    return AuraCard(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 560;
-              final controls = Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: isJoined ? onAddMembers : null,
-                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                    label: const Text('Add members'),
-                  ),
-                ],
-              );
-
-              final textBlock = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(subtitle, style: AuraText.body),
-                ],
-              );
-
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    textBlock,
-                    const SizedBox(height: AuraSpace.s12),
-                    controls,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: textBlock),
-                  const SizedBox(width: AuraSpace.s12),
-                  controls,
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          _ThreadStatusStrip(
-            joinedCount: joinedCount,
-            isJoined: isJoined,
-            isBusy: liveState.isBusy,
-            microphoneEnabled: liveState.microphoneEnabled,
-            cameraEnabled: liveState.cameraEnabled,
-            onJoin: onJoinLive,
-            onLeave: onLeaveLive,
-            onToggleMicrophone: onToggleMicrophone,
-            onToggleCamera: kind == 'video' ? onToggleCamera : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
@@ -2775,9 +2273,6 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
   late final TextEditingController _controller;
   bool _saving = false;
   String? _errorText;
-
-
-
 
   @override
   void initState() {
