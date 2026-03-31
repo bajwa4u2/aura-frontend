@@ -136,8 +136,8 @@ String _threadResolvedSessionId(
     final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
     final expectedId = _threadLiveSurfaceId(thread, fallbackThreadId).trim();
     final sessionType = session.surfaceType.name.trim().toLowerCase();
-    final sessionId = (session.surfaceId ?? '').trim();
-    if (sessionType == expectedType && sessionId == expectedId) {
+    final sessionSurfaceId = (session.surfaceId ?? '').trim();
+    if (sessionType == expectedType && sessionSurfaceId == expectedId) {
       return (liveState.sessionId ?? session.id).trim();
     }
   }
@@ -322,12 +322,17 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       onInvite: () async {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
-                        await context.push(
-                          '/invite/create?destinationType=JOIN_SPACE'
-                          '&spaceId=${Uri.encodeComponent(spaceId)}'
-                          '&threadId=${Uri.encodeComponent(threadId)}'
-                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId)}',
-                        );
+                        final returnTo = '/me/correspondence/$spaceId/thread/$threadId';
+                        final inviteRoute = Uri(
+                          path: '/invite/create',
+                          queryParameters: {
+                            'destinationType': 'JOIN_SPACE',
+                            'spaceId': spaceId,
+                            'threadId': threadId,
+                            'returnTo': returnTo,
+                          },
+                        ).toString();
+                        await context.push(inviteRoute);
                         if (!context.mounted) return;
                         ref.invalidate(_threadDetailProvider(widget.threadId));
                         ref.invalidate(_messagesProvider(widget.threadId));
@@ -420,14 +425,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           ),
                         );
                       }
-
-                      final currentUserId = meAsync.maybeWhen(
-                        data: (me) => _pickString(
-                          me,
-                          const ['id', '_id', 'userId'],
-                        ),
-                        orElse: () => '',
-                      );
 
                       return Column(
                         children: [
