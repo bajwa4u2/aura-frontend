@@ -69,10 +69,10 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Live rooms', style: AuraText.title),
+          Text('Standalone live', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Start a room, enter an existing one, or reopen a room you already joined.',
+            'Use this only for truly standalone live. Correspondence-owned live should be opened from its conversation or space.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -87,7 +87,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'You need an active member session before entering a live room.',
+                    'You need an active member session before joining live.',
                     style: AuraText.muted,
                   ),
                 ],
@@ -99,19 +99,19 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Start live room',
+                    'Start standalone live',
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'Choose where this room belongs and how it will open.',
+                    'Choose where this live session belongs and how it should open.',
                     style: AuraText.muted,
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   DropdownButtonFormField<String>(
                     initialValue: _surfaceType,
                     decoration: const InputDecoration(
-                      labelText: 'Room context',
+                      labelText: 'Live context',
                       border: OutlineInputBorder(),
                     ),
                     items: const [
@@ -160,7 +160,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   Text(
-                    'This room will open as ${_kindLabel(_kind).toLowerCase()} in ${_surfaceLabel(_surfaceType).toLowerCase()}.',
+                    'This live session will open as ${_kindLabel(_kind).toLowerCase()} in ${_surfaceLabel(_surfaceType).toLowerCase()}.',
                     style: AuraText.small,
                   ),
                   const SizedBox(height: AuraSpace.s12),
@@ -178,7 +178,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                             if (!context.mounted) return;
                             router.go('/realtime/$id?action=join');
                           },
-                    child: const Text('Start and enter'),
+                    child: const Text('Start and join'),
                   ),
                 ],
               ),
@@ -189,19 +189,19 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Open existing room',
+                    'Open existing live',
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
-                    'Use a room id to enter, reopen, or inspect the current room state.',
+                    'Use a live session id to join, reopen, or inspect the current state.',
                     style: AuraText.muted,
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _existingSessionController,
                     decoration: const InputDecoration(
-                      labelText: 'Room id',
+                      labelText: 'Live session id',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -216,7 +216,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=join');
                         },
-                        child: const Text('Enter room'),
+                        child: const Text('Join live'),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -224,7 +224,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=resume');
                         },
-                        child: const Text('Reopen room'),
+                        child: const Text('Reopen live'),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -232,7 +232,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                           if (id.isEmpty) return;
                           context.go('/realtime/$id');
                         },
-                        child: const Text('View room'),
+                        child: const Text('View live'),
                       ),
                     ],
                   ),

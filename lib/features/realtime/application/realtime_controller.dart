@@ -49,7 +49,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       await _tokenStore.load();
       final token = _tokenStore.accessToken?.trim() ?? '';
       if (token.isEmpty) {
-        throw StateError('You need to sign in before entering a live room.');
+        throw StateError('You need to sign in before joining live.');
       }
 
       await _socketService.connect(accessToken: token);
@@ -92,7 +92,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         sessionId: bundle.session.id,
         joinState: RealtimeJoinState.idle,
         callMode: normalizedKind == 'video' ? 'video' : 'audio',
-        infoMessage: 'Live room started.',
+        infoMessage: 'Live started here.',
       );
       return bundle.session.id;
     } catch (error) {
@@ -132,7 +132,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final normalizedId = surfaceId.trim();
     final normalizedKind = kind.trim().toUpperCase();
     if (normalizedType.isEmpty || normalizedId.isEmpty) {
-      throw StateError('A live surface is required before starting a room.');
+      throw StateError('A conversation, space, or institution context is required before starting live.');
     }
 
     if (isManagingSurface(surfaceType: normalizedType, surfaceId: normalizedId)) {
@@ -181,7 +181,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       _applyBundle(bundle);
       state = state.copyWith(
         isBusy: false,
-        infoMessage: 'Live room loaded.',
+        infoMessage: 'Live loaded.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -216,7 +216,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
         clearIncomingCall: true,
-        infoMessage: 'You entered the live room.',
+        infoMessage: 'You joined live.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -251,7 +251,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
         clearIncomingCall: true,
-        infoMessage: 'Your live room was restored.',
+        infoMessage: 'Your live session was restored.',
       );
     } catch (error) {
       state = state.copyWith(
@@ -282,7 +282,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       recordings: const <RealtimeRecording>[],
       transcripts: const <RealtimeTranscriptJob>[],
       artifacts: const <RealtimeArtifact>[],
-      infoMessage: 'You left the live room.',
+      infoMessage: 'You left live.',
       clearRemoteRenderers: true,
       clearLocalRenderer: true,
       isMediaReady: false,
@@ -471,7 +471,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     await _repository.removeParticipant(sessionId, targetUserId);
     await hydrateSession(sessionId);
-    state = state.copyWith(infoMessage: 'Member removed from the room.');
+    state = state.copyWith(infoMessage: 'Member removed from this live session.');
   }
 
   Future<void> requestConsent() async {
@@ -639,7 +639,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       state = state.copyWith(
         isMediaBusy: false,
         mediaError: error.toString(),
-        infoMessage: 'You are in the room, but browser media is not active yet.',
+        infoMessage: 'You are connected, but browser media is not active yet.',
       );
     }
   }
@@ -882,7 +882,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:replaced':
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.reconnecting,
-          infoMessage: 'This room moved to a new connection.',
+          infoMessage: 'This live session moved to a new connection.',
           lastSocketEvent: event.name,
         );
         return;
@@ -898,28 +898,28 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           isMediaBusy: false,
           microphoneEnabled: false,
           cameraEnabled: false,
-          infoMessage: 'You were removed from this live room.',
+          infoMessage: 'You were removed from this live session.',
           lastSocketEvent: event.name,
         );
         return;
       case 'join:requested':
         state = state.copyWith(
           joinState: RealtimeJoinState.requested,
-          infoMessage: 'Your entry request is pending.',
+          infoMessage: 'Your request to join is pending.',
           lastSocketEvent: event.name,
         );
         return;
       case 'join:approved':
         state = state.copyWith(
           joinState: RealtimeJoinState.joined,
-          infoMessage: 'Your entry request was approved.',
+          infoMessage: 'Your request to join was approved.',
           lastSocketEvent: event.name,
         );
         return;
       case 'join:rejected':
         state = state.copyWith(
           joinState: RealtimeJoinState.rejected,
-          infoMessage: 'Your entry request was declined.',
+          infoMessage: 'Your request to join was declined.',
           lastSocketEvent: event.name,
         );
         return;

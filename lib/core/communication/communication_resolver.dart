@@ -13,6 +13,9 @@ class CommunicationTarget {
   final String? spaceId;
   final String? sessionId;
   final String? deeplink;
+  final String? context;
+  final String? mode;
+  final String? attention;
 
   const CommunicationTarget({
     required this.owner,
@@ -20,9 +23,13 @@ class CommunicationTarget {
     this.spaceId,
     this.sessionId,
     this.deeplink,
+    this.context,
+    this.mode,
+    this.attention,
   });
 
   bool get hasOwner => owner != CommunicationOwner.unknown;
+  bool get isInline => (attention ?? '').toUpperCase() == 'INLINE';
 }
 
 class CommunicationResolver {
@@ -34,10 +41,13 @@ class CommunicationResolver {
     final meta = _mapOf(payload['metadata']);
 
     final deeplink = _firstNonEmpty([
+      _stringOf(payload['route']),
       _stringOf(payload['deeplink']),
       _stringOf(payload['link']),
       _stringOf(payload['url']),
+      _stringOf(meta['route']),
       _stringOf(meta['deeplink']),
+      _stringOf(metadata['route']),
       _stringOf(metadata['deeplink']),
     ]);
 
@@ -80,6 +90,24 @@ class CommunicationResolver {
       parsed.ownerType ?? '',
     ]);
 
+    final context = _firstNonEmpty([
+      _stringOf(payload['context']).toUpperCase(),
+      _stringOf(meta['context']).toUpperCase(),
+      _stringOf(metadata['context']).toUpperCase(),
+    ]);
+
+    final mode = _firstNonEmpty([
+      _stringOf(payload['mode']).toUpperCase(),
+      _stringOf(meta['mode']).toUpperCase(),
+      _stringOf(metadata['mode']).toUpperCase(),
+    ]);
+
+    final attention = _firstNonEmpty([
+      _stringOf(payload['attention']).toUpperCase(),
+      _stringOf(meta['attention']).toUpperCase(),
+      _stringOf(metadata['attention']).toUpperCase(),
+    ]);
+
     if (threadId.isNotEmpty) {
       return CommunicationTarget(
         owner: CommunicationOwner.thread,
@@ -87,6 +115,9 @@ class CommunicationResolver {
         spaceId: spaceId.isEmpty ? null : spaceId,
         sessionId: sessionId.isEmpty ? null : sessionId,
         deeplink: deeplink.isEmpty ? null : deeplink,
+        context: context.isEmpty ? 'THREAD' : context,
+        mode: mode.isEmpty ? null : mode,
+        attention: attention.isEmpty ? null : attention,
       );
     }
 
@@ -96,14 +127,20 @@ class CommunicationResolver {
         spaceId: spaceId,
         sessionId: sessionId.isEmpty ? null : sessionId,
         deeplink: deeplink.isEmpty ? null : deeplink,
+        context: context.isEmpty ? 'SPACE' : context,
+        mode: mode.isEmpty ? null : mode,
+        attention: attention.isEmpty ? null : attention,
       );
     }
 
-    if (ownerType == 'REALTIME' || deeplink.startsWith('/realtime/')) {
+    if ((ownerType == 'REALTIME' || context == 'STANDALONE') && deeplink.startsWith('/realtime/')) {
       return CommunicationTarget(
         owner: CommunicationOwner.standaloneRealtime,
         sessionId: sessionId.isEmpty ? null : sessionId,
         deeplink: deeplink.isEmpty ? null : deeplink,
+        context: context.isEmpty ? 'STANDALONE' : context,
+        mode: mode.isEmpty ? null : mode,
+        attention: attention.isEmpty ? null : attention,
       );
     }
 
@@ -111,6 +148,9 @@ class CommunicationResolver {
       owner: CommunicationOwner.unknown,
       sessionId: sessionId.isEmpty ? null : sessionId,
       deeplink: deeplink.isEmpty ? null : deeplink,
+      context: context.isEmpty ? null : context,
+      mode: mode.isEmpty ? null : mode,
+      attention: attention.isEmpty ? null : attention,
     );
   }
 

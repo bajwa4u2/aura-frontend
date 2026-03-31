@@ -281,41 +281,34 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         deeplink.startsWith('/realtime') ||
         realtimeSessionId.isNotEmpty;
 
-    if (isRealtimeActivity || communicationTarget.hasOwner) {
-      switch (communicationTarget.owner) {
-        case CommunicationOwner.thread:
-          if ((communicationTarget.threadId ?? '').isNotEmpty) {
-            await _openThreadTarget(
-              threadId: communicationTarget.threadId!,
-              spaceIdHint: communicationTarget.spaceId,
-            );
-            return;
-          }
-          break;
-        case CommunicationOwner.space:
-          if ((communicationTarget.spaceId ?? '').isNotEmpty) {
-            context.push('/me/correspondence/${communicationTarget.spaceId}');
-            return;
-          }
-          break;
-        case CommunicationOwner.standaloneRealtime:
-          if ((communicationTarget.sessionId ?? '').isNotEmpty) {
-            context.push('/realtime/${communicationTarget.sessionId}?action=join');
-            return;
-          }
-          break;
-        case CommunicationOwner.unknown:
-          break;
-      }
+    if (communicationTarget.owner == CommunicationOwner.thread &&
+        (communicationTarget.threadId ?? '').isNotEmpty) {
+      await _openThreadTarget(
+        threadId: communicationTarget.threadId!,
+        spaceIdHint: communicationTarget.spaceId,
+      );
+      return;
+    }
 
-      if (communicationTarget.deeplink != null && communicationTarget.deeplink!.isNotEmpty) {
-        context.push(communicationTarget.deeplink!);
+    if (communicationTarget.owner == CommunicationOwner.space &&
+        (communicationTarget.spaceId ?? '').isNotEmpty) {
+      context.push('/me/correspondence/${communicationTarget.spaceId}');
+      return;
+    }
+
+    if (isRealtimeActivity) {
+      if (threadId.isNotEmpty) {
+        await _openThreadTarget(threadId: threadId, spaceIdHint: spaceId);
         return;
       }
-
-      if (isRealtimeActivity) {
+      if (spaceId.isNotEmpty) {
+        context.push('/me/correspondence/$spaceId');
         return;
       }
+      if (deeplink.startsWith('/me/correspondence/')) {
+        context.push(deeplink);
+      }
+      return;
     }
 
     if (deeplink.isNotEmpty) {
@@ -338,7 +331,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         }
       }
 
-      context.push(deeplink);
+      if (!deeplink.startsWith('/realtime')) {
+        context.push(deeplink);
+      }
       return;
     }
 
@@ -822,7 +817,7 @@ String _buildTitle(Map<String, dynamic> item) {
   ]);
 
   if (realtimeType == 'REALTIME_INVITE') {
-    return '$actorName invited you to a live room';
+    return '$actorName invited you to join live here';
   }
 
   switch (type) {
@@ -866,9 +861,9 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'A work could not be published';
     case 'SYSTEM':
       final title = _stringOf(data['title']);
-      return title.isNotEmpty ? title : 'System activity';
+      return title.isNotEmpty ? title : 'Update';
     default:
-      return 'Activity';
+      return 'Update';
   }
 }
 
@@ -896,7 +891,7 @@ String _buildSubtitle(Map<String, dynamic> item) {
       _stringOf(data['roomTitle']),
       _stringOf(item['title']),
     ]);
-    return roomTitle.isNotEmpty ? 'Open $roomTitle' : 'Open live room';
+    return roomTitle.isNotEmpty ? 'Open $roomTitle in correspondence' : 'Return to correspondence';
   }
 
   switch (type) {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
@@ -187,8 +188,33 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
   }
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
@@ -213,8 +239,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final roomSubtitle = _roomSubtitle(state.session, state.joinState);
     final participantCount = state.participants.length;
     final memberCountLabel = participantCount == 1
-        ? '1 listed for this room'
-        : '$participantCount listed for this room';
+        ? '1 member listed here'
+        : '$participantCount members listed here';
     final presentCount = state.participants.where((participant) => participant.isPresent).length;
     final mediaActiveCount = state.participants
         .where((participant) => participant.audioOn || participant.videoOn || participant.screenOn)
@@ -324,18 +350,23 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
+              if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
+                OutlinedButton(
+                  onPressed: () => context.go(_spaceRouteFromSession(state.session)!),
+                  child: const Text('Return to space'),
+                ),
               OutlinedButton(
                 onPressed: () => controller.hydrateSession(widget.sessionId),
-                child: const Text('Refresh room'),
+                child: const Text('Refresh live'),
               ),
               OutlinedButton(
                 onPressed: controller.leave,
-                child: const Text('Leave room'),
+                child: const Text('Leave live'),
               ),
               if (state.joinState != RealtimeJoinState.joined)
                 FilledButton(
                   onPressed: () => controller.join(widget.sessionId),
-                  child: const Text('Enter room'),
+                  child: Text('Join ${_contextLabel(state.session)}'),
                 ),
               if (state.joinState == RealtimeJoinState.locked ||
                   state.joinState == RealtimeJoinState.rejected ||
@@ -345,7 +376,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   onPressed: () => controller.requestJoin(widget.sessionId),
                   child: Text(
                     policy?.waitingRoomEnabled == true || roomIsClosed
-                        ? 'Request entry'
+                        ? 'Request access'
                         : 'Try again',
                   ),
                 ),
@@ -357,26 +388,26 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String _roomTitle(RealtimeSession? session) {
-    if (session == null) return 'Live Room';
+    if (session == null) return 'Live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
-        return 'Live Correspondence';
+        return 'Conversation live';
       case RealtimeSurfaceType.space:
-        return 'Live Space';
+        return 'Space live';
       case RealtimeSurfaceType.institution:
-        return 'Institution Room';
+        return 'Institution live';
       case RealtimeSurfaceType.unknown:
-        return 'Live Room';
+        return 'Live';
     }
   }
 
   String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
-    if (joinState == RealtimeJoinState.joined) return 'You are in the room.';
-    if (joinState == RealtimeJoinState.requested) return 'Your entry request is pending.';
-    if (joinState == RealtimeJoinState.rejected) return 'Your entry request was declined.';
-    if (joinState == RealtimeJoinState.removed) return 'You were removed from this room.';
-    if (session?.isActive == false) return 'This room has ended.';
-    if (session?.isLocked == true) return 'Closed to new entries.';
+    if (joinState == RealtimeJoinState.joined) return 'You are here now.';
+    if (joinState == RealtimeJoinState.requested) return 'Your request to join is pending.';
+    if (joinState == RealtimeJoinState.rejected) return 'Your request to join was declined.';
+    if (joinState == RealtimeJoinState.removed) return 'You were removed from this live session.';
+    if (session?.isActive == false) return 'This live session has ended.';
+    if (session?.isLocked == true) return 'Closed to new joins.';
     return 'Active now.';
   }
 
@@ -387,7 +418,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   ) {
     if (joinState == RealtimeJoinState.requested) return 'Waiting for approval';
     if (joinState == RealtimeJoinState.rejected) return 'Entry declined';
-    if (joinState == RealtimeJoinState.removed) return 'Removed from room';
+    if (joinState == RealtimeJoinState.removed) return 'Removed';
     if (session?.isActive == false) return 'Ended';
     if (session?.isLocked == true || policy?.isLocked == true) return 'Closed';
     return 'Open';
@@ -409,8 +440,33 @@ class _RoomHeaderCard extends StatelessWidget {
   final String memberCountLabel;
   final String roomStateLabel;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,8 +500,33 @@ class _MetaPill extends StatelessWidget {
   const _MetaPill({required this.label});
   final String label;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s10,
@@ -486,8 +567,33 @@ class _MediaStageCard extends StatelessWidget {
   final VoidCallback onToggleMicrophone;
   final VoidCallback onToggleCamera;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final renderers = <MapEntry<String, RTCVideoRenderer>>[
       if (localRenderer != null) MapEntry<String, RTCVideoRenderer>('local', localRenderer!),
       ...remoteRenderers.entries,
@@ -506,7 +612,7 @@ class _MediaStageCard extends StatelessWidget {
         : isMediaReady
             ? 'Your preview and connected participants appear here.'
             : (mediaError ?? '').trim().isNotEmpty
-                ? 'You joined the room, but this browser did not start media.'
+                ? 'You joined live, but this browser did not start media.'
                 : 'Your browser has not started camera or microphone yet.';
 
     final controlsEnabled = isMediaReady && !isMediaBusy;
@@ -598,8 +704,33 @@ class _VideoTile extends StatelessWidget {
   final RTCVideoRenderer renderer;
   final bool mirror;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -638,8 +769,33 @@ class _RoomOverviewCard extends StatelessWidget {
   final int presentCount;
   final int mediaActiveCount;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final isLive = session?.isActive != false;
     final isClosed = session?.isLocked == true || policy?.isLocked == true;
     final requestsOn = policy?.waitingRoomEnabled == true;
@@ -657,8 +813,8 @@ class _RoomOverviewCard extends StatelessWidget {
           Text(requestsOn ? 'Entry requests enabled' : 'Direct entry available', style: AuraText.body),
           Text(
             participantCount == 1
-                ? '1 member is listed for this room'
-                : '$participantCount members are listed for this room',
+                ? '1 member is listed here'
+                : '$participantCount members are listed here',
             style: AuraText.body,
           ),
           Text(
@@ -698,8 +854,33 @@ class _RoomInviteCard extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<Map<String, dynamic>> onInvite;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,7 +888,7 @@ class _RoomInviteCard extends StatelessWidget {
           Text('Invite members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Find existing Aura members and invite them into this room.',
+            'Find existing Aura members and invite them into this live session.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -805,14 +986,39 @@ class _ArtifactBlock extends StatelessWidget {
   final int transcriptCount;
   final int artifactCount;
 
+
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final recordingLabel = policy?.canRecord == true
         ? (recordingCount == 1 ? '1 recording created' : '$recordingCount recordings created')
-        : 'Recording unavailable in this room';
+        : 'Recording unavailable in this live session';
     final transcriptLabel = policy?.canTranscribe == true
         ? (transcriptCount == 1 ? '1 live note created' : '$transcriptCount live notes created')
-        : 'Live notes unavailable in this room';
+        : 'Live notes unavailable in this live session';
 
     return AuraCard(
       child: Column(

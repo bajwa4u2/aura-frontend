@@ -105,7 +105,8 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         final sessionType = session.surfaceType.name.trim().toLowerCase();
         final sessionSurfaceId = (session.surfaceId ?? '').trim();
         final matchesThread =
-            sessionType == 'dm' && sessionSurfaceId == widget.threadId.trim();
+            (sessionType == 'dm' || sessionType == 'thread') &&
+            sessionSurfaceId == widget.threadId.trim();
         final matchesSpace =
             sessionType == 'space' &&
             spaceId.isNotEmpty &&
