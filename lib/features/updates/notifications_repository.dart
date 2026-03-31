@@ -181,6 +181,14 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
   final session = _mapOf(data['session']);
   final live = _mapOf(data['live']);
 
+  final sessionMeta = (session['metadata'] is Map)
+      ? Map<String, dynamic>.from(session['metadata'])
+      : const {};
+
+  final metaThreadId = _stringOf(sessionMeta['threadId']);
+  final metaSpaceId  = _stringOf(sessionMeta['spaceId']);
+
+
   final announcementId = _firstNonEmpty([
     _stringOf(item['announcementId']),
     _stringOf(data['announcementId']),
@@ -197,6 +205,7 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     _stringOf(payload['threadId']),
     _stringOf(target['threadId']),
     _stringOf(live['threadId']),
+    metaThreadId,
   ]);
 
   final spaceId = _firstNonEmpty([
@@ -206,6 +215,7 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     _stringOf(target['spaceId']),
     _stringOf(live['spaceId']),
     _stringOf(item['surfaceId']),
+    metaSpaceId,
     _stringOf(data['surfaceId']),
   ]);
 

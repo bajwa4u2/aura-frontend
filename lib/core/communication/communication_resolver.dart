@@ -25,9 +25,18 @@ class CommunicationResolver {
   const CommunicationResolver();
 
   CommunicationTarget resolveFromPayload(Map<String, dynamic> payload) {
-    final threadId = _pick(payload, ['threadId', 'thread_id']);
-    final spaceId = _pick(payload, ['spaceId', 'space_id']);
-    final sessionId = _pick(payload, ['sessionId', 'session_id', 'id']);
+    String pick(List<String> keys) {
+      for (final k in keys) {
+        final v = (payload[k] ?? '').toString().trim();
+        if (v.isNotEmpty) return v;
+      }
+      return '';
+    }
+
+    // shallow
+    String threadId = pick(['threadId','thread_id']);
+    String spaceId  = pick(['spaceId','space_id','surfaceId','surface_id']);
+    String sessionId= pick(['sessionId','session_id','id']);
 
     final surfaceType =
         (payload['surfaceType'] ?? payload['surface_type'] ?? '')
@@ -35,6 +44,36 @@ class CommunicationResolver {
             .trim()
             .toLowerCase();
 
+    // nested session support (CRITICAL)
+    final session = (payload['session'] is Map)
+        ? Map<String, dynamic>.from(payload['session'])
+        : <String, dynamic>{};
+
+    final metadata = (session['metadata'] is Map)
+        ? Map<String, dynamic>.from(session['metadata'])
+        : <String, dynamic>{};
+
+    if (threadId.isEmpty) {
+      threadId = (metadata['threadId'] ?? metadata['thread_id'] ?? '')
+          .toString()
+          .trim();
+    }
+
+    if (spaceId.isEmpty) {
+      final sType = (session['surfaceType'] ?? '').toString().toLowerCase();
+      final sId   = (session['surfaceId'] ?? '').toString().trim();
+      if (sType == 'space' && sId.isNotEmpty) {
+        spaceId = sId;
+      }
+    }
+
+    if (sessionId.isEmpty) {
+      sessionId = (session['id'] ?? session['sessionId'] ?? '')
+          .toString()
+          .trim();
+    }
+
+    // decision
     if (threadId.isNotEmpty) {
       return CommunicationTarget(
         owner: CommunicationOwner.thread,
@@ -44,7 +83,8 @@ class CommunicationResolver {
       );
     }
 
-    if (surfaceType == 'space' && spaceId.isNotEmpty) {
+    if ((surfaceType == 'space' || (session['surfaceType'] ?? '').toString().toLowerCase() == 'space')
+        && spaceId.isNotEmpty) {
       return CommunicationTarget(
         owner: CommunicationOwner.space,
         spaceId: spaceId,
@@ -61,26 +101,13 @@ class CommunicationResolver {
   String resolveRoute(CommunicationTarget target) {
     switch (target.owner) {
       case CommunicationOwner.thread:
-        final space = (target.spaceId ?? '').trim();
-        final thread = (target.threadId ?? '').trim();
-        return '/me/correspondence/$space/thread/$thread';
-
+        return '/me/correspondence/${target.spaceId ?? ''}/thread/${target.threadId ?? ''}';
       case CommunicationOwner.space:
-        return '/me/correspondence/${(target.spaceId ?? '').trim()}';
-
+        return '/me/correspondence/${target.spaceId ?? ''}';
       case CommunicationOwner.spaceLiveRoom:
-        return '/space-live/${(target.spaceId ?? '').trim()}';
-
+        return '/space-live/${target.spaceId ?? ''}';
       case CommunicationOwner.standaloneRealtime:
-        return '/realtime/${(target.sessionId ?? '').trim()}';
+        return '/realtime/${target.sessionId ?? ''}';
     }
-  }
-
-  String _pick(Map<String, dynamic> map, List<String> keys) {
-    for (final key in keys) {
-      final value = (map[key] ?? '').toString().trim();
-      if (value.isNotEmpty) return value;
-    }
-    return '';
   }
 }
