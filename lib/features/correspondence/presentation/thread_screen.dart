@@ -131,11 +131,17 @@ String _threadResolvedSessionId(
   ]);
   if (nested.isNotEmpty) return nested;
 
-  final active = liveState.activeSessionIdForCorrespondence(
-    threadId: fallbackThreadId,
-    spaceId: _pickString(thread, const ['spaceId', 'space_id']),
-  );
-  return (active ?? '').trim();
+  final session = liveState.session;
+  if (session != null) {
+    final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
+    final expectedId = _threadLiveSurfaceId(thread, fallbackThreadId).trim();
+    final sessionType = session.surfaceType.name.trim().toLowerCase();
+    final sessionId = (session.surfaceId ?? '').trim();
+    if (sessionType == expectedType && sessionId == expectedId) {
+      return (liveState.sessionId ?? session.id).trim();
+    }
+  }
+  return '';
 }
 
 String _threadLiveKind(
@@ -260,6 +266,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final messagesAsync = ref.watch(_messagesProvider(threadId));
     final meAsync = ref.watch(_currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
+    final currentUserId = meAsync.maybeWhen(
+      data: (me) => _pickString(
+        me,
+        const ['id', '_id', 'userId'],
+      ),
+      orElse: () => '',
+    );
 
     return AuraScaffold(
       title: threadAsync.maybeWhen(
