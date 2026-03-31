@@ -286,27 +286,50 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       await _openThreadTarget(
         threadId: communicationTarget.threadId!,
         spaceIdHint: communicationTarget.spaceId,
+        sessionIdHint: communicationTarget.sessionId,
+        shouldJoin: isRealtimeActivity ||
+            (communicationTarget.attention ?? '').toUpperCase() == 'INTERRUPT' ||
+            (communicationTarget.mode ?? '').toUpperCase().contains('LIVE'),
       );
       return;
     }
 
     if (communicationTarget.owner == CommunicationOwner.space &&
         (communicationTarget.spaceId ?? '').isNotEmpty) {
-      context.push('/me/correspondence/${communicationTarget.spaceId}');
+      final route = _withLiveQuery(
+        '/me/correspondence/${communicationTarget.spaceId}',
+        sessionId: communicationTarget.sessionId,
+        shouldJoin: isRealtimeActivity,
+      );
+      context.push(route);
       return;
     }
 
     if (isRealtimeActivity) {
       if (threadId.isNotEmpty) {
-        await _openThreadTarget(threadId: threadId, spaceIdHint: spaceId);
+        await _openThreadTarget(
+          threadId: threadId,
+          spaceIdHint: spaceId,
+          sessionIdHint: realtimeSessionId,
+          shouldJoin: true,
+        );
         return;
       }
       if (spaceId.isNotEmpty) {
-        context.push('/me/correspondence/$spaceId');
+        final route = _withLiveQuery(
+          '/me/correspondence/$spaceId',
+          sessionId: realtimeSessionId,
+          shouldJoin: true,
+        );
+        context.push(route);
         return;
       }
       if (deeplink.startsWith('/me/correspondence/')) {
-        context.push(deeplink);
+        context.push(_withLiveQuery(
+          deeplink,
+          sessionId: realtimeSessionId,
+          shouldJoin: true,
+        ));
       }
       return;
     }
@@ -318,6 +341,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           await _openThreadTarget(
             threadId: idFromLink,
             spaceIdHint: spaceId,
+            sessionIdHint: realtimeSessionId,
+            shouldJoin: isRealtimeActivity,
           );
           return;
         }
@@ -326,13 +351,21 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       if (deeplink.startsWith('/spaces/')) {
         final idFromLink = deeplink.substring('/spaces/'.length).split('?').first.trim();
         if (idFromLink.isNotEmpty) {
-          context.push('/me/correspondence/$idFromLink');
+          context.push(_withLiveQuery(
+            '/me/correspondence/$idFromLink',
+            sessionId: realtimeSessionId,
+            shouldJoin: isRealtimeActivity,
+          ));
           return;
         }
       }
 
       if (!deeplink.startsWith('/realtime')) {
-        context.push(deeplink);
+        context.push(_withLiveQuery(
+          deeplink,
+          sessionId: realtimeSessionId,
+          shouldJoin: isRealtimeActivity,
+        ));
       }
       return;
     }
@@ -383,6 +416,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           await _openThreadTarget(
             threadId: threadId,
             spaceIdHint: spaceId,
+            sessionIdHint: realtimeSessionId,
+            shouldJoin: isRealtimeActivity,
           );
           return;
         }
@@ -400,7 +435,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           return;
         }
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-          context.push('/me/correspondence/$spaceId/thread/$threadId');
+          context.push(_withLiveQuery(
+            '/me/correspondence/$spaceId/thread/$threadId',
+            sessionId: realtimeSessionId,
+            shouldJoin: isRealtimeActivity,
+          ));
           return;
         }
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
@@ -410,9 +449,12 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   Future<void> _openThreadTarget({
     required String threadId,
     String? spaceIdHint,
+    String? sessionIdHint,
+    bool shouldJoin = false,
   }) async {
     final cleanThreadId = threadId.trim();
     final cleanSpaceId = (spaceIdHint ?? '').trim();
+    final cleanSessionId = (sessionIdHint ?? '').trim();
 
     if (cleanThreadId.isEmpty) {
       context.push('/me/correspondence');
@@ -420,7 +462,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     }
 
     if (cleanSpaceId.isNotEmpty) {
-      context.push('/me/correspondence/$cleanSpaceId/thread/$cleanThreadId');
+      context.push(_withLiveQuery(
+        '/me/correspondence/$cleanSpaceId/thread/$cleanThreadId',
+        sessionId: cleanSessionId,
+        shouldJoin: shouldJoin,
+      ));
       return;
     }
 
@@ -434,13 +480,36 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       ]);
 
       if (resolvedSpaceId.isNotEmpty) {
-        context.push('/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId');
+        context.push(_withLiveQuery(
+          '/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId',
+          sessionId: cleanSessionId,
+          shouldJoin: shouldJoin,
+        ));
         return;
       }
     } catch (_) {}
 
     if (!mounted) return;
     context.push('/me/correspondence');
+  }
+
+  String _withLiveQuery(
+    String route, {
+    String? sessionId,
+    bool shouldJoin = false,
+  }) {
+    final cleanRoute = route.trim();
+    final cleanSessionId = (sessionId ?? '').trim();
+    if (!shouldJoin || cleanRoute.isEmpty || cleanSessionId.isEmpty) {
+      return cleanRoute;
+    }
+
+    final uri = Uri.parse(cleanRoute);
+    final query = <String, String>{...uri.queryParameters};
+    query['join'] = '1';
+    query['sessionId'] = cleanSessionId;
+
+    return uri.replace(queryParameters: query).toString();
   }
 
   @override

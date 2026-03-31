@@ -26,12 +26,30 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   bool _syncing = false;
   bool _postFrameSyncQueued = false;
   String? _joinedSpaceId;
+  bool _handledJoinQuery = false;
 
   String _currentSpaceId() {
     try {
       return GoRouterState.of(context).pathParameters['spaceId']?.trim() ?? '';
     } catch (_) {
       return '';
+    }
+  }
+
+  String _querySessionId() {
+    try {
+      return GoRouterState.of(context).uri.queryParameters['sessionId']?.trim() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool _shouldJoinFromQuery() {
+    try {
+      final value = GoRouterState.of(context).uri.queryParameters['join']?.trim().toLowerCase() ?? '';
+      return value == '1' || value == 'true' || value == 'yes';
+    } catch (_) {
+      return false;
     }
   }
 
@@ -52,6 +70,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     }
 
     await _syncFromController();
+    await _joinFromRouteIfNeeded();
 
     _subscription = live.events.listen((event) {
       if (!_targetsThreadOrSpace(
@@ -75,7 +94,34 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
       }
 
       unawaited(_syncFromController());
+      unawaited(_joinFromRouteIfNeeded());
     });
+  }
+
+  Future<void> _joinFromRouteIfNeeded() async {
+    if (!mounted || _handledJoinQuery || !_shouldJoinFromQuery()) return;
+
+    final sessionId = _querySessionId();
+    if (sessionId.isEmpty) return;
+
+    _handledJoinQuery = true;
+    _lastSessionId = sessionId;
+
+    final notifier = ref.read(realtimeControllerProvider.notifier);
+    final liveState = ref.read(realtimeControllerProvider);
+    final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+    final alreadyJoined =
+        liveState.joinState.name.toLowerCase() == 'joined' && currentSessionId == sessionId;
+
+    if (alreadyJoined) {
+      return;
+    }
+
+    try {
+      await notifier.join(sessionId);
+    } catch (_) {
+      // Keep the thread stable even if live join fails.
+    }
   }
 
   Future<void> _syncFromController() async {
@@ -148,6 +194,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         if (!mounted) return;
         _postFrameSyncQueued = false;
         unawaited(_syncFromController());
+        unawaited(_joinFromRouteIfNeeded());
       });
     }
 
