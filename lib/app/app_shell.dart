@@ -12,6 +12,7 @@ import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
 import '../features/updates/notifications_repository.dart';
+import '../features/realtime/presentation/incoming_live_overlay.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -155,42 +156,44 @@ class MemberShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: Column(
-              children: [
-                _MemberHeader(
-                  isDesktop: isDesktop,
-                  isTablet: isTablet,
-                ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (isDesktop)
-                        _MemberSideNav(
-                          items: _items,
-                          selectedIndex: selectedIndex,
-                          currentPath: path,
-                        ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: child,
-                            ),
-                            if (_showMemberFooter(path)) const _ShellFooter(),
-                          ],
-                        ),
-                      ),
-                    ],
+            child: AuraIncomingLiveLayer(
+              child: Column(
+                children: [
+                  _MemberHeader(
+                    isDesktop: isDesktop,
+                    isTablet: isTablet,
                   ),
-                ),
-                if (!isDesktop)
-                  _MemberBottomNav(
-                    items: _items,
-                    selectedIndex: selectedIndex,
-                    currentPath: path,
-                    compact: !isTablet,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (isDesktop)
+                          _MemberSideNav(
+                            items: _items,
+                            selectedIndex: selectedIndex,
+                            currentPath: path,
+                          ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: child,
+                              ),
+                              if (_showMemberFooter(path)) const _ShellFooter(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-              ],
+                  if (!isDesktop)
+                    _MemberBottomNav(
+                      items: _items,
+                      selectedIndex: selectedIndex,
+                      currentPath: path,
+                      compact: !isTablet,
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -269,33 +272,35 @@ class InstitutionShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: Column(
-              children: [
-                _InstitutionHeader(
-                  isDesktop: isDesktop,
-                  isTablet: isTablet,
-                ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (isDesktop)
-                        _MemberSideNav(
-                          items: _items,
-                          selectedIndex: selectedIndex,
-                          currentPath: path,
-                        ),
-                      Expanded(child: child),
-                    ],
+            child: AuraIncomingLiveLayer(
+              child: Column(
+                children: [
+                  _InstitutionHeader(
+                    isDesktop: isDesktop,
+                    isTablet: isTablet,
                   ),
-                ),
-                if (!isDesktop)
-                  _MemberBottomNav(
-                    items: _items,
-                    selectedIndex: selectedIndex,
-                    currentPath: path,
-                    compact: !isTablet,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (isDesktop)
+                          _MemberSideNav(
+                            items: _items,
+                            selectedIndex: selectedIndex,
+                            currentPath: path,
+                          ),
+                        Expanded(child: child),
+                      ],
+                    ),
                   ),
-              ],
+                  if (!isDesktop)
+                    _MemberBottomNav(
+                      items: _items,
+                      selectedIndex: selectedIndex,
+                      currentPath: path,
+                      compact: !isTablet,
+                    ),
+                ],
+              ),
             ),
           ),
         );
