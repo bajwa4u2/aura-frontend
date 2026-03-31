@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/route_targets.dart';
+import '../../../core/communication/communication_resolver.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -21,6 +22,7 @@ class ActivityScreen extends ConsumerStatefulWidget {
 }
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
+  static const _resolver = CommunicationResolver();
   static const _pageSize = 24;
   static const _pollInterval = Duration(seconds: 8);
 
@@ -270,20 +272,40 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         realtimeSessionId.isNotEmpty;
 
     if (isRealtimeActivity) {
-      final target = deeplink.isNotEmpty
-          ? deeplink
-          : realtimeSessionId.isNotEmpty
-              ? '/realtime/$realtimeSessionId?action=join'
-              : '';
+      final target = _resolver.resolveFromPayload({
+        ...data,
+        if (threadId.isNotEmpty) 'threadId': threadId,
+        if (spaceId.isNotEmpty) 'spaceId': spaceId,
+        if (realtimeSessionId.isNotEmpty) 'sessionId': realtimeSessionId,
+      });
 
-      if (target.isNotEmpty) {
-        context.push(target);
-        return;
+      switch (target.owner) {
+        case CommunicationOwner.thread:
+          if ((target.threadId ?? '').isNotEmpty) {
+            await _openThreadTarget(
+              threadId: target.threadId!,
+              spaceIdHint: target.spaceId,
+            );
+            return;
+          }
+          break;
+
+        case CommunicationOwner.space:
+        case CommunicationOwner.spaceLiveRoom:
+          if ((target.spaceId ?? '').isNotEmpty) {
+            context.push('/me/correspondence/${target.spaceId}');
+            return;
+          }
+          break;
+
+        case CommunicationOwner.standaloneRealtime:
+          if ((target.sessionId ?? '').isNotEmpty) {
+            context.push('/realtime/${target.sessionId}?action=join');
+            return;
+          }
+          break;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This live room is no longer available.')),
-      );
       return;
     }
 
