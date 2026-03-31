@@ -176,6 +176,10 @@ _NotificationsPayload _normalizePayload(dynamic raw) {
 Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
   final item = Map<String, dynamic>.from(raw);
   final data = _mapOf(item['data']);
+  final payload = _mapOf(data['payload']);
+  final target = _mapOf(data['target']);
+  final session = _mapOf(data['session']);
+  final live = _mapOf(data['live']);
 
   final announcementId = _firstNonEmpty([
     _stringOf(item['announcementId']),
@@ -186,10 +190,57 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     _stringOf(data['announcementSlug']),
     _stringOf(data['slug']),
   ]);
+
+  final threadId = _firstNonEmpty([
+    _stringOf(item['threadId']),
+    _stringOf(data['threadId']),
+    _stringOf(payload['threadId']),
+    _stringOf(target['threadId']),
+    _stringOf(live['threadId']),
+  ]);
+
+  final spaceId = _firstNonEmpty([
+    _stringOf(item['spaceId']),
+    _stringOf(data['spaceId']),
+    _stringOf(payload['spaceId']),
+    _stringOf(target['spaceId']),
+    _stringOf(live['spaceId']),
+    _stringOf(item['surfaceId']),
+    _stringOf(data['surfaceId']),
+  ]);
+
+  final sessionId = _firstNonEmpty([
+    _stringOf(item['sessionId']),
+    _stringOf(data['sessionId']),
+    _stringOf(payload['sessionId']),
+    _stringOf(session['id']),
+    _stringOf(session['sessionId']),
+    _stringOf(live['sessionId']),
+    _stringOf(item['realtimeSessionId']),
+    _stringOf(data['realtimeSessionId']),
+  ]);
+
+  final realtimeType = _firstNonEmpty([
+    _stringOf(item['realtimeType']),
+    _stringOf(data['realtimeType']),
+    _stringOf(data['notificationKind']),
+    _stringOf(payload['realtimeType']),
+    _stringOf(payload['notificationKind']),
+    sessionId.isNotEmpty ? 'REALTIME_INVITE' : '',
+  ]);
+
   final deeplink = normalizeMemberFacingRoute(
     _firstNonEmpty([
       _stringOf(item['deeplink']),
       _stringOf(data['deeplink']),
+      _stringOf(payload['deeplink']),
+      _stringOf(data['link']),
+      _stringOf(data['url']),
+      threadId.isNotEmpty && spaceId.isNotEmpty
+          ? '/me/correspondence/$spaceId/thread/$threadId'
+          : '',
+      threadId.isNotEmpty ? '/threads/$threadId' : '',
+      spaceId.isNotEmpty ? '/spaces/$spaceId' : '',
       announcementSlug.isNotEmpty ? '/announcements/$announcementSlug' : '',
       announcementId.isNotEmpty ? '/announcements/$announcementId' : '',
     ]),
@@ -200,6 +251,10 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     ...data,
     if (announcementId.isNotEmpty) 'announcementId': announcementId,
     if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
+    if (threadId.isNotEmpty) 'threadId': threadId,
+    if (spaceId.isNotEmpty) 'spaceId': spaceId,
+    if (sessionId.isNotEmpty) 'sessionId': sessionId,
+    if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
   };
 
@@ -207,6 +262,10 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     ...item,
     if (announcementId.isNotEmpty) 'announcementId': announcementId,
     if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
+    if (threadId.isNotEmpty) 'threadId': threadId,
+    if (spaceId.isNotEmpty) 'spaceId': spaceId,
+    if (sessionId.isNotEmpty) 'sessionId': sessionId,
+    if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
     'data': mergedData,
   };
