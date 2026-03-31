@@ -26,7 +26,6 @@ import '../data/correspondence_live_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
-import '../domain/communication_state.dart';
 
 final _threadOpenProvider = FutureProvider.family<void, String>((
   ref,
@@ -107,7 +106,7 @@ TextAlign _alignForText(String text) {
 }
 
 
-class ThreadStateWrapper extends ConsumerWidget {
+// removed duplicate wrapper class ThreadStateWrapper extends ConsumerWidget {
   const ThreadStateWrapper({super.key, required this.threadId});
 
   final String threadId;
