@@ -18,10 +18,12 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   final Widget child;
 
   @override
-  ConsumerState<AuraIncomingLiveLayer> createState() => _AuraIncomingLiveLayerState();
+  ConsumerState<AuraIncomingLiveLayer> createState() =>
+      _AuraIncomingLiveLayerState();
 }
 
-class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
+class _AuraIncomingLiveLayerState
+    extends ConsumerState<AuraIncomingLiveLayer> {
   Timer? _timer;
   Map<String, dynamic>? _incoming;
   final Set<String> _dismissedIds = <String>{};
@@ -30,8 +32,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCandidate(force: true));
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) => _refreshCandidate());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _refreshCandidate(force: true));
+    _timer =
+        Timer.periodic(const Duration(seconds: 4), (_) => _refreshCandidate());
   }
 
   @override
@@ -47,17 +51,18 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
       final repo = NotificationsRepository(ref.read(dioProvider));
       final items = await repo.list(limit: 30, forceRefresh: force);
       if (!mounted) return;
+
       final currentPath = GoRouterState.of(context).uri.path;
+
       final next = items.firstWhere(
         (item) => _isInterruptCandidate(item, currentPath),
         orElse: () => <String, dynamic>{},
       );
+
       setState(() {
         _incoming = next.isEmpty ? null : next;
       });
-    } catch (_) {
-      // Keep the shell stable even if notifications polling fails.
-    } finally {
+    } catch (_) {} finally {
       _busy = false;
     }
   }
@@ -67,96 +72,66 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
+    // ❌ DO NOT SHOW inside thread / realtime / activity
+    if (currentPath.contains('/thread/') ||
+        currentPath.contains('/realtime') ||
+        currentPath.contains('/activity')) {
+      return false;
+    }
+
     final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
     if (attention != 'INTERRUPT') return false;
 
     final type = _stringOf(item['type']).toUpperCase();
-    final communicationType = _stringOf(data['communicationType']).toUpperCase();
-    final realtimeType = _stringOf(item['realtimeType']).toUpperCase();
+    final communicationType =
+        _stringOf(data['communicationType']).toUpperCase();
+
     final isLive =
-        type == 'LIVE' || communicationType == 'LIVE' || realtimeType.contains('LIVE');
+        type == 'LIVE' || communicationType == 'LIVE';
+
     if (!isLive) return false;
 
-    final deeplink = _resolveRoute(item);
-    if (deeplink.isNotEmpty && _sameContext(currentPath, deeplink)) {
-      return false;
-    }
-
     return true;
-  }
-
-  bool _sameContext(String currentPath, String deeplink) {
-    final current = currentPath.trim();
-    final target = deeplink.trim();
-    if (current.isEmpty || target.isEmpty) return false;
-    if (current == target) return true;
-    return current.startsWith(target) || target.startsWith(current);
-  }
-
-  String _resolveRoute(Map<String, dynamic> item) {
-    final data = _mapOf(item['data']);
-    final direct = _stringOf(item['deeplink']);
-    if (direct.isNotEmpty) return direct;
-    final nested = _stringOf(data['deeplink']);
-    if (nested.isNotEmpty) return nested;
-    final route = _stringOf(data['route']);
-    if (route.isNotEmpty) return route;
-
-    final threadId = _stringOf(item['threadId']).isNotEmpty
-        ? _stringOf(item['threadId'])
-        : _stringOf(data['threadId']);
-    final spaceId = _stringOf(item['spaceId']).isNotEmpty
-        ? _stringOf(item['spaceId'])
-        : _stringOf(data['spaceId']);
-    final sessionId = _stringOf(item['sessionId']).isNotEmpty
-        ? _stringOf(item['sessionId'])
-        : _stringOf(data['sessionId']);
-
-    if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId/thread/$threadId';
-    }
-    if (spaceId.isNotEmpty) {
-      return '/me/correspondence/$spaceId';
-    }
-    if (sessionId.isNotEmpty) {
-      return '/realtime/$sessionId?action=join';
-    }
-    return '';
   }
 
   Future<void> _joinCurrent() async {
     final item = _incoming;
     if (item == null) return;
+
     final repo = NotificationsRepository(ref.read(dioProvider));
+
     final id = _stringOf(item['id']);
-    final sessionId = _stringOf(item['sessionId']).isNotEmpty
-        ? _stringOf(item['sessionId'])
-        : _stringOf(_mapOf(item['data'])['sessionId']);
-    final route = _resolveRoute(item);
+    final data = _mapOf(item['data']);
+
+    final sessionId = _stringOf(data['sessionId']);
+    final threadId = _stringOf(data['threadId']);
+    final spaceId = _stringOf(data['spaceId']);
 
     try {
       if (sessionId.isNotEmpty) {
-        await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+        await ref
+            .read(realtimeControllerProvider.notifier)
+            .join(sessionId);
       }
       if (id.isNotEmpty) {
         await repo.markRead(id);
       }
-    } catch (_) {
-      // Navigation should still happen even if join or markRead fails.
-    }
+    } catch (_) {}
 
     if (!mounted) return;
+
     setState(() {
       _incoming = null;
-      if (id.isNotEmpty) {
-        _dismissedIds.remove(id);
-      }
     });
 
-    if (route.isNotEmpty) {
-      context.go(route);
-    } else if (sessionId.isNotEmpty) {
+    // ✅ ALWAYS return to correspondence first
+    if (threadId.isNotEmpty && spaceId.isNotEmpty) {
+      context.go('/me/correspondence/$spaceId/thread/$threadId');
+      return;
+    }
+
+    if (sessionId.isNotEmpty) {
       context.go('/realtime/$sessionId?action=join');
     }
   }
@@ -164,9 +139,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   void _dismissCurrent() {
     final item = _incoming;
     final id = _stringOf(item?['id']);
+
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
     }
+
     setState(() {
       _incoming = null;
     });
@@ -175,40 +152,46 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   @override
   Widget build(BuildContext context) {
     final item = _incoming;
+
     if (item == null) {
       return widget.child;
     }
 
+    final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
+
     final actorName = _firstNonEmpty([
       _stringOf(actor['displayName']),
       _stringOf(actor['handle']),
-      _stringOf(item['actorName']),
       'Someone',
     ]);
-    final title = _firstNonEmpty([
-      _stringOf(item['title']),
-      _stringOf(_mapOf(item['data'])['title']),
-      'Live request',
+
+    final mode = _stringOf(data['mode']).toLowerCase();
+    final contextName = _firstNonEmpty([
+      _stringOf(data['contextName']),
+      'this conversation',
     ]);
-    final body = _firstNonEmpty([
-      _stringOf(item['body']),
-      _stringOf(_mapOf(item['data'])['body']),
-      'Live is ready to join.',
-    ]);
-    final mode = _stringOf(_mapOf(item['data'])['mode']).toUpperCase();
-    final modeLabel = mode == 'VIDEO'
-        ? 'Video'
-        : mode == 'SCREEN'
-            ? 'Screen'
-            : 'Audio';
+
+    final title = mode == 'video'
+        ? '$actorName started a video call'
+        : '$actorName started an audio call';
+
+    final body = 'Live is active in $contextName.';
 
     return Stack(
       children: [
         widget.child,
+
+        /// 🔒 block background interaction
         Positioned.fill(
-          child: Container(color: Colors.black.withOpacity(0.55)),
+          child: GestureDetector(
+            onTap: () {},
+            child: Container(
+              color: Colors.black.withOpacity(0.55),
+            ),
+          ),
         ),
+
         Positioned.fill(
           child: SafeArea(
             child: Center(
@@ -223,21 +206,19 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$modeLabel live',
+                          mode == 'video' ? 'Video live' : 'Audio live',
                           style: AuraText.small.copyWith(
                             color: AuraSurface.muted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: AuraSpace.s8),
-                        Text(
-                          actorName,
-                          style: AuraText.title,
-                        ),
+                        Text(actorName, style: AuraText.title),
                         const SizedBox(height: AuraSpace.s8),
                         Text(
                           title,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                          style: AuraText.body
+                              .copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: AuraSpace.s8),
                         Text(body, style: AuraText.body),
@@ -275,9 +256,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) {
-    return value.map((key, val) => MapEntry(key.toString(), val));
+    return value.map((k, v) => MapEntry(k.toString(), v));
   }
-  return const <String, dynamic>{};
+  return {};
 }
 
 String _stringOf(dynamic value) {
@@ -286,8 +267,8 @@ String _stringOf(dynamic value) {
 }
 
 String _firstNonEmpty(List<String> values) {
-  for (final value in values) {
-    if (value.trim().isNotEmpty) return value.trim();
+  for (final v in values) {
+    if (v.trim().isNotEmpty) return v.trim();
   }
   return '';
 }
