@@ -267,46 +267,55 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       _stringOf(item['sessionId']),
     ]);
 
+    final communicationTarget = _resolver.resolveFromPayload({
+      ...item,
+      ...data,
+      if (threadId.isNotEmpty) 'threadId': threadId,
+      if (spaceId.isNotEmpty) 'spaceId': spaceId,
+      if (realtimeSessionId.isNotEmpty) 'sessionId': realtimeSessionId,
+      if (deeplink.isNotEmpty) 'deeplink': deeplink,
+      if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
+    });
+
     final isRealtimeActivity = realtimeType.startsWith('REALTIME_') ||
         deeplink.startsWith('/realtime') ||
         realtimeSessionId.isNotEmpty;
 
-    if (isRealtimeActivity) {
-      final target = _resolver.resolveFromPayload({
-        ...data,
-        if (threadId.isNotEmpty) 'threadId': threadId,
-        if (spaceId.isNotEmpty) 'spaceId': spaceId,
-        if (realtimeSessionId.isNotEmpty) 'sessionId': realtimeSessionId,
-      });
-
-      switch (target.owner) {
+    if (isRealtimeActivity || communicationTarget.hasOwner) {
+      switch (communicationTarget.owner) {
         case CommunicationOwner.thread:
-          if ((target.threadId ?? '').isNotEmpty) {
+          if ((communicationTarget.threadId ?? '').isNotEmpty) {
             await _openThreadTarget(
-              threadId: target.threadId!,
-              spaceIdHint: target.spaceId,
+              threadId: communicationTarget.threadId!,
+              spaceIdHint: communicationTarget.spaceId,
             );
             return;
           }
           break;
-
         case CommunicationOwner.space:
-        case CommunicationOwner.spaceLiveRoom:
-          if ((target.spaceId ?? '').isNotEmpty) {
-            context.push('/me/correspondence/${target.spaceId}');
+          if ((communicationTarget.spaceId ?? '').isNotEmpty) {
+            context.push('/me/correspondence/${communicationTarget.spaceId}');
             return;
           }
           break;
-
         case CommunicationOwner.standaloneRealtime:
-          if ((target.sessionId ?? '').isNotEmpty) {
-            context.push('/realtime/${target.sessionId}?action=join');
+          if ((communicationTarget.sessionId ?? '').isNotEmpty) {
+            context.push('/realtime/${communicationTarget.sessionId}?action=join');
             return;
           }
+          break;
+        case CommunicationOwner.unknown:
           break;
       }
 
-      return;
+      if (communicationTarget.deeplink != null && communicationTarget.deeplink!.isNotEmpty) {
+        context.push(communicationTarget.deeplink!);
+        return;
+      }
+
+      if (isRealtimeActivity) {
+        return;
+      }
     }
 
     if (deeplink.isNotEmpty) {
@@ -411,7 +420,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final cleanSpaceId = (spaceIdHint ?? '').trim();
 
     if (cleanThreadId.isEmpty) {
-      context.push('/conversations');
+      context.push('/me/correspondence');
       return;
     }
 
@@ -436,7 +445,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     } catch (_) {}
 
     if (!mounted) return;
-    context.push('/conversations?threadId=$cleanThreadId');
+    context.push('/me/correspondence');
   }
 
   @override

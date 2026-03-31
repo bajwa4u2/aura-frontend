@@ -970,7 +970,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     if (surfaceType == 'space') {
       if (normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId) return true;
-      if (normalizedThreadId.isNotEmpty && surfaceId == normalizedThreadId) return true;
     }
 
     return false;

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 enum CommunicationOwner {
   thread,
   space,
-  spaceLiveRoom,
   standaloneRealtime,
+  unknown,
 }
 
 class CommunicationTarget {
@@ -12,102 +12,180 @@ class CommunicationTarget {
   final String? threadId;
   final String? spaceId;
   final String? sessionId;
+  final String? deeplink;
 
   const CommunicationTarget({
     required this.owner,
     this.threadId,
     this.spaceId,
     this.sessionId,
+    this.deeplink,
   });
+
+  bool get hasOwner => owner != CommunicationOwner.unknown;
 }
 
 class CommunicationResolver {
   const CommunicationResolver();
 
   CommunicationTarget resolveFromPayload(Map<String, dynamic> payload) {
-    String pick(List<String> keys) {
-      for (final k in keys) {
-        final v = (payload[k] ?? '').toString().trim();
-        if (v.isNotEmpty) return v;
-      }
-      return '';
-    }
+    final session = _mapOf(payload['session']);
+    final metadata = _mapOf(session['metadata']);
+    final meta = _mapOf(payload['metadata']);
 
-    // shallow
-    String threadId = pick(['threadId','thread_id']);
-    String spaceId  = pick(['spaceId','space_id','surfaceId','surface_id']);
-    String sessionId= pick(['sessionId','session_id','id']);
+    final deeplink = _firstNonEmpty([
+      _stringOf(payload['deeplink']),
+      _stringOf(payload['link']),
+      _stringOf(payload['url']),
+      _stringOf(meta['deeplink']),
+      _stringOf(metadata['deeplink']),
+    ]);
 
-    final surfaceType =
-        (payload['surfaceType'] ?? payload['surface_type'] ?? '')
-            .toString()
-            .trim()
-            .toLowerCase();
+    final parsed = _parseDeeplink(deeplink);
 
-    // nested session support (CRITICAL)
-    final session = (payload['session'] is Map)
-        ? Map<String, dynamic>.from(payload['session'])
-        : <String, dynamic>{};
+    final threadId = _firstNonEmpty([
+      _stringOf(payload['threadId']),
+      _stringOf(payload['thread_id']),
+      _stringOf(meta['threadId']),
+      _stringOf(metadata['threadId']),
+      parsed.threadId ?? '',
+    ]);
 
-    final metadata = (session['metadata'] is Map)
-        ? Map<String, dynamic>.from(session['metadata'])
-        : <String, dynamic>{};
+    final spaceId = _firstNonEmpty([
+      _stringOf(payload['spaceId']),
+      _stringOf(payload['space_id']),
+      _stringOf(meta['spaceId']),
+      _stringOf(metadata['spaceId']),
+      _stringOf(payload['surfaceType']).toUpperCase() == 'SPACE'
+          ? _stringOf(payload['surfaceId'])
+          : '',
+      _stringOf(session['surfaceType']).toUpperCase() == 'SPACE'
+          ? _stringOf(session['surfaceId'])
+          : '',
+      parsed.spaceId ?? '',
+    ]);
 
-    if (threadId.isEmpty) {
-      threadId = (metadata['threadId'] ?? metadata['thread_id'] ?? '')
-          .toString()
-          .trim();
-    }
+    final sessionId = _firstNonEmpty([
+      _stringOf(payload['sessionId']),
+      _stringOf(payload['session_id']),
+      _stringOf(session['id']),
+      _stringOf(session['sessionId']),
+      _stringOf(payload['id']),
+    ]);
 
-    if (spaceId.isEmpty) {
-      final sType = (session['surfaceType'] ?? '').toString().toLowerCase();
-      final sId   = (session['surfaceId'] ?? '').toString().trim();
-      if (sType == 'space' && sId.isNotEmpty) {
-        spaceId = sId;
-      }
-    }
+    final ownerType = _firstNonEmpty([
+      _stringOf(payload['ownerType']).toUpperCase(),
+      _stringOf(meta['ownerType']).toUpperCase(),
+      _stringOf(metadata['ownerType']).toUpperCase(),
+      parsed.ownerType ?? '',
+    ]);
 
-    if (sessionId.isEmpty) {
-      sessionId = (session['id'] ?? session['sessionId'] ?? '')
-          .toString()
-          .trim();
-    }
-
-    // decision
     if (threadId.isNotEmpty) {
       return CommunicationTarget(
         owner: CommunicationOwner.thread,
         threadId: threadId,
-        spaceId: spaceId,
-        sessionId: sessionId,
+        spaceId: spaceId.isEmpty ? null : spaceId,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        deeplink: deeplink.isEmpty ? null : deeplink,
       );
     }
 
-    if ((surfaceType == 'space' || (session['surfaceType'] ?? '').toString().toLowerCase() == 'space')
-        && spaceId.isNotEmpty) {
+    if (spaceId.isNotEmpty) {
       return CommunicationTarget(
         owner: CommunicationOwner.space,
         spaceId: spaceId,
-        sessionId: sessionId,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        deeplink: deeplink.isEmpty ? null : deeplink,
+      );
+    }
+
+    if (ownerType == 'REALTIME' || deeplink.startsWith('/realtime/')) {
+      return CommunicationTarget(
+        owner: CommunicationOwner.standaloneRealtime,
+        sessionId: sessionId.isEmpty ? null : sessionId,
+        deeplink: deeplink.isEmpty ? null : deeplink,
       );
     }
 
     return CommunicationTarget(
-      owner: CommunicationOwner.standaloneRealtime,
-      sessionId: sessionId,
+      owner: CommunicationOwner.unknown,
+      sessionId: sessionId.isEmpty ? null : sessionId,
+      deeplink: deeplink.isEmpty ? null : deeplink,
     );
   }
 
   String resolveRoute(CommunicationTarget target) {
     switch (target.owner) {
       case CommunicationOwner.thread:
-        return '/me/correspondence/${target.spaceId ?? ''}/thread/${target.threadId ?? ''}';
+        if ((target.spaceId ?? '').isNotEmpty && (target.threadId ?? '').isNotEmpty) {
+          return '/me/correspondence/${target.spaceId!}/thread/${target.threadId!}';
+        }
+        return target.deeplink ?? '/me/correspondence';
       case CommunicationOwner.space:
-        return '/me/correspondence/${target.spaceId ?? ''}';
-      case CommunicationOwner.spaceLiveRoom:
-        return '/space-live/${target.spaceId ?? ''}';
+        if ((target.spaceId ?? '').isNotEmpty) {
+          return '/me/correspondence/${target.spaceId!}';
+        }
+        return target.deeplink ?? '/me/correspondence';
       case CommunicationOwner.standaloneRealtime:
-        return '/realtime/${target.sessionId ?? ''}';
+        if ((target.sessionId ?? '').isNotEmpty) {
+          return '/realtime/${target.sessionId!}?action=join';
+        }
+        return target.deeplink ?? '/realtime';
+      case CommunicationOwner.unknown:
+        return target.deeplink ?? '/activity';
     }
   }
+
+  _ResolvedDeeplink _parseDeeplink(String value) {
+    final raw = value.trim();
+    if (raw.isEmpty) return const _ResolvedDeeplink();
+
+    final threadMatch = RegExp(r'^/me/correspondence/([^/]+)/thread/([^/?#]+)').firstMatch(raw);
+    if (threadMatch != null) {
+      return _ResolvedDeeplink(
+        ownerType: 'THREAD',
+        spaceId: threadMatch.group(1),
+        threadId: threadMatch.group(2),
+      );
+    }
+
+    final spaceMatch = RegExp(r'^/me/correspondence/([^/?#]+)').firstMatch(raw);
+    if (spaceMatch != null) {
+      return _ResolvedDeeplink(ownerType: 'SPACE', spaceId: spaceMatch.group(1));
+    }
+
+    if (raw.startsWith('/realtime/')) {
+      return const _ResolvedDeeplink(ownerType: 'REALTIME');
+    }
+
+    return const _ResolvedDeeplink();
+  }
+}
+
+class _ResolvedDeeplink {
+  final String? ownerType;
+  final String? threadId;
+  final String? spaceId;
+
+  const _ResolvedDeeplink({this.ownerType, this.threadId, this.spaceId});
+}
+
+Map<String, dynamic> _mapOf(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map((key, val) => MapEntry(key.toString(), val));
+  }
+  return const {};
+}
+
+String _stringOf(dynamic value) {
+  if (value == null) return '';
+  return value.toString().trim();
+}
+
+String _firstNonEmpty(List<String> values) {
+  for (final value in values) {
+    if (value.trim().isNotEmpty) return value.trim();
+  }
+  return '';
 }

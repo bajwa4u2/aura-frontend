@@ -202,20 +202,18 @@ bool _targetsThreadOrSpace(
   }
 
   final surfaceId = _pick(payload, const ['surfaceId', 'surface_id']);
-  if (surfaceId.isNotEmpty &&
-      (surfaceId == normalizedThreadId ||
-          (normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId))) {
-    return true;
+  final surfaceType = _pick(payload, const ['surfaceType', 'surface_type']).toLowerCase();
+  if (surfaceId.isNotEmpty) {
+    if (surfaceType == 'space' && normalizedSpaceId.isNotEmpty && surfaceId == normalizedSpaceId) {
+      return true;
+    }
+    if ((surfaceType == 'dm' || surfaceType == 'thread') && surfaceId == normalizedThreadId) {
+      return true;
+    }
   }
 
   if (event.matchesThread(normalizedThreadId)) return true;
   if (normalizedSpaceId.isNotEmpty && event.matchesSpace(normalizedSpaceId)) {
-    return true;
-  }
-
-  final sessionId = _extractSessionId(event);
-  if (sessionId.isNotEmpty &&
-      (event.name.startsWith('session:') || event.name.startsWith('realtime:'))) {
     return true;
   }
 
