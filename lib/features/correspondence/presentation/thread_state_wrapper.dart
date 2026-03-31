@@ -25,6 +25,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   String? _lastSessionId;
   bool _syncing = false;
   bool _postFrameSyncQueued = false;
+  String? _joinedSpaceId;
 
   String _currentSpaceId() {
     try {
@@ -42,8 +43,14 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   Future<void> _bindLive() async {
     final live = ref.read(correspondenceLiveServiceProvider);
+    final spaceId = _currentSpaceId();
 
     await live.joinThread(widget.threadId);
+    if (spaceId.isNotEmpty) {
+      await live.joinSpace(spaceId);
+      _joinedSpaceId = spaceId;
+    }
+
     await _syncFromController();
 
     _subscription = live.events.listen((event) {
@@ -56,7 +63,6 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
       }
 
       final sessionId = _extractSessionId(event);
-
       if (sessionId.isNotEmpty && sessionId != _lastSessionId) {
         _lastSessionId = sessionId;
         unawaited(
@@ -86,7 +92,9 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         spaceId: spaceId.isEmpty ? null : spaceId,
       );
 
-      if (activeSessionId != null && activeSessionId.isNotEmpty && activeSessionId != _lastSessionId) {
+      if (activeSessionId != null &&
+          activeSessionId.isNotEmpty &&
+          activeSessionId != _lastSessionId) {
         _lastSessionId = activeSessionId;
         await notifier.hydrateSession(activeSessionId);
         return;
@@ -94,10 +102,12 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
       final session = liveState.session;
       if (session != null && session.isActive) {
-        final sessionSurfaceId = (session.surfaceId ?? '').trim();
         final sessionType = session.surfaceType.name.trim().toLowerCase();
-        final matchesThread = sessionType == 'dm' && sessionSurfaceId == widget.threadId.trim();
-        final matchesSpace = sessionType == 'space' &&
+        final sessionSurfaceId = (session.surfaceId ?? '').trim();
+        final matchesThread =
+            sessionType == 'dm' && sessionSurfaceId == widget.threadId.trim();
+        final matchesSpace =
+            sessionType == 'space' &&
             spaceId.isNotEmpty &&
             sessionSurfaceId == spaceId;
 
@@ -117,7 +127,15 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   @override
   void dispose() {
     _subscription?.cancel();
-    unawaited(ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId));
+    unawaited(
+      ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId),
+    );
+    final spaceId = _joinedSpaceId;
+    if (spaceId != null && spaceId.isNotEmpty) {
+      unawaited(
+        ref.read(correspondenceLiveServiceProvider).leaveSpace(spaceId),
+      );
+    }
     super.dispose();
   }
 
@@ -191,6 +209,9 @@ bool _targetsThreadOrSpace(
   }
 
   if (event.matchesThread(normalizedThreadId)) return true;
+  if (normalizedSpaceId.isNotEmpty && event.matchesSpace(normalizedSpaceId)) {
+    return true;
+  }
 
   final sessionId = _extractSessionId(event);
   if (sessionId.isNotEmpty &&
