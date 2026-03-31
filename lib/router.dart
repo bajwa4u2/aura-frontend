@@ -52,7 +52,7 @@ import 'features/institutions/correspondence/institution_correspondence_screen.d
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
-import 'features/correspondence/presentation/thread_screen.dart';
+import 'features/correspondence/presentation/thread_state_wrapper.dart';
 import 'features/correspondence/presentation/invite_member_screen.dart';
 import 'features/create/presentation/create_hub_screen.dart';
 import 'features/invitations/presentation/invite_hub_screen.dart';
@@ -616,11 +616,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/me/correspondence/:spaceId/thread/:threadId',
             builder: (context, state) => ThreadStateWrapper(
-              child: ThreadScreen(
-                threadId: state.pathParameters['threadId'] ?? '',
+              threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
-
 
           GoRoute(
             path: '/realtime',

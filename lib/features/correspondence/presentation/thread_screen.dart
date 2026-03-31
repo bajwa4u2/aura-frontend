@@ -106,99 +106,106 @@ TextAlign _alignForText(String text) {
 }
 
 
-// removed duplicate wrapper class ThreadStateWrapper extends ConsumerWidget {
-  const ThreadStateWrapper({super.key, required this.threadId});
 
-  final String threadId;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    const state = CommunicationState.idle;
+String _threadResolvedSessionId(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+  String fallbackThreadId,
+) {
+  final direct = _pickString(thread, const [
+    'liveSessionId',
+    'activeSessionId',
+    'sessionId',
+    'realtimeSessionId',
+    'currentSessionId',
+  ]);
+  if (direct.isNotEmpty) return direct;
 
-    switch (state) {
-      case CommunicationState.idle:
-        return ThreadScreen(threadId: threadId);
-      case CommunicationState.incoming:
-        return const _IncomingCallStateView();
-      case CommunicationState.joining:
-        return const _JoiningStateView();
-      case CommunicationState.audio:
-        return const _AudioCallStateView();
-      case CommunicationState.video:
-        return const _VideoCallStateView();
-      case CommunicationState.group:
-        return const _GroupLiveStateView();
-      case CommunicationState.ending:
-        return const _EndingStateView();
-    }
-  }
+  final nested = _pickNested(thread, const [
+    ['live', 'sessionId'],
+    ['activeLive', 'sessionId'],
+    ['realtime', 'sessionId'],
+    ['session', 'id'],
+    ['activeSession', 'id'],
+  ]);
+  if (nested.isNotEmpty) return nested;
+
+  final active = liveState.activeSessionIdForCorrespondence(
+    threadId: fallbackThreadId,
+    spaceId: _pickString(thread, const ['spaceId', 'space_id']),
+  );
+  return (active ?? '').trim();
 }
 
-class _IncomingCallStateView extends StatelessWidget {
-  const _IncomingCallStateView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Incoming call')),
-    );
-  }
+String _threadLiveKind(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final direct = _pickString(thread, const [
+    'liveKind',
+    'callKind',
+    'callMode',
+    'sessionKind',
+    'liveMode',
+  ]).toLowerCase();
+  if (direct == 'audio' || direct == 'video') return direct;
+  if (liveState.isVideoMode) return 'video';
+  if (liveState.isAudioMode) return 'audio';
+  return 'audio';
 }
 
-class _JoiningStateView extends StatelessWidget {
-  const _JoiningStateView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
+String _threadStartedByUserId(
+  Map<String, dynamic> thread,
+  RealtimeState liveState,
+) {
+  final direct = _pickString(thread, const [
+    'startedByUserId',
+    'liveStartedByUserId',
+    'callerUserId',
+    'ownerUserId',
+  ]);
+  if (direct.isNotEmpty) return direct;
+  final nested = _pickNested(thread, const [
+    ['live', 'startedByUserId'],
+    ['activeLive', 'startedByUserId'],
+    ['realtime', 'startedByUserId'],
+    ['session', 'startedByUserId'],
+  ]);
+  if (nested.isNotEmpty) return nested;
+  return (liveState.session?.startedByUserId ?? '').trim();
 }
 
-class _AudioCallStateView extends StatelessWidget {
-  const _AudioCallStateView();
+bool _eventTargetsThread(
+  CorrespondenceLiveEvent event,
+  String threadId,
+) {
+  final payload = event.payload;
+  final normalizedThreadId = threadId.trim();
+  if (normalizedThreadId.isEmpty) return false;
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Audio call')),
-    );
+  final directThreadId = _pickString(payload, const ['threadId', 'thread_id']);
+  if (directThreadId.isNotEmpty && directThreadId == normalizedThreadId) return true;
+
+  final metadataThreadId = _pickNested(payload, const [
+    ['metadata', 'threadId'],
+    ['meta', 'threadId'],
+    ['session', 'metadata', 'threadId'],
+    ['session', 'meta', 'threadId'],
+    ['live', 'threadId'],
+    ['realtime', 'threadId'],
+  ]);
+  if (metadataThreadId.isNotEmpty && metadataThreadId == normalizedThreadId) return true;
+
+  final surfaceType = _pickString(payload, const ['surfaceType', 'surface_type']).toUpperCase();
+  final surfaceId = _pickString(payload, const ['surfaceId', 'surface_id']);
+  if (surfaceType == 'DM' && surfaceId.isNotEmpty && surfaceId == normalizedThreadId) {
+    return true;
   }
+
+  return event.matchesThread(normalizedThreadId);
 }
 
-class _VideoCallStateView extends StatelessWidget {
-  const _VideoCallStateView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Video call')),
-    );
-  }
-}
-
-class _GroupLiveStateView extends StatelessWidget {
-  const _GroupLiveStateView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Group live')),
-    );
-  }
-}
-
-class _EndingStateView extends StatelessWidget {
-  const _EndingStateView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Ending session')),
-    );
-  }
-}
 
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
@@ -293,6 +300,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     data: (thread) => _ThreadHeaderCard(
                       thread: thread,
                       liveState: liveState,
+                      currentUserId: currentUserId,
                       onOpenSpace: () {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
@@ -305,15 +313,23 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           '/invite/create?destinationType=JOIN_SPACE'
                           '&spaceId=${Uri.encodeComponent(spaceId)}'
                           '&threadId=${Uri.encodeComponent(threadId)}'
-                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId')}',
+                          '&returnTo=${Uri.encodeComponent('/me/correspondence/$spaceId/thread/$threadId)}',
                         );
+                        if (!context.mounted) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
+                        ref.invalidate(_messagesProvider(widget.threadId));
+                      },
+                      onAddMembers: () async {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        await context.push('/me/correspondence/$spaceId/invite');
                         if (!context.mounted) return;
                         ref.invalidate(_threadDetailProvider(widget.threadId));
                         ref.invalidate(_messagesProvider(widget.threadId));
                       },
                       onStartAudio: () async {
                         final controller = ref.read(realtimeControllerProvider.notifier);
-                        await controller.ensureCorrespondenceLive(
+                        final sessionId = await controller.ensureCorrespondenceLive(
                           surfaceType: _threadLiveSurfaceType(thread),
                           surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
                           kind: 'AUDIO',
@@ -322,10 +338,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
                           }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
                         );
+                        if (!mounted || sessionId.trim().isEmpty) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
                       },
                       onStartVideo: () async {
                         final controller = ref.read(realtimeControllerProvider.notifier);
-                        await controller.ensureCorrespondenceLive(
+                        final sessionId = await controller.ensureCorrespondenceLive(
                           surfaceType: _threadLiveSurfaceType(thread),
                           surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
                           kind: 'VIDEO',
@@ -334,9 +352,15 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
                           }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
                         );
+                        if (!mounted || sessionId.trim().isEmpty) return;
+                        ref.invalidate(_threadDetailProvider(widget.threadId));
                       },
                       onJoinLive: () async {
-                        final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+                        final sessionId = _threadResolvedSessionId(
+                          thread,
+                          liveState,
+                          widget.threadId,
+                        );
                         if (sessionId.isEmpty) return;
                         final controller = ref.read(realtimeControllerProvider.notifier);
                         await controller.join(sessionId);
@@ -545,8 +569,10 @@ class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
     required this.liveState,
+    required this.currentUserId,
     required this.onOpenSpace,
     required this.onInvite,
+    required this.onAddMembers,
     required this.onStartAudio,
     required this.onStartVideo,
     required this.onJoinLive,
@@ -557,8 +583,10 @@ class _ThreadHeaderCard extends StatelessWidget {
 
   final Map<String, dynamic> thread;
   final RealtimeState liveState;
+  final String currentUserId;
   final VoidCallback onOpenSpace;
   final VoidCallback onInvite;
+  final VoidCallback onAddMembers;
   final Future<void> Function() onStartAudio;
   final Future<void> Function() onStartVideo;
   final Future<void> Function() onJoinLive;
@@ -632,6 +660,11 @@ class _ThreadHeaderCard extends StatelessWidget {
                         icon: Icons.videocam_rounded,
                         onPressed: () => onStartVideo(),
                       ),
+                      if (spaceId.isNotEmpty)
+                        _HeaderIconAction(
+                          icon: Icons.person_add_alt_1_rounded,
+                          onPressed: onAddMembers,
+                        ),
                       if (spaceId.isNotEmpty)
                         _HeaderIconAction(
                           icon: Icons.group_add_rounded,
@@ -774,11 +807,30 @@ class _ThreadLiveDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final belongsHere = _threadMatchesLiveState(liveState, thread);
-    final sessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
-    final hasLive = belongsHere && sessionId.isNotEmpty;
+    final sessionId = _threadResolvedSessionId(
+      thread,
+      liveState,
+      _pickString(thread, const ['id', 'threadId']),
+    );
+    final hasLive = sessionId.isNotEmpty && (belongsHere || _pickString(thread, const ['liveSessionId', 'activeSessionId']).isNotEmpty || _pickNested(thread, const [
+      ['live', 'sessionId'],
+      ['activeLive', 'sessionId'],
+      ['realtime', 'sessionId'],
+    ]).isNotEmpty);
     if (!hasLive) return const SizedBox.shrink();
 
     final joinedCount = liveState.participants.where((p) => p.isPresent).length;
+    final startedByUserId = _threadStartedByUserId(thread, liveState);
+    final startedByEntity = _extractParticipants(thread).cast<Map<String, dynamic>?>().firstWhere(
+      (participant) {
+        if (participant == null) return false;
+        final id = _pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+        return id.isNotEmpty && id == startedByUserId;
+      },
+      orElse: () => null,
+    );
+    final startedByName = startedByEntity == null ? '' : _identityLabel(startedByEntity);
+    final liveKind = _threadLiveKind(thread, liveState);
     final hasVideoStage = liveState.isJoined && (liveState.isVideoMode ||
         (!liveState.isAudioMode && (liveState.localRenderer != null ||
             liveState.remoteRenderers.isNotEmpty ||
@@ -794,6 +846,14 @@ class _ThreadLiveDock extends StatelessWidget {
           isBusy: liveState.isBusy,
           microphoneEnabled: liveState.microphoneEnabled,
           cameraEnabled: liveState.cameraEnabled,
+          liveLabel: startedByName.isNotEmpty
+              ? (liveState.isJoined
+                  ? '$startedByName · ${liveKind == 'video' ? 'video' : 'audio'}'
+                  : '$startedByName is calling')
+              : (liveKind == 'video' ? 'Video call' : 'Audio call'),
+          liveDetail: joinedCount > 0
+              ? (joinedCount == 1 ? '1 joined' : '$joinedCount joined')
+              : 'Waiting for response',
           onJoin: onJoinLive,
           onLeave: onLeaveLive,
           onToggleMicrophone: onToggleMicrophone,
@@ -833,6 +893,8 @@ class _ThreadStatusStrip extends StatelessWidget {
     required this.isBusy,
     required this.microphoneEnabled,
     required this.cameraEnabled,
+    required this.liveLabel,
+    required this.liveDetail,
     required this.onJoin,
     required this.onLeave,
     required this.onToggleMicrophone,
@@ -844,6 +906,8 @@ class _ThreadStatusStrip extends StatelessWidget {
   final bool isBusy;
   final bool microphoneEnabled;
   final bool cameraEnabled;
+  final String liveLabel;
+  final String liveDetail;
   final Future<void> Function() onJoin;
   final Future<void> Function() onLeave;
   final Future<void> Function() onToggleMicrophone;
@@ -869,18 +933,27 @@ class _ThreadStatusStrip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AuraSpace.s10),
-          Text(
-            isJoined ? 'Live' : 'Calling',
-            style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-          if (joinedCount > 0) ...[
-            const SizedBox(width: AuraSpace.s10),
-            Text(
-              '$joinedCount',
-              style: AuraText.small.copyWith(color: Colors.white70, fontWeight: FontWeight.w700),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  liveLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                ),
+                if (liveDetail.trim().isNotEmpty)
+                  Text(
+                    liveDetail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(color: Colors.white70),
+                  ),
+              ],
             ),
-          ],
-          const Spacer(),
+          ),
+          const SizedBox(width: AuraSpace.s10),
           if (!isJoined)
             _StripIconButton(
               icon: Icons.login_rounded,
