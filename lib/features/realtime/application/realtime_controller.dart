@@ -111,6 +111,20 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _pendingOfferTargets.clear();
   }
 
+
+  String _transportPeerKeyFromPayload(Map<String, dynamic> payload) {
+    final socketId = (payload['socketId'] ?? '').toString().trim();
+    if (socketId.isNotEmpty) return socketId;
+    final fromSocketId = (payload['fromSocketId'] ?? '').toString().trim();
+    if (fromSocketId.isNotEmpty) return fromSocketId;
+    final userId = (payload['userId'] ?? '').toString().trim();
+    return userId;
+  }
+
+  String _participantUserIdFromPayload(Map<String, dynamic> payload) {
+    return (payload['userId'] ?? '').toString().trim();
+  }
+
   Future<void> _flushPendingOffers({
     bool refreshTurnCredentials = false,
   }) async {
@@ -955,8 +969,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           lastSocketEvent: event.name,
         );
 
-        final targetSocketId = event.payload['socketId']?.toString() ?? '';
-        final peerKey = event.payload['userId']?.toString() ?? '';
+        final peerKey = _transportPeerKeyFromPayload(event.payload);
+        final targetSocketId = (event.payload['socketId'] ?? '').toString().trim();
         if (peerKey.isNotEmpty && targetSocketId.isNotEmpty) {
           _queueOfferTarget(
             peerKey: peerKey,
@@ -968,7 +982,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:participant.left':
-        final leavingUserId = event.payload['userId']?.toString();
+        final leavingUserId = _participantUserIdFromPayload(event.payload);
+        final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
         final updatedParticipants = state.participants
             .where((participant) => participant.userId != leavingUserId)
             .toList();
@@ -978,7 +993,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           lastSocketEvent: event.name,
         );
 
-        if (leavingUserId != null && leavingUserId.isNotEmpty) {
+        if (leavingPeerKey.isNotEmpty) {
+          _removePendingOfferTarget(leavingPeerKey);
+          unawaited(_mediaService.removePeer(leavingPeerKey));
+        } else if (leavingUserId.isNotEmpty) {
           _removePendingOfferTarget(leavingUserId);
           unawaited(_mediaService.removePeer(leavingUserId));
         }
@@ -1000,7 +1018,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           final configuration = _rtcConfiguration;
           if (configuration == null) return;
 
-          final peerKey = event.payload['userId']?.toString() ?? event.payload['fromSocketId']?.toString() ?? '';
+          final peerKey = _transportPeerKeyFromPayload(event.payload);
           final fromSocketId = event.payload['fromSocketId']?.toString();
           if (peerKey.isEmpty || fromSocketId == null || fromSocketId.isEmpty) return;
           final answer = await _mediaService.handleRemoteOffer(
@@ -1033,7 +1051,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:answer':
         unawaited(() async {
-          final peerKey = event.payload['userId']?.toString() ?? event.payload['fromSocketId']?.toString() ?? '';
+          final peerKey = _transportPeerKeyFromPayload(event.payload);
           if (peerKey.isEmpty) return;
           final sdp = event.payload['sdp'];
           if (sdp is Map) {
@@ -1047,7 +1065,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:ice-candidate':
         unawaited(() async {
-          final peerKey = event.payload['userId']?.toString() ?? event.payload['fromSocketId']?.toString() ?? '';
+          final peerKey = _transportPeerKeyFromPayload(event.payload);
           if (peerKey.isEmpty) return;
           final candidate = event.payload['candidate'];
           if (candidate is Map) {
