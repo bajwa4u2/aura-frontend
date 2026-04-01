@@ -154,6 +154,7 @@ class RealtimeMediaService {
   }) async {
     final connection = await _ensurePeer(
       configuration: configuration,
+      onIceCandidate: onIceCandidate,
     );
     _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
@@ -174,6 +175,7 @@ class RealtimeMediaService {
   }) async {
     final connection = await _ensurePeer(
       configuration: configuration,
+      onIceCandidate: onIceCandidate,
     );
     _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
