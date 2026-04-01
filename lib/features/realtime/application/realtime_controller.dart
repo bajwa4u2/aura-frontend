@@ -232,13 +232,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
-      await _repository.joinSession(trimmed);
-      
+      await hydrateSession(trimmed);
+
+      final session = state.session;
+      if (session == null) {
+        throw StateError('Live session could not be loaded.');
+      }
+
+      await _repository.joinSession(session);
+
       await _socketService.emitAck('session:join', <String, dynamic>{
         'sessionId': trimmed,
       });
 
-      await hydrateSession(trimmed);
       await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
 
       state = state.copyWith(

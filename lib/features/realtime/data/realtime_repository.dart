@@ -173,8 +173,33 @@ class RealtimeRepository {
     await _dio.post('/realtime/sessions/$sessionId/join-request');
   }
 
-  Future<void> joinSession(String sessionId) async {
-    await _dio.post('/realtime/sessions/$sessionId/join');
+
+  Future<void> joinSession(RealtimeSession session) async {
+    final id = session.id.trim();
+    if (id.isEmpty) return;
+
+    final surfaceId = (session.surfaceId ?? '').trim();
+    final surfaceType = session.surfaceType.name.trim().toLowerCase();
+
+    if ((surfaceType == 'thread' || surfaceType == 'dm') && surfaceId.isNotEmpty) {
+      await _dio.post('/threads/$surfaceId/live/$id/join');
+      return;
+    }
+
+    if (surfaceType == 'space' && surfaceId.isNotEmpty) {
+      await _dio.post('/spaces/$surfaceId/live/$id/join');
+      return;
+    }
+
+    if ((surfaceType == 'room' ||
+            surfaceType == 'eventroom' ||
+            surfaceType == 'institutionroom') &&
+        surfaceId.isNotEmpty) {
+      await _dio.post('/rooms/$surfaceId/live/$id/join');
+      return;
+    }
+
+    throw StateError('Unable to determine join route for this live session.');
   }
 
   Future<void> respondToJoinRequest(
