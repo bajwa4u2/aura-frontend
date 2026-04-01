@@ -73,7 +73,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   bool _isInterruptCandidate(Map<String, dynamic> item, String currentPath) {
     final id = _stringOf(item['id']);
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
-    if (_stringOf(item['readAt']).isNotEmpty) return false;
 
     final data = _mapOf(item['data']);
     final sessionId = _firstNonEmpty([
@@ -81,17 +80,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
       _stringOf(item['sessionId']),
     ]);
     if (sessionId.isNotEmpty && _dismissedSessionIds.contains(sessionId)) return false;
-
-    final liveState = ref.read(realtimeControllerProvider);
-    final currentSessionId = _firstNonEmpty([
-      liveState.sessionId ?? '',
-      liveState.session?.id ?? '',
-    ]);
-    if (sessionId.isNotEmpty &&
-        currentSessionId == sessionId &&
-        (liveState.joinState.name == 'joining' || liveState.joinState.name == 'joined')) {
-      return false;
-    }
+    if (_stringOf(item['readAt']).isNotEmpty) return false;
 
     if (currentPath.contains('/thread/') ||
         currentPath.contains('/realtime') ||
@@ -126,9 +115,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     });
 
     final id = _stringOf(item['id']);
+    _dismissedSessionIds.add(sessionId);
     try {
       await ref.read(realtimeControllerProvider.notifier).join(sessionId);
-      _dismissedSessionIds.add(sessionId);
       if (id.isNotEmpty) {
         await ref.read(notificationsRepoProvider).markRead(id);
       }
@@ -142,6 +131,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
 
       context.go(_resolver.resolveRoute(target));
     } catch (_) {
+      _dismissedSessionIds.remove(sessionId);
       // let user try again
     } finally {
       if (mounted) {
@@ -155,14 +145,13 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   void _dismissCurrent() {
     final item = _incoming;
     final id = _stringOf(item?['id']);
-    final data = _mapOf(item?['data']);
-    final sessionId = _firstNonEmpty([
-      _stringOf(data['sessionId']),
-      _stringOf(item?['sessionId']),
-    ]);
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
     }
+    final sessionId = _firstNonEmpty([
+      _stringOf(_mapOf(item?['data'])['sessionId']),
+      _stringOf(item?['sessionId']),
+    ]);
     if (sessionId.isNotEmpty) {
       _dismissedSessionIds.add(sessionId);
     }

@@ -102,7 +102,10 @@ class RealtimeEventParser {
         break;
     }
 
-    if (state.joinState == RealtimeJoinState.joined) {
+    if (participants.isNotEmpty) {
+      if (state.joinState == RealtimeJoinState.joining && participants.length < 2) {
+        return RealtimeJoinState.joining;
+      }
       return RealtimeJoinState.joined;
     }
     if (session?.isLocked == true && state.joinState == RealtimeJoinState.locked) {

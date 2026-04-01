@@ -223,9 +223,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     _joiningSessionId = trimmed;
     await connect();
-    if (!state.isConnected) {
-      throw StateError('Realtime socket is not connected yet.');
-    }
     _clearRtcConfiguration();
 
     state = state.copyWith(
@@ -246,6 +243,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       final joinedBundle = await _repository.joinSession(session);
       _applyBundle(joinedBundle);
 
+      await connect();
       await _socketService.emitAck('session:join', <String, dynamic>{
         'sessionId': trimmed,
       });
@@ -278,9 +276,6 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     _joiningSessionId = trimmed;
     await connect();
-    if (!state.isConnected) {
-      throw StateError('Realtime socket is not connected yet.');
-    }
     _clearRtcConfiguration();
 
     state = state.copyWith(
