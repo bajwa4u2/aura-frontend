@@ -581,9 +581,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 
   void _applyBundle(RealtimeSessionSnapshot bundle) {
+    final session = bundle.session;
+    final kind = session.kind.name.toLowerCase();
+    final callMode = kind == 'video' ? 'video' : 'audio';
+
     state = state.copyWith(
-      session: bundle.session,
-      sessionId: bundle.session.id,
+      session: session,
+      sessionId: session.id,
+      callMode: callMode,
       participants: bundle.participants,
       policy: bundle.policy,
       consents: bundle.consents,
