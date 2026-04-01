@@ -22,9 +22,7 @@ class ThreadStateWrapper extends ConsumerStatefulWidget {
 
 class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   StreamSubscription<CorrespondenceLiveEvent>? _subscription;
-  String? _lastSessionId;
-  bool _syncing = false;
-  bool _postFrameSyncQueued = false;
+  String? _lastHydratedSessionId;
   String? _joinedSpaceId;
   bool _handledJoinQuery = false;
 
@@ -47,7 +45,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     }
   }
 
-  bool _shouldJoinFromQuery() {
+  bool _shouldJoinFromRoute() {
     try {
       final state = GoRouterState.of(context);
       final fromPath = state.pathParameters['sessionId']?.trim() ?? '';
@@ -75,8 +73,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
       _joinedSpaceId = spaceId;
     }
 
-    await _syncFromController();
-    await _joinFromRouteIfNeeded();
+    await _maybeJoinFromRoute();
 
     _subscription = live.events.listen((event) {
       if (!_targetsThreadOrSpace(
@@ -87,31 +84,42 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         return;
       }
 
-      final sessionId = _extractSessionId(event);
-      if (sessionId.isNotEmpty && sessionId != _lastSessionId) {
-        _lastSessionId = sessionId;
-        unawaited(
-          ref.read(realtimeControllerProvider.notifier).hydrateSession(sessionId),
-        );
-      }
-
-      if (event.name == 'session:removed' || event.name == 'realtime:removed') {
-        unawaited(ref.read(realtimeControllerProvider.notifier).leave());
-      }
-
-      unawaited(_syncFromController());
-      unawaited(_joinFromRouteIfNeeded());
+      _refreshThreadSurface();
+      unawaited(_hydrateFromEvent(event));
     });
   }
 
-  Future<void> _joinFromRouteIfNeeded() async {
-    if (!mounted || _handledJoinQuery || !_shouldJoinFromQuery()) return;
+  void _refreshThreadSurface() {
+    ref.invalidate(threadDetailProvider(widget.threadId));
+    ref.invalidate(messagesProvider(widget.threadId));
+  }
+
+  Future<void> _hydrateFromEvent(CorrespondenceLiveEvent event) async {
+    final notifier = ref.read(realtimeControllerProvider.notifier);
+    final sessionId = _extractSessionId(event);
+
+    if (event.name == 'session:removed' || event.name == 'realtime:removed') {
+      _lastHydratedSessionId = null;
+      await notifier.leave();
+      return;
+    }
+
+    if (sessionId.isNotEmpty && sessionId != _lastHydratedSessionId) {
+      _lastHydratedSessionId = sessionId;
+      await notifier.hydrateSession(sessionId);
+    }
+
+    await _maybeJoinFromRoute();
+  }
+
+  Future<void> _maybeJoinFromRoute() async {
+    if (!mounted || _handledJoinQuery || !_shouldJoinFromRoute()) return;
 
     final sessionId = _querySessionId();
     if (sessionId.isEmpty) return;
 
     _handledJoinQuery = true;
-    _lastSessionId = sessionId;
+    _lastHydratedSessionId = sessionId;
 
     final notifier = ref.read(realtimeControllerProvider.notifier);
     final liveState = ref.read(realtimeControllerProvider);
@@ -119,61 +127,12 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     final alreadyJoined =
         liveState.joinState.name.toLowerCase() == 'joined' && currentSessionId == sessionId;
 
-    if (alreadyJoined) {
-      return;
-    }
+    if (alreadyJoined) return;
 
     try {
       await notifier.join(sessionId);
     } catch (_) {
       // Keep the thread stable even if live join fails.
-    }
-  }
-
-  Future<void> _syncFromController() async {
-    if (!mounted || _syncing) return;
-    _syncing = true;
-
-    try {
-      final notifier = ref.read(realtimeControllerProvider.notifier);
-      final liveState = ref.read(realtimeControllerProvider);
-      final spaceId = _currentSpaceId();
-
-      final activeSessionId = notifier.activeSessionIdForCorrespondence(
-        threadId: widget.threadId,
-        spaceId: spaceId.isEmpty ? null : spaceId,
-      );
-
-      if (activeSessionId != null &&
-          activeSessionId.isNotEmpty &&
-          activeSessionId != _lastSessionId) {
-        _lastSessionId = activeSessionId;
-        await notifier.hydrateSession(activeSessionId);
-        return;
-      }
-
-      final session = liveState.session;
-      if (session != null && session.isActive) {
-        final sessionType = session.surfaceType.name.trim().toLowerCase();
-        final sessionSurfaceId = (session.surfaceId ?? '').trim();
-        final matchesThread =
-            (sessionType == 'dm' || sessionType == 'thread') &&
-            sessionSurfaceId == widget.threadId.trim();
-        final matchesSpace =
-            sessionType == 'space' &&
-            spaceId.isNotEmpty &&
-            sessionSurfaceId == spaceId;
-
-        if (matchesThread || matchesSpace) {
-          final sessionId = (liveState.sessionId ?? session.id).trim();
-          if (sessionId.isNotEmpty && sessionId != _lastSessionId) {
-            _lastSessionId = sessionId;
-            await notifier.hydrateSession(sessionId);
-          }
-        }
-      }
-    } finally {
-      _syncing = false;
     }
   }
 
@@ -194,19 +153,10 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_postFrameSyncQueued) {
-      _postFrameSyncQueued = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _postFrameSyncQueued = false;
-        unawaited(_syncFromController());
-        unawaited(_joinFromRouteIfNeeded());
-      });
-    }
-
     return ThreadScreen(threadId: widget.threadId);
   }
 }
+
 
 bool _targetsThreadOrSpace(
   CorrespondenceLiveEvent event, {

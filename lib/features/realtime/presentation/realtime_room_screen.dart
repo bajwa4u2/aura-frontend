@@ -202,8 +202,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -391,8 +393,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (session == null) return 'Live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'Conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'Space live';
       case RealtimeSurfaceType.institution:
         return 'Institution live';
@@ -454,8 +458,10 @@ class _RoomHeaderCard extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -514,8 +520,10 @@ class _MetaPill extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -581,8 +589,10 @@ class _MediaStageCard extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -718,8 +728,10 @@ class _VideoTile extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -783,8 +795,10 @@ class _RoomOverviewCard extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -868,8 +882,10 @@ class _RoomInviteCard extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';
@@ -1000,8 +1016,10 @@ class _ArtifactBlock extends StatelessWidget {
     if (session == null) return 'live';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
         return 'conversation live';
       case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
         return 'space live';
       case RealtimeSurfaceType.institution:
         return 'institution live';

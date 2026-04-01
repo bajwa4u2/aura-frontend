@@ -27,7 +27,7 @@ import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
 
-final _threadOpenProvider = FutureProvider.family<void, String>((
+final threadOpenProvider = FutureProvider.family<void, String>((
   ref,
   threadId,
 ) async {
@@ -39,13 +39,13 @@ final _threadOpenProvider = FutureProvider.family<void, String>((
   }
 });
 
-final _threadDetailProvider =
+final threadDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, threadId) async {
   final repo = ref.watch(threadsRepositoryProvider);
   return repo.getThread(threadId);
 });
 
-final _messagesProvider =
+final messagesProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((
       ref,
       threadId,
@@ -54,7 +54,7 @@ final _messagesProvider =
       return repo.listMessages(threadId: threadId);
     });
 
-final _currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
   return _unwrapResponseMap(res.data);
@@ -182,37 +182,6 @@ String _threadStartedByUserId(
   return (liveState.session?.startedByUserId ?? '').trim();
 }
 
-bool _eventTargetsThread(
-  CorrespondenceLiveEvent event,
-  String threadId,
-) {
-  final payload = event.payload;
-  final normalizedThreadId = threadId.trim();
-  if (normalizedThreadId.isEmpty) return false;
-
-  final directThreadId = _pickString(payload, const ['threadId', 'thread_id']);
-  if (directThreadId.isNotEmpty && directThreadId == normalizedThreadId) return true;
-
-  final metadataThreadId = _pickNested(payload, const [
-    ['metadata', 'threadId'],
-    ['meta', 'threadId'],
-    ['session', 'metadata', 'threadId'],
-    ['session', 'meta', 'threadId'],
-    ['live', 'threadId'],
-    ['realtime', 'threadId'],
-  ]);
-  if (metadataThreadId.isNotEmpty && metadataThreadId == normalizedThreadId) return true;
-
-  final surfaceType = _pickString(payload, const ['surfaceType', 'surface_type']).toUpperCase();
-  final surfaceId = _pickString(payload, const ['surfaceId', 'surface_id']);
-  if ((surfaceType == 'DM' || surfaceType == 'THREAD') && surfaceId.isNotEmpty && surfaceId == normalizedThreadId) {
-    return true;
-  }
-
-  return event.matchesThread(normalizedThreadId);
-}
-
-
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
 
@@ -224,47 +193,66 @@ class ThreadScreen extends ConsumerStatefulWidget {
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Timer? _pollTimer;
-  StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
 
   @override
   void initState() {
     super.initState();
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
-      ref.invalidate(_threadDetailProvider(widget.threadId));
-      ref.invalidate(_messagesProvider(widget.threadId));
-    });
-
-    Future.microtask(() async {
-      final live = ref.read(correspondenceLiveServiceProvider);
-      await live.joinThread(widget.threadId);
-      _liveSubscription = live.events.listen((event) {
-        if (!mounted) return;
-        if (event.matchesThread(widget.threadId) || event.name.startsWith('invite:') || event.name.startsWith('space:member.')) {
-          ref.invalidate(_threadDetailProvider(widget.threadId));
-          ref.invalidate(_messagesProvider(widget.threadId));
-        }
-      });
+      _refreshThreadData();
     });
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
-    unawaited(ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId));
-    _liveSubscription?.cancel();
     super.dispose();
+  }
+
+  void _refreshThreadData() {
+    ref.invalidate(threadDetailProvider(widget.threadId));
+    ref.invalidate(messagesProvider(widget.threadId));
+  }
+
+  Future<void> _refreshAll() async {
+    ref.invalidate(threadOpenProvider(widget.threadId));
+    _refreshThreadData();
+    ref.invalidate(currentUserProvider);
+    await Future.wait([
+      ref.read(threadOpenProvider(widget.threadId).future),
+      ref.read(threadDetailProvider(widget.threadId).future),
+      ref.read(messagesProvider(widget.threadId).future),
+      ref.read(currentUserProvider.future),
+    ]);
+  }
+
+  Future<void> _startLive({
+    required Map<String, dynamic> thread,
+    required String kind,
+  }) async {
+    final controller = ref.read(realtimeControllerProvider.notifier);
+    final sessionId = await controller.ensureCorrespondenceLive(
+      surfaceType: _threadLiveSurfaceType(thread),
+      surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+      kind: kind,
+      metadata: <String, dynamic>{
+        'threadId': widget.threadId,
+        'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+      }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+    );
+    if (!mounted || sessionId.trim().isEmpty) return;
+    _refreshThreadData();
   }
 
   @override
   Widget build(BuildContext context) {
     final threadId = widget.threadId;
 
-    ref.watch(_threadOpenProvider(threadId));
+    ref.watch(threadOpenProvider(threadId));
 
-    final threadAsync = ref.watch(_threadDetailProvider(threadId));
-    final messagesAsync = ref.watch(_messagesProvider(threadId));
-    final meAsync = ref.watch(_currentUserProvider);
+    final threadAsync = ref.watch(threadDetailProvider(threadId));
+    final messagesAsync = ref.watch(messagesProvider(threadId));
+    final meAsync = ref.watch(currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
     final currentUserId = meAsync.maybeWhen(
       data: (me) => _pickString(
@@ -283,18 +271,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         children: [
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(_threadOpenProvider(threadId));
-                ref.invalidate(_threadDetailProvider(threadId));
-                ref.invalidate(_messagesProvider(threadId));
-                ref.invalidate(_currentUserProvider);
-                await Future.wait([
-                  ref.read(_threadOpenProvider(threadId).future),
-                  ref.read(_threadDetailProvider(threadId).future),
-                  ref.read(_messagesProvider(threadId).future),
-                  ref.read(_currentUserProvider.future),
-                ]);
-              },
+              onRefresh: _refreshAll,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
@@ -306,8 +283,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       child: _ErrorBlock(
                         title: 'Could not load thread',
                         body: '$error',
-                        onRetry: () =>
-                            ref.invalidate(_threadDetailProvider(threadId)),
+                        onRetry: _refreshThreadData,
                       ),
                     ),
                     data: (thread) => _ThreadHeaderCard(
@@ -334,45 +310,17 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         ).toString();
                         await context.push(inviteRoute);
                         if (!context.mounted) return;
-                        ref.invalidate(_threadDetailProvider(widget.threadId));
-                        ref.invalidate(_messagesProvider(widget.threadId));
+                        _refreshThreadData();
                       },
                       onAddMembers: () async {
                         final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
                         if (spaceId.isEmpty) return;
                         await context.push('/me/correspondence/$spaceId/invite');
                         if (!context.mounted) return;
-                        ref.invalidate(_threadDetailProvider(widget.threadId));
-                        ref.invalidate(_messagesProvider(widget.threadId));
+                        _refreshThreadData();
                       },
-                      onStartAudio: () async {
-                        final controller = ref.read(realtimeControllerProvider.notifier);
-                        final sessionId = await controller.ensureCorrespondenceLive(
-                          surfaceType: _threadLiveSurfaceType(thread),
-                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                          kind: 'AUDIO',
-                          metadata: <String, dynamic>{
-                            'threadId': widget.threadId,
-                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                        );
-                        if (!mounted || sessionId.trim().isEmpty) return;
-                        ref.invalidate(_threadDetailProvider(widget.threadId));
-                      },
-                      onStartVideo: () async {
-                        final controller = ref.read(realtimeControllerProvider.notifier);
-                        final sessionId = await controller.ensureCorrespondenceLive(
-                          surfaceType: _threadLiveSurfaceType(thread),
-                          surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-                          kind: 'VIDEO',
-                          metadata: <String, dynamic>{
-                            'threadId': widget.threadId,
-                            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-                          }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
-                        );
-                        if (!mounted || sessionId.trim().isEmpty) return;
-                        ref.invalidate(_threadDetailProvider(widget.threadId));
-                      },
+                      onStartAudio: () => _startLive(thread: thread, kind: 'AUDIO'),
+                      onStartVideo: () => _startLive(thread: thread, kind: 'VIDEO'),
                       onJoinLive: () async {
                         final sessionId = _threadResolvedSessionId(
                           thread,
@@ -405,8 +353,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       child: _ErrorBlock(
                         title: 'Could not load messages',
                         body: '$error',
-                        onRetry: () =>
-                            ref.invalidate(_messagesProvider(threadId)),
+                        onRetry: _refreshThreadData,
                       ),
                     ),
                     data: (messages) {
@@ -451,8 +398,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 await ref
                                     .read(messagesRepositoryProvider)
                                     .deleteMessage(messageId);
-                                ref.invalidate(_threadDetailProvider(widget.threadId));
-                                ref.invalidate(_messagesProvider(widget.threadId));
+                                _refreshThreadData();
                               },
                             ),
                             if (i != messages.length - 1)
@@ -468,15 +414,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           ),
           _ComposerBar(
             threadId: threadId,
-            onSent: () {
-              ref.invalidate(_threadDetailProvider(widget.threadId));
-              ref.invalidate(_messagesProvider(widget.threadId));
-            },
+            onSent: _refreshThreadData,
           ),
         ],
       ),
     );
   }
+
 
   Future<void> _showEditMessageDialog(
     BuildContext context,
@@ -489,8 +433,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     );
 
     if (edited == true) {
-      ref.invalidate(_threadDetailProvider(widget.threadId));
-      ref.invalidate(_messagesProvider(widget.threadId));
+      ref.invalidate(threadDetailProvider(widget.threadId));
+      ref.invalidate(messagesProvider(widget.threadId));
     }
   }
 }

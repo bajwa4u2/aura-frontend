@@ -684,23 +684,6 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
   bool _submitting = false;
   String? _errorText;
 
-
-  Future<void> _joinFromRouteIfNeeded() async {
-    if (!mounted || _handledLiveRoute) return;
-
-    String sessionId = '';
-    try {
-      final state = GoRouterState.of(context);
-      sessionId = state.pathParameters['sessionId']?.trim() ??
-          state.uri.queryParameters['sessionId']?.trim() ??
-          '';
-      final shouldJoin = sessionId.isNotEmpty ||
-          ((state.uri.queryParameters['join'] ?? '').trim().toLowerCase() == '1');
-      if (!shouldJoin || sessionId.isEmpty) return;
-    } catch (_) {
-      return;
-    }
-
     _handledLiveRoute = true;
     await ref.read(realtimeControllerProvider.notifier).join(sessionId);
   }
