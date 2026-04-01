@@ -226,6 +226,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         metadata: metadata,
       );
       _applyBundle(bundle);
+      await _forceNegotiationIfNeeded();
       final normalizedKind = kind.trim().toLowerCase();
       state = state.copyWith(
         isBusy: false,
@@ -326,6 +327,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     try {
       final bundle = await _repository.loadSessionBundle(trimmed);
       _applyBundle(bundle);
+      await _forceNegotiationIfNeeded();
       state = state.copyWith(
         isBusy: false,
         infoMessage: state.isJoined ? state.infoMessage : 'Live loaded.',
@@ -392,6 +394,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         infoMessage: 'You joined live.',
       );
       await _flushPendingOffers(refreshTurnCredentials: true);
+      await _forceNegotiationIfNeeded();
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
@@ -435,6 +438,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         infoMessage: 'Your live session was restored.',
       );
       await _flushPendingOffers(refreshTurnCredentials: true);
+      await _forceNegotiationIfNeeded();
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
@@ -874,8 +878,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       mediaError: snapshot.error,
     );
 
-    if (snapshot.ready && state.isJoined && _pendingOfferTargets.isNotEmpty) {
+    if (snapshot.ready && state.isJoined) {
       unawaited(_flushPendingOffers());
+      unawaited(_forceNegotiationIfNeeded());
     }
   }
 
@@ -978,6 +983,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           );
           if (state.isJoined) {
             unawaited(_flushPendingOffers());
+            unawaited(_forceNegotiationIfNeeded());
           }
         }
         return;
@@ -1199,7 +1205,37 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 
 
-  @override
+  
+
+  Future<void> _forceNegotiationIfNeeded() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    if (!state.isJoined) return;
+    if (!state.isMediaReady) return;
+
+    final meSocketId = _socketService.socketId;
+    if (meSocketId == null || meSocketId.isEmpty) return;
+
+    for (final participant in state.participants) {
+      final peerSocketId = participant.runtimeDeviceId?.trim() ?? '';
+      if (peerSocketId.isEmpty) continue;
+      if (peerSocketId == meSocketId) continue;
+
+      final peerKey = peerSocketId;
+
+      if (_pendingOfferTargets.containsKey(peerKey)) continue;
+
+      _queueOfferTarget(
+        peerKey: peerKey,
+        targetSocketId: peerSocketId,
+      );
+    }
+
+    if (_pendingOfferTargets.isNotEmpty) {
+      await _flushPendingOffers();
+    }
+  }
+@override
   void dispose() {
     _subscription?.cancel();
     _mediaSubscription?.cancel();
