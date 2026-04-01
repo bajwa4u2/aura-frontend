@@ -55,7 +55,17 @@ class RealtimeEventParser {
         : (_looksLikePolicyPayload(payload) ? RealtimePolicy.fromJson(payload) : state.policy);
 
     final nextParticipants = participantsJson != null
-        ? participantsJson.map(RealtimeParticipant.fromJson).toList()
+        ? participantsJson.map((json) {
+            final map = Map<String, dynamic>.from(json);
+
+            // 🔥 CRITICAL FIX: ensure socketId is preserved
+            final socketId = (map['socketId'] ?? '').toString().trim();
+            if (socketId.isNotEmpty) {
+              map['runtimeDeviceId'] = socketId;
+            }
+
+            return RealtimeParticipant.fromJson(map);
+          }).toList()
         : state.participants;
 
     final nextConsents = consentsJson != null
@@ -108,9 +118,11 @@ class RealtimeEventParser {
       }
       return RealtimeJoinState.joined;
     }
+
     if (session?.isLocked == true && state.joinState == RealtimeJoinState.locked) {
       return RealtimeJoinState.locked;
     }
+
     return state.joinState;
   }
 
