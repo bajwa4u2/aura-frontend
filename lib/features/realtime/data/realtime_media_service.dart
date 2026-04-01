@@ -30,7 +30,6 @@ class RealtimeMediaService {
   final Map<String, RTCVideoRenderer> _remoteRenderers =
       <String, RTCVideoRenderer>{};
   final Map<String, MediaStream> _remoteStreams = <String, MediaStream>{};
-  final Map<String, String> _peerSocketIds = <String, String>{};
 
   MediaStream? _localStream;
   RTCVideoRenderer? _localRenderer;
@@ -117,27 +116,11 @@ class RealtimeMediaService {
       }
     }
 
-    connection.onIceCandidate = (RTCIceCandidate candidate) {
-      onIceCandidate(candidate);
-    };
+    connection.onIceCandidate = onIceCandidate;
 
     connection.onTrack = (RTCTrackEvent event) async {
       try {
-        MediaStream? stream;
-
-        if (event.streams.isNotEmpty) {
-          stream = event.streams.first;
-        } else {
-          final existingStream = _remoteStreams[peerKey];
-          if (existingStream != null) {
-            stream = existingStream;
-          } else {
-            stream = await createLocalMediaStream('remote-$peerKey');
-            _remoteStreams[peerKey] = stream;
-          }
-          await stream.addTrack(event.track);
-        }
-
+        final stream = await _resolveRemoteStream(peerKey, event);
         if (stream == null) return;
 
         _remoteStreams[peerKey] = stream;
@@ -163,6 +146,24 @@ class RealtimeMediaService {
     return connection;
   }
 
+  Future<MediaStream?> _resolveRemoteStream(
+    String peerKey,
+    RTCTrackEvent event,
+  ) async {
+    if (event.streams.isNotEmpty) {
+      return event.streams.first;
+    }
+
+    final existing = _remoteStreams[peerKey];
+    final stream = existing ?? await createLocalMediaStream('remote-$peerKey');
+    if (existing == null) {
+      _remoteStreams[peerKey] = stream;
+    }
+
+    await stream.addTrack(event.track);
+    return stream;
+  }
+
   Future<RTCVideoRenderer> _createRemoteRenderer() async {
     final renderer = RTCVideoRenderer();
     await renderer.initialize();
@@ -180,7 +181,6 @@ class RealtimeMediaService {
       onIceCandidate: onIceCandidate,
       peerKey: peerKey,
     );
-    _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
     final offer = await connection.createOffer(<String, dynamic>{
       'offerToReceiveAudio': true,
@@ -202,7 +202,6 @@ class RealtimeMediaService {
       onIceCandidate: onIceCandidate,
       peerKey: peerKey,
     );
-    _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
     await connection.setRemoteDescription(
       RTCSessionDescription(
@@ -210,6 +209,7 @@ class RealtimeMediaService {
         (sdp['type'] ?? 'offer').toString(),
       ),
     );
+
     final answer = await connection.createAnswer(<String, dynamic>{
       'offerToReceiveAudio': true,
       'offerToReceiveVideo': true,
@@ -224,6 +224,7 @@ class RealtimeMediaService {
   }) async {
     final connection = _peers[peerKey];
     if (connection == null) return;
+
     await connection.setRemoteDescription(
       RTCSessionDescription(
         (sdp['sdp'] ?? '').toString(),
@@ -238,6 +239,7 @@ class RealtimeMediaService {
   }) async {
     final connection = _peers[peerKey];
     if (connection == null) return;
+
     final value = candidate['candidate'];
     if (value == null) return;
 
@@ -254,62 +256,40 @@ class RealtimeMediaService {
 
   Future<void> setMicrophoneEnabled(bool enabled) async {
     _micEnabled = enabled;
-    final local = _localStream;
-    if (local != null) {
-      for (final track in local.getAudioTracks()) {
-        track.enabled = enabled;
-      }
-    }
+    await _setTrackEnabled(
+      tracks: _localStream?.getAudioTracks() ?? const <MediaStreamTrack>[],
+      enabled: enabled,
+    );
     _publish();
   }
 
   Future<void> setCameraEnabled(bool enabled) async {
     _cameraEnabled = enabled;
-    final local = _localStream;
-    if (local != null) {
-      for (final track in local.getVideoTracks()) {
-        track.enabled = enabled;
-      }
-    }
+    await _setTrackEnabled(
+      tracks: _localStream?.getVideoTracks() ?? const <MediaStreamTrack>[],
+      enabled: enabled,
+    );
     _publish();
   }
 
+  Future<void> _setTrackEnabled({
+    required List<MediaStreamTrack> tracks,
+    required bool enabled,
+  }) async {
+    for (final track in tracks) {
+      track.enabled = enabled;
+    }
+  }
+
   Future<void> removePeer(String peerKey) async {
-    final peer = _peers.remove(peerKey);
-    if (peer != null) {
-      try {
-        await peer.close();
-      } catch (_) {}
-      try {
-        await peer.dispose();
-      } catch (_) {}
-    }
-    final renderer = _remoteRenderers.remove(peerKey);
-    if (renderer != null) {
-      try {
-        renderer.srcObject = null;
-      } catch (_) {}
-      try {
-        await renderer.dispose();
-      } catch (_) {}
-    }
-    final stream = _remoteStreams.remove(peerKey);
-    if (stream != null) {
-      try {
-        for (final track in stream.getTracks()) {
-          await track.stop();
-        }
-      } catch (_) {}
-      try {
-        await stream.dispose();
-      } catch (_) {}
-    }
-    _peerSocketIds.remove(peerKey);
+    await _disposePeerConnection(_peers.remove(peerKey));
+    await _disposeRenderer(_remoteRenderers.remove(peerKey));
+    await _disposeStream(_remoteStreams.remove(peerKey));
     _publish();
   }
 
   Future<void> disposeAllPeers() async {
-    final keys = _peers.keys.toList();
+    final keys = _peers.keys.toList(growable: false);
     for (final key in keys) {
       await removePeer(key);
     }
@@ -326,9 +306,18 @@ class RealtimeMediaService {
   }
 
   Future<void> _resetLocalMediaOnly() async {
-    final local = _localStream;
-    if (local != null) {
-      for (final track in local.getTracks()) {
+    await _disableAndDisposeStream(_localStream);
+    _localStream = null;
+
+    await _disposeRenderer(_localRenderer);
+    _localRenderer = null;
+  }
+
+  Future<void> _disableAndDisposeStream(MediaStream? stream) async {
+    if (stream == null) return;
+
+    try {
+      for (final track in stream.getTracks()) {
         try {
           track.enabled = false;
         } catch (_) {}
@@ -336,22 +325,49 @@ class RealtimeMediaService {
           await track.stop();
         } catch (_) {}
       }
-      try {
-        await local.dispose();
-      } catch (_) {}
-    }
-    _localStream = null;
+    } catch (_) {}
 
-    final localRenderer = _localRenderer;
-    if (localRenderer != null) {
-      try {
-        localRenderer.srcObject = null;
-      } catch (_) {}
-      try {
-        await localRenderer.dispose();
-      } catch (_) {}
-    }
-    _localRenderer = null;
+    try {
+      await stream.dispose();
+    } catch (_) {}
+  }
+
+  Future<void> _disposeStream(MediaStream? stream) async {
+    if (stream == null) return;
+
+    try {
+      for (final track in stream.getTracks()) {
+        await track.stop();
+      }
+    } catch (_) {}
+
+    try {
+      await stream.dispose();
+    } catch (_) {}
+  }
+
+  Future<void> _disposeRenderer(RTCVideoRenderer? renderer) async {
+    if (renderer == null) return;
+
+    try {
+      renderer.srcObject = null;
+    } catch (_) {}
+
+    try {
+      await renderer.dispose();
+    } catch (_) {}
+  }
+
+  Future<void> _disposePeerConnection(RTCPeerConnection? peer) async {
+    if (peer == null) return;
+
+    try {
+      await peer.close();
+    } catch (_) {}
+
+    try {
+      await peer.dispose();
+    } catch (_) {}
   }
 
   Future<void> dispose() async {

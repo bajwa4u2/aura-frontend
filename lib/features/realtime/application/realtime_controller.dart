@@ -37,6 +37,58 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Map<String, dynamic>? _rtcConfiguration;
   String? _rtcConfigurationSessionId;
 
+  String get _managedSessionId =>
+      (state.sessionId ?? state.session?.id ?? '').trim();
+
+  bool _isSameManagedSession(String sessionId) {
+    final trimmed = sessionId.trim();
+    return trimmed.isNotEmpty && _managedSessionId == trimmed;
+  }
+
+  RealtimeState _copyWithDetachedMediaState({
+    required RealtimeJoinState joinState,
+    String? infoMessage,
+    String? lastSocketEvent,
+    RealtimeConnectionStatus? connectionStatus,
+    bool clearSessionContext = false,
+    bool clearPolicy = false,
+    bool clearErrorMessage = false,
+  }) {
+    return state.copyWith(
+      connectionStatus: connectionStatus,
+      joinState: joinState,
+      clearSessionId: clearSessionContext,
+      clearSession: clearSessionContext,
+      participants: clearSessionContext
+          ? const <RealtimeParticipant>[]
+          : state.participants,
+      clearPolicy: clearPolicy,
+      consents: clearSessionContext ? const <RealtimeConsent>[] : state.consents,
+      recordings: clearSessionContext
+          ? const <RealtimeRecording>[]
+          : state.recordings,
+      transcripts: clearSessionContext
+          ? const <RealtimeTranscriptJob>[]
+          : state.transcripts,
+      artifacts: clearSessionContext
+          ? const <RealtimeArtifact>[]
+          : state.artifacts,
+      infoMessage: infoMessage,
+      clearErrorMessage: clearErrorMessage,
+      clearRemoteRenderers: true,
+      clearLocalRenderer: true,
+      isMediaReady: false,
+      isMediaBusy: false,
+      microphoneEnabled: false,
+      cameraEnabled: false,
+      clearMediaError: true,
+      clearIncomingCall: true,
+      clearCallMode: true,
+      lastSocketEvent: lastSocketEvent,
+    );
+  }
+
+
   Future<void> connect() async {
     if (state.connectionStatus == RealtimeConnectionStatus.connected ||
         state.connectionStatus == RealtimeConnectionStatus.connecting) {
@@ -141,7 +193,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     if (isManagingSurface(surfaceType: normalizedType, surfaceId: normalizedId)) {
-      final existingSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
+      final existingSessionId = _managedSessionId;
       if (existingSessionId.isNotEmpty) {
         if (joinAfterCreate && state.joinState != RealtimeJoinState.joined) {
           await join(existingSessionId);
@@ -214,8 +266,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     final currentSessionId = (state.sessionId ?? state.session?.id ?? '').trim();
     if (_joiningSessionId == trimmed) return;
-    if (state.joinState == RealtimeJoinState.joined && currentSessionId == trimmed) return;
-    if (state.joinState == RealtimeJoinState.joining && currentSessionId == trimmed) return;
+    if (state.joinState == RealtimeJoinState.joined && _isSameManagedSession(trimmed)) return;
+    if (state.joinState == RealtimeJoinState.joining && _isSameManagedSession(trimmed)) return;
 
     if (currentSessionId.isNotEmpty && currentSessionId != trimmed && state.isJoined) {
       await leave();
@@ -608,7 +660,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     _terminating = true;
 
     final session = state.session;
-    final sessionId = (state.sessionId ?? state.session?.id ?? '').trim();
+    final sessionId = _managedSessionId;
 
     try {
       if (sessionId.isNotEmpty && keepSocketConnected) {
@@ -631,27 +683,12 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       }
       _clearRtcConfiguration();
 
-      state = state.copyWith(
+      state = _copyWithDetachedMediaState(
         joinState: RealtimeJoinState.idle,
-        clearSessionId: true,
-        clearSession: true,
-        participants: const <RealtimeParticipant>[],
+        clearSessionContext: true,
         clearPolicy: true,
-        consents: const <RealtimeConsent>[],
-        recordings: const <RealtimeRecording>[],
-        transcripts: const <RealtimeTranscriptJob>[],
-        artifacts: const <RealtimeArtifact>[],
-        infoMessage: infoMessage,
         clearErrorMessage: true,
-        clearRemoteRenderers: true,
-        clearLocalRenderer: true,
-        isMediaReady: false,
-        isMediaBusy: false,
-        microphoneEnabled: false,
-        cameraEnabled: false,
-        clearMediaError: true,
-        clearIncomingCall: true,
-        clearCallMode: true,
+        infoMessage: infoMessage,
       );
     } finally {
       _joiningSessionId = null;
@@ -813,19 +850,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'socket:disconnected':
         unawaited(_mediaService.resetSessionMedia());
-        state = state.copyWith(
+        state = _copyWithDetachedMediaState(
           connectionStatus: RealtimeConnectionStatus.disconnected,
           joinState: RealtimeJoinState.idle,
-          clearSessionId: true,
-          clearSession: true,
-          clearRemoteRenderers: true,
-          clearLocalRenderer: true,
-          clearIncomingCall: true,
-          clearCallMode: true,
-          isMediaReady: false,
-          isMediaBusy: false,
-          microphoneEnabled: false,
-          cameraEnabled: false,
+          clearSessionContext: true,
           lastSocketEvent: event.name,
         );
         return;
@@ -982,16 +1010,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:removed':
       case 'realtime:removed':
         unawaited(_mediaService.resetSessionMedia());
-        state = state.copyWith(
+        state = _copyWithDetachedMediaState(
           joinState: RealtimeJoinState.removed,
-          clearIncomingCall: true,
-          clearCallMode: true,
-          clearRemoteRenderers: true,
-          clearLocalRenderer: true,
-          isMediaReady: false,
-          isMediaBusy: false,
-          microphoneEnabled: false,
-          cameraEnabled: false,
           infoMessage: 'You were removed from this live session.',
           lastSocketEvent: event.name,
         );
@@ -1076,7 +1096,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (!managesCorrespondenceSurface(threadId: threadId, spaceId: spaceId)) {
       return null;
     }
-    final value = (state.sessionId ?? state.session?.id ?? '').trim();
+    final value = _managedSessionId;
     return value.isEmpty ? null : value;
   }
 

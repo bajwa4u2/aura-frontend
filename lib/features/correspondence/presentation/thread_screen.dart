@@ -22,7 +22,6 @@ import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
-import '../data/correspondence_live_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
@@ -441,84 +440,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
 
 
-class _ThreadScreenTopBar extends StatelessWidget {
-  const _ThreadScreenTopBar({
-    required this.title,
-    required this.summary,
-    this.onBack,
-  });
-
-  final String title;
-  final String summary;
-  final VoidCallback? onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          _ThreadRouteIconButton(
-            icon: Icons.arrow_back_rounded,
-            onTap: onBack ?? () => context.pop(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.title.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (summary.trim().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    summary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AuraText.small.copyWith(color: Colors.black54),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreadRouteIconButton extends StatelessWidget {
-  const _ThreadRouteIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withOpacity(0.08)),
-        ),
-        child: Icon(icon, size: 20, color: Colors.black87),
-      ),
-    );
-  }
-}
-
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
@@ -691,31 +612,6 @@ String _participantRoleSummary(List<Map<String, dynamic>> participants) {
   final thread = <String, dynamic>{'participants': participants};
   return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
 }
-
-String _threadPreview(Map<String, dynamic> thread) {
-  return CorrespondenceIdentity.threadPreview(thread);
-}
-
-String _threadRecentWeight(Map<String, dynamic> thread) {
-  return CorrespondenceIdentity.threadRecentWeight(thread);
-}
-
-String _identityLabel(Map<String, dynamic> entity) {
-  return CorrespondenceIdentity.identityLabel(entity);
-}
-
-String _identityLine(Map<String, dynamic> entity, {bool preferHandle = true}) {
-  return CorrespondenceIdentity.identityLine(entity, preferHandle: preferHandle);
-}
-
-String _threadAvatarUrl(Map<String, dynamic> thread) {
-  return CorrespondenceIdentity.threadAvatarUrl(thread);
-}
-
-String _humanizeLabel(String value) {
-  return CorrespondenceIdentity.humanize(value);
-}
-
 
 String _threadLiveSurfaceType(Map<String, dynamic> thread) {
   return 'THREAD';
@@ -1172,41 +1068,6 @@ class _IdentityAvatar extends StatelessWidget {
       child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
     );
   }
-}
-
-enum _StatusTone { neutral, accent, positive, negative }
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.tone});
-
-  final String label;
-  final _StatusTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = switch (tone) {
-      _StatusTone.positive => (border: Colors.green.shade200, text: Colors.green.shade800, fill: Colors.green.shade50),
-      _StatusTone.negative => (border: Colors.red.shade200, text: Colors.red.shade800, fill: Colors.red.shade50),
-      _StatusTone.accent => (border: Colors.blue.shade200, text: Colors.blue.shade800, fill: Colors.blue.shade50),
-      _StatusTone.neutral => (border: Colors.black12, text: Colors.black87, fill: Colors.transparent),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
-      decoration: BoxDecoration(
-        color: palette.fill,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
-    );
-  }
-}
-
-String _truncateLabel(String value, {int max = 48}) {
-  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
-  if (text.length <= max) return text;
-  return '${text.substring(0, max - 1).trimRight()}…';
 }
 
 String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
@@ -3600,30 +3461,6 @@ class _ErrorBlock extends StatelessWidget {
           child: const Text('Try again'),
         ),
       ],
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
     );
   }
 }
