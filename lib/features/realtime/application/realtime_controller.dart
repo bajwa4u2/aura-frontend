@@ -36,6 +36,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   Map<String, dynamic>? _rtcConfiguration;
   String? _rtcConfigurationSessionId;
+  final Map<String, String> _pendingOfferTargets = <String, String>{};
+  bool _flushingPendingOffers = false;
 
   String get _managedSessionId =>
       (state.sessionId ?? state.session?.id ?? '').trim();
@@ -86,6 +88,73 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       clearCallMode: true,
       lastSocketEvent: lastSocketEvent,
     );
+  }
+
+  void _queueOfferTarget({
+    required String peerKey,
+    required String targetSocketId,
+  }) {
+    final normalizedPeerKey = peerKey.trim();
+    final normalizedSocketId = targetSocketId.trim();
+    if (normalizedPeerKey.isEmpty || normalizedSocketId.isEmpty) return;
+    if (normalizedSocketId == _socketService.socketId) return;
+    _pendingOfferTargets[normalizedPeerKey] = normalizedSocketId;
+  }
+
+  void _removePendingOfferTarget(String peerKey) {
+    final normalizedPeerKey = peerKey.trim();
+    if (normalizedPeerKey.isEmpty) return;
+    _pendingOfferTargets.remove(normalizedPeerKey);
+  }
+
+  void _clearPendingOfferTargets() {
+    _pendingOfferTargets.clear();
+  }
+
+  Future<void> _flushPendingOffers({
+    bool refreshTurnCredentials = false,
+  }) async {
+    if (_flushingPendingOffers || _pendingOfferTargets.isEmpty) return;
+
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) return;
+
+    _flushingPendingOffers = true;
+    try {
+      await _ensureMediaReady(
+        sessionId,
+        refreshTurnCredentials: refreshTurnCredentials,
+      );
+
+      if (!state.isMediaReady) return;
+
+      final queued = Map<String, String>.from(_pendingOfferTargets);
+      for (final entry in queued.entries) {
+        final peerKey = entry.key.trim();
+        final targetSocketId = entry.value.trim();
+        if (peerKey.isEmpty || targetSocketId.isEmpty) {
+          _pendingOfferTargets.remove(entry.key);
+          continue;
+        }
+        if (_pendingOfferTargets[peerKey] != targetSocketId) {
+          continue;
+        }
+
+        try {
+          await _sendOfferToSocket(
+            peerKey: peerKey,
+            targetSocketId: targetSocketId,
+          );
+          _pendingOfferTargets.remove(peerKey);
+        } catch (error) {
+          state = state.copyWith(
+            errorMessage: error.toString(),
+          );
+        }
+      }
+    } finally {
+      _flushingPendingOffers = false;
+    }
   }
 
 
@@ -308,6 +377,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         clearIncomingCall: true,
         infoMessage: 'You joined live.',
       );
+      await _flushPendingOffers(refreshTurnCredentials: true);
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
@@ -350,6 +420,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         clearIncomingCall: true,
         infoMessage: 'Your live session was restored.',
       );
+      await _flushPendingOffers(refreshTurnCredentials: true);
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
@@ -682,6 +753,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         await _socketService.disconnect();
       }
       _clearRtcConfiguration();
+      _clearPendingOfferTargets();
 
       state = _copyWithDetachedMediaState(
         joinState: RealtimeJoinState.idle,
@@ -787,6 +859,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       cameraEnabled: snapshot.cameraEnabled,
       mediaError: snapshot.error,
     );
+
+    if (snapshot.ready && state.isJoined && _pendingOfferTargets.isNotEmpty) {
+      unawaited(_flushPendingOffers());
+    }
   }
 
   Future<void> _sendOfferToSocket({
@@ -849,6 +925,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'socket:disconnected':
+        _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(
           connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -877,16 +954,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           callMode: modeFromEvent,
           lastSocketEvent: event.name,
         );
-        final targetSocketId = event.payload['socketId']?.toString();
-        final peerKey = event.payload['userId']?.toString();
-        if (targetSocketId != null &&
-            targetSocketId.isNotEmpty &&
-            targetSocketId != _socketService.socketId &&
-            peerKey != null &&
-            peerKey.isNotEmpty &&
-            state.isJoined &&
-            state.isMediaReady) {
-          unawaited(_sendOfferToSocket(peerKey: peerKey, targetSocketId: targetSocketId));
+
+        final targetSocketId = event.payload['socketId']?.toString() ?? '';
+        final peerKey = event.payload['userId']?.toString() ?? '';
+        if (peerKey.isNotEmpty && targetSocketId.isNotEmpty) {
+          _queueOfferTarget(
+            peerKey: peerKey,
+            targetSocketId: targetSocketId,
+          );
+          if (state.isJoined) {
+            unawaited(_flushPendingOffers());
+          }
         }
         return;
       case 'session:participant.left':
@@ -901,6 +979,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
 
         if (leavingUserId != null && leavingUserId.isNotEmpty) {
+          _removePendingOfferTarget(leavingUserId);
           unawaited(_mediaService.removePeer(leavingUserId));
         }
 
@@ -1009,6 +1088,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         return;
       case 'session:removed':
       case 'realtime:removed':
+        _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(
           joinState: RealtimeJoinState.removed,
