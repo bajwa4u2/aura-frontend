@@ -138,9 +138,7 @@ class RealtimeMediaService {
           await stream.addTrack(event.track);
         }
 
-        if (stream == null) {
-          return;
-        }
+        if (stream == null) return;
 
         _remoteStreams[peerKey] = stream;
         final renderer = _remoteRenderers[peerKey] ?? await _createRemoteRenderer();
@@ -156,8 +154,7 @@ class RealtimeMediaService {
 
     connection.onConnectionState = (RTCPeerConnectionState state) async {
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
         await removePeer(peerKey);
       }
     };

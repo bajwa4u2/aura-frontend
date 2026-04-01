@@ -582,11 +582,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   void _applyBundle(RealtimeSessionSnapshot bundle) {
     final session = bundle.session;
-    String callMode = state.callMode ?? 'audio';
-    final hasVideo = bundle.participants.any((p) => p.videoOn == true);
-    if (hasVideo) {
-      callMode = 'video';
-    }
+    final hasVideo = bundle.participants.any((p) => p.videoOn || p.screenOn);
+    final callMode = hasVideo ? 'video' : (state.callMode ?? 'audio');
 
     state = state.copyWith(
       session: session,
@@ -843,7 +840,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:participant.joined':
       case 'session:participant.resumed':
         final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
-        state = merged.copyWith(lastSocketEvent: event.name);
+        final modeFromEvent =
+            ((event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON' ||
+             (event.payload['screenState'] ?? '').toString().toUpperCase() == 'ON')
+                ? 'video'
+                : merged.callMode;
+        state = merged.copyWith(
+          callMode: modeFromEvent,
+          lastSocketEvent: event.name,
+        );
         final targetSocketId = event.payload['socketId']?.toString();
         final peerKey = event.payload['userId']?.toString();
         if (targetSocketId != null &&
@@ -857,15 +862,26 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:participant.left':
+        final leavingUserId = event.payload['userId']?.toString();
+        final updatedParticipants = state.participants
+            .where((participant) => participant.userId != leavingUserId)
+            .toList();
+
         state = state.copyWith(
-          participants: state.participants
-              .where((participant) => participant.userId != event.payload['userId']?.toString())
-              .toList(),
+          participants: updatedParticipants,
           lastSocketEvent: event.name,
         );
-        final peerKey = event.payload['userId']?.toString();
-        if (peerKey != null && peerKey.isNotEmpty) {
-          unawaited(_mediaService.removePeer(peerKey));
+
+        if (leavingUserId != null && leavingUserId.isNotEmpty) {
+          unawaited(_mediaService.removePeer(leavingUserId));
+        }
+
+        if (updatedParticipants.length <= 1 && state.isJoined) {
+          unawaited(_terminateSession(
+            keepSocketConnected: true,
+            infoMessage: 'Call ended.',
+            alsoCallRepository: false,
+          ));
         }
         return;
       case 'session:offer':
@@ -939,13 +955,16 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'session:track.updated':
         final userId = event.payload['userId']?.toString();
         if (userId != null && userId.isNotEmpty) {
+          final videoOn = (event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON';
+          final screenOn = (event.payload['screenState'] ?? '').toString().toUpperCase() == 'ON';
           state = state.copyWith(
+            callMode: (videoOn || screenOn) ? 'video' : state.callMode,
             participants: state.participants
                 .map((participant) => participant.userId == userId
                     ? participant.copyWith(
                         audioOn: (event.payload['audioState'] ?? '').toString().toUpperCase() == 'ON',
-                        videoOn: (event.payload['videoState'] ?? '').toString().toUpperCase() == 'ON',
-                        screenOn: (event.payload['screenState'] ?? '').toString().toUpperCase() == 'ON',
+                        videoOn: videoOn,
+                        screenOn: screenOn,
                       )
                     : participant)
                 .toList(),
