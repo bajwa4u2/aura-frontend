@@ -22,39 +22,40 @@ final _spaceDetailProvider =
   return repo.getSpace(spaceId);
 });
 
-final _threadsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
-  (ref, spaceId) async {
-    final repo = ref.watch(threadsRepositoryProvider);
-    return repo.listThreads(spaceId: spaceId);
-  },
-);
+final _threadsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+  ref,
+  spaceId,
+) async {
+  final repo = ref.watch(threadsRepositoryProvider);
+  return repo.listThreads(spaceId: spaceId);
+});
 
-final _invitesProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
-  (ref, spaceId) async {
-    final repo = ref.watch(spacesRepositoryProvider);
-    final invites = await repo.listInvites();
+final _invitesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, spaceId) async {
+  final repo = ref.watch(spacesRepositoryProvider);
+  final invites = await repo.listInvites();
 
-    return invites.where((invite) {
-      final inviteSpaceId = _pickString(invite, const [
-        'spaceId',
-        'space_id',
-      ]);
+  return invites.where((invite) {
+    final inviteSpaceId = _pickString(invite, const [
+      'spaceId',
+      'space_id',
+    ]);
 
-      if (inviteSpaceId == spaceId) return true;
+    if (inviteSpaceId == spaceId) return true;
 
-      final nestedSpace = invite['space'];
-      if (nestedSpace is Map) {
-        final nestedId = _pickString(
-          Map<String, dynamic>.from(nestedSpace),
-          const ['id', 'spaceId'],
-        );
-        return nestedId == spaceId;
-      }
+    final nestedSpace = invite['space'];
+    if (nestedSpace is Map) {
+      final nestedId = _pickString(
+        Map<String, dynamic>.from(nestedSpace),
+        const ['id', 'spaceId'],
+      );
+      return nestedId == spaceId;
+    }
 
-      return false;
-    }).toList();
-  },
-);
+    return false;
+  }).toList();
+});
 
 class SpaceScreen extends ConsumerStatefulWidget {
   const SpaceScreen({super.key, required this.spaceId});
@@ -87,7 +88,9 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       await live.joinSpace(widget.spaceId);
       _liveSubscription = live.events.listen((event) {
         if (!mounted) return;
-        if (event.matchesSpace(widget.spaceId) || event.name.startsWith('invite:') || event.name.startsWith('thread:')) {
+        if (event.matchesSpace(widget.spaceId) ||
+            event.name.startsWith('invite:') ||
+            event.name.startsWith('thread:')) {
           ref.invalidate(_spaceDetailProvider(widget.spaceId));
           ref.invalidate(_threadsProvider(widget.spaceId));
           ref.invalidate(_invitesProvider(widget.spaceId));
@@ -95,7 +98,6 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       });
     });
   }
-
 
   Future<void> _joinFromRouteIfNeeded() async {
     if (!mounted || _handledLiveRoute) return;
@@ -113,10 +115,16 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       return;
     }
 
+    _handledLiveRoute = true;
+    await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+  }
+
   @override
   void dispose() {
     _pollTimer?.cancel();
-    unawaited(ref.read(correspondenceLiveServiceProvider).leaveSpace(widget.spaceId));
+    unawaited(
+      ref.read(correspondenceLiveServiceProvider).leaveSpace(widget.spaceId),
+    );
     _liveSubscription?.cancel();
     super.dispose();
   }
@@ -134,7 +142,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     final isPrivateSpace = _pickString(
           spaceData ?? const <String, dynamic>{},
           const ['type'],
-        ).toUpperCase() == 'PRIVATE';
+        ).toUpperCase() ==
+        'PRIVATE';
 
     if (!_redirectingToThread &&
         isPrivateSpace &&
@@ -656,7 +665,6 @@ class _SpaceHeaderCard extends StatelessWidget {
                 onPressed: onInviteMember,
                 child: const Text('Add member'),
               ),
-  
             ],
           ),
         ],
@@ -834,9 +842,18 @@ class _ThreadTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (kind.isNotEmpty) _Pill(label: _humanizeLabel(kind)),
-                        if (archived) _StatusPill(label: 'Archived', tone: _StatusTone.neutral),
-                        if (recentWeight.isNotEmpty) _StatusPill(label: recentWeight, tone: _StatusTone.accent),
+                        if (kind.isNotEmpty)
+                          _Pill(label: _humanizeLabel(kind)),
+                        if (archived)
+                          _StatusPill(
+                            label: 'Archived',
+                            tone: _StatusTone.neutral,
+                          ),
+                        if (recentWeight.isNotEmpty)
+                          _StatusPill(
+                            label: recentWeight,
+                            tone: _StatusTone.accent,
+                          ),
                       ],
                     ),
                     if (participantSummary.isNotEmpty) ...[
@@ -890,10 +907,16 @@ class _InviteTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = _inviteDisplayTitle(invite);
     final subtitle = _inviteDisplaySubtitle(invite);
-    final role = _pickString(invite, const ['roleOffered', 'role', 'roleToGrant']);
+    final role = _pickString(
+      invite,
+      const ['roleOffered', 'role', 'roleToGrant'],
+    );
     final status = _inviteStateLabel(invite);
     final token = _pickString(invite, const ['token', 'inviteToken']);
-    final delivery = _pickString(invite, const ['deliveryChannel', 'delivery_channel']);
+    final delivery = _pickString(
+      invite,
+      const ['deliveryChannel', 'delivery_channel'],
+    );
     final canCopyLink = token.isNotEmpty && _inviteIsActive(invite);
     final canRevoke = _canRevokeInvite(invite);
     final tone = _inviteTone(invite);
@@ -938,8 +961,10 @@ class _InviteTile extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             children: [
               _StatusPill(label: status, tone: tone),
-              if (role.isNotEmpty) _MetaChip(label: 'Role', value: _humanizeLabel(role)),
-              if (delivery.isNotEmpty) _MetaChip(label: 'Delivery', value: _humanizeLabel(delivery)),
+              if (role.isNotEmpty)
+                _MetaChip(label: 'Role', value: _humanizeLabel(role)),
+              if (delivery.isNotEmpty)
+                _MetaChip(label: 'Delivery', value: _humanizeLabel(delivery)),
             ],
           ),
           if (canCopyLink || canRevoke) ...[
@@ -951,7 +976,8 @@ class _InviteTile extends StatelessWidget {
                 if (canCopyLink)
                   OutlinedButton(
                     onPressed: () async {
-                      final link = '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
+                      final link =
+                          '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
                       await Clipboard.setData(ClipboardData(text: link));
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -984,10 +1010,16 @@ class _MemberTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = _memberDisplayName(member);
-    final handle = _pickString(member, const ['handle', 'username', 'userHandle']);
+    final handle = _pickString(
+      member,
+      const ['handle', 'username', 'userHandle'],
+    );
     final role = _pickString(member, const ['role', 'memberRole']);
     final subtitle = _memberSubtitle(member);
-    final state = _pickString(member, const ['status', 'membershipStatus', 'state']);
+    final state = _pickString(
+      member,
+      const ['status', 'membershipStatus', 'state'],
+    );
 
     return AuraCard(
       child: Row(
@@ -1025,8 +1057,13 @@ class _MemberTile extends StatelessWidget {
                   spacing: AuraSpace.s8,
                   runSpacing: AuraSpace.s8,
                   children: [
-                    if (role.isNotEmpty) _MetaChip(label: 'Role', value: _humanizeLabel(role)),
-                    if (state.isNotEmpty) _StatusPill(label: _humanizeLabel(state), tone: _memberStateTone(state)),
+                    if (role.isNotEmpty)
+                      _MetaChip(label: 'Role', value: _humanizeLabel(role)),
+                    if (state.isNotEmpty)
+                      _StatusPill(
+                        label: _humanizeLabel(state),
+                        tone: _memberStateTone(state),
+                      ),
                   ],
                 ),
               ],
@@ -1076,12 +1113,20 @@ String _inviteDisplaySubtitle(Map<String, dynamic> invite) {
 
 bool _inviteIsActive(Map<String, dynamic> invite) {
   final status = _pickString(invite, const ['status']).toUpperCase();
-  return status.isEmpty || status == 'PENDING' || status == 'SENT' || status == 'CREATED' || status == 'OPEN' || status == 'OPENED';
+  return status.isEmpty ||
+      status == 'PENDING' ||
+      status == 'SENT' ||
+      status == 'CREATED' ||
+      status == 'OPEN' ||
+      status == 'OPENED';
 }
 
 bool _canRevokeInvite(Map<String, dynamic> invite) => _inviteIsActive(invite);
 
-List<String> _extractDisplayNames(Map<String, dynamic> source, List<String> keys) {
+List<String> _extractDisplayNames(
+  Map<String, dynamic> source,
+  List<String> keys,
+) {
   final out = <String>[];
   for (final participant in _extractParticipants(source, keys: keys)) {
     final name = _identityLabel(participant);
@@ -1090,7 +1135,16 @@ List<String> _extractDisplayNames(Map<String, dynamic> source, List<String> keys
   return out;
 }
 
-List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> source, {List<String> keys = const ['participants', 'members', 'participantList', 'memberList', 'users']}) {
+List<Map<String, dynamic>> _extractParticipants(
+  Map<String, dynamic> source, {
+  List<String> keys = const [
+    'participants',
+    'members',
+    'participantList',
+    'memberList',
+    'users',
+  ],
+}) {
   final out = <Map<String, dynamic>>[];
   for (final key in keys) {
     final value = source[key];
@@ -1098,7 +1152,12 @@ List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> source, {Li
     for (final raw in value) {
       if (raw is! Map) continue;
       final map = Map<String, dynamic>.from(raw);
-      if (out.any((existing) => _pickString(existing, const ['id', 'userId', '_id']) == _pickString(map, const ['id', 'userId', '_id']) && _pickString(map, const ['id', 'userId', '_id']).isNotEmpty)) {
+      if (out.any(
+        (existing) =>
+            _pickString(existing, const ['id', 'userId', '_id']) ==
+                _pickString(map, const ['id', 'userId', '_id']) &&
+            _pickString(map, const ['id', 'userId', '_id']).isNotEmpty,
+      )) {
         continue;
       }
       out.add(map);
@@ -1220,26 +1279,55 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = switch (tone) {
-      _StatusTone.positive => (border: Colors.green.shade200, text: Colors.green.shade800, fill: Colors.green.shade50),
-      _StatusTone.negative => (border: Colors.red.shade200, text: Colors.red.shade800, fill: Colors.red.shade50),
-      _StatusTone.accent => (border: Colors.blue.shade200, text: Colors.blue.shade800, fill: Colors.blue.shade50),
-      _StatusTone.neutral => (border: Colors.black12, text: Colors.black87, fill: Colors.transparent),
+      _StatusTone.positive => (
+          border: Colors.green.shade200,
+          text: Colors.green.shade800,
+          fill: Colors.green.shade50,
+        ),
+      _StatusTone.negative => (
+          border: Colors.red.shade200,
+          text: Colors.red.shade800,
+          fill: Colors.red.shade50,
+        ),
+      _StatusTone.accent => (
+          border: Colors.blue.shade200,
+          text: Colors.blue.shade800,
+          fill: Colors.blue.shade50,
+        ),
+      _StatusTone.neutral => (
+          border: Colors.black12,
+          text: Colors.black87,
+          fill: Colors.transparent,
+        ),
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         color: palette.fill,
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          fontWeight: FontWeight.w700,
+          color: palette.text,
+        ),
+      ),
     );
   }
 }
 
 class _IdentityAvatar extends StatelessWidget {
-  const _IdentityAvatar({required this.label, this.imageUrl = '', this.radius = 20});
+  const _IdentityAvatar({
+    required this.label,
+    this.imageUrl = '',
+    this.radius = 20,
+  });
 
   final String label;
   final String imageUrl;
@@ -1256,13 +1344,20 @@ class _IdentityAvatar extends StatelessWidget {
     }
     return CircleAvatar(
       radius: radius,
-      child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+      child: Text(
+        initials,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
 
 String _initials(String value) {
-  final parts = value.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList(growable: false);
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((e) => e.isNotEmpty)
+      .toList(growable: false);
   if (parts.isEmpty) return '?';
   if (parts.length == 1) return parts.first[0].toUpperCase();
   return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
