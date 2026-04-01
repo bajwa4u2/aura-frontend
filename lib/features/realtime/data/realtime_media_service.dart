@@ -153,9 +153,6 @@ class RealtimeMediaService {
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
     final connection = await _ensurePeer(
-      peerKey,
-      configuration: configuration,
-      onIceCandidate: onIceCandidate,
     );
     _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
@@ -175,9 +172,6 @@ class RealtimeMediaService {
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
     final connection = await _ensurePeer(
-      peerKey,
-      configuration: configuration,
-      onIceCandidate: onIceCandidate,
     );
     _peerSocketIds[peerKey] = targetSocketId ?? _peerSocketIds[peerKey] ?? '';
 
