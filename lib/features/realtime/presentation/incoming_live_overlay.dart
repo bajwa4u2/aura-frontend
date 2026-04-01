@@ -27,6 +27,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   Timer? _timer;
   Map<String, dynamic>? _incoming;
   final Set<String> _dismissedIds = <String>{};
+  final Set<String> _dismissedSessionIds = <String>{};
   bool _refreshing = false;
   bool _joining = false;
 
@@ -74,6 +75,24 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
+    final data = _mapOf(item['data']);
+    final sessionId = _firstNonEmpty([
+      _stringOf(data['sessionId']),
+      _stringOf(item['sessionId']),
+    ]);
+    if (sessionId.isNotEmpty && _dismissedSessionIds.contains(sessionId)) return false;
+
+    final liveState = ref.read(realtimeControllerProvider);
+    final currentSessionId = _firstNonEmpty([
+      liveState.sessionId ?? '',
+      liveState.session?.id ?? '',
+    ]);
+    if (sessionId.isNotEmpty &&
+        currentSessionId == sessionId &&
+        (liveState.joinState.name == 'joining' || liveState.joinState.name == 'joined')) {
+      return false;
+    }
+
     if (currentPath.contains('/thread/') ||
         currentPath.contains('/realtime') ||
         currentPath.contains('/live') ||
@@ -81,7 +100,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
       return false;
     }
 
-    final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
     if (attention != 'INTERRUPT') return false;
 
@@ -110,6 +128,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     final id = _stringOf(item['id']);
     try {
       await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+      _dismissedSessionIds.add(sessionId);
       if (id.isNotEmpty) {
         await ref.read(notificationsRepoProvider).markRead(id);
       }
@@ -136,8 +155,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   void _dismissCurrent() {
     final item = _incoming;
     final id = _stringOf(item?['id']);
+    final data = _mapOf(item?['data']);
+    final sessionId = _firstNonEmpty([
+      _stringOf(data['sessionId']),
+      _stringOf(item?['sessionId']),
+    ]);
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
+    }
+    if (sessionId.isNotEmpty) {
+      _dismissedSessionIds.add(sessionId);
     }
     setState(() {
       _incoming = null;

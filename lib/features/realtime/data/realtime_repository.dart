@@ -174,21 +174,23 @@ class RealtimeRepository {
   }
 
 
-  Future<void> joinSession(RealtimeSession session) async {
+  Future<RealtimeSessionSnapshot> joinSession(RealtimeSession session) async {
     final id = session.id.trim();
-    if (id.isEmpty) return;
+    if (id.isEmpty) {
+      throw StateError('Live session id is missing.');
+    }
 
     final surfaceId = (session.surfaceId ?? '').trim();
     final surfaceType = session.surfaceType.name.trim().toLowerCase();
 
     if ((surfaceType == 'thread' || surfaceType == 'dm') && surfaceId.isNotEmpty) {
       await _dio.post('/threads/$surfaceId/live/$id/join');
-      return;
+      return loadSessionBundle(id);
     }
 
     if (surfaceType == 'space' && surfaceId.isNotEmpty) {
       await _dio.post('/spaces/$surfaceId/live/$id/join');
-      return;
+      return loadSessionBundle(id);
     }
 
     if ((surfaceType == 'room' ||
@@ -196,7 +198,7 @@ class RealtimeRepository {
             surfaceType == 'institutionroom') &&
         surfaceId.isNotEmpty) {
       await _dio.post('/rooms/$surfaceId/live/$id/join');
-      return;
+      return loadSessionBundle(id);
     }
 
     throw StateError('Unable to determine join route for this live session.');
