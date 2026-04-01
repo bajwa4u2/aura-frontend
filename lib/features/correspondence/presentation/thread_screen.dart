@@ -613,6 +613,15 @@ String _participantRoleSummary(List<Map<String, dynamic>> participants) {
   return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
 }
 
+
+String _identityLabel(Map<String, dynamic> entity) {
+  return CorrespondenceIdentity.identityLabel(entity);
+}
+
+String _threadAvatarUrl(Map<String, dynamic> thread) {
+  return CorrespondenceIdentity.threadAvatarUrl(thread);
+}
+
 String _threadLiveSurfaceType(Map<String, dynamic> thread) {
   return 'THREAD';
 }
