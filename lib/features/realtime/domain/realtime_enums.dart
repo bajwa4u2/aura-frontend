@@ -43,7 +43,9 @@ enum RealtimeTranscriptStatus {
 
 enum RealtimeSurfaceType {
   dm,
+  thread,
   space,
+  room,
   institution,
   unknown,
 }

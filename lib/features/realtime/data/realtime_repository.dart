@@ -59,15 +59,34 @@ class RealtimeRepository {
     required String kind,
     Map<String, dynamic>? metadata,
   }) async {
-    final res = await _dio.post(
-      '/realtime/sessions',
-      data: <String, dynamic>{
+    final normalizedType = surfaceType.trim().toUpperCase();
+    final normalizedKind = kind.trim().toUpperCase();
+    final threadId = (metadata?['threadId'] ?? '').toString().trim();
+    final spaceId = (metadata?['spaceId'] ?? '').toString().trim();
+
+    String path;
+    Map<String, dynamic>? body;
+
+    if ((normalizedType == 'THREAD' || normalizedType == 'DM') && threadId.isNotEmpty) {
+      path = '/threads/$threadId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+      body = null;
+    } else if (normalizedType == 'SPACE' && surfaceId.trim().isNotEmpty) {
+      path = '/spaces/$surfaceId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+      body = null;
+    } else if ((normalizedType == 'EVENT_ROOM' || normalizedType == 'INSTITUTION_ROOM') && surfaceId.trim().isNotEmpty) {
+      path = '/rooms/$surfaceId/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+      body = null;
+    } else {
+      path = '/realtime/sessions';
+      body = <String, dynamic>{
         'surfaceType': surfaceType,
         'surfaceId': surfaceId,
         'kind': kind,
         if (metadata != null && metadata.isNotEmpty) 'metadata': metadata,
-      },
-    );
+      };
+    }
+
+    final res = body == null ? await _dio.post(path) : await _dio.post(path, data: body);
     final sessionMap = _unwrapMap(res.data);
     return await loadSessionBundle(sessionMap['id']?.toString() ?? '');
   }

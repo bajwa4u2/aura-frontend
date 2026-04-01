@@ -205,7 +205,7 @@ bool _eventTargetsThread(
 
   final surfaceType = _pickString(payload, const ['surfaceType', 'surface_type']).toUpperCase();
   final surfaceId = _pickString(payload, const ['surfaceId', 'surface_id']);
-  if (surfaceType == 'DM' && surfaceId.isNotEmpty && surfaceId == normalizedThreadId) {
+  if ((surfaceType == 'DM' || surfaceType == 'THREAD') && surfaceId.isNotEmpty && surfaceId == normalizedThreadId) {
     return true;
   }
 
@@ -774,14 +774,10 @@ String _humanizeLabel(String value) {
 
 
 String _threadLiveSurfaceType(Map<String, dynamic> thread) {
-  final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-  if (spaceId.isNotEmpty) return 'SPACE';
-  return 'DM';
+  return 'THREAD';
 }
 
 String _threadLiveSurfaceId(Map<String, dynamic> thread, String threadId) {
-  final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-  if (spaceId.isNotEmpty) return spaceId;
   return threadId;
 }
 

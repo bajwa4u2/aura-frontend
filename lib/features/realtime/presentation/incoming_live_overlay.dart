@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/communication/communication_resolver.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -24,6 +25,7 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
 
 class _AuraIncomingLiveLayerState
     extends ConsumerState<AuraIncomingLiveLayer> {
+  static const _resolver = CommunicationResolver();
   Timer? _timer;
   Map<String, dynamic>? _incoming;
   final Set<String> _dismissedIds = <String>{};
@@ -75,6 +77,7 @@ class _AuraIncomingLiveLayerState
     // ❌ DO NOT SHOW inside thread / realtime / activity
     if (currentPath.contains('/thread/') ||
         currentPath.contains('/realtime') ||
+        currentPath.contains('/live') ||
         currentPath.contains('/activity')) {
       return false;
     }
@@ -100,19 +103,21 @@ class _AuraIncomingLiveLayerState
     if (item == null) return;
 
     final repo = NotificationsRepository(ref.read(dioProvider));
-
     final id = _stringOf(item['id']);
     final data = _mapOf(item['data']);
+    final target = _resolver.resolveFromPayload({
+      ...item,
+      ...data,
+    });
 
-    final sessionId = _stringOf(data['sessionId']);
-    final threadId = _stringOf(data['threadId']);
-    final spaceId = _stringOf(data['spaceId']);
+    final sessionId = _firstNonEmpty([
+      _stringOf(data['sessionId']),
+      target.sessionId ?? '',
+    ]);
 
     try {
       if (sessionId.isNotEmpty) {
-        await ref
-            .read(realtimeControllerProvider.notifier)
-            .join(sessionId);
+        await ref.read(realtimeControllerProvider.notifier).join(sessionId);
       }
       if (id.isNotEmpty) {
         await repo.markRead(id);
@@ -125,15 +130,7 @@ class _AuraIncomingLiveLayerState
       _incoming = null;
     });
 
-    // ✅ ALWAYS return to correspondence first
-    if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-      context.go('/me/correspondence/$spaceId/thread/$threadId');
-      return;
-    }
-
-    if (sessionId.isNotEmpty) {
-      context.go('/realtime/$sessionId?action=join');
-    }
+    context.go(_resolver.resolveRoute(target));
   }
 
   void _dismissCurrent() {
@@ -166,17 +163,28 @@ class _AuraIncomingLiveLayerState
       'Someone',
     ]);
 
-    final mode = _stringOf(data['mode']).toLowerCase();
+    final target = _resolver.resolveFromPayload({...item, ...data});
+    final mode = _firstNonEmpty([
+      _stringOf(data['mediaMode']),
+      _stringOf(data['mode']),
+      target.mode ?? '',
+    ]).toLowerCase();
     final contextName = _firstNonEmpty([
+      target.context ?? '',
       _stringOf(data['contextName']),
       'this conversation',
     ]);
+    final ownerType = _stringOf(data['ownerType']).toUpperCase();
 
-    final title = mode == 'video'
-        ? '$actorName started a video call'
-        : '$actorName started an audio call';
+    final title = ownerType == 'SPACE'
+        ? '${mode == 'video' ? 'Video' : 'Audio'} is live in $contextName'
+        : mode == 'video'
+            ? '$actorName started a video call'
+            : '$actorName started an audio call';
 
-    final body = 'Live is active in $contextName.';
+    final body = ownerType == 'SPACE'
+        ? 'Join from inside the space.'
+        : 'Live is active in $contextName.';
 
     return Stack(
       children: [

@@ -296,12 +296,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
     if (communicationTarget.owner == CommunicationOwner.space &&
         (communicationTarget.spaceId ?? '').isNotEmpty) {
-      final route = _withLiveQuery(
-        '/me/correspondence/${communicationTarget.spaceId}',
-        sessionId: communicationTarget.sessionId,
-        shouldJoin: isRealtimeActivity,
-      );
-      context.push(route);
+      final resolvedRoute = _resolver.resolveRoute(communicationTarget);
+      context.push(resolvedRoute);
       return;
     }
 

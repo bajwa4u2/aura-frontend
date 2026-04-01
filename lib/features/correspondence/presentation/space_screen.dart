@@ -14,6 +14,7 @@ import '../data/spaces_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../data/correspondence_live_service.dart';
+import '../../realtime/application/realtime_providers.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
@@ -68,10 +69,12 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   bool _redirectingToThread = false;
   Timer? _pollTimer;
   StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
+  bool _handledLiveRoute = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _joinFromRouteIfNeeded());
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
@@ -91,6 +94,27 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
         }
       });
     });
+  }
+
+
+  Future<void> _joinFromRouteIfNeeded() async {
+    if (!mounted || _handledLiveRoute) return;
+
+    String sessionId = '';
+    try {
+      final state = GoRouterState.of(context);
+      sessionId = state.pathParameters['sessionId']?.trim() ??
+          state.uri.queryParameters['sessionId']?.trim() ??
+          '';
+      final shouldJoin = sessionId.isNotEmpty ||
+          ((state.uri.queryParameters['join'] ?? '').trim().toLowerCase() == '1');
+      if (!shouldJoin || sessionId.isEmpty) return;
+    } catch (_) {
+      return;
+    }
+
+    _handledLiveRoute = true;
+    await ref.read(realtimeControllerProvider.notifier).join(sessionId);
   }
 
   @override
@@ -659,6 +683,27 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
   String _kind = 'DIRECT';
   bool _submitting = false;
   String? _errorText;
+
+
+  Future<void> _joinFromRouteIfNeeded() async {
+    if (!mounted || _handledLiveRoute) return;
+
+    String sessionId = '';
+    try {
+      final state = GoRouterState.of(context);
+      sessionId = state.pathParameters['sessionId']?.trim() ??
+          state.uri.queryParameters['sessionId']?.trim() ??
+          '';
+      final shouldJoin = sessionId.isNotEmpty ||
+          ((state.uri.queryParameters['join'] ?? '').trim().toLowerCase() == '1');
+      if (!shouldJoin || sessionId.isEmpty) return;
+    } catch (_) {
+      return;
+    }
+
+    _handledLiveRoute = true;
+    await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+  }
 
   @override
   void dispose() {

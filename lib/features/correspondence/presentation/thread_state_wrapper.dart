@@ -38,7 +38,10 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   String _querySessionId() {
     try {
-      return GoRouterState.of(context).uri.queryParameters['sessionId']?.trim() ?? '';
+      final state = GoRouterState.of(context);
+      final fromPath = state.pathParameters['sessionId']?.trim() ?? '';
+      if (fromPath.isNotEmpty) return fromPath;
+      return state.uri.queryParameters['sessionId']?.trim() ?? '';
     } catch (_) {
       return '';
     }
@@ -46,7 +49,10 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   bool _shouldJoinFromQuery() {
     try {
-      final value = GoRouterState.of(context).uri.queryParameters['join']?.trim().toLowerCase() ?? '';
+      final state = GoRouterState.of(context);
+      final fromPath = state.pathParameters['sessionId']?.trim() ?? '';
+      if (fromPath.isNotEmpty) return true;
+      final value = state.uri.queryParameters['join']?.trim().toLowerCase() ?? '';
       return value == '1' || value == 'true' || value == 'yes';
     } catch (_) {
       return false;

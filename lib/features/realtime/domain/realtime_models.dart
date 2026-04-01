@@ -38,8 +38,13 @@ RealtimeSurfaceType _readSurfaceType(dynamic value) {
   switch ((value ?? '').toString().trim().toLowerCase()) {
     case 'dm':
       return RealtimeSurfaceType.dm;
+    case 'thread':
+      return RealtimeSurfaceType.thread;
     case 'space':
       return RealtimeSurfaceType.space;
+    case 'event_room':
+    case 'room':
+      return RealtimeSurfaceType.room;
     case 'institution':
     case 'institution_room':
       return RealtimeSurfaceType.institution;
