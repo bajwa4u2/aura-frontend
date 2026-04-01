@@ -29,6 +29,7 @@ class RealtimeMediaService {
   final Map<String, RTCPeerConnection> _peers = <String, RTCPeerConnection>{};
   final Map<String, RTCVideoRenderer> _remoteRenderers =
       <String, RTCVideoRenderer>{};
+  final Map<String, MediaStream> _remoteStreams = <String, MediaStream>{};
   final Map<String, String> _peerSocketIds = <String, String>{};
 
   MediaStream? _localStream;
@@ -121,11 +122,36 @@ class RealtimeMediaService {
     };
 
     connection.onTrack = (RTCTrackEvent event) async {
-      if (event.streams.isEmpty) return;
-      final renderer = _remoteRenderers[peerKey] ?? await _createRemoteRenderer();
-      renderer.srcObject = event.streams.first;
-      _remoteRenderers[peerKey] = renderer;
-      _publish();
+      try {
+        MediaStream? stream;
+
+        if (event.streams.isNotEmpty) {
+          stream = event.streams.first;
+        } else {
+          final existingStream = _remoteStreams[peerKey];
+          if (existingStream != null) {
+            stream = existingStream;
+          } else {
+            stream = await createLocalMediaStream('remote-$peerKey');
+            _remoteStreams[peerKey] = stream;
+          }
+          await stream.addTrack(event.track);
+        }
+
+        if (stream == null) {
+          return;
+        }
+
+        _remoteStreams[peerKey] = stream;
+        final renderer = _remoteRenderers[peerKey] ?? await _createRemoteRenderer();
+        renderer.srcObject = stream;
+        _remoteRenderers[peerKey] = renderer;
+        _error = null;
+        _publish();
+      } catch (error) {
+        _error = error.toString();
+        _publish();
+      }
     };
 
     connection.onConnectionState = (RTCPeerConnectionState state) async {
@@ -268,6 +294,17 @@ class RealtimeMediaService {
       } catch (_) {}
       try {
         await renderer.dispose();
+      } catch (_) {}
+    }
+    final stream = _remoteStreams.remove(peerKey);
+    if (stream != null) {
+      try {
+        for (final track in stream.getTracks()) {
+          await track.stop();
+        }
+      } catch (_) {}
+      try {
+        await stream.dispose();
       } catch (_) {}
     }
     _peerSocketIds.remove(peerKey);
