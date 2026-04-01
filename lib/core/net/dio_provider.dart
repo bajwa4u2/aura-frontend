@@ -135,6 +135,10 @@ final dioProvider = Provider<Dio>((ref) {
     return status == 401 || status == 403;
   }
 
+  bool _isRateLimitedStatus(int? status) {
+    return status == 429;
+  }
+
   bool _isSafeSessionResetStatus(int? status) {
     return status == 401 || status == 403;
   }
@@ -342,6 +346,11 @@ final dioProvider = Provider<Dio>((ref) {
       onError: (err, handler) async {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
+
+        if (_isRateLimitedStatus(status)) {
+          handler.reject(_mapDioException(err));
+          return;
+        }
 
         if (status != 401 || isAuthEndpoint(req)) {
           handler.reject(_mapDioException(err));

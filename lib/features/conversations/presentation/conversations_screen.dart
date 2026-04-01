@@ -48,7 +48,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   @override
   void initState() {
     super.initState();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
       ref.invalidate(_conversationSpacesProvider);
     });

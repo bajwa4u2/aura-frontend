@@ -13,10 +13,60 @@ class SpacesRepository {
 
   final Dio _dio;
 
+  static const Duration _cacheTtl = Duration(seconds: 8);
+
+  List<Map<String, dynamic>>? _cache;
+  DateTime? _cacheAt;
+  Future<List<Map<String, dynamic>>>? _inFlight;
+
+  void clearCache() {
+    _cache = null;
+    _cacheAt = null;
+    _inFlight = null;
+  }
+
   Future<List<Map<String, dynamic>>> listMySpaces({
     int limit = 50,
     String? cursor,
-    bool forceRefresh = true,
+    bool forceRefresh = false,
+  }) async {
+    final now = DateTime.now();
+    final useCache = !_hasText(cursor);
+
+    if (useCache &&
+        !forceRefresh &&
+        _cache != null &&
+        _cacheAt != null &&
+        now.difference(_cacheAt!) < _cacheTtl) {
+      return _cloneList(_cache!);
+    }
+
+    if (useCache && !forceRefresh && _inFlight != null) {
+      return _inFlight!;
+    }
+
+    final future = _fetchSpaces(limit: limit, cursor: cursor);
+    if (useCache) {
+      _inFlight = future;
+    }
+
+    try {
+      final spaces = await future;
+      if (useCache) {
+        _cache = _cloneList(spaces);
+        _cacheAt = DateTime.now();
+      }
+      return _cloneList(spaces);
+    } finally {
+      if (useCache) {
+        _inFlight = null;
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchSpaces({
+    required int limit,
+    String? cursor,
   }) async {
     final res = await _dio.get(
       '/spaces',
@@ -33,9 +83,11 @@ class SpacesRepository {
       keys: const ['items', 'spaces', 'results', 'data'],
     );
 
-    final spaces = items.map(_asMap).toList();
+    return items.map(_asMap).toList(growable: false);
+  }
 
-    return spaces;
+  List<Map<String, dynamic>> _cloneList(List<Map<String, dynamic>> items) {
+    return items.map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
   }
 
   Future<Map<String, dynamic>> getSpace(String spaceId) async {
