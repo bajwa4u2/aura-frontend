@@ -113,10 +113,6 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       return;
     }
 
-    _handledLiveRoute = true;
-    await ref.read(realtimeControllerProvider.notifier).join(sessionId);
-  }
-
   @override
   void dispose() {
     _pollTimer?.cancel();
@@ -683,10 +679,6 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
   String _kind = 'DIRECT';
   bool _submitting = false;
   String? _errorText;
-
-    _handledLiveRoute = true;
-    await ref.read(realtimeControllerProvider.notifier).join(sessionId);
-  }
 
   @override
   void dispose() {
