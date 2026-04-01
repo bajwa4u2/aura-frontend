@@ -619,6 +619,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
+          GoRoute(
+            path: '/me/correspondence/:spaceId/thread/:threadId/live/:sessionId',
+            builder: (context, state) => ThreadStateWrapper(
+              threadId: state.pathParameters['threadId'] ?? '',
+            ),
+          ),
 
           GoRoute(
             path: '/realtime',
