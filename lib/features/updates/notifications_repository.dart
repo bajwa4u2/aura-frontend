@@ -302,6 +302,17 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     fallback: '',
   );
 
+  final dedupKey = _logicalDedupKey(
+    threadId: threadId,
+    spaceId: spaceId,
+    sessionId: sessionId,
+    realtimeType: realtimeType,
+    announcementId: announcementId,
+    announcementSlug: announcementSlug,
+    type: _stringOf(item['type']),
+    deeplink: deeplink,
+  );
+
   final mergedData = <String, dynamic>{
     ...data,
     if (threadId.isNotEmpty) 'threadId': threadId,
@@ -312,19 +323,6 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     if (dedupKey.isNotEmpty) 'dedupKey': dedupKey,
   };
 
-  final dedupKey = _firstNonEmpty([
-    [
-      threadId,
-      spaceId,
-      sessionId,
-      realtimeType,
-      announcementId,
-      announcementSlug,
-      _stringOf(item['type']),
-      _stringOf(item['id']),
-    ].where((part) => part.trim().isNotEmpty).join('|'),
-  ]);
-
   return <String, dynamic>{
     ...item,
     'data': mergedData,
@@ -333,7 +331,31 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     if (sessionId.isNotEmpty) 'sessionId': sessionId,
     if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
+    if (dedupKey.isNotEmpty) 'dedupKey': dedupKey,
   };
+}
+
+String _logicalDedupKey({
+  required String threadId,
+  required String spaceId,
+  required String sessionId,
+  required String realtimeType,
+  required String announcementId,
+  required String announcementSlug,
+  required String type,
+  required String deeplink,
+}) {
+  final parts = <String>[
+    if (type.isNotEmpty) type,
+    if (realtimeType.isNotEmpty) realtimeType,
+    if (sessionId.isNotEmpty) sessionId,
+    if (threadId.isNotEmpty) threadId,
+    if (spaceId.isNotEmpty) spaceId,
+    if (announcementId.isNotEmpty) announcementId,
+    if (announcementSlug.isNotEmpty) announcementSlug,
+    if (deeplink.isNotEmpty) deeplink,
+  ];
+  return parts.join('|');
 }
 
 Map<String, dynamic> _mapOf(dynamic value) {

@@ -143,6 +143,13 @@ final dioProvider = Provider<Dio>((ref) {
     return status == 401 || status == 403;
   }
 
+  bool _isTransportRetryable(DioException err) {
+    return err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout;
+  }
+
   Future<void> _clearSessionState() async {
     await ref.read(tokenStoreProvider).clearTokens();
     ref.invalidate(sessionBootstrapProvider);
@@ -350,6 +357,23 @@ final dioProvider = Provider<Dio>((ref) {
         if (_isRateLimitedStatus(status)) {
           handler.reject(_mapDioException(err));
           return;
+        }
+
+        if (_isTransportRetryable(err) &&
+            req.method.toUpperCase() == 'GET' &&
+            req.extra['__retried_transport'] != true) {
+          try {
+            req.extra['__retried_transport'] = true;
+            req.path = _normalizePath(req.path);
+            _normalizeContentTypeForRequest(req);
+            await Future<void>.delayed(const Duration(milliseconds: 250));
+            final response = await dio.fetch<dynamic>(req);
+            handler.resolve(response);
+            return;
+          } catch (_) {
+            handler.reject(_mapDioException(err));
+            return;
+          }
         }
 
         if (status != 401 || isAuthEndpoint(req)) {
