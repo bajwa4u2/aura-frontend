@@ -35,7 +35,8 @@ class RealtimeSocketService {
     await disconnect();
 
     final uri = Uri.parse(AppConfig.apiBaseUrl);
-    final origin = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+    final origin =
+        '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 
     final socket = io.io(
       '$origin/realtime',
@@ -87,7 +88,9 @@ class RealtimeSocketService {
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError('Realtime socket failed to connect: ${error?.toString() ?? 'unknown_error'}'),
+          StateError(
+            'Realtime socket failed to connect: ${error?.toString() ?? 'unknown_error'}',
+          ),
         );
       }
     };
@@ -96,7 +99,9 @@ class RealtimeSocketService {
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError('Realtime socket error: ${error?.toString() ?? 'unknown_error'}'),
+          StateError(
+            'Realtime socket error: ${error?.toString() ?? 'unknown_error'}',
+          ),
         );
       }
     };
@@ -105,7 +110,9 @@ class RealtimeSocketService {
       if (!completer.isCompleted) {
         cleanup();
         completer.completeError(
-          StateError('Realtime socket disconnected before connection completed: ${reason?.toString() ?? 'unknown_reason'}'),
+          StateError(
+            'Realtime socket disconnected before connection completed: ${reason?.toString() ?? 'unknown_reason'}',
+          ),
         );
       }
     };
@@ -127,11 +134,13 @@ class RealtimeSocketService {
   void _wireCoreEvents(io.Socket socket) {
     void onNamed(String eventName) {
       socket.on(eventName, (data) {
+        if (_eventsController.isClosed) return;
         _eventsController.add(RealtimeEventParser.parse(eventName, data));
       });
     }
 
     socket.onConnect((_) {
+      if (_eventsController.isClosed) return;
       _eventsController.add(
         const RealtimeParsedEvent(
           name: 'socket:connected',
@@ -141,6 +150,7 @@ class RealtimeSocketService {
     });
 
     socket.onDisconnect((reason) {
+      if (_eventsController.isClosed) return;
       _eventsController.add(
         RealtimeParsedEvent(
           name: 'socket:disconnected',
@@ -150,6 +160,7 @@ class RealtimeSocketService {
     });
 
     socket.onConnectError((error) {
+      if (_eventsController.isClosed) return;
       _eventsController.add(
         RealtimeParsedEvent(
           name: 'socket:connect_error',
@@ -159,6 +170,7 @@ class RealtimeSocketService {
     });
 
     socket.onError((error) {
+      if (_eventsController.isClosed) return;
       _eventsController.add(
         RealtimeParsedEvent(
           name: 'socket:error',
@@ -178,6 +190,20 @@ class RealtimeSocketService {
       'session:replaced',
       'session:removed',
       'realtime:removed',
+      'session:state',
+      'participants:updated',
+      'policy:updated',
+      'session:policyUpdated',
+      'session:updated',
+      'session:participantUpdated',
+      'session:participantRemoved',
+      'consent:updated',
+      'recording:updated',
+      'transcript:updated',
+      'artifact:updated',
+      'join:requested',
+      'join:approved',
+      'join:rejected',
     ];
 
     for (final name in names) {
@@ -235,6 +261,8 @@ class RealtimeSocketService {
   void dispose() {
     _disposing = true;
     unawaited(disconnect());
-    _eventsController.close();
+    if (!_eventsController.isClosed) {
+      _eventsController.close();
+    }
   }
 }

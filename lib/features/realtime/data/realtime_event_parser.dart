@@ -55,18 +55,10 @@ class RealtimeEventParser {
         : (_looksLikePolicyPayload(payload) ? RealtimePolicy.fromJson(payload) : state.policy);
 
     final nextParticipants = participantsJson != null
-        ? participantsJson.map((json) {
-            final map = Map<String, dynamic>.from(json);
-
-            // 🔥 CRITICAL FIX: ensure socketId is preserved
-            final socketId = (map['socketId'] ?? '').toString().trim();
-            if (socketId.isNotEmpty) {
-              map['runtimeDeviceId'] = socketId;
-            }
-
-            return RealtimeParticipant.fromJson(map);
-          }).toList()
-        : state.participants;
+        ? participantsJson.map((json) => RealtimeParticipant.fromJson(_normalizeParticipantJson(json))).toList()
+        : (_looksLikeParticipantPayload(payload)
+            ? _mergeSingleParticipant(state.participants, RealtimeParticipant.fromJson(_normalizeParticipantJson(payload)))
+            : state.participants);
 
     final nextConsents = consentsJson != null
         ? consentsJson.map(RealtimeConsent.fromJson).toList()
@@ -118,12 +110,67 @@ class RealtimeEventParser {
       }
       return RealtimeJoinState.joined;
     }
-
     if (session?.isLocked == true && state.joinState == RealtimeJoinState.locked) {
       return RealtimeJoinState.locked;
     }
-
     return state.joinState;
+  }
+
+  static Map<String, dynamic> _normalizeParticipantJson(Map<String, dynamic> raw) {
+    final map = Map<String, dynamic>.from(raw);
+
+    final socketId = _readString(map, const ['socketId', 'fromSocketId']);
+    final runtimeDeviceId = _readString(map, const ['runtimeDeviceId']);
+    final userId = _readString(map, const ['userId']);
+
+    if (socketId.isNotEmpty) {
+      map['socketId'] = socketId;
+      map['runtimeDeviceId'] = socketId;
+    } else if (runtimeDeviceId.isNotEmpty) {
+      map['runtimeDeviceId'] = runtimeDeviceId;
+    }
+
+    if (userId.isNotEmpty) {
+      map['userId'] = userId;
+    }
+
+    return map;
+  }
+
+  static List<RealtimeParticipant> _mergeSingleParticipant(
+    List<RealtimeParticipant> current,
+    RealtimeParticipant incoming,
+  ) {
+    final out = <RealtimeParticipant>[];
+    var replaced = false;
+
+    for (final participant in current) {
+      final sameUser = participant.userId.trim().isNotEmpty &&
+          participant.userId.trim() == incoming.userId.trim();
+      final sameRuntime = participant.runtimeDeviceId.trim().isNotEmpty &&
+          participant.runtimeDeviceId.trim() == incoming.runtimeDeviceId.trim();
+
+      if (sameUser || sameRuntime) {
+        out.add(incoming);
+        replaced = true;
+      } else {
+        out.add(participant);
+      }
+    }
+
+    if (!replaced) {
+      out.add(incoming);
+    }
+
+    return out;
+  }
+
+  static String _readString(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final value = (map[key] ?? '').toString().trim();
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   static Map<String, dynamic>? _pickMap(
@@ -173,5 +220,15 @@ class RealtimeEventParser {
         payload.containsKey('canTranscribe') ||
         payload.containsKey('joinRequests') ||
         payload.containsKey('pendingJoinRequests');
+  }
+
+  static bool _looksLikeParticipantPayload(Map<String, dynamic> payload) {
+    return payload.containsKey('userId') ||
+        payload.containsKey('socketId') ||
+        payload.containsKey('fromSocketId') ||
+        payload.containsKey('runtimeDeviceId') ||
+        payload.containsKey('audioState') ||
+        payload.containsKey('videoState') ||
+        payload.containsKey('screenState');
   }
 }

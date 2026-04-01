@@ -34,6 +34,39 @@ String? _readString(dynamic value) {
   return text.isEmpty ? null : text;
 }
 
+String _readFirstString(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = (json[key] ?? '').toString().trim();
+    if (value.isNotEmpty) return value;
+  }
+  return '';
+}
+
+Map<String, dynamic> _normalizeParticipantJson(Map<String, dynamic> raw) {
+  final json = Map<String, dynamic>.from(raw);
+
+  final socketId = _readFirstString(json, const ['socketId', 'fromSocketId']);
+  final runtimeDeviceId = _readFirstString(json, const ['runtimeDeviceId']);
+  final participantId = _readFirstString(json, const ['id']);
+  final userId = _readFirstString(json, const ['userId']);
+
+  if (socketId.isNotEmpty) {
+    json['socketId'] = socketId;
+    json['runtimeDeviceId'] = socketId;
+  } else if (runtimeDeviceId.isNotEmpty) {
+    json['runtimeDeviceId'] = runtimeDeviceId;
+  }
+
+  if (participantId.isNotEmpty) {
+    json['id'] = participantId;
+  }
+  if (userId.isNotEmpty) {
+    json['userId'] = userId;
+  }
+
+  return json;
+}
+
 RealtimeSurfaceType _readSurfaceType(dynamic value) {
   switch ((value ?? '').toString().trim().toLowerCase()) {
     case 'dm':
@@ -210,21 +243,22 @@ class RealtimeParticipant {
   }
 
   factory RealtimeParticipant.fromJson(Map<String, dynamic> json) {
-    final audio = (json['audioState'] ?? '').toString().toUpperCase() == 'ON';
-    final video = (json['videoState'] ?? '').toString().toUpperCase() == 'ON';
-    final screen = (json['screenState'] ?? '').toString().toUpperCase() == 'ON';
+    final normalized = _normalizeParticipantJson(json);
+    final audio = (normalized['audioState'] ?? '').toString().toUpperCase() == 'ON';
+    final video = (normalized['videoState'] ?? '').toString().toUpperCase() == 'ON';
+    final screen = (normalized['screenState'] ?? '').toString().toUpperCase() == 'ON';
 
     return RealtimeParticipant(
-      id: (json['id'] ?? '').toString(),
-      userId: (json['userId'] ?? '').toString(),
-      runtimeDeviceId: _readString(json['runtimeDeviceId']),
-      role: _readRole(json['role']),
-      isPresent: _readBool(json['isPresent'], fallback: true),
+      id: (normalized['id'] ?? '').toString(),
+      userId: (normalized['userId'] ?? '').toString(),
+      runtimeDeviceId: _readString(normalized['runtimeDeviceId']),
+      role: _readRole(normalized['role']),
+      isPresent: _readBool(normalized['isPresent'], fallback: true),
       audioOn: audio,
       videoOn: video,
       screenOn: screen,
-      joinedAt: _readDate(json['joinedAt']),
-      leftAt: _readDate(json['leftAt']),
+      joinedAt: _readDate(normalized['joinedAt']),
+      leftAt: _readDate(normalized['leftAt']),
     );
   }
 }
@@ -421,7 +455,7 @@ class RealtimeSessionSnapshot {
     return RealtimeSessionSnapshot(
       session: RealtimeSession.fromJson(sessionMap),
       participants: _asList(participantsRaw)
-          .map(RealtimeParticipant.fromJson)
+          .map((item) => RealtimeParticipant.fromJson(_normalizeParticipantJson(item)))
           .toList(),
       policy: json['policy'] == null ? null : RealtimePolicy.fromJson(_asMap(json['policy'])),
       consents: _asList(consentsRaw).map(RealtimeConsent.fromJson).toList(),
