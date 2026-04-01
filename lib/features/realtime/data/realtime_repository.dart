@@ -173,6 +173,10 @@ class RealtimeRepository {
     await _dio.post('/realtime/sessions/$sessionId/join-request');
   }
 
+  Future<void> joinSession(String sessionId) async {
+    await _dio.post('/realtime/sessions/$sessionId/join');
+  }
+
   Future<void> respondToJoinRequest(
     String sessionId, {
     required String requestUserId,

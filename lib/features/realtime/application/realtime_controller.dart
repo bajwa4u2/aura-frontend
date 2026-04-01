@@ -232,6 +232,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
+      await _repository.joinSession(trimmed);
+      
       await _socketService.emitAck('session:join', <String, dynamic>{
         'sessionId': trimmed,
       });
