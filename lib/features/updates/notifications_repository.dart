@@ -49,11 +49,12 @@ class NotificationsRepository {
 
     try {
       final payload = await future;
+      final dedupedItems = _dedupItems(payload.items);
       if (useCache) {
-        _cache = _cloneList(payload.items);
+        _cache = _cloneList(dedupedItems);
         _cacheAt = DateTime.now();
       }
-      return _cloneList(payload.items);
+      return _cloneList(dedupedItems);
     } finally {
       if (useCache) {
         _inFlight = null;
@@ -146,6 +147,26 @@ class NotificationsRepository {
 
   List<Map<String, dynamic>> _cloneList(List<Map<String, dynamic>> items) {
     return items.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  List<Map<String, dynamic>> _dedupItems(List<Map<String, dynamic>> items) {
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+
+    for (final item in items) {
+      final dedupKey = _stringOf(item['dedupKey']);
+      if (dedupKey.isEmpty) {
+        out.add(Map<String, dynamic>.from(item));
+        continue;
+      }
+      if (seen.contains(dedupKey)) {
+        continue;
+      }
+      seen.add(dedupKey);
+      out.add(Map<String, dynamic>.from(item));
+    }
+
+    return out;
   }
 }
 
@@ -288,7 +309,21 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     if (sessionId.isNotEmpty) 'sessionId': sessionId,
     if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
+    if (dedupKey.isNotEmpty) 'dedupKey': dedupKey,
   };
+
+  final dedupKey = _firstNonEmpty([
+    [
+      threadId,
+      spaceId,
+      sessionId,
+      realtimeType,
+      announcementId,
+      announcementSlug,
+      _stringOf(item['type']),
+      _stringOf(item['id']),
+    ].where((part) => part.trim().isNotEmpty).join('|'),
+  ]);
 
   return <String, dynamic>{
     ...item,

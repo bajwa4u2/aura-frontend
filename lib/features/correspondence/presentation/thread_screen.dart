@@ -198,6 +198,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     super.initState();
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
+      final liveState = ref.read(realtimeControllerProvider);
+      if (liveState.isJoined || liveState.isBusy || liveState.isMediaBusy) return;
       _refreshThreadData();
     });
   }
@@ -240,7 +242,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
     );
     if (!mounted || sessionId.trim().isEmpty) return;
-    _refreshThreadData();
   }
 
   @override
