@@ -53,6 +53,18 @@ class RealtimeRepository {
     }
   }
 
+  Future<void> _safePost(String path, {Map<String, dynamic>? data}) async {
+    try {
+      await _dio.post(path, data: data);
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode != null && (statusCode == 403 || statusCode == 404 || statusCode == 405)) {
+        return;
+      }
+      rethrow;
+    }
+  }
+
   Future<RealtimeSessionSnapshot> createSession({
     required String surfaceType,
     required String surfaceId,
@@ -73,7 +85,7 @@ class RealtimeRepository {
     } else if (normalizedType == 'SPACE' && surfaceId.trim().isNotEmpty) {
       path = '/spaces/$surfaceId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
       body = null;
-    } else if ((normalizedType == 'EVENT_ROOM' || normalizedType == 'INSTITUTION_ROOM') && surfaceId.trim().isNotEmpty) {
+    } else if ((normalizedType == 'EVENT_ROOM' || normalizedType == 'INSTITUTION_ROOM' || normalizedType == 'ROOM') && surfaceId.trim().isNotEmpty) {
       path = '/rooms/$surfaceId/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
       body = null;
     } else {
@@ -103,12 +115,9 @@ class RealtimeRepository {
     final sessionMap = _unwrapMap(sessionRes.data);
     final policyMap = policyRes == null ? <String, dynamic>{} : _unwrapMap(policyRes.data);
     final consents = consentsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(consentsRes.data);
-    final recordings =
-        recordingsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(recordingsRes.data);
-    final transcripts =
-        transcriptsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(transcriptsRes.data);
-    final artifacts =
-        artifactsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(artifactsRes.data);
+    final recordings = recordingsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(recordingsRes.data);
+    final transcripts = transcriptsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(transcriptsRes.data);
+    final artifacts = artifactsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(artifactsRes.data);
 
     return RealtimeSessionSnapshot.fromJson(
       <String, dynamic>{
@@ -249,5 +258,63 @@ class RealtimeRepository {
   Future<List<RealtimeArtifact>> listArtifacts(String sessionId) async {
     final res = await _dio.get('/realtime/sessions/$sessionId/artifacts');
     return _unwrapList(res.data).map(RealtimeArtifact.fromJson).toList();
+  }
+
+  Future<void> leaveSession(RealtimeSession? session) async {
+    if (session == null) return;
+    final id = session.id.trim();
+    if (id.isEmpty) return;
+
+    final surfaceId = (session.surfaceId ?? '').trim();
+    final surfaceType = session.surfaceType.name.trim().toLowerCase();
+
+    if (surfaceType == 'thread' || surfaceType == 'dm') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/threads/$surfaceId/live/$id/leave');
+        return;
+      }
+    }
+    if (surfaceType == 'space') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/spaces/$surfaceId/live/$id/leave');
+        return;
+      }
+    }
+    if (surfaceType == 'room' || surfaceType == 'eventroom' || surfaceType == 'institutionroom') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/rooms/$surfaceId/live/$id/leave');
+        return;
+      }
+    }
+    await _safePost('/realtime/sessions/$id/leave');
+  }
+
+  Future<void> endSession(RealtimeSession? session) async {
+    if (session == null) return;
+    final id = session.id.trim();
+    if (id.isEmpty) return;
+
+    final surfaceId = (session.surfaceId ?? '').trim();
+    final surfaceType = session.surfaceType.name.trim().toLowerCase();
+
+    if (surfaceType == 'thread' || surfaceType == 'dm') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/threads/$surfaceId/live/$id/end');
+        return;
+      }
+    }
+    if (surfaceType == 'space') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/spaces/$surfaceId/live/$id/end');
+        return;
+      }
+    }
+    if (surfaceType == 'room' || surfaceType == 'eventroom' || surfaceType == 'institutionroom') {
+      if (surfaceId.isNotEmpty) {
+        await _safePost('/rooms/$surfaceId/live/$id/end');
+        return;
+      }
+    }
+    await _safePost('/realtime/sessions/$id/end');
   }
 }

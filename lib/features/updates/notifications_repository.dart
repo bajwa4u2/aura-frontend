@@ -13,6 +13,7 @@ class NotificationsRepository {
   List<Map<String, dynamic>>? _cache;
   DateTime? _cacheAt;
   Future<_NotificationsPayload>? _inFlight;
+  final Set<String> _readInFlight = <String>{};
 
   void clearCache() {
     _cache = null;
@@ -21,7 +22,7 @@ class NotificationsRepository {
   }
 
   Future<List<Map<String, dynamic>>> list({
-    int limit = 20,
+    int limit = 30,
     String? cursor,
     bool forceRefresh = false,
   }) async {
@@ -61,7 +62,7 @@ class NotificationsRepository {
   }
 
   Future<String?> nextCursor({
-    int limit = 20,
+    int limit = 30,
     String? cursor,
   }) async {
     final payload = await _fetch(limit: limit, cursor: cursor);
@@ -69,23 +70,21 @@ class NotificationsRepository {
   }
 
   Future<int> unreadCount({bool forceRefresh = false}) async {
-    final items = await list(limit: 50, forceRefresh: forceRefresh);
+    final items = await list(limit: 30, forceRefresh: forceRefresh);
     return items.where((item) => _stringOf(item['readAt']).isEmpty).length;
   }
 
   Future<void> markRead(String id) async {
-    await _dio.post('/notifications/$id/read');
-    if (_cache != null) {
-      _cache = _cache!
-          .map(
-            (item) => _stringOf(item['id']) == id
-                ? {
-                    ...item,
-                    'readAt': item['readAt'] ?? DateTime.now().toIso8601String(),
-                  }
-                : item,
-          )
-          .toList(growable: false);
+    final trimmed = id.trim();
+    if (trimmed.isEmpty) return;
+    if (_readInFlight.contains(trimmed) || _isCachedAsRead(trimmed)) return;
+
+    _readInFlight.add(trimmed);
+    try {
+      await _dio.post('/notifications/$trimmed/read');
+      _markCachedRead(trimmed);
+    } finally {
+      _readInFlight.remove(trimmed);
     }
   }
 
@@ -99,6 +98,32 @@ class NotificationsRepository {
               ...item,
               'readAt': _stringOf(item['readAt']).isEmpty ? now : item['readAt'],
             },
+          )
+          .toList(growable: false);
+    }
+  }
+
+  bool _isCachedAsRead(String id) {
+    final cache = _cache;
+    if (cache == null) return false;
+    for (final item in cache) {
+      if (_stringOf(item['id']) == id && _stringOf(item['readAt']).isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _markCachedRead(String id) {
+    if (_cache != null) {
+      _cache = _cache!
+          .map(
+            (item) => _stringOf(item['id']) == id
+                ? {
+                    ...item,
+                    'readAt': item['readAt'] ?? DateTime.now().toIso8601String(),
+                  }
+                : item,
           )
           .toList(growable: false);
     }
@@ -186,8 +211,7 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
       : const {};
 
   final metaThreadId = _stringOf(sessionMeta['threadId']);
-  final metaSpaceId  = _stringOf(sessionMeta['spaceId']);
-
+  final metaSpaceId = _stringOf(sessionMeta['spaceId']);
 
   final announcementId = _firstNonEmpty([
     _stringOf(item['announcementId']),
@@ -259,8 +283,6 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
 
   final mergedData = <String, dynamic>{
     ...data,
-    if (announcementId.isNotEmpty) 'announcementId': announcementId,
-    if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
     if (threadId.isNotEmpty) 'threadId': threadId,
     if (spaceId.isNotEmpty) 'spaceId': spaceId,
     if (sessionId.isNotEmpty) 'sessionId': sessionId,
@@ -268,25 +290,21 @@ Map<String, dynamic> _normalizeNotificationItem(Map<String, dynamic> raw) {
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
   };
 
-  return {
+  return <String, dynamic>{
     ...item,
-    if (announcementId.isNotEmpty) 'announcementId': announcementId,
-    if (announcementSlug.isNotEmpty) 'announcementSlug': announcementSlug,
+    'data': mergedData,
     if (threadId.isNotEmpty) 'threadId': threadId,
     if (spaceId.isNotEmpty) 'spaceId': spaceId,
     if (sessionId.isNotEmpty) 'sessionId': sessionId,
     if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     if (deeplink.isNotEmpty) 'deeplink': deeplink,
-    'data': mergedData,
   };
 }
 
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;
-  if (value is Map) {
-    return value.map((key, val) => MapEntry(key.toString(), val));
-  }
-  return const {};
+  if (value is Map) return value.map((key, val) => MapEntry(key.toString(), val));
+  return const <String, dynamic>{};
 }
 
 String _stringOf(dynamic value) {

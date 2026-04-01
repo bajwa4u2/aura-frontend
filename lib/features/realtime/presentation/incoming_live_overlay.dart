@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/net/dio_provider.dart';
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../updates/notifications_repository.dart';
+import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
 
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
@@ -23,21 +22,19 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
       _AuraIncomingLiveLayerState();
 }
 
-class _AuraIncomingLiveLayerState
-    extends ConsumerState<AuraIncomingLiveLayer> {
+class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   static const _resolver = CommunicationResolver();
   Timer? _timer;
   Map<String, dynamic>? _incoming;
   final Set<String> _dismissedIds = <String>{};
-  bool _busy = false;
+  bool _refreshing = false;
+  bool _joining = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _refreshCandidate(force: true));
-    _timer =
-        Timer.periodic(const Duration(seconds: 4), (_) => _refreshCandidate());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCandidate(force: true));
+    _timer = Timer.periodic(const Duration(seconds: 8), (_) => _refreshCandidate());
   }
 
   @override
@@ -47,15 +44,16 @@ class _AuraIncomingLiveLayerState
   }
 
   Future<void> _refreshCandidate({bool force = false}) async {
-    if (!mounted || _busy) return;
-    _busy = true;
+    if (!mounted || _refreshing || _joining) return;
+    _refreshing = true;
     try {
-      final repo = NotificationsRepository(ref.read(dioProvider));
-      final items = await repo.list(limit: 30, forceRefresh: force);
+      final items = await ref.read(notificationsRepoProvider).list(
+            limit: kNotificationsPageLimit,
+            forceRefresh: force,
+          );
       if (!mounted) return;
 
       final currentPath = GoRouterState.of(context).uri.path;
-
       final next = items.firstWhere(
         (item) => _isInterruptCandidate(item, currentPath),
         orElse: () => <String, dynamic>{},
@@ -64,8 +62,10 @@ class _AuraIncomingLiveLayerState
       setState(() {
         _incoming = next.isEmpty ? null : next;
       });
-    } catch (_) {} finally {
-      _busy = false;
+    } catch (_) {
+      // keep layer silent
+    } finally {
+      _refreshing = false;
     }
   }
 
@@ -74,7 +74,6 @@ class _AuraIncomingLiveLayerState
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
-    // ❌ DO NOT SHOW inside thread / realtime / activity
     if (currentPath.contains('/thread/') ||
         currentPath.contains('/realtime') ||
         currentPath.contains('/live') ||
@@ -87,60 +86,59 @@ class _AuraIncomingLiveLayerState
     if (attention != 'INTERRUPT') return false;
 
     final type = _stringOf(item['type']).toUpperCase();
-    final communicationType =
-        _stringOf(data['communicationType']).toUpperCase();
-
-    final isLive =
-        type == 'LIVE' || communicationType == 'LIVE';
-
-    if (!isLive) return false;
-
-    return true;
+    final communicationType = _stringOf(data['communicationType']).toUpperCase();
+    return type == 'LIVE' || communicationType == 'LIVE';
   }
 
   Future<void> _joinCurrent() async {
     final item = _incoming;
-    if (item == null) return;
+    if (item == null || _joining) return;
 
-    final repo = NotificationsRepository(ref.read(dioProvider));
-    final id = _stringOf(item['id']);
     final data = _mapOf(item['data']);
-    final target = _resolver.resolveFromPayload({
-      ...item,
-      ...data,
-    });
-
+    final target = _resolver.resolveFromPayload({...item, ...data});
     final sessionId = _firstNonEmpty([
       _stringOf(data['sessionId']),
       target.sessionId ?? '',
     ]);
 
-    try {
-      if (sessionId.isNotEmpty) {
-        await ref.read(realtimeControllerProvider.notifier).join(sessionId);
-      }
-      if (id.isNotEmpty) {
-        await repo.markRead(id);
-      }
-    } catch (_) {}
-
-    if (!mounted) return;
+    if (sessionId.isEmpty) return;
 
     setState(() {
-      _incoming = null;
+      _joining = true;
     });
 
-    context.go(_resolver.resolveRoute(target));
+    final id = _stringOf(item['id']);
+    try {
+      await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+      if (id.isNotEmpty) {
+        await ref.read(notificationsRepoProvider).markRead(id);
+      }
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(notificationsUnreadCountProvider);
+
+      if (!mounted) return;
+      setState(() {
+        _incoming = null;
+      });
+
+      context.go(_resolver.resolveRoute(target));
+    } catch (_) {
+      // let user try again
+    } finally {
+      if (mounted) {
+        setState(() {
+          _joining = false;
+        });
+      }
+    }
   }
 
   void _dismissCurrent() {
     final item = _incoming;
     final id = _stringOf(item?['id']);
-
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
     }
-
     setState(() {
       _incoming = null;
     });
@@ -149,10 +147,7 @@ class _AuraIncomingLiveLayerState
   @override
   Widget build(BuildContext context) {
     final item = _incoming;
-
-    if (item == null) {
-      return widget.child;
-    }
+    if (item == null) return widget.child;
 
     final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
@@ -189,8 +184,6 @@ class _AuraIncomingLiveLayerState
     return Stack(
       children: [
         widget.child,
-
-        /// 🔒 block background interaction
         Positioned.fill(
           child: GestureDetector(
             onTap: () {},
@@ -199,7 +192,6 @@ class _AuraIncomingLiveLayerState
             ),
           ),
         ),
-
         Positioned.fill(
           child: SafeArea(
             child: Center(
@@ -225,8 +217,7 @@ class _AuraIncomingLiveLayerState
                         const SizedBox(height: AuraSpace.s8),
                         Text(
                           title,
-                          style: AuraText.body
-                              .copyWith(fontWeight: FontWeight.w700),
+                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: AuraSpace.s8),
                         Text(body, style: AuraText.body),
@@ -235,15 +226,15 @@ class _AuraIncomingLiveLayerState
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: _dismissCurrent,
+                                onPressed: _joining ? null : _dismissCurrent,
                                 child: const Text('Dismiss'),
                               ),
                             ),
                             const SizedBox(width: AuraSpace.s12),
                             Expanded(
                               child: FilledButton(
-                                onPressed: _joinCurrent,
-                                child: const Text('Join'),
+                                onPressed: _joining ? null : _joinCurrent,
+                                child: Text(_joining ? 'Joining...' : 'Join'),
                               ),
                             ),
                           ],
@@ -263,10 +254,8 @@ class _AuraIncomingLiveLayerState
 
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;
-  if (value is Map) {
-    return value.map((k, v) => MapEntry(k.toString(), v));
-  }
-  return {};
+  if (value is Map) return value.map((key, val) => MapEntry(key.toString(), val));
+  return const <String, dynamic>{};
 }
 
 String _stringOf(dynamic value) {
@@ -275,8 +264,8 @@ String _stringOf(dynamic value) {
 }
 
 String _firstNonEmpty(List<String> values) {
-  for (final v in values) {
-    if (v.trim().isNotEmpty) return v.trim();
+  for (final value in values) {
+    if (value.trim().isNotEmpty) return value.trim();
   }
   return '';
 }

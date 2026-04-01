@@ -10,6 +10,8 @@ class RealtimeSocketService {
 
   io.Socket? _socket;
   final _eventsController = StreamController<RealtimeParsedEvent>.broadcast();
+  Future<void>? _connectFuture;
+  bool _disposing = false;
 
   Stream<RealtimeParsedEvent> get events => _eventsController.stream;
 
@@ -17,6 +19,19 @@ class RealtimeSocketService {
   String? get socketId => _socket?.id;
 
   Future<void> connect({required String accessToken}) async {
+    if (_disposing) return;
+    if (isConnected) return;
+    if (_connectFuture != null) return _connectFuture!;
+
+    _connectFuture = _connectInternal(accessToken: accessToken);
+    try {
+      await _connectFuture!;
+    } finally {
+      _connectFuture = null;
+    }
+  }
+
+  Future<void> _connectInternal({required String accessToken}) async {
     await disconnect();
 
     final uri = Uri.parse(AppConfig.apiBaseUrl);
@@ -186,6 +201,7 @@ class RealtimeSocketService {
     final completer = Completer<Map<String, dynamic>>();
 
     socket.emitWithAck(event, payload, ack: (dynamic ack) {
+      if (completer.isCompleted) return;
       if (ack is Map<String, dynamic>) {
         completer.complete(ack);
         return;
@@ -205,14 +221,19 @@ class RealtimeSocketService {
 
   Future<void> disconnect() async {
     final socket = _socket;
-    if (socket != null) {
-      socket.dispose();
-      socket.disconnect();
-    }
     _socket = null;
+    if (socket != null) {
+      try {
+        socket.disconnect();
+      } catch (_) {}
+      try {
+        socket.dispose();
+      } catch (_) {}
+    }
   }
 
   void dispose() {
+    _disposing = true;
     unawaited(disconnect());
     _eventsController.close();
   }

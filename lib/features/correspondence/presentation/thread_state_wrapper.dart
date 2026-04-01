@@ -104,7 +104,12 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
       return;
     }
 
-    if (sessionId.isNotEmpty && sessionId != _lastHydratedSessionId) {
+    final liveState = ref.read(realtimeControllerProvider);
+    final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
+
+    if (sessionId.isNotEmpty &&
+        sessionId != _lastHydratedSessionId &&
+        currentSessionId != sessionId) {
       _lastHydratedSessionId = sessionId;
       await notifier.hydrateSession(sessionId);
     }
@@ -126,8 +131,10 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     final currentSessionId = (liveState.sessionId ?? liveState.session?.id ?? '').trim();
     final alreadyJoined =
         liveState.joinState.name.toLowerCase() == 'joined' && currentSessionId == sessionId;
+    final alreadyJoining =
+        liveState.joinState.name.toLowerCase() == 'joining' && currentSessionId == sessionId;
 
-    if (alreadyJoined) return;
+    if (alreadyJoined || alreadyJoining) return;
 
     try {
       await notifier.join(sessionId);

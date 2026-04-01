@@ -12,6 +12,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../updates_repository.dart';
+import '../providers.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
   const UpdatesScreen({super.key});
@@ -21,7 +22,7 @@ class UpdatesScreen extends ConsumerStatefulWidget {
 }
 
 class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
-  static const _pollInterval = Duration(seconds: 20);
+  static const _pollInterval = Duration(seconds: 30);
 
   bool _loading = true;
   String? _error;
@@ -55,6 +56,8 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     try {
       _repo.clearCache();
       final items = await _repo.listUpdates(forceRefresh: true);
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(notificationsUnreadCountProvider);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -73,6 +76,8 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     try {
       _repo.clearCache();
       final items = await _repo.listUpdates(forceRefresh: true);
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(notificationsUnreadCountProvider);
       if (!mounted) return;
       setState(() {
         _items = items;

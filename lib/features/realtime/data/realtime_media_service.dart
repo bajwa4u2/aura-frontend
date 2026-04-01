@@ -37,6 +37,7 @@ class RealtimeMediaService {
   bool _micEnabled = true;
   bool _cameraEnabled = true;
   String? _error;
+  bool _disposed = false;
 
   Stream<RealtimeMediaSnapshot> get snapshots => _snapshots.stream;
 
@@ -53,6 +54,8 @@ class RealtimeMediaService {
     required bool audio,
     required bool video,
   }) async {
+    if (_disposed) return;
+
     if (_ready && _localStream != null && _localRenderer != null) {
       if (_micEnabled != audio) {
         await setMicrophoneEnabled(audio);
@@ -62,6 +65,8 @@ class RealtimeMediaService {
       }
       return;
     }
+
+    await _resetLocalMediaOnly();
 
     try {
       final renderer = RTCVideoRenderer();
@@ -88,24 +93,22 @@ class RealtimeMediaService {
       _error = null;
       _publish();
     } catch (error) {
-      _error = 'Camera or microphone could not be started.';
+      _error = error.toString();
+      _ready = false;
       _publish();
       rethrow;
     }
   }
 
-  Future<RTCPeerConnection> _ensurePeer(
-    String peerKey, {
+  Future<RTCPeerConnection> _ensurePeer({
+    required String peerKey,
     required Map<String, dynamic> configuration,
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
     final existing = _peers[peerKey];
-    if (existing != null) {
-      return existing;
-    }
+    if (existing != null) return existing;
 
     final connection = await createPeerConnection(configuration);
-
     final local = _localStream;
     if (local != null) {
       for (final track in local.getTracks()) {
@@ -251,12 +254,21 @@ class RealtimeMediaService {
   Future<void> removePeer(String peerKey) async {
     final peer = _peers.remove(peerKey);
     if (peer != null) {
-      await peer.close();
+      try {
+        await peer.close();
+      } catch (_) {}
+      try {
+        await peer.dispose();
+      } catch (_) {}
     }
     final renderer = _remoteRenderers.remove(peerKey);
     if (renderer != null) {
-      renderer.srcObject = null;
-      await renderer.dispose();
+      try {
+        renderer.srcObject = null;
+      } catch (_) {}
+      try {
+        await renderer.dispose();
+      } catch (_) {}
     }
     _peerSocketIds.remove(peerKey);
     _publish();
@@ -269,26 +281,48 @@ class RealtimeMediaService {
     }
   }
 
-  Future<void> dispose() async {
+  Future<void> resetSessionMedia() async {
     await disposeAllPeers();
+    await _resetLocalMediaOnly();
+    _ready = false;
+    _micEnabled = false;
+    _cameraEnabled = false;
+    _error = null;
+    _publish();
+  }
+
+  Future<void> _resetLocalMediaOnly() async {
     final local = _localStream;
     if (local != null) {
       for (final track in local.getTracks()) {
-        await track.stop();
+        try {
+          track.enabled = false;
+        } catch (_) {}
+        try {
+          await track.stop();
+        } catch (_) {}
       }
-      await local.dispose();
+      try {
+        await local.dispose();
+      } catch (_) {}
     }
     _localStream = null;
 
     final localRenderer = _localRenderer;
     if (localRenderer != null) {
-      localRenderer.srcObject = null;
-      await localRenderer.dispose();
+      try {
+        localRenderer.srcObject = null;
+      } catch (_) {}
+      try {
+        await localRenderer.dispose();
+      } catch (_) {}
     }
     _localRenderer = null;
-    _ready = false;
-    _micEnabled = true;
-    _cameraEnabled = true;
+  }
+
+  Future<void> dispose() async {
+    _disposed = true;
+    await resetSessionMedia();
     if (!_snapshots.isClosed) {
       await _snapshots.close();
     }
