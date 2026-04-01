@@ -49,7 +49,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     try {
       final state = GoRouterState.of(context);
       final fromPath = state.pathParameters['sessionId']?.trim() ?? '';
-      if (fromPath.isNotEmpty) return true;
+      if (fromPath.isNotEmpty) return false;
       final value = state.uri.queryParameters['join']?.trim().toLowerCase() ?? '';
       return value == '1' || value == 'true' || value == 'yes';
     } catch (_) {

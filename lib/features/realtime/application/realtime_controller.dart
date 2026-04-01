@@ -507,7 +507,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (sessionId == null || sessionId.isEmpty) return;
 
     await _repository.requestConsent(sessionId);
-    final consents = await _repository.listConsents(sessionId);
+
+    List<RealtimeConsent> consents = state.consents;
+    try {
+      consents = await _repository.listConsents(sessionId);
+    } catch (error) {
+      final text = error.toString().toLowerCase();
+      if (!text.contains('403') && !text.contains('forbidden')) {
+        rethrow;
+      }
+    }
+
     state = state.copyWith(
       consents: consents,
       infoMessage: 'Fresh consent requested.',
@@ -522,7 +532,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       sessionId,
       decision: granted ? 'grant' : 'decline',
     );
-    final consents = await _repository.listConsents(sessionId);
+
+    List<RealtimeConsent> consents = state.consents;
+    try {
+      consents = await _repository.listConsents(sessionId);
+    } catch (error) {
+      final text = error.toString().toLowerCase();
+      if (!text.contains('403') && !text.contains('forbidden')) {
+        rethrow;
+      }
+    }
+
     state = state.copyWith(
       consents: consents,
       infoMessage: granted ? 'Consent granted.' : 'Consent declined.',
