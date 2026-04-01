@@ -55,9 +55,14 @@ class RealtimeEventParser {
         : (_looksLikePolicyPayload(payload) ? RealtimePolicy.fromJson(payload) : state.policy);
 
     final nextParticipants = participantsJson != null
-        ? participantsJson.map((json) => RealtimeParticipant.fromJson(_normalizeParticipantJson(json))).toList()
+        ? participantsJson
+            .map((json) => RealtimeParticipant.fromJson(_normalizeParticipantJson(json)))
+            .toList()
         : (_looksLikeParticipantPayload(payload)
-            ? _mergeSingleParticipant(state.participants, RealtimeParticipant.fromJson(_normalizeParticipantJson(payload)))
+            ? _mergeSingleParticipant(
+                state.participants,
+                RealtimeParticipant.fromJson(_normalizeParticipantJson(payload)),
+              )
             : state.participants);
 
     final nextConsents = consentsJson != null
@@ -145,10 +150,13 @@ class RealtimeEventParser {
     var replaced = false;
 
     for (final participant in current) {
-      final sameUser = participant.userId.trim().isNotEmpty &&
-          participant.userId.trim() == incoming.userId.trim();
-      final sameRuntime = participant.runtimeDeviceId.trim().isNotEmpty &&
-          participant.runtimeDeviceId.trim() == incoming.runtimeDeviceId.trim();
+      final participantUserId = participant.userId.trim();
+      final incomingUserId = incoming.userId.trim();
+      final participantRuntime = (participant.runtimeDeviceId ?? '').trim();
+      final incomingRuntime = (incoming.runtimeDeviceId ?? '').trim();
+
+      final sameUser = participantUserId.isNotEmpty && participantUserId == incomingUserId;
+      final sameRuntime = participantRuntime.isNotEmpty && participantRuntime == incomingRuntime;
 
       if (sameUser || sameRuntime) {
         out.add(incoming);
