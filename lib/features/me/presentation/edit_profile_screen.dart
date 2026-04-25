@@ -148,7 +148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.get('/v1/users/me');
+      final res = await dio.get('/users/me');
       final data = _unwrapResponseMap(res.data);
 
       _initialDisplayName = _readString(data, const ['displayName', 'name']);
@@ -334,8 +334,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
 
     await dio.post('/media/$mediaId/confirm');
-    await dio.post('/media/$mediaId/ready');
-
     final patchRes = await dio.patch(
       '/media/$mediaId',
       data: {
@@ -379,7 +377,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final links = _normalizedLinksPayload();
 
       await dio.patch(
-        '/v1/users/me',
+        '/users/me',
         data: {
           'displayName': _displayNameController.text.trim(),
           'bio': _bioController.text.trim(),

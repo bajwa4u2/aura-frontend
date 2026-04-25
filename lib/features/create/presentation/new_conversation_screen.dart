@@ -461,7 +461,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/review',
+        '/composition/review',
         data: {
           'text': draft,
           'surface': 'space',
@@ -504,7 +504,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/apply',
+        '/composition/apply',
         data: {
           'sessionId': review.sessionId,
           'findingId': suggestion.id,
@@ -572,7 +572,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/translate',
+        '/composition/translate',
         data: {
           'text': draft,
           'targetLanguage': _translationTargetLanguage,

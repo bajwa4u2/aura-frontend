@@ -443,7 +443,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/translate',
+        '/composition/translate',
         data: {
           'text': trimmed,
           'targetLanguage': target,

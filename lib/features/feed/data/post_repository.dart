@@ -187,9 +187,8 @@ class PostsRepository {
       if (_hasText(sourceLanguage)) 'sourceLanguage': sourceLanguage!.trim(),
     };
 
-    final res = await _postWithFallback(
+    final res = await _dio.post(
       '/composition/translate',
-      '/v1/composition/translate',
       data: payload,
     );
 
@@ -344,9 +343,8 @@ class PostsRepository {
       if (height != null) 'height': height,
     };
 
-    final res = await _postWithFallback(
+    final res = await _dio.post(
       '/media/presign',
-      '/uploads/presign',
       data: payload,
     );
 
@@ -384,10 +382,4 @@ class PostsRepository {
     );
   }
 
-  Future<void> markMediaReady(String mediaId) async {
-    final id = mediaId.trim();
-    if (id.isEmpty) return;
-
-    await _postWithFallback('/media/$id/ready', '/uploads/$id/ready');
-  }
 }

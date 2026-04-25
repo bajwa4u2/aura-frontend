@@ -195,7 +195,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
 
       if (trimmedSummary.isNotEmpty) {
         final res = await dio.post(
-          '/v1/composition/translate',
+          '/composition/translate',
           data: {
             'text': trimmedSummary,
             'targetLanguage': target,
@@ -212,7 +212,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
 
       if (trimmedBody.isNotEmpty) {
         final res = await dio.post(
-          '/v1/composition/translate',
+          '/composition/translate',
           data: {
             'text': trimmedBody,
             'targetLanguage': target,

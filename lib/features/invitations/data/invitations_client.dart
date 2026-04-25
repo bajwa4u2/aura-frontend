@@ -15,9 +15,6 @@ class InvitationsClient {
   Future<List<Map<String, dynamic>>> loadInbox() async {
     final res = await _getFirstSuccessful([
       '/invites',
-      '/v1/invites',
-      '/invites/inbox',
-      '/v1/invites/inbox',
     ]);
     return _extractInboxList(res.data);
   }
@@ -25,9 +22,6 @@ class InvitationsClient {
   Future<List<Map<String, dynamic>>> loadSent() async {
     final res = await _getFirstSuccessful([
       '/invites',
-      '/v1/invites',
-      '/invites/sent',
-      '/v1/invites/sent',
     ]);
     return _extractScopedInviteList(
       res.data,
@@ -38,9 +32,6 @@ class InvitationsClient {
   Future<List<Map<String, dynamic>>> loadApprovals() async {
     final res = await _getFirstSuccessful([
       '/invites',
-      '/v1/invites',
-      '/invites/approvals',
-      '/v1/invites/approvals',
     ]);
     return _extractScopedInviteList(
       res.data,
@@ -54,11 +45,6 @@ class InvitationsClient {
 
     final attempts = <Future<Response<dynamic>> Function()>[
       () => _dio.get('/invite-links/$trimmed'),
-      () => _dio.get('/v1/invite-links/$trimmed'),
-      () => _dio.get('/invites/token/$trimmed'),
-      () => _dio.get('/v1/invites/token/$trimmed'),
-      () => _dio.get('/invites/inspect', queryParameters: {'token': trimmed}),
-      () => _dio.get('/v1/invites/inspect', queryParameters: {'token': trimmed}),
     ];
 
     for (final attempt in attempts) {
@@ -100,7 +86,6 @@ class InvitationsClient {
         _nonEmpty(normalizedRecipientUserId)) {
       final res = await _postFirstSuccessful([
         '/spaces/$normalizedSpaceId/invites',
-        '/v1/spaces/$normalizedSpaceId/invites',
       ], data: {
         'invitedUserId': normalizedRecipientUserId,
         'roleOffered': normalizedRole,
@@ -111,7 +96,6 @@ class InvitationsClient {
     if (normalizedDestination == 'JOIN_THREAD' && _nonEmpty(normalizedThreadId)) {
       final res = await _postFirstSuccessful([
         '/threads/$normalizedThreadId/invites',
-        '/v1/threads/$normalizedThreadId/invites',
       ], data: {
         'destinationType': normalizedDestination,
         if (_nonEmpty(accessPolicy)) 'accessPolicy': accessPolicy!.trim(),
@@ -142,7 +126,6 @@ class InvitationsClient {
 
     final res = await _postFirstSuccessful([
       '/invites',
-      '/v1/invites',
     ], data: body);
     return _extractMap(res.data);
   }
@@ -160,19 +143,11 @@ class InvitationsClient {
     if (_nonEmpty(inviteId)) {
       final id = inviteId!.trim();
       attempts.add(() => _dio.post('/invites/$id/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/v1/invites/$id/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/invites/$id/${normalized.toLowerCase()}'));
-      attempts.add(() => _dio.post('/v1/invites/$id/${normalized.toLowerCase()}'));
     }
 
     if (_nonEmpty(token)) {
       final t = token!.trim();
       attempts.add(() => _dio.post('/invite-links/$t/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/v1/invite-links/$t/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/invites/token/$t/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/v1/invites/token/$t/respond', data: {'action': normalized}));
-      attempts.add(() => _dio.post('/invites/respond', data: {'token': t, 'action': normalized}));
-      attempts.add(() => _dio.post('/v1/invites/respond', data: {'token': t, 'action': normalized}));
     }
 
     for (final attempt in attempts) {
@@ -193,7 +168,6 @@ class InvitationsClient {
     if (id.isEmpty) throw Exception('Missing invite id.');
     final res = await _postFirstSuccessful([
       '/invites/$id/revoke',
-      '/v1/invites/$id/revoke',
     ]);
     return _extractMap(res.data);
   }

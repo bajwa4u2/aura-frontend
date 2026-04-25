@@ -177,17 +177,6 @@ class _AnnouncementEditorScreenState
 
   String _trimmedOrEmpty(String text) => text.trim();
 
-  Future<String> _currentUserId() async {
-    final dio = ref.read(dioProvider);
-    final res = await dio.get('/v1/users/me');
-    final root = _asMap(res.data);
-    final data = _asMap(root['data']);
-    final user = _asMap(data.isNotEmpty ? (data['user'] ?? data) : (root['user'] ?? root));
-    return _firstNonEmpty([
-      user['id']?.toString(),
-    ]);
-  }
-
   String _inferMime(String fileName) {
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
@@ -310,8 +299,6 @@ class _AnnouncementEditorScreenState
       );
 
       await dio.post('/media/$mediaId/confirm');
-      await dio.post('/media/$mediaId/ready');
-
       final patched = await dio.patch('/media/$mediaId', data: {
         'caption': null,
       });
@@ -383,7 +370,6 @@ class _AnnouncementEditorScreenState
     };
 
     final attempts = <String>[
-      '/v1/integrations/linkedin/publish/announcement',
       '/integrations/linkedin/publish/announcement',
     ];
 
@@ -434,7 +420,6 @@ class _AnnouncementEditorScreenState
     };
 
     final attempts = <String>[
-      '/v1/integrations/tiktok/publish/video/announcement',
       '/integrations/tiktok/publish/video/announcement',
     ];
 
@@ -831,15 +816,12 @@ class _AnnouncementEditorScreenState
     });
 
     try {
-      final userId = await _currentUserId();
       final dio = ref.read(dioProvider);
       final res = await _getFirstSuccessful(
         dio,
         const [
-          '/v1/integrations/tiktok/account',
           '/integrations/tiktok/account',
         ],
-        queryParameters: userId.isNotEmpty ? {'userId': userId} : null,
       );
       final data = _unwrapConnectedAccount(res.data);
       if (!mounted) return;
@@ -873,15 +855,12 @@ class _AnnouncementEditorScreenState
     });
 
     try {
-      final userId = await _currentUserId();
       final dio = ref.read(dioProvider);
       final res = await _getFirstSuccessful(
         dio,
         const [
-          '/v1/integrations/linkedin/account',
           '/integrations/linkedin/account',
         ],
-        queryParameters: userId.isNotEmpty ? {'userId': userId} : null,
       );
       final data = _unwrapConnectedAccount(res.data);
       if (!mounted) return;

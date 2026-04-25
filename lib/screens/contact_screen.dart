@@ -139,7 +139,7 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
       final dio = ref.read(dioProvider);
 
       await dio.post(
-        '/v1/contact',
+        '/contact',
         data: {
           'topic': _topicValue(_topic),
           'name': name,

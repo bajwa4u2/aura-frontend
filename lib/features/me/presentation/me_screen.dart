@@ -75,41 +75,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      final meResponse = await dio.get('/v1/users/me');
+      final meResponse = await dio.get('/users/me');
       final user = _unwrapUser(meResponse.data);
 
       final handle = _value(user['handle']);
-      final userId = _value(user['id']);
-
       final futures = await Future.wait<dynamic>([
         if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/followers') else Future.value(null),
         if (handle.isNotEmpty) _safeGet(dio, '/users/$handle/following') else Future.value(null),
         _safeGet(dio, '/users/me/follow/requests/inbox'),
         _safeGet(dio, '/users/me/follow/requests/outbox'),
-        if (userId.isNotEmpty)
-          _safeGet(
-            dio,
-            '/v1/integrations/tiktok/account',
-            queryParameters: {'userId': userId},
-          )
-        else
-          Future.value(null),
-        if (userId.isNotEmpty)
-          _safeGet(
-            dio,
-            '/v1/integrations/linkedin/account',
-            queryParameters: {'userId': userId},
-          )
-        else
-          Future.value(null),
-        if (userId.isNotEmpty)
-          _safeGet(
-            dio,
-            '/integrations/linkedin/account',
-            queryParameters: {'userId': userId},
-          )
-        else
-          Future.value(null),
+        _safeGet(dio, '/integrations/tiktok/account'),
+        _safeGet(dio, '/integrations/linkedin/account'),
         _safeGet(dio, '/invites'),
         _safeGet(dio, '/communications/preferences/me'),
       ]);
@@ -120,9 +96,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final outboxRes = futures[3];
       final tiktokRes = futures[4];
       final linkedinRes = futures[5];
-      final linkedinAltRes = futures[6];
-      final inviteInboxRes = futures[7];
-      final communicationRes = futures[8];
+      final inviteInboxRes = futures[6];
+      final communicationRes = futures[7];
 
       if (!mounted) return;
 
@@ -136,9 +111,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
         _sentInvitesCount = 0;
         _approvalInvitesCount = 0;
         _tiktokAccount = _unwrapTikTokAccount(tiktokRes?.data);
-        _linkedinAccount = _unwrapLinkedInAccount(
-          linkedinRes?.data ?? linkedinAltRes?.data,
-        );
+        _linkedinAccount = _unwrapLinkedInAccount(linkedinRes?.data);
         _communicationPreferences = _unwrapCommunicationPreferences(communicationRes?.data);
         _communicationLoading = false;
         _loading = false;
@@ -186,9 +159,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Future<void> _reloadLinkedInOnly() async {
-    final userId = _currentUserId;
-    if (userId.isEmpty) return;
-
     if (mounted) {
       setState(() {
         _linkedinLoading = true;
@@ -199,20 +169,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final dio = ref.read(dioProvider);
       final primary = await _safeGet(
         dio,
-        '/v1/integrations/linkedin/account',
-        queryParameters: {'userId': userId},
-      );
-      final secondary = await _safeGet(
-        dio,
         '/integrations/linkedin/account',
-        queryParameters: {'userId': userId},
       );
 
       if (!mounted) return;
 
       setState(() {
         _linkedinAccount = _unwrapLinkedInAccount(
-          primary?.data ?? secondary?.data,
+          primary?.data,
         );
       });
     } catch (_) {
@@ -239,10 +203,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       final res = await _getFirstSuccessful(
         dio,
         [
-          '/v1/integrations/linkedin/connect/start',
           '/integrations/linkedin/connect/start',
         ],
-        queryParameters: {'userId': userId},
       );
 
       final root = _asMap(res.data);
@@ -340,10 +302,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       await _postFirstSuccessful(
         dio,
         [
-          '/v1/integrations/linkedin/disconnect',
           '/integrations/linkedin/disconnect',
         ],
-        data: {'userId': userId},
       );
 
       if (!mounted) return;
@@ -379,9 +339,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }
 
   Future<void> _reloadTikTokOnly() async {
-    final userId = _currentUserId;
-    if (userId.isEmpty) return;
-
     if (mounted) {
       setState(() {
         _tiktokLoading = true;
@@ -391,8 +348,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
       final res = await dio.get(
-        '/v1/integrations/tiktok/account',
-        queryParameters: {'userId': userId},
+        '/integrations/tiktok/account',
       );
 
       if (!mounted) return;
@@ -422,8 +378,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
       final res = await dio.get(
-        '/v1/integrations/tiktok/connect/start',
-        queryParameters: {'userId': userId},
+        '/integrations/tiktok/connect/start',
       );
 
       final root = _asMap(res.data);
@@ -495,8 +450,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
       await dio.post(
-        '/v1/integrations/tiktok/refresh',
-        data: {'userId': userId},
+        '/integrations/tiktok/refresh',
       );
 
       await _reloadTikTokOnly();
@@ -563,8 +517,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     try {
       final dio = ref.read(dioProvider);
       await dio.post(
-        '/v1/integrations/tiktok/disconnect',
-        data: {'userId': userId},
+        '/integrations/tiktok/disconnect',
       );
 
       if (!mounted) return;

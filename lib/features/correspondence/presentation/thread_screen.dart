@@ -1376,8 +1376,6 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     final mediaId = _firstNonEmpty(mediaMap, const ['id', 'mediaId']);
     if (mediaId.isNotEmpty) {
       await dio.post('/media/$mediaId/confirm');
-      await dio.post('/media/$mediaId/ready');
-
       final patch = await dio.patch(
         '/media/$mediaId',
         data: {
@@ -1468,7 +1466,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     try {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
-        '/v1/composition/review',
+        '/composition/review',
         data: {
           'text': text,
           'surface': 'dm',
@@ -1516,7 +1514,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       final dio = ref.read(dioProvider);
       final currentText = _controller.text;
       final res = await dio.post(
-        '/v1/composition/apply',
+        '/composition/apply',
         data: {
           'sessionId': sessionId,
           'findingId': suggestionId,
@@ -1577,7 +1575,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     try {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
-        '/v1/composition/translate',
+        '/composition/translate',
         data: {
           'text': text,
           'targetLanguage': _translationTargetLanguage,
@@ -2361,7 +2359,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
     try {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
-        '/v1/composition/translate',
+        '/composition/translate',
         data: {
           'text': trimmed,
           'targetLanguage': target,

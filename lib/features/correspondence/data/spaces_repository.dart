@@ -171,7 +171,7 @@ class SpacesRepository {
   }
 
   Future<void> revokeInvite(String inviteId) async {
-    await _dio.delete('/invites/$inviteId');
+    await _dio.post('/invites/$inviteId/revoke');
   }
 
 }

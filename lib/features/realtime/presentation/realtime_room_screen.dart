@@ -40,18 +40,16 @@ Map<String, dynamic> _unwrapResponseMap(dynamic value) {
   return <String, dynamic>{};
 }
 
-final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   final dio = ref.watch(dioProvider);
   final response = await dio.get('/users/me');
   return _unwrapResponseMap(response.data);
 });
 
 class RealtimeRoomScreen extends ConsumerStatefulWidget {
-  const RealtimeRoomScreen({
-    super.key,
-    required this.sessionId,
-    this.action,
-  });
+  const RealtimeRoomScreen({super.key, required this.sessionId, this.action});
 
   final String sessionId;
   final String? action;
@@ -167,7 +165,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
 
     try {
-      await ref.read(realtimeControllerProvider.notifier).inviteMember(
+      await ref
+          .read(realtimeControllerProvider.notifier)
+          .inviteMember(
             invitedUserId: invitedUserId,
             note: _inviteNoteController.text.trim().isEmpty
                 ? null
@@ -175,7 +175,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           );
       if (!mounted) return;
       setState(() {
-        _inviteResults = _inviteResults.where((u) => (u['id'] ?? '').toString() != invitedUserId).toList();
+        _inviteResults = _inviteResults
+            .where((u) => (u['id'] ?? '').toString() != invitedUserId)
+            .toList();
         _invitingUserId = null;
       });
       _inviteSearchController.clear();
@@ -187,7 +189,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       });
     }
   }
-
 
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
@@ -216,7 +217,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
@@ -236,16 +236,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     final canModerate = myParticipant?.isModerator ?? false;
     final policy = state.policy;
-    final roomIsClosed = state.session?.isLocked == true || policy?.isLocked == true;
+    final roomIsClosed =
+        state.session?.isLocked == true || policy?.isLocked == true;
     final roomTitle = _roomTitle(state.session);
     final roomSubtitle = _roomSubtitle(state.session, state.joinState);
+    final showConnectionRecovery =
+        state.connectionStatus == RealtimeConnectionStatus.disconnected ||
+        state.connectionStatus == RealtimeConnectionStatus.error;
     final participantCount = state.participants.length;
     final memberCountLabel = participantCount == 1
         ? '1 member listed here'
         : '$participantCount members listed here';
-    final presentCount = state.participants.where((participant) => participant.isPresent).length;
+    final presentCount = state.participants
+        .where((participant) => participant.isPresent)
+        .length;
     final mediaActiveCount = state.participants
-        .where((participant) => participant.audioOn || participant.videoOn || participant.screenOn)
+        .where(
+          (participant) =>
+              participant.audioOn ||
+              participant.videoOn ||
+              participant.screenOn,
+        )
         .length;
 
     return AuraScaffold(
@@ -257,11 +268,28 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             subtitle: roomSubtitle,
             sessionId: state.sessionId ?? widget.sessionId,
             memberCountLabel: memberCountLabel,
-            roomStateLabel: _roomStateLabel(state.session, policy, state.joinState),
+            roomStateLabel: _roomStateLabel(
+              state.session,
+              policy,
+              state.joinState,
+            ),
           ),
           const SizedBox(height: AuraSpace.s12),
           RealtimeStatusStrip(state: state),
           const SizedBox(height: AuraSpace.s12),
+          if (showConnectionRecovery) ...[
+            _ConnectionRecoveryCard(
+              isBusy:
+                  state.isBusy ||
+                  state.connectionStatus ==
+                      RealtimeConnectionStatus.connecting ||
+                  state.connectionStatus ==
+                      RealtimeConnectionStatus.reconnecting,
+              onReconnect: () => controller.resume(widget.sessionId),
+              onReload: () => controller.hydrateSession(widget.sessionId),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
           if ((state.errorMessage ?? '').isNotEmpty) ...[
             AuraCard(child: Text(state.errorMessage!, style: AuraText.body)),
             const SizedBox(height: AuraSpace.s12),
@@ -354,7 +382,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             children: [
               if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
                 OutlinedButton(
-                  onPressed: () => context.go(_spaceRouteFromSession(state.session)!),
+                  onPressed: () =>
+                      context.go(_spaceRouteFromSession(state.session)!),
                   child: const Text('Return to space'),
                 ),
               OutlinedButton(
@@ -407,9 +436,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
     if (joinState == RealtimeJoinState.joined) return 'You are here now.';
-    if (joinState == RealtimeJoinState.requested) return 'Your request to join is pending.';
-    if (joinState == RealtimeJoinState.rejected) return 'Your request to join was declined.';
-    if (joinState == RealtimeJoinState.removed) return 'You were removed from this live session.';
+    if (joinState == RealtimeJoinState.requested)
+      return 'Your request to join is pending.';
+    if (joinState == RealtimeJoinState.rejected)
+      return 'Your request to join was declined.';
+    if (joinState == RealtimeJoinState.removed)
+      return 'You were removed from this live session.';
     if (session?.isActive == false) return 'This live session has ended.';
     if (session?.isLocked == true) return 'Closed to new joins.';
     return 'Active now.';
@@ -429,6 +461,53 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 }
 
+class _ConnectionRecoveryCard extends StatelessWidget {
+  const _ConnectionRecoveryCard({
+    required this.isBusy,
+    required this.onReconnect,
+    required this.onReload,
+  });
+
+  final bool isBusy;
+  final Future<void> Function() onReconnect;
+  final Future<void> Function() onReload;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Live connection needs attention',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'You can reconnect to the live room or reload the room state.',
+            style: AuraText.muted,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              FilledButton(
+                onPressed: isBusy ? null : onReconnect,
+                child: const Text('Reconnect'),
+              ),
+              OutlinedButton(
+                onPressed: isBusy ? null : onReload,
+                child: const Text('Reload state'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RoomHeaderCard extends StatelessWidget {
   const _RoomHeaderCard({
     required this.title,
@@ -443,7 +522,6 @@ class _RoomHeaderCard extends StatelessWidget {
   final String sessionId;
   final String memberCountLabel;
   final String roomStateLabel;
-
 
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
@@ -472,7 +550,6 @@ class _RoomHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +583,6 @@ class _MetaPill extends StatelessWidget {
   const _MetaPill({required this.label});
   final String label;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -534,7 +610,6 @@ class _MetaPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s10,
@@ -575,7 +650,6 @@ class _MediaStageCard extends StatelessWidget {
   final VoidCallback onToggleMicrophone;
   final VoidCallback onToggleCamera;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -603,27 +677,27 @@ class _MediaStageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final renderers = <MapEntry<String, RTCVideoRenderer>>[
-      if (localRenderer != null) MapEntry<String, RTCVideoRenderer>('local', localRenderer!),
+      if (localRenderer != null)
+        MapEntry<String, RTCVideoRenderer>('local', localRenderer!),
       ...remoteRenderers.entries,
     ];
 
     final mediaStateLabel = isMediaBusy
         ? 'Preparing media'
         : isMediaReady
-            ? 'Media ready'
-            : (mediaError ?? '').trim().isNotEmpty
-                ? 'Media unavailable'
-                : 'Waiting for browser media';
+        ? 'Media ready'
+        : (mediaError ?? '').trim().isNotEmpty
+        ? 'Media unavailable'
+        : 'Waiting for browser media';
 
     final mediaHelpText = isMediaBusy
         ? 'Aura is requesting access to your camera and microphone.'
         : isMediaReady
-            ? 'Your preview and connected participants appear here.'
-            : (mediaError ?? '').trim().isNotEmpty
-                ? 'You joined live, but this browser did not start media.'
-                : 'Your browser has not started camera or microphone yet.';
+        ? 'Your preview and connected participants appear here.'
+        : (mediaError ?? '').trim().isNotEmpty
+        ? 'You joined live, but this browser did not start media.'
+        : 'Your browser has not started camera or microphone yet.';
 
     final controlsEnabled = isMediaReady && !isMediaBusy;
 
@@ -638,8 +712,13 @@ class _MediaStageCard extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             children: [
               _MetaPill(label: mediaStateLabel),
-              if (localRenderer != null) const _MetaPill(label: 'Local preview on'),
-              if (remoteRenderers.isNotEmpty) _MetaPill(label: '${remoteRenderers.length} remote feed${remoteRenderers.length == 1 ? '' : 's'}'),
+              if (localRenderer != null)
+                const _MetaPill(label: 'Local preview on'),
+              if (remoteRenderers.isNotEmpty)
+                _MetaPill(
+                  label:
+                      '${remoteRenderers.length} remote feed${remoteRenderers.length == 1 ? '' : 's'}',
+                ),
             ],
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -658,10 +737,10 @@ class _MediaStageCard extends StatelessWidget {
                 isMediaBusy
                     ? 'Waiting for browser permission'
                     : isMediaReady
-                        ? 'Media is ready, but no preview is showing yet'
-                        : (mediaError ?? '').trim().isNotEmpty
-                            ? 'Media did not start in this browser'
-                            : 'Camera and microphone have not started yet',
+                    ? 'Media is ready, but no preview is showing yet'
+                    : (mediaError ?? '').trim().isNotEmpty
+                    ? 'Media did not start in this browser'
+                    : 'Camera and microphone have not started yet',
                 textAlign: TextAlign.center,
                 style: AuraText.body.copyWith(color: Colors.white70),
               ),
@@ -689,11 +768,15 @@ class _MediaStageCard extends StatelessWidget {
             children: [
               FilledButton.tonal(
                 onPressed: controlsEnabled ? onToggleMicrophone : null,
-                child: Text(microphoneEnabled ? 'Mute microphone' : 'Turn mic on'),
+                child: Text(
+                  microphoneEnabled ? 'Mute microphone' : 'Turn mic on',
+                ),
               ),
               FilledButton.tonal(
                 onPressed: controlsEnabled ? onToggleCamera : null,
-                child: Text(cameraEnabled ? 'Turn camera off' : 'Turn camera on'),
+                child: Text(
+                  cameraEnabled ? 'Turn camera off' : 'Turn camera on',
+                ),
               ),
             ],
           ),
@@ -714,7 +797,6 @@ class _VideoTile extends StatelessWidget {
   final RTCVideoRenderer renderer;
   final bool mirror;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -742,7 +824,6 @@ class _VideoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -760,7 +841,10 @@ class _VideoTile extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AuraSpace.s8),
-        Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          label,
+          style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+        ),
       ],
     );
   }
@@ -781,7 +865,6 @@ class _RoomOverviewCard extends StatelessWidget {
   final int presentCount;
   final int mediaActiveCount;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -809,7 +892,6 @@ class _RoomOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final isLive = session?.isActive != false;
     final isClosed = session?.isLocked == true || policy?.isLocked == true;
     final requestsOn = policy?.waitingRoomEnabled == true;
@@ -823,8 +905,14 @@ class _RoomOverviewCard extends StatelessWidget {
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(isClosed ? 'Closed to new entries' : 'Open to members', style: AuraText.body),
-          Text(requestsOn ? 'Entry requests enabled' : 'Direct entry available', style: AuraText.body),
+          Text(
+            isClosed ? 'Closed to new entries' : 'Open to members',
+            style: AuraText.body,
+          ),
+          Text(
+            requestsOn ? 'Entry requests enabled' : 'Direct entry available',
+            style: AuraText.body,
+          ),
           Text(
             participantCount == 1
                 ? '1 member is listed here'
@@ -868,7 +956,6 @@ class _RoomInviteCard extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<Map<String, dynamic>> onInvite;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -896,7 +983,6 @@ class _RoomInviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,7 +1023,10 @@ class _RoomInviteCard extends StatelessWidget {
               child: LinearProgressIndicator(),
             )
           else if (searchController.text.trim().isEmpty)
-            Text('Search to invite people already on Aura.', style: AuraText.small)
+            Text(
+              'Search to invite people already on Aura.',
+              style: AuraText.small,
+            )
           else if (results.isEmpty)
             Text('No matching members found.', style: AuraText.small)
           else
@@ -949,8 +1038,8 @@ class _RoomInviteCard extends StatelessWidget {
               final title = displayName.isNotEmpty
                   ? displayName
                   : handle.isNotEmpty
-                      ? '@$handle'
-                      : 'Member';
+                  ? '@$handle'
+                  : 'Member';
               final subtitle = [
                 if (handle.isNotEmpty && displayName.isNotEmpty) '@$handle',
                 if (bio.isNotEmpty) bio,
@@ -967,7 +1056,12 @@ class _RoomInviteCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                          Text(
+                            title,
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           if (subtitle.isNotEmpty) ...[
                             const SizedBox(height: AuraSpace.s4),
                             Text(subtitle, style: AuraText.small),
@@ -1002,7 +1096,6 @@ class _ArtifactBlock extends StatelessWidget {
   final int transcriptCount;
   final int artifactCount;
 
-
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -1030,24 +1123,32 @@ class _ArtifactBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final recordingLabel = policy?.canRecord == true
-        ? (recordingCount == 1 ? '1 recording created' : '$recordingCount recordings created')
+        ? (recordingCount == 1
+              ? '1 recording created'
+              : '$recordingCount recordings created')
         : 'Recording unavailable in this live session';
     final transcriptLabel = policy?.canTranscribe == true
-        ? (transcriptCount == 1 ? '1 live note created' : '$transcriptCount live notes created')
+        ? (transcriptCount == 1
+              ? '1 live note created'
+              : '$transcriptCount live notes created')
         : 'Live notes unavailable in this live session';
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Room output', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Room output',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: AuraSpace.s8),
           Text(recordingLabel, style: AuraText.small),
           Text(transcriptLabel, style: AuraText.small),
           Text(
-            artifactCount == 1 ? '1 saved artifact' : '$artifactCount saved artifacts',
+            artifactCount == 1
+                ? '1 saved artifact'
+                : '$artifactCount saved artifacts',
             style: AuraText.small,
           ),
         ],

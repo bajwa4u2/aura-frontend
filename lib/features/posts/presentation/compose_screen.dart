@@ -436,7 +436,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   Future<bool> _ensureSignedIn() async {
     try {
       final dio = ref.read(dioProvider);
-      await dio.get('/v1/users/me');
+      await dio.get('/users/me');
       return true;
     } on DioException catch (e) {
       final status = e.response?.statusCode ?? 0;
@@ -465,7 +465,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     try {
       final dio = ref.read(dioProvider);
 
-      final meRes = await dio.get('/v1/users/me');
+      final meRes = await dio.get('/users/me');
       final user = _unwrapUser(meRes.data);
       final userId = _str(user['id']);
 
@@ -476,24 +476,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       final results = await Future.wait<dynamic>([
         _safeGet(
           dio,
-          '/v1/integrations/tiktok/account',
-          queryParameters: {'userId': userId},
-        ),
-        _safeGet(
-          dio,
-          '/v1/integrations/linkedin/account',
-          queryParameters: {'userId': userId},
+          '/integrations/tiktok/account',
         ),
         _safeGet(
           dio,
           '/integrations/linkedin/account',
-          queryParameters: {'userId': userId},
         ),
       ]);
 
       final tiktokAccount = _unwrapTikTokAccount(results[0]?.data);
       final linkedinAccount = _unwrapLinkedInAccount(
-        results[1]?.data ?? results[2]?.data,
+        results[1]?.data,
       );
 
       if (!mounted) return;
@@ -974,8 +967,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     );
 
     await dio.post('/media/$mediaId/confirm');
-    await dio.post('/media/$mediaId/ready');
-
     final patchBody = <String, dynamic>{
       'caption': attachment.captionController.text.trim().isEmpty
           ? null
@@ -1225,7 +1216,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/review',
+        '/composition/review',
         data: {
           'text': text,
           'surface': _compositionSurface.name,
@@ -1283,7 +1274,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/apply',
+        '/composition/apply',
         data: {
           'sessionId': review.sessionId,
           'findingId': suggestion.id,
@@ -1362,7 +1353,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
-        '/v1/composition/translate',
+        '/composition/translate',
         data: {
           'text': text,
           'targetLanguage': _translationTargetLanguage,
@@ -1916,7 +1907,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     };
 
     final attempts = <String>[
-      '/v1/integrations/linkedin/publish/post',
       '/integrations/linkedin/publish/post',
     ];
 
@@ -1954,7 +1944,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     final dio = ref.read(dioProvider);
 
     await dio.post(
-      '/v1/integrations/tiktok/publish/video',
+      '/integrations/tiktok/publish/video',
       data: {
         'postId': postId,
         'mediaUrl': mediaUrl,

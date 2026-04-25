@@ -15,7 +15,10 @@ class RealtimeRepository {
 
   List<Map<String, dynamic>> _asList(dynamic value) {
     if (value is List) {
-      return value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     return const <Map<String, dynamic>>[];
   }
@@ -58,7 +61,8 @@ class RealtimeRepository {
       await _dio.post(path, data: data);
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
-      if (statusCode != null && (statusCode == 403 || statusCode == 404 || statusCode == 405)) {
+      if (statusCode != null &&
+          (statusCode == 403 || statusCode == 404 || statusCode == 405)) {
         return;
       }
       rethrow;
@@ -79,14 +83,21 @@ class RealtimeRepository {
     String path;
     Map<String, dynamic>? body;
 
-    if ((normalizedType == 'THREAD' || normalizedType == 'DM') && threadId.isNotEmpty) {
-      path = '/threads/$threadId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+    if ((normalizedType == 'THREAD' || normalizedType == 'DM') &&
+        threadId.isNotEmpty) {
+      path =
+          '/threads/$threadId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
       body = null;
     } else if (normalizedType == 'SPACE' && surfaceId.trim().isNotEmpty) {
-      path = '/spaces/$surfaceId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+      path =
+          '/spaces/$surfaceId/live/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
       body = null;
-    } else if ((normalizedType == 'EVENT_ROOM' || normalizedType == 'INSTITUTION_ROOM' || normalizedType == 'ROOM') && surfaceId.trim().isNotEmpty) {
-      path = '/rooms/$surfaceId/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
+    } else if ((normalizedType == 'EVENT_ROOM' ||
+            normalizedType == 'INSTITUTION_ROOM' ||
+            normalizedType == 'ROOM') &&
+        surfaceId.trim().isNotEmpty) {
+      path =
+          '/rooms/$surfaceId/${normalizedKind == 'VIDEO' ? 'video' : 'audio'}/start';
       body = null;
     } else {
       path = '/realtime/sessions';
@@ -98,7 +109,9 @@ class RealtimeRepository {
       };
     }
 
-    final res = body == null ? await _dio.post(path) : await _dio.post(path, data: body);
+    final res = body == null
+        ? await _dio.post(path)
+        : await _dio.post(path, data: body);
     final sessionMap = _unwrapMap(res.data);
     return await loadSessionBundle(sessionMap['id']?.toString() ?? '');
   }
@@ -107,29 +120,48 @@ class RealtimeRepository {
     final sessionRes = await _dio.get('/realtime/sessions/$sessionId');
 
     final policyRes = await _safeGet('/realtime/sessions/$sessionId/policy');
-    final consentsRes = await _safeGet('/realtime/sessions/$sessionId/consents');
-    final recordingsRes = await _safeGet('/realtime/sessions/$sessionId/recordings');
-    final transcriptsRes = await _safeGet('/realtime/sessions/$sessionId/transcripts');
-    final artifactsRes = await _safeGet('/realtime/sessions/$sessionId/artifacts');
+    final consentsRes = await _safeGet(
+      '/realtime/sessions/$sessionId/consents',
+    );
+    final recordingsRes = await _safeGet(
+      '/realtime/sessions/$sessionId/recordings',
+    );
+    final transcriptsRes = await _safeGet(
+      '/realtime/sessions/$sessionId/transcripts',
+    );
+    final artifactsRes = await _safeGet(
+      '/realtime/sessions/$sessionId/artifacts',
+    );
 
     final sessionMap = _unwrapMap(sessionRes.data);
-    final policyMap = policyRes == null ? <String, dynamic>{} : _unwrapMap(policyRes.data);
-    final consents = consentsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(consentsRes.data);
-    final recordings = recordingsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(recordingsRes.data);
-    final transcripts = transcriptsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(transcriptsRes.data);
-    final artifacts = artifactsRes == null ? const <Map<String, dynamic>>[] : _unwrapList(artifactsRes.data);
+    final policyMap = policyRes == null
+        ? <String, dynamic>{}
+        : _unwrapMap(policyRes.data);
+    final consents = consentsRes == null
+        ? const <Map<String, dynamic>>[]
+        : _unwrapList(consentsRes.data);
+    final recordings = recordingsRes == null
+        ? const <Map<String, dynamic>>[]
+        : _unwrapList(recordingsRes.data);
+    final transcripts = transcriptsRes == null
+        ? const <Map<String, dynamic>>[]
+        : _unwrapList(transcriptsRes.data);
+    final artifacts = artifactsRes == null
+        ? const <Map<String, dynamic>>[]
+        : _unwrapList(artifactsRes.data);
 
-    return RealtimeSessionSnapshot.fromJson(
-      <String, dynamic>{
-        'session': sessionMap,
-        'participants': sessionMap['participants'] ?? sessionMap['sessionParticipants'] ?? const [],
-        'policy': policyMap,
-        'consents': consents,
-        'recordings': recordings,
-        'transcripts': transcripts,
-        'artifacts': artifacts,
-      },
-    );
+    return RealtimeSessionSnapshot.fromJson(<String, dynamic>{
+      'session': sessionMap,
+      'participants':
+          sessionMap['participants'] ??
+          sessionMap['sessionParticipants'] ??
+          const [],
+      'policy': policyMap,
+      'consents': consents,
+      'recordings': recordings,
+      'transcripts': transcripts,
+      'artifacts': artifacts,
+    });
   }
 
   Future<Map<String, dynamic>> issueTurnCredentials(String sessionId) async {
@@ -153,16 +185,23 @@ class RealtimeRepository {
     bool? screenAllowed,
   }) async {
     final payload = <String, dynamic>{};
-    if (waitingRoomEnabled != null) payload['waitingRoomEnabled'] = waitingRoomEnabled;
+    if (waitingRoomEnabled != null)
+      payload['waitingRoomEnabled'] = waitingRoomEnabled;
     if (audioAllowed != null) payload['audioAllowed'] = audioAllowed;
     if (videoAllowed != null) payload['videoAllowed'] = videoAllowed;
     if (screenAllowed != null) payload['screenAllowed'] = screenAllowed;
 
-    final res = await _dio.patch('/realtime/sessions/$sessionId/policy', data: payload);
+    final res = await _dio.patch(
+      '/realtime/sessions/$sessionId/policy',
+      data: payload,
+    );
     return RealtimePolicy.fromJson(_unwrapMap(res.data));
   }
 
-  Future<RealtimePolicy> setLocked(String sessionId, {required bool locked}) async {
+  Future<RealtimePolicy> setLocked(
+    String sessionId, {
+    required bool locked,
+  }) async {
     final res = await _dio.post(
       '/realtime/sessions/$sessionId/${locked ? 'lock' : 'unlock'}',
     );
@@ -173,7 +212,6 @@ class RealtimeRepository {
     await _dio.post('/realtime/sessions/$sessionId/join-request');
   }
 
-
   Future<RealtimeSessionSnapshot> joinSession(RealtimeSession session) async {
     final id = session.id.trim();
     if (id.isEmpty) {
@@ -183,7 +221,8 @@ class RealtimeRepository {
     final surfaceId = (session.surfaceId ?? '').trim();
     final surfaceType = session.surfaceType.name.trim().toLowerCase();
 
-    if ((surfaceType == 'thread' || surfaceType == 'dm') && surfaceId.isNotEmpty) {
+    if ((surfaceType == 'thread' || surfaceType == 'dm') &&
+        surfaceId.isNotEmpty) {
       await _dio.post('/threads/$surfaceId/live/$id/join');
       return loadSessionBundle(id);
     }
@@ -209,9 +248,10 @@ class RealtimeRepository {
     required String requestUserId,
     required String decision,
   }) async {
+    final normalizedDecision = _joinDecisionValue(decision);
     await _dio.post(
       '/realtime/sessions/$sessionId/join-requests/$requestUserId/respond',
-      data: <String, dynamic>{'decision': decision},
+      data: <String, dynamic>{'decision': normalizedDecision},
     );
   }
 
@@ -241,9 +281,13 @@ class RealtimeRepository {
     String sessionId, {
     required String decision,
   }) async {
+    final status = _consentStatusValue(decision);
     await _dio.post(
       '/realtime/sessions/$sessionId/consents/respond',
-      data: <String, dynamic>{'decision': decision},
+      data: <String, dynamic>{
+        'recordingConsentStatus': status,
+        'transcriptionConsentStatus': status,
+      },
     );
   }
 
@@ -257,10 +301,7 @@ class RealtimeRepository {
     return _unwrapList(res.data).map(RealtimeRecording.fromJson).toList();
   }
 
-  Future<void> requestRecording(
-    String sessionId, {
-    String? title,
-  }) async {
+  Future<void> requestRecording(String sessionId, {String? title}) async {
     await _dio.post(
       '/realtime/sessions/$sessionId/recordings/request',
       data: <String, dynamic>{
@@ -274,10 +315,7 @@ class RealtimeRepository {
     return _unwrapList(res.data).map(RealtimeTranscriptJob.fromJson).toList();
   }
 
-  Future<void> requestTranscript(
-    String sessionId, {
-    String? title,
-  }) async {
+  Future<void> requestTranscript(String sessionId, {String? title}) async {
     await _dio.post(
       '/realtime/sessions/$sessionId/transcripts/request',
       data: <String, dynamic>{
@@ -311,7 +349,9 @@ class RealtimeRepository {
         return;
       }
     }
-    if (surfaceType == 'room' || surfaceType == 'eventroom' || surfaceType == 'institutionroom') {
+    if (surfaceType == 'room' ||
+        surfaceType == 'eventroom' ||
+        surfaceType == 'institutionroom') {
       if (surfaceId.isNotEmpty) {
         await _safePost('/rooms/$surfaceId/live/$id/leave');
         return;
@@ -340,12 +380,42 @@ class RealtimeRepository {
         return;
       }
     }
-    if (surfaceType == 'room' || surfaceType == 'eventroom' || surfaceType == 'institutionroom') {
+    if (surfaceType == 'room' ||
+        surfaceType == 'eventroom' ||
+        surfaceType == 'institutionroom') {
       if (surfaceId.isNotEmpty) {
         await _safePost('/rooms/$surfaceId/live/$id/end');
         return;
       }
     }
     await _safePost('/realtime/sessions/$id/end');
+  }
+
+  String _joinDecisionValue(String decision) {
+    final normalized = decision.trim().toLowerCase();
+    if (normalized == 'approved' || normalized == 'approve') {
+      return 'APPROVED';
+    }
+    if (normalized == 'rejected' || normalized == 'reject') {
+      return 'REJECTED';
+    }
+    return decision.trim().toUpperCase();
+  }
+
+  String _consentStatusValue(String decision) {
+    final normalized = decision.trim().toLowerCase();
+    if (normalized == 'grant' ||
+        normalized == 'granted' ||
+        normalized == 'approve' ||
+        normalized == 'approved') {
+      return 'GRANTED';
+    }
+    if (normalized == 'decline' ||
+        normalized == 'declined' ||
+        normalized == 'reject' ||
+        normalized == 'rejected') {
+      return 'DECLINED';
+    }
+    return decision.trim().toUpperCase();
   }
 }
