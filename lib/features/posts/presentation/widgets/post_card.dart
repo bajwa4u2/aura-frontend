@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +15,6 @@ import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
-import '../../../saves/saves_repository.dart';
 
 String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   final url = (raw ?? '').trim();
@@ -49,6 +47,11 @@ String _canonicalPostUrl(String postId) {
   return '$base/posts/$postId';
 }
 
+String? _cleanNullableText(dynamic value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty) return null;
+  return text;
+}
 
 String _linkedInShareUrl(String postUrl) {
   final u = Uri.encodeComponent(postUrl);
@@ -1060,41 +1063,30 @@ class _PostCardState extends ConsumerState<PostCard> {
     String? linkThumbUrl;
 
     try {
-      linkUrl = (dyn.linkUrl as String?)?.trim();
-      if (linkUrl != null && linkUrl.isEmpty) linkUrl = null;
+      linkUrl = _cleanNullableText(dyn.linkUrl);
     } catch (_) {
       try {
-        linkUrl = (dyn.url as String?)?.trim();
-        if (linkUrl != null && linkUrl.isEmpty) linkUrl = null;
+        linkUrl = _cleanNullableText(dyn.url);
       } catch (_) {}
     }
 
     try {
-      linkTitle = (dyn.linkTitle as String?)?.trim();
-      if (linkTitle != null && linkTitle.isEmpty) linkTitle = null;
+      linkTitle = _cleanNullableText(dyn.linkTitle);
     } catch (_) {}
 
     try {
-      linkSubtitle = (dyn.linkSubtitle as String?)?.trim();
-      if (linkSubtitle != null && linkSubtitle.isEmpty) linkSubtitle = null;
+      linkSubtitle = _cleanNullableText(dyn.linkSubtitle);
     } catch (_) {
       try {
-        linkSubtitle = (dyn.linkDescription as String?)?.trim();
-        if (linkSubtitle != null && linkSubtitle.isEmpty) {
-          linkSubtitle = null;
-        }
+        linkSubtitle = _cleanNullableText(dyn.linkDescription);
       } catch (_) {}
     }
 
     try {
-      linkThumbUrl = (dyn.linkThumbUrl as String?)?.trim();
-      if (linkThumbUrl != null && linkThumbUrl.isEmpty) linkThumbUrl = null;
+      linkThumbUrl = _cleanNullableText(dyn.linkThumbUrl);
     } catch (_) {
       try {
-        linkThumbUrl = (dyn.linkImageUrl as String?)?.trim();
-        if (linkThumbUrl != null && linkThumbUrl.isEmpty) {
-          linkThumbUrl = null;
-        }
+        linkThumbUrl = _cleanNullableText(dyn.linkImageUrl);
       } catch (_) {}
     }
 
@@ -2672,7 +2664,6 @@ class _Badge extends StatelessWidget {
         fg = AuraSurface.warnInk;
         break;
       case _BadgeTone.neutral:
-      default:
         bg = AuraSurface.elevated;
         fg = AuraSurface.ink;
         break;

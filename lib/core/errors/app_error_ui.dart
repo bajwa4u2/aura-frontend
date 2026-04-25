@@ -48,7 +48,7 @@ class AppInlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.82);
+    final muted = Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.82);
 
     return Padding(
       padding: padding,

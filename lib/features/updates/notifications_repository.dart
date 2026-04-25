@@ -12,16 +12,18 @@ class NotificationsRepository {
 
   List<Map<String, dynamic>>? _cache;
   DateTime? _cacheAt;
-  Future<_NotificationsPayload>? _inFlight;
+  String? _cacheNextCursor;
+  Future<NotificationsPage>? _inFlight;
   final Set<String> _readInFlight = <String>{};
 
   void clearCache() {
     _cache = null;
     _cacheAt = null;
+    _cacheNextCursor = null;
     _inFlight = null;
   }
 
-  Future<List<Map<String, dynamic>>> list({
+  Future<NotificationsPage> page({
     int limit = 30,
     String? cursor,
     bool forceRefresh = false,
@@ -34,27 +36,35 @@ class NotificationsRepository {
         _cache != null &&
         _cacheAt != null &&
         now.difference(_cacheAt!) < _cacheTtl) {
-      return _cloneList(_cache!);
+      return NotificationsPage(
+        items: _cloneList(_cache!),
+        nextCursor: _cacheNextCursor,
+      );
     }
 
     if (useCache && !forceRefresh && _inFlight != null) {
-      final payload = await _inFlight!;
-      return _cloneList(payload.items);
+      return await _inFlight!;
     }
 
-    final future = _fetch(limit: limit, cursor: cursor);
+    final future = _fetch(limit: limit, cursor: cursor).then((payload) {
+      final dedupedItems = _dedupItems(payload.items);
+      final page = NotificationsPage(
+        items: _cloneList(dedupedItems),
+        nextCursor: payload.nextCursor,
+      );
+      if (useCache) {
+        _cache = _cloneList(dedupedItems);
+        _cacheAt = DateTime.now();
+        _cacheNextCursor = payload.nextCursor;
+      }
+      return page;
+    });
     if (useCache) {
       _inFlight = future;
     }
 
     try {
-      final payload = await future;
-      final dedupedItems = _dedupItems(payload.items);
-      if (useCache) {
-        _cache = _cloneList(dedupedItems);
-        _cacheAt = DateTime.now();
-      }
-      return _cloneList(dedupedItems);
+      return await future;
     } finally {
       if (useCache) {
         _inFlight = null;
@@ -62,17 +72,34 @@ class NotificationsRepository {
     }
   }
 
+  Future<List<Map<String, dynamic>>> list({
+    int limit = 30,
+    String? cursor,
+    bool forceRefresh = false,
+  }) async {
+    return (await page(
+      limit: limit,
+      cursor: cursor,
+      forceRefresh: forceRefresh,
+    ))
+        .items;
+  }
+
   Future<String?> nextCursor({
     int limit = 30,
     String? cursor,
   }) async {
-    final payload = await _fetch(limit: limit, cursor: cursor);
-    return payload.nextCursor;
+    return (await page(limit: limit, cursor: cursor)).nextCursor;
   }
 
   Future<int> unreadCount({bool forceRefresh = false}) async {
-    final items = await list(limit: 30, forceRefresh: forceRefresh);
-    return items.where((item) => _stringOf(item['readAt']).isEmpty).length;
+    if (forceRefresh) {}
+    final res = await _dio.get('/notifications/unread-count');
+    final root = _mapOf(res.data);
+    final data = _mapOf(root['data']);
+    final raw = root['unreadCount'] ?? data['unreadCount'] ?? data['count'];
+    final parsed = int.tryParse(raw?.toString() ?? '');
+    return parsed ?? 0;
   }
 
   Future<void> markRead(String id) async {
@@ -178,6 +205,19 @@ class _NotificationsPayload {
 
   final List<Map<String, dynamic>> items;
   final String? nextCursor;
+}
+
+class NotificationsPage {
+  const NotificationsPage({
+    required this.items,
+    required this.nextCursor,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final String? nextCursor;
+
+  int get unreadCount =>
+      items.where((item) => _stringOf(item['readAt']).isEmpty).length;
 }
 
 _NotificationsPayload _normalizePayload(dynamic raw) {

@@ -8,7 +8,6 @@ import 'app/app_shell.dart';
 import 'app/route_classification.dart';
 import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
-import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/auth/session_providers.dart';
 import 'core/institutions/institution_access_provider.dart';

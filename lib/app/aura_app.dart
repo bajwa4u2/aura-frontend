@@ -27,8 +27,6 @@ class AuraApp extends ConsumerWidget {
         onSecondary: Colors.white,
         error: Color(0xFFCF6679),
         onError: Colors.black,
-        background: AuraSurface.page,
-        onBackground: AuraSurface.ink,
         surface: AuraSurface.card,
         onSurface: AuraSurface.ink,
       ),

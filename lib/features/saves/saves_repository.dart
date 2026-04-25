@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/session_providers.dart';
-import '../../core/net/dio_provider.dart';
 import '../feed/domain/post.dart';
 
 

@@ -56,8 +56,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     try {
       _repo.clearCache();
       final items = await _repo.listUpdates(forceRefresh: true);
-      ref.invalidate(notificationsProvider);
-      ref.invalidate(notificationsUnreadCountProvider);
+      await ref.read(notificationsControllerProvider.notifier).refresh(force: true);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -76,8 +75,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     try {
       _repo.clearCache();
       final items = await _repo.listUpdates(forceRefresh: true);
-      ref.invalidate(notificationsProvider);
-      ref.invalidate(notificationsUnreadCountProvider);
+      await ref.read(notificationsControllerProvider.notifier).refresh(force: true);
       if (!mounted) return;
       setState(() {
         _items = items;

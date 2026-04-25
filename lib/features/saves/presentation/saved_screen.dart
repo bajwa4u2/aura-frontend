@@ -20,7 +20,7 @@ List<Post> _coercePosts(dynamic raw) {
         continue;
       }
       if (item is Map) {
-        out.add(Post.fromJson((item as Map).cast<String, dynamic>()));
+        out.add(Post.fromJson(Map<String, dynamic>.from(item)));
         continue;
       }
     }

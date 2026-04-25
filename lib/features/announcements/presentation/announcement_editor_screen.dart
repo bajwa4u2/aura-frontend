@@ -13,7 +13,6 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../composition/data/composition_repository.dart';
@@ -1287,7 +1286,7 @@ class _AnnouncementEditorScreenState
                         SizedBox(
                           width: 180,
                           child: DropdownButtonFormField<String>(
-                            value: _targetLanguage,
+                            initialValue: _targetLanguage,
                             decoration: const InputDecoration(
                               labelText: 'Translate to',
                               isDense: true,
@@ -1536,11 +1535,7 @@ class _AnnouncementEditorMediaAttachment {
     required this.bytes,
     required this.mimeType,
     required this.kind,
-    this.mediaId,
-    this.url,
-    this.thumbUrl,
     this.uploading = false,
-    this.error,
   });
 
   final String localId;

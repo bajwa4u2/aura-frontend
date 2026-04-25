@@ -60,10 +60,11 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
         _error = e.toString();
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-      });
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
     }
   }
 
@@ -206,24 +207,6 @@ class _AuraEditorReport extends StatelessWidget {
   List<dynamic> _listAny(String key) {
     final v = data[key];
     return v is List ? v : const [];
-  }
-
-  String _oneLine(dynamic v) {
-    if (v == null) return '';
-    if (v is String) return v.trim();
-    if (v is Map) {
-      final code = v['code']?.toString().trim();
-      final label = v['label']?.toString().trim();
-      final msg = v['message']?.toString().trim();
-      return (label?.isNotEmpty == true)
-          ? label!
-          : (msg?.isNotEmpty == true)
-              ? msg!
-              : (code?.isNotEmpty == true)
-                  ? code!
-                  : v.toString();
-    }
-    return v.toString();
   }
 
   List<String> _topSuggestions({

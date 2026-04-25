@@ -37,7 +37,7 @@ class AuthController {
 
     final data = m['data'];
     if (data is Map) {
-      return (data as Map).cast<String, dynamic>();
+      return Map<String, dynamic>.from(data);
     }
 
     return m;
@@ -49,7 +49,7 @@ class AuthController {
 
     final data = outer['data'];
     if (data is Map) {
-      final inner = (data as Map).cast<String, dynamic>();
+      final inner = Map<String, dynamic>.from(data);
       final t2 = (inner['accessToken'] ?? '').toString().trim();
       if (t2.isNotEmpty) return t2;
     }
@@ -63,7 +63,7 @@ class AuthController {
 
     final data = outer['data'];
     if (data is Map) {
-      final inner = (data as Map).cast<String, dynamic>();
+      final inner = Map<String, dynamic>.from(data);
       final r2 = (inner['refreshToken'] ?? '').toString().trim();
       if (r2.isNotEmpty) return r2;
     }

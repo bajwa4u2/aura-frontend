@@ -15,7 +15,6 @@ class AuraAppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AuraSurface.ink,
       brightness: Brightness.light,
-      background: AuraSurface.page,
       surface: AuraSurface.card,
     );
 
@@ -49,9 +48,9 @@ class AuraAppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: outline(AuraSurface.divider),
         enabledBorder: outline(AuraSurface.divider),
-        focusedBorder: outline(AuraSurface.ink.withOpacity(0.35)),
-        errorBorder: outline(Colors.red.withOpacity(0.6)),
-        focusedErrorBorder: outline(Colors.red.withOpacity(0.8)),
+        focusedBorder: outline(AuraSurface.ink.withValues(alpha: 0.35)),
+        errorBorder: outline(Colors.red.withValues(alpha: 0.6)),
+        focusedErrorBorder: outline(Colors.red.withValues(alpha: 0.8)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

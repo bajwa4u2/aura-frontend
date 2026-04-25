@@ -11,11 +11,11 @@ import 'route_targets.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
-import '../features/updates/notifications_repository.dart';
 import '../features/realtime/presentation/incoming_live_overlay.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
+import '../features/updates/providers.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -568,33 +568,6 @@ class _HeaderTools extends ConsumerStatefulWidget {
 
 class _HeaderToolsState extends ConsumerState<_HeaderTools> {
   bool _busyLogout = false;
-  int _unreadCount = 0;
-  Timer? _activityPollTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUnreadCount();
-    _activityPollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
-      if (!mounted) return;
-      _loadUnreadCount();
-    });
-  }
-
-  @override
-  void dispose() {
-    _activityPollTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadUnreadCount() async {
-    try {
-      final repo = NotificationsRepository(ref.read(dioProvider));
-      final count = await repo.unreadCount(forceRefresh: true);
-      if (!mounted) return;
-      setState(() => _unreadCount = count);
-    } catch (_) {}
-  }
 
   Future<void> _handleAccountAction(String value) async {
     switch (value) {
@@ -644,6 +617,8 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = ref.watch(notificationsUnreadCountProvider);
+
     if (widget.isDesktop) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -659,12 +634,8 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
             tooltip: 'Activity',
             icon: Icons.notifications_none,
             label: 'Activity',
-            unreadCount: _unreadCount,
-            onTap: () async {
-              await context.push(widget.activityPath);
-              if (!mounted) return;
-              _loadUnreadCount();
-            },
+            unreadCount: unreadCount,
+            onTap: () => context.push(widget.activityPath),
           ),
           if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
             const SizedBox(width: AuraSpace.s8),
@@ -704,12 +675,8 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
         _HeaderActivityIconButton(
           tooltip: 'Activity',
           icon: Icons.notifications_none,
-          unreadCount: _unreadCount,
-          onTap: () async {
-            await context.push(widget.activityPath);
-            if (!mounted) return;
-            _loadUnreadCount();
-          },
+          unreadCount: unreadCount,
+          onTap: () => context.push(widget.activityPath),
         ),
         if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
           const SizedBox(width: AuraSpace.s8),

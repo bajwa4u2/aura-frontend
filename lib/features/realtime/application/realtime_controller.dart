@@ -648,21 +648,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     if (sessionId == null || sessionId.isEmpty) return;
 
     await _repository.requestConsent(sessionId);
-
-    List<RealtimeConsent> consents = state.consents;
-    try {
-      consents = await _repository.listConsents(sessionId);
-    } catch (error) {
-      final text = error.toString().toLowerCase();
-      if (!text.contains('403') && !text.contains('forbidden')) {
-        rethrow;
-      }
-    }
-
-    state = state.copyWith(
-      consents: consents,
-      infoMessage: 'Fresh consent requested.',
-    );
+    await syncConsentsVisibility(canManageConsents: false);
+    state = state.copyWith(infoMessage: 'Fresh consent requested.');
   }
 
   Future<void> answerConsent({required bool granted}) async {
@@ -673,21 +660,34 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       sessionId,
       decision: granted ? 'grant' : 'decline',
     );
-
-    List<RealtimeConsent> consents = state.consents;
-    try {
-      consents = await _repository.listConsents(sessionId);
-    } catch (error) {
-      final text = error.toString().toLowerCase();
-      if (!text.contains('403') && !text.contains('forbidden')) {
-        rethrow;
-      }
-    }
-
+    await syncConsentsVisibility(canManageConsents: false);
     state = state.copyWith(
-      consents: consents,
       infoMessage: granted ? 'Consent granted.' : 'Consent declined.',
     );
+  }
+
+  Future<void> syncConsentsVisibility({
+    required bool? canManageConsents,
+  }) async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+    if (canManageConsents == null) return;
+
+    try {
+      final consents = canManageConsents
+          ? await _repository.listConsents(sessionId)
+          : await _repository.getOwnConsent(sessionId);
+      state = state.copyWith(consents: consents);
+    } catch (error) {
+      if (canManageConsents) {
+        try {
+          final consents = await _repository.getOwnConsent(sessionId);
+          state = state.copyWith(consents: consents);
+          return;
+        } catch (_) {}
+      }
+      state = state.copyWith(errorMessage: error.toString());
+    }
   }
 
   Future<void> requestRecording({String? title}) async {

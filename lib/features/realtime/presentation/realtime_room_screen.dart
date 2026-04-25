@@ -11,6 +11,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../search/search_repository.dart';
+import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
@@ -60,6 +61,7 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _didBoot = false;
+  String? _lastConsentSyncKey;
   final TextEditingController _inviteSearchController = TextEditingController();
   final TextEditingController _inviteNoteController = TextEditingController();
   Timer? _searchDebounce;
@@ -190,6 +192,23 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
   }
 
+  void _syncConsentsIfNeeded({
+    required RealtimeController controller,
+    required String sessionId,
+    required bool? canManageConsents,
+  }) {
+    if (sessionId.trim().isEmpty || canManageConsents != true) return;
+
+    final syncKey = '$sessionId:moderator';
+    if (_lastConsentSyncKey == syncKey) return;
+    _lastConsentSyncKey = syncKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.syncConsentsVisibility(canManageConsents: canManageConsents);
+    });
+  }
+
   String? _spaceRouteFromSession(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
@@ -234,7 +253,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       }
     }
 
-    final canModerate = myParticipant?.isModerator ?? false;
+    final isHost = myUserId.isNotEmpty &&
+        state.session?.startedByUserId == myUserId;
+    final canModerate = myParticipant?.isModerator ?? isHost;
+    final canManageConsents = canModerate;
     final policy = state.policy;
     final roomIsClosed =
         state.session?.isLocked == true || policy?.isLocked == true;
@@ -258,6 +280,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               participant.screenOn,
         )
         .length;
+
+    _syncConsentsIfNeeded(
+      controller: controller,
+      sessionId: state.sessionId ?? widget.sessionId,
+      canManageConsents: canManageConsents,
+    );
 
     return AuraScaffold(
       body: ListView(
@@ -436,12 +464,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
     if (joinState == RealtimeJoinState.joined) return 'You are here now.';
-    if (joinState == RealtimeJoinState.requested)
+    if (joinState == RealtimeJoinState.requested) {
       return 'Your request to join is pending.';
-    if (joinState == RealtimeJoinState.rejected)
+    }
+    if (joinState == RealtimeJoinState.rejected) {
       return 'Your request to join was declined.';
-    if (joinState == RealtimeJoinState.removed)
+    }
+    if (joinState == RealtimeJoinState.removed) {
       return 'You were removed from this live session.';
+    }
     if (session?.isActive == false) return 'This live session has ended.';
     if (session?.isLocked == true) return 'Closed to new joins.';
     return 'Active now.';

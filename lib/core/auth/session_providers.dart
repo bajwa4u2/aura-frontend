@@ -89,7 +89,7 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
 
     final user = inner['user'];
     if (user is Map) {
-      final ev = (user as Map)['emailVerifiedAt'];
+      final ev = user['emailVerifiedAt'];
       if (ev != null) return true;
     }
 

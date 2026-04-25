@@ -78,7 +78,6 @@ class RealtimeRepository {
     final normalizedType = surfaceType.trim().toUpperCase();
     final normalizedKind = kind.trim().toUpperCase();
     final threadId = (metadata?['threadId'] ?? '').toString().trim();
-    final spaceId = (metadata?['spaceId'] ?? '').toString().trim();
 
     String path;
     Map<String, dynamic>? body;
@@ -120,8 +119,9 @@ class RealtimeRepository {
     final sessionRes = await _dio.get('/realtime/sessions/$sessionId');
 
     final policyRes = await _safeGet('/realtime/sessions/$sessionId/policy');
-    final consentsRes = await _safeGet(
-      '/realtime/sessions/$sessionId/consents',
+    final consentRes = await _safeGet(
+      '/realtime/sessions/$sessionId/consent',
+      toleratedStatusCodes: const <int>[404],
     );
     final recordingsRes = await _safeGet(
       '/realtime/sessions/$sessionId/recordings',
@@ -137,9 +137,10 @@ class RealtimeRepository {
     final policyMap = policyRes == null
         ? <String, dynamic>{}
         : _unwrapMap(policyRes.data);
-    final consents = consentsRes == null
+    final ownConsentMap = consentRes == null ? null : _unwrapMap(consentRes.data);
+    final consents = ownConsentMap == null || ownConsentMap.isEmpty
         ? const <Map<String, dynamic>>[]
-        : _unwrapList(consentsRes.data);
+        : <Map<String, dynamic>>[ownConsentMap];
     final recordings = recordingsRes == null
         ? const <Map<String, dynamic>>[]
         : _unwrapList(recordingsRes.data);
@@ -185,8 +186,9 @@ class RealtimeRepository {
     bool? screenAllowed,
   }) async {
     final payload = <String, dynamic>{};
-    if (waitingRoomEnabled != null)
+    if (waitingRoomEnabled != null) {
       payload['waitingRoomEnabled'] = waitingRoomEnabled;
+    }
     if (audioAllowed != null) payload['audioAllowed'] = audioAllowed;
     if (videoAllowed != null) payload['videoAllowed'] = videoAllowed;
     if (screenAllowed != null) payload['screenAllowed'] = screenAllowed;
@@ -294,6 +296,19 @@ class RealtimeRepository {
   Future<List<RealtimeConsent>> listConsents(String sessionId) async {
     final res = await _dio.get('/realtime/sessions/$sessionId/consents');
     return _unwrapList(res.data).map(RealtimeConsent.fromJson).toList();
+  }
+
+  Future<List<RealtimeConsent>> getOwnConsent(String sessionId) async {
+    final res = await _safeGet(
+      '/realtime/sessions/$sessionId/consent',
+      toleratedStatusCodes: const <int>[404],
+    );
+    if (res == null) return const <RealtimeConsent>[];
+
+    final consentMap = _unwrapMap(res.data);
+    if (consentMap.isEmpty) return const <RealtimeConsent>[];
+
+    return <RealtimeConsent>[RealtimeConsent.fromJson(consentMap)];
   }
 
   Future<List<RealtimeRecording>> listRecordings(String sessionId) async {

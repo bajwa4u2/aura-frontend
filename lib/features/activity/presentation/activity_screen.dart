@@ -1,17 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/route_targets.dart';
 import '../../../core/communication/communication_resolver.dart';
-import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../updates/notifications_repository.dart';
+import '../../updates/providers.dart';
 import '../../correspondence/data/threads_repository.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
@@ -23,188 +20,15 @@ class ActivityScreen extends ConsumerStatefulWidget {
 
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   static const _resolver = CommunicationResolver();
-  static const _pageSize = 24;
-  static const _pollInterval = Duration(seconds: 8);
-
-  bool _loading = true;
-  bool _loadingMore = false;
-  bool _markingAllRead = false;
-  String? _error;
-  List<Map<String, dynamic>> _items = const [];
-  String? _nextCursor;
-  Timer? _pollTimer;
-
-  NotificationsRepository get _repo =>
-      NotificationsRepository(ref.read(dioProvider));
-
-  @override
-  void initState() {
-    super.initState();
-    _loadInitial();
-    _pollTimer = Timer.periodic(_pollInterval, (_) {
-      if (!mounted || _loading || _loadingMore || _markingAllRead) return;
-      _refreshSilently();
-    });
-  }
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      _repo.clearCache();
-      final items = await _repo.list(limit: _pageSize, forceRefresh: true);
-      final nextCursor = await _repo.nextCursor(limit: _pageSize);
-
-      if (!mounted) return;
-      setState(() {
-        _items = items;
-        _nextCursor = nextCursor;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load activity right now.';
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _refreshSilently() async {
-    try {
-      _repo.clearCache();
-      final items = await _repo.list(limit: _pageSize, forceRefresh: true);
-      final nextCursor = await _repo.nextCursor(limit: _pageSize);
-      if (!mounted) return;
-      setState(() {
-        _items = _mergeIncoming(current: _items, incoming: items);
-        _nextCursor = nextCursor;
-      });
-    } catch (_) {}
-  }
-
-  Future<void> _loadMore() async {
-    final cursor = _nextCursor;
-    if (_loadingMore || cursor == null || cursor.isEmpty) return;
-
-    setState(() => _loadingMore = true);
-
-    try {
-      final items = await _repo.list(
-        limit: _pageSize,
-        cursor: cursor,
-        forceRefresh: true,
-      );
-      final nextCursor = await _repo.nextCursor(
-        limit: _pageSize,
-        cursor: cursor,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _items = _mergeIncoming(current: _items, incoming: items, append: true);
-        _nextCursor = nextCursor;
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _loadingMore = false);
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> _mergeIncoming({
-    required List<Map<String, dynamic>> current,
-    required List<Map<String, dynamic>> incoming,
-    bool append = false,
-  }) {
-    final byId = <String, Map<String, dynamic>>{};
-
-    if (append) {
-      for (final item in current) {
-        final id = _stringOf(item['id']);
-        if (id.isNotEmpty) byId[id] = item;
-      }
-      for (final item in incoming) {
-        final id = _stringOf(item['id']);
-        if (id.isEmpty) continue;
-        byId[id] = item;
-      }
-      return byId.values.toList(growable: false);
-    }
-
-    for (final item in incoming) {
-      final id = _stringOf(item['id']);
-      if (id.isEmpty) continue;
-      byId[id] = item;
-    }
-    for (final item in current) {
-      final id = _stringOf(item['id']);
-      if (id.isEmpty || byId.containsKey(id)) continue;
-      byId[id] = item;
-    }
-    return byId.values.toList(growable: false);
-  }
 
   Future<void> _markAllRead() async {
-    if (_markingAllRead || _items.isEmpty) return;
-
-    setState(() => _markingAllRead = true);
-
-    try {
-      await _repo.markAllRead();
-      if (!mounted) return;
-      final now = DateTime.now().toIso8601String();
-      setState(() {
-        _items = _items
-            .map(
-              (item) => {
-                ...item,
-                'readAt': _stringOf(item['readAt']).isEmpty ? now : item['readAt'],
-              },
-            )
-            .toList(growable: false);
-      });
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not mark activity as read.')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _markingAllRead = false);
-      }
-    }
+    await ref.read(notificationsControllerProvider.notifier).markAllRead();
   }
 
   Future<void> _handleTap(Map<String, dynamic> item) async {
     final id = _stringOf(item['id']);
     if (id.isNotEmpty && _stringOf(item['readAt']).isEmpty) {
-      try {
-        await _repo.markRead(id);
-        if (mounted) {
-          setState(() {
-            _items = _items
-                .map(
-                  (entry) => _stringOf(entry['id']) == id
-                      ? {
-                          ...entry,
-                          'readAt': DateTime.now().toIso8601String(),
-                        }
-                      : entry,
-                )
-                .toList(growable: false);
-          });
-        }
-      } catch (_) {}
+      await ref.read(notificationsControllerProvider.notifier).markRead(id);
     }
     if (!mounted) return;
     await _navigateFromActivity(item);
@@ -510,7 +334,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _items.where((item) => _stringOf(item['readAt']).isEmpty).length;
+    final state = ref.watch(notificationsControllerProvider);
+    final items = state.items;
+    final unreadCount = state.unreadCount;
 
     return AuraScaffold(
       showHeader: false,
@@ -520,7 +346,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 920),
             child: RefreshIndicator(
-              onRefresh: _loadInitial,
+              onRefresh: () =>
+                  ref.read(notificationsControllerProvider.notifier).refresh(force: true),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   AuraSpace.s16,
@@ -531,31 +358,36 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 children: [
                   _ActivityHeader(
                     unreadCount: unreadCount,
-                    onMarkAllRead: _items.isEmpty ? null : _markAllRead,
-                    markingAllRead: _markingAllRead,
+                    onMarkAllRead: items.isEmpty ? null : _markAllRead,
+                    markingAllRead: state.isRefreshing,
                   ),
                   const SizedBox(height: AuraSpace.s16),
-                  if (_loading)
+                  if (state.isLoading)
                     const _ActivityLoadingState()
-                  else if (_error != null)
+                  else if ((state.error ?? '').isNotEmpty)
                     _ActivityErrorState(
-                      message: _error!,
-                      onRetry: _loadInitial,
+                      message: state.error!,
+                      onRetry: () =>
+                          ref.read(notificationsControllerProvider.notifier).refresh(force: true),
                     )
-                  else if (_items.isEmpty)
+                  else if (items.isEmpty)
                     const _ActivityEmptyState()
                   else ...[
-                    for (final item in _items)
+                    for (final item in items)
                       _ActivityTile(
                         item: item,
                         onTap: () => _handleTap(item),
                       ),
-                    if (_nextCursor != null && _nextCursor!.isNotEmpty) ...[
+                    if ((state.nextCursor ?? '').isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s16),
                       Center(
                         child: OutlinedButton(
-                          onPressed: _loadingMore ? null : _loadMore,
-                          child: Text(_loadingMore ? 'Loading…' : 'Load more'),
+                          onPressed: state.isLoadingMore
+                              ? null
+                              : () => ref
+                                  .read(notificationsControllerProvider.notifier)
+                                  .loadMore(),
+                          child: Text(state.isLoadingMore ? 'Loading…' : 'Load more'),
                         ),
                       ),
                     ],

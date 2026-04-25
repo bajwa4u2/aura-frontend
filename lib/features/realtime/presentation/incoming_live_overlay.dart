@@ -24,51 +24,9 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
 
 class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   static const _resolver = CommunicationResolver();
-  Timer? _timer;
-  Map<String, dynamic>? _incoming;
   final Set<String> _dismissedIds = <String>{};
   final Set<String> _dismissedSessionIds = <String>{};
-  bool _refreshing = false;
   bool _joining = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCandidate(force: true));
-    _timer = Timer.periodic(const Duration(seconds: 8), (_) => _refreshCandidate());
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _refreshCandidate({bool force = false}) async {
-    if (!mounted || _refreshing || _joining) return;
-    _refreshing = true;
-    try {
-      final items = await ref.read(notificationsRepoProvider).list(
-            limit: kNotificationsPageLimit,
-            forceRefresh: force,
-          );
-      if (!mounted) return;
-
-      final currentPath = GoRouterState.of(context).uri.path;
-      final next = items.firstWhere(
-        (item) => _isInterruptCandidate(item, currentPath),
-        orElse: () => <String, dynamic>{},
-      );
-
-      setState(() {
-        _incoming = next.isEmpty ? null : next;
-      });
-    } catch (_) {
-      // keep layer silent
-    } finally {
-      _refreshing = false;
-    }
-  }
 
   bool _isInterruptCandidate(Map<String, dynamic> item, String currentPath) {
     final id = _stringOf(item['id']);
@@ -97,9 +55,20 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     return type == 'LIVE' || communicationType == 'LIVE';
   }
 
-  Future<void> _joinCurrent() async {
-    final item = _incoming;
-    if (item == null || _joining) return;
+  Map<String, dynamic>? _currentIncoming(
+    String currentPath,
+    List<Map<String, dynamic>> items,
+  ) {
+    for (final item in items) {
+      if (_isInterruptCandidate(item, currentPath)) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _joinCurrent(Map<String, dynamic> item) async {
+    if (_joining) return;
 
     final data = _mapOf(item['data']);
     final target = _resolver.resolveFromPayload({...item, ...data});
@@ -119,15 +88,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     try {
       await ref.read(realtimeControllerProvider.notifier).join(sessionId);
       if (id.isNotEmpty) {
-        await ref.read(notificationsRepoProvider).markRead(id);
+        await ref.read(notificationsControllerProvider.notifier).markRead(id);
       }
-      ref.invalidate(notificationsProvider);
-      ref.invalidate(notificationsUnreadCountProvider);
-
-      if (!mounted) return;
-      setState(() {
-        _incoming = null;
-      });
 
       context.go(_resolver.resolveRoute(target));
     } catch (_) {
@@ -142,27 +104,25 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     }
   }
 
-  void _dismissCurrent() {
-    final item = _incoming;
-    final id = _stringOf(item?['id']);
+  void _dismissCurrent(Map<String, dynamic> item) {
+    final id = _stringOf(item['id']);
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
     }
     final sessionId = _firstNonEmpty([
-      _stringOf(_mapOf(item?['data'])['sessionId']),
-      _stringOf(item?['sessionId']),
+      _stringOf(_mapOf(item['data'])['sessionId']),
+      _stringOf(item['sessionId']),
     ]);
     if (sessionId.isNotEmpty) {
       _dismissedSessionIds.add(sessionId);
     }
-    setState(() {
-      _incoming = null;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final item = _incoming;
+    final notifications = ref.watch(notificationsControllerProvider);
+    final currentPath = GoRouterState.of(context).uri.path;
+    final item = _currentIncoming(currentPath, notifications.items);
     if (item == null) return widget.child;
 
     final data = _mapOf(item['data']);
@@ -242,14 +202,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: _joining ? null : _dismissCurrent,
+                                onPressed: _joining ? null : () => _dismissCurrent(item),
                                 child: const Text('Dismiss'),
                               ),
                             ),
                             const SizedBox(width: AuraSpace.s12),
                             Expanded(
                               child: FilledButton(
-                                onPressed: _joining ? null : _joinCurrent,
+                                onPressed: _joining ? null : () => _joinCurrent(item),
                                 child: Text(_joining ? 'Joining...' : 'Join'),
                               ),
                             ),
