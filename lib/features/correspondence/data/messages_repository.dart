@@ -32,14 +32,14 @@ class MessagesRepository {
 
   Future<Map<String, dynamic>> sendMessage({
     required String threadId,
-    required String body,
+    String? body,
     List<Map<String, dynamic>> attachments = const [],
     String? sourceLanguage,
     Map<String, dynamic>? composition,
     Map<String, dynamic>? translation,
   }) async {
     final payload = <String, dynamic>{
-      'body': body.trim(),
+      if (_hasText(body)) 'body': body!.trim(),
       if (attachments.isNotEmpty) 'attachments': attachments,
       if (_hasText(sourceLanguage)) 'sourceLanguage': sourceLanguage!.trim(),
       if (composition != null && composition.isNotEmpty) 'composition': composition,

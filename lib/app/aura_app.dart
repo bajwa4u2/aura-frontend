@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
+import '../core/notifications/notification_bridge.dart';
 import '../router.dart';
 
 class AuraApp extends ConsumerWidget {
@@ -56,13 +57,16 @@ class AuraApp extends ConsumerWidget {
       highlightColor: Colors.transparent,
     );
 
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'Aura',
-      theme: theme,
-      darkTheme: theme,
-      themeMode: ThemeMode.dark,
-      routerConfig: router,
+    return NotificationBridge(
+      child: MaterialApp.router(
+        scaffoldMessengerKey: auraScaffoldMessengerKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Aura',
+        theme: theme,
+        darkTheme: theme,
+        themeMode: ThemeMode.dark,
+        routerConfig: router,
+      ),
     );
   }
 }

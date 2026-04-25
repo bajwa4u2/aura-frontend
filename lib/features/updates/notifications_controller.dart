@@ -198,6 +198,7 @@ class NotificationsController extends StateNotifier<NotificationsState>
   }
 
   Future<void> _refreshInternal({required bool force}) async {
+    if (!mounted) return;
     state = state.copyWith(
       isLoading: !state.hasLoaded,
       isRefreshing: state.hasLoaded,
@@ -210,6 +211,7 @@ class NotificationsController extends StateNotifier<NotificationsState>
         forceRefresh: force,
       );
       final unreadCount = await _repo.unreadCount(forceRefresh: force);
+      if (!mounted) return;
       state = state.copyWith(
         items: page.items,
         nextCursor: page.nextCursor,
@@ -226,10 +228,12 @@ class NotificationsController extends StateNotifier<NotificationsState>
         await ref.read(tokenStoreProvider).clearTokens();
         _stopPolling();
         _repo.clearCache();
+        if (!mounted) return;
         state = NotificationsState.initial();
         return;
       }
 
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
@@ -237,6 +241,7 @@ class NotificationsController extends StateNotifier<NotificationsState>
         error: _readApiError(error),
       );
     } catch (error) {
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
@@ -247,6 +252,7 @@ class NotificationsController extends StateNotifier<NotificationsState>
   }
 
   Future<void> _loadMoreInternal(String cursor) async {
+    if (!mounted) return;
     state = state.copyWith(
       isLoadingMore: true,
       clearError: true,
@@ -271,6 +277,7 @@ class NotificationsController extends StateNotifier<NotificationsState>
       }
 
       final unreadCount = merged.where((item) => _stringOf(item['readAt']).isEmpty).length;
+      if (!mounted) return;
       state = state.copyWith(
         items: merged,
         unreadCount: unreadCount,
@@ -285,15 +292,18 @@ class NotificationsController extends StateNotifier<NotificationsState>
         await ref.read(tokenStoreProvider).clearTokens();
         _stopPolling();
         _repo.clearCache();
+        if (!mounted) return;
         state = NotificationsState.initial();
         return;
       }
 
+      if (!mounted) return;
       state = state.copyWith(
         isLoadingMore: false,
         error: _readApiError(error),
       );
     } catch (error) {
+      if (!mounted) return;
       state = state.copyWith(
         isLoadingMore: false,
         error: error.toString(),

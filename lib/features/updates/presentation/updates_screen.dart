@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +10,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../updates_repository.dart';
-import '../providers.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
   const UpdatesScreen({super.key});
@@ -22,12 +19,9 @@ class UpdatesScreen extends ConsumerStatefulWidget {
 }
 
 class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
-  static const _pollInterval = Duration(seconds: 30);
-
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
-  Timer? _pollTimer;
 
   UpdatesRepository get _repo => UpdatesRepository(ref.read(dioProvider));
 
@@ -35,15 +29,10 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
   void initState() {
     super.initState();
     _load();
-    _pollTimer = Timer.periodic(_pollInterval, (_) {
-      if (!mounted || _loading) return;
-      _refreshSilently();
-    });
   }
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
     super.dispose();
   }
 
@@ -56,7 +45,6 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     try {
       _repo.clearCache();
       final items = await _repo.listUpdates(forceRefresh: true);
-      await ref.read(notificationsControllerProvider.notifier).refresh(force: true);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -69,18 +57,6 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         _loading = false;
       });
     }
-  }
-
-  Future<void> _refreshSilently() async {
-    try {
-      _repo.clearCache();
-      final items = await _repo.listUpdates(forceRefresh: true);
-      await ref.read(notificationsControllerProvider.notifier).refresh(force: true);
-      if (!mounted) return;
-      setState(() {
-        _items = items;
-      });
-    } catch (_) {}
   }
 
   void _openUpdate(Map<String, dynamic> item) {
@@ -113,7 +89,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            Text('Updates', style: AuraText.title),
+            const Text('Updates', style: AuraText.title),
             const SizedBox(height: AuraSpace.s16),
             AuraCard(
               child: Column(
@@ -121,7 +97,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
                 children: [
                   Text('Public record', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: AuraSpace.s8),
-                  Text(
+                  const Text(
                     'Announcements, releases, and public changes appear here.',
                     style: AuraText.small,
                   ),
@@ -165,7 +141,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text('Updates', style: AuraText.title)),
+                    const Expanded(child: Text('Updates', style: AuraText.title)),
                     OutlinedButton(
                       onPressed: _load,
                       child: const Text('Refresh'),
@@ -180,7 +156,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
                     child: Text(_error!, style: AuraText.small),
                   )
                 else if (_items.isEmpty)
-                  AuraCard(
+                  const AuraCard(
                     child: Text('No updates yet.', style: AuraText.small),
                   )
                 else

@@ -11,9 +11,7 @@ final notificationsRepoProvider = Provider<NotificationsRepository>((ref) {
 final notificationsControllerProvider =
     StateNotifierProvider<NotificationsController, NotificationsState>((ref) {
   final repo = ref.watch(notificationsRepoProvider);
-  final controller = NotificationsController(ref, repo);
-  ref.onDispose(controller.dispose);
-  return controller;
+  return NotificationsController(ref, repo);
 });
 
 final notificationsProvider = Provider<List<Map<String, dynamic>>>((ref) {
