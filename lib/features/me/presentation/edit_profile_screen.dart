@@ -16,6 +16,24 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 
+enum _EditSection { identity, coverAndAvatar, presence, publications, links, account }
+
+class _SectionItem {
+  const _SectionItem(this.section, this.label, this.icon);
+  final _EditSection section;
+  final String label;
+  final IconData icon;
+}
+
+const _kSections = <_SectionItem>[
+  _SectionItem(_EditSection.identity, 'Identity', Icons.person_outline_rounded),
+  _SectionItem(_EditSection.coverAndAvatar, 'Cover & Avatar', Icons.photo_outlined),
+  _SectionItem(_EditSection.presence, 'Presence', Icons.location_on_outlined),
+  _SectionItem(_EditSection.publications, 'Publications', Icons.auto_stories_outlined),
+  _SectionItem(_EditSection.links, 'Links', Icons.link_rounded),
+  _SectionItem(_EditSection.account, 'Account', Icons.lock_outline_rounded),
+];
+
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -34,6 +52,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _saving = false;
   bool _uploadingAvatar = false;
   bool _uploadingCover = false;
+
+  _EditSection _activeSection = _EditSection.identity;
+  bool _showPreview = false;
 
   String? _errorText;
 
@@ -499,73 +520,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loading) {
       return AuraScaffold(
         title: 'Edit presence',
-        body: const Center(
-          child: AuraLoadingState(message: 'Loading profile…'),
-        ),
+        body: const Center(child: AuraLoadingState(message: 'Loading profile…')),
       );
     }
 
-    return AuraScaffold(
-      title: 'Edit presence',
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s20,
-              AuraSpace.s20,
-              AuraSpace.s20,
-              140,
-            ),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCoverSurface(),
-                      Transform.translate(
-                        offset: const Offset(0, -36),
-                        child: Column(
-                          children: [
-                            _buildAvatar(),
-                            const SizedBox(height: AuraSpace.s14),
-                            _buildIdentityPreview(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AuraSpace.s4),
-                      if (_errorText != null) ...[
-                        _buildErrorBanner(),
-                        const SizedBox(height: AuraSpace.s24),
-                      ],
-                      _buildSectionLabel('Identity'),
-                      const SizedBox(height: AuraSpace.s14),
-                      _buildIdentityBlock(),
-                      const SizedBox(height: AuraSpace.s32),
-                      _buildSectionLabel('Presence'),
-                      const SizedBox(height: AuraSpace.s14),
-                      _buildPresenceBlock(),
-                      const SizedBox(height: AuraSpace.s32),
-                      _buildSectionLabel('Publications'),
-                      const SizedBox(height: AuraSpace.s14),
-                      _buildPublicationsBlock(),
-                      const SizedBox(height: AuraSpace.s32),
-                      _buildSectionLabel('Links'),
-                      const SizedBox(height: AuraSpace.s14),
-                      _buildLinksBlock(),
-                      const SizedBox(height: AuraSpace.s32),
-                      _buildSectionLabel('Account record'),
-                      const SizedBox(height: AuraSpace.s14),
-                      _buildAccountRecordBlock(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_hasChanges) _buildSaveRail(),
-        ],
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _showDiscardDialog();
+      },
+      child: AuraScaffold(
+        title: 'Edit presence',
+        body: LayoutBuilder(
+          builder: (context, constraints) => constraints.maxWidth >= 900
+              ? _buildWideLayout()
+              : _buildNarrowLayout(),
+        ),
       ),
     );
   }
@@ -1290,6 +1260,437 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Text(
       text,
       style: AuraText.muted.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
+    );
+  }
+
+  void _showDiscardDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+        ),
+        title: const Text('Discard changes?', style: AuraText.title),
+        content: Text(
+          'You have unsaved changes. Going back will discard them.',
+          style: AuraText.body.copyWith(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Keep editing',
+              style: AuraText.body.copyWith(color: AuraSurface.muted),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _discardChanges();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Discard',
+              style: AuraText.body.copyWith(color: AuraSurface.dangerInk),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideLayout() {
+    return Stack(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(width: 220, child: _buildLeftNav()),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s24,
+                  AuraSpace.s24,
+                  AuraSpace.s24,
+                  100,
+                ),
+                children: [
+                  if (_errorText != null) ...[
+                    _buildErrorBanner(),
+                    const SizedBox(height: AuraSpace.s20),
+                  ],
+                  _buildSectionEditor(),
+                ],
+              ),
+            ),
+            SizedBox(width: 260, child: _buildPreviewPanel()),
+          ],
+        ),
+        if (_hasChanges) _buildSaveRail(),
+      ],
+    );
+  }
+
+  Widget _buildNarrowLayout() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildSectionChipRow(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  AuraSpace.s16,
+                  100,
+                ),
+                children: [
+                  if (_showPreview) ...[
+                    _buildPreviewCard(),
+                    const SizedBox(height: AuraSpace.s20),
+                  ],
+                  if (_errorText != null) ...[
+                    _buildErrorBanner(),
+                    const SizedBox(height: AuraSpace.s20),
+                  ],
+                  _buildSectionLabel(
+                    _kSections
+                        .firstWhere((s) => s.section == _activeSection)
+                        .label,
+                  ),
+                  const SizedBox(height: AuraSpace.s14),
+                  _buildSectionEditor(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (_hasChanges) _buildSaveRail(),
+      ],
+    );
+  }
+
+  Widget _buildLeftNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(right: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s20),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              0,
+              AuraSpace.s16,
+              AuraSpace.s12,
+            ),
+            child: Text(
+              'SECTION',
+              style: AuraText.muted.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          ..._kSections.map(_buildNavItem),
+          const SizedBox(height: AuraSpace.s20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+            child: AuraPrimaryButton(
+              label: _saving ? 'Saving…' : 'Save changes',
+              onPressed: (_busy || !_hasChanges) ? null : _save,
+              icon: Icons.check_rounded,
+            ),
+          ),
+          if (_hasChanges)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s12,
+                AuraSpace.s8,
+                AuraSpace.s12,
+                0,
+              ),
+              child: AuraGhostButton(
+                label: 'Discard',
+                onPressed: _busy ? null : _discardChanges,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(_SectionItem item) {
+    final isActive = _activeSection == item.section;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _activeSection = item.section),
+        child: Container(
+          margin: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s8,
+            vertical: AuraSpace.s2,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s12,
+          ),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AuraSurface.accentSoft
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                item.icon,
+                size: 18,
+                color: isActive ? AuraSurface.accentText : AuraSurface.muted,
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: AuraText.body.copyWith(
+                    color: isActive ? AuraSurface.accentText : AuraSurface.ink,
+                    fontWeight:
+                        isActive ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionChipRow() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s10,
+        ),
+        child: Row(
+          children: [
+            ..._kSections.map((item) {
+              final isActive = _activeSection == item.section;
+              return Padding(
+                padding: const EdgeInsets.only(right: AuraSpace.s8),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _activeSection = item.section),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s12,
+                        vertical: AuraSpace.s8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AuraSurface.accentSoft
+                            : AuraSurface.card,
+                        borderRadius: BorderRadius.circular(AuraRadius.pill),
+                        border: Border.all(
+                          color: isActive
+                              ? AuraSurface.accentText.withValues(alpha: 0.45)
+                              : AuraSurface.divider,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 14,
+                            color: isActive
+                                ? AuraSurface.accentText
+                                : AuraSurface.muted,
+                          ),
+                          const SizedBox(width: AuraSpace.s6),
+                          Text(
+                            item.label,
+                            style: AuraText.small.copyWith(
+                              color: isActive
+                                  ? AuraSurface.accentText
+                                  : AuraSurface.ink,
+                              fontWeight: isActive
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => setState(() => _showPreview = !_showPreview),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _showPreview
+                        ? AuraSurface.elevated
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    border: Border.all(color: AuraSurface.divider),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.preview_outlined,
+                        size: 14,
+                        color: AuraSurface.muted,
+                      ),
+                      SizedBox(width: AuraSpace.s6),
+                      Text('Preview', style: AuraText.small),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionEditor() {
+    switch (_activeSection) {
+      case _EditSection.identity:
+        return _buildIdentityBlock();
+      case _EditSection.coverAndAvatar:
+        return _buildCoverAndAvatarSection();
+      case _EditSection.presence:
+        return _buildPresenceBlock();
+      case _EditSection.publications:
+        return _buildPublicationsBlock();
+      case _EditSection.links:
+        return _buildLinksBlock();
+      case _EditSection.account:
+        return _buildAccountRecordBlock();
+    }
+  }
+
+  Widget _buildCoverAndAvatarSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCoverSurface(),
+        const SizedBox(height: AuraSpace.s24),
+        Center(child: _buildAvatar()),
+      ],
+    );
+  }
+
+  Widget _buildPreviewPanel() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(left: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        children: [
+          Text(
+            'PREVIEW',
+            style: AuraText.muted.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _buildPreviewCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewCard() {
+    final coverProvider = _imageProviderFromUrl(_coverUrl);
+    final avatarProvider = _imageProviderFromUrl(_avatarUrl);
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                height: 80,
+                width: double.infinity,
+                child: coverProvider != null
+                    ? Image(image: coverProvider, fit: BoxFit.cover)
+                    : const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AuraSurface.elevated, AuraSurface.card],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+              ),
+              Positioned(
+                bottom: -26,
+                left: AuraSpace.s16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AuraSurface.card, width: 3),
+                  ),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AuraSurface.elevated,
+                    backgroundImage: avatarProvider,
+                    child: avatarProvider == null
+                        ? Text(
+                            _initials,
+                            style: AuraText.label.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 38),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16,
+              0,
+              AuraSpace.s16,
+              AuraSpace.s16,
+            ),
+            child: _buildIdentityPreview(),
+          ),
+        ],
+      ),
     );
   }
 

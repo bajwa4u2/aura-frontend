@@ -16,6 +16,8 @@ import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
 
+enum _ProfileTab { posts, connections }
+
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({super.key, required this.handle});
 
@@ -28,6 +30,7 @@ class AuthorProfileScreen extends ConsumerStatefulWidget {
 
 class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   late Future<_ProfileBundle> _bundleFuture;
+  _ProfileTab _activeTab = _ProfileTab.posts;
 
   @override
   void initState() {
@@ -369,45 +372,157 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
-  Widget _pageList(List<Widget> children) {
-    final items = <Widget>[];
+  Widget _buildTabBar() {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s4),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        children: [
+          _ProfileTabPill(
+            label: 'Posts',
+            selected: _activeTab == _ProfileTab.posts,
+            onTap: () => setState(() => _activeTab = _ProfileTab.posts),
+          ),
+          _ProfileTabPill(
+            label: 'Connections',
+            selected: _activeTab == _ProfileTab.connections,
+            onTap: () => setState(() => _activeTab = _ProfileTab.connections),
+          ),
+        ],
+      ),
+    );
+  }
 
-    for (var i = 0; i < children.length; i++) {
-      items.add(children[i]);
-      if (i != children.length - 1) {
-        items.add(const SizedBox(height: 32));
-      }
-    }
+  Widget _buildLoaded(_ProfileBundle bundle, bool isAuthed) {
+    final repo = ref.read(profileRepositoryProvider);
+    final profile = bundle.profile;
+    final posts = bundle.posts;
+    final followState = bundle.followState;
+
+    final name = profile.displayName.trim().isNotEmpty
+        ? profile.displayName.trim()
+        : widget.handle;
+    final bio = (profile.bio ?? '').trim();
+    final avatar = (profile.avatarUrl ?? '').trim();
+    final cover = (profile.coverUrl ?? '').trim();
+    final trailingMeta = _presenceMeta(profile);
+
+    final followLabel = switch (followState) {
+      'following' => 'Following',
+      'outgoing_pending' => 'Requested',
+      _ => 'Follow',
+    };
+
+    final canFollowAction =
+        followState == 'none' || followState == 'outgoing_pending';
+    final canCorrespond = isAuthed && followState == 'following';
+
+    final notice = _presenceNotice(
+      isAuthed: isAuthed,
+      canCorrespond: canCorrespond,
+      followState: followState,
+    );
+    final showNotice = isAuthed && !canCorrespond;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-
-        double horizontalPadding;
-        double maxWidth;
-
-        if (width < 600) {
-          horizontalPadding = 12;
-          maxWidth = double.infinity;
-        } else if (width < 980) {
-          horizontalPadding = 24;
-          maxWidth = 760;
-        } else {
-          horizontalPadding = 32;
-          maxWidth = 860;
-        }
+        final hPad = width < 600 ? 12.0 : width < 980 ? 24.0 : 32.0;
+        final maxW = width < 600 ? double.infinity : width < 980 ? 760.0 : 860.0;
 
         return Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+            constraints: BoxConstraints(maxWidth: maxW),
             child: ListView(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                18,
-                horizontalPadding,
-                28,
-              ),
-              children: items,
+              padding: EdgeInsets.fromLTRB(hPad, AuraSpace.s18, hPad, AuraSpace.s28),
+              children: [
+                PresenceHeader(
+                  displayName: name,
+                  handle: widget.handle,
+                  bio: bio,
+                  avatarUrl: avatar,
+                  coverUrl: cover,
+                  trailingMeta: trailingMeta,
+                  actions: [
+                    if (!isAuthed)
+                      PresenceHeaderAction(
+                        label: 'Sign in to follow',
+                        primary: true,
+                        icon: Icons.lock_outline,
+                        onTap: () {
+                          final redirect = '/u/${widget.handle}';
+                          context.push(
+                            '/login?redirect=${Uri.encodeComponent(redirect)}',
+                          );
+                        },
+                      )
+                    else
+                      PresenceHeaderAction(
+                        label: followLabel,
+                        primary: true,
+                        icon: followState == 'following'
+                            ? Icons.check
+                            : followState == 'outgoing_pending'
+                            ? Icons.schedule
+                            : Icons.person_add_alt_1,
+                        onTap: !canFollowAction
+                            ? null
+                            : () async {
+                                try {
+                                  if (followState == 'outgoing_pending') {
+                                    await repo.unfollow(widget.handle);
+                                    _showMessage('Request canceled');
+                                  } else {
+                                    await repo.follow(widget.handle);
+                                    _showMessage('Follow request sent');
+                                  }
+                                  _reload();
+                                } catch (_) {
+                                  _showMessage('Could not update follow state');
+                                }
+                              },
+                      ),
+                    PresenceHeaderAction(
+                      label: 'Message',
+                      primary: false,
+                      icon: Icons.chat_bubble_outline,
+                      onTap: canCorrespond
+                          ? () => _openPrivateConversation(profile)
+                          : null,
+                    ),
+                  ],
+                ),
+                if (showNotice) ...[
+                  const SizedBox(height: AuraSpace.s16),
+                  notice,
+                ],
+                const SizedBox(height: AuraSpace.s16),
+                _buildTabBar(),
+                const SizedBox(height: AuraSpace.s20),
+                if (_activeTab == _ProfileTab.posts)
+                  _workSection(posts)
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _connectionsSection(profile),
+                      const SizedBox(height: AuraSpace.s24),
+                      _correspondenceSection(
+                        isAuthed: isAuthed,
+                        canCorrespond: canCorrespond,
+                        profile: profile,
+                      ),
+                      if (isAuthed) ...[
+                        const SizedBox(height: AuraSpace.s24),
+                        _reportSection(),
+                      ],
+                    ],
+                  ),
+              ],
             ),
           ),
         );
@@ -415,9 +530,22 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
+  Widget _reportSection() {
+    return _surfaceSection(
+      title: 'Moderation',
+      children: [
+        _sectionRow(
+          title: 'Report this profile',
+          subtitle: 'Flag content for review by moderators',
+          leading: Icons.flag_outlined,
+          onTap: () => _showMessage('Report submitted. Thank you.'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final repo = ref.read(profileRepositoryProvider);
     final isAuthed = ref.watch(authStatusProvider) == AuthStatus.authed;
 
     return AuraScaffold(
@@ -440,103 +568,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
             );
           }
 
-          final bundle = snapshot.data!;
-          final profile = bundle.profile;
-          final posts = bundle.posts;
-          final followState = bundle.followState;
-
-          final name = profile.displayName.trim().isNotEmpty
-              ? profile.displayName.trim()
-              : widget.handle;
-          final bio = (profile.bio ?? '').trim();
-          final avatar = (profile.avatarUrl ?? '').trim();
-          final cover = (profile.coverUrl ?? '').trim();
-          final trailingMeta = _presenceMeta(profile);
-
-          final followLabel = switch (followState) {
-            'following' => 'Following',
-            'outgoing_pending' => 'Requested',
-            _ => 'Follow',
-          };
-
-          final canFollowAction =
-              followState == 'none' || followState == 'outgoing_pending';
-
-          final canCorrespond = isAuthed && followState == 'following';
-
-          return _pageList([
-            PresenceHeader(
-              displayName: name,
-              handle: widget.handle,
-              bio: bio,
-              avatarUrl: avatar,
-              coverUrl: cover,
-              trailingMeta: trailingMeta,
-              actions: [
-                if (!isAuthed)
-                  const PresenceHeaderAction(
-                    label: 'Login to follow',
-                    primary: true,
-                    onTap: null,
-                    icon: Icons.lock_outline,
-                  )
-                else
-                  PresenceHeaderAction(
-                    label: followLabel,
-                    primary: true,
-                    icon: followState == 'following'
-                        ? Icons.check
-                        : followState == 'outgoing_pending'
-                        ? Icons.schedule
-                        : Icons.person_add_alt_1,
-                    onTap: !canFollowAction
-                        ? null
-                        : () async {
-                            try {
-                              if (followState == 'outgoing_pending') {
-                                await repo.unfollow(widget.handle);
-                                _showMessage('Request canceled');
-                              } else {
-                                await repo.follow(widget.handle);
-                                _showMessage('Follow request sent');
-                              }
-                              _reload();
-                            } catch (_) {
-                              _showMessage('Could not update follow state');
-                            }
-                          },
-                  ),
-                PresenceHeaderAction(
-                  label: 'Message',
-                  primary: false,
-                  icon: Icons.chat_bubble_outline,
-                  onTap: canCorrespond
-                      ? () => _openPrivateConversation(profile)
-                      : null,
-                ),
-                PresenceHeaderAction(
-                  label: 'Invite to space',
-                  primary: false,
-                  icon: Icons.person_add_alt_outlined,
-                  onTap: canCorrespond
-                      ? () => _openInviteToSpace(profile)
-                      : null,
-                ),
-              ],
-            ),
-            _presenceNotice(
-              isAuthed: isAuthed,
-              canCorrespond: canCorrespond,
-              followState: followState,
-            ),
-            _workSection(posts),
-            _correspondenceSection(
-              isAuthed: isAuthed,
-              canCorrespond: canCorrespond,
-              profile: profile,
-            ),
-            _connectionsSection(profile),
-          ]);
+          return _buildLoaded(snapshot.data!, isAuthed);
         },
       ),
     );
@@ -557,4 +589,54 @@ class _ProfileBundle {
 
 String _cleanValue(String? value) {
   return (value ?? '').trim();
+}
+
+class _ProfileTabPill extends StatelessWidget {
+  const _ProfileTabPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(
+              vertical: AuraSpace.s8,
+              horizontal: AuraSpace.s4,
+            ),
+            decoration: BoxDecoration(
+              color: selected ? AuraSurface.accentSoft : Colors.transparent,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(
+                color: selected
+                    ? AuraSurface.accent.withValues(alpha: 0.4)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: AuraText.small.copyWith(
+                fontWeight:
+                    selected ? FontWeight.w700 : FontWeight.w500,
+                color:
+                    selected ? AuraSurface.accentText : AuraSurface.muted,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

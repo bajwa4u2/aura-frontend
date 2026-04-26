@@ -561,31 +561,34 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s6,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? AuraSurface.accentSoft : AuraSurface.card,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(
-              color: selected
-                  ? AuraSurface.accent.withValues(alpha: 0.4)
-                  : AuraSurface.divider,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s6,
             ),
-          ),
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600,
-              color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            decoration: BoxDecoration(
+              color: selected ? AuraSurface.accentSoft : AuraSurface.card,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(
+                color: selected
+                    ? AuraSurface.accent.withValues(alpha: 0.4)
+                    : AuraSurface.divider,
+              ),
+            ),
+            child: Text(
+              label,
+              style: AuraText.small.copyWith(
+                fontWeight: FontWeight.w600,
+                color: selected ? AuraSurface.accentText : AuraSurface.muted,
+              ),
             ),
           ),
         ),
@@ -832,68 +835,70 @@ class _ActivityTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s12,
-              vertical: AuraSpace.s14,
-            ),
-            decoration: BoxDecoration(
-              color: unread ? AuraSurface.subtle : Colors.transparent,
-              borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: unread
-                  ? Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.15),
-                    )
-                  : null,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ActivityLeadingIcon(
-                  type: type,
-                  avatarUrl: _stringOf(actor['avatarUrl']),
-                  unread: unread,
-                ),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: AuraText.small.copyWith(
-                          fontWeight: unread
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          color: AuraSurface.ink,
-                        ),
-                      ),
-                      if (subtitle.isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s4),
-                        Text(
-                          subtitle,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s12,
+                vertical: AuraSpace.s14,
+              ),
+              decoration: BoxDecoration(
+                color: unread ? AuraSurface.subtle : Colors.transparent,
+                borderRadius: BorderRadius.circular(AuraRadius.card),
+                border: unread
+                    ? Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.15),
+                      )
+                    : null,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ActivityLeadingIcon(
+                    type: type,
+                    avatarUrl: _stringOf(actor['avatarUrl']),
+                    unread: unread,
                   ),
-                ),
-                const SizedBox(width: AuraSpace.s8),
-                Text(
-                  timeLabel,
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-              ],
+                  const SizedBox(width: AuraSpace.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: AuraText.small.copyWith(
+                            fontWeight:
+                                unread ? FontWeight.w700 : FontWeight.w600,
+                            color: AuraSurface.ink,
+                          ),
+                        ),
+                        if (subtitle.isNotEmpty) ...[
+                          const SizedBox(height: AuraSpace.s4),
+                          Text(
+                            subtitle,
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.muted,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  Text(
+                    timeLabel,
+                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

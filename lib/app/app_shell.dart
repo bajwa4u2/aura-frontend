@@ -319,14 +319,24 @@ class InstitutionShell extends StatelessWidget {
 // HEADERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PublicHeader extends StatelessWidget {
+class _PublicHeader extends ConsumerWidget {
   const _PublicHeader({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
 
+  static bool _worthRedirecting(String path) =>
+      path != '/' &&
+      path != '/public' &&
+      !path.startsWith('/login') &&
+      !path.startsWith('/register');
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthed = ref.watch(isAuthedProvider);
+    final currentUri = GoRouterState.of(context).uri;
+    final currentPath = currentUri.path;
+
     final hPad = isDesktop
         ? AuraSpace.s24
         : isTablet
@@ -347,28 +357,50 @@ class _PublicHeader extends StatelessWidget {
                 horizontal: hPad, vertical: AuraSpace.s12),
             child: Row(
               children: [
-                _AuraWordmark(onTap: () => context.go('/public')),
-                const Spacer(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isTablet) ...[
-                      _NavTextLink(
-                        label: 'Explore',
-                        onTap: () => context.go('/search'),
-                      ),
-                      const SizedBox(width: AuraSpace.s4),
-                      _NavTextLink(
-                        label: 'Institutions',
-                        onTap: () => context.go('/institutions'),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                    ],
-                    _SignInButton(onTap: () => context.go('/login')),
-                    const SizedBox(width: AuraSpace.s8),
-                    _JoinButton(onTap: () => context.go('/register')),
-                  ],
+                _AuraWordmark(
+                  onTap: () => context.go(isAuthed ? '/home' : '/public'),
                 ),
+                const Spacer(),
+                if (isAuthed) ...[
+                  if (isTablet) ...[
+                    _NavTextLink(
+                      label: 'Explore',
+                      onTap: () => context.go('/search'),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                  ],
+                  _GoHomeButton(onTap: () => context.go('/home')),
+                ] else ...[
+                  if (isTablet) ...[
+                    _NavTextLink(
+                      label: 'Explore',
+                      onTap: () => context.go('/search'),
+                    ),
+                    const SizedBox(width: AuraSpace.s4),
+                    _NavTextLink(
+                      label: 'Institutions',
+                      onTap: () => context.go('/institutions'),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                  ],
+                  _SignInButton(onTap: () {
+                    final redirect = _worthRedirecting(currentPath)
+                        ? currentUri.toString()
+                        : null;
+                    context.go(redirect != null
+                        ? '/login?redirect=${Uri.encodeComponent(redirect)}'
+                        : '/login');
+                  }),
+                  const SizedBox(width: AuraSpace.s8),
+                  _JoinButton(onTap: () {
+                    final redirect = _worthRedirecting(currentPath)
+                        ? currentUri.toString()
+                        : null;
+                    context.go(redirect != null
+                        ? '/register?redirect=${Uri.encodeComponent(redirect)}'
+                        : '/register');
+                  }),
+                ],
               ],
             ),
           ),
@@ -570,6 +602,11 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
     if (_busyLogout) return;
     setState(() => _busyLogout = true);
 
+    final currentPath = GoRouterState.of(context).uri.path;
+    final returnPath = shouldUseMemberShellForAuthed(currentPath)
+        ? currentPath
+        : '/public';
+
     final container = ProviderScope.containerOf(context, listen: false);
     final dio = container.read(dioProvider);
 
@@ -583,7 +620,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
       container.invalidate(authStatusProvider);
       container.invalidate(isAuthedProvider);
     } finally {
-      if (mounted) context.go('/public');
+      if (mounted) context.go(returnPath);
       if (mounted) setState(() => _busyLogout = false);
     }
   }
@@ -840,6 +877,38 @@ class _NavTextLink extends StatelessWidget {
         label,
         style:
             AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _GoHomeButton extends StatelessWidget {
+  const _GoHomeButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: AuraGradients.accent,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s14, vertical: AuraSpace.s8),
+            child: Text(
+              'Open Aura',
+              style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+        ),
       ),
     );
   }

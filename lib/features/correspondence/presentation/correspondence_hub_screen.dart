@@ -180,11 +180,13 @@ class _CorrespondenceActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => context.push(route),
-        borderRadius: BorderRadius.circular(AuraRadius.card),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push(route),
+          borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
           padding: const EdgeInsets.all(AuraSpace.s16),
           decoration: BoxDecoration(
@@ -254,6 +256,7 @@ class _CorrespondenceActionCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

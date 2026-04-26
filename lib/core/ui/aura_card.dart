@@ -47,14 +47,17 @@ class AuraCard extends StatelessWidget {
 
     if (onTap == null) return card;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(radius),
-        splashColor: AuraSurface.accentSoft,
-        highlightColor: AuraSurface.divider,
-        onTap: onTap,
-        child: card,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(radius),
+          splashColor: AuraSurface.accentSoft,
+          highlightColor: AuraSurface.divider,
+          onTap: onTap,
+          child: card,
+        ),
       ),
     );
   }

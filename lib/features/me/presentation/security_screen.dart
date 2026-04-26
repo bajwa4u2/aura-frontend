@@ -64,11 +64,15 @@ class SecurityScreen extends ConsumerWidget {
         ? AuraSurface.ink
         : AuraSurface.muted;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
+    return MouseRegion(
+      cursor: onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s16,
             vertical: AuraSpace.s14,
@@ -121,7 +125,8 @@ class SecurityScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _cardList(List<Widget> children) {

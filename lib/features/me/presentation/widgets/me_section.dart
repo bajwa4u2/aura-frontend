@@ -77,10 +77,12 @@ class MeSectionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = enabled && onTap != null;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: active ? onTap : null,
+    return MouseRegion(
+      cursor: active ? SystemMouseCursors.click : MouseCursor.defer,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: active ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s16,
@@ -138,6 +140,7 @@ class MeSectionRow extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

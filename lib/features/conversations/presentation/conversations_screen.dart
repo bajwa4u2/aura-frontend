@@ -459,24 +459,27 @@ class _FilterPill extends StatelessWidget {
         ? AuraSurface.accent.withValues(alpha: 0.4)
         : AuraSurface.divider;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s8,
-        ),
-        decoration: BoxDecoration(
-          color: background,
-          border: Border.all(color: borderColor),
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-        ),
-        child: Text(
-          label,
-          style: AuraText.small.copyWith(
-            fontWeight: FontWeight.w700,
-            color: foreground,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s8,
+          ),
+          decoration: BoxDecoration(
+            color: background,
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w700,
+              color: foreground,
+            ),
           ),
         ),
       ),
@@ -538,11 +541,13 @@ class _ConversationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -618,7 +623,8 @@ class _ConversationRow extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

@@ -1634,53 +1634,56 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   }) {
     final enabled = onTap != null;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: Opacity(
-        opacity: enabled ? 1 : 0.72,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AuraSpace.s12,
-            horizontal: AuraSpace.s4,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: AuraSurface.ink),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AuraTextBlock(
-                      label,
-                      style: AuraText.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (subtitle != null && subtitle.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Opacity(
+          opacity: enabled ? 1 : 0.72,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AuraSpace.s12,
+              horizontal: AuraSpace.s4,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: AuraSurface.ink),
+                const SizedBox(width: AuraSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       AuraTextBlock(
-                        subtitle.trim(),
-                        style: AuraText.small.copyWith(
-                          color: AuraSurface.muted,
+                        label,
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        AuraTextBlock(
+                          subtitle.trim(),
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (enabled)
-                const Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: AuraSurface.muted,
-                ),
-            ],
+                if (enabled)
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AuraSurface.muted,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
