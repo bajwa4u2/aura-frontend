@@ -20,8 +20,45 @@ class ActivityScreen extends ConsumerStatefulWidget {
   ConsumerState<ActivityScreen> createState() => _ActivityScreenState();
 }
 
+enum _ActivityFilter { all, messages, social, announcements, system }
+
 class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   static const _resolver = CommunicationResolver();
+
+  _ActivityFilter _activeFilter = _ActivityFilter.all;
+
+  List<Map<String, dynamic>> _applyFilter(List<Map<String, dynamic>> items) {
+    if (_activeFilter == _ActivityFilter.all) return items;
+    return items.where((item) {
+      final type = (item['type'] ?? '').toString().toUpperCase();
+      switch (_activeFilter) {
+        case _ActivityFilter.messages:
+          return type == 'MESSAGE_RECEIVED' ||
+              type == 'THREAD_INVITE' ||
+              type == 'SPACE_INVITE';
+        case _ActivityFilter.social:
+          return type == 'FOLLOW' ||
+              type == 'FOLLOW_REQUEST' ||
+              type == 'FOLLOW_ACCEPTED' ||
+              type == 'LIKE' ||
+              type == 'SAVE' ||
+              type == 'REPLY' ||
+              type == 'REPOST' ||
+              type == 'MENTION';
+        case _ActivityFilter.announcements:
+          return type == 'ANNOUNCEMENT_PUBLISHED';
+        case _ActivityFilter.system:
+          return type == 'POST_PUBLISHED' ||
+              type == 'POST_PUBLISH_FAILED' ||
+              type == 'SYSTEM' ||
+              type == 'INVITE_ACCEPTED' ||
+              type == 'INVITE_DECLINED' ||
+              type == 'INVITE_REVOKED';
+        case _ActivityFilter.all:
+          return true;
+      }
+    }).toList();
+  }
 
   Future<void> _markAllRead() async {
     await ref.read(notificationsControllerProvider.notifier).markAllRead();
@@ -362,8 +399,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(notificationsControllerProvider);
-    final items = state.items;
+    final allItems = state.items;
+    final filteredItems = _applyFilter(allItems);
     final unreadCount = state.unreadCount;
+
+    final unread = filteredItems
+        .where((i) => (i['readAt'] ?? '').toString().trim().isEmpty)
+        .toList();
+    final read = filteredItems
+        .where((i) => (i['readAt'] ?? '').toString().trim().isNotEmpty)
+        .toList();
 
     return AuraScaffold(
       showHeader: false,
@@ -387,8 +432,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                 children: [
                   _ActivityHeader(
                     unreadCount: unreadCount,
-                    onMarkAllRead: items.isEmpty ? null : _markAllRead,
+                    onMarkAllRead: allItems.isEmpty ? null : _markAllRead,
                     markingAllRead: state.isRefreshing,
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  _ActivityFilterRow(
+                    active: _activeFilter,
+                    onChange: (f) => setState(() => _activeFilter = f),
                   ),
                   const SizedBox(height: AuraSpace.s20),
                   if (state.isLoading)
@@ -405,11 +455,36 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                         icon: Icons.refresh_rounded,
                       ),
                     )
-                  else if (items.isEmpty)
+                  else if (filteredItems.isEmpty)
                     const _ActivityEmptyState()
                   else ...[
-                    for (final item in items)
-                      _ActivityTile(item: item, onTap: () => _handleTap(item)),
+                    if (unread.isNotEmpty) ...[
+                      _ActivitySectionLabel(
+                        label: 'New',
+                        count: unread.length,
+                        accent: true,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      for (final item in unread)
+                        _ActivityTile(
+                          item: item,
+                          onTap: () => _handleTap(item),
+                        ),
+                      if (read.isNotEmpty)
+                        const SizedBox(height: AuraSpace.s20),
+                    ],
+                    if (read.isNotEmpty) ...[
+                      _ActivitySectionLabel(
+                        label: unread.isEmpty ? 'Activity' : 'Earlier',
+                        count: read.length,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      for (final item in read)
+                        _ActivityTile(
+                          item: item,
+                          onTap: () => _handleTap(item),
+                        ),
+                    ],
                     if ((state.nextCursor ?? '').isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s20),
                       Center(
@@ -436,6 +511,143 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 }
+
+// ── Filter row ─────────────────────────────────────────────────────────────
+
+class _ActivityFilterRow extends StatelessWidget {
+  const _ActivityFilterRow({required this.active, required this.onChange});
+
+  final _ActivityFilter active;
+  final ValueChanged<_ActivityFilter> onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    const filters = [
+      (_ActivityFilter.all, 'All'),
+      (_ActivityFilter.messages, 'Messages'),
+      (_ActivityFilter.social, 'Social'),
+      (_ActivityFilter.announcements, 'Announcements'),
+      (_ActivityFilter.system, 'System'),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (filter, label) in filters) ...[
+            _FilterPill(
+              label: label,
+              selected: active == filter,
+              onTap: () => onChange(filter),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s6,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? AuraSurface.accentSoft : AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: selected
+                  ? AuraSurface.accent.withValues(alpha: 0.4)
+                  : AuraSurface.divider,
+            ),
+          ),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Section label ──────────────────────────────────────────────────────────
+
+class _ActivitySectionLabel extends StatelessWidget {
+  const _ActivitySectionLabel({
+    required this.label,
+    required this.count,
+    this.accent = false,
+  });
+
+  final String label;
+  final int count;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: AuraText.label.copyWith(
+            color: accent ? AuraSurface.accentText : AuraSurface.faint,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s8,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: accent ? AuraSurface.accentSoft : AuraSurface.elevated,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: accent
+                  ? AuraSurface.accent.withValues(alpha: 0.3)
+                  : AuraSurface.divider,
+            ),
+          ),
+          child: Text(
+            '$count',
+            style: AuraText.micro.copyWith(
+              color: accent ? AuraSurface.accentText : AuraSurface.faint,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Data helpers ───────────────────────────────────────────────────────────
 
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
@@ -46,41 +47,25 @@ class MissionScreen extends StatelessWidget {
           const SizedBox(height: AuraSpace.s12),
 
           // Primary: in-app reading surface (MD rendered nicely)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.go('/white-paper'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
-                  ),
-                  child: Text('Read the White Paper', style: AuraText.body),
-                ),
-              ),
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: AuraPrimaryButton(
+              label: 'Read the White Paper',
+              onPressed: () => context.go('/white-paper'),
+              icon: Icons.auto_stories_outlined,
+            ),
           ),
 
           const SizedBox(height: AuraSpace.s8),
 
           // Secondary: PDF download (external)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _openPdf(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s12,
-                    ),
-                  ),
-                  child: Text('Download PDF', style: AuraText.body),
-                ),
-              ),
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: AuraGhostButton(
+              label: 'Download PDF',
+              onPressed: () => _openPdf(context),
+              icon: Icons.download_outlined,
+            ),
           ),
 
           const SizedBox(height: AuraSpace.s10),

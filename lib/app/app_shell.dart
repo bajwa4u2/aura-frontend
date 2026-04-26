@@ -1083,27 +1083,30 @@ class _BottomNavButton extends StatelessWidget {
         child: Semantics(
           button: true,
           label: item.label,
-          child: GestureDetector(
-            onTap: onTap,
-            child: AnimatedContainer(
-              duration: AuraMotion.fast,
-              width: compact ? 46 : 52,
-              height: compact ? 46 : 52,
-              decoration: BoxDecoration(
-                gradient: selected ? null : AuraGradients.accent,
-                color: selected ? AuraSurface.accentSoft : null,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                border: Border.all(
-                  color: selected
-                      ? AuraSurface.accent.withValues(alpha: 0.4)
-                      : Colors.transparent,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: AuraMotion.fast,
+                width: compact ? 46 : 52,
+                height: compact ? 46 : 52,
+                decoration: BoxDecoration(
+                  gradient: selected ? null : AuraGradients.accent,
+                  color: selected ? AuraSurface.accentSoft : null,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(
+                    color: selected
+                        ? AuraSurface.accent.withValues(alpha: 0.4)
+                        : Colors.transparent,
+                  ),
+                  boxShadow: selected ? [] : AuraShadows.glow,
                 ),
-                boxShadow: selected ? [] : AuraShadows.glow,
-              ),
-              child: Icon(
-                item.icon,
-                size: compact ? 20 : 22,
-                color: Colors.white,
+                child: Icon(
+                  item.icon,
+                  size: compact ? 20 : 22,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

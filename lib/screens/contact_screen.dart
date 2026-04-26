@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/net/dio_provider.dart';
+import '../core/ui/aura_platform_components.dart';
 import '../core/ui/document_scaffold.dart';
 
 enum ContactTopic {
@@ -252,9 +253,10 @@ class _ContactBodyState extends ConsumerState<_ContactBody> {
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          child: FilledButton(
+          child: AuraPrimaryButton(
+            label: _submitting ? 'Sending…' : 'Send message',
             onPressed: _submitting ? null : _submit,
-            child: Text(_submitting ? 'Sending…' : 'Send'),
+            icon: _submitting ? null : Icons.send_outlined,
           ),
         ),
       ],

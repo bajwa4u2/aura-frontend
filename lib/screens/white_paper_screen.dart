@@ -6,6 +6,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
@@ -99,16 +100,19 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
                     const SizedBox(height: AuraSpace.s10),
                     Doc.p('Unable to load the white paper right now.'),
                     const SizedBox(height: AuraSpace.s10),
-                    Row(
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s8,
                       children: [
-                        OutlinedButton(
+                        AuraSecondaryButton(
+                          label: 'Try again',
                           onPressed: _load,
-                          child: Text('Try again', style: AuraText.body),
+                          icon: Icons.refresh_rounded,
                         ),
-                        const SizedBox(width: AuraSpace.s10),
-                        OutlinedButton(
+                        AuraGhostButton(
+                          label: 'Download PDF',
                           onPressed: _openPdf,
-                          child: Text('Download PDF', style: AuraText.body),
+                          icon: Icons.download_outlined,
                         ),
                       ],
                     ),
@@ -117,16 +121,19 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s8,
                       children: [
-                        OutlinedButton(
+                        AuraGhostButton(
+                          label: 'Back to Mission',
                           onPressed: () => context.go('/mission'),
-                          child: Text('Back to Mission', style: AuraText.body),
+                          icon: Icons.arrow_back_rounded,
                         ),
-                        const SizedBox(width: AuraSpace.s10),
-                        OutlinedButton(
+                        AuraGhostButton(
+                          label: 'Download PDF',
                           onPressed: _openPdf,
-                          child: Text('Download PDF', style: AuraText.body),
+                          icon: Icons.download_outlined,
                         ),
                       ],
                     ),
