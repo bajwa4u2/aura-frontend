@@ -13,6 +13,7 @@ import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_design_system.dart';
 import '../features/realtime/presentation/incoming_live_overlay.dart';
+import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -31,12 +32,17 @@ class AppShell extends ConsumerWidget {
     if (isInstitutionShellPath(path)) {
       return InstitutionShell(child: child);
     }
-    if (isMemberShellPath(path) || (isAuthed && shouldUseMemberShellForAuthed(path))) {
+    if (isMemberShellPath(path) ||
+        (isAuthed && shouldUseMemberShellForAuthed(path))) {
       return MemberShell(child: child);
     }
     return PublicShell(child: child);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC SHELL
+// ─────────────────────────────────────────────────────────────────────────────
 
 class PublicShell extends StatelessWidget {
   const PublicShell({super.key, required this.child});
@@ -62,10 +68,7 @@ class PublicShell extends StatelessWidget {
             bottom: false,
             child: Column(
               children: [
-                _PublicHeader(
-                  isDesktop: isDesktop,
-                  isTablet: isTablet,
-                ),
+                _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
                 Expanded(child: child),
                 const _ShellFooter(),
               ],
@@ -77,66 +80,64 @@ class PublicShell extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMBER SHELL
+// ─────────────────────────────────────────────────────────────────────────────
+
 class MemberShell extends StatelessWidget {
   const MemberShell({super.key, required this.child});
 
   final Widget child;
 
-  static const List<_MemberNavItem> _items = [
-    _MemberNavItem(
+  static const List<_NavItem> _items = [
+    _NavItem(
       label: 'Works',
       icon: Icons.home_outlined,
-      selectedIcon: Icons.home,
+      selectedIcon: Icons.home_rounded,
       path: '/home',
     ),
-    _MemberNavItem(
-      label: 'Correspondence',
-      icon: Icons.mail_outline,
-      selectedIcon: Icons.mail,
+    _NavItem(
+      label: 'Messages',
+      icon: Icons.mail_outline_rounded,
+      selectedIcon: Icons.mail_rounded,
       path: '/me/correspondence',
     ),
-    _MemberNavItem(
+    _NavItem(
       label: 'Create',
-      icon: Icons.add_box_outlined,
-      selectedIcon: Icons.add_box,
+      icon: Icons.add_rounded,
+      selectedIcon: Icons.add_rounded,
       path: '/compose',
       isPrimary: true,
     ),
-    _MemberNavItem(
-      label: 'Conversations',
+    _NavItem(
+      label: 'Spaces',
       icon: Icons.forum_outlined,
-      selectedIcon: Icons.forum,
+      selectedIcon: Icons.forum_rounded,
       path: '/conversations',
     ),
-    _MemberNavItem(
-      label: 'Presence',
-      icon: Icons.person_outline,
-      selectedIcon: Icons.person,
+    _NavItem(
+      label: 'Me',
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
       path: '/me',
     ),
   ];
 
   static const double _maxContentWidth = 920;
-  static const double _headerHeight = 72;
-  static const double _logoHeight = 44;
+  static const double _headerHeight = 64;
+  static const double _logoHeight = 40;
   static const double _desktopBreakpoint = 1100;
   static const double _tabletBreakpoint = 760;
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
 
   int _indexForPath(String path) {
     if (path == '/home') return 0;
-
-    if (path == '/me/correspondence' ||
-        path.startsWith('/me/correspondence/')) {
+    if (path == '/me/correspondence' || path.startsWith('/me/correspondence/')) {
       return 1;
     }
-
     if (path == '/compose' || path == '/create') return 2;
-
     if (path == '/conversations') return 3;
-
     if (path == '/me' || path.startsWith('/me/')) return 4;
-
     return 0;
   }
 
@@ -176,10 +177,9 @@ class MemberShell extends StatelessWidget {
                         Expanded(
                           child: Column(
                             children: [
-                              Expanded(
-                                child: child,
-                              ),
-                              if (_showMemberFooter(path)) const _ShellFooter(),
+                              Expanded(child: child),
+                              if (_showMemberFooter(path))
+                                const _ShellFooter(),
                             ],
                           ),
                         ),
@@ -203,43 +203,48 @@ class MemberShell extends StatelessWidget {
   }
 }
 
-
 bool _showMemberFooter(String path) {
   if (path.startsWith('/realtime')) return false;
-  if (path == '/conversations' || path.startsWith('/conversations/')) return false;
+  if (path == '/conversations' || path.startsWith('/conversations/')) {
+    return false;
+  }
   if (path.startsWith('/me/correspondence/')) return false;
   if (path.startsWith('/spaces/') || path.startsWith('/space/')) return false;
   return true;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTION SHELL
+// ─────────────────────────────────────────────────────────────────────────────
 
 class InstitutionShell extends StatelessWidget {
   const InstitutionShell({super.key, required this.child});
 
   final Widget child;
 
-  static const List<_MemberNavItem> _items = [
-    _MemberNavItem(
+  static const List<_NavItem> _items = [
+    _NavItem(
       label: 'Dashboard',
       icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view,
+      selectedIcon: Icons.grid_view_rounded,
       path: '/institution/dashboard',
     ),
-    _MemberNavItem(
+    _NavItem(
       label: 'Announcements',
       icon: Icons.campaign_outlined,
-      selectedIcon: Icons.campaign,
+      selectedIcon: Icons.campaign_rounded,
       path: '/institution/announcements',
     ),
-    _MemberNavItem(
-      label: 'Correspondence',
-      icon: Icons.mail_outline,
-      selectedIcon: Icons.mail,
+    _NavItem(
+      label: 'Messages',
+      icon: Icons.mail_outline_rounded,
+      selectedIcon: Icons.mail_rounded,
       path: '/institution/correspondence',
     ),
-    _MemberNavItem(
+    _NavItem(
       label: 'Profile',
       icon: Icons.apartment_outlined,
-      selectedIcon: Icons.apartment,
+      selectedIcon: Icons.apartment_rounded,
       path: '/institution/profile',
     ),
   ];
@@ -310,18 +315,19 @@ class InstitutionShell extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HEADERS
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _PublicHeader extends StatelessWidget {
-  const _PublicHeader({
-    required this.isDesktop,
-    required this.isTablet,
-  });
+  const _PublicHeader({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = isDesktop
+    final hPad = isDesktop
         ? AuraSpace.s24
         : isTablet
             ? AuraSpace.s20
@@ -330,56 +336,38 @@ class _PublicHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: AuraGradients.header,
-        border: Border(
-          bottom: BorderSide(color: AuraSurface.divider),
-        ),
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: PublicShell.maxContentWidth + 160,
-          ),
+              maxWidth: PublicShell.maxContentWidth + 160),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              horizontalPadding,
-              AuraSpace.s12,
-              horizontalPadding,
-              AuraSpace.s12,
-            ),
+            padding: EdgeInsets.symmetric(
+                horizontal: hPad, vertical: AuraSpace.s12),
             child: Row(
               children: [
                 _AuraWordmark(onTap: () => context.go('/public')),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _HeaderTextLink(
-                          label: 'Explore',
-                          onTap: () => context.go('/search'),
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                        _HeaderTextLink(
-                          label: 'Institutions',
-                          onTap: () => context.go('/institutions'),
-                        ),
-                        const SizedBox(width: AuraSpace.s12),
-                        _PublicActionButton(
-                          label: 'Sign in',
-                          filled: false,
-                          onTap: () => context.go('/login'),
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                        _PublicActionButton(
-                          label: 'Join',
-                          filled: true,
-                          onTap: () => context.go('/register'),
-                        ),
-                      ],
-                    ),
-                  ),
+                const Spacer(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isTablet) ...[
+                      _NavTextLink(
+                        label: 'Explore',
+                        onTap: () => context.go('/search'),
+                      ),
+                      const SizedBox(width: AuraSpace.s4),
+                      _NavTextLink(
+                        label: 'Institutions',
+                        onTap: () => context.go('/institutions'),
+                      ),
+                      const SizedBox(width: AuraSpace.s12),
+                    ],
+                    _SignInButton(onTap: () => context.go('/login')),
+                    const SizedBox(width: AuraSpace.s8),
+                    _JoinButton(onTap: () => context.go('/register')),
+                  ],
                 ),
               ],
             ),
@@ -391,17 +379,14 @@ class _PublicHeader extends StatelessWidget {
 }
 
 class _MemberHeader extends StatelessWidget {
-  const _MemberHeader({
-    required this.isDesktop,
-    required this.isTablet,
-  });
+  const _MemberHeader({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = isDesktop
+    final hPad = isDesktop
         ? AuraSpace.s24
         : isTablet
             ? AuraSpace.s20
@@ -411,24 +396,17 @@ class _MemberHeader extends StatelessWidget {
       height: MemberShell._headerHeight,
       decoration: const BoxDecoration(
         gradient: AuraGradients.header,
-        border: Border(
-          bottom: BorderSide(color: AuraSurface.divider),
-        ),
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: MemberShell._maxContentWidth + 160),
+          constraints: const BoxConstraints(
+              maxWidth: MemberShell._maxContentWidth + 160),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: AuraSpace.s12,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: hPad),
             child: Row(
               children: [
-                _AuraWordmark(
-                  onTap: () => context.go('/home'),
-                ),
+                _AuraWordmark(onTap: () => context.go('/home')),
                 const Spacer(),
                 _HeaderTools(
                   isTablet: isTablet,
@@ -448,17 +426,14 @@ class _MemberHeader extends StatelessWidget {
 }
 
 class _InstitutionHeader extends StatelessWidget {
-  const _InstitutionHeader({
-    required this.isDesktop,
-    required this.isTablet,
-  });
+  const _InstitutionHeader({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = isDesktop
+    final hPad = isDesktop
         ? AuraSpace.s24
         : isTablet
             ? AuraSpace.s20
@@ -467,40 +442,38 @@ class _InstitutionHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: AuraGradients.header,
-        border: Border(
-          bottom: BorderSide(color: AuraSurface.divider),
-        ),
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: PublicShell.maxContentWidth + 160,
-          ),
+              maxWidth: PublicShell.maxContentWidth + 160),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-              horizontalPadding,
-              AuraSpace.s12,
-              horizontalPadding,
-              AuraSpace.s12,
-            ),
+                hPad, AuraSpace.s12, hPad, AuraSpace.s12),
             child: Row(
               children: [
                 _AuraWordmark(
                   onTap: () => context.go('/institution/dashboard'),
                 ),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
+                const SizedBox(width: AuraSpace.s10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s8, vertical: AuraSpace.s4),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.accentSoft,
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.25)),
+                  ),
                   child: Text(
-                    'Institution workspace',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    'Institution',
+                    style: AuraText.label.copyWith(
+                        color: AuraSurface.accentText,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
-                const SizedBox(width: AuraSpace.s12),
+                const Spacer(),
                 _HeaderTools(
                   isTablet: isTablet,
                   isDesktop: isDesktop,
@@ -517,6 +490,10 @@ class _InstitutionHeader extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// WORDMARK
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _AuraWordmark extends StatelessWidget {
   const _AuraWordmark({required this.onTap});
 
@@ -529,12 +506,10 @@ class _AuraWordmark extends StatelessWidget {
       label: 'Aura',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s4,
-            vertical: AuraSpace.s4,
-          ),
+              horizontal: AuraSpace.s4, vertical: AuraSpace.s4),
           child: SvgPicture.asset(
             MemberShell._logoAsset,
             height: MemberShell._logoHeight,
@@ -545,6 +520,10 @@ class _AuraWordmark extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HEADER TOOLS (ICON STRIP)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _HeaderTools extends ConsumerStatefulWidget {
   const _HeaderTools({
@@ -589,7 +568,6 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
 
   Future<void> _logout() async {
     if (_busyLogout) return;
-
     setState(() => _busyLogout = true);
 
     final container = ProviderScope.containerOf(context, listen: false);
@@ -597,9 +575,7 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
 
     try {
       await dio.post('/auth/logout');
-    } catch (_) {
-      // Local logout should still complete even if server logout fails.
-    }
+    } catch (_) {}
 
     try {
       await container.read(tokenStoreProvider).clear();
@@ -607,116 +583,66 @@ class _HeaderToolsState extends ConsumerState<_HeaderTools> {
       container.invalidate(authStatusProvider);
       container.invalidate(isAuthedProvider);
     } finally {
-      if (mounted) {
-        context.go('/public');
-      }
-      if (mounted) {
-        setState(() => _busyLogout = false);
-      }
+      if (mounted) context.go('/public');
+      if (mounted) setState(() => _busyLogout = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(notificationsUnreadCountProvider);
+    const gap = SizedBox(width: AuraSpace.s6);
 
-    if (widget.isDesktop) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _HeaderPillButton(
-            tooltip: 'Search',
-            icon: Icons.search,
-            label: 'Search',
-            onTap: () => context.push(widget.searchPath),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _HeaderActivityPillButton(
-            tooltip: 'Activity',
-            icon: Icons.notifications_none,
-            label: 'Activity',
-            unreadCount: unreadCount,
-            onTap: () => context.push(widget.activityPath),
-          ),
-          if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
-            const SizedBox(width: AuraSpace.s8),
-            _HeaderPillButton(
-              tooltip: 'Live Rooms',
-              icon: Icons.videocam_outlined,
-              label: 'Live Rooms',
-              onTap: () => context.push(widget.liveRoomsPath!),
-            ),
-          ],
-          const SizedBox(width: AuraSpace.s8),
-          _HeaderPillButton(
-            tooltip: 'Invite',
-            icon: Icons.outbound_outlined,
-            label: 'Invite',
-            onTap: () => context.push(widget.invitePath),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _HeaderAccountButton(
-            compact: false,
-            busy: _busyLogout,
-            onSelected: (value) => unawaited(_handleAccountAction(value)),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _HeaderIconButton(
-          tooltip: 'Search',
-          icon: Icons.search,
-          onTap: () => context.push(widget.searchPath),
+    final tools = <Widget>[
+      _HeaderIconBtn(
+        icon: Icons.search_rounded,
+        tooltip: 'Search',
+        onTap: () => context.push(widget.searchPath),
+      ),
+      gap,
+      _HeaderActivityBtn(
+        unreadCount: unreadCount,
+        onTap: () => context.push(widget.activityPath),
+      ),
+      if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
+        gap,
+        _HeaderIconBtn(
+          icon: Icons.videocam_outlined,
+          tooltip: 'Live rooms',
+          onTap: () => context.push(widget.liveRoomsPath!),
         ),
-        const SizedBox(width: AuraSpace.s8),
-        _HeaderActivityIconButton(
-          tooltip: 'Activity',
-          icon: Icons.notifications_none,
-          unreadCount: unreadCount,
-          onTap: () => context.push(widget.activityPath),
-        ),
-        if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
-          const SizedBox(width: AuraSpace.s8),
-          _HeaderIconButton(
-            tooltip: 'Live Rooms',
-            icon: Icons.videocam_outlined,
-            onTap: () => context.push(widget.liveRoomsPath!),
-          ),
-        ],
-        const SizedBox(width: AuraSpace.s8),
-        _HeaderIconButton(
-          tooltip: 'Invite',
-          icon: Icons.outbound_outlined,
-          onTap: () => context.push(widget.invitePath),
-        ),
-        const SizedBox(width: AuraSpace.s8),
-        _HeaderAccountButton(
-          compact: true,
-          busy: _busyLogout,
-          onSelected: (value) => unawaited(_handleAccountAction(value)),
-        ),
-        if (widget.isTablet) const SizedBox(width: AuraSpace.s4),
       ],
-    );
+      gap,
+      _HeaderIconBtn(
+        icon: Icons.outbound_outlined,
+        tooltip: 'Invite',
+        onTap: () => context.push(widget.invitePath),
+      ),
+      gap,
+      _HeaderAccountBtn(
+        busy: _busyLogout,
+        onSelected: (v) => unawaited(_handleAccountAction(v)),
+      ),
+    ];
+
+    if (widget.isTablet) tools.add(const SizedBox(width: AuraSpace.s4));
+    return Row(mainAxisSize: MainAxisSize.min, children: tools);
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HEADER BUTTON ATOMS
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _HeaderActivityIconButton extends StatelessWidget {
-  const _HeaderActivityIconButton({
-    required this.tooltip,
+class _HeaderIconBtn extends StatelessWidget {
+  const _HeaderIconBtn({
     required this.icon,
-    required this.unreadCount,
+    required this.tooltip,
     required this.onTap,
   });
 
-  final String tooltip;
   final IconData icon;
-  final int unreadCount;
+  final String tooltip;
   final VoidCallback onTap;
 
   @override
@@ -725,131 +651,86 @@ class _HeaderActivityIconButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(999),
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(color: AuraSurface.divider),
           ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Center(
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: AuraSurface.muted,
-                ),
-              ),
-              if (unreadCount > 0)
-                Positioned(
-                  right: 1,
-                  top: 1,
-                  child: _UnreadBadge(count: unreadCount),
-                ),
-            ],
-          ),
+          child: Icon(icon, size: 18, color: AuraSurface.muted),
         ),
       ),
     );
   }
 }
 
-class _HeaderActivityPillButton extends StatelessWidget {
-  const _HeaderActivityPillButton({
-    required this.tooltip,
-    required this.icon,
-    required this.label,
+class _HeaderActivityBtn extends StatelessWidget {
+  const _HeaderActivityBtn({
     required this.unreadCount,
     required this.onTap,
   });
 
-  final String tooltip;
-  final IconData icon;
-  final String label;
   final int unreadCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: tooltip,
+      message: 'Activity',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: AuraSurface.muted,
-                  ),
-                  if (unreadCount > 0)
-                    const Positioned(
-                      right: -6,
-                      top: -5,
-                      child: SizedBox.shrink(),
-                    ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: -8,
-                      top: -7,
-                      child: _UnreadBadge(count: unreadCount),
-                    ),
-                ],
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AuraSurface.subtle,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(color: AuraSurface.divider),
               ),
-              const SizedBox(width: AuraSpace.s8),
-              Text(
-                label,
-                style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AuraSurface.muted,
-                ),
+              child: const Icon(Icons.notifications_none_rounded,
+                  size: 18, color: AuraSurface.muted),
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: _UnreadDot(count: unreadCount),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.count});
+class _UnreadDot extends StatelessWidget {
+  const _UnreadDot({required this.count});
 
   final int count;
 
   @override
   Widget build(BuildContext context) {
-    final text = count > 99 ? '99+' : '$count';
+    final label = count > 99 ? '99+' : '$count';
     return Container(
-      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        color: AuraSurface.ink,
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.accent,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.page, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
-        text,
-        style: AuraText.small.copyWith(
-          color: AuraSurface.page,
+        label,
+        style: AuraText.micro.copyWith(
+          color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.w800,
         ),
@@ -858,14 +739,9 @@ class _UnreadBadge extends StatelessWidget {
   }
 }
 
-class _HeaderAccountButton extends StatelessWidget {
-  const _HeaderAccountButton({
-    required this.compact,
-    required this.busy,
-    required this.onSelected,
-  });
+class _HeaderAccountBtn extends StatelessWidget {
+  const _HeaderAccountBtn({required this.busy, required this.onSelected});
 
-  final bool compact;
   final bool busy;
   final ValueChanged<String> onSelected;
 
@@ -877,300 +753,76 @@ class _HeaderAccountButton extends StatelessWidget {
         tooltip: 'Account',
         onSelected: onSelected,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AuraRadius.r16),
           side: const BorderSide(color: AuraSurface.divider),
         ),
-        color: AuraSurface.card,
+        color: AuraSurface.overlay,
         itemBuilder: (context) => [
-          const PopupMenuItem<String>(
-            value: 'profile',
-            child: _AccountMenuItemRow(
-              icon: Icons.person_outline,
-              label: 'Profile',
-            ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'edit_profile',
-            child: _AccountMenuItemRow(
-              icon: Icons.edit_outlined,
-              label: 'Edit profile',
-            ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'security',
-            child: _AccountMenuItemRow(
-              icon: Icons.shield_outlined,
-              label: 'Security',
-            ),
-          ),
+          _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
+          _menuItem('edit_profile', Icons.edit_outlined, 'Edit profile'),
+          _menuItem('security', Icons.shield_outlined, 'Security'),
           const PopupMenuDivider(),
-          PopupMenuItem<String>(
-            value: 'logout',
-            child: _AccountMenuItemRow(
-              icon: busy ? Icons.hourglass_empty : Icons.logout,
-              label: busy ? 'Signing out…' : 'Sign out',
-              danger: true,
-            ),
+          _menuItem('logout',
+              busy ? Icons.hourglass_empty : Icons.logout_rounded,
+              busy ? 'Signing out…' : 'Sign out',
+              danger: true),
+        ],
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: busy
+              ? const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+                )
+              : const Icon(Icons.person_outline_rounded,
+                  size: 18, color: AuraSurface.muted),
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label, {
+    bool danger = false,
+  }) {
+    final color = danger ? AuraSurface.dangerInk : AuraSurface.ink;
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: AuraSpace.s10),
+          Text(
+            label,
+            style: AuraText.small.copyWith(
+                color: color, fontWeight: FontWeight.w600),
           ),
         ],
-        child: compact
-            ? _HeaderIconButtonVisual(
-                tooltip: 'Account',
-                icon: busy ? null : Icons.person_outline,
-                progress: busy,
-              )
-            : _HeaderPillButtonVisual(
-                tooltip: 'Account',
-                icon: busy ? null : Icons.person_outline,
-                label: busy ? 'Signing out…' : 'Account',
-                progress: busy,
-              ),
       ),
     );
   }
 }
 
-class _AccountMenuItemRow extends StatelessWidget {
-  const _AccountMenuItemRow({
-    required this.icon,
-    required this.label,
-    this.danger = false,
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC HEADER BUTTON ATOMS
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final IconData icon;
-  final String label;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = danger ? Colors.redAccent : AuraSurface.ink;
-
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: AuraSpace.s12),
-        Text(
-          label,
-          style: AuraText.small.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: _HeaderIconButtonVisual(
-          tooltip: tooltip,
-          icon: icon,
-          progress: false,
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderIconButtonVisual extends StatelessWidget {
-  const _HeaderIconButtonVisual({
-    required this.tooltip,
-    required this.icon,
-    required this.progress,
-  });
-
-  final String tooltip;
-  final IconData? icon;
-  final bool progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AuraSurface.card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Center(
-          child: progress
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  icon,
-                  size: 20,
-                  color: AuraSurface.muted,
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderPillButton extends StatelessWidget {
-  const _HeaderPillButton({
-    required this.tooltip,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: _HeaderPillButtonVisual(
-          tooltip: tooltip,
-          icon: icon,
-          label: label,
-          progress: false,
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderPillButtonVisual extends StatelessWidget {
-  const _HeaderPillButtonVisual({
-    required this.tooltip,
-    required this.icon,
-    required this.label,
-    required this.progress,
-  });
-
-  final String tooltip;
-  final IconData? icon;
-  final String label;
-  final bool progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-        ),
-        decoration: BoxDecoration(
-          color: AuraSurface.card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (progress)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Icon(
-                icon,
-                size: 18,
-                color: AuraSurface.muted,
-              ),
-            const SizedBox(width: AuraSpace.s8),
-            Text(
-              label,
-              style: AuraText.small.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AuraSurface.muted,
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s6),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 18,
-              color: AuraSurface.muted,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PublicActionButton extends StatelessWidget {
-  const _PublicActionButton({
-    required this.label,
-    required this.filled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final background = filled ? AuraSurface.ink : Colors.transparent;
-    final foreground = filled ? AuraSurface.page : AuraSurface.ink;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-        ),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AuraText.small.copyWith(
-            color: foreground,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderTextLink extends StatelessWidget {
-  const _HeaderTextLink({
-    required this.label,
-    required this.onTap,
-  });
+class _NavTextLink extends StatelessWidget {
+  const _NavTextLink({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -1180,22 +832,77 @@ class _HeaderTextLink extends StatelessWidget {
     return TextButton(
       onPressed: onTap,
       style: TextButton.styleFrom(
-        foregroundColor: AuraSurface.ink,
+        foregroundColor: AuraSurface.muted,
         padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s8,
-          vertical: AuraSpace.s8,
-        ),
+            horizontal: AuraSpace.s10, vertical: AuraSpace.s8),
       ),
       child: Text(
         label,
-        style: AuraText.small.copyWith(
-          color: AuraSurface.ink,
-          fontWeight: FontWeight.w600,
+        style:
+            AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _SignInButton extends StatelessWidget {
+  const _SignInButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12, vertical: AuraSpace.s8),
+        child: Text(
+          'Sign in',
+          style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600, color: AuraSurface.muted),
         ),
       ),
     );
   }
 }
+
+class _JoinButton extends StatelessWidget {
+  const _JoinButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: AuraGradients.accent,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s14, vertical: AuraSpace.s8),
+            child: Text(
+              'Join',
+              style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w700, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDE NAV
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MemberSideNav extends StatelessWidget {
   const _MemberSideNav({
@@ -1204,40 +911,33 @@ class _MemberSideNav extends StatelessWidget {
     required this.currentPath,
   });
 
-  final List<_MemberNavItem> items;
+  final List<_NavItem> items;
   final int selectedIndex;
   final String currentPath;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 248,
+      width: 240,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF12161E), Color(0xFF0E1116)],
-        ),
-        border: Border(
-          right: BorderSide(color: AuraSurface.divider),
-        ),
+        gradient: AuraGradients.sideNav,
+        border: Border(right: BorderSide(color: AuraSurface.divider)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s16),
+        padding: const EdgeInsets.fromLTRB(
+            AuraSpace.s12, AuraSpace.s16, AuraSpace.s12, AuraSpace.s20),
         child: Column(
           children: [
             for (var i = 0; i < items.length; i++) ...[
-              _MemberRailButton(
+              _SideNavTile(
                 item: items[i],
                 selected: i == selectedIndex,
                 onTap: () {
                   final target = items[i].path;
-                  if (target != currentPath) {
-                    context.go(target);
-                  }
+                  if (target != currentPath) context.go(target);
                 },
               ),
-              if (i != items.length - 1) const SizedBox(height: AuraSpace.s8),
+              if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
             ],
             const Spacer(),
           ],
@@ -1247,68 +947,202 @@ class _MemberSideNav extends StatelessWidget {
   }
 }
 
-class _MemberRailButton extends StatelessWidget {
-  const _MemberRailButton({
+class _SideNavTile extends StatelessWidget {
+  const _SideNavTile({
     required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final _MemberNavItem item;
+  final _NavItem item;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final iconData = selected ? item.selectedIcon : item.icon;
-    final foreground = selected ? AuraSurface.ink : AuraSurface.muted;
-    final background = selected ? AuraSurface.accentSoft : Colors.transparent;
+    final fgColor = selected ? AuraSurface.ink : AuraSurface.muted;
+
+    return Semantics(
+      button: true,
+      label: item.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.r14),
+          child: AnimatedContainer(
+            duration: AuraMotion.fast,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
+            decoration: BoxDecoration(
+              color: selected ? AuraSurface.accentSoft : Colors.transparent,
+              borderRadius: BorderRadius.circular(AuraRadius.r14),
+              border: Border.all(
+                color: selected
+                    ? AuraSurface.accent.withValues(alpha: 0.25)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(iconData, size: AuraIconSize.md, color: fgColor),
+                const SizedBox(width: AuraSpace.s10),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                      color: fgColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOTTOM NAV
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MemberBottomNav extends StatelessWidget {
+  const _MemberBottomNav({
+    required this.items,
+    required this.selectedIndex,
+    required this.currentPath,
+    required this.compact,
+  });
+
+  final List<_NavItem> items;
+  final int selectedIndex;
+  final String currentPath;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AuraGradients.bottomNav,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? AuraSpace.s4 : AuraSpace.s8,
+            vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: _BottomNavButton(
+                    item: items[i],
+                    selected: i == selectedIndex,
+                    compact: compact,
+                    onTap: () {
+                      final target = items[i].path;
+                      if (target != currentPath) context.go(target);
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavButton extends StatelessWidget {
+  const _BottomNavButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    required this.compact,
+  });
+
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (item.isPrimary) {
+      return Center(
+        child: Semantics(
+          button: true,
+          label: item.label,
+          child: GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: AuraMotion.fast,
+              width: compact ? 46 : 52,
+              height: compact ? 46 : 52,
+              decoration: BoxDecoration(
+                gradient: selected ? null : AuraGradients.accent,
+                color: selected ? AuraSurface.accentSoft : null,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(
+                  color: selected
+                      ? AuraSurface.accent.withValues(alpha: 0.4)
+                      : Colors.transparent,
+                ),
+                boxShadow: selected ? [] : AuraShadows.glow,
+              ),
+              child: Icon(
+                item.icon,
+                size: compact ? 20 : 22,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final iconColor = selected ? AuraSurface.ink : AuraSurface.faint;
+    final textColor = selected ? AuraSurface.accentText : AuraSurface.faint;
 
     return Semantics(
       button: true,
       label: item.label,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s12,
+        borderRadius: BorderRadius.circular(AuraRadius.r12),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: compact ? AuraSpace.s4 : AuraSpace.s6,
+            horizontal: AuraSpace.s4,
           ),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? AuraSurface.divider : Colors.transparent,
-            ),
-          ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: selected ? AuraSurface.page : AuraSurface.card,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-                child: Icon(
-                  iconData,
-                  size: 20,
-                  color: foreground,
-                ),
+              Icon(
+                selected ? item.selectedIcon : item.icon,
+                size: compact ? 20 : 22,
+                color: iconColor,
               ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                    color: foreground,
-                  ),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AuraText.micro.copyWith(
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                  color: textColor,
                 ),
               ),
             ],
@@ -1319,63 +1153,83 @@ class _MemberRailButton extends StatelessWidget {
   }
 }
 
-class _MemberBottomNav extends StatelessWidget {
-  const _MemberBottomNav({
-    required this.items,
-    required this.selectedIndex,
-    required this.currentPath,
-    required this.compact,
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// FOOTER
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final List<_MemberNavItem> items;
-  final int selectedIndex;
-  final String currentPath;
-  final bool compact;
+class _ShellFooter extends StatelessWidget {
+  const _ShellFooter();
+
+  static const _links = [
+    _Link('Mission', '/mission'),
+    _Link('Institutions', '/institutions'),
+    _Link('Investors', '/investors'),
+    _Link('Patrons', '/patrons'),
+    _Link('Supporters', '/supporters'),
+    _Link('Contact', '/contact'),
+    _Link('Privacy', '/privacy'),
+    _Link('Terms', '/terms'),
+    _Link('White Paper', '/white-paper'),
+    _Link('Founder', '/founder'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A1E24), Color(0xFF151922)],
-        ),
-        border: Border(
-          top: BorderSide(color: AuraSurface.divider),
-        ),
+        gradient: AuraGradients.footer,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? AuraSpace.s4 : AuraSpace.s8,
-        vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            for (var i = 0; i < items.length; i++)
-              Expanded(
-                child: _MemberNavButton(
-                  item: items[i],
-                  selected: i == selectedIndex,
-                  compact: compact,
-                  onTap: () {
-                    final target = items[i].path;
-                    if (target != currentPath) {
-                      context.go(target);
-                    }
-                  },
-                ),
-              ),
-          ],
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+              maxWidth: PublicShell.maxContentWidth + 160),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s14, AuraSpace.s16, AuraSpace.s14),
+            child: Wrap(
+              spacing: AuraSpace.s2,
+              runSpacing: AuraSpace.s4,
+              children: _links.map((l) => _FooterBtn(link: l)).toList(),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _MemberNavItem {
-  const _MemberNavItem({
+class _FooterBtn extends StatelessWidget {
+  const _FooterBtn({required this.link});
+
+  final _Link link;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () => context.go(link.path),
+      style: TextButton.styleFrom(
+        foregroundColor: AuraSurface.faint,
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s6, vertical: AuraSpace.s4),
+      ),
+      child: Text(
+        link.label,
+        style: AuraText.micro.copyWith(fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA CLASSES
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _NavItem {
+  const _NavItem({
     required this.label,
     required this.icon,
     required this.selectedIcon,
@@ -1390,202 +1244,8 @@ class _MemberNavItem {
   final bool isPrimary;
 }
 
-class _MemberNavButton extends StatelessWidget {
-  const _MemberNavButton({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-    required this.compact,
-  });
-
-  final _MemberNavItem item;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = selected ? AuraSurface.ink : AuraSurface.muted;
-    final textColor = selected ? AuraSurface.ink : AuraSurface.muted;
-    final iconData = selected ? item.selectedIcon : item.icon;
-
-    if (item.isPrimary) {
-      return Center(
-        child: Semantics(
-          button: true,
-          label: item.label,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(999),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: compact ? AuraSpace.s4 / 2 : AuraSpace.s4,
-                horizontal: AuraSpace.s4,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: compact ? 42 : 46,
-                    height: compact ? 42 : 46,
-                    decoration: BoxDecoration(
-                      color: selected ? AuraSurface.accentSoft : AuraSurface.page,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: AuraSurface.divider),
-                    ),
-                    child: Icon(
-                      iconData,
-                      size: compact ? 20 : 22,
-                      color: iconColor,
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s4),
-                  Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AuraText.small.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Semantics(
-      button: true,
-      label: item.label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: compact ? AuraSpace.s4 : AuraSpace.s6,
-            horizontal: AuraSpace.s4,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                iconData,
-                size: compact ? 20 : 22,
-                color: iconColor,
-              ),
-              const SizedBox(height: AuraSpace.s4),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ShellFooter extends StatelessWidget {
-  const _ShellFooter();
-
-  static const List<_FooterLink> _links = [
-    _FooterLink(label: 'Mission', path: '/mission'),
-    _FooterLink(label: 'Institutions', path: '/institutions'),
-    _FooterLink(label: 'Investors', path: '/investors'),
-    _FooterLink(label: 'Patrons', path: '/patrons'),
-    _FooterLink(label: 'Supporters', path: '/supporters'),
-    _FooterLink(label: 'Contact', path: '/contact'),
-    _FooterLink(label: 'Privacy', path: '/privacy'),
-    _FooterLink(label: 'Terms', path: '/terms'),
-    _FooterLink(label: 'White Paper', path: '/white-paper'),
-    _FooterLink(label: 'Founder', path: '/founder'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF0F1218), Color(0xFF0B0D12)],
-        ),
-        border: Border(
-          top: BorderSide(color: AuraSurface.divider),
-        ),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: PublicShell.maxContentWidth + 160,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s16,
-            ),
-            child: Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                for (final link in _links)
-                  _FooterButton(link: link),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FooterButton extends StatelessWidget {
-  const _FooterButton({required this.link});
-
-  final _FooterLink link;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () => context.go(link.path),
-      style: TextButton.styleFrom(
-        foregroundColor: AuraSurface.muted,
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s4,
-          vertical: AuraSpace.s4,
-        ),
-      ),
-      child: Text(
-        link.label,
-        style: AuraText.small.copyWith(
-          color: AuraSurface.muted,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
-class _FooterLink {
-  const _FooterLink({
-    required this.label,
-    required this.path,
-  });
+class _Link {
+  const _Link(this.label, this.path);
 
   final String label;
   final String path;

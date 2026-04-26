@@ -1,52 +1,60 @@
 import 'package:flutter/material.dart';
 
 /// Centralized surface + stroke tokens for Aura.
-/// Keep this file boring and stable.
-/// Everything UI should reference these instead of hard-coded colors.
+/// Deep navy direction — premium, institutional, trust-forward.
 class AuraSurface {
   AuraSurface._();
 
-  /// Deep graphite page background (dark-first cinematic base)
-  static const Color page = Color(0xFF121418);
+  /// Deep navy canvas — the base of every surface.
+  static const Color page = Color(0xFF0D1520);
 
-  /// Primary panel surface (default card surface)
-  static const Color card = Color(0xFF1A1E24);
+  /// Inset surface — for nested well areas, sidebar backgrounds, text fields.
+  static const Color subtle = Color(0xFF111D2E);
 
-  /// Slightly elevated surface (dialogs / overlays / pop surfaces)
-  static const Color elevated = Color(0xFF222833);
+  /// Primary panel surface — default card background.
+  static const Color card = Color(0xFF152438);
 
-  /// Main text color (luminous but not pure white)
-  static const Color ink = Color(0xFFE8EAED);
+  /// Elevated surface — dialogs, overlays, popups.
+  static const Color elevated = Color(0xFF1B2E44);
 
-  /// Muted text color (still readable on dark)
-  static const Color muted = Color(0xFF9AA3AF);
+  /// Heavy overlay — bottom sheets, side drawers.
+  static const Color overlay = Color(0xFF203454);
 
-  /// Subtle divider / hairline separator
-  /// Very soft light edge, not heavy border
-  static const Color divider = Color(0x1FFFFFFF);
+  /// Primary text — luminous cool white.
+  static const Color ink = Color(0xFFE2ECF5);
 
-  /// Alias kept so older widgets don’t break.
-  /// Prefer using `divider` going forward.
+  /// Muted text — readable secondary on navy.
+  static const Color muted = Color(0xFF7A96B5);
+
+  /// Faint text — placeholder, disabled, tertiary.
+  static const Color faint = Color(0xFF4B6882);
+
+  /// Hairline divider — barely-there separator.
+  static const Color divider = Color(0x14FFFFFF);
+
+  /// Alias kept for backward compatibility.
   static const Color cardBorder = divider;
 
-  /// Signature accent (indigo, controlled usage)
+  /// Signature indigo accent.
   static const Color accent = Color(0xFF5B6CFF);
 
-  /// Soft accent glow (hover / active states)
+  /// Soft accent — glow / active / hover backgrounds.
   static const Color accentSoft = Color(0x335B6CFF);
 
-  // --- Semantic status surfaces (for badges, callouts, quiet system feedback) ---
-  // These are intentionally low-chroma so Aura stays “quiet” and institutional.
+  /// Accent text — lighter indigo for text on dark navy.
+  static const Color accentText = Color(0xFF8B9EFF);
 
-  static const Color goodBg = Color(0xFF14251B);
-  static const Color goodInk = Color(0xFF9FE3B7);
+  // ── Semantic status surfaces ────────────────────────────────────────────────
 
-  static const Color warnBg = Color(0xFF2A2214);
-  static const Color warnInk = Color(0xFFF2D08A);
+  static const Color goodBg = Color(0xFF0E2318);
+  static const Color goodInk = Color(0xFF5FD99A);
 
-  static const Color dangerBg = Color(0xFF2A1717);
-  static const Color dangerInk = Color(0xFFF0A3A3);
+  static const Color warnBg = Color(0xFF221B0E);
+  static const Color warnInk = Color(0xFFEDC264);
 
-  static const Color infoBg = Color(0xFF16212B);
-  static const Color infoInk = Color(0xFF9BC7F0);
+  static const Color dangerBg = Color(0xFF231010);
+  static const Color dangerInk = Color(0xFFF07878);
+
+  static const Color infoBg = Color(0xFF0F1E2E);
+  static const Color infoInk = Color(0xFF6BAEED);
 }

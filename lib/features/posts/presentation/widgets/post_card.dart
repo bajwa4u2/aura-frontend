@@ -9,6 +9,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_platform_components.dart';
+import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
@@ -1543,9 +1545,10 @@ class _IdentityHeader extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Avatar(
+                  AuraAvatar(
+                    name: displayName,
                     imageUrl: avatarUrl,
-                    radius: compact ? 18 : 20,
+                    size: compact ? 36.0 : 40.0,
                   ),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
@@ -1600,20 +1603,22 @@ class _IdentityHeader extends StatelessWidget {
             ),
           ),
         ),
-        PopupMenuButton<String>(
-          tooltip: 'More',
-          onSelected: (_) => onMenuTap(),
-          itemBuilder: (context) => const [
-            PopupMenuItem<String>(
-              value: 'open',
-              child: Text('Options'),
-            ),
-          ],
+        GestureDetector(
+          onTap: onMenuTap,
           child: Container(
             width: 36,
             height: 36,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(color: AuraSurface.divider),
+            ),
             alignment: Alignment.center,
-            child: const Icon(Icons.more_horiz, size: 20),
+            child: const Icon(
+              Icons.more_horiz,
+              size: 18,
+              color: AuraSurface.muted,
+            ),
           ),
         ),
       ],
@@ -2303,47 +2308,6 @@ class _VideoFallback extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({
-    required this.imageUrl,
-    required this.radius,
-  });
-
-  final String? imageUrl;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageUrl == null || imageUrl!.trim().isEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: AuraSurface.elevated,
-        child: const Icon(Icons.person, size: 18),
-      );
-    }
-
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: AuraSurface.elevated,
-      child: ClipOval(
-        child: Image.network(
-          imageUrl!,
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => SizedBox(
-            width: radius * 2,
-            height: radius * 2,
-            child: const Center(
-              child: Icon(Icons.person, size: 18),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _VisibilityMeta extends StatelessWidget {
   const _VisibilityMeta({
     required this.icon,
@@ -2536,77 +2500,39 @@ class _ActionRow extends ConsumerWidget {
       );
     }
 
-    Widget pill({
-      required IconData icon,
-      required String label,
-      required VoidCallback onTap,
-      bool active = false,
-    }) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12,
-            vertical: AuraSpace.s8,
-          ),
-          decoration: BoxDecoration(
-            color: AuraSurface.elevated,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: active ? AuraSurface.ink : AuraSurface.muted,
-              ),
-              const SizedBox(width: AuraSpace.s6),
-              Text(
-                label,
-                style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
       children: [
-        pill(
+        AuraActionPill(
           icon: Icons.reply_outlined,
           label: 'Respond',
           onTap: () => context.push('/compose?replyTo=$postId&surface=dm'),
         ),
-        pill(
+        AuraActionPill(
           icon: Icons.repeat,
           label: 'Repost',
           onTap: repost,
         ),
         saved.when(
-          data: (v) => pill(
+          data: (v) => AuraActionPill(
             icon: v ? Icons.bookmark : Icons.bookmark_border,
             label: v ? 'Saved' : 'Save',
             onTap: toggleSave,
             active: v,
           ),
-          loading: () => pill(
+          loading: () => AuraActionPill(
             icon: Icons.bookmark_border,
             label: 'Save',
             onTap: toggleSave,
           ),
-          error: (_, __) => pill(
+          error: (_, __) => AuraActionPill(
             icon: Icons.bookmark_border,
             label: 'Save',
             onTap: toggleSave,
           ),
         ),
-        pill(
+        AuraActionPill(
           icon: Icons.share_outlined,
           label: 'Share',
           onTap: share,

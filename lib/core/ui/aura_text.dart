@@ -2,26 +2,50 @@ import 'package:flutter/material.dart';
 
 import 'aura_surface.dart';
 
-/// Aura typography tokens.
-/// Keep this file dependency-light: only tokens, no widgets.
+/// Aura typography tokens — full scale from display to micro.
 class AuraText {
   AuraText._();
 
-  // Page / section titles
-  // Stronger authority, slightly larger presence
+  /// Display — hero moments, landing page headlines only.
+  static const TextStyle display = TextStyle(
+    fontSize: 40,
+    height: 1.08,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+    color: AuraSurface.ink,
+  );
+
+  /// Headline — section heroes, profile names, large card titles.
+  static const TextStyle headline = TextStyle(
+    fontSize: 28,
+    height: 1.15,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.2,
+    color: AuraSurface.ink,
+  );
+
+  /// Title — page/section titles (unchanged from original).
   static const TextStyle title = TextStyle(
     fontSize: 20,
     height: 1.25,
     fontWeight: FontWeight.w700,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
     color: AuraSurface.ink,
   );
 
-  // Back-compat heading alias used by some screens
+  /// Back-compat alias.
   static TextStyle get h1 => title;
 
-  // Primary body text
-  // Increased line height for immersive reading
+  /// Subtitle — card titles, list section labels, secondary headings.
+  static const TextStyle subtitle = TextStyle(
+    fontSize: 17,
+    height: 1.3,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
+    color: AuraSurface.ink,
+  );
+
+  /// Body — primary reading text.
   static const TextStyle body = TextStyle(
     fontSize: 15,
     height: 1.6,
@@ -30,8 +54,7 @@ class AuraText {
     color: AuraSurface.ink,
   );
 
-  // Secondary / muted body text
-  // Still readable on dark background
+  /// Muted — secondary body text.
   static const TextStyle muted = TextStyle(
     fontSize: 14,
     height: 1.55,
@@ -40,7 +63,7 @@ class AuraText {
     color: AuraSurface.muted,
   );
 
-  // Small helper text
+  /// Small — captions, meta lines, timestamps.
   static const TextStyle small = TextStyle(
     fontSize: 13,
     height: 1.45,
@@ -49,12 +72,30 @@ class AuraText {
     color: AuraSurface.muted,
   );
 
-  // Emphasized inline text (use sparingly)
+  /// Emphasis — inline strong text used sparingly.
   static const TextStyle emphasis = TextStyle(
     fontSize: 15,
     height: 1.6,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.15,
     color: AuraSurface.ink,
+  );
+
+  /// Label — chip text, badge labels, eyebrow text, nav labels.
+  static const TextStyle label = TextStyle(
+    fontSize: 12,
+    height: 1.3,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.3,
+    color: AuraSurface.muted,
+  );
+
+  /// Micro — timestamps, legal, very small metadata.
+  static const TextStyle micro = TextStyle(
+    fontSize: 11,
+    height: 1.2,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.4,
+    color: AuraSurface.faint,
   );
 }

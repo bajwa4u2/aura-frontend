@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/aura_text_block.dart';
 import '../../feed/domain/post.dart';
 import '../../feed/providers.dart';
 
@@ -26,152 +26,27 @@ class PublicHomeScreen extends ConsumerWidget {
     final worksAsync = ref.watch(feedProvider);
 
     return AuraScaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1160),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              const AuraGradientHeader(
-                title: 'Aura Public Work',
-                subtitle:
-                    'A premium public surface for writing, publishing, and institutional trust signals.',
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= 980;
-                  return isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _PublicWorksHeader(context)),
-                            const SizedBox(width: AuraSpace.s16),
-                            Expanded(
-                              child: _PublicCalloutColumn(
-                                onSearch: () => context.go('/search'),
-                                onInstitutions: () => context.go('/institutions'),
-                                onJoin: () => context.go('/register'),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _PublicWorksHeader(context),
-                            const SizedBox(height: AuraSpace.s16),
-                            _PublicCalloutColumn(
-                              onSearch: () => context.go('/search'),
-                              onInstitutions: () => context.go('/institutions'),
-                              onJoin: () => context.go('/register'),
-                            ),
-                          ],
-                        );
-                },
-              ),
-              const SizedBox(height: AuraSpace.s18),
-              const AuraSectionHeader(
-                title: 'Public work',
-                subtitle: 'Recent writing and creations from the network.',
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              worksAsync.when(
-                data: (posts) {
-                  if (posts.isEmpty) {
-                    return const AuraEmptyState(
-                      title: 'No public work yet',
-                      body:
-                          'When people publish, their work will appear here with context and provenance.',
-                      icon: Icons.public_outlined,
-                    );
-                  }
-
-                  final show = posts.take(6).toList();
-
-                  return Column(
-                    children: [
-                      for (final p in show) ...[
-                        _PublicWorkPreview(post: p),
-                        const SizedBox(height: AuraSpace.s10),
-                      ],
-                      const SizedBox(height: AuraSpace.s6),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: AuraSecondaryButton(
-                          label: 'Explore more',
-                          onPressed: () => context.go('/search'),
-                          icon: Icons.explore_outlined,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-                loading: () => const AuraLoadingState(message: 'Loading public work…'),
-                error: (e, _) => AuraErrorState(
-                  title: 'Could not load public work',
-                  body: '$e',
-                  action: AuraSecondaryButton(
-                    label: 'Try again',
-                    onPressed: () => ref.refresh(feedProvider),
-                    icon: Icons.refresh_rounded,
-                  ),
+      showHeader: false,
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _HeroSection(
+            onJoin: () => context.go('/register'),
+            onExplore: () => context.go('/search'),
+            onInstitutions: () => context.go('/institutions'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s28, AuraSpace.s16, AuraSpace.s32),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: _PublicFeedSection(
+                  worksAsync: worksAsync,
+                  onExplore: () => context.go('/search'),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PublicWorksHeader extends StatelessWidget {
-  const _PublicWorksHeader(this.contextRef);
-
-  final BuildContext contextRef;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AuraBadge(
-            label: 'Public platform',
-            icon: Icons.auto_awesome_outlined,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            'Build a public record of work that earns real consideration',
-            style: AuraText.title.copyWith(fontSize: 30, height: 1.1),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          const Text(
-            'Aura is where creators publish writing and creations that can be discovered, evaluated, and taken seriously by others and institutions.',
-            style: AuraText.body,
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Text(
-            'No noise. Just structured, accountable work that holds weight over time.',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              AuraPrimaryButton(
-                label: 'Join Aura',
-                onPressed: () => contextRef.go('/register'),
-                icon: Icons.arrow_forward_rounded,
-              ),
-              AuraSecondaryButton(
-                label: 'Browse institutions',
-                onPressed: () => contextRef.go('/institutions'),
-                icon: Icons.apartment_outlined,
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -179,133 +54,518 @@ class _PublicWorksHeader extends StatelessWidget {
   }
 }
 
-class _PublicCalloutColumn extends StatelessWidget {
-  const _PublicCalloutColumn({
-    required this.onSearch,
-    required this.onInstitutions,
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HeroSection extends StatelessWidget {
+  const _HeroSection({
     required this.onJoin,
+    required this.onExplore,
+    required this.onInstitutions,
   });
 
-  final VoidCallback onSearch;
-  final VoidCallback onInstitutions;
   final VoidCallback onJoin;
+  final VoidCallback onExplore;
+  final VoidCallback onInstitutions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AuraGradients.hero,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Stack(
+        children: [
+          // Subtle accent radial glow behind headline
+          Positioned(
+            top: -60,
+            left: -80,
+            child: Container(
+              width: 480,
+              height: 480,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Color(0x1A5B6CFF), Colors.transparent],
+                  radius: 0.65,
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1160),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s20, 60, AuraSpace.s20, 56),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 720;
+                    return wide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: _HeroLeft(onJoin: onJoin, onExplore: onExplore),
+                              ),
+                              const SizedBox(width: AuraSpace.s32),
+                              Expanded(
+                                flex: 3,
+                                child: _HeroPlatformCard(
+                                    onInstitutions: onInstitutions),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _HeroLeft(onJoin: onJoin, onExplore: onExplore),
+                              const SizedBox(height: AuraSpace.s24),
+                              _HeroPlatformCard(
+                                  onInstitutions: onInstitutions),
+                            ],
+                          );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroLeft extends StatelessWidget {
+  const _HeroLeft({required this.onJoin, required this.onExplore});
+
+  final VoidCallback onJoin;
+  final VoidCallback onExplore;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Eyebrow label
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Trust signals', style: AuraText.title.copyWith(fontSize: 17)),
-              const SizedBox(height: AuraSpace.s8),
-              const Text(
-                'Discover public profiles, institutions, and announcements without losing the structure behind them.',
-                style: AuraText.body,
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: [
-                  AuraStatusChip(label: 'Verified identity', backgroundColor: AuraSurface.goodBg, textColor: AuraSurface.goodInk),
-                  AuraStatusChip(label: 'Institution ready', backgroundColor: AuraSurface.infoBg, textColor: AuraSurface.infoInk),
-                  AuraStatusChip(label: 'Public announcements', backgroundColor: AuraSurface.warnBg, textColor: AuraSurface.warnInk),
-                ],
+              const Icon(Icons.auto_awesome_rounded,
+                  size: 11, color: AuraSurface.accentText),
+              const SizedBox(width: AuraSpace.s6),
+              Text(
+                'Civic communication platform',
+                style: AuraText.label
+                    .copyWith(color: AuraSurface.accentText),
               ),
             ],
           ),
         ),
-        const SizedBox(height: AuraSpace.s12),
-        AuraAdminTile(
-          title: 'Search the platform',
-          body: 'Find members, institutions, and public work with context attached.',
-          icon: Icons.search_rounded,
-          action: AuraSecondaryButton(label: 'Open search', onPressed: onSearch, icon: Icons.search_rounded),
+        const SizedBox(height: AuraSpace.s20),
+
+        // Display headline
+        Text(
+          'Work that earns\nreal consideration',
+          style: AuraText.display,
         ),
-        const SizedBox(height: AuraSpace.s12),
-        AuraAdminTile(
-          title: 'Institution discovery',
-          body: 'See who is present, verified, and publishing on the platform.',
-          icon: Icons.apartment_outlined,
-          action: AuraSecondaryButton(label: 'Open institutions', onPressed: onInstitutions, icon: Icons.apartment_outlined),
+        const SizedBox(height: AuraSpace.s16),
+
+        // Sub-headline
+        Text(
+          'Publish writing, share creations, and build a public record that institutions and people take seriously — with no noise.',
+          style: AuraText.body.copyWith(
+              color: AuraSurface.muted, height: 1.6),
         ),
-        const SizedBox(height: AuraSpace.s12),
-        AuraAdminTile(
-          title: 'Create an account',
-          body: 'Join the network and move into the full experience.',
-          icon: Icons.person_add_alt_1_rounded,
-          action: AuraPrimaryButton(label: 'Register', onPressed: onJoin, icon: Icons.arrow_forward_rounded),
+        const SizedBox(height: AuraSpace.s28),
+
+        // CTAs
+        Wrap(
+          spacing: AuraSpace.s10,
+          runSpacing: AuraSpace.s10,
+          children: [
+            AuraPrimaryButton(
+              label: 'Join Aura',
+              onPressed: onJoin,
+              icon: Icons.arrow_forward_rounded,
+            ),
+            _HeroOutlineButton(
+              label: 'Explore work',
+              onTap: onExplore,
+            ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s20),
+
+        // Trust pills
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: const [
+            _TrustPill(label: 'Verified identities', icon: Icons.verified_user_outlined),
+            _TrustPill(label: 'Institution ready', icon: Icons.apartment_outlined),
+            _TrustPill(label: 'No noise', icon: Icons.block_flipped),
+          ],
         ),
       ],
     );
   }
 }
 
-class _PublicWorkPreview extends StatelessWidget {
-  const _PublicWorkPreview({required this.post});
+class _HeroPlatformCard extends StatelessWidget {
+  const _HeroPlatformCard({required this.onInstitutions});
+
+  final VoidCallback onInstitutions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+        boxShadow: AuraShadows.panel,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Platform overview',
+            style: AuraText.label
+                .copyWith(color: AuraSurface.faint, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          _FeatureRow(
+            icon: Icons.edit_note_rounded,
+            title: 'Publish works',
+            body: 'Writing, media, and long-form content with full provenance.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Divider(color: AuraSurface.divider, height: 1),
+          const SizedBox(height: AuraSpace.s12),
+          _FeatureRow(
+            icon: Icons.apartment_rounded,
+            title: 'Institutional trust',
+            body: 'Verified institutions that signal professional context.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Divider(color: AuraSurface.divider, height: 1),
+          const SizedBox(height: AuraSpace.s12),
+          _FeatureRow(
+            icon: Icons.mail_outline_rounded,
+            title: 'Direct correspondence',
+            body: 'Private, structured messaging for serious communication.',
+          ),
+          const SizedBox(height: AuraSpace.s20),
+          GestureDetector(
+            onTap: onInstitutions,
+            child: Row(
+              children: [
+                Text(
+                  'Browse institutions',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s6),
+                const Icon(Icons.arrow_forward_rounded,
+                    size: 14, color: AuraSurface.accentText),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.r10),
+            border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon,
+              size: AuraIconSize.sm, color: AuraSurface.accentText),
+        ),
+        const SizedBox(width: AuraSpace.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: AuraSurface.ink)),
+              const SizedBox(height: AuraSpace.s2),
+              Text(body,
+                  style: AuraText.small.copyWith(
+                      color: AuraSurface.muted, height: 1.4)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrustPill extends StatelessWidget {
+  const _TrustPill({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AuraSurface.faint),
+          const SizedBox(width: AuraSpace.s6),
+          Text(label,
+              style: AuraText.micro
+                  .copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroOutlineButton extends StatelessWidget {
+  const _HeroOutlineButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s20, vertical: AuraSpace.s12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Text(
+            label,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC FEED SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PublicFeedSection extends StatelessWidget {
+  const _PublicFeedSection({
+    required this.worksAsync,
+    required this.onExplore,
+  });
+
+  final AsyncValue<List<Post>> worksAsync;
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Public work', style: AuraText.headline),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    'Recent writing and creations from the network.',
+                    style: AuraText.muted,
+                  ),
+                ],
+              ),
+            ),
+            AuraGhostButton(
+              label: 'Explore all',
+              onPressed: onExplore,
+              icon: Icons.explore_outlined,
+            ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s20),
+        worksAsync.when(
+          data: (posts) {
+            if (posts.isEmpty) {
+              return const AuraEmptyState(
+                title: 'No public work yet',
+                body: 'When people publish, their work will appear here.',
+                icon: Icons.public_outlined,
+              );
+            }
+            return Column(
+              children: [
+                for (final p in posts.take(6)) ...[
+                  _PublicPostCard(post: p),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+                const SizedBox(height: AuraSpace.s6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AuraSecondaryButton(
+                    label: 'Explore more work',
+                    onPressed: onExplore,
+                    icon: Icons.explore_outlined,
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => const AuraLoadingState(message: 'Loading public work…'),
+          error: (e, _) => const AuraErrorState(
+            title: 'Could not load public work',
+            body: 'Refresh the page or try again in a moment.',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PublicPostCard extends StatelessWidget {
+  const _PublicPostCard({required this.post});
 
   final Post post;
 
   @override
   Widget build(BuildContext context) {
     final a = post.author;
-    final authorMap = _asMap(a);
-    final name = ((authorMap['displayName'] ?? a?.displayName ?? '') as String)
-        .trim();
-    final handle =
-        ((authorMap['handle'] ?? a?.handle ?? '') as String).trim();
-
-    final byline =
-        handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' • $name' : ''}';
+    final aMap = _asMap(a);
+    final name = ((aMap['displayName'] ?? a?.displayName ?? '') as String).trim();
+    final handle = ((aMap['handle'] ?? a?.handle ?? '') as String).trim();
+    final byline = handle.isNotEmpty
+        ? '@$handle${name.isNotEmpty ? ' · $name' : ''}'
+        : name;
 
     final text = post.text.trim();
-    final previewLength = MediaQuery.of(context).size.width < 600 ? 160 : 240;
-    final preview = text.length <= previewLength
+    final screenW = MediaQuery.of(context).size.width;
+    final maxLen = screenW < 600 ? 180 : 280;
+    final preview = text.length <= maxLen
         ? text
-        : '${text.substring(0, previewLength)}…';
+        : '${text.substring(0, maxLen).trim()}…';
 
-    return AuraCard(
-      onTap: () => context.push('/posts/${post.id}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final createdAt = post.createdAt;
+    final dateLabel = createdAt == null
+        ? ''
+        : '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        onTap: () => context.push('/posts/${post.id}'),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            gradient: AuraGradients.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(color: AuraSurface.divider),
+            boxShadow: AuraShadows.card,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AuraSurface.divider),
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: AuraTextBlock(
-                  byline.isEmpty ? 'Work' : byline,
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w700,
+              // Author row
+              Row(
+                children: [
+                  AuraAvatar(
+                    name: name.isNotEmpty ? name : handle,
+                    size: 32,
                   ),
-                  maxLines: 1,
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          byline.isEmpty ? 'Aura member' : byline,
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AuraSurface.ink,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (dateLabel.isNotEmpty)
+                          Text(dateLabel, style: AuraText.micro),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 12, color: AuraSurface.faint),
+                ],
+              ),
+
+              // Text preview
+              if (preview.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Text(
+                  preview,
+                  style: AuraText.body.copyWith(height: 1.5),
+                  maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AuraSurface.muted,
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: AuraSpace.s10),
-          AuraTextBlock(
-            preview.isEmpty ? '—' : preview,
-            style: AuraText.body.copyWith(height: 1.45),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -7,6 +7,10 @@ import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE SHELLS
+// ─────────────────────────────────────────────────────────────────────────────
+
 class AuraPageShell extends StatelessWidget {
   const AuraPageShell({
     super.key,
@@ -24,49 +28,29 @@ class AuraPageShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget body = child;
-    if (padding != null) {
-      body = Padding(padding: padding!, child: body);
-    }
+    if (padding != null) body = Padding(padding: padding!, child: body);
 
     return DecoratedBox(
       decoration: const BoxDecoration(gradient: AuraGradients.page),
-      child: Stack(
-        children: [
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x1A5B6CFF),
-                      Colors.transparent,
-                      Color(0x09000000),
-                    ],
-                    stops: [0.0, 0.34, 1.0],
-                  ),
-                ),
-              ),
-            ),
+      child: Align(
+        alignment: alignTop ? Alignment.topCenter : Alignment.center,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: SizedBox(width: double.infinity, child: body),
           ),
-          SafeArea(
-            child: Align(
-              alignment: alignTop ? Alignment.topCenter : Alignment.center,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxWidth),
-                  child: SizedBox(width: double.infinity, child: body),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HEADERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Section header used at the top of screen content areas.
+/// More premium than the previous card-boxed version.
 class AuraGradientHeader extends StatelessWidget {
   const AuraGradientHeader({
     super.key,
@@ -104,10 +88,16 @@ class AuraGradientHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AuraText.title),
+                Text(title, style: AuraText.headline),
                 if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.s8),
-                  Text(subtitle!, style: AuraText.muted),
+                  Text(
+                    subtitle!,
+                    style: AuraText.body.copyWith(
+                      color: AuraSurface.muted,
+                      height: 1.5,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -122,6 +112,7 @@ class AuraGradientHeader extends StatelessWidget {
   }
 }
 
+/// Section title + optional subtitle + optional action button.
 class AuraSectionHeader extends StatelessWidget {
   const AuraSectionHeader({
     super.key,
@@ -143,9 +134,9 @@ class AuraSectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AuraText.title.copyWith(fontSize: 17)),
+              Text(title, style: AuraText.subtitle),
               if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s6),
+                const SizedBox(height: AuraSpace.s4),
                 Text(subtitle!, style: AuraText.muted),
               ],
             ],
@@ -157,6 +148,253 @@ class AuraSectionHeader extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOADING & SKELETON
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Pulsing skeleton placeholder for loading states.
+class AuraSkeleton extends StatefulWidget {
+  const AuraSkeleton({
+    super.key,
+    this.width,
+    this.height = 16,
+    this.radius,
+  });
+
+  final double? width;
+  final double height;
+  final double? radius;
+
+  @override
+  State<AuraSkeleton> createState() => _AuraSkeletonState();
+}
+
+class _AuraSkeletonState extends State<AuraSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<Color?> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = ColorTween(
+      begin: AuraSurface.card,
+      end: AuraSurface.elevated,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.radius ?? (widget.height / 2);
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: _anim.value,
+          borderRadius: BorderRadius.circular(r),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pre-built skeleton for a card that contains a title + two lines of text.
+class AuraCardSkeleton extends StatelessWidget {
+  const AuraCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AuraSkeleton(width: 36, height: 36, radius: 18),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    AuraSkeleton(height: 13, width: 140),
+                    SizedBox(height: 6),
+                    AuraSkeleton(height: 11, width: 80),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          const AuraSkeleton(height: 13),
+          const SizedBox(height: AuraSpace.s8),
+          const AuraSkeleton(height: 13),
+          const SizedBox(height: AuraSpace.s8),
+          const AuraSkeleton(height: 13, width: 200),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact inline loading state — spinner + message.
+class AuraLoadingState extends StatelessWidget {
+  const AuraLoadingState({
+    super.key,
+    this.message = 'Loading…',
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AuraSurface.muted,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Text(message, style: AuraText.small),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY / ERROR STATES
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AuraEmptyState extends StatelessWidget {
+  const AuraEmptyState({
+    super.key,
+    required this.title,
+    required this.body,
+    this.icon = Icons.inbox_outlined,
+    this.action,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.r16),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Icon(icon, size: AuraIconSize.lg, color: AuraSurface.faint),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Text(
+            title,
+            style: AuraText.subtitle,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(
+              body,
+              style: AuraText.muted,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          if (action != null) ...[
+            const SizedBox(height: AuraSpace.s16),
+            action!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AuraErrorState extends StatelessWidget {
+  const AuraErrorState({
+    super.key,
+    required this.title,
+    required this.body,
+    this.action,
+  });
+
+  final String title;
+  final String body;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      borderColor: AuraSurface.dangerInk.withValues(alpha: 0.22),
+      color: AuraSurface.dangerBg.withValues(alpha: 0.9),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                size: AuraIconSize.md,
+                color: AuraSurface.dangerInk,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AuraText.subtitle.copyWith(
+                    color: AuraSurface.dangerInk,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(body, style: AuraText.muted),
+          if (action != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            action!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Primary CTA — accent gradient background.
 class AuraPrimaryButton extends StatelessWidget {
   const AuraPrimaryButton({
     super.key,
@@ -171,14 +409,44 @@ class AuraPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: AuraIconSize.sm),
-      label: Text(label),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        splashColor: Colors.white12,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: onPressed != null ? AuraGradients.accent : null,
+            color: onPressed == null ? AuraSurface.faint : null,
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: AuraIconSize.sm, color: Colors.white),
+                  const SizedBox(width: AuraSpace.s8),
+                ],
+                Text(
+                  label,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
+/// Secondary CTA — outlined border.
 class AuraSecondaryButton extends StatelessWidget {
   const AuraSecondaryButton({
     super.key,
@@ -201,6 +469,7 @@ class AuraSecondaryButton extends StatelessWidget {
   }
 }
 
+/// Ghost / text button.
 class AuraGhostButton extends StatelessWidget {
   const AuraGhostButton({
     super.key,
@@ -222,6 +491,71 @@ class AuraGhostButton extends StatelessWidget {
     );
   }
 }
+
+/// Action pill — for feed card action rows (respond, save, share, etc.)
+class AuraActionPill extends StatelessWidget {
+  const AuraActionPill({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        splashColor: AuraSurface.accentSoft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s8,
+          ),
+          decoration: BoxDecoration(
+            color: active ? AuraSurface.accentSoft : AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: active
+                  ? AuraSurface.accent.withValues(alpha: 0.35)
+                  : AuraSurface.divider,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: AuraIconSize.sm,
+                color: active ? AuraSurface.accentText : AuraSurface.muted,
+              ),
+              const SizedBox(width: AuraSpace.s6),
+              Text(
+                label,
+                style: AuraText.label.copyWith(
+                  color: active ? AuraSurface.accentText : AuraSurface.muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORM INPUTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraInput extends StatelessWidget {
   const AuraInput({
@@ -261,6 +595,7 @@ class AuraInput extends StatelessWidget {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       validator: validator,
+      style: AuraText.body,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -289,6 +624,7 @@ class AuraSearchBar extends StatelessWidget {
       controller: controller,
       textInputAction: TextInputAction.search,
       onSubmitted: onSubmitted,
+      style: AuraText.body,
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: const Icon(Icons.search_rounded, size: AuraIconSize.md),
@@ -297,254 +633,88 @@ class AuraSearchBar extends StatelessWidget {
   }
 }
 
-class AuraBottomNavigation extends StatelessWidget {
-  const AuraBottomNavigation({
+// ─────────────────────────────────────────────────────────────────────────────
+// AVATAR
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Canonical Aura avatar — single implementation for the entire app.
+class AuraAvatar extends StatelessWidget {
+  const AuraAvatar({
     super.key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onSelected,
+    required this.name,
+    this.imageUrl,
+    this.size = 44,
   });
 
-  final List<AuraNavItem> items;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
+  final String name;
+  final String? imageUrl;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onSelected,
-      destinations: [
-        for (final item in items)
-          NavigationDestination(
-            icon: Icon(item.icon),
-            selectedIcon: Icon(item.selectedIcon ?? item.icon),
-            label: item.label,
-          ),
-      ],
+    final trimmed = name.trim();
+    final initial =
+        trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
+    final url = (imageUrl ?? '').trim();
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: AuraGradients.accent,
+      ),
+      child: ClipOval(
+        child: url.isEmpty
+            ? _InitialView(initial: initial, size: size)
+            : Image.network(
+                url,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _InitialView(initial: initial, size: size),
+              ),
+      ),
     );
   }
 }
 
-class AuraSideRail extends StatelessWidget {
-  const AuraSideRail({
-    super.key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onSelected,
-    this.width = 248,
-  });
+class _InitialView extends StatelessWidget {
+  const _InitialView({required this.initial, required this.size});
 
-  final List<AuraNavItem> items;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-  final double width;
+  final String initial;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF12161E), Color(0xFF0F1318)],
-        ),
-        border: Border(
-          right: BorderSide(color: AuraSurface.divider),
-        ),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        children: [
-          const SizedBox(height: AuraSpace.xs),
-          for (var i = 0; i < items.length; i++) ...[
-            _AuraRailTile(
-              item: items[i],
-              selected: i == selectedIndex,
-              onTap: () => onSelected(i),
-            ),
-            const SizedBox(height: AuraSpace.xs),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class AuraNavItem {
-  const AuraNavItem({
-    required this.label,
-    required this.icon,
-    this.selectedIcon,
-    required this.path,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final IconData? selectedIcon;
-  final String path;
-  final bool isPrimary;
-}
-
-class _AuraRailTile extends StatelessWidget {
-  const _AuraRailTile({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AuraNavItem item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AuraSurface.accentSoft : Colors.transparent,
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.md,
-            vertical: AuraSpace.sm,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(
-              color: selected ? AuraSurface.accent : AuraSurface.divider,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                selected ? (item.selectedIcon ?? item.icon) : item.icon,
-                size: AuraIconSize.md,
-                color: selected ? AuraSurface.ink : AuraSurface.muted,
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: AuraText.body.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? AuraSurface.ink : AuraSurface.muted,
-                  ),
-                ),
-              ),
-              if (item.isPrimary)
-                const Icon(Icons.bolt_rounded, size: AuraIconSize.sm, color: AuraSurface.accent),
-            ],
-          ),
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: AuraText.body.copyWith(
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          fontSize: size * 0.4,
+          height: 1,
         ),
       ),
     );
   }
 }
 
-class AuraEmptyState extends StatelessWidget {
-  const AuraEmptyState({
-    super.key,
-    required this.title,
-    required this.body,
-    this.icon = Icons.inbox_outlined,
-    this.action,
-  });
-
-  final String title;
-  final String body;
-  final IconData icon;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: AuraIconSize.lg, color: AuraSurface.muted),
-          const SizedBox(height: AuraSpace.s12),
-          Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-          const SizedBox(height: AuraSpace.s8),
-          Text(body, style: AuraText.muted),
-          if (action != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            action!,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class AuraErrorState extends StatelessWidget {
-  const AuraErrorState({
-    super.key,
-    required this.title,
-    required this.body,
-    this.action,
-  });
-
-  final String title;
-  final String body;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      borderColor: AuraSurface.dangerInk.withValues(alpha: 0.24),
-      color: AuraSurface.dangerBg.withValues(alpha: 0.92),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-          const SizedBox(height: AuraSpace.s8),
-          Text(body, style: AuraText.muted),
-          if (action != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            action!,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class AuraLoadingState extends StatelessWidget {
-  const AuraLoadingState({
-    super.key,
-    this.message = 'Loading…',
-  });
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(child: Text(message, style: AuraText.muted)),
-        ],
-      ),
-    );
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// BADGES & CHIPS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraBadge extends StatelessWidget {
   const AuraBadge({
     super.key,
     required this.label,
     this.backgroundColor = AuraSurface.accentSoft,
-    this.textColor = AuraSurface.ink,
+    this.textColor = AuraSurface.accentText,
     this.icon,
   });
 
@@ -562,7 +732,7 @@ class AuraBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: Row(
@@ -574,7 +744,7 @@ class AuraBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: AuraText.small.copyWith(
+            style: AuraText.label.copyWith(
               color: textColor,
               fontWeight: FontWeight.w700,
             ),
@@ -607,61 +777,9 @@ class AuraStatusChip extends StatelessWidget {
   }
 }
 
-class AuraAvatar extends StatelessWidget {
-  const AuraAvatar({
-    super.key,
-    required this.name,
-    this.imageUrl,
-    this.size = 44,
-  });
-
-  final String name;
-  final String? imageUrl;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final trimmed = name.trim();
-    final initial = trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A3357), Color(0xFF5B6CFF)],
-        ),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: ClipOval(
-        child: imageUrl == null || imageUrl!.trim().isEmpty
-            ? Center(
-                child: Text(
-                  initial,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-            : Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
-                  child: Text(
-                    initial,
-                    style: AuraText.body.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// METRIC & ADMIN TILES
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraMetricCard extends StatelessWidget {
   const AuraMetricCard({
@@ -693,7 +811,7 @@ class AuraMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(value, style: AuraText.title.copyWith(fontSize: 26)),
+          Text(value, style: AuraText.headline),
           if (subtext != null && subtext!.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text(subtext!, style: AuraText.small),
@@ -725,11 +843,11 @@ class AuraAdminTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               gradient: AuraGradients.accent,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AuraRadius.r12),
             ),
             child: Icon(icon, color: Colors.white, size: AuraIconSize.md),
           ),
@@ -738,8 +856,8 @@ class AuraAdminTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-                const SizedBox(height: AuraSpace.s6),
+                Text(title, style: AuraText.subtitle),
+                const SizedBox(height: AuraSpace.s4),
                 Text(body, style: AuraText.muted),
                 if (action != null) ...[
                   const SizedBox(height: AuraSpace.s12),
@@ -753,6 +871,10 @@ class AuraAdminTile extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSATION & NOTIFICATION TILES
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraConversationTile extends StatelessWidget {
   const AuraConversationTile({
@@ -789,13 +911,11 @@ class AuraConversationTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-                    ),
+                    Expanded(child: Text(title, style: AuraText.subtitle)),
                     if (badge != null) badge!,
                   ],
                 ),
-                const SizedBox(height: AuraSpace.s6),
+                const SizedBox(height: AuraSpace.s4),
                 Text(subtitle, style: AuraText.muted),
               ],
             ),
@@ -838,18 +958,24 @@ class AuraNotificationTile extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: AuraSurface.accentSoft,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AuraSurface.divider),
+              borderRadius: BorderRadius.circular(AuraRadius.r12),
+              border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.2),
+              ),
             ),
-            child: Icon(icon ?? Icons.notifications_none_rounded, size: AuraIconSize.sm),
+            child: Icon(
+              icon ?? Icons.notifications_none_rounded,
+              size: AuraIconSize.sm,
+              color: AuraSurface.accentText,
+            ),
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-                const SizedBox(height: AuraSpace.s6),
+                Text(title, style: AuraText.subtitle),
+                const SizedBox(height: AuraSpace.s4),
                 Text(body, style: AuraText.muted),
               ],
             ),
@@ -863,6 +989,10 @@ class AuraNotificationTile extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MESSAGING
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraMessageBubble extends StatelessWidget {
   const AuraMessageBubble({
@@ -880,7 +1010,10 @@ class AuraMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isMine ? AuraSurface.accentSoft : AuraSurface.elevated;
+    final bg = isMine ? AuraSurface.accentSoft : AuraSurface.subtle;
+    final borderColor = isMine
+        ? AuraSurface.accent.withValues(alpha: 0.3)
+        : AuraSurface.divider;
     final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
     return Column(
@@ -888,22 +1021,26 @@ class AuraMessageBubble extends StatelessWidget {
       children: [
         Container(
           constraints: const BoxConstraints(maxWidth: 620),
-          padding: const EdgeInsets.all(AuraSpace.s12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s14,
+            vertical: AuraSpace.s12,
+          ),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AuraSurface.divider),
+            borderRadius: BorderRadius.circular(AuraRadius.r18),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             crossAxisAlignment: align,
             children: [
-              if (body.trim().isNotEmpty)
-                Text(body, style: AuraText.body),
-              if (attachmentLabel != null && attachmentLabel!.trim().isNotEmpty) ...[
+              if (body.trim().isNotEmpty) Text(body, style: AuraText.body),
+              if (attachmentLabel != null &&
+                  attachmentLabel!.trim().isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s8),
                 AuraStatusChip(
                   label: attachmentLabel!,
-                  backgroundColor: AuraSurface.page.withValues(alpha: 0.35),
+                  backgroundColor:
+                      AuraSurface.page.withValues(alpha: 0.35),
                   textColor: AuraSurface.ink,
                 ),
               ],
@@ -911,13 +1048,17 @@ class AuraMessageBubble extends StatelessWidget {
           ),
         ),
         if (timestamp != null && timestamp!.trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s6),
-          Text(timestamp!, style: AuraText.small),
+          const SizedBox(height: AuraSpace.s4),
+          Text(timestamp!, style: AuraText.micro),
         ],
       ],
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REALTIME / CALL
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuraCallBanner extends StatelessWidget {
   const AuraCallBanner({
@@ -945,7 +1086,7 @@ class AuraCallBanner extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               gradient: AuraGradients.accent,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AuraRadius.r14),
             ),
             child: const Icon(Icons.call, color: Colors.white, size: AuraIconSize.md),
           ),
@@ -954,8 +1095,8 @@ class AuraCallBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AuraText.title.copyWith(fontSize: 17)),
-                const SizedBox(height: AuraSpace.s6),
+                Text(title, style: AuraText.subtitle),
+                const SizedBox(height: AuraSpace.s4),
                 Text(body, style: AuraText.muted),
               ],
             ),
@@ -1002,7 +1143,9 @@ class AuraRealtimeControlBar extends StatelessWidget {
           ),
           const SizedBox(width: AuraSpace.s10),
           _ControlButton(
-            icon: cameraOn ? Icons.videocam_off_rounded : Icons.videocam_rounded,
+            icon: cameraOn
+                ? Icons.videocam_off_rounded
+                : Icons.videocam_rounded,
             label: cameraOn ? 'Camera off' : 'Camera on',
             onPressed: onToggleCamera,
           ),
@@ -1011,6 +1154,10 @@ class AuraRealtimeControlBar extends StatelessWidget {
             onPressed: onHangUp,
             icon: const Icon(Icons.call_end_rounded),
             label: const Text('End'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AuraSurface.dangerInk,
+              foregroundColor: Colors.white,
+            ),
           ),
         ],
       ),

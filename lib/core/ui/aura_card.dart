@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import 'aura_design_system.dart';
@@ -7,8 +5,8 @@ import 'aura_radius.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 
-/// A cinematic panel container used across Aura.
-/// Structured. Subtle. Layered.
+/// Premium navy panel container for Aura.
+/// Depth via gradient + shadow. No performance-heavy blur.
 class AuraCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -29,28 +27,22 @@ class AuraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double radius = AuraRadius.card;
+    const radius = AuraRadius.card;
 
-    final card = ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          margin: margin,
-          padding: padding ?? const EdgeInsets.all(AuraSpace.md),
-          decoration: BoxDecoration(
-            gradient: AuraGradients.card,
-            color: (color ?? AuraSurface.card).withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color: borderColor ?? AuraSurface.divider,
-              width: 1,
-            ),
-            boxShadow: AuraShadows.panel,
-          ),
-          child: child,
+    Widget card = Container(
+      margin: margin,
+      padding: padding ?? const EdgeInsets.all(AuraSpace.md),
+      decoration: BoxDecoration(
+        gradient: color != null ? null : AuraGradients.card,
+        color: color?.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: borderColor ?? AuraSurface.divider,
+          width: 1,
         ),
+        boxShadow: AuraShadows.card,
       ),
+      child: child,
     );
 
     if (onTap == null) return card;
@@ -60,7 +52,7 @@ class AuraCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(radius),
         splashColor: AuraSurface.accentSoft,
-        highlightColor: Colors.transparent,
+        highlightColor: AuraSurface.divider,
         onTap: onTap,
         child: card,
       ),
