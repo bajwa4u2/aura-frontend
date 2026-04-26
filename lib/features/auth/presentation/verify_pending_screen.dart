@@ -15,11 +15,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyPendingScreen extends ConsumerStatefulWidget {
-  const VerifyPendingScreen({
-    super.key,
-    this.email,
-    this.redirectTo,
-  });
+  const VerifyPendingScreen({super.key, this.email, this.redirectTo});
 
   final String? email;
   final String? redirectTo;
@@ -205,7 +201,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AuraSurface.accentSoft,
                         shape: BoxShape.circle,
                       ),
@@ -216,7 +212,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    Text('Almost there', style: AuraText.title),
+                    const Text('Almost there', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
                       'We need to verify your email before you can continue. Open the email we sent and click the link.',
@@ -245,7 +241,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     ),
                     const SizedBox(height: AuraSpace.s20),
                     if (_busy) ...[
-                      AuraPrimaryButton(
+                      const AuraPrimaryButton(
                         label: 'Sending…',
                         onPressed: null,
                         icon: Icons.refresh_rounded,
@@ -280,7 +276,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       const SizedBox(height: AuraSpace.s14),
                       Row(
                         children: [
-                          SizedBox(
+                          const SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
@@ -291,8 +287,9 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                           const SizedBox(width: AuraSpace.s10),
                           Text(
                             'Checking verification status…',
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.muted,
+                            ),
                           ),
                         ],
                       ),

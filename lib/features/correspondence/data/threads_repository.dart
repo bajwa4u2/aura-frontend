@@ -41,10 +41,7 @@ class ThreadsRepository {
       if (memberIds.isNotEmpty) 'memberIds': memberIds,
     };
 
-    final res = await _dio.post(
-      '/spaces/$spaceId/threads',
-      data: body,
-    );
+    final res = await _dio.post('/spaces/$spaceId/threads', data: body);
 
     return _unwrapData(res.data);
   }
@@ -61,10 +58,7 @@ class ThreadsRepository {
       if (archived != null) 'archived': archived,
     };
 
-    final res = await _dio.patch(
-      '/threads/$threadId',
-      data: body,
-    );
+    final res = await _dio.patch('/threads/$threadId', data: body);
 
     return _unwrapData(res.data);
   }
@@ -106,18 +100,6 @@ Map<String, dynamic> _unwrapData(dynamic raw) {
   }
 
   return <String, dynamic>{};
-}
-
-List<dynamic> _readListFromCommonKeys(
-  Map<String, dynamic> map, {
-  required List<String> keys,
-}) {
-  for (final key in keys) {
-    final value = map[key];
-    if (value is List) return value;
-  }
-
-  return const [];
 }
 
 Map<String, dynamic> _asMap(dynamic value) {

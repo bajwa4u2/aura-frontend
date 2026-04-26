@@ -26,7 +26,7 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Entry requests', style: AuraText.title),
+          const Text('Entry requests', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
             requests.isEmpty
@@ -47,7 +47,9 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
                     Expanded(
                       child: Text(
                         _requestLabel(index),
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     AuraSecondaryButton(

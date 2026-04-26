@@ -14,16 +14,13 @@ class InstitutionProfileScreen extends StatelessWidget {
   Widget _sectionTitle(String text) {
     return Text(
       text,
-      style: AuraText.body.copyWith(
-        fontWeight: FontWeight.w700,
-        fontSize: 16,
-      ),
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
     );
   }
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s8),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,9 +34,7 @@ class InstitutionProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: AuraText.body),
-          ),
+          Expanded(child: Text(value, style: AuraText.body)),
         ],
       ),
     );
@@ -65,7 +60,7 @@ class InstitutionProfileScreen extends StatelessWidget {
               border: Border.all(color: AuraSurface.divider),
               borderRadius: BorderRadius.circular(AuraRadius.card),
             ),
-            padding: EdgeInsets.all(AuraSpace.s14),
+            padding: const EdgeInsets.all(AuraSpace.s14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,9 +68,9 @@ class InstitutionProfileScreen extends StatelessWidget {
                   title,
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: AuraSpace.s8),
+                const SizedBox(height: AuraSpace.s8),
                 Text(detail, style: AuraText.body),
-                SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s12),
                 Text(
                   status,
                   style: AuraText.body.copyWith(
@@ -99,13 +94,10 @@ class InstitutionProfileScreen extends StatelessWidget {
           Text(
             'Institution profile',
             style: (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
-                .copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 30,
-            ),
+                .copyWith(fontWeight: FontWeight.w700, fontSize: 30),
           ),
-          SizedBox(height: AuraSpace.s10),
-          Text(
+          const SizedBox(height: AuraSpace.s10),
+          const Text(
             'This is the institution-facing profile workspace. Public institution identity, profile presentation, and institution-specific settings should be managed here, separate from member profile screens.',
             style: AuraText.body,
           ),
@@ -120,11 +112,14 @@ class InstitutionProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Workspace status'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _infoRow('Surface', 'Institution-only'),
           _infoRow('Public identity', 'Dedicated institution profile route'),
           _infoRow('Member profile flow', 'Separated'),
-          _infoRow('Editing workflow', 'Placeholder until institution profile editing is connected'),
+          _infoRow(
+            'Editing workflow',
+            'Placeholder until institution profile editing is connected',
+          ),
         ],
       ),
     );
@@ -136,7 +131,7 @@ class InstitutionProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Institution profile actions'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s12,
             runSpacing: AuraSpace.s12,
@@ -180,8 +175,8 @@ class InstitutionProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Why this screen exists'),
-          SizedBox(height: AuraSpace.s12),
-          Text(
+          const SizedBox(height: AuraSpace.s12),
+          const Text(
             'Institution identity should not be edited through personal member profile surfaces. This route protects that separation now, so future institution profile tools can be built on the correct branch without leakage.',
             style: AuraText.body,
           ),
@@ -198,18 +193,18 @@ class InstitutionProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Institution profile'),
-          SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s10),
           Doc.meta('Dedicated profile workspace for institutional accounts.'),
           Doc.lede(
             'This route is reserved for institution identity, public profile presentation, and profile-specific controls.',
           ),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _heroCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _overviewCard(),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _actionsCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _notesCard(),
         ],
       ),

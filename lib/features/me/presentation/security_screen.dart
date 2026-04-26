@@ -26,30 +26,23 @@ class SecurityScreen extends ConsumerWidget {
     for (var i = 0; i < children.length; i++) {
       out.add(children[i]);
       if (i != children.length - 1) {
-        out.add(const Divider(
-          height: 1,
-          thickness: 1,
-          color: AuraSurface.divider,
-        ));
+        out.add(
+          const Divider(height: 1, thickness: 1, color: AuraSurface.divider),
+        );
       }
     }
 
     return out;
   }
 
-  Widget _section({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _section({required String title, required List<Widget> children}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle(title),
         AuraCard(
           padding: EdgeInsets.zero,
-          child: Column(
-            children: _withDividers(children),
-          ),
+          child: Column(children: _withDividers(children)),
         ),
       ],
     );
@@ -68,8 +61,8 @@ class SecurityScreen extends ConsumerWidget {
     final iconColor = danger
         ? AuraSurface.dangerInk
         : active
-            ? AuraSurface.ink
-            : AuraSurface.muted;
+        ? AuraSurface.ink
+        : AuraSurface.muted;
 
     return Material(
       color: Colors.transparent,
@@ -83,11 +76,7 @@ class SecurityScreen extends ConsumerWidget {
           child: Row(
             children: [
               if (leading != null) ...[
-                Icon(
-                  leading,
-                  size: 18,
-                  color: iconColor,
-                ),
+                Icon(leading, size: 18, color: iconColor),
                 const SizedBox(width: AuraSpace.s12),
               ],
               Expanded(
@@ -194,7 +183,7 @@ class SecurityScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Sign in to continue', style: AuraText.title),
+                const Text('Sign in to continue', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
                   'You need to be signed in to view security settings.',

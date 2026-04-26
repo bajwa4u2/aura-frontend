@@ -37,7 +37,11 @@ class PublicHomeScreen extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16, AuraSpace.s28, AuraSpace.s16, AuraSpace.s32),
+              AuraSpace.s16,
+              AuraSpace.s28,
+              AuraSpace.s16,
+              AuraSpace.s32,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1160),
@@ -100,7 +104,11 @@ class _HeroSection extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 1160),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s20, 60, AuraSpace.s20, 56),
+                  AuraSpace.s20,
+                  60,
+                  AuraSpace.s20,
+                  56,
+                ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 720;
@@ -110,13 +118,17 @@ class _HeroSection extends StatelessWidget {
                             children: [
                               Expanded(
                                 flex: 5,
-                                child: _HeroLeft(onJoin: onJoin, onExplore: onExplore),
+                                child: _HeroLeft(
+                                  onJoin: onJoin,
+                                  onExplore: onExplore,
+                                ),
                               ),
                               const SizedBox(width: AuraSpace.s32),
                               Expanded(
                                 flex: 3,
                                 child: _HeroPlatformCard(
-                                    onInstitutions: onInstitutions),
+                                  onInstitutions: onInstitutions,
+                                ),
                               ),
                             ],
                           )
@@ -125,8 +137,7 @@ class _HeroSection extends StatelessWidget {
                             children: [
                               _HeroLeft(onJoin: onJoin, onExplore: onExplore),
                               const SizedBox(height: AuraSpace.s24),
-                              _HeroPlatformCard(
-                                  onInstitutions: onInstitutions),
+                              _HeroPlatformCard(onInstitutions: onInstitutions),
                             ],
                           );
                   },
@@ -154,23 +165,28 @@ class _HeroLeft extends StatelessWidget {
         // Eyebrow label
         Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+            horizontal: AuraSpace.s10,
+            vertical: AuraSpace.s6,
+          ),
           decoration: BoxDecoration(
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.3)),
+              color: AuraSurface.accent.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  size: 11, color: AuraSurface.accentText),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                size: 11,
+                color: AuraSurface.accentText,
+              ),
               const SizedBox(width: AuraSpace.s6),
               Text(
                 'Civic communication platform',
-                style: AuraText.label
-                    .copyWith(color: AuraSurface.accentText),
+                style: AuraText.label.copyWith(color: AuraSurface.accentText),
               ),
             ],
           ),
@@ -178,7 +194,7 @@ class _HeroLeft extends StatelessWidget {
         const SizedBox(height: AuraSpace.s20),
 
         // Display headline
-        Text(
+        const Text(
           'Work that earns\nreal consideration',
           style: AuraText.display,
         ),
@@ -187,8 +203,7 @@ class _HeroLeft extends StatelessWidget {
         // Sub-headline
         Text(
           'Publish writing, share creations, and build a public record that institutions and people take seriously — with no noise.',
-          style: AuraText.body.copyWith(
-              color: AuraSurface.muted, height: 1.6),
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
 
@@ -202,21 +217,24 @@ class _HeroLeft extends StatelessWidget {
               onPressed: onJoin,
               icon: Icons.arrow_forward_rounded,
             ),
-            _HeroOutlineButton(
-              label: 'Explore work',
-              onTap: onExplore,
-            ),
+            _HeroOutlineButton(label: 'Explore work', onTap: onExplore),
           ],
         ),
         const SizedBox(height: AuraSpace.s20),
 
         // Trust pills
-        Wrap(
+        const Wrap(
           spacing: AuraSpace.s8,
           runSpacing: AuraSpace.s8,
-          children: const [
-            _TrustPill(label: 'Verified identities', icon: Icons.verified_user_outlined),
-            _TrustPill(label: 'Institution ready', icon: Icons.apartment_outlined),
+          children: [
+            _TrustPill(
+              label: 'Verified identities',
+              icon: Icons.verified_user_outlined,
+            ),
+            _TrustPill(
+              label: 'Institution ready',
+              icon: Icons.apartment_outlined,
+            ),
             _TrustPill(label: 'No noise', icon: Icons.block_flipped),
           ],
         ),
@@ -245,27 +263,29 @@ class _HeroPlatformCard extends StatelessWidget {
         children: [
           Text(
             'Platform overview',
-            style: AuraText.label
-                .copyWith(color: AuraSurface.faint, letterSpacing: 0.8),
+            style: AuraText.label.copyWith(
+              color: AuraSurface.faint,
+              letterSpacing: 0.8,
+            ),
           ),
           const SizedBox(height: AuraSpace.s16),
-          _FeatureRow(
+          const _FeatureRow(
             icon: Icons.edit_note_rounded,
             title: 'Publish works',
             body: 'Writing, media, and long-form content with full provenance.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          Divider(color: AuraSurface.divider, height: 1),
+          const Divider(color: AuraSurface.divider, height: 1),
           const SizedBox(height: AuraSpace.s12),
-          _FeatureRow(
+          const _FeatureRow(
             icon: Icons.apartment_rounded,
             title: 'Institutional trust',
             body: 'Verified institutions that signal professional context.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          Divider(color: AuraSurface.divider, height: 1),
+          const Divider(color: AuraSurface.divider, height: 1),
           const SizedBox(height: AuraSpace.s12),
-          _FeatureRow(
+          const _FeatureRow(
             icon: Icons.mail_outline_rounded,
             title: 'Direct correspondence',
             body: 'Private, structured messaging for serious communication.',
@@ -286,8 +306,11 @@ class _HeroPlatformCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s6),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 14, color: AuraSurface.accentText),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AuraSurface.accentText,
+                  ),
                 ],
               ),
             ),
@@ -321,21 +344,35 @@ class _FeatureRow extends StatelessWidget {
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.r10),
             border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.2)),
+              color: AuraSurface.accent.withValues(alpha: 0.2),
+            ),
           ),
-          child: Icon(icon,
-              size: AuraIconSize.sm, color: AuraSurface.accentText),
+          child: Icon(
+            icon,
+            size: AuraIconSize.sm,
+            color: AuraSurface.accentText,
+          ),
         ),
         const SizedBox(width: AuraSpace.s12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: AuraSurface.ink)),
+              Text(
+                title,
+                style: AuraText.small.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AuraSurface.ink,
+                ),
+              ),
               const SizedBox(height: AuraSpace.s2),
-              Text(body,
-                  style: AuraText.small.copyWith(
-                      color: AuraSurface.muted, height: 1.4)),
+              Text(
+                body,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),
@@ -354,7 +391,9 @@ class _TrustPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -365,9 +404,13 @@ class _TrustPill extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: AuraSurface.faint),
           const SizedBox(width: AuraSpace.s6),
-          Text(label,
-              style: AuraText.micro
-                  .copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -389,7 +432,9 @@ class _HeroOutlineButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.r14),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s20, vertical: AuraSpace.s12),
+            horizontal: AuraSpace.s20,
+            vertical: AuraSpace.s12,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AuraRadius.r14),
             border: Border.all(color: AuraSurface.divider),
@@ -409,10 +454,7 @@ class _HeroOutlineButton extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PublicFeedSection extends StatelessWidget {
-  const _PublicFeedSection({
-    required this.worksAsync,
-    required this.onExplore,
-  });
+  const _PublicFeedSection({required this.worksAsync, required this.onExplore});
 
   final AsyncValue<List<Post>> worksAsync;
   final VoidCallback onExplore;
@@ -424,12 +466,12 @@ class _PublicFeedSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Public work', style: AuraText.headline),
-                  const SizedBox(height: AuraSpace.s4),
+                  SizedBox(height: AuraSpace.s4),
                   Text(
                     'Recent writing and creations from the network.',
                     style: AuraText.muted,
@@ -472,7 +514,8 @@ class _PublicFeedSection extends StatelessWidget {
               ],
             );
           },
-          loading: () => const AuraLoadingState(message: 'Loading public work…'),
+          loading: () =>
+              const AuraLoadingState(message: 'Loading public work…'),
           error: (e, _) => const AuraErrorState(
             title: 'Could not load public work',
             body: 'Refresh the page or try again in a moment.',
@@ -492,7 +535,8 @@ class _PublicPostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = post.author;
     final aMap = _asMap(a);
-    final name = ((aMap['displayName'] ?? a?.displayName ?? '') as String).trim();
+    final name = ((aMap['displayName'] ?? a?.displayName ?? '') as String)
+        .trim();
     final handle = ((aMap['handle'] ?? a?.handle ?? '') as String).trim();
     final byline = handle.isNotEmpty
         ? '@$handle${name.isNotEmpty ? ' · $name' : ''}'
@@ -506,9 +550,8 @@ class _PublicPostCard extends StatelessWidget {
         : '${text.substring(0, maxLen).trim()}…';
 
     final createdAt = post.createdAt;
-    final dateLabel = createdAt == null
-        ? ''
-        : '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
+    final dateLabel =
+        '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
 
     return Material(
       color: Colors.transparent,
@@ -529,10 +572,7 @@ class _PublicPostCard extends StatelessWidget {
               // Author row
               Row(
                 children: [
-                  AuraAvatar(
-                    name: name.isNotEmpty ? name : handle,
-                    size: 32,
-                  ),
+                  AuraAvatar(name: name.isNotEmpty ? name : handle, size: 32),
                   const SizedBox(width: AuraSpace.s10),
                   Expanded(
                     child: Column(
@@ -552,8 +592,11 @@ class _PublicPostCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios_rounded,
-                      size: 12, color: AuraSurface.faint),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: AuraSurface.faint,
+                  ),
                 ],
               ),
 

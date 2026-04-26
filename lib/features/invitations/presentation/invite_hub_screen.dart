@@ -39,10 +39,7 @@ class InviteHubScreen extends StatelessWidget {
       ...uri.queryParameters,
       'returnTo': _returnTo,
     };
-    return Uri(
-      path: uri.path,
-      queryParameters: query,
-    ).toString();
+    return Uri(path: uri.path, queryParameters: query).toString();
   }
 
   @override
@@ -53,7 +50,8 @@ class InviteHubScreen extends StatelessWidget {
       options.add(
         _InviteOptionData(
           title: 'Bring someone into this thread',
-          subtitle: 'Invite a specific Aura member directly into this conversation.',
+          subtitle:
+              'Invite a specific Aura member directly into this conversation.',
           icon: Icons.forum_outlined,
           onTap: () => context.push(
             _withReturnTo(
@@ -70,7 +68,8 @@ class InviteHubScreen extends StatelessWidget {
       options.add(
         _InviteOptionData(
           title: 'Bring someone into this space',
-          subtitle: 'Invite into the shared room instead of a single thread when they should belong more broadly.',
+          subtitle:
+              'Invite into the shared room instead of a single thread when they should belong more broadly.',
           icon: Icons.groups_outlined,
           onTap: () => context.push(
             _withReturnTo(
@@ -85,13 +84,17 @@ class InviteHubScreen extends StatelessWidget {
       options.addAll([
         _InviteOptionData(
           title: 'Invite into Aura',
-          subtitle: 'Create a clean entry path for someone who is not yet inside the platform.',
+          subtitle:
+              'Create a clean entry path for someone who is not yet inside the platform.',
           icon: Icons.public_outlined,
-          onTap: () => context.push(_withReturnTo('/invite/create?destinationType=JOIN_AURA')),
+          onTap: () => context.push(
+            _withReturnTo('/invite/create?destinationType=JOIN_AURA'),
+          ),
         ),
         _InviteOptionData(
           title: 'Start a private conversation instead',
-          subtitle: 'Direct conversations belong under Correspondence, not inside the invitation flow.',
+          subtitle:
+              'Direct conversations belong under Correspondence, not inside the invitation flow.',
           icon: Icons.chat_bubble_outline,
           onTap: () => context.push('/me/correspondence/create/conversation'),
         ),
@@ -107,12 +110,9 @@ class InviteHubScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite', style: AuraText.title),
+                const Text('Invite', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s8),
-                AuraTextBlock(
-                  _introText,
-                  style: AuraText.body,
-                ),
+                AuraTextBlock(_introText, style: AuraText.body),
               ],
             ),
           ),
@@ -189,14 +189,13 @@ class _InviteOptionCard extends StatelessWidget {
                   children: [
                     AuraTextBlock(
                       data.title,
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: AuraSpace.s6),
-                    AuraTextBlock(
-                      data.subtitle,
-                      style: AuraText.body,
-                    ),
+                    AuraTextBlock(data.subtitle, style: AuraText.body),
                   ],
                 ),
               ),

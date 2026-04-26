@@ -18,18 +18,16 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 30),
-      headers: const {
-        'Accept': 'application/json',
-      },
+      headers: const {'Accept': 'application/json'},
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
   );
 
   configureDioForPlatform(dio);
 
-  const _bodyMethods = {'POST', 'PUT', 'PATCH'};
+  const bodyMethods = {'POST', 'PUT', 'PATCH'};
 
-  bool _hasMeaningfulBody(dynamic data) {
+  bool hasMeaningfulBody(dynamic data) {
     if (data == null) return false;
     if (data is String) return data.trim().isNotEmpty;
     if (data is List) return data.isNotEmpty;
@@ -38,7 +36,7 @@ final dioProvider = Provider<Dio>((ref) {
     return true;
   }
 
-  String _normalizePath(String path) {
+  String normalizePath(String path) {
     final trimmed = path.trim();
     if (trimmed.isEmpty) return trimmed;
 
@@ -66,9 +64,9 @@ final dioProvider = Provider<Dio>((ref) {
     return normalized;
   }
 
-  void _normalizeContentTypeForRequest(RequestOptions options) {
+  void normalizeContentTypeForRequest(RequestOptions options) {
     final method = options.method.toUpperCase();
-    final hasBody = _hasMeaningfulBody(options.data);
+    final hasBody = hasMeaningfulBody(options.data);
     final hasExplicitContentType =
         options.contentType != null ||
         options.headers.keys.any(
@@ -83,7 +81,7 @@ final dioProvider = Provider<Dio>((ref) {
       return;
     }
 
-    if (_bodyMethods.contains(method) && hasBody) {
+    if (bodyMethods.contains(method) && hasBody) {
       if (!hasExplicitContentType) {
         options.contentType = Headers.jsonContentType;
         options.headers['Content-Type'] = Headers.jsonContentType;
@@ -97,13 +95,13 @@ final dioProvider = Provider<Dio>((ref) {
     }
   }
 
-  Map<String, dynamic> _asMap(dynamic v) {
+  Map<String, dynamic> asMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;
     if (v is Map) return Map<String, dynamic>.from(v);
     throw Exception('Invalid response type');
   }
 
-  String _readAccessToken(Map<String, dynamic> outer) {
+  String readAccessToken(Map<String, dynamic> outer) {
     final t1 = (outer['accessToken'] ?? '').toString().trim();
     if (t1.isNotEmpty) return t1;
 
@@ -117,7 +115,7 @@ final dioProvider = Provider<Dio>((ref) {
     return '';
   }
 
-  String? _readRefreshToken(Map<String, dynamic> outer) {
+  String? readRefreshToken(Map<String, dynamic> outer) {
     final r1 = (outer['refreshToken'] ?? '').toString().trim();
     if (r1.isNotEmpty) return r1;
 
@@ -131,26 +129,26 @@ final dioProvider = Provider<Dio>((ref) {
     return null;
   }
 
-  bool _isUnauthorizedStatus(int? status) {
+  bool isUnauthorizedStatus(int? status) {
     return status == 401 || status == 403;
   }
 
-  bool _isRateLimitedStatus(int? status) {
+  bool isRateLimitedStatus(int? status) {
     return status == 429;
   }
 
-  bool _isSafeSessionResetStatus(int? status) {
+  bool isSafeSessionResetStatus(int? status) {
     return status == 401 || status == 403;
   }
 
-  bool _isTransportRetryable(DioException err) {
+  bool isTransportRetryable(DioException err) {
     return err.type == DioExceptionType.connectionError ||
         err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.sendTimeout;
   }
 
-  Future<void> _clearSessionState() async {
+  Future<void> clearSessionState() async {
     await ref.read(tokenStoreProvider).clearTokens();
     ref.invalidate(sessionBootstrapProvider);
     ref.invalidate(authStatusProvider);
@@ -159,15 +157,15 @@ final dioProvider = Provider<Dio>((ref) {
   Future<void>? refreshInFlight;
 
   bool isAuthEndpoint(RequestOptions o) {
-    final path = _normalizePath(o.path);
+    final path = normalizePath(o.path);
     if (path.startsWith('/auth')) return true;
     if (path.startsWith('/v1/auth')) return true;
     return false;
   }
 
-  bool _shouldAttemptRefreshForRequest(RequestOptions req) {
+  bool shouldAttemptRefreshForRequest(RequestOptions req) {
     final method = req.method.toUpperCase();
-    final path = _normalizePath(req.path);
+    final path = normalizePath(req.path);
 
     if (method == 'GET') return true;
 
@@ -190,8 +188,8 @@ final dioProvider = Provider<Dio>((ref) {
     return true;
   }
 
-  String? _featureFromRequest(RequestOptions req) {
-    final path = _normalizePath(req.path).toLowerCase();
+  String? featureFromRequest(RequestOptions req) {
+    final path = normalizePath(req.path).toLowerCase();
     if (path.contains('/translate') || path.contains('/translation')) {
       return 'translate this post';
     }
@@ -210,15 +208,12 @@ final dioProvider = Provider<Dio>((ref) {
     return null;
   }
 
-  DioException _mapDioException(
+  DioException mapDioException(
     DioException err, {
     RequestOptions? requestOptions,
   }) {
     final req = requestOptions ?? err.requestOptions;
-    final mapped = AppErrorMapper.from(
-      err,
-      feature: _featureFromRequest(req),
-    );
+    final mapped = AppErrorMapper.from(err, feature: featureFromRequest(req));
 
     return DioException(
       requestOptions: req,
@@ -236,9 +231,7 @@ final dioProvider = Provider<Dio>((ref) {
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 30),
         sendTimeout: const Duration(seconds: 30),
-        headers: const {
-          'Accept': 'application/json',
-        },
+        headers: const {'Accept': 'application/json'},
         validateStatus: (code) => code != null && code < 500,
       ),
     );
@@ -267,7 +260,7 @@ final dioProvider = Provider<Dio>((ref) {
 
         if (res.statusCode == 204) return;
 
-        if (_isUnauthorizedStatus(res.statusCode)) {
+        if (isUnauthorizedStatus(res.statusCode)) {
           throw DioException(
             requestOptions: res.requestOptions,
             response: res,
@@ -276,8 +269,8 @@ final dioProvider = Provider<Dio>((ref) {
           );
         }
 
-        final outer = _asMap(res.data);
-        final access = _readAccessToken(outer);
+        final outer = asMap(res.data);
+        final access = readAccessToken(outer);
 
         if (access.isEmpty) {
           throw Exception('No access token returned');
@@ -301,7 +294,7 @@ final dioProvider = Provider<Dio>((ref) {
         options: Options(headers: const {'x-token-transport': 'body'}),
       );
 
-      if (_isUnauthorizedStatus(res.statusCode)) {
+      if (isUnauthorizedStatus(res.statusCode)) {
         throw DioException(
           requestOptions: res.requestOptions,
           response: res,
@@ -310,9 +303,9 @@ final dioProvider = Provider<Dio>((ref) {
         );
       }
 
-      final outer = _asMap(res.data);
-      final access = _readAccessToken(outer);
-      final newRefresh = _readRefreshToken(outer);
+      final outer = asMap(res.data);
+      final access = readAccessToken(outer);
+      final newRefresh = readRefreshToken(outer);
 
       if (access.isEmpty) {
         throw Exception('No access token returned');
@@ -338,8 +331,8 @@ final dioProvider = Provider<Dio>((ref) {
           await store.waitUntilLoaded();
         } catch (_) {}
 
-        options.path = _normalizePath(options.path);
-        _normalizeContentTypeForRequest(options);
+        options.path = normalizePath(options.path);
+        normalizeContentTypeForRequest(options);
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {
@@ -354,45 +347,45 @@ final dioProvider = Provider<Dio>((ref) {
         final status = err.response?.statusCode;
         final req = err.requestOptions;
 
-        if (_isRateLimitedStatus(status)) {
-          handler.reject(_mapDioException(err));
+        if (isRateLimitedStatus(status)) {
+          handler.reject(mapDioException(err));
           return;
         }
 
-        if (_isTransportRetryable(err) &&
+        if (isTransportRetryable(err) &&
             req.method.toUpperCase() == 'GET' &&
             req.extra['__retried_transport'] != true) {
           try {
             req.extra['__retried_transport'] = true;
-            req.path = _normalizePath(req.path);
-            _normalizeContentTypeForRequest(req);
+            req.path = normalizePath(req.path);
+            normalizeContentTypeForRequest(req);
             await Future<void>.delayed(const Duration(milliseconds: 250));
             final response = await dio.fetch<dynamic>(req);
             handler.resolve(response);
             return;
           } catch (_) {
-            handler.reject(_mapDioException(err));
+            handler.reject(mapDioException(err));
             return;
           }
         }
 
         if (status != 401 || isAuthEndpoint(req)) {
-          handler.reject(_mapDioException(err));
+          handler.reject(mapDioException(err));
           return;
         }
 
-        if (!_shouldAttemptRefreshForRequest(req)) {
-          handler.reject(_mapDioException(err));
+        if (!shouldAttemptRefreshForRequest(req)) {
+          handler.reject(mapDioException(err));
           return;
         }
 
         if (!canAttemptRefreshNow()) {
-          handler.reject(_mapDioException(err));
+          handler.reject(mapDioException(err));
           return;
         }
 
         if (req.extra['__retried_after_refresh'] == true) {
-          handler.reject(_mapDioException(err));
+          handler.reject(mapDioException(err));
           return;
         }
 
@@ -419,14 +412,16 @@ final dioProvider = Provider<Dio>((ref) {
 
           final newToken = ref.read(tokenStoreProvider).accessToken;
           if (newToken == null || newToken.trim().isEmpty) {
-            throw Exception('Refresh completed but no access token is available');
+            throw Exception(
+              'Refresh completed but no access token is available',
+            );
           }
 
           req.extra['__retried_after_refresh'] = true;
-          req.path = _normalizePath(req.path);
+          req.path = normalizePath(req.path);
           req.headers['Authorization'] = 'Bearer $newToken';
 
-          _normalizeContentTypeForRequest(req);
+          normalizeContentTypeForRequest(req);
 
           final response = await dio.fetch<dynamic>(req);
           handler.resolve(response);
@@ -435,13 +430,13 @@ final dioProvider = Provider<Dio>((ref) {
               ? refreshError.response?.statusCode
               : null;
 
-          if (_isSafeSessionResetStatus(refreshStatus)) {
-            await _clearSessionState();
-            handler.reject(_mapDioException(err));
+          if (isSafeSessionResetStatus(refreshStatus)) {
+            await clearSessionState();
+            handler.reject(mapDioException(err));
             return;
           }
 
-          handler.reject(_mapDioException(err));
+          handler.reject(mapDioException(err));
         }
       },
     ),

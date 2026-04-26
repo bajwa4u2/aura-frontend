@@ -237,10 +237,11 @@ class _InstitutionRequestVerificationScreenState
         _statusMessage = 'Something went wrong. Please try again.';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _submitting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
     }
   }
 
@@ -248,19 +249,14 @@ class _InstitutionRequestVerificationScreenState
     if (_statusMessage == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s12),
-      child: AuraCard(
-        child: Text(
-          _statusMessage!,
-          style: AuraText.body,
-        ),
-      ),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      child: AuraCard(child: Text(_statusMessage!, style: AuraText.body)),
     );
   }
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s10),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
       child: Text(
         title,
         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
@@ -289,7 +285,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _lastName,
                 enabled: enabled,
@@ -301,7 +297,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _roleTitle,
                 enabled: enabled,
@@ -316,7 +312,7 @@ class _InstitutionRequestVerificationScreenState
             ],
           ),
         ),
-        SizedBox(height: AuraSpace.s12),
+        const SizedBox(height: AuraSpace.s12),
         _sectionTitle('Institution'),
         AuraCard(
           child: Column(
@@ -332,9 +328,9 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               DropdownButtonFormField<String>(
-                value: _institutionType,
+                initialValue: _institutionType,
                 items: _institutionTypes
                     .map(
                       (item) => DropdownMenuItem<String>(
@@ -355,7 +351,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _website,
                 enabled: enabled,
@@ -368,7 +364,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _workEmail,
                 enabled: enabled,
@@ -381,7 +377,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _jurisdiction,
                 enabled: enabled,
@@ -393,7 +389,7 @@ class _InstitutionRequestVerificationScreenState
                   border: InputBorder.none,
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _purpose,
                 enabled: enabled,
@@ -409,7 +405,7 @@ class _InstitutionRequestVerificationScreenState
             ],
           ),
         ),
-        SizedBox(height: AuraSpace.s12),
+        const SizedBox(height: AuraSpace.s12),
         _sectionTitle('Institution credentials'),
         AuraCard(
           child: Column(
@@ -433,12 +429,14 @@ class _InstitutionRequestVerificationScreenState
                           }
                         : null,
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                   ),
                 ),
               ),
-              Divider(height: AuraSpace.s16),
+              const Divider(height: AuraSpace.s16),
               TextField(
                 controller: _confirmPassword,
                 enabled: enabled,
@@ -485,12 +483,12 @@ class _InstitutionRequestVerificationScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Create institutional account'),
-          SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s10),
           Doc.meta('Institutional entry reviewed before activation.'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _statusBlock(),
           _formCard(),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           SizedBox(
             width: double.infinity,
             child: AuraPrimaryButton(

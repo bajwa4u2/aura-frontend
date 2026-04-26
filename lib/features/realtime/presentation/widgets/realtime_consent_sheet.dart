@@ -35,9 +35,9 @@ class RealtimeConsentSheet extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Consent requested', style: AuraText.title),
+          const Text('Consent requested', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
-          Text(
+          const Text(
             'The room host is asking for a fresh consent decision before continuing.',
             style: AuraText.body,
           ),

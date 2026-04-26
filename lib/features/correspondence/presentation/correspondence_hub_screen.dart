@@ -29,13 +29,15 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 920),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
               children: [
                 _CorrespondenceHeader(),
                 const SizedBox(height: AuraSpace.s24),
-                _SignInCard(
-                  onSignIn: () => context.go('/login'),
-                ),
+                _SignInCard(onSignIn: () => context.go('/login')),
               ],
             ),
           ),
@@ -59,11 +61,15 @@ class CorrespondenceHubScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 920),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+              AuraSpace.s16,
+              AuraSpace.s20,
+              AuraSpace.s16,
+              AuraSpace.s32,
+            ),
             children: [
               _CorrespondenceHeader(),
               const SizedBox(height: AuraSpace.s24),
-              _CorrespondenceActionCard(
+              const _CorrespondenceActionCard(
                 title: 'Start a private conversation',
                 body: 'Choose one member and begin a direct exchange.',
                 icon: Icons.chat_bubble_outline_rounded,
@@ -71,7 +77,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
                 route: '/me/correspondence?start=private',
               ),
               const SizedBox(height: AuraSpace.s12),
-              _CorrespondenceActionCard(
+              const _CorrespondenceActionCard(
                 title: 'Create a shared space',
                 body:
                     'Bring together a circle, workroom, or salon with clear membership.',
@@ -80,7 +86,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
                 route: '/me/correspondence?start=space',
               ),
               const SizedBox(height: AuraSpace.s12),
-              _CorrespondenceActionCard(
+              const _CorrespondenceActionCard(
                 title: 'Open conversations',
                 body:
                     'Return to active private and shared continuity already underway.',
@@ -89,7 +95,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
                 route: '/conversations',
               ),
               const SizedBox(height: AuraSpace.s12),
-              _CorrespondenceActionCard(
+              const _CorrespondenceActionCard(
                 title: 'Invitation center',
                 body:
                     'Review, create, and manage invitations for existing spaces and threads.',
@@ -111,12 +117,11 @@ class _CorrespondenceHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Correspondence', style: AuraText.headline),
+        const Text('Correspondence', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
           'Private exchange, shared rooms, and invitations — one unified system.',
-          style: AuraText.body
-              .copyWith(color: AuraSurface.muted, height: 1.5),
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
         ),
       ],
     );
@@ -140,7 +145,7 @@ class _SignInCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sign in required', style: AuraText.subtitle),
+          const Text('Sign in required', style: AuraText.subtitle),
           const SizedBox(height: AuraSpace.s8),
           Text(
             'Your conversations, spaces, and invitations will appear here once you are signed in.',
@@ -199,7 +204,11 @@ class _CorrespondenceActionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(color: AuraSurface.divider),
                 ),
-                child: Icon(icon, size: AuraIconSize.sm, color: AuraSurface.muted),
+                child: Icon(
+                  icon,
+                  size: AuraIconSize.sm,
+                  color: AuraSurface.muted,
+                ),
               ),
               const SizedBox(width: AuraSpace.s14),
               Expanded(
@@ -208,14 +217,17 @@ class _CorrespondenceActionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style:
-                          AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: AuraSpace.s6),
                     Text(
                       body,
-                      style: AuraText.small
-                          .copyWith(color: AuraSurface.muted, height: 1.45),
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.45,
+                      ),
                     ),
                     const SizedBox(height: AuraSpace.s12),
                     Row(
@@ -228,8 +240,11 @@ class _CorrespondenceActionCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: AuraSpace.s4),
-                        const Icon(Icons.arrow_forward_rounded,
-                            size: 14, color: AuraSurface.accentText),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: AuraSurface.accentText,
+                        ),
                       ],
                     ),
                   ],

@@ -15,15 +15,21 @@ import '../data/invitations_client.dart';
 import '../../correspondence/data/correspondence_identity.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 
-final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   return ref.watch(invitationsClientProvider).loadInbox();
 });
 
-final _inviteSentProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _inviteSentProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   return ref.watch(invitationsClientProvider).loadSent();
 });
 
-final _inviteApprovalsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _inviteApprovalsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   return ref.watch(invitationsClientProvider).loadApprovals();
 });
 
@@ -45,7 +51,9 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
       await live.ensureConnected();
       _liveSubscription = live.events.listen((event) {
         if (!mounted) return;
-        if (event.name.startsWith('invite:') || event.name.startsWith('thread:') || event.name.startsWith('space:member.')) {
+        if (event.name.startsWith('invite:') ||
+            event.name.startsWith('thread:') ||
+            event.name.startsWith('space:member.')) {
           ref.invalidate(_inviteInboxProvider);
           ref.invalidate(_inviteSentProvider);
           ref.invalidate(_inviteApprovalsProvider);
@@ -87,9 +95,9 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Invitations', style: AuraText.title),
+                  const Text('Invitations', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s8),
-                  AuraTextBlock(
+                  const AuraTextBlock(
                     'See what is waiting on you, what you have already sent, and anything that still needs a decision.',
                     style: AuraText.body,
                   ),
@@ -112,10 +120,7 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
               ),
             ),
             const SizedBox(height: AuraSpace.s14),
-            _SectionHeader(
-              title: 'Incoming',
-              countAsync: inboxAsync,
-            ),
+            _SectionHeader(title: 'Incoming', countAsync: inboxAsync),
             const SizedBox(height: AuraSpace.s10),
             _InviteListBlock(
               asyncValue: inboxAsync,
@@ -124,10 +129,7 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
               itemBuilder: (invite) => _IncomingInviteCard(invite: invite),
             ),
             const SizedBox(height: AuraSpace.s14),
-            _SectionHeader(
-              title: 'Sent',
-              countAsync: sentAsync,
-            ),
+            _SectionHeader(title: 'Sent', countAsync: sentAsync),
             const SizedBox(height: AuraSpace.s10),
             _InviteListBlock(
               asyncValue: sentAsync,
@@ -155,28 +157,34 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.countAsync,
-  });
+  const _SectionHeader({required this.title, required this.countAsync});
 
   final String title;
   final AsyncValue<List<Map<String, dynamic>>> countAsync;
 
   @override
   Widget build(BuildContext context) {
-    final count = countAsync.maybeWhen(data: (items) => items.length, orElse: () => null);
+    final count = countAsync.maybeWhen(
+      data: (items) => items.length,
+      orElse: () => null,
+    );
     return Row(
       children: [
         Expanded(child: Text(title, style: AuraText.title)),
         if (count != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s10,
+              vertical: AuraSpace.s6,
+            ),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black12),
               borderRadius: BorderRadius.circular(AuraRadius.pill),
             ),
-            child: Text('$count', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(
+              '$count',
+              style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
       ],
     );
@@ -204,7 +212,7 @@ class _InviteListBlock extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Could not load invitations', style: AuraText.title),
+            const Text('Could not load invitations', style: AuraText.title),
             const SizedBox(height: AuraSpace.s8),
             AuraTextBlock('$error', style: AuraText.body),
           ],
@@ -251,11 +259,9 @@ class _IncomingInviteCard extends ConsumerWidget {
     final status = _inviteStateLabel(invite);
 
     Future<void> respond(String action) async {
-      await ref.read(invitationsClientProvider).respond(
-            inviteId: inviteId,
-            token: token,
-            action: action,
-          );
+      await ref
+          .read(invitationsClientProvider)
+          .respond(inviteId: inviteId, token: token, action: action);
       ref.invalidate(_inviteInboxProvider);
       ref.invalidate(_inviteSentProvider);
       ref.invalidate(_inviteApprovalsProvider);
@@ -288,7 +294,14 @@ class _IncomingInviteCard extends ConsumerWidget {
             runSpacing: AuraSpace.s8,
             children: [
               _StatusPill(label: status, tone: _inviteTone(invite)),
-              _Pill(label: _humanizeLabel(_pickString(invite, const ['destinationType', 'destination_type']))),
+              _Pill(
+                label: _humanizeLabel(
+                  _pickString(invite, const [
+                    'destinationType',
+                    'destination_type',
+                  ]),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -307,7 +320,9 @@ class _IncomingInviteCard extends ConsumerWidget {
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('$e')));
                     }
                   }
                 },
@@ -319,7 +334,9 @@ class _IncomingInviteCard extends ConsumerWidget {
                     await respond('DECLINE');
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('$e')));
                     }
                   }
                 },
@@ -327,7 +344,9 @@ class _IncomingInviteCard extends ConsumerWidget {
               if (token.isNotEmpty)
                 AuraSecondaryButton(
                   label: 'Open invite',
-                  onPressed: () => context.push('/invite/accept?token=${Uri.encodeComponent(token)}'),
+                  onPressed: () => context.push(
+                    '/invite/accept?token=${Uri.encodeComponent(token)}',
+                  ),
                 ),
             ],
           ),
@@ -375,9 +394,22 @@ class _SentInviteCard extends ConsumerWidget {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              _StatusPill(label: _inviteStateLabel(invite), tone: _inviteTone(invite)),
-              if (_pickString(invite, const ['deliveryChannel', 'delivery_channel']).isNotEmpty)
-                _Pill(label: _humanizeLabel(_pickString(invite, const ['deliveryChannel', 'delivery_channel']))),
+              _StatusPill(
+                label: _inviteStateLabel(invite),
+                tone: _inviteTone(invite),
+              ),
+              if (_pickString(invite, const [
+                'deliveryChannel',
+                'delivery_channel',
+              ]).isNotEmpty)
+                _Pill(
+                  label: _humanizeLabel(
+                    _pickString(invite, const [
+                      'deliveryChannel',
+                      'delivery_channel',
+                    ]),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -390,7 +422,8 @@ class _SentInviteCard extends ConsumerWidget {
                   label: 'Copy link',
                   icon: Icons.link_outlined,
                   onPressed: () async {
-                    final link = Uri.base.origin + '/invite/accept?token=${Uri.encodeComponent(token)}';
+                    final link =
+                        '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
                     await Clipboard.setData(ClipboardData(text: link));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -404,13 +437,17 @@ class _SentInviteCard extends ConsumerWidget {
                     ? null
                     : () async {
                         try {
-                          await ref.read(invitationsClientProvider).revokeInvite(inviteId);
+                          await ref
+                              .read(invitationsClientProvider)
+                              .revokeInvite(inviteId);
                           ref.invalidate(_inviteInboxProvider);
                           ref.invalidate(_inviteSentProvider);
                           ref.invalidate(_inviteApprovalsProvider);
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('$e')));
                           }
                         }
                       },
@@ -437,15 +474,25 @@ class _ApprovalInviteCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IdentityAvatar(label: _inviteTitle(invite), imageUrl: _inviteAvatarUrl(invite)),
+              _IdentityAvatar(
+                label: _inviteTitle(invite),
+                imageUrl: _inviteAvatarUrl(invite),
+              ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AuraTextBlock(_inviteTitle(invite), style: AuraText.title, maxLines: 2),
+                    AuraTextBlock(
+                      _inviteTitle(invite),
+                      style: AuraText.title,
+                      maxLines: 2,
+                    ),
                     const SizedBox(height: AuraSpace.s6),
-                    AuraTextBlock(_inviteSubtitle(invite), style: AuraText.body),
+                    AuraTextBlock(
+                      _inviteSubtitle(invite),
+                      style: AuraText.body,
+                    ),
                   ],
                 ),
               ),
@@ -456,9 +503,22 @@ class _ApprovalInviteCard extends StatelessWidget {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              _StatusPill(label: _inviteStateLabel(invite), tone: _inviteTone(invite)),
-              if (_pickString(invite, const ['accessPolicy', 'access_policy']).isNotEmpty)
-                _Pill(label: _humanizeLabel(_pickString(invite, const ['accessPolicy', 'access_policy']))),
+              _StatusPill(
+                label: _inviteStateLabel(invite),
+                tone: _inviteTone(invite),
+              ),
+              if (_pickString(invite, const [
+                'accessPolicy',
+                'access_policy',
+              ]).isNotEmpty)
+                _Pill(
+                  label: _humanizeLabel(
+                    _pickString(invite, const [
+                      'accessPolicy',
+                      'access_policy',
+                    ]),
+                  ),
+                ),
             ],
           ),
         ],
@@ -497,12 +557,18 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = label.trim().isEmpty ? '—' : label.trim();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
-      child: Text(text, style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+      child: Text(
+        text,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -518,40 +584,70 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = switch (tone) {
-      _StatusTone.positive => (border: Colors.green.shade200, text: Colors.green.shade800, fill: Colors.green.shade50),
-      _StatusTone.negative => (border: Colors.red.shade200, text: Colors.red.shade800, fill: Colors.red.shade50),
-      _StatusTone.accent => (border: Colors.blue.shade200, text: Colors.blue.shade800, fill: Colors.blue.shade50),
-      _StatusTone.neutral => (border: Colors.black12, text: Colors.black87, fill: Colors.transparent),
+      _StatusTone.positive => (
+        border: Colors.green.shade200,
+        text: Colors.green.shade800,
+        fill: Colors.green.shade50,
+      ),
+      _StatusTone.negative => (
+        border: Colors.red.shade200,
+        text: Colors.red.shade800,
+        fill: Colors.red.shade50,
+      ),
+      _StatusTone.accent => (
+        border: Colors.blue.shade200,
+        text: Colors.blue.shade800,
+        fill: Colors.blue.shade50,
+      ),
+      _StatusTone.neutral => (
+        border: Colors.black12,
+        text: Colors.black87,
+        fill: Colors.transparent,
+      ),
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
       decoration: BoxDecoration(
         color: palette.fill,
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
-      child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
+      child: Text(
+        label,
+        style: AuraText.small.copyWith(
+          fontWeight: FontWeight.w700,
+          color: palette.text,
+        ),
+      ),
     );
   }
 }
 
 class _IdentityAvatar extends StatelessWidget {
-  const _IdentityAvatar({required this.label, this.imageUrl = '', this.radius = 20});
+  const _IdentityAvatar({required this.label, this.imageUrl = ''});
 
   final String label;
   final String imageUrl;
-  final double radius;
 
   @override
   Widget build(BuildContext context) {
     final initials = _initials(label);
     if (imageUrl.trim().isNotEmpty) {
-      return CircleAvatar(radius: radius, backgroundImage: NetworkImage(imageUrl.trim()));
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: NetworkImage(imageUrl.trim()),
+      );
     }
     return CircleAvatar(
-      radius: radius,
-      child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+      radius: 20,
+      child: Text(
+        initials,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
@@ -563,7 +659,6 @@ String _inviteTitle(Map<String, dynamic> invite) {
 String _inviteSubtitle(Map<String, dynamic> invite) {
   return CorrespondenceIdentity.inviteSubtitle(invite);
 }
-
 
 String _inviteStateLabel(Map<String, dynamic> invite) {
   return CorrespondenceIdentity.inviteStateLabel(invite);
@@ -609,22 +704,6 @@ String _pickString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
     final value = (map[key] ?? '').toString().trim();
     if (value.isNotEmpty) return value;
-  }
-  return '';
-}
-
-String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
-  for (final path in paths) {
-    dynamic current = map;
-    for (final key in path) {
-      if (current is! Map) {
-        current = null;
-        break;
-      }
-      current = current[key];
-    }
-    final text = (current ?? '').toString().trim();
-    if (text.isNotEmpty) return text;
   }
   return '';
 }

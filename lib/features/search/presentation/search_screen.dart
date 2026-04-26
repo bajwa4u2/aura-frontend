@@ -19,11 +19,7 @@ final searchResultProvider = FutureProvider<SearchResult>((ref) async {
   final q = ref.watch(searchQueryProvider);
 
   if (q.trim().isEmpty) {
-    return const SearchResult(
-      users: [],
-      institutions: [],
-      posts: [],
-    );
+    return const SearchResult(users: [], institutions: [], posts: []);
   }
 
   final repo = ref.watch(searchRepositoryProvider);
@@ -57,8 +53,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _syncControllerToQuery(String q) {
     if (_controller.text == q) return;
     _controller.text = q;
-    _controller.selection =
-        TextSelection.collapsed(offset: _controller.text.length);
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
   }
 
   void _onQueryChanged(String value) {
@@ -86,12 +83,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           AuraSpace.s32,
         ),
         children: [
-          _SearchHeader(isAuthed: isAuthed, onSignIn: () => context.go('/login?redirect=%2Fsearch')),
+          _SearchHeader(
+            isAuthed: isAuthed,
+            onSignIn: () => context.go('/login?redirect=%2Fsearch'),
+          ),
           const SizedBox(height: AuraSpace.s16),
           _SearchInput(controller: _controller, onChanged: _onQueryChanged),
           const SizedBox(height: AuraSpace.s20),
           if (q.trim().isEmpty)
-            _SearchEmptyPrompt(isAuthed: isAuthed, onSignIn: () => context.go('/login?redirect=%2Fsearch'))
+            _SearchEmptyPrompt(
+              isAuthed: isAuthed,
+              onSignIn: () => context.go('/login?redirect=%2Fsearch'),
+            )
           else
             _SearchResults(results: results, q: q),
         ],
@@ -115,7 +118,7 @@ class _SearchHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Discover', style: AuraText.headline),
+              const Text('Discover', style: AuraText.headline),
               const SizedBox(height: AuraSpace.s4),
               Text(
                 'Search creators, institutions, and public work.',
@@ -136,10 +139,7 @@ class _SearchHeader extends StatelessWidget {
 }
 
 class _SearchInput extends StatelessWidget {
-  const _SearchInput({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _SearchInput({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -161,10 +161,15 @@ class _SearchInput extends StatelessWidget {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          prefixIcon: const Icon(Icons.search_rounded,
-              size: 20, color: AuraSurface.muted),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: AuraSurface.muted,
+          ),
           contentPadding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s16, vertical: AuraSpace.s14),
+            horizontal: AuraSpace.s16,
+            vertical: AuraSpace.s14,
+          ),
         ),
         textInputAction: TextInputAction.search,
         onChanged: onChanged,
@@ -174,10 +179,7 @@ class _SearchInput extends StatelessWidget {
 }
 
 class _SearchEmptyPrompt extends StatelessWidget {
-  const _SearchEmptyPrompt({
-    required this.isAuthed,
-    required this.onSignIn,
-  });
+  const _SearchEmptyPrompt({required this.isAuthed, required this.onSignIn});
 
   final bool isAuthed;
   final VoidCallback onSignIn;
@@ -187,21 +189,21 @@ class _SearchEmptyPrompt extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SearchSectionLabel(label: 'What you can find'),
+        const _SearchSectionLabel(label: 'What you can find'),
         const SizedBox(height: AuraSpace.s12),
-        _SearchHintRow(
+        const _SearchHintRow(
           icon: Icons.person_outline_rounded,
           title: 'Creators',
           body: 'Profiles, handles, and public presence.',
         ),
         const SizedBox(height: AuraSpace.s8),
-        _SearchHintRow(
+        const _SearchHintRow(
           icon: Icons.apartment_outlined,
           title: 'Institutions',
           body: 'Organizations in the public record.',
         ),
         const SizedBox(height: AuraSpace.s8),
-        _SearchHintRow(
+        const _SearchHintRow(
           icon: Icons.article_outlined,
           title: 'Public work',
           body: 'Writing and creations matching your terms.',
@@ -275,13 +277,15 @@ class _SearchHintRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style:
-                        AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: AuraSpace.s2),
-                Text(body,
-                    style:
-                        AuraText.small.copyWith(color: AuraSurface.muted)),
+                Text(
+                  body,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
               ],
             ),
           ),
@@ -302,7 +306,9 @@ class _SearchResults extends ConsumerWidget {
     return results.when(
       data: (r) {
         final hasAny =
-            r.users.isNotEmpty || r.institutions.isNotEmpty || r.posts.isNotEmpty;
+            r.users.isNotEmpty ||
+            r.institutions.isNotEmpty ||
+            r.posts.isNotEmpty;
 
         if (!hasAny) {
           return AuraEmptyState(
@@ -317,21 +323,19 @@ class _SearchResults extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (r.users.isNotEmpty) ...[
-              _SearchSectionLabel(label: 'Creators'),
+              const _SearchSectionLabel(label: 'Creators'),
               const SizedBox(height: AuraSpace.s10),
               ...r.users.take(8).map((u) => _AuthorTile(u: u)),
               const SizedBox(height: AuraSpace.s20),
             ],
             if (r.institutions.isNotEmpty) ...[
-              _SearchSectionLabel(label: 'Institutions'),
+              const _SearchSectionLabel(label: 'Institutions'),
               const SizedBox(height: AuraSpace.s10),
-              ...r.institutions
-                  .take(8)
-                  .map((i) => _InstitutionTile(i: i)),
+              ...r.institutions.take(8).map((i) => _InstitutionTile(i: i)),
               const SizedBox(height: AuraSpace.s20),
             ],
             if (r.posts.isNotEmpty) ...[
-              _SearchSectionLabel(label: 'Public work'),
+              const _SearchSectionLabel(label: 'Public work'),
               const SizedBox(height: AuraSpace.s10),
               ...r.posts.take(12).map((p) => _PostTile(p: p)),
             ],
@@ -339,7 +343,7 @@ class _SearchResults extends ConsumerWidget {
         );
       },
       loading: () => const AuraLoadingState(message: 'Searching…'),
-      error: (e, _) => AuraErrorState(
+      error: (e, _) => const AuraErrorState(
         title: 'Search unavailable',
         body: 'Search could not be reached right now. Try again in a moment.',
       ),
@@ -375,16 +379,16 @@ class _AuthorTile extends StatelessWidget {
     final name = (u['displayName'] ?? '').toString().trim();
     final bio = (u['bio'] ?? '').toString().trim();
     final avatarUrl = (u['avatarUrl'] ?? '').toString().trim();
-    final display =
-        name.isNotEmpty ? name : (handle.isNotEmpty ? handle : 'Author');
+    final display = name.isNotEmpty
+        ? name
+        : (handle.isNotEmpty ? handle : 'Author');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap:
-              handle.isEmpty ? null : () => context.push('/u/$handle'),
+          onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
           borderRadius: BorderRadius.circular(AuraRadius.card),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
@@ -396,7 +400,10 @@ class _AuthorTile extends StatelessWidget {
             child: Row(
               children: [
                 AuraAvatar(
-                    name: display, imageUrl: avatarUrl.isEmpty ? null : avatarUrl, size: 40),
+                  name: display,
+                  imageUrl: avatarUrl.isEmpty ? null : avatarUrl,
+                  size: 40,
+                ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
                   child: Column(
@@ -406,28 +413,38 @@ class _AuthorTile extends StatelessWidget {
                         display,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AuraText.body
-                            .copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       if (handle.isNotEmpty)
-                        Text('@$handle',
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          '@$handle',
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       if (bio.isNotEmpty) ...[
                         const SizedBox(height: AuraSpace.s4),
-                        Text(bio,
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          bio,
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: AuraSurface.faint),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AuraSurface.faint,
+                ),
               ],
             ),
           ),
@@ -460,8 +477,9 @@ class _InstitutionTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap:
-              slug.isEmpty ? null : () => context.push('/institutions/$slug'),
+          onTap: slug.isEmpty
+              ? null
+              : () => context.push('/institutions/$slug'),
           borderRadius: BorderRadius.circular(AuraRadius.card),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
@@ -480,8 +498,11 @@ class _InstitutionTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AuraRadius.r10),
                     border: Border.all(color: AuraSurface.divider),
                   ),
-                  child: const Icon(Icons.apartment_outlined,
-                      size: 20, color: AuraSurface.muted),
+                  child: const Icon(
+                    Icons.apartment_outlined,
+                    size: 20,
+                    color: AuraSurface.muted,
+                  ),
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
@@ -492,36 +513,49 @@ class _InstitutionTile extends StatelessWidget {
                         name.isNotEmpty ? name : 'Institution',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AuraText.body
-                            .copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       if (slug.isNotEmpty)
-                        Text(slug,
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          slug,
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       if (sublineParts.isNotEmpty) ...[
                         const SizedBox(height: AuraSpace.s4),
-                        Text(sublineParts.join(' · '),
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          sublineParts.join(' · '),
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                       if (description.isNotEmpty) ...[
                         const SizedBox(height: AuraSpace.s4),
-                        Text(description,
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          description,
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: AuraSurface.faint),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AuraSurface.faint,
+                ),
               ],
             ),
           ),
@@ -542,8 +576,9 @@ class _PostTile extends StatelessWidget {
     final handle = (author?.handle ?? '').trim();
     final name = (author?.displayName ?? '').trim();
 
-    final byline =
-        handle.isEmpty ? name : '@$handle${name.isNotEmpty ? ' · $name' : ''}';
+    final byline = handle.isEmpty
+        ? name
+        : '@$handle${name.isNotEmpty ? ' · $name' : ''}';
 
     final text = p.text.trim();
     final preview = text.length <= 220 ? text : '${text.substring(0, 220)}…';
@@ -568,8 +603,7 @@ class _PostTile extends StatelessWidget {
                 if (byline.isNotEmpty) ...[
                   Text(
                     byline,
-                    style:
-                        AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -16,21 +16,17 @@ import '../../correspondence/data/threads_repository.dart';
 
 final _conversationSpacesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final auth = ref.watch(authStatusProvider);
+      final auth = ref.watch(authStatusProvider);
 
-  if (auth != AuthStatus.authed) {
-    return [];
-  }
+      if (auth != AuthStatus.authed) {
+        return [];
+      }
 
-  final repo = ref.watch(spacesRepositoryProvider);
-  return repo.listMySpaces();
-});
+      final repo = ref.watch(spacesRepositoryProvider);
+      return repo.listMySpaces();
+    });
 
-enum _ConversationFilter {
-  all,
-  private,
-  spaces,
-}
+enum _ConversationFilter { all, private, spaces }
 
 class ConversationsScreen extends ConsumerStatefulWidget {
   const ConversationsScreen({super.key});
@@ -78,15 +74,17 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         var threadId = item.directThreadId;
 
         if (threadId.isEmpty) {
-          final threads = await ref.read(threadsRepositoryProvider).listThreads(
-                spaceId: item.id,
-              );
+          final threads = await ref
+              .read(threadsRepositoryProvider)
+              .listThreads(spaceId: item.id);
 
           final visibleThreads = threads
               .where((thread) => thread['archived'] != true)
               .toList(growable: false);
 
-          final target = visibleThreads.isNotEmpty ? visibleThreads.first : (threads.isNotEmpty ? threads.first : null);
+          final target = visibleThreads.isNotEmpty
+              ? visibleThreads.first
+              : (threads.isNotEmpty ? threads.first : null);
 
           if (target != null) {
             threadId = _pickString(target, const ['id', 'threadId']);
@@ -112,7 +110,6 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     }
   }
 
-
   Future<void> _openRequestedThreadIfNeeded(
     List<Map<String, dynamic>> spaces,
   ) async {
@@ -128,7 +125,9 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     _handledThreadId = requestedThreadId;
 
     try {
-      final thread = await ref.read(threadsRepositoryProvider).getThread(requestedThreadId);
+      final thread = await ref
+          .read(threadsRepositoryProvider)
+          .getThread(requestedThreadId);
       if (!mounted) return;
 
       final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
@@ -138,7 +137,9 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('That conversation is no longer available.')),
+        const SnackBar(
+          content: Text('That conversation is no longer available.'),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -157,9 +158,13 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         showHeader: false,
         body: ListView(
           padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+            AuraSpace.s16,
+            AuraSpace.s20,
+            AuraSpace.s16,
+            AuraSpace.s32,
+          ),
           children: [
-            _ConversationsHeader(
+            const _ConversationsHeader(
               subtitle: 'Ongoing direct threads and shared rooms.',
             ),
             const SizedBox(height: AuraSpace.s24),
@@ -188,19 +193,28 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         child: spacesAsync.when(
           loading: () => ListView(
             padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
-            children: [
+              AuraSpace.s16,
+              AuraSpace.s20,
+              AuraSpace.s16,
+              AuraSpace.s32,
+            ),
+            children: const [
               _ConversationsHeader(subtitle: 'Loading active conversations…'),
-              const SizedBox(height: AuraSpace.s24),
-              const AuraLoadingState(message: 'Loading your inbox…'),
+              SizedBox(height: AuraSpace.s24),
+              AuraLoadingState(message: 'Loading your inbox…'),
             ],
           ),
           error: (error, _) => ListView(
             padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+              AuraSpace.s16,
+              AuraSpace.s20,
+              AuraSpace.s16,
+              AuraSpace.s32,
+            ),
             children: [
-              _ConversationsHeader(
-                  subtitle: 'Could not load your ongoing correspondence.'),
+              const _ConversationsHeader(
+                subtitle: 'Could not load your ongoing correspondence.',
+              ),
               const SizedBox(height: AuraSpace.s24),
               AuraErrorState(
                 title: 'Something went wrong',
@@ -225,9 +239,13 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
               children: [
-                _ConversationsHeader(
+                const _ConversationsHeader(
                   subtitle:
                       'Direct threads and shared rooms already in motion.',
                 ),
@@ -273,7 +291,7 @@ class _ConversationsHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Conversations', style: AuraText.headline),
+        const Text('Conversations', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
           subtitle,
@@ -289,10 +307,10 @@ class _ConversationQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
+    return const Wrap(
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
-      children: const [
+      children: [
         _QuickActionCard(
           label: 'New conversation',
           subtitle: 'Start direct exchange',
@@ -355,10 +373,10 @@ class _QuickActionCard extends StatelessWidget {
                     color: AuraSurface.accentSoft,
                     borderRadius: BorderRadius.circular(AuraRadius.r10),
                     border: Border.all(
-                        color: AuraSurface.accent.withValues(alpha: 0.25)),
+                      color: AuraSurface.accent.withValues(alpha: 0.25),
+                    ),
                   ),
-                  child:
-                      Icon(icon, size: 18, color: AuraSurface.accentText),
+                  child: Icon(icon, size: 18, color: AuraSurface.accentText),
                 ),
                 const SizedBox(width: AuraSpace.s10),
                 Expanded(
@@ -374,8 +392,9 @@ class _QuickActionCard extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s2),
                       Text(
                         subtitle,
-                        style: AuraText.small
-                            .copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                       ),
                     ],
                   ),
@@ -390,10 +409,7 @@ class _QuickActionCard extends StatelessWidget {
 }
 
 class _FilterRow extends StatelessWidget {
-  const _FilterRow({
-    required this.filter,
-    required this.onFilterChanged,
-  });
+  const _FilterRow({required this.filter, required this.onFilterChanged});
 
   final _ConversationFilter filter;
   final ValueChanged<_ConversationFilter> onFilterChanged;
@@ -497,7 +513,11 @@ class _ConversationList extends StatelessWidget {
               onTap: () => onOpenConversation(items[i]),
             ),
             if (i != items.length - 1)
-              const Divider(height: 1, thickness: 1, color: AuraSurface.divider),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AuraSurface.divider,
+              ),
           ],
         ],
       ),
@@ -522,17 +542,11 @@ class _ConversationRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ConversationBadge(
-              badge: item.badge,
-              icon: item.icon,
-            ),
+            _ConversationBadge(badge: item.badge, icon: item.icon),
             const SizedBox(width: AuraSpace.s12),
             Expanded(
               child: Column(
@@ -596,8 +610,11 @@ class _ConversationRow extends StatelessWidget {
                       color: AuraSurface.accent,
                     ),
                   )
-                : const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: AuraSurface.faint),
+                : const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: AuraSurface.faint,
+                  ),
           ],
         ),
       ),
@@ -606,10 +623,7 @@ class _ConversationRow extends StatelessWidget {
 }
 
 class _ConversationBadge extends StatelessWidget {
-  const _ConversationBadge({
-    required this.badge,
-    required this.icon,
-  });
+  const _ConversationBadge({required this.badge, required this.icon});
 
   final String badge;
   final IconData icon;
@@ -671,7 +685,9 @@ class _StateCard extends StatelessWidget {
           Text(
             body,
             style: AuraText.small.copyWith(
-                color: AuraSurface.muted, height: 1.45),
+              color: AuraSurface.muted,
+              height: 1.45,
+            ),
           ),
           if (primaryLabel != null && onPrimary != null) ...[
             const SizedBox(height: AuraSpace.s16),
@@ -688,7 +704,6 @@ class _StateCard extends StatelessWidget {
 }
 
 class _ConversationItem {
-
   const _ConversationItem({
     required this.id,
     required this.title,
@@ -769,8 +784,8 @@ List<_ConversationItem> _buildConversationItems(
     final preview = description.isNotEmpty
         ? description
         : type == 'PRIVATE'
-            ? 'Direct exchange'
-            : 'Shared space';
+        ? 'Direct exchange'
+        : 'Shared space';
 
     final metaParts = <String>[];
 
@@ -817,10 +832,13 @@ String _pickTitle(Map<String, dynamic> space) {
   if (members.isNotEmpty) {
     final names = members
         .map(
-          (member) => _pickString(
-            member,
-            const ['displayName', 'name', 'fullName', 'handle', 'username'],
-          ),
+          (member) => _pickString(member, const [
+            'displayName',
+            'name',
+            'fullName',
+            'handle',
+            'username',
+          ]),
         )
         .where((value) => value.isNotEmpty)
         .take(2)
@@ -890,7 +908,10 @@ String _formatTimestamp(String raw) {
 
   if (diff.inSeconds < 45) return 'Now';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-  if (diff.inHours < 24 && now.day == local.day && now.month == local.month && now.year == local.year) {
+  if (diff.inHours < 24 &&
+      now.day == local.day &&
+      now.month == local.month &&
+      now.year == local.year) {
     return '${diff.inHours}h';
   }
 
@@ -900,15 +921,7 @@ String _formatTimestamp(String raw) {
 
   if (dayDiff == 1) return 'Yesterday';
 
-  const weekdays = [
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun',
-  ];
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (dayDiff >= 0 && dayDiff < 7) {
     return weekdays[local.weekday - 1];

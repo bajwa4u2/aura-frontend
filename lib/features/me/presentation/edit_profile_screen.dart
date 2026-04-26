@@ -51,7 +51,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _initialWebsite = '';
   String? _initialAvatarUrl;
   String? _initialCoverUrl;
-  List<Map<String, dynamic>> _initialPublicationsData = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _initialPublicationsData =
+      const <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _initialLinksData = const <Map<String, dynamic>>[];
 
   List<_EditablePublication> _publications = <_EditablePublication>[];
@@ -103,7 +104,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _websiteController.text.trim() != _initialWebsite ||
         (_avatarUrl ?? '') != (_initialAvatarUrl ?? '') ||
         (_coverUrl ?? '') != (_initialCoverUrl ?? '') ||
-        _publicationsSignature != _signatureForCollection(_initialPublicationsData) ||
+        _publicationsSignature !=
+            _signatureForCollection(_initialPublicationsData) ||
         _linksSignature != _signatureForCollection(_initialLinksData);
   }
 
@@ -125,8 +127,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final source = _displayName.trim();
     if (source.isEmpty) return 'A';
 
-    final parts =
-        source.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    final parts = source
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     if (parts.isEmpty) return 'A';
     if (parts.length == 1) {
@@ -141,7 +145,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String get _publicationsSignature =>
       _signatureForCollection(_normalizedPublicationsPayload());
 
-  String get _linksSignature => _signatureForCollection(_normalizedLinksPayload());
+  String get _linksSignature =>
+      _signatureForCollection(_normalizedLinksPayload());
 
   Future<void> _load() async {
     setState(() {
@@ -160,13 +165,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (_initialLocation.isEmpty) {
         final city = _readString(data, const ['city']);
         final country = _readString(data, const ['country']);
-        _initialLocation = [city, country].where((e) => e.isNotEmpty).join(', ');
+        _initialLocation = [
+          city,
+          country,
+        ].where((e) => e.isNotEmpty).join(', ');
       }
 
-      _initialWebsite = _readString(
-        data,
-        const ['website', 'websiteUrl', 'site', 'url'],
-      );
+      _initialWebsite = _readString(data, const [
+        'website',
+        'websiteUrl',
+        'site',
+        'url',
+      ]);
       _initialAvatarUrl = _emptyToNull(
         _readString(data, const ['avatarUrl', 'avatar', 'photoUrl']),
       );
@@ -188,7 +198,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       _replacePublications(
         _extractPublications(data)
-            .map((item) => _EditablePublication.fromMap(item, onChanged: _onChanged))
+            .map(
+              (item) =>
+                  _EditablePublication.fromMap(item, onChanged: _onChanged),
+            )
             .toList(),
       );
       _replaceLinks(
@@ -267,14 +280,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _errorText = 'Could not upload image.';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        if (isAvatar) {
-          _uploadingAvatar = false;
-        } else {
-          _uploadingCover = false;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (isAvatar) {
+            _uploadingAvatar = false;
+          } else {
+            _uploadingCover = false;
+          }
+        });
+      }
     }
   }
 
@@ -350,9 +364,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _saving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Presence updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Presence updated')));
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -380,7 +394,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _coverUrl = _initialCoverUrl;
       _replacePublications(
         _initialPublicationsData
-            .map((item) => _EditablePublication.fromMap(item, onChanged: _onChanged))
+            .map(
+              (item) =>
+                  _EditablePublication.fromMap(item, onChanged: _onChanged),
+            )
             .toList(),
       );
       _replaceLinks(
@@ -427,10 +444,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _addLink() {
     if (_busy) return;
     setState(() {
-      _links = [
-        ..._links,
-        _EditableLink(onChanged: _onChanged),
-      ];
+      _links = [..._links, _EditableLink(onChanged: _onChanged)];
     });
   }
 
@@ -485,7 +499,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loading) {
       return AuraScaffold(
         title: 'Edit presence',
-        body: const Center(child: AuraLoadingState(message: 'Loading profile…')),
+        body: const Center(
+          child: AuraLoadingState(message: 'Loading profile…'),
+        ),
       );
     }
 
@@ -569,18 +585,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         fit: StackFit.expand,
         children: [
           if (coverProvider != null)
-            Image(
-              image: coverProvider,
-              fit: BoxFit.cover,
-            )
+            Image(image: coverProvider, fit: BoxFit.cover)
           else
-            DecoratedBox(
+            const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     AuraSurface.elevated,
                     AuraSurface.card,
-                    const Color(0xFF171B22),
+                    Color(0xFF171B22),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -591,9 +604,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withOpacity(0.10),
-                  Colors.black.withOpacity(0.22),
-                  Colors.black.withOpacity(0.34),
+                  Colors.black.withValues(alpha: 0.10),
+                  Colors.black.withValues(alpha: 0.22),
+                  Colors.black.withValues(alpha: 0.34),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -610,9 +623,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 vertical: AuraSpace.s10,
               ),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.34),
+                color: Colors.black.withValues(alpha: 0.34),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.10)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,13 +634,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     'Cover',
                     style: AuraText.muted.copyWith(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.78),
+                      color: Colors.white.withValues(alpha: 0.78),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _coverUrl == null ? 'Set the surface behind your presence' : 'Current cover in use',
+                    _coverUrl == null
+                        ? 'Set the surface behind your presence'
+                        : 'Current cover in use',
                     style: AuraText.body.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -674,7 +689,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               BoxShadow(
                 blurRadius: 18,
                 offset: const Offset(0, 8),
-                color: Colors.black.withOpacity(0.22),
+                color: Colors.black.withValues(alpha: 0.22),
               ),
             ],
           ),
@@ -716,12 +731,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               if ((_avatarUrl ?? '').isNotEmpty)
-                PopupMenuItem<String>(
+                const PopupMenuItem<String>(
                   value: 'remove',
-                  child: Text(
-                    'Remove photo',
-                    style: AuraText.body,
-                  ),
+                  child: Text('Remove photo', style: AuraText.body),
                 ),
             ],
             child: Container(
@@ -784,10 +796,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             runSpacing: AuraSpace.s8,
             alignment: WrapAlignment.center,
             children: [
-              if (_location.isNotEmpty)
-                _previewChip(label: _location),
-              if (_website.isNotEmpty)
-                _previewChip(label: _website),
+              if (_location.isNotEmpty) _previewChip(label: _location),
+              if (_website.isNotEmpty) _previewChip(label: _website),
             ],
           ),
         ],
@@ -880,7 +890,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 final item = _publications[index];
                 return Padding(
                   padding: EdgeInsets.only(
-                    bottom: index == _publications.length - 1 ? 0 : AuraSpace.s14,
+                    bottom: index == _publications.length - 1
+                        ? 0
+                        : AuraSpace.s14,
                   ),
                   child: _entryCard(
                     indexLabel: 'Publication ${index + 1}',
@@ -1018,13 +1030,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           title,
-          style: AuraText.title.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+          style: AuraText.title.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: AuraText.muted.copyWith(fontSize: 13),
-        ),
+        Text(subtitle, style: AuraText.muted.copyWith(fontSize: 13)),
       ],
     );
   }
@@ -1058,13 +1070,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete_outline,
-                        size: 16, color: AuraSurface.dangerInk),
+                    const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: AuraSurface.dangerInk,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Remove',
-                      style: AuraText.small
-                          .copyWith(color: AuraSurface.dangerInk),
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.dangerInk,
+                      ),
                     ),
                   ],
                 ),
@@ -1090,10 +1106,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: Text(
-        label,
-        style: AuraText.muted,
-      ),
+      child: Text(label, style: AuraText.muted),
     );
   }
 
@@ -1119,10 +1132,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
-      child: AuraTextBlock(
-        label,
-        style: AuraText.muted.copyWith(fontSize: 13),
-      ),
+      child: AuraTextBlock(label, style: AuraText.muted.copyWith(fontSize: 13)),
     );
   }
 
@@ -1210,7 +1220,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       decoration: BoxDecoration(
         color: AuraSurface.dangerBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AuraSurface.dangerInk.withOpacity(0.35)),
+        border: Border.all(
+          color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+        ),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
@@ -1218,9 +1230,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       child: AuraTextBlock(
         _errorText ?? '',
-        style: AuraText.body.copyWith(
-          color: AuraSurface.dangerInk,
-        ),
+        style: AuraText.body.copyWith(color: AuraSurface.dangerInk),
       ),
     );
   }
@@ -1242,7 +1252,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 BoxShadow(
                   blurRadius: 24,
                   offset: const Offset(0, 10),
-                  color: Colors.black.withOpacity(0.18),
+                  color: Colors.black.withValues(alpha: 0.18),
                 ),
               ],
             ),
@@ -1255,9 +1265,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 Expanded(
                   child: Text(
                     _saving ? 'Saving...' : 'Unsaved changes',
-                    style: AuraText.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 AuraGhostButton(
@@ -1281,10 +1289,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
-      style: AuraText.muted.copyWith(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-      ),
+      style: AuraText.muted.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
     );
   }
 
@@ -1293,7 +1298,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required VoidCallback? onPressed,
   }) {
     return Material(
-      color: Colors.white.withOpacity(0.92),
+      color: Colors.white.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(AuraRadius.pill),
       child: InkWell(
         onTap: onPressed,
@@ -1351,10 +1356,10 @@ class _EditablePublication {
     String link = '',
     String description = '',
     required VoidCallback onChanged,
-  })  : titleController = TextEditingController(text: title),
-        linkController = TextEditingController(text: link),
-        descriptionController = TextEditingController(text: description),
-        _onChanged = onChanged {
+  }) : titleController = TextEditingController(text: title),
+       linkController = TextEditingController(text: link),
+       descriptionController = TextEditingController(text: description),
+       _onChanged = onChanged {
     titleController.addListener(_onChanged);
     linkController.addListener(_onChanged);
     descriptionController.addListener(_onChanged);
@@ -1367,10 +1372,7 @@ class _EditablePublication {
     return _EditablePublication(
       title: _firstPresent(map, const ['title', 'name']),
       link: _firstPresent(map, const ['link', 'url', 'href']),
-      description: _firstPresent(
-        map,
-        const ['description', 'summary', 'note'],
-      ),
+      description: _firstPresent(map, const ['description', 'summary', 'note']),
       onChanged: onChanged,
     );
   }
@@ -1389,11 +1391,7 @@ class _EditablePublication {
       return <String, dynamic>{};
     }
 
-    return {
-      'title': title,
-      'link': link,
-      'description': description,
-    };
+    return {'title': title, 'link': link, 'description': description};
   }
 
   void dispose() {
@@ -1411,9 +1409,9 @@ class _EditableLink {
     String label = '',
     String url = '',
     required VoidCallback onChanged,
-  })  : labelController = TextEditingController(text: label),
-        urlController = TextEditingController(text: url),
-        _onChanged = onChanged {
+  }) : labelController = TextEditingController(text: label),
+       urlController = TextEditingController(text: url),
+       _onChanged = onChanged {
     labelController.addListener(_onChanged);
     urlController.addListener(_onChanged);
   }
@@ -1441,10 +1439,7 @@ class _EditableLink {
       return <String, dynamic>{};
     }
 
-    return {
-      'label': label,
-      'url': url,
-    };
+    return {'label': label, 'url': url};
   }
 
   void dispose() {
@@ -1477,23 +1472,6 @@ Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
   return <String, dynamic>{};
 }
 
-Map<String, dynamic> _unwrapDataMap(dynamic raw) {
-  if (raw is Map) {
-    final map = Map<String, dynamic>.from(raw);
-    final data = map['data'];
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    return map;
-  }
-  return <String, dynamic>{};
-}
-
-Map<String, dynamic> _asMap(dynamic raw) {
-  if (raw is Map<String, dynamic>) return raw;
-  if (raw is Map) return Map<String, dynamic>.from(raw);
-  return <String, dynamic>{};
-}
-
 String _readString(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
     final value = (map[key] ?? '').toString().trim();
@@ -1520,35 +1498,43 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   final image = frame.image;
-  return {
-    'width': image.width,
-    'height': image.height,
-  };
+  return {'width': image.width, 'height': image.height};
 }
 
 List<Map<String, dynamic>> _extractPublications(Map<String, dynamic> data) {
   final raw = data['publications'];
   return _normalizeObjectList(raw)
-      .map((item) => {
-            'title': _firstPresent(item, const ['title', 'name']),
-            'link': _firstPresent(item, const ['link', 'url', 'href']),
-            'description': _firstPresent(
-              item,
-              const ['description', 'summary', 'note'],
-            ),
-          })
-      .where((item) => item.values.any((value) => value.toString().trim().isNotEmpty))
+      .map(
+        (item) => {
+          'title': _firstPresent(item, const ['title', 'name']),
+          'link': _firstPresent(item, const ['link', 'url', 'href']),
+          'description': _firstPresent(item, const [
+            'description',
+            'summary',
+            'note',
+          ]),
+        },
+      )
+      .where(
+        (item) =>
+            item.values.any((value) => value.toString().trim().isNotEmpty),
+      )
       .toList();
 }
 
 List<Map<String, dynamic>> _extractLinks(Map<String, dynamic> data) {
   final raw = data['links'];
   return _normalizeObjectList(raw)
-      .map((item) => {
-            'label': _firstPresent(item, const ['label', 'title', 'name']),
-            'url': _firstPresent(item, const ['url', 'link', 'href']),
-          })
-      .where((item) => item.values.any((value) => value.toString().trim().isNotEmpty))
+      .map(
+        (item) => {
+          'label': _firstPresent(item, const ['label', 'title', 'name']),
+          'url': _firstPresent(item, const ['url', 'link', 'href']),
+        },
+      )
+      .where(
+        (item) =>
+            item.values.any((value) => value.toString().trim().isNotEmpty),
+      )
       .toList();
 }
 
@@ -1569,14 +1555,12 @@ List<Map<String, dynamic>> _normalizeObjectList(dynamic raw) {
 String _signatureForCollection(List<Map<String, dynamic>> items) {
   final normalized = items
       .map(
-        (item) => item.map(
-          (key, value) => MapEntry(key, value.toString().trim()),
-        ),
+        (item) =>
+            item.map((key, value) => MapEntry(key, value.toString().trim())),
       )
       .toList();
   return normalized.toString();
 }
-
 
 String _firstPresent(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {

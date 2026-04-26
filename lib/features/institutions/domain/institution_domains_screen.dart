@@ -44,9 +44,9 @@ class _InstitutionDomainsScreenState
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _dioMessage(Object error, String fallback) {
@@ -88,8 +88,9 @@ class _InstitutionDomainsScreenState
 
       Map<String, dynamic>? resolvedInstitution;
       if (membership is Map && membership['institution'] is Map) {
-        resolvedInstitution =
-            Map<String, dynamic>.from(membership['institution'] as Map);
+        resolvedInstitution = Map<String, dynamic>.from(
+          membership['institution'] as Map,
+        );
       }
 
       if (resolvedInstitution == null ||
@@ -179,7 +180,10 @@ class _InstitutionDomainsScreenState
     }
 
     try {
-      final verification = await repo.issueDnsChallenge(institutionId, domainId);
+      final verification = await repo.issueDnsChallenge(
+        institutionId,
+        domainId,
+      );
 
       if (!mounted) return;
 
@@ -193,7 +197,7 @@ class _InstitutionDomainsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Create the following TXT record in your DNS:'),
-                SizedBox(height: AuraSpace.s10),
+                const SizedBox(height: AuraSpace.s10),
                 _copyRow(
                   'Record name',
                   verification['recordName']?.toString() ?? '',
@@ -206,11 +210,11 @@ class _InstitutionDomainsScreenState
                   'Record value',
                   verification['value']?.toString() ?? '',
                 ),
-                SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s12),
                 const Text(
                   'After adding the record, click Verify. DNS propagation may take a few minutes.',
                 ),
-                SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s12),
                 Wrap(
                   spacing: 8,
                   children: [
@@ -345,12 +349,12 @@ class _InstitutionDomainsScreenState
             domain,
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          SizedBox(height: AuraSpace.s8),
+          const SizedBox(height: AuraSpace.s8),
           Text('Status: $status'),
           if (isPrimary) const Text('Primary domain'),
           if (trustLevel.isNotEmpty) Text('Trust: $trustLevel'),
           if (verifiedAt.isNotEmpty) Text('Verified at: $verifiedAt'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
@@ -391,7 +395,7 @@ class _InstitutionDomainsScreenState
               name,
               style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
             ),
-            SizedBox(height: AuraSpace.s8),
+            const SizedBox(height: AuraSpace.s8),
             if (slug.isNotEmpty) Text('Slug: $slug'),
             if (institutionState != null && institutionState!.isNotEmpty)
               Text('Standing: $institutionState'),
@@ -417,15 +421,11 @@ class _InstitutionDomainsScreenState
           'This institutional standing is suspended. Domain management is temporarily unavailable.';
     }
 
-    return AuraCard(
-      child: Text(message),
-    );
+    return AuraCard(child: Text(message));
   }
 
   Widget _emptyState() {
-    return const AuraCard(
-      child: Text('No domains added yet.'),
-    );
+    return const AuraCard(child: Text('No domains added yet.'));
   }
 
   @override
@@ -449,13 +449,13 @@ class _InstitutionDomainsScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Institution domains'),
-          SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s10),
           Doc.meta('DNS verification and domain ownership.'),
           Doc.lede('Attach and verify domains owned by the institution.'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
 
           _statusCard(),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
 
           AuraCard(
             child: Column(
@@ -465,7 +465,7 @@ class _InstitutionDomainsScreenState
                   'Add domain',
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: AuraSpace.s10),
+                const SizedBox(height: AuraSpace.s10),
                 TextField(
                   controller: domainController,
                   enabled: canManageDomains && !_submitting,
@@ -481,7 +481,7 @@ class _InstitutionDomainsScreenState
                     }
                   },
                 ),
-                SizedBox(height: AuraSpace.s10),
+                const SizedBox(height: AuraSpace.s10),
                 AuraPrimaryButton(
                   label: _submitting ? 'Adding...' : 'Add domain',
                   onPressed: _submitting ? null : addDomain,
@@ -490,10 +490,10 @@ class _InstitutionDomainsScreenState
             ),
           ),
 
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
 
           if (loading)
-            Center(child: AuraLoadingState(message: 'Loading domains…'))
+            const Center(child: AuraLoadingState(message: 'Loading domains…'))
           else if (loadError != null)
             AuraCard(child: Text(loadError!))
           else if (!canManageDomains)

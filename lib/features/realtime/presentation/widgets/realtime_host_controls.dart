@@ -41,12 +41,9 @@ class RealtimeHostControls extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Room controls', style: AuraText.title),
+          const Text('Room controls', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Manage access and room behavior.',
-            style: AuraText.muted,
-          ),
+          const Text('Manage access and room behavior.', style: AuraText.muted),
           const SizedBox(height: AuraSpace.s12),
           SwitchListTile(
             value: waitingRoom,
@@ -64,7 +61,9 @@ class RealtimeHostControls extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             title: Text(locked ? 'Room is closed' : 'Room is open'),
             subtitle: Text(
-              locked ? 'New entries are blocked.' : 'Anyone with access can enter.',
+              locked
+                  ? 'New entries are blocked.'
+                  : 'Anyone with access can enter.',
             ),
             onChanged: onToggleLock,
           ),
@@ -83,18 +82,15 @@ class RealtimeHostControls extends StatelessWidget {
                   onPressed: onRequestRecording,
                 )
               else
-                _PassivePill(label: 'Recording unavailable'),
+                const _PassivePill(label: 'Recording unavailable'),
               if (canTranscribe)
                 AuraSecondaryButton(
                   label: 'Request live notes',
                   onPressed: onRequestTranscript,
                 )
               else
-                _PassivePill(label: 'Live notes unavailable'),
-              AuraSecondaryButton(
-                label: 'Refresh room',
-                onPressed: onRefresh,
-              ),
+                const _PassivePill(label: 'Live notes unavailable'),
+              AuraSecondaryButton(label: 'Refresh room', onPressed: onRefresh),
             ],
           ),
         ],

@@ -1,19 +1,13 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
-
-import 'dart:html' as html;
 import 'dart:ui_web' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:web/web.dart' as web;
 
 class PdfViewer extends StatefulWidget {
   final String assetPath;
   final String title;
 
-  const PdfViewer({
-    super.key,
-    required this.assetPath,
-    required this.title,
-  });
+  const PdfViewer({super.key, required this.assetPath, required this.title});
 
   @override
   State<PdfViewer> createState() => _PdfViewerWebState();
@@ -37,7 +31,7 @@ class _PdfViewerWebState extends State<PdfViewer> {
     final src = '/$fileName';
 
     ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-      final iframe = html.IFrameElement()
+      final iframe = web.HTMLIFrameElement()
         ..src = src
         ..style.border = '0'
         ..style.width = '100%'

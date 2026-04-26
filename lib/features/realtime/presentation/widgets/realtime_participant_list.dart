@@ -28,7 +28,8 @@ class RealtimeParticipantList extends StatelessWidget {
   String _displayName(RealtimeParticipant participant, int index) {
     final me = (currentUserId ?? '').trim();
     if (me.isNotEmpty && participant.userId == me) return 'You';
-    if (participant.isHost || ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
+    if (participant.isHost ||
+        ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
       return 'Room host';
     }
     if (participant.isModerator) {
@@ -38,7 +39,8 @@ class RealtimeParticipantList extends StatelessWidget {
   }
 
   String _roleLabel(RealtimeParticipant participant) {
-    if (participant.isHost || ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
+    if (participant.isHost ||
+        ((hostUserId ?? '').isNotEmpty && participant.userId == hostUserId)) {
       return 'Room host';
     }
     if (participant.isModerator) return 'Moderator';
@@ -56,14 +58,14 @@ class RealtimeParticipantList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Members', style: AuraText.title),
+          const Text('Members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(
             participants.isEmpty
                 ? 'No one is in the room yet.'
                 : participants.length == 1
-                    ? '1 person is here.'
-                    : '${participants.length} people are here.',
+                ? '1 person is here.'
+                : '${participants.length} people are here.',
             style: AuraText.muted,
           ),
           if (participants.isNotEmpty) const SizedBox(height: AuraSpace.s12),
@@ -90,7 +92,8 @@ class RealtimeParticipantList extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         child: RTCVideoView(
                           renderer,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                          objectFit:
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                         ),
                       ),
                     Expanded(

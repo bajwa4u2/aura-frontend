@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +79,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   String get _destinationType => widget.destinationType.trim().toUpperCase();
 
   bool get _collapsedMemberFlow {
-    return (_destinationType == 'JOIN_SPACE' || _destinationType == 'JOIN_THREAD') &&
+    return (_destinationType == 'JOIN_SPACE' ||
+            _destinationType == 'JOIN_THREAD') &&
         (widget.spaceId ?? '').trim().isNotEmpty;
   }
 
@@ -121,7 +121,6 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     context.go(target);
   }
 
-
   bool get _supportsInternalAuraMemberMode {
     return _destinationType == 'JOIN_SPACE' ||
         _destinationType == 'JOIN_THREAD' ||
@@ -136,11 +135,14 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
   List<_InviteCandidate> get _filteredCandidates {
     final q = _searchController.text.trim().toLowerCase();
     if (q.isEmpty) return _allCandidates;
-    return _allCandidates.where((candidate) {
-      final hay =
-          '${candidate.name} ${candidate.handle} ${candidate.subtitle}'.toLowerCase();
-      return hay.contains(q);
-    }).toList(growable: false);
+    return _allCandidates
+        .where((candidate) {
+          final hay =
+              '${candidate.name} ${candidate.handle} ${candidate.subtitle}'
+                  .toLowerCase();
+          return hay.contains(q);
+        })
+        .toList(growable: false);
   }
 
   Future<void> _loadCandidates() async {
@@ -171,15 +173,18 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       for (final item in merged) {
         final candidate = _candidateFromMap(item);
         if (candidate == null) continue;
-        final key = candidate.userId.isNotEmpty ? candidate.userId : candidate.handle;
+        final key = candidate.userId.isNotEmpty
+            ? candidate.userId
+            : candidate.handle;
         if (key.isEmpty) continue;
         items[key] = candidate;
       }
 
       if (!mounted) return;
       setState(() {
-        _allCandidates = items.values.toList(growable: false)
-          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _allCandidates = items.values.toList(
+          growable: false,
+        )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         _loading = false;
       });
     } catch (e) {
@@ -202,7 +207,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
       _searchController.clear();
       _loadError = null;
       _submitError = null;
-      _allCandidates = value == 'KNOWN_MEMBER' ? _allCandidates : const <_InviteCandidate>[];
+      _allCandidates = value == 'KNOWN_MEMBER'
+          ? _allCandidates
+          : const <_InviteCandidate>[];
     });
 
     if (value == 'KNOWN_MEMBER') {
@@ -228,7 +235,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
     });
 
     try {
-      final invite = await ref.read(invitationsClientProvider).createInvite(
+      final invite = await ref
+          .read(invitationsClientProvider)
+          .createInvite(
             destinationType: _effectiveDestinationType,
             accessPolicy: _collapsedMemberFlow ? 'OPEN' : _accessPolicy,
             deliveryChannel: _deliveryChannel,
@@ -240,7 +249,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             recipientHandle: _selected?.handle,
             spaceId: widget.spaceId,
             threadId: _collapsedMemberFlow ? null : widget.threadId,
-            roleToGrant: _effectiveDestinationType == 'JOIN_SPACE' ? _roleToGrant : null,
+            roleToGrant: _effectiveDestinationType == 'JOIN_SPACE'
+                ? _roleToGrant
+                : null,
             maxUses: 1,
           );
 
@@ -253,8 +264,8 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
 
       final destinationMessage = _collapsedMemberFlow
           ? (_destinationType == 'JOIN_THREAD'
-              ? 'Member added to the conversation path.'
-              : 'Member added to the space path.')
+                ? 'Member added to the conversation path.'
+                : 'Member added to the space path.')
           : switch (_destinationType) {
               'JOIN_AURA' => 'Aura invitation ready.',
               'START_1_TO_1' => '1:1 invitation ready.',
@@ -333,7 +344,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Choose member', style: AuraText.title),
+                  const Text('Choose member', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
@@ -353,14 +364,16 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   ],
                   const SizedBox(height: AuraSpace.s12),
                   if (_loading)
-                    const _LoadingRow(label: 'Loading connected Aura members...')
+                    const _LoadingRow(
+                      label: 'Loading connected Aura members...',
+                    )
                   else if (_loadError != null)
-                    AuraTextBlock(
+                    const AuraTextBlock(
                       'Members could not be loaded right now.',
                       style: AuraText.body,
                     )
                   else if (filtered.isEmpty)
-                    AuraTextBlock(
+                    const AuraTextBlock(
                       'No connected Aura members matched that search.',
                       style: AuraText.body,
                     )
@@ -371,9 +384,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                           _CandidateRow(
                             candidate: filtered[i],
                             selected: _selected?.id == filtered[i].id,
-                            onTap: () => setState(() => _selected = filtered[i]),
+                            onTap: () =>
+                                setState(() => _selected = filtered[i]),
                           ),
-                          if (i != filtered.length - 1) const Divider(height: 1),
+                          if (i != filtered.length - 1)
+                            const Divider(height: 1),
                         ],
                       ],
                     ),
@@ -385,7 +400,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Optional note', style: AuraText.title),
+                  const Text('Optional note', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _messageController,
@@ -405,7 +420,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                     const SizedBox(height: AuraSpace.s12),
                     Text(
                       _submitError!,
-                      style: AuraText.small.copyWith(color: Colors.red.shade700),
+                      style: AuraText.small.copyWith(
+                        color: Colors.red.shade700,
+                      ),
                     ),
                   ],
                 ],
@@ -443,7 +460,10 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_titleForDestination(_destinationType), style: AuraText.title),
+                Text(
+                  _titleForDestination(_destinationType),
+                  style: AuraText.title,
+                ),
                 const SizedBox(height: AuraSpace.s8),
                 AuraTextBlock(
                   _bodyForDestination(
@@ -461,16 +481,18 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite mode', style: AuraText.title),
+                const Text('Invite mode', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
-                  value: _inviteMode,
+                  initialValue: _inviteMode,
                   items: _inviteModeItems(_destinationType),
                   onChanged: (value) {
                     if (value == null) return;
                     _changeInviteMode(value);
                   },
-                  decoration: const InputDecoration(labelText: 'How to create this invite'),
+                  decoration: const InputDecoration(
+                    labelText: 'How to create this invite',
+                  ),
                 ),
                 const SizedBox(height: AuraSpace.s10),
                 AuraTextBlock(
@@ -486,7 +508,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Choose Aura member', style: AuraText.title),
+                  const Text('Choose Aura member', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s12),
                   TextField(
                     controller: _searchController,
@@ -506,11 +528,13 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   ],
                   const SizedBox(height: AuraSpace.s12),
                   if (_loading)
-                    const _LoadingRow(label: 'Loading connected Aura members...')
+                    const _LoadingRow(
+                      label: 'Loading connected Aura members...',
+                    )
                   else if (_loadError != null)
                     AuraTextBlock(_loadError!, style: AuraText.body)
                   else if (filtered.isEmpty)
-                    AuraTextBlock(
+                    const AuraTextBlock(
                       'No connected Aura members are available yet from your current graph.',
                       style: AuraText.body,
                     )
@@ -521,9 +545,11 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                           _CandidateRow(
                             candidate: filtered[i],
                             selected: _selected?.id == filtered[i].id,
-                            onTap: () => setState(() => _selected = filtered[i]),
+                            onTap: () =>
+                                setState(() => _selected = filtered[i]),
                           ),
-                          if (i != filtered.length - 1) const Divider(height: 1),
+                          if (i != filtered.length - 1)
+                            const Divider(height: 1),
                         ],
                       ],
                     ),
@@ -536,10 +562,10 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Invite settings', style: AuraText.title),
+                const Text('Invite settings', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
-                  value: _accessPolicy,
+                  initialValue: _accessPolicy,
                   items: _accessPolicyItems(_destinationType),
                   onChanged: (value) {
                     if (value == null) return;
@@ -549,7 +575,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 ),
                 const SizedBox(height: AuraSpace.s12),
                 DropdownButtonFormField<String>(
-                  value: _deliveryChannel,
+                  initialValue: _deliveryChannel,
                   items: _deliveryItems(_inviteMode),
                   onChanged: (value) {
                     if (value == null) return;
@@ -560,7 +586,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 if (!_showsInternalRecipientPicker) ...[
                   const SizedBox(height: AuraSpace.s12),
                   DropdownButtonFormField<String>(
-                    value: _recipientType,
+                    initialValue: _recipientType,
                     items: const [
                       DropdownMenuItem(
                         value: 'OPEN_LINK',
@@ -575,13 +601,15 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                       if (value == null) return;
                       setState(() => _recipientType = value);
                     },
-                    decoration: const InputDecoration(labelText: 'Recipient type'),
+                    decoration: const InputDecoration(
+                      labelText: 'Recipient type',
+                    ),
                   ),
                 ],
                 if (_destinationType == 'JOIN_SPACE') ...[
                   const SizedBox(height: AuraSpace.s12),
                   DropdownButtonFormField<String>(
-                    value: _roleToGrant,
+                    initialValue: _roleToGrant,
                     items: const [
                       DropdownMenuItem(value: 'MEMBER', child: Text('Member')),
                       DropdownMenuItem(value: 'EDITOR', child: Text('Editor')),
@@ -591,7 +619,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                       if (value == null) return;
                       setState(() => _roleToGrant = value);
                     },
-                    decoration: const InputDecoration(labelText: 'Role to grant'),
+                    decoration: const InputDecoration(
+                      labelText: 'Role to grant',
+                    ),
                   ),
                 ],
                 const SizedBox(height: AuraSpace.s12),
@@ -682,10 +712,7 @@ class _SelectedCandidateChip extends StatelessWidget {
             ),
           ],
           const SizedBox(width: AuraSpace.s8),
-          InkWell(
-            onTap: onClear,
-            child: const Icon(Icons.close, size: 16),
-          ),
+          InkWell(onTap: onClear, child: const Icon(Icons.close, size: 16)),
         ],
       ),
     );
@@ -746,10 +773,10 @@ class _CandidateRow extends StatelessWidget {
                 ],
               ),
             ),
-            Radio<bool>(
-              value: true,
+            RadioGroup<bool>(
               groupValue: selected,
               onChanged: (_) => onTap(),
+              child: const Radio<bool>(value: true),
             ),
           ],
         ),
@@ -783,18 +810,27 @@ List<DropdownMenuItem<String>> _inviteModeItems(String destinationType) {
   switch (destinationType) {
     case 'JOIN_AURA':
       return const [
-        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+        DropdownMenuItem(
+          value: 'SHAREABLE',
+          child: Text('Shareable invitation'),
+        ),
       ];
     case 'START_1_TO_1':
     case 'JOIN_SPACE':
     case 'JOIN_THREAD':
       return const [
-        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+        DropdownMenuItem(
+          value: 'SHAREABLE',
+          child: Text('Shareable invitation'),
+        ),
         DropdownMenuItem(value: 'KNOWN_MEMBER', child: Text('Aura member')),
       ];
     default:
       return const [
-        DropdownMenuItem(value: 'SHAREABLE', child: Text('Shareable invitation')),
+        DropdownMenuItem(
+          value: 'SHAREABLE',
+          child: Text('Shareable invitation'),
+        ),
       ];
   }
 }
@@ -846,9 +882,7 @@ List<DropdownMenuItem<String>> _accessPolicyItems(String destinationType) {
         ),
       ];
     default:
-      return const [
-        DropdownMenuItem(value: 'OPEN', child: Text('Open')),
-      ];
+      return const [DropdownMenuItem(value: 'OPEN', child: Text('Open'))];
   }
 }
 
@@ -968,7 +1002,6 @@ String _accessPolicyHint(String destinationType, String accessPolicy) {
   }
 }
 
-
 String _humanizeInviteError(DioException e, {required String fallback}) {
   final raw = _readApiError(e, fallback: fallback).trim().toLowerCase();
 
@@ -1005,12 +1038,18 @@ _InviteCandidate? _candidateFromMap(Map<String, dynamic> item) {
   final user = _unwrapNestedUser(item);
   final id = _pickString(user, const ['id', 'userId', '_id']);
   final handle = _cleanHandle(_pickString(user, const ['handle', 'username']));
-  final name = _pickString(
-    user,
-    const ['displayName', 'name', 'fullName', 'username', 'handle'],
-  );
-  final state = _pickString(item, const ['state', 'status', 'relationship'])
-      .replaceAll('_', ' ');
+  final name = _pickString(user, const [
+    'displayName',
+    'name',
+    'fullName',
+    'username',
+    'handle',
+  ]);
+  final state = _pickString(item, const [
+    'state',
+    'status',
+    'relationship',
+  ]).replaceAll('_', ' ');
 
   if (id.isEmpty && handle.isEmpty && name.isEmpty) return null;
 

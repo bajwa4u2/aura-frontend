@@ -13,8 +13,10 @@ import '../../../core/ui/aura_text.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 
-const String _adminUserIds =
-    String.fromEnvironment('AURA_ADMIN_USER_IDS', defaultValue: '');
+const String _adminUserIds = String.fromEnvironment(
+  'AURA_ADMIN_USER_IDS',
+  defaultValue: '',
+);
 
 List<String> _adminUserIdList() {
   return _adminUserIds
@@ -40,7 +42,9 @@ Map<String, dynamic> _unwrapMap(dynamic raw) {
   return root;
 }
 
-final _announcementsMeProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final _announcementsMeProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
   return _unwrapMap(res.data);
@@ -69,7 +73,9 @@ class AnnouncementsScreen extends ConsumerWidget {
     return meAsync.when(
       loading: () => AuraScaffold(
         showHeader: false,
-        body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
+        body: const Center(
+          child: AuraLoadingState(message: 'Loading announcements…'),
+        ),
       ),
       error: (_, __) {
         return _PublicAnnouncementsScreen(
@@ -90,7 +96,9 @@ class AnnouncementsScreen extends ConsumerWidget {
         return institutionAsync.when(
           loading: () => AuraScaffold(
             showHeader: false,
-            body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
+            body: const Center(
+              child: AuraLoadingState(message: 'Loading announcements…'),
+            ),
           ),
           error: (_, __) {
             return _PublicAnnouncementsScreen(
@@ -101,8 +109,10 @@ class AnnouncementsScreen extends ConsumerWidget {
           data: (institutionAccess) {
             final hasInstitutionStanding =
                 institutionAccess.state == InstitutionAccessState.pending ||
-                    institutionAccess.state == InstitutionAccessState.verifiedMember ||
-                    institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
+                institutionAccess.state ==
+                    InstitutionAccessState.verifiedMember ||
+                institutionAccess.state ==
+                    InstitutionAccessState.authorizedSpeaker;
 
             if (hasInstitutionStanding) {
               return _InstitutionAnnouncementsScreen(
@@ -224,7 +234,8 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
               children: [
                 AuraPrimaryButton(
                   label: 'Create platform notice',
-                  onPressed: () => context.go('/announcements/create?scope=platform'),
+                  onPressed: () =>
+                      context.go('/announcements/create?scope=platform'),
                   icon: Icons.add_circle_outline,
                 ),
                 AuraSecondaryButton(
@@ -260,7 +271,8 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
             asyncValue: listAsync,
             title: 'Announcement archive',
             emptyTitle: 'No announcements yet',
-            emptyBody: 'When platform notices are published, they will appear here.',
+            emptyBody:
+                'When platform notices are published, they will appear here.',
           ),
         ],
       ),
@@ -357,18 +369,22 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Standing', style: AuraText.small.copyWith(
-                  color: AuraSurface.faint,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
-                )),
+                Text(
+                  'Standing',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                  ),
+                ),
                 const SizedBox(height: AuraSpace.s10),
                 Wrap(
                   spacing: AuraSpace.s8,
                   runSpacing: AuraSpace.s8,
                   children: [
                     _StatusBadge(label: standing),
-                    if (domain.isNotEmpty) _StatusBadge(label: 'Domain: $domain'),
+                    if (domain.isNotEmpty)
+                      _StatusBadge(label: 'Domain: $domain'),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s16),
@@ -378,7 +394,8 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
                   children: [
                     AuraPrimaryButton(
                       label: 'Create institution notice',
-                      onPressed: () => context.go('/announcements/create?scope=institution'),
+                      onPressed: () =>
+                          context.go('/announcements/create?scope=institution'),
                       icon: Icons.add_circle_outline,
                     ),
                     AuraSecondaryButton(
@@ -454,7 +471,7 @@ class _PinnedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return asyncValue.when(
       loading: () => const AuraLoadingState(message: 'Loading pinned…'),
-      error: (e, _) => AuraErrorState(
+      error: (e, _) => const AuraErrorState(
         title: 'Could not load pinned notices',
         body: 'Something went wrong. Try refreshing.',
       ),
@@ -502,7 +519,8 @@ class _AllSection extends StatelessWidget {
     required this.asyncValue,
     this.title = 'All notices',
     this.emptyTitle = 'Nothing published yet',
-    this.emptyBody = 'When platform notices are published, they will appear here.',
+    this.emptyBody =
+        'When platform notices are published, they will appear here.',
   });
 
   final AsyncValue<List<Announcement>> asyncValue;
@@ -514,7 +532,7 @@ class _AllSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return asyncValue.when(
       loading: () => const AuraLoadingState(message: 'Loading announcements…'),
-      error: (e, _) => AuraErrorState(
+      error: (e, _) => const AuraErrorState(
         title: 'Could not load announcements',
         body: 'Something went wrong. Try refreshing.',
       ),
@@ -578,8 +596,18 @@ class _AnnouncementCard extends StatelessWidget {
   String _formatDate(DateTime dt) {
     final local = dt.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
@@ -608,7 +636,8 @@ class _AnnouncementCard extends StatelessWidget {
                   color: AuraSurface.accentSoft,
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                    color: AuraSurface.accent.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Icon(
                   pinned ? Icons.push_pin_outlined : Icons.campaign_outlined,
@@ -623,21 +652,28 @@ class _AnnouncementCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     if (publishedAt != null) ...[
                       const SizedBox(height: AuraSpace.s4),
                       Text(
                         _formatDate(publishedAt!),
-                        style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.faint,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: AuraSpace.s8),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 16, color: AuraSurface.faint),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: AuraSurface.faint,
+              ),
             ],
           ),
         ),

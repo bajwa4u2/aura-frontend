@@ -29,9 +29,9 @@ class AuraAppTheme {
     );
 
     OutlineInputBorder outline(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.r14),
-          borderSide: BorderSide(color: color, width: 1),
-        );
+      borderRadius: BorderRadius.circular(AuraRadius.r14),
+      borderSide: BorderSide(color: color, width: 1),
+    );
 
     return base.copyWith(
       textTheme: base.textTheme.copyWith(
@@ -45,7 +45,10 @@ class AuraAppTheme {
         fillColor: AuraSurface.card,
         labelStyle: AuraText.small.copyWith(color: AuraSurface.muted),
         hintStyle: AuraText.small,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: outline(AuraSurface.divider),
         enabledBorder: outline(AuraSurface.divider),
         focusedBorder: outline(AuraSurface.ink.withValues(alpha: 0.35)),
@@ -65,7 +68,7 @@ class AuraAppTheme {
         style: OutlinedButton.styleFrom(
           textStyle: AuraText.body.copyWith(fontWeight: FontWeight.w600),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          side: BorderSide(color: AuraSurface.divider),
+          side: const BorderSide(color: AuraSurface.divider),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),

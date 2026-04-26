@@ -63,8 +63,12 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
   void _openUpdate(Map<String, dynamic> item) {
     final targetUrl = (item['targetUrl'] ?? '').toString().trim();
     final raw = item['raw'];
-    final rawMap = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-    final post = rawMap['post'] is Map ? Map<String, dynamic>.from(rawMap['post']) : <String, dynamic>{};
+    final rawMap = raw is Map
+        ? Map<String, dynamic>.from(raw)
+        : <String, dynamic>{};
+    final post = rawMap['post'] is Map
+        ? Map<String, dynamic>.from(rawMap['post'])
+        : <String, dynamic>{};
     final postId = _firstNonEmpty([
       (rawMap['postId'] ?? '').toString(),
       (post['id'] ?? '').toString(),
@@ -92,7 +96,11 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
             constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
               children: [
                 _UpdatesHeader(),
                 const SizedBox(height: AuraSpace.s24),
@@ -117,7 +125,11 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
             constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
               children: [
                 _UpdatesHeader(),
                 const SizedBox(height: AuraSpace.s24),
@@ -167,7 +179,7 @@ class _UpdatesHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Updates', style: AuraText.headline),
+        const Text('Updates', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
           'Announcements, releases, and public changes from Aura.',
@@ -179,10 +191,7 @@ class _UpdatesHeader extends StatelessWidget {
 }
 
 class _SignInPrompt extends StatelessWidget {
-  const _SignInPrompt({
-    required this.onSignIn,
-    required this.onRegister,
-  });
+  const _SignInPrompt({required this.onSignIn, required this.onRegister});
 
   final VoidCallback onSignIn;
   final VoidCallback onRegister;
@@ -199,10 +208,7 @@ class _SignInPrompt extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Sign in to access updates',
-            style: AuraText.subtitle,
-          ),
+          const Text('Sign in to access updates', style: AuraText.subtitle),
           const SizedBox(height: AuraSpace.s8),
           Text(
             'Platform announcements, releases, and notices are visible after signing in.',
@@ -270,10 +276,14 @@ class _UpdateTile extends StatelessWidget {
                   color: AuraSurface.accentSoft,
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                    color: AuraSurface.accent.withValues(alpha: 0.25),
+                  ),
                 ),
-                child: const Icon(Icons.campaign_outlined,
-                    size: 18, color: AuraSurface.accentText),
+                child: const Icon(
+                  Icons.campaign_outlined,
+                  size: 18,
+                  color: AuraSurface.accentText,
+                ),
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
@@ -282,15 +292,17 @@ class _UpdateTile extends StatelessWidget {
                   children: [
                     Text(
                       headline,
-                      style: AuraText.small
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     if (detail.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s4),
                       Text(
                         detail,
-                        style:
-                            AuraText.small.copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -299,16 +311,20 @@ class _UpdateTile extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s6),
                       Text(
                         timeLabel,
-                        style:
-                            AuraText.micro.copyWith(color: AuraSurface.faint),
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.faint,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: AuraSpace.s8),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 16, color: AuraSurface.faint),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: AuraSurface.faint,
+              ),
             ],
           ),
         ),

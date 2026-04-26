@@ -52,7 +52,8 @@ class _InstitutionDashboardScreenState
   bool get _hasRequest => _requestData.isNotEmpty;
 
   bool get _domainVerified {
-    final verifiedAt = _institution?['domainVerifiedAt']?.toString().trim() ?? '';
+    final verifiedAt =
+        _institution?['domainVerifiedAt']?.toString().trim() ?? '';
     return verifiedAt.isNotEmpty;
   }
 
@@ -221,7 +222,8 @@ class _InstitutionDashboardScreenState
 
   String _displayInstitutionName() {
     final name = _institution?['name']?.toString().trim() ?? '';
-    final requestOrg = _requestData['organizationName']?.toString().trim() ?? '';
+    final requestOrg =
+        _requestData['organizationName']?.toString().trim() ?? '';
     if (name.isNotEmpty) return name;
     if (requestOrg.isNotEmpty) return requestOrg;
     return 'Institution';
@@ -241,7 +243,7 @@ class _InstitutionDashboardScreenState
       if (domain.isNotEmpty) _DetailEntry('Domain', domain),
       if (website.isNotEmpty) _DetailEntry('Website', website),
       if (_membership?['canSpeakOfficially'] == true)
-        _DetailEntry('Official speech', 'Active'),
+        const _DetailEntry('Official speech', 'Active'),
     ];
 
     return _DashCard(
@@ -257,10 +259,14 @@ class _InstitutionDashboardScreenState
                   color: AuraSurface.accentSoft,
                   borderRadius: BorderRadius.circular(AuraRadius.r12),
                   border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                    color: AuraSurface.accent.withValues(alpha: 0.25),
+                  ),
                 ),
-                child: const Icon(Icons.apartment_outlined,
-                    size: 20, color: AuraSurface.accentText),
+                child: const Icon(
+                  Icons.apartment_outlined,
+                  size: 20,
+                  color: AuraSurface.accentText,
+                ),
               ),
               const SizedBox(width: AuraSpace.s14),
               Expanded(
@@ -319,7 +325,10 @@ class _InstitutionDashboardScreenState
           const SizedBox(height: AuraSpace.s10),
           Text(
             _nextStepBody(),
-            style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.45),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.45,
+            ),
           ),
           if (actionLabel != null && action != null) ...[
             const SizedBox(height: AuraSpace.s16),
@@ -337,7 +346,8 @@ class _InstitutionDashboardScreenState
   Widget _buildPipelineCard() {
     final step1Done = _hasRequest || _hasInstitution || _canUseInstitutionTools;
     final step2Done = _isPending || _canUseInstitutionTools || _isSuspended;
-    final step3Done = _hasInstitution || _canUseInstitutionTools || _isSuspended;
+    final step3Done =
+        _hasInstitution || _canUseInstitutionTools || _isSuspended;
     final step4Done = _domainVerified;
     final step5Done = step4Done && _canUseInstitutionTools;
 
@@ -413,7 +423,8 @@ class _InstitutionDashboardScreenState
           const SizedBox(height: AuraSpace.s14),
           if (org.isNotEmpty) _DetailRow(label: 'Institution', value: org),
           if (status.isNotEmpty) _DetailRow(label: 'Status', value: status),
-          if (workEmail.isNotEmpty) _DetailRow(label: 'Work email', value: workEmail),
+          if (workEmail.isNotEmpty)
+            _DetailRow(label: 'Work email', value: workEmail),
           if (website.isNotEmpty) _DetailRow(label: 'Website', value: website),
           if (domain.isNotEmpty) _DetailRow(label: 'Domain', value: domain),
           if (roleTitle.isNotEmpty)
@@ -431,28 +442,32 @@ class _InstitutionDashboardScreenState
     final tools = [
       _ToolData(
         title: 'Official posts',
-        body: 'Publish institutional statements, notices, and official public communication.',
+        body:
+            'Publish institutional statements, notices, and official public communication.',
         icon: Icons.campaign_outlined,
         enabled: _canUseInstitutionTools,
         onTap: _canUseInstitutionTools ? () => _go('/announcements') : null,
       ),
       _ToolData(
         title: 'Representatives',
-        body: 'Define institutional people, roles, and speaking authority inside Aura.',
+        body:
+            'Define institutional people, roles, and speaking authority inside Aura.',
         icon: Icons.people_outline_rounded,
         enabled: _canUseInstitutionTools,
         onTap: null,
       ),
       _ToolData(
         title: 'Domains',
-        body: 'Attach and verify institutional domains through DNS ownership checks.',
+        body:
+            'Attach and verify institutional domains through DNS ownership checks.',
         icon: Icons.language_rounded,
         enabled: _canManageDomains,
         onTap: _canManageDomains ? () => _go('/institution/domains') : null,
       ),
       _ToolData(
         title: 'Institution record',
-        body: 'Maintain public identity, description, standing, and institutional profile surfaces.',
+        body:
+            'Maintain public identity, description, standing, and institutional profile surfaces.',
         icon: Icons.badge_outlined,
         enabled: _canUseInstitutionTools,
         onTap: null,
@@ -463,7 +478,10 @@ class _InstitutionDashboardScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: AuraSpace.s12),
+          padding: const EdgeInsets.only(
+            left: AuraSpace.s4,
+            bottom: AuraSpace.s12,
+          ),
           child: Text(
             'Institution tools',
             style: AuraText.label.copyWith(
@@ -535,12 +553,14 @@ class _InstitutionDashboardScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Institution dashboard', style: AuraText.headline),
+                  const Text('Institution dashboard', style: AuraText.headline),
                   const SizedBox(height: AuraSpace.s6),
                   Text(
                     'Institutional standing, verification progress, and official surfaces.',
-                    style: AuraText.body
-                        .copyWith(color: AuraSurface.muted, height: 1.5),
+                    style: AuraText.body.copyWith(
+                      color: AuraSurface.muted,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s24),
                   _buildBody(),
@@ -611,9 +631,7 @@ class _DetailRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: AuraText.small),
-          ),
+          Expanded(child: Text(value, style: AuraText.small)),
         ],
       ),
     );
@@ -645,7 +663,9 @@ class _PipelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = step.isDone
         ? Icons.check_circle_rounded
-        : (step.isCurrent ? Icons.radio_button_checked : Icons.radio_button_off);
+        : (step.isCurrent
+              ? Icons.radio_button_checked
+              : Icons.radio_button_off);
     final iconColor = step.isDone
         ? AuraSurface.goodInk
         : (step.isCurrent ? AuraSurface.accentText : AuraSurface.faint);
@@ -767,7 +787,9 @@ class _ToolCard extends StatelessWidget {
                       Text(
                         tool.body,
                         style: AuraText.small.copyWith(
-                            color: AuraSurface.muted, height: 1.4),
+                          color: AuraSurface.muted,
+                          height: 1.4,
+                        ),
                       ),
                       if (tool.onTap != null) ...[
                         const SizedBox(height: AuraSpace.s10),
@@ -781,8 +803,11 @@ class _ToolCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: AuraSpace.s4),
-                            const Icon(Icons.arrow_forward_rounded,
-                                size: 12, color: AuraSurface.accentText),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 12,
+                              color: AuraSurface.accentText,
+                            ),
                           ],
                         ),
                       ] else ...[
@@ -790,8 +815,9 @@ class _ToolCard extends StatelessWidget {
                         Text(
                           'Unavailable',
                           style: AuraText.small.copyWith(
-                              color: AuraSurface.faint,
-                              fontWeight: FontWeight.w600),
+                            color: AuraSurface.faint,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ],

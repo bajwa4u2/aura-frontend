@@ -21,44 +21,47 @@ import '../../realtime/application/realtime_providers.dart';
 
 final _spaceDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, spaceId) async {
-  final repo = ref.watch(spacesRepositoryProvider);
-  return repo.getSpace(spaceId);
-});
+      final repo = ref.watch(spacesRepositoryProvider);
+      return repo.getSpace(spaceId);
+    });
 
 final _threadsProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((
-  ref,
-  spaceId,
-) async {
-  final repo = ref.watch(threadsRepositoryProvider);
-  return repo.listThreads(spaceId: spaceId);
-});
+      ref,
+      spaceId,
+    ) async {
+      final repo = ref.watch(threadsRepositoryProvider);
+      return repo.listThreads(spaceId: spaceId);
+    });
 
 final _invitesProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, spaceId) async {
-  final repo = ref.watch(spacesRepositoryProvider);
-  final invites = await repo.listInvites();
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      spaceId,
+    ) async {
+      final repo = ref.watch(spacesRepositoryProvider);
+      final invites = await repo.listInvites();
 
-  return invites.where((invite) {
-    final inviteSpaceId = _pickString(invite, const [
-      'spaceId',
-      'space_id',
-    ]);
+      return invites.where((invite) {
+        final inviteSpaceId = _pickString(invite, const [
+          'spaceId',
+          'space_id',
+        ]);
 
-    if (inviteSpaceId == spaceId) return true;
+        if (inviteSpaceId == spaceId) return true;
 
-    final nestedSpace = invite['space'];
-    if (nestedSpace is Map) {
-      final nestedId = _pickString(
-        Map<String, dynamic>.from(nestedSpace),
-        const ['id', 'spaceId'],
-      );
-      return nestedId == spaceId;
-    }
+        final nestedSpace = invite['space'];
+        if (nestedSpace is Map) {
+          final nestedId = _pickString(
+            Map<String, dynamic>.from(nestedSpace),
+            const ['id', 'spaceId'],
+          );
+          return nestedId == spaceId;
+        }
 
-    return false;
-  }).toList();
-});
+        return false;
+      }).toList();
+    });
 
 class SpaceScreen extends ConsumerStatefulWidget {
   const SpaceScreen({super.key, required this.spaceId});
@@ -78,7 +81,9 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _joinFromRouteIfNeeded());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _joinFromRouteIfNeeded(),
+    );
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
@@ -108,11 +113,14 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     String sessionId = '';
     try {
       final state = GoRouterState.of(context);
-      sessionId = state.pathParameters['sessionId']?.trim() ??
+      sessionId =
+          state.pathParameters['sessionId']?.trim() ??
           state.uri.queryParameters['sessionId']?.trim() ??
           '';
-      final shouldJoin = sessionId.isNotEmpty ||
-          ((state.uri.queryParameters['join'] ?? '').trim().toLowerCase() == '1');
+      final shouldJoin =
+          sessionId.isNotEmpty ||
+          ((state.uri.queryParameters['join'] ?? '').trim().toLowerCase() ==
+              '1');
       if (!shouldJoin || sessionId.isEmpty) return;
     } catch (_) {
       return;
@@ -142,10 +150,10 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
 
     final spaceData = spaceAsync.valueOrNull;
     final threadsData = threadsAsync.valueOrNull;
-    final isPrivateSpace = _pickString(
-          spaceData ?? const <String, dynamic>{},
-          const ['type'],
-        ).toUpperCase() ==
+    final isPrivateSpace =
+        _pickString(spaceData ?? const <String, dynamic>{}, const [
+          'type',
+        ]).toUpperCase() ==
         'PRIVATE';
 
     if (!_redirectingToThread &&
@@ -197,7 +205,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                   child: _ErrorBlock(
                     title: 'Could not load space',
                     body: '$error',
-                    onRetry: () => ref.invalidate(_spaceDetailProvider(spaceId)),
+                    onRetry: () =>
+                        ref.invalidate(_spaceDetailProvider(spaceId)),
                   ),
                 ),
                 data: (space) => _SpaceHeaderCard(
@@ -232,7 +241,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                       _ThreadsTab(
                         spaceId: spaceId,
                         threadsAsync: threadsAsync,
-                        onCreateThread: () => _showCreateThreadDialog(context, ref),
+                        onCreateThread: () =>
+                            _showCreateThreadDialog(context, ref),
                       ),
                       _MembersTab(spaceAsync: spaceAsync),
                       _InvitesTab(
@@ -257,7 +267,10 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     );
   }
 
-  Future<void> _showCreateThreadDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showCreateThreadDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final created = await showDialog<bool>(
       context: context,
       builder: (_) => _CreateThreadDialog(spaceId: widget.spaceId),
@@ -297,12 +310,11 @@ class _ThreadsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        Text('Threads', style: AuraText.title),
+        const Text('Threads', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
         threadsAsync.when(
-          loading: () => const AuraCard(
-            child: _LoadingBlock(label: 'Loading threads...'),
-          ),
+          loading: () =>
+              const AuraCard(child: _LoadingBlock(label: 'Loading threads...')),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
               title: 'Could not load threads',
@@ -316,9 +328,9 @@ class _ThreadsTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('No threads yet', style: AuraText.title),
+                    const Text('No threads yet', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
-                    Text(
+                    const Text(
                       'Create the first thread in this space.',
                       style: AuraText.body,
                     ),
@@ -336,10 +348,7 @@ class _ThreadsTab extends StatelessWidget {
             return Column(
               children: [
                 for (var i = 0; i < threads.length; i++) ...[
-                  _ThreadTile(
-                    spaceId: spaceId,
-                    thread: threads[i],
-                  ),
+                  _ThreadTile(spaceId: spaceId, thread: threads[i]),
                   if (i != threads.length - 1)
                     const SizedBox(height: AuraSpace.s10),
                 ],
@@ -353,9 +362,7 @@ class _ThreadsTab extends StatelessWidget {
 }
 
 class _MembersTab extends StatelessWidget {
-  const _MembersTab({
-    required this.spaceAsync,
-  });
+  const _MembersTab({required this.spaceAsync});
 
   final AsyncValue<Map<String, dynamic>> spaceAsync;
 
@@ -363,12 +370,11 @@ class _MembersTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        Text('Members', style: AuraText.title),
+        const Text('Members', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
         spaceAsync.when(
-          loading: () => const AuraCard(
-            child: _LoadingBlock(label: 'Loading members...'),
-          ),
+          loading: () =>
+              const AuraCard(child: _LoadingBlock(label: 'Loading members...')),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
               title: 'Could not load members',
@@ -378,17 +384,17 @@ class _MembersTab extends StatelessWidget {
           ),
           data: (space) {
             final members = _extractMembers(space);
-            final memberCount = _pickInt(
-              space,
-              const ['memberCount', 'membersCount'],
-            );
+            final memberCount = _pickInt(space, const [
+              'memberCount',
+              'membersCount',
+            ]);
 
             if (members.isEmpty) {
               return AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Members', style: AuraText.title),
+                    const Text('Members', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
                       memberCount > 0
@@ -432,12 +438,11 @@ class _InvitesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        Text('Invites', style: AuraText.title),
+        const Text('Invites', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
         invitesAsync.when(
-          loading: () => const AuraCard(
-            child: _LoadingBlock(label: 'Loading invites...'),
-          ),
+          loading: () =>
+              const AuraCard(child: _LoadingBlock(label: 'Loading invites...')),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
               title: 'Could not load invites',
@@ -451,9 +456,9 @@ class _InvitesTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('No invites yet', style: AuraText.title),
+                    const Text('No invites yet', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
-                    Text(
+                    const Text(
                       'Create or review invitations connected to this space.',
                       style: AuraText.body,
                     ),
@@ -474,10 +479,10 @@ class _InvitesTab extends StatelessWidget {
                   _InviteTile(
                     invite: invites[i],
                     onRevoke: () async {
-                      final inviteId = _pickString(
-                        invites[i],
-                        const ['id', 'inviteId'],
-                      );
+                      final inviteId = _pickString(invites[i], const [
+                        'id',
+                        'inviteId',
+                      ]);
                       if (inviteId.isEmpty) return;
                       await onRevokeInvite(inviteId);
                     },
@@ -495,9 +500,7 @@ class _InvitesTab extends StatelessWidget {
 }
 
 class _MediaTab extends StatelessWidget {
-  const _MediaTab({
-    required this.spaceAsync,
-  });
+  const _MediaTab({required this.spaceAsync});
 
   final AsyncValue<Map<String, dynamic>> spaceAsync;
 
@@ -505,12 +508,11 @@ class _MediaTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        Text('Media', style: AuraText.title),
+        const Text('Media', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
         spaceAsync.when(
-          loading: () => const AuraCard(
-            child: _LoadingBlock(label: 'Loading media...'),
-          ),
+          loading: () =>
+              const AuraCard(child: _LoadingBlock(label: 'Loading media...')),
           error: (error, _) => AuraCard(
             child: _ErrorBlock(
               title: 'Could not load media',
@@ -584,9 +586,7 @@ class _MediaGroupCard extends StatelessWidget {
             children: [
               Icon(icon, size: 18),
               const SizedBox(width: AuraSpace.s8),
-              Expanded(
-                child: Text(title, style: AuraText.title),
-              ),
+              Expanded(child: Text(title, style: AuraText.title)),
               _MetaChip(label: 'Count', value: '$count'),
             ],
           ),
@@ -643,10 +643,7 @@ class _SpaceHeaderCard extends StatelessWidget {
           ),
           if (description.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            AuraTextBlock(
-              description,
-              style: AuraText.body,
-            ),
+            AuraTextBlock(description, style: AuraText.body),
           ],
           const SizedBox(height: AuraSpace.s12),
           Wrap(
@@ -686,7 +683,8 @@ class _CreateThreadDialog extends ConsumerStatefulWidget {
   final String spaceId;
 
   @override
-  ConsumerState<_CreateThreadDialog> createState() => _CreateThreadDialogState();
+  ConsumerState<_CreateThreadDialog> createState() =>
+      _CreateThreadDialogState();
 }
 
 class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
@@ -718,11 +716,9 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
     });
 
     try {
-      await ref.read(threadsRepositoryProvider).createThread(
-            spaceId: spaceId,
-            title: title,
-            kind: _kind,
-          );
+      await ref
+          .read(threadsRepositoryProvider)
+          .createThread(spaceId: spaceId, title: title, kind: _kind);
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -753,7 +749,7 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
               ),
               const SizedBox(height: AuraSpace.s12),
               DropdownButtonFormField<String>(
-                value: _kind,
+                initialValue: _kind,
                 items: const [
                   DropdownMenuItem(value: 'DIRECT', child: Text('Direct')),
                   DropdownMenuItem(value: 'GROUP', child: Text('Group')),
@@ -798,10 +794,7 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
 }
 
 class _ThreadTile extends StatelessWidget {
-  const _ThreadTile({
-    required this.spaceId,
-    required this.thread,
-  });
+  const _ThreadTile({required this.spaceId, required this.thread});
 
   final String spaceId;
   final Map<String, dynamic> thread;
@@ -811,8 +804,7 @@ class _ThreadTile extends StatelessWidget {
     final id = _pickString(thread, const ['id', 'threadId']);
     final title = _threadDisplayTitle(thread);
     final kind = _pickString(thread, const ['kind', 'type']);
-    final archived =
-        thread['archived'] == true || thread['archivedAt'] != null;
+    final archived = thread['archived'] == true || thread['archivedAt'] != null;
     final preview = _threadPreview(thread);
     final participantSummary = _threadParticipantSummary(thread);
     final participantRoleSummary = _threadParticipantRoleSummary(thread);
@@ -850,10 +842,9 @@ class _ThreadTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (kind.isNotEmpty)
-                          _Pill(label: _humanizeLabel(kind)),
+                        if (kind.isNotEmpty) _Pill(label: _humanizeLabel(kind)),
                         if (archived)
-                          _StatusPill(
+                          const _StatusPill(
                             label: 'Archived',
                             tone: _StatusTone.neutral,
                           ),
@@ -868,7 +859,9 @@ class _ThreadTile extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s6),
                       AuraTextBlock(
                         participantSummary,
-                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -877,7 +870,9 @@ class _ThreadTile extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
                         participantRoleSummary,
-                        style: AuraText.small.copyWith(color: AuraSurface.faint),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.faint,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -903,10 +898,7 @@ class _ThreadTile extends StatelessWidget {
 }
 
 class _InviteTile extends StatelessWidget {
-  const _InviteTile({
-    required this.invite,
-    required this.onRevoke,
-  });
+  const _InviteTile({required this.invite, required this.onRevoke});
 
   final Map<String, dynamic> invite;
   final VoidCallback onRevoke;
@@ -915,16 +907,17 @@ class _InviteTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = _inviteDisplayTitle(invite);
     final subtitle = _inviteDisplaySubtitle(invite);
-    final role = _pickString(
-      invite,
-      const ['roleOffered', 'role', 'roleToGrant'],
-    );
+    final role = _pickString(invite, const [
+      'roleOffered',
+      'role',
+      'roleToGrant',
+    ]);
     final status = _inviteStateLabel(invite);
     final token = _pickString(invite, const ['token', 'inviteToken']);
-    final delivery = _pickString(
-      invite,
-      const ['deliveryChannel', 'delivery_channel'],
-    );
+    final delivery = _pickString(invite, const [
+      'deliveryChannel',
+      'delivery_channel',
+    ]);
     final canCopyLink = token.isNotEmpty && _inviteIsActive(invite);
     final canRevoke = _canRevokeInvite(invite);
     final tone = _inviteTone(invite);
@@ -936,10 +929,7 @@ class _InviteTile extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IdentityAvatar(
-                label: title,
-                imageUrl: _inviteAvatarUrl(invite),
-              ),
+              _IdentityAvatar(label: title, imageUrl: _inviteAvatarUrl(invite)),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Column(
@@ -1011,34 +1001,31 @@ class _InviteTile extends StatelessWidget {
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({
-    required this.member,
-  });
+  const _MemberTile({required this.member});
 
   final Map<String, dynamic> member;
 
   @override
   Widget build(BuildContext context) {
     final name = _memberDisplayName(member);
-    final handle = _pickString(
-      member,
-      const ['handle', 'username', 'userHandle'],
-    );
+    final handle = _pickString(member, const [
+      'handle',
+      'username',
+      'userHandle',
+    ]);
     final role = _pickString(member, const ['role', 'memberRole']);
     final subtitle = _memberSubtitle(member);
-    final state = _pickString(
-      member,
-      const ['status', 'membershipStatus', 'state'],
-    );
+    final state = _pickString(member, const [
+      'status',
+      'membershipStatus',
+      'state',
+    ]);
 
     return AuraCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _IdentityAvatar(
-            label: name,
-            imageUrl: _memberAvatarUrl(member),
-          ),
+          _IdentityAvatar(label: name, imageUrl: _memberAvatarUrl(member)),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
@@ -1133,18 +1120,6 @@ bool _inviteIsActive(Map<String, dynamic> invite) {
 
 bool _canRevokeInvite(Map<String, dynamic> invite) => _inviteIsActive(invite);
 
-List<String> _extractDisplayNames(
-  Map<String, dynamic> source,
-  List<String> keys,
-) {
-  final out = <String>[];
-  for (final participant in _extractParticipants(source, keys: keys)) {
-    final name = _identityLabel(participant);
-    if (name.isNotEmpty && !out.contains(name)) out.add(name);
-  }
-  return out;
-}
-
 List<Map<String, dynamic>> _extractParticipants(
   Map<String, dynamic> source, {
   List<String> keys = const [
@@ -1176,14 +1151,6 @@ List<Map<String, dynamic>> _extractParticipants(
   return out;
 }
 
-String _identityLabel(Map<String, dynamic> entity) {
-  return CorrespondenceIdentity.identityLabel(entity);
-}
-
-String _identityLine(Map<String, dynamic> entity, {bool preferHandle = true}) {
-  return CorrespondenceIdentity.identityLine(entity, preferHandle: preferHandle);
-}
-
 String _humanizeLabel(String value) {
   return CorrespondenceIdentity.humanize(value);
 }
@@ -1192,17 +1159,6 @@ String _inviteStateLabel(Map<String, dynamic> invite) {
   final status = _pickString(invite, const ['status']);
   if (status.isEmpty) return 'Pending';
   return _humanizeLabel(status);
-}
-
-String _inviteTimeLabel(String raw) {
-  final parsed = DateTime.tryParse(raw);
-  if (parsed == null) return '';
-  final diff = DateTime.now().difference(parsed.toLocal());
-  if (diff.inMinutes < 1) return 'Just now';
-  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-  if (diff.inDays < 1) return '${diff.inHours}h ago';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
-  return '${parsed.month}/${parsed.day}/${parsed.year}';
 }
 
 _StatusTone _inviteTone(Map<String, dynamic> invite) {
@@ -1272,12 +1228,6 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
   return '';
 }
 
-String _truncateLabel(String value, {int max = 40}) {
-  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
-  if (text.length <= max) return text;
-  return '${text.substring(0, max - 1).trimRight()}…';
-}
-
 enum _StatusTone { neutral, accent, positive, negative }
 
 class _StatusPill extends StatelessWidget {
@@ -1290,25 +1240,25 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = switch (tone) {
       _StatusTone.positive => (
-          border: AuraSurface.goodInk.withValues(alpha: 0.35),
-          text: AuraSurface.goodInk,
-          fill: AuraSurface.goodBg,
-        ),
+        border: AuraSurface.goodInk.withValues(alpha: 0.35),
+        text: AuraSurface.goodInk,
+        fill: AuraSurface.goodBg,
+      ),
       _StatusTone.negative => (
-          border: AuraSurface.dangerInk.withValues(alpha: 0.35),
-          text: AuraSurface.dangerInk,
-          fill: AuraSurface.dangerBg,
-        ),
+        border: AuraSurface.dangerInk.withValues(alpha: 0.35),
+        text: AuraSurface.dangerInk,
+        fill: AuraSurface.dangerBg,
+      ),
       _StatusTone.accent => (
-          border: AuraSurface.accent.withValues(alpha: 0.35),
-          text: AuraSurface.accentText,
-          fill: AuraSurface.accentSoft,
-        ),
+        border: AuraSurface.accent.withValues(alpha: 0.35),
+        text: AuraSurface.accentText,
+        fill: AuraSurface.accentSoft,
+      ),
       _StatusTone.neutral => (
-          border: AuraSurface.divider,
-          text: AuraSurface.muted,
-          fill: Colors.transparent,
-        ),
+        border: AuraSurface.divider,
+        text: AuraSurface.muted,
+        fill: Colors.transparent,
+      ),
     };
 
     return Container(
@@ -1425,10 +1375,7 @@ class _ErrorBlock extends StatelessWidget {
 }
 
 class _MetaChip extends StatelessWidget {
-  const _MetaChip({
-    required this.label,
-    required this.value,
-  });
+  const _MetaChip({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -1537,22 +1484,27 @@ _MediaSummary _extractMediaSummary(Map<String, dynamic> space) {
   final nested = _extractNestedMediaMap(space);
 
   return _MediaSummary(
-    images: _pickInt(
-      nested ?? space,
-      const ['imagesCount', 'imageCount', 'images'],
-    ),
-    documents: _pickInt(
-      nested ?? space,
-      const ['documentsCount', 'documentCount', 'documents', 'docsCount'],
-    ),
-    audio: _pickInt(
-      nested ?? space,
-      const ['audioCount', 'audiosCount', 'audio'],
-    ),
-    files: _pickInt(
-      nested ?? space,
-      const ['filesCount', 'fileCount', 'files'],
-    ),
+    images: _pickInt(nested ?? space, const [
+      'imagesCount',
+      'imageCount',
+      'images',
+    ]),
+    documents: _pickInt(nested ?? space, const [
+      'documentsCount',
+      'documentCount',
+      'documents',
+      'docsCount',
+    ]),
+    audio: _pickInt(nested ?? space, const [
+      'audioCount',
+      'audiosCount',
+      'audio',
+    ]),
+    files: _pickInt(nested ?? space, const [
+      'filesCount',
+      'fileCount',
+      'files',
+    ]),
   );
 }
 

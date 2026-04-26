@@ -110,7 +110,10 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   icon: Icons.auto_awesome_outlined,
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                Text('Aura Editor', style: AuraText.title.copyWith(fontSize: 26)),
+                Text(
+                  'Aura Editor',
+                  style: AuraText.title.copyWith(fontSize: 26),
+                ),
                 const SizedBox(height: AuraSpace.s10),
                 const Text(
                   'A calm editorial review for clarity, responsibility, and civic impact.',
@@ -158,7 +161,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Note', style: AuraText.title),
+                  const Text('Note', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   Text(_error!, style: AuraText.body),
                 ],
@@ -167,10 +170,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
           if (data != null) ...[
             const SizedBox(height: AuraSpace.s12),
             AuraCard(
-              child: _AuraEditorReport(
-                inputText: input,
-                data: data,
-              ),
+              child: _AuraEditorReport(inputText: input, data: data),
             ),
           ],
         ],
@@ -180,10 +180,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
 }
 
 class _AuraEditorReport extends StatelessWidget {
-  const _AuraEditorReport({
-    required this.inputText,
-    required this.data,
-  });
+  const _AuraEditorReport({required this.inputText, required this.data});
 
   final String inputText;
   final Map<String, dynamic> data;
@@ -194,7 +191,18 @@ class _AuraEditorReport extends StatelessWidget {
     if (t.endsWith('?')) return true;
 
     final lower = t.toLowerCase();
-    const starters = ['who', 'what', 'where', 'when', 'why', 'how', 'is ', 'are ', 'do ', 'does '];
+    const starters = [
+      'who',
+      'what',
+      'where',
+      'when',
+      'why',
+      'how',
+      'is ',
+      'are ',
+      'do ',
+      'does ',
+    ];
     for (final s in starters) {
       if (lower.startsWith(s)) return true;
     }
@@ -225,34 +233,43 @@ class _AuraEditorReport extends StatelessWidget {
     final out = <String>[];
 
     if (isQuestion) {
-      out.add('If you are asking readers for help, add a little context (location, timeframe, or why you’re asking).');
+      out.add(
+        'If you are asking readers for help, add a little context (location, timeframe, or why you’re asking).',
+      );
       return out.take(3).toList();
     }
 
     if (hasClaims) {
-      out.add('If this is intended as a factual claim, add a source or a brief context line to support it.');
+      out.add(
+        'If this is intended as a factual claim, add a source or a brief context line to support it.',
+      );
     } else {
-      out.add('If you want readers to respond thoughtfully, make your intent explicit in one clear sentence.');
+      out.add(
+        'If you want readers to respond thoughtfully, make your intent explicit in one clear sentence.',
+      );
     }
 
     if (hasClarityIssues) {
-      out.add('Clarify the key term or reference that a new reader may not understand.');
+      out.add(
+        'Clarify the key term or reference that a new reader may not understand.',
+      );
     }
 
     if (hasToneFlags) {
-      out.add('Consider softening the wording so the point lands without sounding accusatory.');
+      out.add(
+        'Consider softening the wording so the point lands without sounding accusatory.',
+      );
     }
 
     // Keep it limited.
     return out.where((s) => s.trim().isNotEmpty).take(3).toList();
   }
 
-  String _whatItIsDoing({
-    required bool hasClaims,
-    required bool isQuestion,
-  }) {
+  String _whatItIsDoing({required bool hasClaims, required bool isQuestion}) {
     if (isQuestion) return 'This reads as an informational question.';
-    if (hasClaims) return 'This reads as a statement that includes factual claims.';
+    if (hasClaims) {
+      return 'This reads as a statement that includes factual claims.';
+    }
     return 'This reads as an opinion or a general statement.';
   }
 
@@ -286,10 +303,14 @@ class _AuraEditorReport extends StatelessWidget {
     final what = _whatItIsDoing(hasClaims: hasClaims, isQuestion: isQuestion);
 
     final consider = <String>[
-      if (hasClaims) 'Readers may interpret this as a factual assertion. If so, it benefits from evidence or context.',
-      if (hasClarity) 'Some wording may be unclear to a reader who doesn’t know the background.',
-      if (assumptions.isNotEmpty) 'There may be implicit assumptions. Making them explicit can improve fairness and clarity.',
-      if (!hasClaims && !hasClarity && !isQuestion) 'If your goal is persuasion, add one concrete example to anchor the point.',
+      if (hasClaims)
+        'Readers may interpret this as a factual assertion. If so, it benefits from evidence or context.',
+      if (hasClarity)
+        'Some wording may be unclear to a reader who doesn’t know the background.',
+      if (assumptions.isNotEmpty)
+        'There may be implicit assumptions. Making them explicit can improve fairness and clarity.',
+      if (!hasClaims && !hasClarity && !isQuestion)
+        'If your goal is persuasion, add one concrete example to anchor the point.',
     ].where((s) => s.trim().isNotEmpty).take(3).toList();
 
     final suggestions = _topSuggestions(
@@ -308,53 +329,75 @@ class _AuraEditorReport extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Aura Editor review', style: AuraText.title),
+        const Text('Aura Editor review', style: AuraText.title),
         const SizedBox(height: AuraSpace.s10),
 
-        Text('What this piece is doing', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'What this piece is doing',
+          style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         Text(what, style: AuraText.body),
 
         const SizedBox(height: AuraSpace.s14),
 
-        Text('Things to consider', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Things to consider',
+          style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         if (consider.isEmpty)
-          Text('No concerns detected.', style: AuraText.body)
+          const Text('No concerns detected.', style: AuraText.body)
         else
-          ...consider.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• $s', style: AuraText.body),
-              )),
+          ...consider.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('• $s', style: AuraText.body),
+            ),
+          ),
 
         const SizedBox(height: AuraSpace.s14),
 
-        Text('Ways to strengthen it', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Ways to strengthen it',
+          style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         if (suggestions.isEmpty)
-          Text('No changes suggested.', style: AuraText.body)
+          const Text('No changes suggested.', style: AuraText.body)
         else
-          ...suggestions.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• $s', style: AuraText.body),
-              )),
+          ...suggestions.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('• $s', style: AuraText.body),
+            ),
+          ),
 
         const SizedBox(height: AuraSpace.s14),
 
-        Text('Civic awareness', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Civic awareness',
+          style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 6),
         Text(civic, style: AuraText.body),
 
         // Keep internal analysis invisible. But we can show a calm “details” section with claims only.
         if (hasClaims) ...[
           const SizedBox(height: AuraSpace.s14),
-          Text('Claims detected', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Claims detected',
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 6),
           ...claims.take(5).map((c) {
             final text = (c['text']?.toString() ?? '').trim();
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: Text('• ${text.isEmpty ? '—' : text}', style: AuraText.body),
+              child: Text(
+                '• ${text.isEmpty ? '—' : text}',
+                style: AuraText.body,
+              ),
             );
           }),
         ],
@@ -362,14 +405,20 @@ class _AuraEditorReport extends StatelessWidget {
         // Optional: if we ever add "suggested_refinement" from backend, we render it here.
         if (data['suggested_refinement'] != null) ...[
           const SizedBox(height: AuraSpace.s14),
-          Text('Suggested refinement', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Suggested refinement',
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 6),
           _CopySuggestionBox(text: data['suggested_refinement'].toString()),
         ] else if (hasTone || hasClarity || hasClaims) ...[
           const SizedBox(height: AuraSpace.s14),
-          Text('Suggested refinement', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
           Text(
+            'Suggested refinement',
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          const Text(
             'A refined version will appear here once the backend returns a single editorial rewrite. For now, use the guidance above.',
             style: AuraText.body,
           ),

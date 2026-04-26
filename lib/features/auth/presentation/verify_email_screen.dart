@@ -16,12 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
-  const VerifyEmailScreen({
-    super.key,
-    this.token,
-    this.email,
-    this.redirectTo,
-  });
+  const VerifyEmailScreen({super.key, this.token, this.email, this.redirectTo});
 
   final String? token;
   final String? email;
@@ -109,7 +104,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       setState(() {
         _busy = false;
         _ok = false;
-        _msg = 'This verification link is incomplete. Please request a new one.';
+        _msg =
+            'This verification link is incomplete. Please request a new one.';
         _msgIsError = true;
       });
       return;
@@ -131,7 +127,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         _msgIsError = false;
       });
     } on DioException catch (e) {
-      debugPrint('verify-email failed: ${e.response?.statusCode} ${e.response?.data}');
+      debugPrint(
+        'verify-email failed: ${e.response?.statusCode} ${e.response?.data}',
+      );
 
       if (!mounted) return;
 
@@ -186,31 +184,29 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                         color: _busy
                             ? AuraSurface.accentSoft
                             : (_ok
-                                ? const Color(0xFF0E2318)
-                                : const Color(0xFF231010)),
+                                  ? const Color(0xFF0E2318)
+                                  : const Color(0xFF231010)),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         _busy
                             ? Icons.hourglass_top_rounded
                             : (_ok
-                                ? Icons.verified_rounded
-                                : Icons.error_outline_rounded),
+                                  ? Icons.verified_rounded
+                                  : Icons.error_outline_rounded),
                         size: 22,
                         color: _busy
                             ? AuraSurface.accentText
                             : (_ok
-                                ? AuraSurface.goodInk
-                                : AuraSurface.dangerInk),
+                                  ? AuraSurface.goodInk
+                                  : AuraSurface.dangerInk),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    Text('Email verification', style: AuraText.title),
+                    const Text('Email verification', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
-                      _busy
-                          ? 'Verifying your email…'
-                          : (_msg ?? ''),
+                      _busy ? 'Verifying your email…' : (_msg ?? ''),
                       style: AuraText.body.copyWith(
                         color: AuraSurface.muted,
                         height: 1.5,
@@ -220,7 +216,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     if (_busy) ...[
                       Row(
                         children: [
-                          SizedBox(
+                          const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
@@ -231,8 +227,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                           const SizedBox(width: AuraSpace.s12),
                           Text(
                             'Please wait…',
-                            style: AuraText.small
-                                .copyWith(color: AuraSurface.muted),
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.muted,
+                            ),
                           ),
                         ],
                       ),

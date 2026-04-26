@@ -116,18 +116,17 @@ final postProvider = FutureProvider.family<Post, String>((ref, id) async {
   return _postFromAny(res.data);
 });
 
-final repliesProvider =
-    FutureProvider.family<List<Post>, String>((ref, id) async {
+final repliesProvider = FutureProvider.family<List<Post>, String>((
+  ref,
+  id,
+) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/$id/replies');
   return _repliesFromAny(res.data);
 });
 
 class PostDetailScreen extends ConsumerWidget {
-  const PostDetailScreen({
-    super.key,
-    required this.postId,
-  });
+  const PostDetailScreen({super.key, required this.postId});
 
   final String postId;
 
@@ -160,9 +159,7 @@ class PostDetailScreen extends ConsumerWidget {
 
                   Text(
                     'This work is part of a public record that remains accessible and accountable over time.',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                    ),
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
 
                   const SizedBox(height: AuraSpace.s14),
@@ -172,10 +169,7 @@ class PostDetailScreen extends ConsumerWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          PostCard(
-                            post: post,
-                            compact: false,
-                          ),
+                          PostCard(post: post, compact: false),
                           const SizedBox(height: AuraSpace.s12),
                           Wrap(
                             spacing: AuraSpace.s10,
@@ -193,9 +187,8 @@ class PostDetailScreen extends ConsumerWidget {
                       );
                     },
                     loading: () => const _LoadingCard(label: 'Loading work…'),
-                    error: (e, _) => _ErrorCard(
-                      message: 'Could not load work: $e',
-                    ),
+                    error: (e, _) =>
+                        _ErrorCard(message: 'Could not load work: $e'),
                   ),
 
                   const SizedBox(height: AuraSpace.s24),
@@ -204,9 +197,7 @@ class PostDetailScreen extends ConsumerWidget {
 
                   Row(
                     children: [
-                      const Expanded(
-                        child: _SectionLabel(title: 'Responses'),
-                      ),
+                      const Expanded(child: _SectionLabel(title: 'Responses')),
                       repliesAsync.when(
                         data: (items) => _CountPill(count: items.length),
                         loading: () => const SizedBox.shrink(),
@@ -219,9 +210,7 @@ class PostDetailScreen extends ConsumerWidget {
 
                   Text(
                     'Responses become part of the same record.',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                    ),
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
 
                   const SizedBox(height: AuraSpace.s14),
@@ -268,17 +257,14 @@ class PostDetailScreen extends ConsumerWidget {
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: AuraSpace.s14),
                         itemBuilder: (context, index) {
-                          return PostCard(
-                            post: items[index],
-                            compact: false,
-                          );
+                          return PostCard(post: items[index], compact: false);
                         },
                       );
                     },
-                    loading: () => const _LoadingCard(label: 'Loading responses…'),
-                    error: (e, _) => _ErrorCard(
-                      message: 'Could not load responses: $e',
-                    ),
+                    loading: () =>
+                        const _LoadingCard(label: 'Loading responses…'),
+                    error: (e, _) =>
+                        _ErrorCard(message: 'Could not load responses: $e'),
                   ),
                 ],
               ),
@@ -291,9 +277,7 @@ class PostDetailScreen extends ConsumerWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.postId,
-  });
+  const _TopBar({required this.postId});
 
   final String postId;
 
@@ -315,19 +299,14 @@ class _TopBar extends StatelessWidget {
             context.go('/search');
           },
         ),
-        Text(
-          'Record',
-          style: AuraText.title,
-        ),
+        const Text('Record', style: AuraText.title),
       ],
     );
   }
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({
-    required this.title,
-  });
+  const _SectionLabel({required this.title});
 
   final String title;
 
@@ -335,17 +314,13 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: AuraText.body.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
     );
   }
 }
 
 class _CountPill extends StatelessWidget {
-  const _CountPill({
-    required this.count,
-  });
+  const _CountPill({required this.count});
 
   final int count;
 
@@ -373,9 +348,7 @@ class _CountPill extends StatelessWidget {
 }
 
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard({
-    required this.label,
-  });
+  const _LoadingCard({required this.label});
 
   final String label;
 
@@ -392,12 +365,7 @@ class _LoadingCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: AuraSpace.s10),
-            Expanded(
-              child: Text(
-                label,
-                style: AuraText.body,
-              ),
-            ),
+            Expanded(child: Text(label, style: AuraText.body)),
           ],
         ),
       ),
@@ -406,9 +374,7 @@ class _LoadingCard extends StatelessWidget {
 }
 
 class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({
-    required this.message,
-  });
+  const _ErrorCard({required this.message});
 
   final String message;
 
@@ -417,10 +383,7 @@ class _ErrorCard extends StatelessWidget {
     return AuraCard(
       child: Padding(
         padding: const EdgeInsets.all(AuraSpace.s14),
-        child: Text(
-          message,
-          style: AuraText.body,
-        ),
+        child: Text(message, style: AuraText.body),
       ),
     );
   }

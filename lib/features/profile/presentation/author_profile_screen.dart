@@ -17,10 +17,7 @@ import '../domain/profile.dart';
 import '../providers.dart';
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
-  const AuthorProfileScreen({
-    super.key,
-    required this.handle,
-  });
+  const AuthorProfileScreen({super.key, required this.handle});
 
   final String handle;
 
@@ -60,9 +57,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _openPrivateConversation(Profile profile) {
@@ -116,9 +113,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
         _sectionTitle(title),
         AuraCard(
           padding: EdgeInsets.zero,
-          child: Column(
-            children: _withDividers(children),
-          ),
+          child: Column(children: _withDividers(children)),
         ),
       ],
     );
@@ -130,11 +125,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     for (var i = 0; i < children.length; i++) {
       out.add(children[i]);
       if (i != children.length - 1) {
-        out.add(const Divider(
-          height: 1,
-          thickness: 1,
-          color: AuraSurface.divider,
-        ));
+        out.add(
+          const Divider(height: 1, thickness: 1, color: AuraSurface.divider),
+        );
       }
     }
 
@@ -231,10 +224,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     return AuraCard(
       child: Text(
         message,
-        style: AuraText.body.copyWith(
-          color: AuraSurface.muted,
-          height: 1.5,
-        ),
+        style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
       ),
     );
   }
@@ -259,8 +249,11 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.verified_rounded,
-                  size: 12, color: AuraSurface.goodInk),
+              const Icon(
+                Icons.verified_rounded,
+                size: 12,
+                color: AuraSurface.goodInk,
+              ),
               const SizedBox(width: AuraSpace.s4),
               Text(
                 'Verified',
@@ -279,19 +272,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     if (location.isNotEmpty) {
       meta.add(
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 6,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             border: Border.all(color: AuraSurface.divider),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Text(
             location,
-            style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -306,13 +294,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
       children: [
         _sectionTitle('Works'),
         if (posts.isEmpty)
-          AuraCard(
+          const AuraCard(
             child: Padding(
-              padding: const EdgeInsets.all(AuraSpace.s18),
-              child: Text(
-                'No work yet.',
-                style: AuraText.body,
-              ),
+              padding: EdgeInsets.all(AuraSpace.s18),
+              child: Text('No work yet.', style: AuraText.body),
             ),
           )
         else
@@ -343,8 +328,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           subtitle: canCorrespond
               ? 'Open a private conversation'
               : isAuthed
-                  ? 'Available after the follow relationship is established'
-                  : 'Sign in to continue',
+              ? 'Available after the follow relationship is established'
+              : 'Sign in to continue',
           leading: Icons.chat_bubble_outline,
           enabled: canCorrespond,
           onTap: canCorrespond ? () => _openPrivateConversation(profile) : null,
@@ -354,8 +339,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           subtitle: canCorrespond
               ? 'Bring this person into a shared room'
               : isAuthed
-                  ? 'Available after the follow relationship is established'
-                  : 'Sign in to continue',
+              ? 'Available after the follow relationship is established'
+              : 'Sign in to continue',
           leading: Icons.person_add_alt_outlined,
           enabled: canCorrespond,
           onTap: canCorrespond ? () => _openInviteToSpace(profile) : null,
@@ -502,8 +487,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                     icon: followState == 'following'
                         ? Icons.check
                         : followState == 'outgoing_pending'
-                            ? Icons.schedule
-                            : Icons.person_add_alt_1,
+                        ? Icons.schedule
+                        : Icons.person_add_alt_1,
                     onTap: !canFollowAction
                         ? null
                         : () async {

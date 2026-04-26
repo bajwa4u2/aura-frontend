@@ -14,7 +14,8 @@ class RealtimeLobbyScreen extends ConsumerStatefulWidget {
   const RealtimeLobbyScreen({super.key});
 
   @override
-  ConsumerState<RealtimeLobbyScreen> createState() => _RealtimeLobbyScreenState();
+  ConsumerState<RealtimeLobbyScreen> createState() =>
+      _RealtimeLobbyScreenState();
 }
 
 class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
@@ -70,9 +71,9 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Standalone live', style: AuraText.title),
+          const Text('Standalone live', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
-          Text(
+          const Text(
             'Use this only for truly standalone live. Correspondence-owned live should be opened from its conversation or space.',
             style: AuraText.body,
           ),
@@ -87,7 +88,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
-                  Text(
+                  const Text(
                     'You need an active member session before joining live.',
                     style: AuraText.muted,
                   ),
@@ -104,7 +105,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
-                  Text(
+                  const Text(
                     'Choose where this live session belongs and how it should open.',
                     style: AuraText.muted,
                   ),
@@ -117,7 +118,10 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     ),
                     items: const [
                       DropdownMenuItem(value: 'SPACE', child: Text('Space')),
-                      DropdownMenuItem(value: 'DM', child: Text('Direct conversation')),
+                      DropdownMenuItem(
+                        value: 'DM',
+                        child: Text('Direct conversation'),
+                      ),
                       DropdownMenuItem(
                         value: 'INSTITUTION_ROOM',
                         child: Text('Institution'),
@@ -171,7 +175,9 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                         ? null
                         : () async {
                             final router = GoRouter.of(context);
-                            final controller = ref.read(realtimeControllerProvider.notifier);
+                            final controller = ref.read(
+                              realtimeControllerProvider.notifier,
+                            );
                             final id = await controller.createSession(
                               surfaceType: _surfaceType,
                               surfaceId: _surfaceIdController.text.trim(),
@@ -194,7 +200,7 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AuraSpace.s8),
-                  Text(
+                  const Text(
                     'Use a live session id to join, reopen, or inspect the current state.',
                     style: AuraText.muted,
                   ),
@@ -243,15 +249,11 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
           ],
           if ((realtime.errorMessage ?? '').isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
-            AuraCard(
-              child: Text(realtime.errorMessage!, style: AuraText.body),
-            ),
+            AuraCard(child: Text(realtime.errorMessage!, style: AuraText.body)),
           ],
           if ((realtime.infoMessage ?? '').isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
-            AuraCard(
-              child: Text(realtime.infoMessage!, style: AuraText.body),
-            ),
+            AuraCard(child: Text(realtime.infoMessage!, style: AuraText.body)),
           ],
         ],
       ),

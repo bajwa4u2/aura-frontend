@@ -22,7 +22,8 @@ class AdminWorkspaceScreen extends ConsumerWidget {
       title: 'Admin workspace',
       showHomeAction: true,
       body: adminAsync.when(
-        loading: () => Center(child: AuraLoadingState(message: 'Loading…')),
+        loading: () =>
+            const Center(child: AuraLoadingState(message: 'Loading…')),
         error: (e, _) => Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
@@ -30,7 +31,7 @@ class AdminWorkspaceScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Failed to load', style: AuraText.title),
+                  const Text('Failed to load', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   Text(e.toString(), style: AuraText.body),
                 ],
@@ -43,12 +44,12 @@ class AdminWorkspaceScreen extends ConsumerWidget {
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
-                child: AuraCard(
+                child: const AuraCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Not available', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
+                      SizedBox(height: AuraSpace.s10),
                       Text(
                         'This workspace is only available to platform admins.',
                         style: AuraText.body,
@@ -61,7 +62,9 @@ class AdminWorkspaceScreen extends ConsumerWidget {
           }
 
           final me = admin.me ?? <String, dynamic>{};
-          final name = (me['displayName'] ?? me['name'] ?? '').toString().trim();
+          final name = (me['displayName'] ?? me['name'] ?? '')
+              .toString()
+              .trim();
           final email = (me['email'] ?? '').toString().trim();
 
           return ListView(
@@ -81,9 +84,9 @@ class AdminWorkspaceScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Admin workspace', style: AuraText.title),
+                          const Text('Admin workspace', style: AuraText.title),
                           const SizedBox(height: AuraSpace.s8),
-                          Text(
+                          const Text(
                             'This is the platform authority surface. It should hold the administrative tools that shape system-level behavior without mixing them into member presence.',
                             style: AuraText.body,
                           ),
@@ -105,9 +108,12 @@ class AdminWorkspaceScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Authority surfaces', style: AuraText.title),
+                          const Text(
+                            'Authority surfaces',
+                            style: AuraText.title,
+                          ),
                           const SizedBox(height: AuraSpace.s10),
-                          Text(
+                          const Text(
                             'Announcements are wired first. Other system controls can be added here without leaking admin functions into member-facing routes.',
                             style: AuraText.body,
                           ),

@@ -79,10 +79,7 @@ class PresenceHeader extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  _PresenceCover(
-                    coverUrl: coverUrl,
-                    height: coverHeight,
-                  ),
+                  _PresenceCover(coverUrl: coverUrl, height: coverHeight),
                   Positioned(
                     left: isNarrow ? AuraSpace.s18 : AuraSpace.s24,
                     bottom: -(avatarSize / 2) + overlap,
@@ -237,24 +234,17 @@ class _PresenceControlRail extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ...actions.map((action) => Padding(
-                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                child: _PresenceActionButton(
-                  action: action,
-                  expand: true,
-                ),
-              )),
+          ...actions.map(
+            (action) => Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+              child: _PresenceActionButton(action: action, expand: true),
+            ),
+          ),
           if (workspaceActions.isNotEmpty) ...[
             if (actions.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(
-                  top: 2,
-                  bottom: AuraSpace.s12,
-                ),
-                child: Container(
-                  height: 1,
-                  color: AuraSurface.divider,
-                ),
+                padding: const EdgeInsets.only(top: 2, bottom: AuraSpace.s12),
+                child: Container(height: 1, color: AuraSurface.divider),
               ),
             Text(
               'Workspaces',
@@ -268,10 +258,7 @@ class _PresenceControlRail extends StatelessWidget {
             ...workspaceActions.map(
               (action) => Padding(
                 padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                child: _PresenceActionButton(
-                  action: action,
-                  expand: true,
-                ),
+                child: _PresenceActionButton(action: action, expand: true),
               ),
             ),
           ],
@@ -285,10 +272,7 @@ class _PresenceCover extends StatelessWidget {
   final String coverUrl;
   final double height;
 
-  const _PresenceCover({
-    required this.coverUrl,
-    required this.height,
-  });
+  const _PresenceCover({required this.coverUrl, required this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -332,9 +316,9 @@ class _PresenceCover extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(hasCover ? 0.10 : 0.08),
-                  Colors.black.withOpacity(hasCover ? 0.20 : 0.16),
-                  Colors.black.withOpacity(hasCover ? 0.34 : 0.24),
+                  Colors.black.withValues(alpha: hasCover ? 0.10 : 0.08),
+                  Colors.black.withValues(alpha: hasCover ? 0.20 : 0.16),
+                  Colors.black.withValues(alpha: hasCover ? 0.34 : 0.24),
                 ],
                 stops: const [0.0, 0.52, 1.0],
               ),
@@ -351,15 +335,9 @@ class _PresenceCover extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF232833),
-            Color(0xFF1C212A),
-            Color(0xFF171B22),
-          ],
+          colors: [Color(0xFF232833), Color(0xFF1C212A), Color(0xFF171B22)],
         ),
-        border: Border(
-          bottom: BorderSide(color: AuraSurface.divider),
-        ),
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -372,7 +350,7 @@ class _PresenceCover extends StatelessWidget {
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.04),
+                color: Colors.white.withValues(alpha: 0.04),
               ),
             ),
           ),
@@ -384,7 +362,7 @@ class _PresenceCover extends StatelessWidget {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.02),
+                color: Colors.white.withValues(alpha: 0.02),
               ),
             ),
           ),
@@ -474,8 +452,11 @@ class _PresenceAvatar extends StatelessWidget {
   }
 
   String _initials(String name) {
-    final parts =
-        name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
@@ -498,28 +479,21 @@ class _PresenceActionButton extends StatelessWidget {
   final PresenceHeaderAction action;
   final bool expand;
 
-  const _PresenceActionButton({
-    required this.action,
-    this.expand = false,
-  });
+  const _PresenceActionButton({required this.action, this.expand = false});
 
   @override
   Widget build(BuildContext context) {
     final child = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment:
-          expand ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: expand
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
       children: [
         if (action.icon != null) ...[
           Icon(action.icon, size: 16),
           const SizedBox(width: AuraSpace.s8),
         ],
-        Flexible(
-          child: Text(
-            action.label,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        Flexible(child: Text(action.label, overflow: TextOverflow.ellipsis)),
       ],
     );
 
@@ -548,9 +522,7 @@ class _PresenceActionButton extends StatelessWidget {
           horizontal: AuraSpace.s16,
           vertical: AuraSpace.s12,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       child: child,
     );

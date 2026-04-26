@@ -60,7 +60,6 @@ class _ComposeAttachment {
     this.thumbUrl,
     this.uploading = false,
     this.attachedToDraft = false,
-    this.error,
   });
 
   final String localId;
@@ -129,7 +128,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String? _translationSnapshot;
 
   bool _tiktokLoading = false;
-  bool _tiktokActionBusy = false;
+  final bool _tiktokActionBusy = false;
   bool _publishToTikTok = false;
   bool _publishingToTikTok = false;
   bool _tiktokConnected = false;
@@ -142,8 +141,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String _linkedinAccountLabel = '';
   String? _linkedinError;
 
-  String _currentUserId = '';
-
   bool get _isReply => widget.replyToPostId != null;
 
   String get _replyToPostId => (widget.replyToPostId ?? '').trim();
@@ -151,7 +148,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool get _hasText => _textController.text.trim().isNotEmpty;
   bool get _textTooLong => _textController.text.trim().length > _limit;
-  bool get _hasAttachments => _attachments.isNotEmpty;
   bool get _hasUploadingAttachments => _attachments.any((a) => a.uploading);
   bool get _canAddMoreAttachments =>
       !_isReply && _attachments.length < _maxAttachments;
@@ -183,7 +179,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (v == null) return <String, dynamic>{};
 
     if (v is Map) {
-      return Map<String, dynamic>.from(v as Map);
+      return Map<String, dynamic>.from(v);
     }
 
     if (v is String) {
@@ -192,22 +188,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       try {
         final decoded = jsonDecode(s);
         if (decoded is Map) {
-          return Map<String, dynamic>.from(decoded as Map);
+          return Map<String, dynamic>.from(decoded);
         }
       } catch (_) {}
     }
 
     return <String, dynamic>{};
-  }
-
-  Map<String, dynamic> _unwrapDataMap(dynamic v) {
-    Map<String, dynamic> cur = _asMap(v);
-    while (cur.containsKey('ok') &&
-        cur.containsKey('data') &&
-        cur['data'] is Map) {
-      cur = Map<String, dynamic>.from(cur['data'] as Map);
-    }
-    return cur;
   }
 
   List<Map<String, dynamic>> _listOfMap(dynamic v) {
@@ -225,37 +211,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   String _str(dynamic v) => (v ?? '').toString().trim();
 
-String _firstNonEmpty(List<String?> values, {String fallback = ''}) {
-  for (final value in values) {
-    final s = (value ?? '').trim();
-    if (s.isNotEmpty) {
-      return s;
+  String _firstNonEmpty(List<String?> values, {String fallback = ''}) {
+    for (final value in values) {
+      final s = (value ?? '').trim();
+      if (s.isNotEmpty) {
+        return s;
+      }
     }
-  }
-  return fallback;
-}
-
-List<String> _listOfString(dynamic v, {int take = 3}) {
-  if (v is! List) return const [];
-
-  final out = <String>[];
-  final seen = <String>{};
-
-  for (final item in v) {
-    final s = _str(item);
-    if (s.isEmpty) continue;
-
-    final k = s.toLowerCase();
-    if (seen.contains(k)) continue;
-
-    seen.add(k);
-    out.add(s);
-
-    if (out.length >= take) break;
+    return fallback;
   }
 
-  return out;
-}
+  List<String> _listOfString(dynamic v, {int take = 3}) {
+    if (v is! List) return const [];
+
+    final out = <String>[];
+    final seen = <String>{};
+
+    for (final item in v) {
+      final s = _str(item);
+      if (s.isEmpty) continue;
+
+      final k = s.toLowerCase();
+      if (seen.contains(k)) continue;
+
+      seen.add(k);
+      out.add(s);
+
+      if (out.length >= take) break;
+    }
+
+    return out;
+  }
 
   String _inferMime(String fileName) {
     final lower = fileName.toLowerCase();
@@ -349,9 +335,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       return TextDirection.rtl;
     }
     final previewText = _translationPreview?.translatedText ?? '';
-    return _looksRtlText(previewText)
-        ? TextDirection.rtl
-        : TextDirection.ltr;
+    return _looksRtlText(previewText) ? TextDirection.rtl : TextDirection.ltr;
   }
 
   TextAlign _translationPreviewTextAlign() {
@@ -410,7 +394,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     super.dispose();
   }
 
-
   String _currentComposeRedirect() {
     final params = <String, String>{};
     if (_replyToPostId.isNotEmpty) {
@@ -424,7 +407,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       params['surface'] = surface;
     }
 
-    final uri = Uri(path: '/compose', queryParameters: params.isEmpty ? null : params);
+    final uri = Uri(
+      path: '/compose',
+      queryParameters: params.isEmpty ? null : params,
+    );
     return uri.toString();
   }
 
@@ -462,32 +448,21 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       final meRes = await dio.get('/users/me');
       final user = _unwrapUser(meRes.data);
-      final userId = _str(user['id']);
-
-      if (userId.isEmpty) {
+      if (_str(user['id']).isEmpty) {
         throw Exception('User id is missing.');
       }
 
       final results = await Future.wait<dynamic>([
-        _safeGet(
-          dio,
-          '/integrations/tiktok/account',
-        ),
-        _safeGet(
-          dio,
-          '/integrations/linkedin/account',
-        ),
+        _safeGet(dio, '/integrations/tiktok/account'),
+        _safeGet(dio, '/integrations/linkedin/account'),
       ]);
 
       final tiktokAccount = _unwrapTikTokAccount(results[0]?.data);
-      final linkedinAccount = _unwrapLinkedInAccount(
-        results[1]?.data,
-      );
+      final linkedinAccount = _unwrapLinkedInAccount(results[1]?.data);
 
       if (!mounted) return;
 
       setState(() {
-        _currentUserId = userId;
         _tiktokConnected = _readTikTokConnected(tiktokAccount);
         _tiktokAccountLabel = _readTikTokAccountLabel(tiktokAccount);
         _linkedinConnected = _readLinkedInConnected(linkedinAccount);
@@ -582,7 +557,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     ]);
   }
 
-
   Map<String, dynamic> _unwrapLinkedInAccount(dynamic raw) {
     if (raw is! Map) return <String, dynamic>{};
 
@@ -615,13 +589,13 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (connected is bool) return connected;
 
     return _firstNonEmpty([
-          _str(account['linkedinMemberId']),
-          _str(account['memberId']),
-          _str(account['id']),
-          _str(account['sub']),
-          _str(account['name']),
-          _str(account['email']),
-        ]).isNotEmpty;
+      _str(account['linkedinMemberId']),
+      _str(account['memberId']),
+      _str(account['id']),
+      _str(account['sub']),
+      _str(account['name']),
+      _str(account['email']),
+    ]).isNotEmpty;
   }
 
   String _readLinkedInAccountLabel(Map<String, dynamic> account) {
@@ -665,7 +639,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         );
         for (final item in heldItems) {
           if (_str(item['id']) == _heldPostId) {
-            res = Response(requestOptions: RequestOptions(path: '/posts/held'), data: item);
+            res = Response(
+              requestOptions: RequestOptions(path: '/posts/held'),
+              data: item,
+            );
             break;
           }
         }
@@ -696,8 +673,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         if (mediaId.isEmpty) continue;
 
         final isVideo = typeRaw == 'VIDEO';
-        final captionController =
-            TextEditingController(text: _str(item['caption']));
+        final captionController = TextEditingController(
+          text: _str(item['caption']),
+        );
         captionController.addListener(_scheduleAutosave);
 
         loadedAttachments.add(
@@ -791,7 +769,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Camera capture is not available here. Choose a file instead.'),
+          content: Text(
+            'Camera capture is not available here. Choose a file instead.',
+          ),
         ),
       );
       await _pickImageFromGallery();
@@ -829,7 +809,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Video recording is not available here. Choose a file instead.'),
+          content: Text(
+            'Video recording is not available here. Choose a file instead.',
+          ),
         ),
       );
       await _pickVideoFromGallery();
@@ -932,8 +914,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       fileName: file.name,
       mimeType: mime,
       kind: attachment.isImage ? 'IMAGE' : 'VIDEO',
-      source:
-          attachment.source == _AttachmentSource.camera ? 'CAMERA' : 'GALLERY',
+      source: attachment.source == _AttachmentSource.camera
+          ? 'CAMERA'
+          : 'GALLERY',
       width: attachment.isImage ? attachment.width : null,
       height: attachment.isImage ? attachment.height : null,
       duration: attachment.isVideo ? attachment.durationMs : null,
@@ -1073,9 +1056,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     if (!_hasText) {
       if (!silent && mounted) {
         setState(() => _showTextError = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Text is required.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Text is required.')));
       }
       return;
     }
@@ -1104,9 +1087,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     } catch (e) {
       if (!mounted) return;
       if (!silent) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not hold this work: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not hold this work: $e')));
       }
       rethrow;
     } finally {
@@ -1115,7 +1098,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       }
     }
   }
-
 
   CompositionSurface get _compositionSurface {
     final explicit = (widget.surface ?? '').trim().toLowerCase();
@@ -1179,10 +1161,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/composition/review',
-        data: {
-          'text': text,
-          'surface': _compositionSurface.name,
-        },
+        data: {'text': text, 'surface': _compositionSurface.name},
       );
 
       if (!mounted) return null;
@@ -1221,7 +1200,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     }
   }
 
-  Future<void> _applyCompositionSuggestion(CompositionSuggestion suggestion) async {
+  Future<void> _applyCompositionSuggestion(
+    CompositionSuggestion suggestion,
+  ) async {
     final review = _compositionReview;
     if (review == null || suggestion.id.trim().isEmpty) return;
 
@@ -1283,9 +1264,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       setState(() {
         _compositionError = e.toString();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not apply suggestion: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not apply suggestion: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -1316,10 +1297,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/composition/translate',
-        data: {
-          'text': text,
-          'targetLanguage': _translationTargetLanguage,
-        },
+        data: {'text': text, 'targetLanguage': _translationTargetLanguage},
       );
 
       if (!mounted) return;
@@ -1354,9 +1332,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       setState(() {
         _translationError = e.toString();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Translation could not run: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Translation could not run: $e')));
     } finally {
       if (mounted) {
         setState(() => _translationBusy = false);
@@ -1442,7 +1420,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   children: [
                     Text(
                       suggestion.message,
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     if (suggestion.replacement.trim().isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s6),
@@ -1458,10 +1438,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       children: [
                         if (suggestion.canApply)
                           AuraPrimaryButton(
-                            label: _applyingSuggestionIds.contains(suggestion.id)
+                            label:
+                                _applyingSuggestionIds.contains(suggestion.id)
                                 ? 'Applying...'
                                 : 'Apply',
-                            onPressed: _applyingSuggestionIds.contains(suggestion.id)
+                            onPressed:
+                                _applyingSuggestionIds.contains(suggestion.id)
                                 ? null
                                 : () => _applyCompositionSuggestion(suggestion),
                           ),
@@ -1500,7 +1482,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
               SizedBox(
                 width: 140,
                 child: DropdownButtonFormField<String>(
-                  value: _translationTargetLanguage,
+                  initialValue: _translationTargetLanguage,
                   items: const [
                     DropdownMenuItem(value: 'en', child: Text('English')),
                     DropdownMenuItem(value: 'ur', child: Text('Urdu')),
@@ -1527,7 +1509,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   decoration: const InputDecoration(
                     isDense: true,
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                 ),
               ),
@@ -1590,8 +1575,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           ] else ...[
             const SizedBox(height: AuraSpace.s10),
             AuraSecondaryButton(
-              label: _translationBusy ? 'Translating...' : 'Preview translation',
-              onPressed: (_posting || _translationBusy) ? null : _translateDraft,
+              label: _translationBusy
+                  ? 'Translating...'
+                  : 'Preview translation',
+              onPressed: (_posting || _translationBusy)
+                  ? null
+                  : _translateDraft,
             ),
           ],
         ],
@@ -1648,9 +1637,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       });
 
       if (!fromPublish && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Text is required.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Text is required.')));
       }
       return null;
     }
@@ -1746,18 +1735,15 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
   List<String> _legacySignals(Map<String, dynamic> r) {
-    final assumptions = _listOfMap(r['assumptions'])
-        .take(3)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
-    final clarity = _listOfMap(r['clarity_issues'])
-        .take(3)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
-    final tone = _listOfMap(r['tone_flags'])
-        .take(2)
-        .map((x) => _str(x['reason']))
-        .where((s) => s.isNotEmpty);
+    final assumptions = _listOfMap(
+      r['assumptions'],
+    ).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+    final clarity = _listOfMap(
+      r['clarity_issues'],
+    ).take(3).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
+    final tone = _listOfMap(
+      r['tone_flags'],
+    ).take(2).map((x) => _str(x['reason'])).where((s) => s.isNotEmpty);
 
     final combined = <String>[...clarity, ...assumptions, ...tone];
     final seen = <String>{};
@@ -1810,9 +1796,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     await dio.post(
       '/posts/$_replyToPostId/reply',
-      data: {
-        'text': _textController.text.trim(),
-      },
+      data: {'text': _textController.text.trim()},
     );
 
     return null;
@@ -1861,14 +1845,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   Future<void> _publishToLinkedInNow(String postId) async {
     final dio = ref.read(dioProvider);
 
-    final payload = {
-      'postId': postId,
-      'text': _textController.text.trim(),
-    };
+    final payload = {'postId': postId, 'text': _textController.text.trim()};
 
-    final attempts = <String>[
-      '/integrations/linkedin/publish/post',
-    ];
+    final attempts = <String>['/integrations/linkedin/publish/post'];
 
     DioException? lastDioError;
     Object? lastError;
@@ -1920,9 +1899,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     if (!_hasText) {
       setState(() => _showTextError = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Text is required.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Text is required.')));
       return;
     }
 
@@ -1976,10 +1955,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
     try {
       if (!_isReply) {
-        await _saveDraft(
-          silent: true,
-          allowWhilePosting: true,
-        );
+        await _saveDraft(silent: true, allowWhilePosting: true);
       }
 
       publishedPostId = await _publishNow();
@@ -2036,10 +2012,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
       if (!mounted) return;
 
-      if ((externalMessage ?? '').trim().isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(externalMessage!)),
-        );
+      if (externalMessage.trim().isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(externalMessage)));
       }
 
       if (!_isReply) {
@@ -2064,13 +2040,14 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     } catch (e) {
       if (!mounted) return;
 
-      final message = publishedPostId != null && publishedPostId.trim().isNotEmpty
+      final message =
+          publishedPostId != null && publishedPostId.trim().isNotEmpty
           ? 'Published to Aura, but the screen could not finish cleanly: $e'
           : 'Could not publish: $e';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) {
         setState(() {
@@ -2111,16 +2088,18 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         final refinement = r == null
             ? ''
             : (_str(r['suggested_refinement']).isNotEmpty
-                ? _str(r['suggested_refinement'])
-                : _legacyRefinement(r, _textController.text));
-        final spelling =
-            r == null ? const <Map<String, String>>[] : _spellingItems(r);
-        final grammar =
-            r == null ? const <Map<String, String>>[] : _grammarItems(r);
-        final legacySignals =
-            r == null ? const <String>[] : _legacySignals(r);
+                  ? _str(r['suggested_refinement'])
+                  : _legacyRefinement(r, _textController.text));
+        final spelling = r == null
+            ? const <Map<String, String>>[]
+            : _spellingItems(r);
+        final grammar = r == null
+            ? const <Map<String, String>>[]
+            : _grammarItems(r);
+        final legacySignals = r == null ? const <String>[] : _legacySignals(r);
 
-        final hasAnyContent = what.isNotEmpty ||
+        final hasAnyContent =
+            what.isNotEmpty ||
             consider.isNotEmpty ||
             strengthen.isNotEmpty ||
             civic.isNotEmpty ||
@@ -2156,7 +2135,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Aura Editor', style: AuraText.title),
+                      const Text('Aura Editor', style: AuraText.title),
                       const SizedBox(height: AuraSpace.s8),
                       if (_auditError != null &&
                           _auditError!.trim().isNotEmpty) ...[
@@ -2178,20 +2157,19 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                         const SizedBox(height: AuraSpace.s12),
                       ],
                       if (_auditBusy && !hasAnyContent) ...[
-                        AuraCard(
+                        const AuraCard(
                           child: Row(
                             children: [
-                              const SizedBox(
+                              SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                              const SizedBox(width: AuraSpace.s10),
-                              Expanded(
-                                child: Text(
-                                  'Reviewing…',
-                                  style: AuraText.body,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
+                              ),
+                              SizedBox(width: AuraSpace.s10),
+                              Expanded(
+                                child: Text('Reviewing…', style: AuraText.body),
                               ),
                             ],
                           ),
@@ -2201,7 +2179,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       if (!_auditBusy &&
                           !hasAnyContent &&
                           (_auditError ?? '').trim().isEmpty) ...[
-                        AuraCard(
+                        const AuraCard(
                           child: Text(
                             'No review available yet.',
                             style: AuraText.body,
@@ -2407,9 +2385,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                                 : () => Navigator.of(ctx).pop(false),
                           ),
                           AuraSecondaryButton(
-                            label: _auditCooldownActive ? 'Please wait…' : 'Run again',
-                            onPressed:
-                                (_auditBusy || _auditCooldownActive) ? null : rerun,
+                            label: _auditCooldownActive
+                                ? 'Please wait…'
+                                : 'Run again',
+                            onPressed: (_auditBusy || _auditCooldownActive)
+                                ? null
+                                : rerun,
                           ),
                           if (publishMode)
                             AuraPrimaryButton(
@@ -2468,7 +2449,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Add attachment', style: AuraText.title),
+                const Text('Add attachment', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 _AttachmentActionButton(
                   icon: Icons.camera_alt_outlined,
@@ -2490,7 +2471,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 const SizedBox(height: AuraSpace.s10),
                 _AttachmentActionButton(
                   icon: Icons.videocam_outlined,
-                  label: _supportsCameraCapture ? 'Record video' : 'Choose video',
+                  label: _supportsCameraCapture
+                      ? 'Record video'
+                      : 'Choose video',
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await _pickVideoFromCamera();
@@ -2512,8 +2495,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       },
     );
   }
-
-  Widget _divider() => Container(height: 1, color: AuraSurface.divider);
 
   int _attachmentColumns(double width) {
     if (width < 700) return 1;
@@ -2556,7 +2537,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         AuraSecondaryButton(
           label: _compositionBusy ? 'Reviewing…' : 'Review',
           icon: Icons.fact_check_outlined,
-          onPressed: (_posting || _compositionBusy) ? null : () => _runCompositionReview(),
+          onPressed: (_posting || _compositionBusy)
+              ? null
+              : () => _runCompositionReview(),
         ),
         AuraSecondaryButton(
           label: _translationBusy ? 'Translating…' : 'Translate',
@@ -2604,7 +2587,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
   Widget _buildIntentCard() {
-    final title = _isReply ? 'Your response will stay with the same record.' : 'What you place here can remain visible, reviewable, and accountable over time.';
+    final title = _isReply
+        ? 'Your response will stay with the same record.'
+        : 'What you place here can remain visible, reviewable, and accountable over time.';
     final subtitle = _isReply
         ? 'Respond with care. Your words become part of the public thread around this work.'
         : 'Write for the record first. Publishing elsewhere, translation, and review stay available as supporting tools.';
@@ -2625,10 +2610,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(
-            title,
-            style: AuraText.body,
-          ),
+          Text(title, style: AuraText.body),
           const SizedBox(height: AuraSpace.s6),
           Text(
             subtitle,
@@ -2695,9 +2677,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           hintText: _isReply
               ? 'Add your response with care.'
               : 'What should this record carry?',
-          hintStyle: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-          ),
+          hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
           border: InputBorder.none,
           errorText: _showTextError ? 'Text is required' : null,
         ),
@@ -2757,8 +2737,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
             AuraSecondaryButton(
               label: 'Add attachment',
               icon: Icons.add,
-              onPressed:
-                  (_posting || !_canAddMoreAttachments) ? null : _showAddAttachmentSheet,
+              onPressed: (_posting || !_canAddMoreAttachments)
+                  ? null
+                  : _showAddAttachmentSheet,
             ),
           ],
         ),
@@ -2767,7 +2748,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = _attachmentColumns(constraints.maxWidth);
-              final gap = AuraSpace.s12;
+              const gap = AuraSpace.s12;
               final itemWidth =
                   (constraints.maxWidth - ((columns - 1) * gap)) / columns;
 
@@ -2809,20 +2790,20 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     final tiktokSubtitle = _tiktokLoading
         ? 'Checking connection…'
         : !_tiktokConnected
-            ? 'Connect TikTok from Me to publish externally.'
-            : !_hasTikTokVideo
-                ? 'Add and upload one video to enable TikTok publishing.'
-                : _tiktokAccountLabel.isNotEmpty
-                    ? 'Connected as $_tiktokAccountLabel'
-                    : 'Connected';
+        ? 'Connect TikTok from Me to publish externally.'
+        : !_hasTikTokVideo
+        ? 'Add and upload one video to enable TikTok publishing.'
+        : _tiktokAccountLabel.isNotEmpty
+        ? 'Connected as $_tiktokAccountLabel'
+        : 'Connected';
 
     final linkedinVisible = _linkedinLoading || _linkedinConnected;
     final canUseLinkedIn = _linkedinConnected && !_posting;
     final linkedinSubtitle = _linkedinLoading
         ? 'Checking connection…'
         : _linkedinAccountLabel.isNotEmpty
-            ? 'Connected as $_linkedinAccountLabel'
-            : 'Connected';
+        ? 'Connected as $_linkedinAccountLabel'
+        : 'Connected';
 
     final tiktokHelper = (_tiktokError ?? '').trim();
     final linkedinHelper = (_linkedinError ?? '').trim();
@@ -2896,9 +2877,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 const SizedBox(height: AuraSpace.s10),
                 Text(
                   tiktokHelper,
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.warnInk,
-                  ),
+                  style: AuraText.small.copyWith(color: AuraSurface.warnInk),
                 ),
               ],
               if (linkedinVisible) ...[
@@ -2956,9 +2935,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   const SizedBox(height: AuraSpace.s10),
                   Text(
                     linkedinHelper,
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.warnInk,
-                    ),
+                    style: AuraText.small.copyWith(color: AuraSurface.warnInk),
                   ),
                 ],
               ],
@@ -2968,11 +2945,9 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                   _publishToTikTok && _publishToLinkedIn
                       ? 'Aura publishes first, then sends the post to TikTok and LinkedIn.'
                       : _publishToTikTok
-                          ? 'Aura will publish the post first, then queue the first uploaded video to TikTok.'
-                          : 'Aura will publish the post first, then send the text to LinkedIn.',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
-                  ),
+                      ? 'Aura will publish the post first, then queue the first uploaded video to TikTok.'
+                      : 'Aura will publish the post first, then send the text to LinkedIn.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
               ],
             ],
@@ -2992,18 +2967,23 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
         AuraSpace.s16,
         AuraSpace.s12 + bottomPad,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AuraSurface.page,
-        border: Border(
-          top: BorderSide(color: AuraSurface.divider),
-        ),
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
       ),
       child: Row(
         children: [
           Expanded(
             child: AuraGhostButton(
-              label: _isReply ? 'Holding disabled for replies' : 'Hold for later',
-              onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
+              label: _isReply
+                  ? 'Holding disabled for replies'
+                  : 'Hold for later',
+              onPressed:
+                  (_isReply ||
+                      _posting ||
+                      _saving ||
+                      !_hasText ||
+                      _uploadingMedia)
                   ? null
                   : () {
                       if (!_hasText) {
@@ -3018,8 +2998,10 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           AuraPrimaryButton(
             label: _posting
                 ? (_isReply
-                    ? 'Publishing reply…'
-                    : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
+                      ? 'Publishing reply…'
+                      : (_publishingToTikTok
+                            ? 'Queuing TikTok…'
+                            : 'Publishing…'))
                 : (_isReply ? 'Publish response' : 'Publish to record'),
             onPressed: (_posting || !_canPublish)
                 ? null
@@ -3066,7 +3048,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                         const SizedBox(height: AuraSpace.s12),
                         _buildActionRow(),
                         const SizedBox(height: AuraSpace.s16),
-_buildMainCard(),
+                        _buildMainCard(),
                       ],
                     ),
                   ),
@@ -3098,10 +3080,7 @@ class _VisibilityChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(AuraRadius.pill),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AuraSurface.card : AuraSurface.page,
           borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -3133,11 +3112,7 @@ class _AttachmentActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: AuraSecondaryButton(
-        label: label,
-        icon: icon,
-        onPressed: onTap,
-      ),
+      child: AuraSecondaryButton(label: label, icon: icon, onPressed: onTap),
     );
   }
 }
@@ -3229,7 +3204,8 @@ class _AttachmentCard extends StatelessWidget {
               ),
             ],
           ),
-          if (attachment.isVideo && _durationText(attachment.durationMs).isNotEmpty)
+          if (attachment.isVideo &&
+              _durationText(attachment.durationMs).isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: AuraSpace.s8),
               child: Text(
@@ -3275,9 +3251,7 @@ class _AttachmentCard extends StatelessWidget {
 }
 
 class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({
-    required this.attachment,
-  });
+  const _AttachmentPreview({required this.attachment});
 
   final _ComposeAttachment attachment;
 
@@ -3338,7 +3312,7 @@ class _AttachmentPreview extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.45),
+              color: Colors.black.withValues(alpha: 0.45),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.play_arrow, color: Colors.white),
@@ -3371,7 +3345,7 @@ class _AttachmentPreview extends StatelessWidget {
         border: Border.all(color: AuraSurface.divider),
       ),
       alignment: Alignment.center,
-      child: Icon(
+      child: const Icon(
         Icons.image_outlined,
         color: AuraSurface.muted,
         size: 36,
@@ -3391,7 +3365,7 @@ class _AttachmentPreview extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.videocam_outlined,
             color: AuraSurface.muted,
             size: 36,

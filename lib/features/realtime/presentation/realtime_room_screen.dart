@@ -212,31 +212,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(realtimeControllerProvider);
@@ -256,8 +231,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       }
     }
 
-    final isHost = myUserId.isNotEmpty &&
-        state.session?.startedByUserId == myUserId;
+    final isHost =
+        myUserId.isNotEmpty && state.session?.startedByUserId == myUserId;
     final canModerate = myParticipant?.isModerator ?? isHost;
     final canManageConsents = canModerate;
     final policy = state.policy;
@@ -463,6 +438,31 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
   }
 
+  String? _spaceRouteFromSession(RealtimeSession? session) {
+    if (session == null) return null;
+    if (session.surfaceType == RealtimeSurfaceType.space) {
+      final spaceId = (session.surfaceId ?? '').trim();
+      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+    }
+    return null;
+  }
+
+  String _contextLabel(RealtimeSession? session) {
+    if (session == null) return 'live';
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
+        return 'conversation live';
+      case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
+        return 'space live';
+      case RealtimeSurfaceType.institution:
+        return 'institution live';
+      case RealtimeSurfaceType.unknown:
+        return 'live';
+    }
+  }
+
   String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
     if (joinState == RealtimeJoinState.joined) return 'You are here now.';
     if (joinState == RealtimeJoinState.requested) {
@@ -515,7 +515,7 @@ class _ConnectionRecoveryCard extends StatelessWidget {
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(
+          const Text(
             'You can reconnect to the live room or reload the room state.',
             style: AuraText.muted,
           ),
@@ -555,31 +555,6 @@ class _RoomHeaderCard extends StatelessWidget {
   final String memberCountLabel;
   final String roomStateLabel;
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return AuraCard(
@@ -614,31 +589,6 @@ class _RoomHeaderCard extends StatelessWidget {
 class _MetaPill extends StatelessWidget {
   const _MetaPill({required this.label});
   final String label;
-
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -682,31 +632,6 @@ class _MediaStageCard extends StatelessWidget {
   final VoidCallback onToggleMicrophone;
   final VoidCallback onToggleCamera;
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final renderers = <MapEntry<String, RTCVideoRenderer>>[
@@ -737,7 +662,7 @@ class _MediaStageCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Live media', style: AuraText.title),
+          const Text('Live media', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Wrap(
             spacing: AuraSpace.s8,
@@ -825,31 +750,6 @@ class _VideoTile extends StatelessWidget {
   final RTCVideoRenderer renderer;
   final bool mirror;
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -892,31 +792,6 @@ class _RoomOverviewCard extends StatelessWidget {
   final int participantCount;
   final int presentCount;
   final int mediaActiveCount;
-
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -984,40 +859,15 @@ class _RoomInviteCard extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<Map<String, dynamic>> onInvite;
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Invite members', style: AuraText.title),
+          const Text('Invite members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
-          Text(
+          const Text(
             'Find existing Aura members and invite them into this live session.',
             style: AuraText.muted,
           ),
@@ -1046,8 +896,8 @@ class _RoomInviteCard extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s12),
           if (isSearching)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AuraSpace.s8),
               child: Center(
                 child: SizedBox(
                   width: 20,
@@ -1060,12 +910,12 @@ class _RoomInviteCard extends StatelessWidget {
               ),
             )
           else if (searchController.text.trim().isEmpty)
-            Text(
+            const Text(
               'Search to invite people already on Aura.',
               style: AuraText.small,
             )
           else if (results.isEmpty)
-            Text('No matching members found.', style: AuraText.small)
+            const Text('No matching members found.', style: AuraText.small)
           else
             ...results.map((user) {
               final id = (user['id'] ?? '').toString();
@@ -1132,31 +982,6 @@ class _ArtifactBlock extends StatelessWidget {
   final int recordingCount;
   final int transcriptCount;
   final int artifactCount;
-
-  String? _spaceRouteFromSession(RealtimeSession? session) {
-    if (session == null) return null;
-    if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
-    }
-    return null;
-  }
-
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'conversation live';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space live';
-      case RealtimeSurfaceType.institution:
-        return 'institution live';
-      case RealtimeSurfaceType.unknown:
-        return 'live';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

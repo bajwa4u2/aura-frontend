@@ -42,10 +42,10 @@ class AuraApp extends ConsumerWidget {
       onSurface: AuraSurface.ink,
     );
 
-    OutlineInputBorder _border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.r14),
-          borderSide: BorderSide(color: color, width: 1),
-        );
+    OutlineInputBorder border(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AuraRadius.r14),
+      borderSide: BorderSide(color: color, width: 1),
+    );
 
     return ThemeData(
       useMaterial3: true,
@@ -79,12 +79,15 @@ class AuraApp extends ConsumerWidget {
         fillColor: AuraSurface.subtle,
         labelStyle: AuraText.small.copyWith(color: AuraSurface.muted),
         hintStyle: AuraText.small.copyWith(color: AuraSurface.faint),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: _border(AuraSurface.divider),
-        enabledBorder: _border(AuraSurface.divider),
-        focusedBorder: _border(AuraSurface.accent),
-        errorBorder: _border(AuraSurface.dangerInk.withValues(alpha: 0.5)),
-        focusedErrorBorder: _border(AuraSurface.dangerInk),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: border(AuraSurface.divider),
+        enabledBorder: border(AuraSurface.divider),
+        focusedBorder: border(AuraSurface.accent),
+        errorBorder: border(AuraSurface.dangerInk.withValues(alpha: 0.5)),
+        focusedErrorBorder: border(AuraSurface.dangerInk),
       ),
 
       filledButtonTheme: FilledButtonThemeData(

@@ -94,14 +94,16 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _allEntries;
 
-    return _allEntries.where((entry) {
-      final haystack = [
-        entry.displayName,
-        entry.subtitle,
-      ].join(' ').toLowerCase();
+    return _allEntries
+        .where((entry) {
+          final haystack = [
+            entry.displayName,
+            entry.subtitle,
+          ].join(' ').toLowerCase();
 
-      return haystack.contains(query);
-    }).toList(growable: false);
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
   }
 
   List<CompositionSuggestion> get _visibleSuggestions {
@@ -154,7 +156,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
 
     if (_translationSourceSnapshot != null &&
-        _normalizeText(_translationSourceSnapshot!) != _normalizeText(current)) {
+        _normalizeText(_translationSourceSnapshot!) !=
+            _normalizeText(current)) {
       setState(() {
         _translationPreview = null;
         _translationError = null;
@@ -203,12 +206,14 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final deduped = _dedupeEntries(relationshipEntries)
         ..sort(
           (a, b) => a.displayName.toLowerCase().compareTo(
-                b.displayName.toLowerCase(),
-              ),
+            b.displayName.toLowerCase(),
+          ),
         );
 
       final meId = _pickString(me, const ['id', 'userId']);
-      final meHandle = _normalizeHandle(_pickString(me, const ['handle', 'username']));
+      final meHandle = _normalizeHandle(
+        _pickString(me, const ['handle', 'username']),
+      );
 
       if (!mounted) return;
 
@@ -285,10 +290,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final dio = ref.read(dioProvider);
       final response = await dio.get(
         '/search',
-        queryParameters: {
-          'q': query,
-          'limit': 12,
-        },
+        queryParameters: {'q': query, 'limit': 12},
       );
 
       final root = _firstMap(response.data);
@@ -299,9 +301,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
           .map(_memberEntryFromMap)
           .whereType<_DirectoryEntry>()
           .where((entry) {
-            final sameId = (_currentUserId ?? '').isNotEmpty &&
+            final sameId =
+                (_currentUserId ?? '').isNotEmpty &&
                 entry.userId.trim() == (_currentUserId ?? '');
-            final sameHandle = (_currentUserHandle ?? '').isNotEmpty &&
+            final sameHandle =
+                (_currentUserHandle ?? '').isNotEmpty &&
                 _normalizeHandle(entry.handle) == (_currentUserHandle ?? '');
             return !sameId && !sameHandle;
           })
@@ -330,10 +334,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     List<_DirectoryEntry> primary,
     List<_DirectoryEntry> secondary,
   ) {
-    return _dedupeEntries([
-      ...primary,
-      ...secondary,
-    ]);
+    return _dedupeEntries([...primary, ...secondary]);
   }
 
   void _applyInitialSelectionIfNeeded() {
@@ -351,7 +352,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final sameUserId =
           wantedUserId.isNotEmpty && entry.userId.trim() == wantedUserId;
       final sameHandle = wantedHandle.isNotEmpty && entryHandle == wantedHandle;
-      final sameName = wantedName.isNotEmpty &&
+      final sameName =
+          wantedName.isNotEmpty &&
           entry.displayName.trim().toLowerCase() == wantedName;
 
       if (sameUserId || sameHandle || sameName) {
@@ -464,10 +466,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/composition/review',
-        data: {
-          'text': draft,
-          'surface': 'space',
-        },
+        data: {'text': draft, 'surface': 'space'},
       );
 
       final parsed = _parseLightReview(_firstMap(response.data));
@@ -481,13 +480,16 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _suggestionsError = silent ? null : 'Suggestions could not be loaded: $e';
+        _suggestionsError = silent
+            ? null
+            : 'Suggestions could not be loaded: $e';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _suggestionsBusy = false;
-      });
+      if (mounted) {
+        setState(() {
+          _suggestionsBusy = false;
+        });
+      }
     }
   }
 
@@ -547,10 +549,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         _suggestionsError = 'Suggestion could not be applied: $e';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _applyingSuggestionIds.remove(suggestion.id);
-      });
+      if (mounted) {
+        setState(() {
+          _applyingSuggestionIds.remove(suggestion.id);
+        });
+      }
     }
   }
 
@@ -575,10 +578,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/composition/translate',
-        data: {
-          'text': draft,
-          'targetLanguage': _translationTargetLanguage,
-        },
+        data: {'text': draft, 'targetLanguage': _translationTargetLanguage},
       );
 
       final root = _firstMap(response.data);
@@ -604,10 +604,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         _translationError = 'Translation could not be prepared: $e';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _translationBusy = false;
-      });
+      if (mounted) {
+        setState(() {
+          _translationBusy = false;
+        });
+      }
     }
   }
 
@@ -684,8 +685,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       return returnedThreadId;
     }
 
-    final existingThreads =
-        await _fetchRequiredList(dio, '/spaces/$spaceId/threads');
+    final existingThreads = await _fetchRequiredList(
+      dio,
+      '/spaces/$spaceId/threads',
+    );
     final preferredExistingThreadId = _pickPreferredThreadId(existingThreads);
     if (preferredExistingThreadId.isNotEmpty) {
       return preferredExistingThreadId;
@@ -762,7 +765,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredEntries = _filteredEntries;
-    final pageTitle = _isSharedSpaceMode ? 'Create space' : 'Start a private conversation';
+    final pageTitle = _isSharedSpaceMode
+        ? 'Create space'
+        : 'Start a private conversation';
 
     return AuraScaffold(
       title: pageTitle,
@@ -781,13 +786,16 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                 title: pageTitle,
                 subtitle: _isSharedSpaceMode
                     ? 'Choose the members first, then name the room.'
-                    : 'Choose one member and start directly.' ,
+                    : 'Choose one member and start directly.',
               ),
               const SizedBox(height: AuraSpace.s16),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final stacked = constraints.maxWidth < 860;
-                  final directory = _buildDirectoryCard(context, filteredEntries);
+                  final directory = _buildDirectoryCard(
+                    context,
+                    filteredEntries,
+                  );
                   final side = _buildSelectionRail(context);
 
                   if (!_isSharedSpaceMode) {
@@ -826,9 +834,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   padding: const EdgeInsets.only(bottom: AuraSpace.s12),
                   child: Text(
                     _submitError!,
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.warnInk,
-                    ),
+                    style: AuraText.small.copyWith(color: AuraSurface.warnInk),
                   ),
                 ),
               Row(
@@ -846,8 +852,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                       label: _submitting
                           ? (_isSharedSpaceMode ? 'Creating…' : 'Starting…')
                           : (_isSharedSpaceMode
-                              ? 'Create space'
-                              : 'Start conversation'),
+                                ? 'Create space'
+                                : 'Start conversation'),
                       onPressed: _canSubmit ? _submit : null,
                       icon: Icons.arrow_forward_rounded,
                     ),
@@ -914,7 +920,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             ),
             const SizedBox(height: AuraSpace.s12),
             DropdownButtonFormField<String>(
-              value: _spaceType,
+              initialValue: _spaceType,
               decoration: const InputDecoration(labelText: 'Type'),
               items: const [
                 DropdownMenuItem(value: 'CIRCLE', child: Text('Circle')),
@@ -957,7 +963,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   children: [
                     Text(
                       'Writing assist',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: AuraSpace.s6),
                     Text(
@@ -970,8 +978,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               AuraSecondaryButton(
                 label: _suggestionsBusy ? 'Checking…' : 'Check',
                 icon: Icons.auto_fix_high_outlined,
-                onPressed:
-                    hasDraft && !_suggestionsBusy ? () => _refreshSuggestions() : null,
+                onPressed: hasDraft && !_suggestionsBusy
+                    ? () => _refreshSuggestions()
+                    : null,
               ),
             ],
           ),
@@ -1010,7 +1019,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _translationTargetLanguage,
+                  initialValue: _translationTargetLanguage,
                   decoration: const InputDecoration(labelText: 'Translate to'),
                   items: const [
                     DropdownMenuItem(value: 'ur', child: Text('Urdu')),
@@ -1031,7 +1040,9 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               AuraSecondaryButton(
                 label: _translationBusy ? 'Preparing…' : 'Preview',
                 icon: Icons.translate_outlined,
-                onPressed: hasDraft && !_translationBusy ? _translateDraft : null,
+                onPressed: hasDraft && !_translationBusy
+                    ? _translateDraft
+                    : null,
               ),
             ],
           ),
@@ -1072,7 +1083,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                     child: AuraPrimaryButton(
                       label: 'Use translation',
                       icon: Icons.check_rounded,
-                      onPressed: _translationPreview!.translatedText.trim().isEmpty
+                      onPressed:
+                          _translationPreview!.translatedText.trim().isEmpty
                           ? null
                           : _applyTranslation,
                     ),
@@ -1117,14 +1129,14 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                       ),
                     )
                   : (_searchController.text.trim().isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.close),
-                        )),
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.close),
+                          )),
             ),
           ),
           const SizedBox(height: AuraSpace.s14),
@@ -1156,8 +1168,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                         ? null
                         : () => context.push(filteredEntries[i].profileRoute!),
                   ),
-                  if (i != filteredEntries.length - 1)
-                    const Divider(height: 1),
+                  if (i != filteredEntries.length - 1) const Divider(height: 1),
                 ],
               ],
             ),
@@ -1197,7 +1208,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         ['text'],
         ['body'],
       ]);
-      final canApply = _boolAt(item, const ['canApply']) ??
+      final canApply =
+          _boolAt(item, const ['canApply']) ??
           _boolAt(item, const ['allowApply']) ??
           replacement.trim().isNotEmpty;
 
@@ -1252,9 +1264,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         value.forEach((_, grouped) {
           if (grouped is List) {
             flattened.addAll(
-              grouped
-                  .whereType<Map>()
-                  .map((e) => Map<String, dynamic>.from(e)),
+              grouped.whereType<Map>().map((e) => Map<String, dynamic>.from(e)),
             );
           }
         });
@@ -1397,17 +1407,18 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         ? name
         : (handle.isNotEmpty ? handle.replaceFirst('@', '') : 'Member');
 
-    final subtitle =
-        handle.isNotEmpty ? '@${handle.replaceFirst('@', '')}' : 'Member';
+    final subtitle = handle.isNotEmpty
+        ? '@${handle.replaceFirst('@', '')}'
+        : 'Member';
     final profileRoute = handle.isNotEmpty ? '/$handle' : null;
 
     final stableId = id.isNotEmpty
         ? id
         : (userId.isNotEmpty
-            ? userId
-            : handle.isNotEmpty
-                ? handle
-                : displayName);
+              ? userId
+              : handle.isNotEmpty
+              ? handle
+              : displayName);
 
     if (stableId.trim().isEmpty) return null;
 
@@ -1437,7 +1448,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     return value;
   }
 
-  Future<List<Map<String, dynamic>>> _fetchRequiredList(Dio dio, String path) async {
+  Future<List<Map<String, dynamic>>> _fetchRequiredList(
+    Dio dio,
+    String path,
+  ) async {
     final res = await dio.get(path);
     return _deepListOfMaps(res.data);
   }
@@ -1570,14 +1584,11 @@ class _DirectoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trailing = allowMultiSelect
-        ? Checkbox(
-            value: selected,
-            onChanged: (_) => onTap(),
-          )
-        : Radio<bool>(
-            value: true,
+        ? Checkbox(value: selected, onChanged: (_) => onTap())
+        : RadioGroup<bool>(
             groupValue: selected,
             onChanged: (_) => onTap(),
+            child: const Radio<bool>(value: true),
           );
 
     return InkWell(
@@ -1612,10 +1623,7 @@ class _DirectoryRow extends StatelessWidget {
               ),
             ),
             if (onOpenProfile != null)
-              AuraGhostButton(
-                label: 'Profile',
-                onPressed: onOpenProfile,
-              ),
+              AuraGhostButton(label: 'Profile', onPressed: onOpenProfile),
             trailing,
           ],
         ),
@@ -1625,10 +1633,7 @@ class _DirectoryRow extends StatelessWidget {
 }
 
 class _SelectedChip extends StatelessWidget {
-  const _SelectedChip({
-    required this.label,
-    required this.onRemoved,
-  });
+  const _SelectedChip({required this.label, required this.onRemoved});
 
   final String label;
   final VoidCallback onRemoved;
@@ -1650,10 +1655,7 @@ class _SelectedChip extends StatelessWidget {
         children: [
           Text(label, style: AuraText.small),
           const SizedBox(width: AuraSpace.s8),
-          InkWell(
-            onTap: onRemoved,
-            child: const Icon(Icons.close, size: 16),
-          ),
+          InkWell(onTap: onRemoved, child: const Icon(Icons.close, size: 16)),
         ],
       ),
     );
@@ -1697,10 +1699,7 @@ class _InlineErrorBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-        ),
+        Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: AuraSpace.s6),
         Text(body, style: AuraText.small),
         const SizedBox(height: AuraSpace.s10),
@@ -1726,13 +1725,13 @@ class _DirectoryEntry {
   });
 
   const _DirectoryEntry.empty()
-      : id = '',
-        userId = '',
-        handle = '',
-        displayName = '',
-        subtitle = '',
-        avatarUrl = '',
-        profileRoute = null;
+    : id = '',
+      userId = '',
+      handle = '',
+      displayName = '',
+      subtitle = '',
+      avatarUrl = '',
+      profileRoute = null;
 
   final String id;
   final String userId;
@@ -1743,8 +1742,9 @@ class _DirectoryEntry {
   final String? profileRoute;
 
   String get avatarLetter {
-    final base =
-        displayName.trim().isNotEmpty ? displayName.trim() : handle.trim();
+    final base = displayName.trim().isNotEmpty
+        ? displayName.trim()
+        : handle.trim();
     if (base.isEmpty) return '?';
     return base.characters.first.toUpperCase();
   }

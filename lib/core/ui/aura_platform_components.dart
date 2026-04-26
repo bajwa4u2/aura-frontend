@@ -154,12 +154,7 @@ class AuraSectionHeader extends StatelessWidget {
 
 /// Pulsing skeleton placeholder for loading states.
 class AuraSkeleton extends StatefulWidget {
-  const AuraSkeleton({
-    super.key,
-    this.width,
-    this.height = 16,
-    this.radius,
-  });
+  const AuraSkeleton({super.key, this.width, this.height = 16, this.radius});
 
   final double? width;
   final double height;
@@ -216,18 +211,18 @@ class AuraCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
+    return const AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const AuraSkeleton(width: 36, height: 36, radius: 18),
-              const SizedBox(width: AuraSpace.s10),
+              AuraSkeleton(width: 36, height: 36, radius: 18),
+              SizedBox(width: AuraSpace.s10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     AuraSkeleton(height: 13, width: 140),
                     SizedBox(height: 6),
                     AuraSkeleton(height: 11, width: 80),
@@ -236,12 +231,12 @@ class AuraCardSkeleton extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AuraSpace.s14),
-          const AuraSkeleton(height: 13),
-          const SizedBox(height: AuraSpace.s8),
-          const AuraSkeleton(height: 13),
-          const SizedBox(height: AuraSpace.s8),
-          const AuraSkeleton(height: 13, width: 200),
+          SizedBox(height: AuraSpace.s14),
+          AuraSkeleton(height: 13),
+          SizedBox(height: AuraSpace.s8),
+          AuraSkeleton(height: 13),
+          SizedBox(height: AuraSpace.s8),
+          AuraSkeleton(height: 13, width: 200),
         ],
       ),
     );
@@ -250,10 +245,7 @@ class AuraCardSkeleton extends StatelessWidget {
 
 /// Compact inline loading state — spinner + message.
 class AuraLoadingState extends StatelessWidget {
-  const AuraLoadingState({
-    super.key,
-    this.message = 'Loading…',
-  });
+  const AuraLoadingState({super.key, this.message = 'Loading…'});
 
   final String message;
 
@@ -316,11 +308,7 @@ class AuraEmptyState extends StatelessWidget {
             child: Icon(icon, size: AuraIconSize.lg, color: AuraSurface.faint),
           ),
           const SizedBox(height: AuraSpace.s16),
-          Text(
-            title,
-            style: AuraText.subtitle,
-            textAlign: TextAlign.center,
-          ),
+          Text(title, style: AuraText.subtitle, textAlign: TextAlign.center),
           const SizedBox(height: AuraSpace.s8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 320),
@@ -463,7 +451,9 @@ class AuraSecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: AuraIconSize.sm),
+      icon: icon == null
+          ? const SizedBox.shrink()
+          : Icon(icon, size: AuraIconSize.sm),
       label: Text(label),
     );
   }
@@ -486,7 +476,9 @@ class AuraGhostButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton.icon(
       onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: AuraIconSize.sm),
+      icon: icon == null
+          ? const SizedBox.shrink()
+          : Icon(icon, size: AuraIconSize.sm),
       label: Text(label),
     );
   }
@@ -653,8 +645,9 @@ class AuraAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmed = name.trim();
-    final initial =
-        trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
+    final initial = trimmed.isEmpty
+        ? '?'
+        : trimmed.substring(0, 1).toUpperCase();
     final url = (imageUrl ?? '').trim();
 
     return Container(
@@ -1039,8 +1032,7 @@ class AuraMessageBubble extends StatelessWidget {
                 const SizedBox(height: AuraSpace.s8),
                 AuraStatusChip(
                   label: attachmentLabel!,
-                  backgroundColor:
-                      AuraSurface.page.withValues(alpha: 0.35),
+                  backgroundColor: AuraSurface.page.withValues(alpha: 0.35),
                   textColor: AuraSurface.ink,
                 ),
               ],
@@ -1088,7 +1080,11 @@ class AuraCallBanner extends StatelessWidget {
               gradient: AuraGradients.accent,
               borderRadius: BorderRadius.circular(AuraRadius.r14),
             ),
-            child: const Icon(Icons.call, color: Colors.white, size: AuraIconSize.md),
+            child: const Icon(
+              Icons.call,
+              color: Colors.white,
+              size: AuraIconSize.md,
+            ),
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(

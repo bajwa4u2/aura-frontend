@@ -14,16 +14,13 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
   Widget _sectionTitle(String text) {
     return Text(
       text,
-      style: AuraText.body.copyWith(
-        fontWeight: FontWeight.w700,
-        fontSize: 16,
-      ),
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
     );
   }
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s8),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,9 +34,7 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: AuraText.body),
-          ),
+          Expanded(child: Text(value, style: AuraText.body)),
         ],
       ),
     );
@@ -65,7 +60,7 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
               border: Border.all(color: AuraSurface.divider),
               borderRadius: BorderRadius.circular(AuraRadius.card),
             ),
-            padding: EdgeInsets.all(AuraSpace.s14),
+            padding: const EdgeInsets.all(AuraSpace.s14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,9 +68,9 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
                   title,
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: AuraSpace.s8),
+                const SizedBox(height: AuraSpace.s8),
                 Text(detail, style: AuraText.body),
-                SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s12),
                 Text(
                   status,
                   style: AuraText.body.copyWith(
@@ -99,13 +94,10 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
           Text(
             'Institution correspondence',
             style: (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
-                .copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 30,
-            ),
+                .copyWith(fontWeight: FontWeight.w700, fontSize: 30),
           ),
-          SizedBox(height: AuraSpace.s10),
-          Text(
+          const SizedBox(height: AuraSpace.s10),
+          const Text(
             'This is the institutional correspondence workspace. Official institutional exchange should be handled here, separate from the signed-in member correspondence flow.',
             style: AuraText.body,
           ),
@@ -120,11 +112,14 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Workspace status'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _infoRow('Surface', 'Institution-only'),
           _infoRow('Member mailbox', 'Separated'),
           _infoRow('Official communication', 'Reserved for institution routes'),
-          _infoRow('Record posture', 'Continuity, traceability, and institutional memory'),
+          _infoRow(
+            'Record posture',
+            'Continuity, traceability, and institutional memory',
+          ),
         ],
       ),
     );
@@ -136,7 +131,7 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Institution correspondence actions'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s12,
             runSpacing: AuraSpace.s12,
@@ -185,8 +180,8 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Why this screen exists'),
-          SizedBox(height: AuraSpace.s12),
-          Text(
+          const SizedBox(height: AuraSpace.s12),
+          const Text(
             'Institution correspondence should not inherit the member mailbox by accident. This screen keeps the route and future workflow institution-specific, so official exchange can later be built with the right permissions, records, and continuity.',
             style: AuraText.body,
           ),
@@ -203,18 +198,20 @@ class InstitutionCorrespondenceScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Institution correspondence'),
-          SizedBox(height: AuraSpace.s10),
-          Doc.meta('Dedicated correspondence workspace for institutional accounts.'),
+          const SizedBox(height: AuraSpace.s10),
+          Doc.meta(
+            'Dedicated correspondence workspace for institutional accounts.',
+          ),
           Doc.lede(
             'This route is reserved for official institutional exchange and should remain separate from member correspondence screens.',
           ),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _heroCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _overviewCard(),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _actionsCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _notesCard(),
         ],
       ),

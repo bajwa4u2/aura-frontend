@@ -91,7 +91,9 @@ String _languageLabel(String code) {
 }
 
 String _defaultTranslationLanguage(BuildContext context) {
-  final code = Localizations.localeOf(context).languageCode.trim().toLowerCase();
+  final code = Localizations.localeOf(
+    context,
+  ).languageCode.trim().toLowerCase();
   if (_translationLanguageLabels.containsKey(code)) return code;
   return 'en';
 }
@@ -179,9 +181,7 @@ Future<void> _copyToClipboard(
 }) async {
   await Clipboard.setData(ClipboardData(text: value));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
-  );
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 Future<void> _openExternalUrl(
@@ -194,11 +194,7 @@ Future<void> _openExternalUrl(
 
   Uri? uri = Uri.tryParse(trimmed);
   if (uri == null) {
-    await _copyToClipboard(
-      context,
-      trimmed,
-      message: fallbackCopyMessage,
-    );
+    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
     return;
   }
 
@@ -207,41 +203,25 @@ Future<void> _openExternalUrl(
   }
 
   if (uri == null) {
-    await _copyToClipboard(
-      context,
-      trimmed,
-      message: fallbackCopyMessage,
-    );
+    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
     return;
   }
 
   try {
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.platformDefault,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
 
     if (!launched) {
-      await _copyToClipboard(
-        context,
-        trimmed,
-        message: fallbackCopyMessage,
-      );
+      if (!context.mounted) return;
+      await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
     }
   } catch (_) {
-    await _copyToClipboard(
-      context,
-      trimmed,
-      message: fallbackCopyMessage,
-    );
+    if (!context.mounted) return;
+    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
   }
 }
 
 class _ViewerIdentity {
-  const _ViewerIdentity({
-    required this.id,
-    required this.handle,
-  });
+  const _ViewerIdentity({required this.id, required this.handle});
 
   final String id;
   final String handle;
@@ -274,7 +254,10 @@ final viewerIdentityProvider = FutureProvider<_ViewerIdentity?>((ref) async {
   }
 });
 
-final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async {
+final isLikedProvider = FutureProvider.family<bool, String>((
+  ref,
+  postId,
+) async {
   final dio = ref.read(dioProvider);
   final pid = postId.trim();
   if (pid.isEmpty) return false;
@@ -290,7 +273,10 @@ final isLikedProvider = FutureProvider.family<bool, String>((ref, postId) async 
   }
 });
 
-final isSavedProvider = FutureProvider.family<bool, String>((ref, postId) async {
+final isSavedProvider = FutureProvider.family<bool, String>((
+  ref,
+  postId,
+) async {
   final repo = ref.read(savesRepositoryProvider);
   final pid = postId.trim();
   if (pid.isEmpty) return false;
@@ -368,7 +354,9 @@ class _PostCardState extends ConsumerState<PostCard> {
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
   Future<void> _pickTranslationLanguage(BuildContext context) async {
-    final current = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+    final current =
+        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
+            .toLowerCase();
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -406,14 +394,18 @@ class _PostCardState extends ConsumerState<PostCard> {
                           vertical: AuraSpace.s8,
                         ),
                         decoration: BoxDecoration(
-                          color: active ? AuraSurface.elevated : AuraSurface.page,
+                          color: active
+                              ? AuraSurface.elevated
+                              : AuraSurface.page,
                           borderRadius: BorderRadius.circular(AuraRadius.pill),
                           border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Text(
                           entry.value,
                           style: AuraText.small.copyWith(
-                            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: active
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -438,7 +430,9 @@ class _PostCardState extends ConsumerState<PostCard> {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _translationBusy) return;
 
-    final target = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+    final target =
+        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
+            .toLowerCase();
 
     setState(() {
       _translationBusy = true;
@@ -449,17 +443,17 @@ class _PostCardState extends ConsumerState<PostCard> {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '/composition/translate',
-        data: {
-          'text': trimmed,
-          'targetLanguage': target,
-        },
+        data: {'text': trimmed, 'targetLanguage': target},
       );
 
       final root = _asMap(response.data);
       final data = _asMap(root['data']);
 
       final translatedText = _readString(
-        root['translatedText'] ?? root['text'] ?? data['translatedText'] ?? data['text'],
+        root['translatedText'] ??
+            root['text'] ??
+            data['translatedText'] ??
+            data['text'],
       );
 
       if (translatedText.isEmpty) {
@@ -471,14 +465,17 @@ class _PostCardState extends ConsumerState<PostCard> {
       setState(() {
         _translatedText = translatedText;
         _showTranslation = true;
-        _translationTargetLanguage = _readString(
-          root['targetLanguage'] ?? data['targetLanguage'] ?? target,
-        ).toLowerCase().isEmpty
+        _translationTargetLanguage =
+            _readString(
+              root['targetLanguage'] ?? data['targetLanguage'] ?? target,
+            ).toLowerCase().isEmpty
             ? target
-            : _readString(root['targetLanguage'] ?? data['targetLanguage'] ?? target).toLowerCase();
+            : _readString(
+                root['targetLanguage'] ?? data['targetLanguage'] ?? target,
+              ).toLowerCase();
       });
     } on DioException catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final status = e.response?.statusCode;
       final authRequired = status == 401 || status == 403;
       final message = authRequired
@@ -489,9 +486,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            authRequired ? 'Sign in to use translation.' : message,
-          ),
+          content: Text(authRequired ? 'Sign in to use translation.' : message),
           action: authRequired
               ? SnackBarAction(
                   label: 'Sign in',
@@ -501,17 +496,18 @@ class _PostCardState extends ConsumerState<PostCard> {
         ),
       );
     } catch (_) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       const message = 'Translation could not run right now.';
       setState(() {
         _translationError = message;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(message)));
     } finally {
-      if (!mounted) return;
-      setState(() => _translationBusy = false);
+      if (mounted) {
+        setState(() => _translationBusy = false);
+      }
     }
   }
 
@@ -784,17 +780,17 @@ class _PostCardState extends ConsumerState<PostCard> {
       },
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !context.mounted) return;
 
     try {
       final dio = ref.read(dioProvider);
       await dio.delete('/posts/$postId');
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Work deleted')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Work deleted')));
 
       if (context.canPop()) {
         context.pop();
@@ -802,10 +798,10 @@ class _PostCardState extends ConsumerState<PostCard> {
         context.go('/home');
       }
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not delete post')),
-      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not delete post')));
     }
   }
 
@@ -877,7 +873,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       },
     );
 
-    if (!mounted || selected == null) return;
+    if (!context.mounted || selected == null) return;
 
     switch (selected) {
       case 'edit_post':
@@ -897,11 +893,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         }
         break;
       case 'copy_link':
-        await _copyToClipboard(
-          context,
-          postUrl,
-          message: 'Work link copied',
-        );
+        await _copyToClipboard(context, postUrl, message: 'Work link copied');
         break;
       case 'share_linkedin':
         await _openExternalUrl(
@@ -920,93 +912,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
-  Future<void> _showShareSheet(
-    BuildContext context, {
-    required String postId,
-  }) async {
-    final postUrl = _canonicalPostUrl(postId);
-    final linkedInUrl = _linkedInShareUrl(postUrl);
-    final emailUrl = _emailShareUrl(postUrl);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              10,
-              16,
-              24 + MediaQuery.of(ctx).viewInsets.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Share', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Share this work.',
-                  style: AuraText.body,
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    AuraSecondaryButton(
-                      label: 'Copy link',
-                      icon: Icons.link_outlined,
-                      onPressed: () async {
-                        await _copyToClipboard(
-                          ctx,
-                          postUrl,
-                          message: 'Work link copied',
-                        );
-                      },
-                    ),
-                    AuraSecondaryButton(
-                      label: 'Share to LinkedIn',
-                      icon: Icons.work_outline,
-                      onPressed: () async {
-                        await _openExternalUrl(
-                          ctx,
-                          linkedInUrl,
-                          fallbackCopyMessage: 'LinkedIn share link copied',
-                        );
-                      },
-                    ),
-                    AuraSecondaryButton(
-                      label: 'Share to Email',
-                      icon: Icons.email_outlined,
-                      onPressed: () async {
-                        await _openExternalUrl(
-                          ctx,
-                          emailUrl,
-                          fallbackCopyMessage: 'Email share link copied',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: AuraGhostButton(
-                    label: 'Done',
-                    onPressed: () => Navigator.of(ctx).pop(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _openProfile(BuildContext context, String handle) {
     final h = handle.trim();
     if (h.isEmpty) return;
@@ -1020,14 +925,11 @@ class _PostCardState extends ConsumerState<PostCard> {
   ) async {
     await showDialog<void>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.88),
+      barrierColor: Colors.black.withValues(alpha: 0.88),
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: _MediaViewerDialog(
-          items: items,
-          initialIndex: initialIndex,
-        ),
+        child: _MediaViewerDialog(items: items, initialIndex: initialIndex),
       ),
     );
   }
@@ -1093,9 +995,8 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
 
     final createdAt = post.createdAt;
-    final createdLabel = (createdAt == null)
-        ? ''
-        : '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
+    final createdLabel =
+        '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
 
     final postId = post.id;
     final postUrl = _canonicalPostUrl(postId);
@@ -1216,7 +1117,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                             onTap: _translationBusy
                                 ? null
                                 : () => _translatePostText(context, text),
-                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
@@ -1229,14 +1132,18 @@ class _PostCardState extends ConsumerState<PostCard> {
                                     const SizedBox(
                                       width: 14,
                                       height: 14,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
                                     const SizedBox(width: AuraSpace.s8),
                                   ],
                                   Text(
                                     _translationBusy
                                         ? 'Translating...'
-                                        : (_showTranslation ? 'Refresh translation' : 'Translate'),
+                                        : (_showTranslation
+                                              ? 'Refresh translation'
+                                              : 'Translate'),
                                     style: AuraText.small.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: AuraSurface.muted,
@@ -1248,7 +1155,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                           ),
                           InkWell(
                             onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s10,
@@ -1256,17 +1165,28 @@ class _PostCardState extends ConsumerState<PostCard> {
                               ),
                               decoration: BoxDecoration(
                                 color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AuraRadius.pill,
+                                ),
                                 border: Border.all(color: AuraSurface.divider),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.translate, size: 14, color: AuraSurface.muted),
+                                  const Icon(
+                                    Icons.translate,
+                                    size: 14,
+                                    color: AuraSurface.muted,
+                                  ),
                                   const SizedBox(width: AuraSpace.s6),
                                   Text(
-                                    _languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context)),
-                                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                                    _languageLabel(
+                                      _translationTargetLanguage ??
+                                          _defaultTranslationLanguage(context),
+                                    ),
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1280,7 +1200,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                                   _translationError = null;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(AuraRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
+                              ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AuraSpace.s6,
@@ -1301,10 +1223,13 @@ class _PostCardState extends ConsumerState<PostCard> {
                         const SizedBox(height: AuraSpace.s8),
                         Text(
                           _translationError!,
-                          style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.warnInk,
+                          ),
                         ),
                       ],
-                      if (_showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
+                      if (_showTranslation &&
+                          (_translatedText ?? '').trim().isNotEmpty) ...[
                         const SizedBox(height: AuraSpace.s12),
                         Container(
                           width: double.infinity,
@@ -1346,11 +1271,8 @@ class _PostCardState extends ConsumerState<PostCard> {
               linkTitle: linkTitle,
               linkSubtitle: linkSubtitle,
               linkThumbUrl: linkThumbUrl,
-              onOpenMediaAt: (index) => _openMediaViewer(
-                context,
-                mediaItems,
-                index,
-              ),
+              onOpenMediaAt: (index) =>
+                  _openMediaViewer(context, mediaItems, index),
             ),
             const SizedBox(height: AuraSpace.s12),
             _ActionRow(postId: post.id),
@@ -1407,7 +1329,9 @@ class _PostCardState extends ConsumerState<PostCard> {
       );
     }
 
-    final title = (linkTitle ?? '').trim().isNotEmpty ? linkTitle!.trim() : host;
+    final title = (linkTitle ?? '').trim().isNotEmpty
+        ? linkTitle!.trim()
+        : host;
     final subtitle = (linkSubtitle ?? '').trim();
 
     return Padding(
@@ -1419,11 +1343,8 @@ class _PostCardState extends ConsumerState<PostCard> {
           lUrl,
           fallbackCopyMessage: 'Could not open link. Link copied instead.',
         ),
-        onLongPress: () => _copyToClipboard(
-          context,
-          lUrl,
-          message: 'Link copied',
-        ),
+        onLongPress: () =>
+            _copyToClipboard(context, lUrl, message: 'Link copied'),
         child: ClipRRect(
           borderRadius: radius,
           child: Container(
@@ -1446,7 +1367,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                     children: [
                       Text(
                         title,
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1462,14 +1385,16 @@ class _PostCardState extends ConsumerState<PostCard> {
                       const SizedBox(height: AuraSpace.s8),
                       Text(
                         host,
-                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: AuraSpace.s6),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.open_in_new,
                             size: 14,
                             color: AuraSurface.muted,
@@ -1651,7 +1576,7 @@ class _PostMediaBlock extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final spacing = AuraSpace.s12;
+        const spacing = AuraSpace.s12;
         final totalWidth = constraints.maxWidth;
         final columns = totalWidth >= 760 ? 2 : 1;
         final cardWidth = columns == 1
@@ -1726,9 +1651,7 @@ class _SingleMediaCard extends StatelessWidget {
         fit: BoxFit.cover,
         placeholderBuilder: (_) => const SizedBox(
           height: 140,
-          child: Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       );
     } else if (imageUrl.isNotEmpty) {
@@ -1781,7 +1704,7 @@ class _SingleMediaCard extends StatelessWidget {
                 width: 68,
                 height: 68,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.58),
+                  color: Colors.black.withValues(alpha: 0.58),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1799,7 +1722,7 @@ class _SingleMediaCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
               ),
               child: Row(
@@ -1836,21 +1759,14 @@ class _SingleMediaCard extends StatelessWidget {
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 child: content,
               )
-            : AspectRatio(
-                aspectRatio: ratio,
-                child: content,
-              ),
+            : AspectRatio(aspectRatio: ratio, child: content),
       ),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: mediaBox,
-        ),
+        InkWell(borderRadius: radius, onTap: onTap, child: mediaBox),
         if ((item.caption ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s8),
           Text(
@@ -1874,10 +1790,7 @@ class _SingleMediaCard extends StatelessWidget {
 }
 
 class _MediaViewerDialog extends StatefulWidget {
-  const _MediaViewerDialog({
-    required this.items,
-    required this.initialIndex,
-  });
+  const _MediaViewerDialog({required this.items, required this.initialIndex});
 
   final List<_ResolvedMediaItem> items;
   final int initialIndex;
@@ -1917,10 +1830,7 @@ class _MediaViewerDialogState extends State<_MediaViewerDialog> {
     final item = widget.items[_index];
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 1100,
-        maxHeight: 820,
-      ),
+      constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.black,
@@ -1957,9 +1867,7 @@ class _MediaViewerDialogState extends State<_MediaViewerDialog> {
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                   decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Colors.white12),
-                    ),
+                    border: Border(top: BorderSide(color: Colors.white12)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2038,10 +1946,7 @@ class _MediaViewerDialogState extends State<_MediaViewerDialog> {
 }
 
 class _ViewerArrowButton extends StatelessWidget {
-  const _ViewerArrowButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _ViewerArrowButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -2049,7 +1954,7 @@ class _ViewerArrowButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.45),
+      color: Colors.black.withValues(alpha: 0.45),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -2065,9 +1970,7 @@ class _ViewerArrowButton extends StatelessWidget {
 }
 
 class _ImageViewer extends StatelessWidget {
-  const _ImageViewer({
-    required this.url,
-  });
+  const _ImageViewer({required this.url});
 
   final String url;
 
@@ -2096,9 +1999,7 @@ class _ImageViewer extends StatelessWidget {
 }
 
 class _VideoViewer extends StatefulWidget {
-  const _VideoViewer({
-    required this.url,
-  });
+  const _VideoViewer({required this.url});
 
   final String url;
 
@@ -2127,17 +2028,20 @@ class _VideoViewerState extends State<_VideoViewer> {
     try {
       final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       _controller = controller;
-      _initializeFuture = controller.initialize().then((_) async {
-        await controller.setLooping(true);
-        if (mounted) {
-          setState(() {});
-        }
-      }).catchError((_) {
-        _error = 'Could not load video';
-        if (mounted) {
-          setState(() {});
-        }
-      });
+      _initializeFuture = controller
+          .initialize()
+          .then((_) async {
+            await controller.setLooping(true);
+            if (mounted) {
+              setState(() {});
+            }
+          })
+          .catchError((_) {
+            _error = 'Could not load video';
+            if (mounted) {
+              setState(() {});
+            }
+          });
     } catch (_) {
       _error = 'Could not open video';
     }
@@ -2154,20 +2058,14 @@ class _VideoViewerState extends State<_VideoViewer> {
   @override
   Widget build(BuildContext context) {
     if ((_error ?? '').trim().isNotEmpty) {
-      return _VideoFallback(
-        message: _error!,
-        url: widget.url,
-      );
+      return _VideoFallback(message: _error!, url: widget.url);
     }
 
     final controller = _controller;
     final initializeFuture = _initializeFuture;
 
     if (controller == null || initializeFuture == null) {
-      return _VideoFallback(
-        message: 'Video unavailable',
-        url: widget.url,
-      );
+      return _VideoFallback(message: 'Video unavailable', url: widget.url);
     }
 
     return FutureBuilder<void>(
@@ -2182,9 +2080,7 @@ class _VideoViewerState extends State<_VideoViewer> {
 
         if (snapshot.connectionState != ConnectionState.done ||
             !controller.value.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          );
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
         }
 
         return Column(
@@ -2209,7 +2105,9 @@ class _VideoViewerState extends State<_VideoViewer> {
               children: [
                 AuraPrimaryButton(
                   label: controller.value.isPlaying ? 'Pause' : 'Play',
-                  icon: controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                  icon: controller.value.isPlaying
+                      ? Icons.pause
+                      : Icons.play_arrow,
                   onPressed: () async {
                     if (controller.value.isPlaying) {
                       await controller.pause();
@@ -2253,10 +2151,7 @@ class _VideoViewerState extends State<_VideoViewer> {
 }
 
 class _VideoFallback extends StatelessWidget {
-  const _VideoFallback({
-    required this.message,
-    required this.url,
-  });
+  const _VideoFallback({required this.message, required this.url});
 
   final String message;
   final String url;
@@ -2274,11 +2169,7 @@ class _VideoFallback extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.videocam_outlined,
-            size: 40,
-            color: Colors.white70,
-          ),
+          const Icon(Icons.videocam_outlined, size: 40, color: Colors.white70),
           const SizedBox(height: 12),
           Text(
             message,
@@ -2302,10 +2193,7 @@ class _VideoFallback extends StatelessWidget {
 }
 
 class _VisibilityMeta extends StatelessWidget {
-  const _VisibilityMeta({
-    required this.icon,
-    required this.label,
-  });
+  const _VisibilityMeta({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -2334,17 +2222,15 @@ class _VisibilityMeta extends StatelessWidget {
 }
 
 class _ActionRow extends ConsumerWidget {
-  const _ActionRow({
-    required this.postId,
-  });
+  const _ActionRow({required this.postId});
 
   final String postId;
 
   void _showError(BuildContext context, String message) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -2358,6 +2244,7 @@ class _ActionRow extends ConsumerWidget {
         ref.invalidate(isSavedProvider(postId));
         ref.invalidate(savedPostsProvider);
       } catch (_) {
+        if (!context.mounted) return;
         _showError(context, 'Could not update save');
       }
     }
@@ -2403,9 +2290,9 @@ class _ActionRow extends ConsumerWidget {
         await dio.post('/posts/$postId/repost', data: payload);
 
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Work reposted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Work reposted')));
       } catch (_) {
         _showError(context, 'Could not repost');
       } finally {
@@ -2431,12 +2318,9 @@ class _ActionRow extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Share', style: AuraText.title),
+                  const Text('Share', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    'Share this work.',
-                    style: AuraText.body,
-                  ),
+                  const Text('Share this work.', style: AuraText.body),
                   const SizedBox(height: AuraSpace.s14),
                   Wrap(
                     spacing: AuraSpace.s10,
@@ -2502,11 +2386,7 @@ class _ActionRow extends ConsumerWidget {
           label: 'Respond',
           onTap: () => context.push('/compose?replyTo=$postId&surface=dm'),
         ),
-        AuraActionPill(
-          icon: Icons.repeat,
-          label: 'Repost',
-          onTap: repost,
-        ),
+        AuraActionPill(icon: Icons.repeat, label: 'Repost', onTap: repost),
         saved.when(
           data: (v) => AuraActionPill(
             icon: v ? Icons.bookmark : Icons.bookmark_border,
@@ -2560,10 +2440,7 @@ class _MenuActionTile extends StatelessWidget {
 enum _BadgeTone { neutral, good, warn }
 
 class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.text,
-    required this.tone,
-  });
+  const _Badge({required this.text, required this.tone});
 
   final String text;
   final _BadgeTone tone;
@@ -2597,10 +2474,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AuraText.small.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w800,
-        ),
+        style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w800),
       ),
     );
   }

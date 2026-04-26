@@ -32,7 +32,8 @@ class AuraIdentitySurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tap = onTap ??
+    final tap =
+        onTap ??
         () {
           context.push('/author/$handle');
         };
@@ -57,18 +58,14 @@ class AuraIdentitySurface extends StatelessWidget {
                 children: [
                   Text(
                     displayName,
-                    style: AuraText.body.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                   ),
 
                   const SizedBox(height: 2),
 
                   Text(
                     '@$handle',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.muted,
-                    ),
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
 
                   if (!compact &&
@@ -77,9 +74,7 @@ class AuraIdentitySurface extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       contextLine!,
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                      ),
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
                     ),
                   ],
                 ],
@@ -89,7 +84,7 @@ class AuraIdentitySurface extends StatelessWidget {
             if (trailing != null) ...[
               const SizedBox(width: AuraSpace.s8),
               trailing!,
-            ]
+            ],
           ],
         ),
       ),
@@ -104,7 +99,7 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = 40.0;
+    const size = 40.0;
 
     if (avatarUrl != null && avatarUrl!.isNotEmpty) {
       return ClipOval(
@@ -131,7 +126,7 @@ class _Avatar extends StatelessWidget {
         border: Border.all(color: AuraSurface.divider),
       ),
       alignment: Alignment.center,
-      child: Icon(
+      child: const Icon(
         Icons.person_outline,
         color: AuraSurface.muted,
         size: 22,

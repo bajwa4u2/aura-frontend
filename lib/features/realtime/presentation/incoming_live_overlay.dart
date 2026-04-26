@@ -38,7 +38,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
       _stringOf(data['sessionId']),
       _stringOf(item['sessionId']),
     ]);
-    if (sessionId.isNotEmpty && _dismissedSessionIds.contains(sessionId)) return false;
+    if (sessionId.isNotEmpty && _dismissedSessionIds.contains(sessionId)) {
+      return false;
+    }
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
     if (currentPath.contains('/thread/') ||
@@ -52,7 +54,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     if (attention != 'INTERRUPT') return false;
 
     final type = _stringOf(item['type']).toUpperCase();
-    final communicationType = _stringOf(data['communicationType']).toUpperCase();
+    final communicationType = _stringOf(
+      data['communicationType'],
+    ).toUpperCase();
     return type == 'LIVE' || communicationType == 'LIVE';
   }
 
@@ -80,6 +84,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
 
     if (sessionId.isEmpty) return;
 
+    final router = GoRouter.of(context);
+    final route = _resolver.resolveRoute(target);
+
     setState(() {
       _joining = true;
     });
@@ -92,7 +99,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
         await ref.read(notificationsControllerProvider.notifier).markRead(id);
       }
 
-      context.go(_resolver.resolveRoute(target));
+      if (!mounted) return;
+      router.go(route);
     } catch (_) {
       _dismissedSessionIds.remove(sessionId);
       // let user try again
@@ -151,8 +159,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     final title = ownerType == 'SPACE'
         ? '${mode == 'video' ? 'Video' : 'Audio'} is live in $contextName'
         : mode == 'video'
-            ? '$actorName started a video call'
-            : '$actorName started an audio call';
+        ? '$actorName started a video call'
+        : '$actorName started an audio call';
 
     final body = ownerType == 'SPACE'
         ? 'Join from inside the space.'
@@ -164,9 +172,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
         Positioned.fill(
           child: GestureDetector(
             onTap: () {},
-            child: Container(
-              color: Colors.black.withOpacity(0.55),
-            ),
+            child: Container(color: Colors.black.withValues(alpha: 0.55)),
           ),
         ),
         Positioned.fill(
@@ -194,7 +200,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                         const SizedBox(height: AuraSpace.s8),
                         Text(
                           title,
-                          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                          style: AuraText.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: AuraSpace.s8),
                         Text(body, style: AuraText.body),
@@ -204,14 +212,18 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                             Expanded(
                               child: AuraSecondaryButton(
                                 label: 'Dismiss',
-                                onPressed: _joining ? null : () => _dismissCurrent(item),
+                                onPressed: _joining
+                                    ? null
+                                    : () => _dismissCurrent(item),
                               ),
                             ),
                             const SizedBox(width: AuraSpace.s12),
                             Expanded(
                               child: AuraPrimaryButton(
                                 label: _joining ? 'Joining...' : 'Join',
-                                onPressed: _joining ? null : () => _joinCurrent(item),
+                                onPressed: _joining
+                                    ? null
+                                    : () => _joinCurrent(item),
                               ),
                             ),
                           ],
@@ -231,7 +243,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
 
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;
-  if (value is Map) return value.map((key, val) => MapEntry(key.toString(), val));
+  if (value is Map) {
+    return value.map((key, val) => MapEntry(key.toString(), val));
+  }
   return const <String, dynamic>{};
 }
 

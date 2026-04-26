@@ -42,9 +42,9 @@ final threadOpenProvider = FutureProvider.family<void, String>((
 
 final threadDetailProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, threadId) async {
-  final repo = ref.watch(threadsRepositoryProvider);
-  return repo.getThread(threadId);
-});
+      final repo = ref.watch(threadsRepositoryProvider);
+      return repo.getThread(threadId);
+    });
 
 final messagesProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((
@@ -86,7 +86,9 @@ String _languageLabel(String code) {
 }
 
 String _defaultTranslationLanguage(BuildContext context) {
-  final code = Localizations.localeOf(context).languageCode.trim().toLowerCase();
+  final code = Localizations.localeOf(
+    context,
+  ).languageCode.trim().toLowerCase();
   if (_translationLanguageLabels.containsKey(code)) return code;
   return 'en';
 }
@@ -94,7 +96,9 @@ String _defaultTranslationLanguage(BuildContext context) {
 bool _hasRtlScript(String text) {
   final value = text.trim();
   if (value.isEmpty) return false;
-  final rtl = RegExp(r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]');
+  final rtl = RegExp(
+    r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+  );
   return rtl.hasMatch(value);
 }
 
@@ -105,9 +109,6 @@ TextDirection _directionForText(String text) {
 TextAlign _alignForText(String text) {
   return _hasRtlScript(text) ? TextAlign.right : TextAlign.left;
 }
-
-
-
 
 String _threadResolvedSessionId(
   Map<String, dynamic> thread,
@@ -145,10 +146,7 @@ String _threadResolvedSessionId(
   return '';
 }
 
-String _threadLiveKind(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
+String _threadLiveKind(Map<String, dynamic> thread, RealtimeState liveState) {
   final direct = _pickString(thread, const [
     'liveKind',
     'callKind',
@@ -201,7 +199,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       final liveState = ref.read(realtimeControllerProvider);
-      if (liveState.isJoined || liveState.isBusy || liveState.isMediaBusy) return;
+      if (liveState.isJoined || liveState.isBusy || liveState.isMediaBusy) {
+        return;
+      }
       _refreshThreadData();
     });
   }
@@ -238,10 +238,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       surfaceType: _threadLiveSurfaceType(thread),
       surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
       kind: kind,
-      metadata: <String, dynamic>{
-        'threadId': widget.threadId,
-        'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
-      }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty),
+      metadata:
+          <String, dynamic>{
+            'threadId': widget.threadId,
+            'spaceId': _pickString(thread, const ['spaceId', 'space_id']),
+          }..removeWhere(
+            (key, value) => value == null || value.toString().trim().isEmpty,
+          ),
     );
     if (!mounted || sessionId.trim().isEmpty) return;
   }
@@ -257,10 +260,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final meAsync = ref.watch(currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
     final currentUserId = meAsync.maybeWhen(
-      data: (me) => _pickString(
-        me,
-        const ['id', '_id', 'userId'],
-      ),
+      data: (me) => _pickString(me, const ['id', '_id', 'userId']),
       orElse: () => '',
     );
 
@@ -293,14 +293,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       liveState: liveState,
                       currentUserId: currentUserId,
                       onOpenSpace: () {
-                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        final spaceId = _pickString(thread, const [
+                          'spaceId',
+                          'space_id',
+                        ]);
                         if (spaceId.isEmpty) return;
                         context.push('/me/correspondence/$spaceId');
                       },
                       onInvite: () async {
-                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        final spaceId = _pickString(thread, const [
+                          'spaceId',
+                          'space_id',
+                        ]);
                         if (spaceId.isEmpty) return;
-                        final returnTo = '/me/correspondence/$spaceId/thread/$threadId';
+                        final returnTo =
+                            '/me/correspondence/$spaceId/thread/$threadId';
                         final inviteRoute = Uri(
                           path: '/invite/create',
                           queryParameters: {
@@ -315,14 +322,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         _refreshThreadData();
                       },
                       onAddMembers: () async {
-                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        final spaceId = _pickString(thread, const [
+                          'spaceId',
+                          'space_id',
+                        ]);
                         if (spaceId.isEmpty) return;
-                        await context.push('/me/correspondence/$spaceId/invite');
+                        await context.push(
+                          '/me/correspondence/$spaceId/invite',
+                        );
                         if (!context.mounted) return;
                         _refreshThreadData();
                       },
-                      onStartAudio: () => _startLive(thread: thread, kind: 'AUDIO'),
-                      onStartVideo: () => _startLive(thread: thread, kind: 'VIDEO'),
+                      onStartAudio: () =>
+                          _startLive(thread: thread, kind: 'AUDIO'),
+                      onStartVideo: () =>
+                          _startLive(thread: thread, kind: 'VIDEO'),
                       onJoinLive: () async {
                         final sessionId = _threadResolvedSessionId(
                           thread,
@@ -330,22 +344,30 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           widget.threadId,
                         );
                         if (sessionId.isEmpty) return;
-                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        final controller = ref.read(
+                          realtimeControllerProvider.notifier,
+                        );
                         await controller.join(sessionId);
                       },
                       onLeaveLive: () async {
-                        await ref.read(realtimeControllerProvider.notifier).leave();
+                        await ref
+                            .read(realtimeControllerProvider.notifier)
+                            .leave();
                       },
                       onToggleMicrophone: () async {
-                        await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                        await ref
+                            .read(realtimeControllerProvider.notifier)
+                            .toggleMicrophone();
                       },
                       onToggleCamera: () async {
-                        await ref.read(realtimeControllerProvider.notifier).toggleCamera();
+                        await ref
+                            .read(realtimeControllerProvider.notifier)
+                            .toggleCamera();
                       },
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
-                  Text('Messages', style: AuraText.title),
+                  const Text('Messages', style: AuraText.title),
                   const SizedBox(height: AuraSpace.s10),
                   messagesAsync.when(
                     loading: () => const AuraCard(
@@ -381,11 +403,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             _MessageTile(
                               message: messages[i],
                               currentUserId: currentUserId,
-                              showAuthorHeader:
-                                  !_isSameSender(
-                                    messages[i],
-                                    i > 0 ? messages[i - 1] : null,
-                                  ),
+                              showAuthorHeader: !_isSameSender(
+                                messages[i],
+                                i > 0 ? messages[i - 1] : null,
+                              ),
                               onEdit: () => _showEditMessageDialog(
                                 context,
                                 ref,
@@ -414,15 +435,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               ),
             ),
           ),
-          _ComposerBar(
-            threadId: threadId,
-            onSent: _refreshThreadData,
-          ),
+          _ComposerBar(threadId: threadId, onSent: _refreshThreadData),
         ],
       ),
     );
   }
-
 
   Future<void> _showEditMessageDialog(
     BuildContext context,
@@ -440,8 +457,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     }
   }
 }
-
-
 
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
@@ -512,7 +527,9 @@ class _ThreadHeaderCard extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
                         roles,
-                        style: AuraText.small.copyWith(color: AuraSurface.muted),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -589,9 +606,9 @@ class _HeaderIconAction extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
         child: Icon(icon, size: 18, color: Colors.white),
       ),
@@ -608,14 +625,15 @@ List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> thread) {
 }
 
 String _participantSummary(List<Map<String, dynamic>> participants) {
-  return CorrespondenceIdentity.threadParticipantSummaryFromParticipants(participants);
+  return CorrespondenceIdentity.threadParticipantSummaryFromParticipants(
+    participants,
+  );
 }
 
 String _participantRoleSummary(List<Map<String, dynamic>> participants) {
   final thread = <String, dynamic>{'participants': participants};
   return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
 }
-
 
 String _identityLabel(Map<String, dynamic> entity) {
   return CorrespondenceIdentity.identityLabel(entity);
@@ -633,7 +651,10 @@ String _threadLiveSurfaceId(Map<String, dynamic> thread, String threadId) {
   return threadId;
 }
 
-bool _threadMatchesLiveState(RealtimeState liveState, Map<String, dynamic> thread) {
+bool _threadMatchesLiveState(
+  RealtimeState liveState,
+  Map<String, dynamic> thread,
+) {
   final session = liveState.session;
   if (session == null) return false;
   final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
@@ -670,29 +691,47 @@ class _ThreadLiveDock extends StatelessWidget {
       liveState,
       _pickString(thread, const ['id', 'threadId']),
     );
-    final hasLive = sessionId.isNotEmpty && (belongsHere || _pickString(thread, const ['liveSessionId', 'activeSessionId']).isNotEmpty || _pickNested(thread, const [
-      ['live', 'sessionId'],
-      ['activeLive', 'sessionId'],
-      ['realtime', 'sessionId'],
-    ]).isNotEmpty);
+    final hasLive =
+        sessionId.isNotEmpty &&
+        (belongsHere ||
+            _pickString(thread, const [
+              'liveSessionId',
+              'activeSessionId',
+            ]).isNotEmpty ||
+            _pickNested(thread, const [
+              ['live', 'sessionId'],
+              ['activeLive', 'sessionId'],
+              ['realtime', 'sessionId'],
+            ]).isNotEmpty);
     if (!hasLive) return const SizedBox.shrink();
 
     final joinedCount = liveState.participants.where((p) => p.isPresent).length;
     final startedByUserId = _threadStartedByUserId(thread, liveState);
-    final startedByEntity = _extractParticipants(thread).cast<Map<String, dynamic>?>().firstWhere(
-      (participant) {
-        if (participant == null) return false;
-        final id = _pickString(participant, const ['id', '_id', 'userId', 'memberId']);
-        return id.isNotEmpty && id == startedByUserId;
-      },
-      orElse: () => null,
-    );
-    final startedByName = startedByEntity == null ? '' : _identityLabel(startedByEntity);
+    final startedByEntity = _extractParticipants(thread)
+        .cast<Map<String, dynamic>?>()
+        .firstWhere((participant) {
+          if (participant == null) return false;
+          final id = _pickString(participant, const [
+            'id',
+            '_id',
+            'userId',
+            'memberId',
+          ]);
+          return id.isNotEmpty && id == startedByUserId;
+        }, orElse: () => null);
+    final startedByName = startedByEntity == null
+        ? ''
+        : _identityLabel(startedByEntity);
     final liveKind = _threadLiveKind(thread, liveState);
-    final hasVideoStage = liveState.isJoined && (liveState.isVideoMode ||
-        (!liveState.isAudioMode && (liveState.localRenderer != null ||
-            liveState.remoteRenderers.isNotEmpty ||
-            liveState.participants.any((p) => p.videoOn || p.screenOn))));
+    final hasVideoStage =
+        liveState.isJoined &&
+        (liveState.isVideoMode ||
+            (!liveState.isAudioMode &&
+                (liveState.localRenderer != null ||
+                    liveState.remoteRenderers.isNotEmpty ||
+                    liveState.participants.any(
+                      (p) => p.videoOn || p.screenOn,
+                    ))));
     final hasAudioState = liveState.isJoined && !hasVideoStage;
 
     return Column(
@@ -706,8 +745,8 @@ class _ThreadLiveDock extends StatelessWidget {
           cameraEnabled: liveState.cameraEnabled,
           liveLabel: startedByName.isNotEmpty
               ? (liveState.isJoined
-                  ? '$startedByName · ${liveKind == 'video' ? 'video' : 'audio'}'
-                  : '$startedByName is calling')
+                    ? '$startedByName · ${liveKind == 'video' ? 'video' : 'audio'}'
+                    : '$startedByName is calling')
               : (liveKind == 'video' ? 'Video call' : 'Audio call'),
           liveDetail: joinedCount > 0
               ? (joinedCount == 1 ? '1 joined' : '$joinedCount joined')
@@ -800,7 +839,10 @@ class _ThreadStatusStrip extends StatelessWidget {
                   liveLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: AuraText.small.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 if (liveDetail.trim().isNotEmpty)
                   Text(
@@ -821,13 +863,17 @@ class _ThreadStatusStrip extends StatelessWidget {
             ),
           if (isJoined) ...[
             _StripIconButton(
-              icon: microphoneEnabled ? Icons.mic_off_rounded : Icons.mic_rounded,
+              icon: microphoneEnabled
+                  ? Icons.mic_off_rounded
+                  : Icons.mic_rounded,
               onTap: () => onToggleMicrophone(),
             ),
             if (onToggleCamera != null) ...[
               const SizedBox(width: AuraSpace.s8),
               _StripIconButton(
-                icon: cameraEnabled ? Icons.videocam_off_rounded : Icons.videocam_rounded,
+                icon: cameraEnabled
+                    ? Icons.videocam_off_rounded
+                    : Icons.videocam_rounded,
                 onTap: () => onToggleCamera!(),
               ),
             ],
@@ -867,7 +913,7 @@ class _StripIconButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 18, color: color),
@@ -907,7 +953,9 @@ class _ThreadAudioStage extends StatelessWidget {
             runSpacing: AuraSpace.s8,
             children: participants.isEmpty
                 ? const <Widget>[]
-                : participants.map((p) => _ThreadParticipantChip(participant: p)).toList(),
+                : participants
+                      .map((p) => _ThreadParticipantChip(participant: p))
+                      .toList(),
           ),
         ],
       ),
@@ -937,20 +985,27 @@ class _ThreadParticipantChip extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: participant.isPresent ? AuraSurface.goodInk : AuraSurface.faint,
+              color: participant.isPresent
+                  ? AuraSurface.goodInk
+                  : AuraSurface.faint,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
-          if (participant.audioOn || participant.videoOn || participant.screenOn) ...[
+          Text(
+            label,
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (participant.audioOn ||
+              participant.videoOn ||
+              participant.screenOn) ...[
             const SizedBox(width: 8),
             Icon(
               participant.screenOn
                   ? Icons.screen_share_rounded
                   : participant.videoOn
-                      ? Icons.videocam_rounded
-                      : Icons.mic_rounded,
+                  ? Icons.videocam_rounded
+                  : Icons.mic_rounded,
               size: 14,
               color: AuraSurface.muted,
             ),
@@ -986,7 +1041,9 @@ class _ThreadVideoStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final tiles = <Widget>[];
     if (localRenderer != null) {
-      tiles.add(_ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true));
+      tiles.add(
+        _ThreadVideoTile(label: 'You', renderer: localRenderer!, mirror: true),
+      );
     }
     remoteRenderers.forEach((key, renderer) {
       final participant = participants.cast<RealtimeParticipant?>().firstWhere(
@@ -1048,12 +1105,15 @@ class _ThreadVideoTile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
               ),
               child: Text(
                 label,
-                style: AuraText.small.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                style: AuraText.small.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -1064,7 +1124,11 @@ class _ThreadVideoTile extends StatelessWidget {
 }
 
 class _IdentityAvatar extends StatelessWidget {
-  const _IdentityAvatar({required this.label, this.imageUrl = '', this.radius = 20});
+  const _IdentityAvatar({
+    required this.label,
+    this.imageUrl = '',
+    this.radius = 20,
+  });
 
   final String label;
   final String imageUrl;
@@ -1074,11 +1138,17 @@ class _IdentityAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final initials = _initials(label);
     if (imageUrl.trim().isNotEmpty) {
-      return CircleAvatar(radius: radius, backgroundImage: NetworkImage(imageUrl.trim()));
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: NetworkImage(imageUrl.trim()),
+      );
     }
     return CircleAvatar(
       radius: radius,
-      child: Text(initials, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+      child: Text(
+        initials,
+        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
@@ -1100,17 +1170,18 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
 }
 
 String _initials(String value) {
-  final parts = value.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList(growable: false);
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((e) => e.isNotEmpty)
+      .toList(growable: false);
   if (parts.isEmpty) return '?';
   if (parts.length == 1) return parts.first[0].toUpperCase();
   return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 class _ComposerBar extends ConsumerStatefulWidget {
-  const _ComposerBar({
-    required this.threadId,
-    required this.onSent,
-  });
+  const _ComposerBar({required this.threadId, required this.onSent});
 
   final String threadId;
   final VoidCallback onSent;
@@ -1185,7 +1256,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Camera capture is not available here. Choose a file instead.'),
+          content: Text(
+            'Camera capture is not available here. Choose a file instead.',
+          ),
         ),
       );
       await _pickImageFromGallery();
@@ -1211,7 +1284,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Video capture is not available here. Choose a file instead.'),
+          content: Text(
+            'Video capture is not available here. Choose a file instead.',
+          ),
         ),
       );
       await _pickVideoFromGallery();
@@ -1271,7 +1346,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Audio recording is not available here. Upload an audio file instead.'),
+          content: Text(
+            'Audio recording is not available here. Upload an audio file instead.',
+          ),
         ),
       );
       return;
@@ -1402,7 +1479,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       source: _mediaSourceValue(attachment.source),
       width: attachment.width,
       height: attachment.height,
-      duration: attachment.kind == _AttachmentKind.audio ? attachment.durationSec : null,
+      duration: attachment.kind == _AttachmentKind.audio
+          ? attachment.durationSec
+          : null,
       metadataPatch: <String, dynamic>{
         if (attachment.width != null) 'width': attachment.width,
         if (attachment.height != null) 'height': attachment.height,
@@ -1431,10 +1510,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
         '/composition/review',
-        data: {
-          'text': text,
-          'surface': 'dm',
-        },
+        data: {'text': text, 'surface': 'dm'},
       );
 
       final root = _unwrapDataMap(res.data);
@@ -1456,7 +1532,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
         _assistError = findings.isEmpty ? 'Nothing urgent to revise.' : null;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _assistBusy = false;
         _assistError = 'Could not review this draft right now.';
@@ -1507,14 +1583,16 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       if (!mounted) return;
       setState(() {
         _assistSnapshot = nextText;
-        _suggestions = findings.isNotEmpty ? findings : _suggestions.where((item) {
-          final id = _firstNonEmpty(item, const ['id', 'findingId']);
-          return id != suggestionId;
-        }).toList();
+        _suggestions = findings.isNotEmpty
+            ? findings
+            : _suggestions.where((item) {
+                final id = _firstNonEmpty(item, const ['id', 'findingId']);
+                return id != suggestionId;
+              }).toList();
         _dismissedSuggestionIds.remove(suggestionId);
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _assistError = 'Could not apply that suggestion.';
       });
@@ -1540,10 +1618,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
         '/composition/translate',
-        data: {
-          'text': text,
-          'targetLanguage': _translationTargetLanguage,
-        },
+        data: {'text': text, 'targetLanguage': _translationTargetLanguage},
       );
 
       final root = _unwrapDataMap(res.data);
@@ -1612,14 +1687,18 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
     final body = _controller.text.trim();
     final attachmentsPayload = _attachments
-        .where((a) => !a.uploading && a.error == null && a.storageKey.isNotEmpty)
+        .where(
+          (a) => !a.uploading && a.error == null && a.storageKey.isNotEmpty,
+        )
         .map((a) => a.toMessagePayload())
         .toList();
 
     setState(() => _sending = true);
 
     try {
-      await ref.read(messagesRepositoryProvider).sendMessage(
+      await ref
+          .read(messagesRepositoryProvider)
+          .sendMessage(
             threadId: widget.threadId,
             body: body,
             attachments: attachmentsPayload,
@@ -1642,9 +1721,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send message: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not send message: $e')));
     } finally {
       if (mounted) {
         setState(() => _sending = false);
@@ -1675,7 +1754,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_camera_outlined),
-                title: Text(_supportsCameraCapture ? 'Take photo' : 'Choose photo'),
+                title: Text(
+                  _supportsCameraCapture ? 'Take photo' : 'Choose photo',
+                ),
                 onTap: () => closeAnd(_pickImageFromCamera),
               ),
               ListTile(
@@ -1685,7 +1766,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
               ),
               ListTile(
                 leading: const Icon(Icons.videocam_outlined),
-                title: Text(_supportsCameraCapture ? 'Record video' : 'Choose video'),
+                title: Text(
+                  _supportsCameraCapture ? 'Record video' : 'Choose video',
+                ),
                 onTap: () => closeAnd(_pickVideoFromCamera),
               ),
               ListTile(
@@ -1701,8 +1784,8 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                   _recordingAudio
                       ? 'Stop audio recording'
                       : _supportsAudioRecording
-                          ? 'Record audio'
-                          : 'Audio recording unavailable',
+                      ? 'Record audio'
+                      : 'Audio recording unavailable',
                 ),
                 onTap: _supportsAudioRecording
                     ? () => closeAnd(_toggleAudioRecording)
@@ -1747,7 +1830,10 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
             if (_recordingAudio) ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AuraSurface.dangerBg,
                   borderRadius: BorderRadius.circular(AuraRadius.md),
@@ -1757,12 +1843,18 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.fiber_manual_record, size: 14, color: AuraSurface.dangerInk),
+                    const Icon(
+                      Icons.fiber_manual_record,
+                      size: 14,
+                      color: AuraSurface.dangerInk,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Recording audio ${_formatRecordingDuration(recordingElapsed)}',
-                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     AuraGhostButton(
@@ -1773,7 +1865,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                     AuraPrimaryButton(
                       label: 'Stop',
                       icon: Icons.stop_rounded,
-                      onPressed: _sending ? null : () => _toggleAudioRecording(),
+                      onPressed: _sending
+                          ? null
+                          : () => _toggleAudioRecording(),
                     ),
                   ],
                 ),
@@ -1787,7 +1881,10 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                 applyingIds: _applyingSuggestionIds,
                 onApply: _applySuggestion,
                 onDismiss: (suggestion) {
-                  final id = _firstNonEmpty(suggestion, const ['id', 'findingId']);
+                  final id = _firstNonEmpty(suggestion, const [
+                    'id',
+                    'findingId',
+                  ]);
                   if (id.isEmpty) return;
                   setState(() => _dismissedSuggestionIds.add(id));
                 },
@@ -1801,7 +1898,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                 errorText: _translationError,
                 busy: _translationBusy,
                 onApply: _translationPreview == null ? null : _applyTranslation,
-                onRestore: _translationSnapshot == null ? null : _restoreBeforeTranslation,
+                onRestore: _translationSnapshot == null
+                    ? null
+                    : _restoreBeforeTranslation,
               ),
               const SizedBox(height: AuraSpace.s10),
             ],
@@ -1827,13 +1926,15 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                         ),
                         onChanged: (_) {
                           setState(() {
-                            if ((_assistSnapshot ?? '') != _controller.text.trim()) {
+                            if ((_assistSnapshot ?? '') !=
+                                _controller.text.trim()) {
                               _suggestions = const [];
                               _assistError = null;
                               _assistSessionId = null;
                               _dismissedSuggestionIds.clear();
                             }
-                            if ((_translationSnapshot ?? '') != _controller.text.trim()) {
+                            if ((_translationSnapshot ?? '') !=
+                                _controller.text.trim()) {
                               _translationPreview = null;
                               _translationError = null;
                             }
@@ -1846,15 +1947,26 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                           AuraSecondaryButton(
                             label: _assistBusy ? 'Polishing…' : 'Polish',
                             icon: Icons.auto_fix_high_outlined,
-                            onPressed: !_hasText || _assistBusy ? null : _runAssist,
+                            onPressed: !_hasText || _assistBusy
+                                ? null
+                                : _runAssist,
                           ),
                           const SizedBox(width: AuraSpace.s8),
                           DropdownButton<String>(
                             value: _translationTargetLanguage,
                             items: const [
-                              DropdownMenuItem(value: 'ur', child: Text('Urdu')),
-                              DropdownMenuItem(value: 'en', child: Text('English')),
-                              DropdownMenuItem(value: 'ar', child: Text('Arabic')),
+                              DropdownMenuItem(
+                                value: 'ur',
+                                child: Text('Urdu'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'en',
+                                child: Text('English'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'ar',
+                                child: Text('Arabic'),
+                              ),
                             ],
                             onChanged: _translationBusy
                                 ? null
@@ -1867,10 +1979,13 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                           ),
                           const SizedBox(width: AuraSpace.s8),
                           AuraSecondaryButton(
-                            label: _translationBusy ? 'Translating…' : 'Translate',
+                            label: _translationBusy
+                                ? 'Translating…'
+                                : 'Translate',
                             icon: Icons.translate_outlined,
-                            onPressed:
-                                !_hasText || _translationBusy ? null : _translateDraft,
+                            onPressed: !_hasText || _translationBusy
+                                ? null
+                                : _translateDraft,
                           ),
                         ],
                       ),
@@ -1882,8 +1997,8 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                   label: _sending
                       ? 'Sending…'
                       : uploadingCount > 0
-                          ? 'Uploading…'
-                          : 'Send',
+                      ? 'Uploading…'
+                      : 'Send',
                   onPressed: _canSend ? _submit : null,
                   icon: Icons.send_rounded,
                 ),
@@ -1917,7 +2032,7 @@ class _ComposerAssistPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Writing support', style: AuraText.title),
+          const Text('Writing support', style: AuraText.title),
           if (errorText != null && errorText!.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
             Text(errorText!, style: AuraText.body),
@@ -1954,8 +2069,16 @@ class _ComposerSuggestionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final message = _firstNonEmpty(suggestion, const ['message', 'title', 'finding']);
-    final detail = _firstNonEmpty(suggestion, const ['suggestion', 'detail', 'description']);
+    final message = _firstNonEmpty(suggestion, const [
+      'message',
+      'title',
+      'finding',
+    ]);
+    final detail = _firstNonEmpty(suggestion, const [
+      'suggestion',
+      'detail',
+      'description',
+    ]);
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
@@ -1968,7 +2091,10 @@ class _ComposerSuggestionTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (message.isNotEmpty)
-            Text(message, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              message,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+            ),
           if (detail.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s6),
             Text(detail, style: AuraText.body),
@@ -2023,7 +2149,7 @@ class _ComposerTranslationPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Translation preview', style: AuraText.title),
+          const Text('Translation preview', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text('Target language: $label', style: AuraText.small),
           if (errorText != null && errorText!.trim().isNotEmpty) ...[
@@ -2061,6 +2187,7 @@ class _ComposerTranslationPanel extends StatelessWidget {
     );
   }
 }
+
 class _AttachmentPreviewRow extends StatelessWidget {
   const _AttachmentPreviewRow({
     required this.attachments,
@@ -2105,8 +2232,8 @@ class _AttachmentPreviewCard extends StatelessWidget {
     final subtitle = attachment.uploading
         ? 'Uploading...'
         : attachment.error != null
-            ? 'Failed'
-            : _attachmentKindLabel(attachment.kind);
+        ? 'Failed'
+        : _attachmentKindLabel(attachment.kind);
 
     return Container(
       width: 240,
@@ -2197,10 +2324,9 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
     });
 
     try {
-      await ref.read(messagesRepositoryProvider).editMessage(
-            messageId: messageId,
-            body: body,
-          );
+      await ref
+          .read(messagesRepositoryProvider)
+          .editMessage(messageId: messageId, body: body);
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -2225,9 +2351,7 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
               controller: _controller,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Message',
-              ),
+              decoration: const InputDecoration(labelText: 'Message'),
             ),
             if (_errorText != null) ...[
               const SizedBox(height: AuraSpace.s12),
@@ -2235,9 +2359,7 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _errorText!,
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.dangerInk,
-                  ),
+                  style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
                 ),
               ),
             ],
@@ -2293,7 +2415,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
   String? _translationTargetLanguage;
 
   Future<void> _pickTranslationLanguage(BuildContext context) async {
-    final current = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+    final current =
+        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
+            .toLowerCase();
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -2325,7 +2449,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                           vertical: AuraSpace.s8,
                         ),
                         decoration: BoxDecoration(
-                          color: active ? AuraSurface.overlay : Colors.transparent,
+                          color: active
+                              ? AuraSurface.overlay
+                              : Colors.transparent,
                           border: Border.all(color: AuraSurface.divider),
                           borderRadius: BorderRadius.circular(AuraRadius.pill),
                         ),
@@ -2358,7 +2484,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _translationBusy) return;
 
-    final target = (_translationTargetLanguage ?? _defaultTranslationLanguage(context)).toLowerCase();
+    final target =
+        (_translationTargetLanguage ?? _defaultTranslationLanguage(context))
+            .toLowerCase();
 
     setState(() {
       _translationBusy = true;
@@ -2369,10 +2497,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
       final dio = ref.read(dioProvider);
       final res = await dio.post(
         '/composition/translate',
-        data: {
-          'text': trimmed,
-          'targetLanguage': target,
-        },
+        data: {'text': trimmed, 'targetLanguage': target},
       );
 
       final root = _unwrapDataMap(res.data);
@@ -2400,13 +2525,15 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
         _translationBusy = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _translationBusy = false;
         _translationError = 'Could not translate this message right now.';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not translate this message right now.')),
+        const SnackBar(
+          content: Text('Could not translate this message right now.'),
+        ),
       );
     }
   }
@@ -2433,23 +2560,25 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
       authorMap.isNotEmpty ? authorMap : message,
       const ['authorContext', 'senderContext', 'bio', 'tagline', 'headline'],
     );
-    final createdAt = _pickString(
-      message,
-      const ['createdAt', 'sentAt', 'timestamp'],
-    );
+    final createdAt = _pickString(message, const [
+      'createdAt',
+      'sentAt',
+      'timestamp',
+    ]);
     final attachments = _listOfMap(message['attachments']);
     final senderId = _extractSenderId(message);
     final isMine =
-        currentUserId.trim().isNotEmpty && senderId.trim() == currentUserId.trim();
+        currentUserId.trim().isNotEmpty &&
+        senderId.trim() == currentUserId.trim();
 
     final bubbleColor = isMine ? AuraSurface.overlay : AuraSurface.elevated;
     final bubbleBorderColor = isMine
         ? AuraSurface.accent.withValues(alpha: 0.3)
         : AuraSurface.divider;
-    final textColor = AuraSurface.ink;
-    final metaColor = AuraSurface.muted;
-    final translatedTextColor = AuraSurface.ink;
-    final translatedSurfaceColor = AuraSurface.subtle;
+    const textColor = AuraSurface.ink;
+    const metaColor = AuraSurface.muted;
+    const translatedTextColor = AuraSurface.ink;
+    const translatedSurfaceColor = AuraSurface.subtle;
 
     _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
@@ -2460,16 +2589,18 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
           maxWidth: MediaQuery.of(context).size.width > 900 ? 660 : 560,
         ),
         child: Column(
-          crossAxisAlignment:
-              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMine
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             if (!isMine && showAuthorHeader && author.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 6, bottom: 6),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap:
-                      handle.isEmpty ? null : () => context.push('/u/$handle'),
+                  onTap: handle.isEmpty
+                      ? null
+                      : () => context.push('/u/$handle'),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
@@ -2566,7 +2697,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (_translationBusy) ...[
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 14,
                                     height: 14,
                                     child: CircularProgressIndicator(
@@ -2581,7 +2712,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                                 Text(
                                   _translationBusy
                                       ? 'Translating...'
-                                      : (_showTranslation ? 'Refresh translation' : 'Translate'),
+                                      : (_showTranslation
+                                            ? 'Refresh translation'
+                                            : 'Translate'),
                                   style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: metaColor,
@@ -2601,20 +2734,25 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                             ),
                             decoration: BoxDecoration(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AuraRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
+                              ),
                               border: Border.all(color: AuraSurface.divider),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.translate,
                                   size: 14,
                                   color: metaColor,
                                 ),
                                 const SizedBox(width: AuraSpace.s6),
                                 Text(
-                                  _languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context)),
+                                  _languageLabel(
+                                    _translationTargetLanguage ??
+                                        _defaultTranslationLanguage(context),
+                                  ),
                                   style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: AuraSurface.ink,
@@ -2632,7 +2770,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                                 _translationError = null;
                               });
                             },
-                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
@@ -2658,7 +2798,8 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                         ),
                       ),
                     ],
-                    if (_showTranslation && (_translatedText ?? '').trim().isNotEmpty) ...[
+                    if (_showTranslation &&
+                        (_translatedText ?? '').trim().isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s10),
                       Container(
                         width: double.infinity,
@@ -2680,18 +2821,23 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                             ),
                             const SizedBox(height: AuraSpace.s6),
                             Directionality(
-                              textDirection: _directionForText(_translatedText!),
+                              textDirection: _directionForText(
+                                _translatedText!,
+                              ),
                               child: AuraTextBlock(
                                 _translatedText!,
                                 textAlign: _alignForText(_translatedText!),
-                                style: AuraText.body.copyWith(color: translatedTextColor),
+                                style: AuraText.body.copyWith(
+                                  color: translatedTextColor,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
-                    if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
+                    if (attachments.isNotEmpty)
+                      const SizedBox(height: AuraSpace.s10),
                   ],
                   if (attachments.isNotEmpty) ...[
                     _MessageAttachmentList(
@@ -2721,7 +2867,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                         const SizedBox(width: AuraSpace.s8),
                         PopupMenuButton<String>(
                           padding: EdgeInsets.zero,
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.more_horiz,
                             size: 18,
                             color: metaColor,
@@ -2771,12 +2917,8 @@ class _MessageAttachmentList extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < attachments.length; i++) ...[
-          _MessageAttachmentCard(
-            attachment: attachments[i],
-            isMine: isMine,
-          ),
-          if (i != attachments.length - 1)
-            const SizedBox(height: AuraSpace.s8),
+          _MessageAttachmentCard(attachment: attachments[i], isMine: isMine),
+          if (i != attachments.length - 1) const SizedBox(height: AuraSpace.s8),
         ],
       ],
     );
@@ -2810,7 +2952,9 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
 
     final ok = await launchUrl(
       uri,
-      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      mode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
       webOnlyWindowName: '_blank',
     );
 
@@ -2893,8 +3037,6 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
   @override
   Widget build(BuildContext context) {
     final attachment = widget.attachment;
-    final isMine = widget.isMine;
-
     final fileName = _pickString(attachment, const ['fileName', 'name']);
     final mimeType = _pickString(attachment, const ['mimeType', 'mime']);
     final sizeBytes = _pickInt(attachment, const ['sizeBytes', 'size']);
@@ -2902,10 +3044,10 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
     final url = _resolveAttachmentUrl(attachment);
     final thumbUrl = _resolveAttachmentThumbUrl(attachment);
 
-    final borderColor = AuraSurface.divider;
-    final surfaceColor = AuraSurface.subtle;
-    final primaryTextColor = AuraSurface.ink;
-    final secondaryTextColor = AuraSurface.muted;
+    const borderColor = AuraSurface.divider;
+    const surfaceColor = AuraSurface.subtle;
+    const primaryTextColor = AuraSurface.ink;
+    const secondaryTextColor = AuraSurface.muted;
 
     void handleTap() {
       if (url.isEmpty) return;
@@ -2971,10 +3113,7 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
-      child: GestureDetector(
-        onTap: handleTap,
-        child: mediaSurface,
-      ),
+      child: GestureDetector(onTap: handleTap, child: mediaSurface),
     );
   }
 }
@@ -3008,7 +3147,13 @@ class _ImageAttachmentSurface extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
-      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
+      transform: Matrix4.identity()
+        ..scaleByDouble(
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          1,
+        ),
       decoration: BoxDecoration(
         color: surfaceColor,
         border: Border.all(color: borderColor),
@@ -3043,12 +3188,12 @@ class _ImageAttachmentSurface extends StatelessWidget {
                   duration: const Duration(milliseconds: 140),
                   opacity: hovering ? 1 : 0.92,
                   child: Container(
-                    color: Colors.black.withOpacity(hovering ? 0.18 : 0.08),
+                    color: Colors.black.withValues(
+                      alpha: hovering ? 0.18 : 0.08,
+                    ),
                   ),
                 ),
-                const Center(
-                  child: _CenterOpenIcon(),
-                ),
+                const Center(child: _CenterOpenIcon()),
                 const Positioned(
                   right: 10,
                   bottom: 10,
@@ -3115,7 +3260,13 @@ class _VideoAttachmentSurface extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
-      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
+      transform: Matrix4.identity()
+        ..scaleByDouble(
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          1,
+        ),
       decoration: BoxDecoration(
         color: surfaceColor,
         border: Border.all(color: borderColor),
@@ -3134,7 +3285,7 @@ class _VideoAttachmentSurface extends StatelessWidget {
                   Image.network(
                     previewUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _BrokenMediaFallback(
+                    errorBuilder: (_, __, ___) => const _BrokenMediaFallback(
                       icon: Icons.videocam_outlined,
                       text: 'Video preview unavailable',
                       textColor: Colors.white70,
@@ -3142,16 +3293,16 @@ class _VideoAttachmentSurface extends StatelessWidget {
                     ),
                   )
                 else
-                  _BrokenMediaFallback(
+                  const _BrokenMediaFallback(
                     icon: Icons.videocam_outlined,
                     text: 'Video ready to open',
                     textColor: Colors.white70,
                     dark: true,
                   ),
-                Container(color: Colors.black.withOpacity(hovering ? 0.34 : 0.26)),
-                const Center(
-                  child: _CenterPlayIcon(),
+                Container(
+                  color: Colors.black.withValues(alpha: hovering ? 0.34 : 0.26),
                 ),
+                const Center(child: _CenterPlayIcon()),
                 const Positioned(
                   right: 10,
                   bottom: 10,
@@ -3216,7 +3367,13 @@ class _AudioAttachmentSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
-      transform: Matrix4.identity()..scale(hovering ? 1.01 : 1.0),
+      transform: Matrix4.identity()
+        ..scaleByDouble(
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          1,
+        ),
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -3230,15 +3387,12 @@ class _AudioAttachmentSurface extends StatelessWidget {
             width: 48,
             decoration: BoxDecoration(
               color: hovering
-                  ? Colors.white.withOpacity(0.06)
+                  ? Colors.white.withValues(alpha: 0.06)
                   : Colors.transparent,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              Icons.graphic_eq_outlined,
-              color: secondaryTextColor,
-            ),
+            child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
           ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
@@ -3311,10 +3465,7 @@ class _BrokenMediaFallback extends StatelessWidget {
         children: [
           Icon(icon, size: 36, color: textColor),
           const SizedBox(height: 8),
-          Text(
-            text,
-            style: AuraText.small.copyWith(color: textColor),
-          ),
+          Text(text, style: AuraText.small.copyWith(color: textColor)),
         ],
       ),
     );
@@ -3333,11 +3484,7 @@ class _CenterOpenIcon extends StatelessWidget {
         color: AuraSurface.overlay,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
-      child: const Icon(
-        Icons.open_in_full,
-        size: 24,
-        color: AuraSurface.ink,
-      ),
+      child: const Icon(Icons.open_in_full, size: 24, color: AuraSurface.ink),
     );
   }
 }
@@ -3364,10 +3511,7 @@ class _CenterPlayIcon extends StatelessWidget {
 }
 
 class _OpenBadge extends StatelessWidget {
-  const _OpenBadge({
-    required this.label,
-    this.dark = false,
-  });
+  const _OpenBadge({required this.label, this.dark = false});
 
   final String label;
   final bool dark;
@@ -3383,18 +3527,9 @@ class _OpenBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.open_in_new,
-            size: 12,
-            color: AuraSurface.ink,
-          ),
+          const Icon(Icons.open_in_new, size: 12, color: AuraSurface.ink),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.ink,
-            ),
-          ),
+          Text(label, style: AuraText.small.copyWith(color: AuraSurface.ink)),
         ],
       ),
     );
@@ -3527,18 +3662,9 @@ class _DraftAttachment {
   }
 }
 
-enum _AttachmentKind {
-  image,
-  video,
-  audio,
-}
+enum _AttachmentKind { image, video, audio }
 
-enum _AttachmentSource {
-  gallery,
-  camera,
-  upload,
-  recording,
-}
+enum _AttachmentSource { gallery, camera, upload, recording }
 
 String _attachmentKindLabel(_AttachmentKind kind) {
   switch (kind) {
@@ -3608,10 +3734,7 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   final image = frame.image;
-  return {
-    'width': image.width,
-    'height': image.height,
-  };
+  return {'width': image.width, 'height': image.height};
 }
 
 Map<String, dynamic> _unwrapDataMap(dynamic raw) {
@@ -3627,13 +3750,7 @@ Map<String, dynamic> _unwrapDataMap(dynamic raw) {
 
 Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
   if (raw is Map<String, dynamic>) {
-    const nestedKeys = [
-      'data',
-      'user',
-      'item',
-      'result',
-      'payload',
-    ];
+    const nestedKeys = ['data', 'user', 'item', 'result', 'payload'];
 
     for (final key in nestedKeys) {
       final nested = raw[key];
@@ -3666,7 +3783,6 @@ List<Map<String, dynamic>> _listOfMap(dynamic raw) {
   return raw.map((e) => _asMap(e)).toList();
 }
 
-
 List<Map<String, dynamic>> _extractFindings(Map<String, dynamic> root) {
   for (final path in const [
     ['findings'],
@@ -3680,8 +3796,16 @@ List<Map<String, dynamic>> _extractFindings(Map<String, dynamic> root) {
     if (value is List) {
       return value.map(_asMap).where((item) {
         final id = _firstNonEmpty(item, const ['id', 'findingId']);
-        final message = _firstNonEmpty(item, const ['message', 'title', 'finding']);
-        final detail = _firstNonEmpty(item, const ['suggestion', 'detail', 'description']);
+        final message = _firstNonEmpty(item, const [
+          'message',
+          'title',
+          'finding',
+        ]);
+        final detail = _firstNonEmpty(item, const [
+          'suggestion',
+          'detail',
+          'description',
+        ]);
         return id.isNotEmpty || message.isNotEmpty || detail.isNotEmpty;
       }).toList();
     }
@@ -3740,14 +3864,7 @@ String _pickString(Map<String, dynamic> map, List<String> keys) {
 }
 
 Map<String, dynamic> _extractAuthorMap(Map<String, dynamic> message) {
-  const keys = [
-    'author',
-    'sender',
-    'user',
-    'member',
-    'profile',
-    'createdBy',
-  ];
+  const keys = ['author', 'sender', 'user', 'member', 'profile', 'createdBy'];
 
   for (final key in keys) {
     final value = message[key];
@@ -3771,57 +3888,48 @@ String _extractSenderId(Map<String, dynamic> message) {
   final author = _extractAuthorMap(message);
   if (author.isEmpty) return '';
 
-  return _pickString(author, const [
-    'id',
-    '_id',
-    'userId',
-    'memberId',
-  ]);
+  return _pickString(author, const ['id', '_id', 'userId', 'memberId']);
 }
 
 String _resolveAttachmentUrl(Map<String, dynamic> attachment) {
-  return _pickString(
-    attachment,
-    const [
-      'displayUrl',
-      'playbackUrl',
-      'url',
-      'publicUrl',
-      'signedUrl',
-      'sourceUrl',
-      'fileUrl',
-      'href',
-      'src',
-      'downloadUrl',
-      'originalUrl',
-    ],
-  );
+  return _pickString(attachment, const [
+    'displayUrl',
+    'playbackUrl',
+    'url',
+    'publicUrl',
+    'signedUrl',
+    'sourceUrl',
+    'fileUrl',
+    'href',
+    'src',
+    'downloadUrl',
+    'originalUrl',
+  ]);
 }
 
 String _resolveAttachmentThumbUrl(Map<String, dynamic> attachment) {
-  return _pickString(
-    attachment,
-    const [
-      'thumbnailUrl',
-      'thumbUrl',
-      'previewUrl',
-      'posterUrl',
-      'displayUrl',
-      'publicUrl',
-      'signedUrl',
-      'url',
-    ],
-  );
+  return _pickString(attachment, const [
+    'thumbnailUrl',
+    'thumbUrl',
+    'previewUrl',
+    'posterUrl',
+    'displayUrl',
+    'publicUrl',
+    'signedUrl',
+    'url',
+  ]);
 }
 
-bool _isSameSender(Map<String, dynamic> current, Map<String, dynamic>? previous) {
+bool _isSameSender(
+  Map<String, dynamic> current,
+  Map<String, dynamic>? previous,
+) {
   if (previous == null) return false;
   final currentSender = _extractSenderId(current).trim();
   final previousSender = _extractSenderId(previous).trim();
   if (currentSender.isEmpty || previousSender.isEmpty) return false;
   return currentSender == previousSender;
 }
-
 
 String _formatMessageTimestamp(String raw) {
   final value = raw.trim();
@@ -3840,8 +3948,8 @@ String _formatMessageTimestamp(String raw) {
     final hour = dt.hour == 0
         ? 12
         : dt.hour > 12
-            ? dt.hour - 12
-            : dt.hour;
+        ? dt.hour - 12
+        : dt.hour;
     final minute = dt.minute.toString().padLeft(2, '0');
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $ampm';
@@ -3854,10 +3962,22 @@ String _formatMessageTimestamp(String raw) {
     return weekdays[local.weekday - 1];
   }
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return '${months[local.month - 1]} ${local.day}';
 }
-
 
 String _formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';

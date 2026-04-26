@@ -68,10 +68,7 @@ class _DocumentSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.card,
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(
-          color: AuraSurface.divider,
-          width: 1,
-        ),
+        border: Border.all(color: AuraSurface.divider, width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22000000),
@@ -89,95 +86,64 @@ class _DocumentSurface extends StatelessWidget {
 class Doc {
   Doc._();
 
-  static Widget title(String text) => Text(
-        text,
-        style: AuraText.title,
-      );
+  static Widget title(String text) => Text(text, style: AuraText.title);
 
-  static Widget meta(String text) => Text(
-        text,
-        style: AuraText.muted,
-      );
+  static Widget meta(String text) => Text(text, style: AuraText.muted);
 
   static Widget lede(String text) => Padding(
-        padding: const EdgeInsets.only(top: AuraSpace.sm),
-        child: Text(
-          text,
-          style: AuraText.body.copyWith(
-            fontSize: 16,
-            height: 1.8,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(top: AuraSpace.sm),
+    child: Text(text, style: AuraText.body.copyWith(fontSize: 16, height: 1.8)),
+  );
 
   static Widget h(String text) => Padding(
-        padding: const EdgeInsets.only(
-          top: AuraSpace.xl,
-          bottom: AuraSpace.sm,
-        ),
-        child: Text(
-          text,
-          style: AuraText.emphasis.copyWith(
-            fontSize: 16,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(top: AuraSpace.xl, bottom: AuraSpace.sm),
+    child: Text(text, style: AuraText.emphasis.copyWith(fontSize: 16)),
+  );
 
   static Widget p(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: AuraSpace.sm),
-        child: Text(
-          text,
-          style: AuraText.body.copyWith(
-            height: 1.7,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: AuraSpace.sm),
+    child: Text(text, style: AuraText.body.copyWith(height: 1.7)),
+  );
 
   static Widget callout(String text) => Container(
-        margin: const EdgeInsets.symmetric(vertical: AuraSpace.md),
-        padding: const EdgeInsets.all(AuraSpace.md),
-        decoration: BoxDecoration(
-          color: AuraSurface.elevated,
-          borderRadius: BorderRadius.circular(AuraRadius.md),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Text(
-          text,
-          style: AuraText.body.copyWith(height: 1.6),
-        ),
-      );
+    margin: const EdgeInsets.symmetric(vertical: AuraSpace.md),
+    padding: const EdgeInsets.all(AuraSpace.md),
+    decoration: BoxDecoration(
+      color: AuraSurface.elevated,
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      border: Border.all(color: AuraSurface.divider),
+    ),
+    child: Text(text, style: AuraText.body.copyWith(height: 1.6)),
+  );
 
   static Widget bullets(List<String> items) => Padding(
-        padding: const EdgeInsets.only(bottom: AuraSpace.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: items
-              .map(
-                (x) => Padding(
-                  padding: const EdgeInsets.only(bottom: AuraSpace.sm),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 9),
-                        child: Icon(
-                          Icons.circle,
-                          size: 6,
-                          color: AuraSurface.muted,
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.sm),
-                      Expanded(
-                        child: Text(
-                          x,
-                          style: AuraText.body.copyWith(height: 1.6),
-                        ),
-                      ),
-                    ],
+    padding: const EdgeInsets.only(bottom: AuraSpace.sm),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items
+          .map(
+            (x) => Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 9),
+                    child: Icon(
+                      Icons.circle,
+                      size: 6,
+                      color: AuraSurface.muted,
+                    ),
                   ),
-                ),
-              )
-              .toList(),
-        ),
-      );
+                  const SizedBox(width: AuraSpace.sm),
+                  Expanded(
+                    child: Text(x, style: AuraText.body.copyWith(height: 1.6)),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }

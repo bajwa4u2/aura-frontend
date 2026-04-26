@@ -14,16 +14,13 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
   Widget _sectionTitle(String text) {
     return Text(
       text,
-      style: AuraText.body.copyWith(
-        fontWeight: FontWeight.w700,
-        fontSize: 16,
-      ),
+      style: AuraText.body.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
     );
   }
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AuraSpace.s8),
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,9 +34,7 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: AuraText.body),
-          ),
+          Expanded(child: Text(value, style: AuraText.body)),
         ],
       ),
     );
@@ -65,7 +60,7 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
               border: Border.all(color: AuraSurface.divider),
               borderRadius: BorderRadius.circular(AuraRadius.card),
             ),
-            padding: EdgeInsets.all(AuraSpace.s14),
+            padding: const EdgeInsets.all(AuraSpace.s14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,9 +68,9 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
                   title,
                   style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: AuraSpace.s8),
+                const SizedBox(height: AuraSpace.s8),
                 Text(detail, style: AuraText.body),
-                SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s12),
                 Text(
                   status,
                   style: AuraText.body.copyWith(
@@ -99,13 +94,10 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
           Text(
             'Institution announcements',
             style: (Theme.of(context).textTheme.headlineMedium ?? AuraText.body)
-                .copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 30,
-            ),
+                .copyWith(fontWeight: FontWeight.w700, fontSize: 30),
           ),
-          SizedBox(height: AuraSpace.s10),
-          Text(
+          const SizedBox(height: AuraSpace.s10),
+          const Text(
             'This is the institutional announcements workspace. Official announcements should be created, reviewed, and managed here, separate from the public member announcements flow.',
             style: AuraText.body,
           ),
@@ -120,11 +112,17 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Workspace status'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _infoRow('Surface', 'Institution-only'),
           _infoRow('Public member feed', 'Separated'),
-          _infoRow('Publishing flow', 'Placeholder until institutional workflow is built'),
-          _infoRow('Moderation posture', 'Institutional review and record-first'),
+          _infoRow(
+            'Publishing flow',
+            'Placeholder until institutional workflow is built',
+          ),
+          _infoRow(
+            'Moderation posture',
+            'Institutional review and record-first',
+          ),
         ],
       ),
     );
@@ -136,7 +134,7 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Institution announcement actions'),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s12,
             runSpacing: AuraSpace.s12,
@@ -179,8 +177,8 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('Why this screen exists'),
-          SizedBox(height: AuraSpace.s12),
-          Text(
+          const SizedBox(height: AuraSpace.s12),
+          const Text(
             'Institution announcements should not fall into the same branch as public member reading surfaces. This screen keeps the route, identity, and future publishing workflow institution-specific from the start.',
             style: AuraText.body,
           ),
@@ -197,18 +195,20 @@ class InstitutionAnnouncementsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Doc.title('Institution announcements'),
-          SizedBox(height: AuraSpace.s10),
-          Doc.meta('Dedicated announcements workspace for institutional accounts.'),
+          const SizedBox(height: AuraSpace.s10),
+          Doc.meta(
+            'Dedicated announcements workspace for institutional accounts.',
+          ),
           Doc.lede(
             'This route is reserved for official institution announcements and should remain separate from public member announcement screens.',
           ),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _heroCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _overviewCard(),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _actionsCard(context),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s12),
           _notesCard(),
         ],
       ),

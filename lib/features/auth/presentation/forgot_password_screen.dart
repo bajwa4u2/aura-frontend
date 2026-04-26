@@ -14,11 +14,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
-  const ForgotPasswordScreen({
-    super.key,
-    this.email,
-    this.redirectTo,
-  });
+  const ForgotPasswordScreen({super.key, this.email, this.redirectTo});
 
   final String? email;
   final String? redirectTo;
@@ -133,7 +129,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       Container(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AuraSurface.accentSoft,
                           shape: BoxShape.circle,
                         ),
@@ -144,7 +140,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s14),
-                      Text('Reset your password', style: AuraText.title),
+                      const Text('Reset your password', style: AuraText.title),
                       const SizedBox(height: AuraSpace.s8),
                       Text(
                         'Enter your email and we will send you a secure link to set a new password.',
@@ -173,7 +169,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: AuraSpace.s20),
                       if (_busy) ...[
-                        AuraPrimaryButton(
+                        const AuraPrimaryButton(
                           label: 'Sending…',
                           onPressed: null,
                           icon: Icons.send_rounded,
@@ -191,8 +187,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         onPressed: _busy
                             ? null
                             : () => context.go(
-                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                ),
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              ),
                       ),
                       if (_message != null) ...[
                         const SizedBox(height: AuraSpace.s16),

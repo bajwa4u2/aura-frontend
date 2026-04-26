@@ -180,11 +180,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
+                              const Expanded(
                                 child: _AuthHero(
                                   title: 'Welcome back',
-                                  body: 'Sign in to continue your work, conversations, institutions, and publishing history.',
-                                  accent: 'Aura keeps communication, identity, and publication in one place.',
+                                  body:
+                                      'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                  accent:
+                                      'Aura keeps communication, identity, and publication in one place.',
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s16),
@@ -203,18 +205,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     _obscurePassword = !_obscurePassword;
                                   }),
                                   onLogin: _login,
-                                  onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
-                                  onCreateAccount: () => context.push(_withRedirect('/register')),
+                                  onForgotPassword: () => context.push(
+                                    _withRedirect('/forgot-password'),
+                                  ),
+                                  onCreateAccount: () =>
+                                      context.push(_withRedirect('/register')),
                                 ),
                               ),
                             ],
                           )
                         : Column(
                             children: [
-                              _AuthHero(
+                              const _AuthHero(
                                 title: 'Welcome back',
-                                body: 'Sign in to continue your work, conversations, institutions, and publishing history.',
-                                accent: 'Aura keeps communication, identity, and publication in one place.',
+                                body:
+                                    'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                accent:
+                                    'Aura keeps communication, identity, and publication in one place.',
                               ),
                               const SizedBox(height: AuraSpace.s16),
                               _LoginFormCard(
@@ -230,8 +237,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   _obscurePassword = !_obscurePassword;
                                 }),
                                 onLogin: _login,
-                                onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
-                                onCreateAccount: () => context.push(_withRedirect('/register')),
+                                onForgotPassword: () => context.push(
+                                  _withRedirect('/forgot-password'),
+                                ),
+                                onCreateAccount: () =>
+                                    context.push(_withRedirect('/register')),
                               ),
                             ],
                           ),
@@ -264,14 +274,20 @@ class _AuthHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AuraBadge(
-            label: 'Trusted access',
-            icon: Icons.shield_outlined,
-          ),
+          const AuraBadge(label: 'Trusted access', icon: Icons.shield_outlined),
           const SizedBox(height: AuraSpace.s16),
-          Text(title, style: AuraText.title.copyWith(fontSize: 34, height: 1.05)),
+          Text(
+            title,
+            style: AuraText.title.copyWith(fontSize: 34, height: 1.05),
+          ),
           const SizedBox(height: AuraSpace.s12),
-          Text(body, style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6)),
+          Text(
+            body,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.6,
+            ),
+          ),
           const SizedBox(height: AuraSpace.s20),
           const _AuthFeatureRow(
             icon: Icons.edit_note_rounded,
@@ -288,7 +304,13 @@ class _AuthHero extends StatelessWidget {
             label: 'Direct correspondence and shared spaces',
           ),
           const SizedBox(height: AuraSpace.s20),
-          Text(accent, style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5)),
+          Text(
+            accent,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.faint,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -311,13 +333,21 @@ class _AuthFeatureRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.sm),
-            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.2),
+            ),
           ),
           child: Icon(icon, size: 14, color: AuraSurface.accentText),
         ),
         const SizedBox(width: AuraSpace.s10),
         Expanded(
-          child: Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4)),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+          ),
         ),
       ],
     );
@@ -371,10 +401,7 @@ class _LoginFormCard extends StatelessWidget {
               ),
               const SizedBox(height: AuraSpace.s14),
               if (error != null) ...[
-                AuraErrorState(
-                  title: 'Sign-in failed',
-                  body: error!,
-                ),
+                AuraErrorState(title: 'Sign-in failed', body: error!),
                 const SizedBox(height: AuraSpace.s10),
               ],
               AuraInput(
@@ -396,7 +423,9 @@ class _LoginFormCard extends StatelessWidget {
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   onPressed: busy ? null : onTogglePassword,
-                  icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),

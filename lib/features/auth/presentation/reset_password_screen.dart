@@ -151,10 +151,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/auth/reset-password', data: {
-        'token': token,
-        'password': pass,
-      });
+      await dio.post(
+        '/auth/reset-password',
+        data: {'token': token, 'password': pass},
+      );
 
       if (!mounted) return;
 
@@ -224,7 +224,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AuraSurface.accentSoft,
                         shape: BoxShape.circle,
                       ),
@@ -235,7 +235,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    Text('Set a new password', style: AuraText.title),
+                    const Text('Set a new password', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
                       hasToken
@@ -261,9 +261,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           suffixIcon: IconButton(
                             onPressed: enabled
                                 ? () => setState(
-                                      () => _obscurePassword =
-                                          !_obscurePassword,
-                                    )
+                                    () => _obscurePassword = !_obscurePassword,
+                                  )
                                 : null,
                             icon: Icon(
                               _obscurePassword
@@ -289,9 +288,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           suffixIcon: IconButton(
                             onPressed: enabled
                                 ? () => setState(
-                                      () =>
-                                          _obscureConfirm = !_obscureConfirm,
-                                    )
+                                    () => _obscureConfirm = !_obscureConfirm,
+                                  )
                                 : null,
                             icon: Icon(
                               _obscureConfirm
@@ -320,8 +318,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         onPressed: _busy
                             ? null
                             : () => context.go(
-                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                ),
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              ),
                       ),
                     ] else ...[
                       AuraPrimaryButton(

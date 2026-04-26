@@ -55,12 +55,11 @@ class SavedScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Saved', style: AuraText.headline),
+                    const Text('Saved', style: AuraText.headline),
                     const SizedBox(height: AuraSpace.s4),
                     Text(
                       'Work you chose to keep. Stays private.',
-                      style:
-                          AuraText.small.copyWith(color: AuraSurface.muted),
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
                     ),
                   ],
                 ),
@@ -90,8 +89,7 @@ class SavedScreen extends ConsumerWidget {
                 children: posts
                     .map(
                       (p) => Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: AuraSpace.s10),
+                        padding: const EdgeInsets.only(bottom: AuraSpace.s10),
                         child: PostCard(post: p, compact: false),
                       ),
                     )

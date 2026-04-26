@@ -11,17 +11,16 @@ import '../../../core/ui/aura_text.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
 
-final followingProvider =
-    FutureProvider.family<List<ProfileListItem>, String>((ref, handle) async {
+final followingProvider = FutureProvider.family<List<ProfileListItem>, String>((
+  ref,
+  handle,
+) async {
   final repo = ref.watch(profileRepositoryProvider);
   return repo.getFollowing(handle);
 });
 
 class FollowingScreen extends ConsumerWidget {
-  const FollowingScreen({
-    super.key,
-    required this.handle,
-  });
+  const FollowingScreen({super.key, required this.handle});
 
   final String handle;
 
@@ -58,11 +57,12 @@ class FollowingScreen extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
             itemBuilder: (context, index) {
               final person = items[index];
-              final displayName = (person.displayName ?? '').trim();
-              final handleText = (person.handle ?? '').trim();
+              final displayName = person.displayName.trim();
+              final handleText = person.handle.trim();
               final avatarUrl = (person.avatarUrl ?? '').trim();
-              final label =
-                  displayName.isNotEmpty ? displayName : '@$handleText';
+              final label = displayName.isNotEmpty
+                  ? displayName
+                  : '@$handleText';
 
               return AuraCard(
                 onTap: handleText.isNotEmpty

@@ -103,7 +103,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       if (realtimeType.isNotEmpty) 'realtimeType': realtimeType,
     });
 
-    final isRealtimeActivity = realtimeType.startsWith('REALTIME_') ||
+    final isRealtimeActivity =
+        realtimeType.startsWith('REALTIME_') ||
         deeplink.startsWith('/realtime') ||
         realtimeSessionId.isNotEmpty;
 
@@ -113,8 +114,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         threadId: communicationTarget.threadId!,
         spaceIdHint: communicationTarget.spaceId,
         sessionIdHint: communicationTarget.sessionId,
-        shouldJoin: isRealtimeActivity ||
-            (communicationTarget.attention ?? '').toUpperCase() == 'INTERRUPT' ||
+        shouldJoin:
+            isRealtimeActivity ||
+            (communicationTarget.attention ?? '').toUpperCase() ==
+                'INTERRUPT' ||
             (communicationTarget.mode ?? '').toUpperCase().contains('LIVE'),
       );
       return;
@@ -147,18 +150,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return;
       }
       if (deeplink.startsWith('/me/correspondence/')) {
-        context.push(_withLiveQuery(
-          deeplink,
-          sessionId: realtimeSessionId,
-          shouldJoin: true,
-        ));
+        context.push(
+          _withLiveQuery(
+            deeplink,
+            sessionId: realtimeSessionId,
+            shouldJoin: true,
+          ),
+        );
       }
       return;
     }
 
     if (deeplink.isNotEmpty) {
       if (deeplink.startsWith('/threads/')) {
-        final idFromLink = deeplink.substring('/threads/'.length).split('?').first.trim();
+        final idFromLink = deeplink
+            .substring('/threads/'.length)
+            .split('?')
+            .first
+            .trim();
         if (idFromLink.isNotEmpty) {
           await _openThreadTarget(
             threadId: idFromLink,
@@ -171,23 +180,31 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       }
 
       if (deeplink.startsWith('/spaces/')) {
-        final idFromLink = deeplink.substring('/spaces/'.length).split('?').first.trim();
+        final idFromLink = deeplink
+            .substring('/spaces/'.length)
+            .split('?')
+            .first
+            .trim();
         if (idFromLink.isNotEmpty) {
-          context.push(_withLiveQuery(
-            '/me/correspondence/$idFromLink',
-            sessionId: realtimeSessionId,
-            shouldJoin: isRealtimeActivity,
-          ));
+          context.push(
+            _withLiveQuery(
+              '/me/correspondence/$idFromLink',
+              sessionId: realtimeSessionId,
+              shouldJoin: isRealtimeActivity,
+            ),
+          );
           return;
         }
       }
 
       if (!deeplink.startsWith('/realtime')) {
-        context.push(_withLiveQuery(
-          deeplink,
-          sessionId: realtimeSessionId,
-          shouldJoin: isRealtimeActivity,
-        ));
+        context.push(
+          _withLiveQuery(
+            deeplink,
+            sessionId: realtimeSessionId,
+            shouldJoin: isRealtimeActivity,
+          ),
+        );
       }
       return;
     }
@@ -257,11 +274,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           return;
         }
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {
-          context.push(_withLiveQuery(
-            '/me/correspondence/$spaceId/thread/$threadId',
-            sessionId: realtimeSessionId,
-            shouldJoin: isRealtimeActivity,
-          ));
+          context.push(
+            _withLiveQuery(
+              '/me/correspondence/$spaceId/thread/$threadId',
+              sessionId: realtimeSessionId,
+              shouldJoin: isRealtimeActivity,
+            ),
+          );
           return;
         }
         if (spaceId.isNotEmpty) context.push('/me/correspondence/$spaceId');
@@ -284,16 +303,20 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     }
 
     if (cleanSpaceId.isNotEmpty) {
-      context.push(_withLiveQuery(
-        '/me/correspondence/$cleanSpaceId/thread/$cleanThreadId',
-        sessionId: cleanSessionId,
-        shouldJoin: shouldJoin,
-      ));
+      context.push(
+        _withLiveQuery(
+          '/me/correspondence/$cleanSpaceId/thread/$cleanThreadId',
+          sessionId: cleanSessionId,
+          shouldJoin: shouldJoin,
+        ),
+      );
       return;
     }
 
     try {
-      final thread = await ref.read(threadsRepositoryProvider).getThread(cleanThreadId);
+      final thread = await ref
+          .read(threadsRepositoryProvider)
+          .getThread(cleanThreadId);
       if (!mounted) return;
 
       final resolvedSpaceId = _firstNonEmpty([
@@ -302,11 +325,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       ]);
 
       if (resolvedSpaceId.isNotEmpty) {
-        context.push(_withLiveQuery(
-          '/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId',
-          sessionId: cleanSessionId,
-          shouldJoin: shouldJoin,
-        ));
+        context.push(
+          _withLiveQuery(
+            '/me/correspondence/$resolvedSpaceId/thread/$cleanThreadId',
+            sessionId: cleanSessionId,
+            shouldJoin: shouldJoin,
+          ),
+        );
         return;
       }
     } catch (_) {}
@@ -349,8 +374,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
             constraints: const BoxConstraints(maxWidth: 920),
             child: RefreshIndicator(
               color: AuraSurface.accent,
-              onRefresh: () =>
-                  ref.read(notificationsControllerProvider.notifier).refresh(force: true),
+              onRefresh: () => ref
+                  .read(notificationsControllerProvider.notifier)
+                  .refresh(force: true),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   AuraSpace.s16,
@@ -383,10 +409,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                     const _ActivityEmptyState()
                   else ...[
                     for (final item in items)
-                      _ActivityTile(
-                        item: item,
-                        onTap: () => _handleTap(item),
-                      ),
+                      _ActivityTile(item: item, onTap: () => _handleTap(item)),
                     if ((state.nextCursor ?? '').isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s20),
                       Center(
@@ -395,8 +418,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                           onPressed: state.isLoadingMore
                               ? null
                               : () => ref
-                                  .read(notificationsControllerProvider.notifier)
-                                  .loadMore(),
+                                    .read(
+                                      notificationsControllerProvider.notifier,
+                                    )
+                                    .loadMore(),
                           icon: Icons.expand_more_rounded,
                         ),
                       ),
@@ -452,7 +477,7 @@ class _ActivityHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Activity', style: AuraText.headline),
+              const Text('Activity', style: AuraText.headline),
               const SizedBox(height: AuraSpace.s4),
               if (unreadCount > 0)
                 Row(
@@ -470,8 +495,9 @@ class _ActivityHeader extends StatelessWidget {
                     Text(
                       '$unreadCount unread',
                       style: AuraText.small.copyWith(
-                          color: AuraSurface.accentText,
-                          fontWeight: FontWeight.w600),
+                        color: AuraSurface.accentText,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 )
@@ -502,28 +528,32 @@ class _ActivitySkeletonList extends StatelessWidget {
     return Column(
       children: List.generate(
         5,
-        (_) => Padding(
-          padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+        (_) => const Padding(
+          padding: EdgeInsets.only(bottom: AuraSpace.s12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AuraSkeleton(width: 40, height: 40, radius: AuraRadius.pill),
-              const SizedBox(width: AuraSpace.s12),
+              SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AuraSkeleton(
-                        width: double.infinity,
-                        height: 14,
-                        radius: AuraRadius.r10),
-                    const SizedBox(height: AuraSpace.s8),
+                      width: double.infinity,
+                      height: 14,
+                      radius: AuraRadius.r10,
+                    ),
+                    SizedBox(height: AuraSpace.s8),
                     AuraSkeleton(
-                        width: 160, height: 12, radius: AuraRadius.r10),
+                      width: 160,
+                      height: 12,
+                      radius: AuraRadius.r10,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: AuraSpace.s12),
+              SizedBox(width: AuraSpace.s12),
               AuraSkeleton(width: 32, height: 12, radius: AuraRadius.r10),
             ],
           ),
@@ -550,12 +580,17 @@ class _ActivityEmptyState extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: AuraSurface.divider),
             ),
-            child: const Icon(Icons.notifications_none_rounded,
-                size: 24, color: AuraSurface.muted),
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              size: 24,
+              color: AuraSurface.muted,
+            ),
           ),
           const SizedBox(height: AuraSpace.s14),
-          Text('No activity yet',
-              style: AuraText.subtitle.copyWith(color: AuraSurface.ink)),
+          Text(
+            'No activity yet',
+            style: AuraText.subtitle.copyWith(color: AuraSurface.ink),
+          ),
           const SizedBox(height: AuraSpace.s6),
           Text(
             'When people interact with your work, you\'ll see it here.',
@@ -569,10 +604,7 @@ class _ActivityEmptyState extends StatelessWidget {
 }
 
 class _ActivityTile extends StatelessWidget {
-  const _ActivityTile({
-    required this.item,
-    required this.onTap,
-  });
+  const _ActivityTile({required this.item, required this.onTap});
 
   final Map<String, dynamic> item;
   final VoidCallback onTap;
@@ -596,13 +628,16 @@ class _ActivityTile extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s12, vertical: AuraSpace.s14),
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s14,
+            ),
             decoration: BoxDecoration(
               color: unread ? AuraSurface.subtle : Colors.transparent,
               borderRadius: BorderRadius.circular(AuraRadius.card),
               border: unread
                   ? Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.15))
+                      color: AuraSurface.accent.withValues(alpha: 0.15),
+                    )
                   : null,
             ),
             child: Row(
@@ -621,8 +656,9 @@ class _ActivityTile extends StatelessWidget {
                       Text(
                         title,
                         style: AuraText.small.copyWith(
-                          fontWeight:
-                              unread ? FontWeight.w700 : FontWeight.w600,
+                          fontWeight: unread
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           color: AuraSurface.ink,
                         ),
                       ),
@@ -630,8 +666,9 @@ class _ActivityTile extends StatelessWidget {
                         const SizedBox(height: AuraSpace.s4),
                         Text(
                           subtitle,
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -640,9 +677,10 @@ class _ActivityTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s8),
-                Text(timeLabel,
-                    style: AuraText.micro
-                        .copyWith(color: AuraSurface.faint)),
+                Text(
+                  timeLabel,
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
               ],
             ),
           ),
@@ -732,11 +770,8 @@ class _ActivityLeadingIcon extends StatelessWidget {
                   child: Image.network(
                     avatarUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(
-                      _iconForType(),
-                      size: 18,
-                      color: _iconColor(),
-                    ),
+                    errorBuilder: (_, __, ___) =>
+                        Icon(_iconForType(), size: 18, color: _iconColor()),
                   ),
                 )
               : Icon(_iconForType(), size: 18, color: _iconColor()),

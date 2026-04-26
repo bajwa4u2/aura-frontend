@@ -50,8 +50,7 @@ class _PinnedAnnouncement {
     final slug = (m['slug'] ?? '').toString().trim();
     if (slug.isEmpty) return null;
     final title = (m['title'] ?? slug).toString().trim();
-    final summary =
-        (m['summary'] ?? m['excerpt'] ?? '').toString().trim();
+    final summary = (m['summary'] ?? m['excerpt'] ?? '').toString().trim();
     DateTime? publishedAt;
     final p = m['publishedAt'];
     if (p is String && p.trim().isNotEmpty) {
@@ -107,13 +106,14 @@ _PinnedAnnouncement? _unwrapPinned(dynamic raw) {
 
 final pinnedAnnouncementProvider =
     FutureProvider.autoDispose<_PinnedAnnouncement?>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/announcements/pinned');
-  return _unwrapPinned(res.data);
-});
+      final dio = ref.watch(dioProvider);
+      final res = await dio.get('/announcements/pinned');
+      return _unwrapPinned(res.data);
+    });
 
-final latestHeldProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+final latestHeldProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
+  ref,
+) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/posts/held/latest');
   final raw = res.data;
@@ -166,7 +166,11 @@ class MemberHomeScreen extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
               children: [
                 // ── Pinned announcement (silent if absent)
                 const _PinnedAnnouncementBanner(),
@@ -221,11 +225,13 @@ class MemberHomeScreen extends ConsumerWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text('Works', style: AuraText.subtitle),
+                      const Text('Works', style: AuraText.subtitle),
                       const SizedBox(width: AuraSpace.s8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s8, vertical: AuraSpace.s2),
+                          horizontal: AuraSpace.s8,
+                          vertical: AuraSpace.s2,
+                        ),
                         decoration: BoxDecoration(
                           color: AuraSurface.subtle,
                           borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -233,7 +239,8 @@ class MemberHomeScreen extends ConsumerWidget {
                         child: Text(
                           '${feedState.items.length}',
                           style: AuraText.micro.copyWith(
-                              color: AuraSurface.faint),
+                            color: AuraSurface.faint,
+                          ),
                         ),
                       ),
                     ],
@@ -336,12 +343,17 @@ class _ComposerCard extends StatelessWidget {
                 decoration: const BoxDecoration(
                   gradient: AuraGradients.accent,
                   borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AuraRadius.card)),
+                    top: Radius.circular(AuraRadius.card),
+                  ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s20, AuraSpace.s18, AuraSpace.s20, AuraSpace.s20),
+                  AuraSpace.s20,
+                  AuraSpace.s18,
+                  AuraSpace.s20,
+                  AuraSpace.s20,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -349,34 +361,42 @@ class _ComposerCard extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AuraSpace.s8,
-                              vertical: AuraSpace.s4),
+                            horizontal: AuraSpace.s8,
+                            vertical: AuraSpace.s4,
+                          ),
                           decoration: BoxDecoration(
                             color: AuraSurface.accentSoft,
-                            borderRadius:
-                                BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             border: Border.all(
-                                color: AuraSurface.accent
-                                    .withValues(alpha: 0.3)),
+                              color: AuraSurface.accent.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.edit_outlined,
-                                  size: 11,
-                                  color: AuraSurface.accentText),
+                              const Icon(
+                                Icons.edit_outlined,
+                                size: 11,
+                                color: AuraSurface.accentText,
+                              ),
                               const SizedBox(width: AuraSpace.s4),
                               Text(
                                 hasHeld ? 'Held work' : 'Composer',
                                 style: AuraText.label.copyWith(
-                                    color: AuraSurface.accentText),
+                                  color: AuraSurface.accentText,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.arrow_forward_rounded,
-                            size: 16, color: AuraSurface.faint),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
+                          color: AuraSurface.faint,
+                        ),
                       ],
                     ),
                     const SizedBox(height: AuraSpace.s14),
@@ -391,8 +411,7 @@ class _ComposerCard extends StatelessWidget {
                       hasHeld
                           ? 'You have a work in progress. Return to the editing surface.'
                           : 'Begin a new piece — writing, media, or long-form work.',
-                      style: AuraText.body
-                          .copyWith(color: AuraSurface.muted),
+                      style: AuraText.body.copyWith(color: AuraSurface.muted),
                     ),
                     if (hasHeld && preview.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s14),
@@ -400,15 +419,15 @@ class _ComposerCard extends StatelessWidget {
                         padding: const EdgeInsets.all(AuraSpace.s12),
                         decoration: BoxDecoration(
                           color: AuraSurface.page.withValues(alpha: 0.5),
-                          borderRadius:
-                              BorderRadius.circular(AuraRadius.r12),
-                          border:
-                              Border.all(color: AuraSurface.divider),
+                          borderRadius: BorderRadius.circular(AuraRadius.r12),
+                          border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Text(
                           preview,
                           style: AuraText.small.copyWith(
-                              height: 1.5, color: AuraSurface.muted),
+                            height: 1.5,
+                            color: AuraSurface.muted,
+                          ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -446,8 +465,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (a) {
         if (a == null) return const SizedBox.shrink();
-        final title =
-            a.title.trim().isEmpty ? a.slug : a.title.trim();
+        final title = a.title.trim().isEmpty ? a.slug : a.title.trim();
         final summary = a.summary.trim();
 
         return Padding(
@@ -465,11 +483,14 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                     color: AuraSurface.warnBg,
                     borderRadius: BorderRadius.circular(AuraRadius.r10),
                     border: Border.all(
-                        color:
-                            AuraSurface.warnInk.withValues(alpha: 0.25)),
+                      color: AuraSurface.warnInk.withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: const Icon(Icons.push_pin_outlined,
-                      size: 16, color: AuraSurface.warnInk),
+                  child: const Icon(
+                    Icons.push_pin_outlined,
+                    size: 16,
+                    color: AuraSurface.warnInk,
+                  ),
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
@@ -481,22 +502,21 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                           Text(
                             'Pinned announcement',
                             style: AuraText.label.copyWith(
-                                color: AuraSurface.warnInk),
+                              color: AuraSurface.warnInk,
+                            ),
                           ),
                           const Spacer(),
                           if (a.publishedAt != null)
-                            Text(
-                              _fmt(a.publishedAt!),
-                              style: AuraText.micro,
-                            ),
+                            Text(_fmt(a.publishedAt!), style: AuraText.micro),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s6),
                       Text(
                         title,
                         style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AuraSurface.ink),
+                          fontWeight: FontWeight.w700,
+                          color: AuraSurface.ink,
+                        ),
                       ),
                       if (summary.isNotEmpty) ...[
                         const SizedBox(height: AuraSpace.s4),
@@ -511,8 +531,11 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s8),
-                const Icon(Icons.chevron_right_rounded,
-                    size: 16, color: AuraSurface.faint),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: AuraSurface.faint,
+                ),
               ],
             ),
           ),

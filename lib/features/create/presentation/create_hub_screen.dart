@@ -28,9 +28,9 @@ class CreateHubScreen extends StatelessWidget {
             children: [
               _CreateHero(),
               const SizedBox(height: AuraSpace.s28),
-              _CreateSection(
+              const _CreateSection(
                 title: 'Writing',
-                items: const [
+                items: [
                   _CreateActionData(
                     title: 'New work',
                     subtitle: 'Begin a piece of writing or long-form content.',
@@ -39,19 +39,21 @@ class CreateHubScreen extends StatelessWidget {
                   ),
                   _CreateActionData(
                     title: 'With media',
-                    subtitle: 'Open composition with image or video attachment.',
+                    subtitle:
+                        'Open composition with image or video attachment.',
                     icon: Icons.perm_media_outlined,
                     route: '/compose',
                   ),
                 ],
               ),
               const SizedBox(height: AuraSpace.s20),
-              _CreateSection(
+              const _CreateSection(
                 title: 'Correspondence',
-                items: const [
+                items: [
                   _CreateActionData(
                     title: 'Conversation',
-                    subtitle: 'Begin a direct private exchange with one person.',
+                    subtitle:
+                        'Begin a direct private exchange with one person.',
                     icon: Icons.chat_bubble_outline_rounded,
                     route: '/me/correspondence/create/conversation',
                   ),
@@ -64,9 +66,9 @@ class CreateHubScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AuraSpace.s20),
-              _CreateSection(
+              const _CreateSection(
                 title: 'System',
-                items: const [
+                items: [
                   _CreateActionData(
                     title: 'Claim audit',
                     subtitle: 'Open the AI-powered claim audit surface.',
@@ -75,7 +77,8 @@ class CreateHubScreen extends StatelessWidget {
                   ),
                   _CreateActionData(
                     title: 'Announcement',
-                    subtitle: 'Publish an official institution or platform notice.',
+                    subtitle:
+                        'Publish an official institution or platform notice.',
                     icon: Icons.campaign_outlined,
                     route: '/announcements/create',
                   ),
@@ -94,7 +97,11 @@ class _CreateHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s20, AuraSpace.s24, AuraSpace.s20, AuraSpace.s24),
+        AuraSpace.s20,
+        AuraSpace.s24,
+        AuraSpace.s20,
+        AuraSpace.s24,
+      ),
       decoration: BoxDecoration(
         gradient: AuraGradients.card,
         borderRadius: BorderRadius.circular(AuraRadius.xl),
@@ -107,12 +114,14 @@ class _CreateHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Create', style: AuraText.headline),
+                const Text('Create', style: AuraText.headline),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
                   'Start something — writing, correspondence, or a platform notice.',
-                  style: AuraText.body
-                      .copyWith(color: AuraSurface.muted, height: 1.5),
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.muted,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -133,10 +142,7 @@ class _CreateHero extends StatelessWidget {
 }
 
 class _CreateSection extends StatelessWidget {
-  const _CreateSection({
-    required this.title,
-    required this.items,
-  });
+  const _CreateSection({required this.title, required this.items});
 
   final String title;
   final List<_CreateActionData> items;
@@ -148,7 +154,9 @@ class _CreateSection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(
-              left: AuraSpace.s4, bottom: AuraSpace.s12),
+            left: AuraSpace.s4,
+            bottom: AuraSpace.s12,
+          ),
           child: Text(
             title,
             style: AuraText.label.copyWith(
@@ -220,10 +228,14 @@ class _CreateActionCard extends StatelessWidget {
                   color: AuraSurface.accentSoft,
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                    color: AuraSurface.accent.withValues(alpha: 0.25),
+                  ),
                 ),
-                child: Icon(data.icon,
-                    size: AuraIconSize.sm, color: AuraSurface.accentText),
+                child: Icon(
+                  data.icon,
+                  size: AuraIconSize.sm,
+                  color: AuraSurface.accentText,
+                ),
               ),
               const SizedBox(height: AuraSpace.s14),
               Text(
@@ -234,7 +246,9 @@ class _CreateActionCard extends StatelessWidget {
               Text(
                 data.subtitle,
                 style: AuraText.small.copyWith(
-                    color: AuraSurface.muted, height: 1.4),
+                  color: AuraSurface.muted,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: AuraSpace.s14),
               Row(
@@ -247,8 +261,11 @@ class _CreateActionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s4),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 14, color: AuraSurface.accentText),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AuraSurface.accentText,
+                  ),
                 ],
               ),
             ],

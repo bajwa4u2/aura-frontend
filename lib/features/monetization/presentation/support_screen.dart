@@ -16,14 +16,19 @@ class SupportScreen extends StatelessWidget {
     return AuraScaffold(
       title: 'Support',
       body: ListView(
-        padding: EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, AuraSpace.s24),
+        padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s12,
+          AuraSpace.s16,
+          AuraSpace.s24,
+        ),
         children: [
           AuraCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Support @$handle', style: AuraText.title),
-                SizedBox(height: AuraSpace.s8),
+                const SizedBox(height: AuraSpace.s8),
                 Text(
                   'Phase 3 keeps support present, but not noisy. Payments are a later integration. '
                   'This screen is the stable place where support will live.',
@@ -32,35 +37,32 @@ class SupportScreen extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(height: AuraSpace.s14),
-          AuraCard(
-            child: const _Tier(
+          const SizedBox(height: AuraSpace.s14),
+          const AuraCard(
+            child: _Tier(
               title: 'Patron',
               subtitle: 'Quiet monthly support',
               amount: '\$5 / month',
             ),
           ),
-          SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: const _Tier(
+          const SizedBox(height: AuraSpace.s12),
+          const AuraCard(
+            child: _Tier(
               title: 'Sustainer',
               subtitle: 'Carry the infrastructure',
               amount: '\$20 / month',
             ),
           ),
-          SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: const _Tier(
+          const SizedBox(height: AuraSpace.s12),
+          const AuraCard(
+            child: _Tier(
               title: 'Institution',
               subtitle: 'Ethics + systems partnership',
               amount: 'Request access',
             ),
           ),
-          SizedBox(height: AuraSpace.s18),
-          AuraPrimaryButton(
-            label: 'Back',
-            onPressed: () => context.pop(),
-          ),
+          const SizedBox(height: AuraSpace.s18),
+          AuraPrimaryButton(label: 'Back', onPressed: () => context.pop()),
         ],
       ),
     );
@@ -68,7 +70,11 @@ class SupportScreen extends StatelessWidget {
 }
 
 class _Tier extends StatelessWidget {
-  const _Tier({required this.title, required this.subtitle, required this.amount});
+  const _Tier({
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+  });
 
   final String title;
   final String subtitle;
@@ -80,9 +86,9 @@ class _Tier extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-        SizedBox(height: AuraSpace.s6),
+        const SizedBox(height: AuraSpace.s6),
         Text(subtitle, style: AuraText.body),
-        SizedBox(height: AuraSpace.s10),
+        const SizedBox(height: AuraSpace.s10),
         Text(amount, style: AuraText.muted),
       ],
     );

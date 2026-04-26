@@ -37,7 +37,9 @@ String _announcementLanguageLabel(String code) {
 }
 
 String _defaultAnnouncementTranslationLanguage(BuildContext context) {
-  final code = Localizations.localeOf(context).languageCode.trim().toLowerCase();
+  final code = Localizations.localeOf(
+    context,
+  ).languageCode.trim().toLowerCase();
   if (_announcementTranslationLanguageLabels.containsKey(code)) return code;
   return 'en';
 }
@@ -48,9 +50,13 @@ Map<String, dynamic> _announcementAsMap(dynamic value) {
   return <String, dynamic>{};
 }
 
-String _announcementReadString(dynamic value) => (value ?? '').toString().trim();
+String _announcementReadString(dynamic value) =>
+    (value ?? '').toString().trim();
 
-String _announcementDeepString(Map<String, dynamic> root, List<List<String>> candidatePaths) {
+String _announcementDeepString(
+  Map<String, dynamic> root,
+  List<List<String>> candidatePaths,
+) {
   for (final path in candidatePaths) {
     dynamic current = root;
     var ok = true;
@@ -72,12 +78,16 @@ String _announcementDeepString(Map<String, dynamic> root, List<List<String>> can
 bool _announcementHasRtlScript(String text) {
   final value = text.trim();
   if (value.isEmpty) return false;
-  final rtl = RegExp(r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]');
+  final rtl = RegExp(
+    r'[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+  );
   return rtl.hasMatch(value);
 }
 
 TextDirection _announcementDirectionFor(String text) {
-  return _announcementHasRtlScript(text) ? TextDirection.rtl : TextDirection.ltr;
+  return _announcementHasRtlScript(text)
+      ? TextDirection.rtl
+      : TextDirection.ltr;
 }
 
 TextAlign _announcementAlignFor(String text) {
@@ -89,10 +99,12 @@ class AnnouncementDetailScreen extends ConsumerStatefulWidget {
   final String slug;
 
   @override
-  ConsumerState<AnnouncementDetailScreen> createState() => _AnnouncementDetailScreenState();
+  ConsumerState<AnnouncementDetailScreen> createState() =>
+      _AnnouncementDetailScreenState();
 }
 
-class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScreen> {
+class _AnnouncementDetailScreenState
+    extends ConsumerState<AnnouncementDetailScreen> {
   bool _translationBusy = false;
   String? _translationError;
   String? _translatedSummary;
@@ -107,7 +119,9 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
   }
 
   Future<void> _pickTranslationLanguage(BuildContext context) async {
-    final current = (_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context)).toLowerCase();
+    final current =
+        (_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context))
+            .toLowerCase();
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -134,7 +148,9 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                 Wrap(
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
-                  children: _announcementTranslationLanguageLabels.entries.map((entry) {
+                  children: _announcementTranslationLanguageLabels.entries.map((
+                    entry,
+                  ) {
                     final active = entry.key == current;
                     return InkWell(
                       onTap: () => Navigator.of(ctx).pop(entry.key),
@@ -145,14 +161,18 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                           vertical: AuraSpace.s8,
                         ),
                         decoration: BoxDecoration(
-                          color: active ? AuraSurface.elevated : AuraSurface.page,
+                          color: active
+                              ? AuraSurface.elevated
+                              : AuraSurface.page,
                           borderRadius: BorderRadius.circular(AuraRadius.pill),
                           border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Text(
                           entry.value,
                           style: AuraText.small.copyWith(
-                            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: active
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -180,9 +200,13 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
   }) async {
     final trimmedSummary = summary.trim();
     final trimmedBody = body.trim();
-    if ((trimmedSummary.isEmpty && trimmedBody.isEmpty) || _translationBusy) return;
+    if ((trimmedSummary.isEmpty && trimmedBody.isEmpty) || _translationBusy) {
+      return;
+    }
 
-    final target = (_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context)).toLowerCase();
+    final target =
+        (_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context))
+            .toLowerCase();
 
     setState(() {
       _translationBusy = true;
@@ -198,10 +222,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
       if (trimmedSummary.isNotEmpty) {
         final res = await dio.post(
           '/composition/translate',
-          data: {
-            'text': trimmedSummary,
-            'targetLanguage': target,
-          },
+          data: {'text': trimmedSummary, 'targetLanguage': target},
         );
         final root = _announcementAsMap(res.data);
         translatedSummary = _announcementDeepString(root, const [
@@ -215,10 +236,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
       if (trimmedBody.isNotEmpty) {
         final res = await dio.post(
           '/composition/translate',
-          data: {
-            'text': trimmedBody,
-            'targetLanguage': target,
-          },
+          data: {'text': trimmedBody, 'targetLanguage': target},
         );
         final root = _announcementAsMap(res.data);
         translatedBody = _announcementDeepString(root, const [
@@ -237,12 +255,14 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
         _targetLanguage = target;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       setState(() {
         _translationError = 'Could not translate this announcement right now.';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not translate this announcement right now.')),
+        const SnackBar(
+          content: Text('Could not translate this announcement right now.'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -259,7 +279,8 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
       title: 'Announcement',
       showHomeAction: true,
       body: async.when(
-        loading: () => Center(child: AuraLoadingState(message: 'Loading…')),
+        loading: () =>
+            const Center(child: AuraLoadingState(message: 'Loading…')),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (a) {
           if (a == null) {
@@ -327,11 +348,13 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                             onTap: _translationBusy
                                 ? null
                                 : () => _translateAnnouncement(
-                                      context: context,
-                                      summary: summary,
-                                      body: body,
-                                    ),
-                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                                    context: context,
+                                    summary: summary,
+                                    body: body,
+                                  ),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
@@ -344,14 +367,18 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                                     const SizedBox(
                                       width: 14,
                                       height: 14,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
                                     const SizedBox(width: AuraSpace.s8),
                                   ],
                                   Text(
                                     _translationBusy
                                         ? 'Translating...'
-                                        : (_showTranslation ? 'Refresh translation' : 'Translate'),
+                                        : (_showTranslation
+                                              ? 'Refresh translation'
+                                              : 'Translate'),
                                     style: AuraText.small.copyWith(
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -362,7 +389,9 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                           ),
                           InkWell(
                             onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s10,
@@ -370,19 +399,30 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                               ),
                               decoration: BoxDecoration(
                                 color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AuraRadius.pill,
+                                ),
                                 border: Border.all(color: AuraSurface.divider),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.translate, size: 14, color: AuraSurface.muted),
+                                  const Icon(
+                                    Icons.translate,
+                                    size: 14,
+                                    color: AuraSurface.muted,
+                                  ),
                                   const SizedBox(width: AuraSpace.s6),
                                   Text(
                                     _announcementLanguageLabel(
-                                      _targetLanguage ?? _defaultAnnouncementTranslationLanguage(context),
+                                      _targetLanguage ??
+                                          _defaultAnnouncementTranslationLanguage(
+                                            context,
+                                          ),
                                     ),
-                                    style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -396,7 +436,9 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                                   _translationError = null;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(AuraRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
+                              ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AuraSpace.s6,
@@ -442,13 +484,19 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            if ((_translatedSummary ?? '').trim().isNotEmpty) ...[
+                            if ((_translatedSummary ?? '')
+                                .trim()
+                                .isNotEmpty) ...[
                               const SizedBox(height: AuraSpace.s8),
                               Directionality(
-                                textDirection: _announcementDirectionFor(_translatedSummary!),
+                                textDirection: _announcementDirectionFor(
+                                  _translatedSummary!,
+                                ),
                                 child: AuraTextBlock(
                                   _translatedSummary!,
-                                  textAlign: _announcementAlignFor(_translatedSummary!),
+                                  textAlign: _announcementAlignFor(
+                                    _translatedSummary!,
+                                  ),
                                   style: AuraText.body.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -458,10 +506,14 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                             if ((_translatedBody ?? '').trim().isNotEmpty) ...[
                               const SizedBox(height: AuraSpace.s12),
                               Directionality(
-                                textDirection: _announcementDirectionFor(_translatedBody!),
+                                textDirection: _announcementDirectionFor(
+                                  _translatedBody!,
+                                ),
                                 child: AuraTextBlock(
                                   _translatedBody!,
-                                  textAlign: _announcementAlignFor(_translatedBody!),
+                                  textAlign: _announcementAlignFor(
+                                    _translatedBody!,
+                                  ),
                                   style: AuraText.body,
                                 ),
                               ),
