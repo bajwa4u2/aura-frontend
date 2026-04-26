@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class AdminWorkspaceScreen extends ConsumerWidget {
@@ -19,7 +22,7 @@ class AdminWorkspaceScreen extends ConsumerWidget {
       title: 'Admin workspace',
       showHomeAction: true,
       body: adminAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: AuraLoadingState(message: 'Loading…')),
         error: (e, _) => Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
@@ -113,10 +116,10 @@ class AdminWorkspaceScreen extends ConsumerWidget {
                             spacing: AuraSpace.s10,
                             runSpacing: AuraSpace.s10,
                             children: [
-                              FilledButton.icon(
+                              AuraPrimaryButton(
+                                label: 'Announcements',
+                                icon: Icons.campaign_outlined,
                                 onPressed: () => context.go('/announcements'),
-                                icon: const Icon(Icons.campaign_outlined),
-                                label: const Text('Announcements'),
                               ),
                             ],
                           ),
@@ -147,8 +150,8 @@ class _Chip extends StatelessWidget {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,

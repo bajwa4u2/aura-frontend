@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_platform_components.dart';
+import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../domain/realtime_models.dart';
 
@@ -70,27 +73,27 @@ class RealtimeHostControls extends StatelessWidget {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Request consent',
                 onPressed: onRequestConsent,
-                child: const Text('Request consent'),
               ),
               if (canRecord)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Request recording',
                   onPressed: onRequestRecording,
-                  child: const Text('Request recording'),
                 )
               else
                 _PassivePill(label: 'Recording unavailable'),
               if (canTranscribe)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Request live notes',
                   onPressed: onRequestTranscript,
-                  child: const Text('Request live notes'),
                 )
               else
                 _PassivePill(label: 'Live notes unavailable'),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Refresh room',
                 onPressed: onRefresh,
-                child: const Text('Refresh room'),
               ),
             ],
           ),
@@ -113,8 +116,8 @@ class _PassivePill extends StatelessWidget {
         vertical: AuraSpace.s10,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,

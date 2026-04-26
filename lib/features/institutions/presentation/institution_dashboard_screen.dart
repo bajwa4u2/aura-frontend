@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/document_scaffold.dart';
 
 class InstitutionDashboardScreen extends ConsumerStatefulWidget {
   const InstitutionDashboardScreen({super.key});
@@ -22,7 +24,6 @@ class _InstitutionDashboardScreenState
   bool _loading = true;
   String? _error;
 
-  Map<String, dynamic> _stateData = <String, dynamic>{};
   Map<String, dynamic>? _membership;
   Map<String, dynamic>? _institution;
   Map<String, dynamic>? _request;
@@ -35,11 +36,6 @@ class _InstitutionDashboardScreenState
   bool get _hasInstitution =>
       _institution != null &&
       ((_institution!['id']?.toString().trim().isNotEmpty) ?? false);
-
-  bool get _hasMembership =>
-      _membership != null &&
-      ((_membership!['institutionMemberId']?.toString().trim().isNotEmpty) ??
-          false);
 
   bool get _canUseInstitutionTools =>
       _state == 'VERIFIED_MEMBER' || _state == 'AUTHORIZED_SPEAKER';
@@ -84,7 +80,6 @@ class _InstitutionDashboardScreenState
           : 'SIGNED_IN_NO_STANDING';
 
       setState(() {
-        _stateData = data;
         _membership = membership;
         _institution = institution;
         _request = request;
@@ -224,13 +219,6 @@ class _InstitutionDashboardScreenState
     return () => _go('/institution/create');
   }
 
-  TextStyle _sectionTitleStyle() {
-    return AuraText.body.copyWith(
-      fontWeight: FontWeight.w700,
-      fontSize: 20,
-    );
-  }
-
   String _displayInstitutionName() {
     final name = _institution?['name']?.toString().trim() ?? '';
     final requestOrg = _requestData['organizationName']?.toString().trim() ?? '';
@@ -246,41 +234,52 @@ class _InstitutionDashboardScreenState
     final website = _institution?['website']?.toString().trim() ?? '';
     final role = _membership?['role']?.toString().trim() ?? '';
 
-    return AuraCard(
+    final details = <_DetailEntry>[
+      _DetailEntry('Standing', _standingLabel()),
+      if (role.isNotEmpty) _DetailEntry('Role', role),
+      if (slug.isNotEmpty) _DetailEntry('Public path', '/institutions/$slug'),
+      if (domain.isNotEmpty) _DetailEntry('Domain', domain),
+      if (website.isNotEmpty) _DetailEntry('Website', website),
+      if (_membership?['canSpeakOfficially'] == true)
+        _DetailEntry('Official speech', 'Active'),
+    ];
+
+    return _DashCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Institution status',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r12),
+                  border: Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                ),
+                child: const Icon(Icons.apartment_outlined,
+                    size: 20, color: AuraSurface.accentText),
+              ),
+              const SizedBox(width: AuraSpace.s14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(displayName, style: AuraText.subtitle),
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      'Institution status',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            displayName,
-            style: _sectionTitleStyle(),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text('Standing: ${_standingLabel()}'),
-          if (role.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Role: $role'),
-          ],
-          if (slug.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Public path: /institutions/$slug'),
-          ],
-          if (domain.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Domain: $domain'),
-          ],
-          if (website.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Website: $website'),
-          ],
-          if (_membership?['canSpeakOfficially'] == true) ...[
-            const SizedBox(height: AuraSpace.s6),
-            const Text('Official speaking rights: active'),
-          ],
+          const SizedBox(height: AuraSpace.s16),
+          ...details.map((d) => _DetailRow(label: d.label, value: d.value)),
         ],
       ),
     );
@@ -290,21 +289,44 @@ class _InstitutionDashboardScreenState
     final actionLabel = _primaryActionLabel();
     final action = _primaryAction();
 
-    return AuraCard(
+    Color iconColor = AuraSurface.accentText;
+    IconData stepIcon = Icons.arrow_forward_rounded;
+    if (_isPending) {
+      stepIcon = Icons.hourglass_top_rounded;
+      iconColor = AuraSurface.warnInk;
+    } else if (_domainVerified && _canUseInstitutionTools) {
+      stepIcon = Icons.check_circle_outline_rounded;
+      iconColor = AuraSurface.goodInk;
+    } else if (_isRejected || _isSuspended) {
+      stepIcon = Icons.error_outline_rounded;
+      iconColor = AuraSurface.dangerInk;
+    }
+
+    return _DashCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _nextStepTitle(),
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Icon(stepIcon, size: 18, color: iconColor),
+              const SizedBox(width: AuraSpace.s10),
+              Text(
+                _nextStepTitle(),
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
           const SizedBox(height: AuraSpace.s10),
-          Text(_nextStepBody()),
+          Text(
+            _nextStepBody(),
+            style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.45),
+          ),
           if (actionLabel != null && action != null) ...[
-            const SizedBox(height: AuraSpace.s14),
-            ElevatedButton(
+            const SizedBox(height: AuraSpace.s16),
+            AuraPrimaryButton(
+              label: actionLabel,
               onPressed: action,
-              child: Text(actionLabel),
+              icon: Icons.arrow_forward_rounded,
             ),
           ],
         ],
@@ -319,7 +341,41 @@ class _InstitutionDashboardScreenState
     final step4Done = _domainVerified;
     final step5Done = step4Done && _canUseInstitutionTools;
 
-    return AuraCard(
+    final steps = [
+      _PipelineStep(
+        title: 'Request submitted',
+        subtitle: 'Institutional account request has entered review.',
+        isDone: step1Done,
+        isCurrent: !step1Done,
+      ),
+      _PipelineStep(
+        title: 'Review',
+        subtitle: 'Identity, role, and institutional standing are reviewed.',
+        isDone: step2Done,
+        isCurrent: _isPending,
+      ),
+      _PipelineStep(
+        title: 'Institution created',
+        subtitle: 'Institution and membership are created after approval.',
+        isDone: step3Done,
+        isCurrent: _hasInstitution && !step4Done,
+      ),
+      _PipelineStep(
+        title: 'Domain verified',
+        subtitle: 'Domain ownership is confirmed through DNS verification.',
+        isDone: step4Done,
+        isCurrent: _canManageDomains && !step4Done,
+      ),
+      _PipelineStep(
+        title: 'Institution active',
+        subtitle: 'Official institutional tools become available.',
+        isDone: step5Done,
+        isCurrent: step4Done && _canUseInstitutionTools,
+        isLast: true,
+      ),
+    ];
+
+    return _DashCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -327,77 +383,8 @@ class _InstitutionDashboardScreenState
             'Institution standing',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s12),
-          _pipelineRow(
-            title: 'Request submitted',
-            subtitle: 'Institutional account request has entered review.',
-            isDone: step1Done,
-            isCurrent: !step1Done,
-          ),
-          _pipelineRow(
-            title: 'Review',
-            subtitle: 'Identity, role, and institutional standing are reviewed.',
-            isDone: step2Done,
-            isCurrent: _isPending,
-          ),
-          _pipelineRow(
-            title: 'Institution created',
-            subtitle: 'Institution and membership are created after approval.',
-            isDone: step3Done,
-            isCurrent: _hasInstitution && !step4Done,
-          ),
-          _pipelineRow(
-            title: 'Domain verified',
-            subtitle: 'Domain ownership is confirmed through DNS verification.',
-            isDone: step4Done,
-            isCurrent: _canManageDomains && !step4Done,
-          ),
-          _pipelineRow(
-            title: 'Institution active',
-            subtitle: 'Official institutional tools become available.',
-            isDone: step5Done,
-            isCurrent: step4Done && _canUseInstitutionTools,
-            isLast: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _pipelineRow({
-    required String title,
-    required String subtitle,
-    required bool isDone,
-    required bool isCurrent,
-    bool isLast = false,
-  }) {
-    final icon = isDone
-        ? Icons.check_circle
-        : (isCurrent ? Icons.radio_button_checked : Icons.radio_button_off);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 18),
-          ),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(subtitle),
-              ],
-            ),
-          ),
+          const SizedBox(height: AuraSpace.s16),
+          ...steps.map((s) => _PipelineRow(step: s)),
         ],
       ),
     );
@@ -415,7 +402,7 @@ class _InstitutionDashboardScreenState
     final status = _requestData['status']?.toString().trim() ?? '';
     final reviewedAt = _requestData['reviewedAt']?.toString().trim() ?? '';
 
-    return AuraCard(
+    return _DashCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -423,106 +410,73 @@ class _InstitutionDashboardScreenState
             'Request details',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s10),
-          if (org.isNotEmpty) Text('Institution: $org'),
-          if (status.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Status: $status'),
-          ],
-          if (workEmail.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Work email: $workEmail'),
-          ],
-          if (website.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Website: $website'),
-          ],
-          if (domain.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Domain: $domain'),
-          ],
-          if (roleTitle.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Representative title: $roleTitle'),
-          ],
-          if (jurisdiction.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Jurisdiction: $jurisdiction'),
-          ],
-          if (reviewedAt.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text('Reviewed at: $reviewedAt'),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolCard({
-    required String title,
-    required String body,
-    required bool enabled,
-    required VoidCallback? onTap,
-  }) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(body),
-          const SizedBox(height: AuraSpace.s12),
-          ElevatedButton(
-            onPressed: enabled ? onTap : null,
-            child: Text(enabled ? 'Open' : 'Unavailable'),
-          ),
+          const SizedBox(height: AuraSpace.s14),
+          if (org.isNotEmpty) _DetailRow(label: 'Institution', value: org),
+          if (status.isNotEmpty) _DetailRow(label: 'Status', value: status),
+          if (workEmail.isNotEmpty) _DetailRow(label: 'Work email', value: workEmail),
+          if (website.isNotEmpty) _DetailRow(label: 'Website', value: website),
+          if (domain.isNotEmpty) _DetailRow(label: 'Domain', value: domain),
+          if (roleTitle.isNotEmpty)
+            _DetailRow(label: 'Representative title', value: roleTitle),
+          if (jurisdiction.isNotEmpty)
+            _DetailRow(label: 'Jurisdiction', value: jurisdiction),
+          if (reviewedAt.isNotEmpty)
+            _DetailRow(label: 'Reviewed at', value: reviewedAt, isLast: true),
         ],
       ),
     );
   }
 
   Widget _buildToolsSection() {
+    final tools = [
+      _ToolData(
+        title: 'Official posts',
+        body: 'Publish institutional statements, notices, and official public communication.',
+        icon: Icons.campaign_outlined,
+        enabled: _canUseInstitutionTools,
+        onTap: _canUseInstitutionTools ? () => _go('/announcements') : null,
+      ),
+      _ToolData(
+        title: 'Representatives',
+        body: 'Define institutional people, roles, and speaking authority inside Aura.',
+        icon: Icons.people_outline_rounded,
+        enabled: _canUseInstitutionTools,
+        onTap: null,
+      ),
+      _ToolData(
+        title: 'Domains',
+        body: 'Attach and verify institutional domains through DNS ownership checks.',
+        icon: Icons.language_rounded,
+        enabled: _canManageDomains,
+        onTap: _canManageDomains ? () => _go('/institution/domains') : null,
+      ),
+      _ToolData(
+        title: 'Institution record',
+        body: 'Maintain public identity, description, standing, and institutional profile surfaces.',
+        icon: Icons.badge_outlined,
+        enabled: _canUseInstitutionTools,
+        onTap: null,
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Institution tools',
-          style: _sectionTitleStyle(),
+        Padding(
+          padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: AuraSpace.s12),
+          child: Text(
+            'Institution tools',
+            style: AuraText.label.copyWith(
+              color: AuraSurface.faint,
+              letterSpacing: 0.8,
+            ),
+          ),
         ),
-        const SizedBox(height: AuraSpace.s10),
-        _buildToolCard(
-          title: 'Official posts',
-          body:
-              'Publish institutional statements, notices, and official public communication.',
-          enabled: _canUseInstitutionTools,
-          onTap: () => _go('/announcements'),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        _buildToolCard(
-          title: 'Representatives',
-          body:
-              'Define institutional people, roles, and speaking authority inside Aura.',
-          enabled: _canUseInstitutionTools,
-          onTap: null,
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        _buildToolCard(
-          title: 'Domains',
-          body:
-              'Attach and verify institutional domains through DNS ownership checks.',
-          enabled: _canManageDomains,
-          onTap: () => _go('/institution/domains'),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        _buildToolCard(
-          title: 'Institution record',
-          body:
-              'Maintain public identity, description, standing, and institutional profile surfaces.',
-          enabled: _canUseInstitutionTools,
-          onTap: null,
+        ...tools.map(
+          (t) => Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+            child: _ToolCard(tool: t),
+          ),
         ),
       ],
     );
@@ -530,26 +484,17 @@ class _InstitutionDashboardScreenState
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AuraLoadingState(message: 'Loading institution dashboard…');
     }
 
     if (_error != null) {
-      return AuraCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Institution dashboard',
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AuraSpace.s10),
-            Text(_error!),
-            const SizedBox(height: AuraSpace.s12),
-            ElevatedButton(
-              onPressed: _load,
-              child: const Text('Try again'),
-            ),
-          ],
+      return AuraErrorState(
+        title: 'Institution dashboard unavailable',
+        body: _error!,
+        action: AuraSecondaryButton(
+          label: 'Try again',
+          onPressed: _load,
+          icon: Icons.refresh_rounded,
         ),
       );
     }
@@ -557,13 +502,6 @@ class _InstitutionDashboardScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Doc.title('Institution dashboard'),
-        const SizedBox(height: AuraSpace.s10),
-        Doc.meta('Institutional standing, review state, and official surfaces.'),
-        Doc.lede(
-          'A working view of institutional status, verification progress, and the public record surfaces attached to that standing.',
-        ),
-        const SizedBox(height: AuraSpace.s12),
         _buildStatusCard(),
         const SizedBox(height: AuraSpace.s12),
         _buildNextStepCard(),
@@ -572,7 +510,7 @@ class _InstitutionDashboardScreenState
         const SizedBox(height: AuraSpace.s12),
         if (_hasRequest) ...[
           _buildRequestDetailsCard(),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s20),
         ],
         _buildToolsSection(),
       ],
@@ -581,9 +519,289 @@ class _InstitutionDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    return DocumentScaffold(
-      title: 'Institution dashboard',
-      child: _buildBody(),
+    return AuraScaffold(
+      showHeader: false,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s20,
+          AuraSpace.s16,
+          AuraSpace.s32,
+        ),
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Institution dashboard', style: AuraText.headline),
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    'Institutional standing, verification progress, and official surfaces.',
+                    style: AuraText.body
+                        .copyWith(color: AuraSurface.muted, height: 1.5),
+                  ),
+                  const SizedBox(height: AuraSpace.s24),
+                  _buildBody(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Support widgets ────────────────────────────────────────────────────────
+
+class _DashCard extends StatelessWidget {
+  const _DashCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DetailEntry {
+  const _DetailEntry(this.label, this.value);
+
+  final String label;
+  final String value;
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: AuraText.small),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PipelineStep {
+  const _PipelineStep({
+    required this.title,
+    required this.subtitle,
+    required this.isDone,
+    required this.isCurrent,
+    this.isLast = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool isDone;
+  final bool isCurrent;
+  final bool isLast;
+}
+
+class _PipelineRow extends StatelessWidget {
+  const _PipelineRow({required this.step});
+
+  final _PipelineStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = step.isDone
+        ? Icons.check_circle_rounded
+        : (step.isCurrent ? Icons.radio_button_checked : Icons.radio_button_off);
+    final iconColor = step.isDone
+        ? AuraSurface.goodInk
+        : (step.isCurrent ? AuraSurface.accentText : AuraSurface.faint);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: step.isLast ? 0 : AuraSpace.s12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 18, color: iconColor),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step.title,
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: step.isDone || step.isCurrent
+                        ? AuraSurface.ink
+                        : AuraSurface.muted,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s2),
+                Text(
+                  step.subtitle,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToolData {
+  const _ToolData({
+    required this.title,
+    required this.body,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback? onTap;
+}
+
+class _ToolCard extends StatelessWidget {
+  const _ToolCard({required this.tool});
+
+  final _ToolData tool;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: tool.onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Opacity(
+          opacity: tool.enabled ? 1 : 0.45,
+          child: Container(
+            padding: const EdgeInsets.all(AuraSpace.s14),
+            decoration: BoxDecoration(
+              color: AuraSurface.card,
+              borderRadius: BorderRadius.circular(AuraRadius.card),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: tool.enabled
+                        ? AuraSurface.accentSoft
+                        : AuraSurface.subtle,
+                    borderRadius: BorderRadius.circular(AuraRadius.r10),
+                    border: Border.all(
+                      color: tool.enabled
+                          ? AuraSurface.accent.withValues(alpha: 0.25)
+                          : AuraSurface.divider,
+                    ),
+                  ),
+                  child: Icon(
+                    tool.icon,
+                    size: 18,
+                    color: tool.enabled
+                        ? AuraSurface.accentText
+                        : AuraSurface.muted,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tool.title,
+                        style: AuraText.small.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: tool.enabled
+                              ? AuraSurface.ink
+                              : AuraSurface.muted,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        tool.body,
+                        style: AuraText.small.copyWith(
+                            color: AuraSurface.muted, height: 1.4),
+                      ),
+                      if (tool.onTap != null) ...[
+                        const SizedBox(height: AuraSpace.s10),
+                        Row(
+                          children: [
+                            Text(
+                              'Open',
+                              style: AuraText.small.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AuraSurface.accentText,
+                              ),
+                            ),
+                            const SizedBox(width: AuraSpace.s4),
+                            const Icon(Icons.arrow_forward_rounded,
+                                size: 12, color: AuraSurface.accentText),
+                          ],
+                        ),
+                      ] else ...[
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(
+                          'Unavailable',
+                          style: AuraText.small.copyWith(
+                              color: AuraSurface.faint,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -201,16 +202,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
+                              child: AuraSecondaryButton(
+                                label: 'Dismiss',
                                 onPressed: _joining ? null : () => _dismissCurrent(item),
-                                child: const Text('Dismiss'),
                               ),
                             ),
                             const SizedBox(width: AuraSpace.s12),
                             Expanded(
-                              child: FilledButton(
+                              child: AuraPrimaryButton(
+                                label: _joining ? 'Joining...' : 'Join',
                                 onPressed: _joining ? null : () => _joinCurrent(item),
-                                child: Text(_joining ? 'Joining...' : 'Join'),
                               ),
                             ),
                           ],

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -164,7 +165,8 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     style: AuraText.small,
                   ),
                   const SizedBox(height: AuraSpace.s12),
-                  FilledButton(
+                  AuraPrimaryButton(
+                    label: 'Start and join',
                     onPressed: realtime.isBusy
                         ? null
                         : () async {
@@ -178,7 +180,6 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                             if (!context.mounted) return;
                             router.go('/realtime/$id?action=join');
                           },
-                    child: const Text('Start and join'),
                   ),
                 ],
               ),
@@ -210,29 +211,29 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
                     spacing: AuraSpace.s8,
                     runSpacing: AuraSpace.s8,
                     children: [
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'Join live',
                         onPressed: () {
                           final id = _existingSessionController.text.trim();
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=join');
                         },
-                        child: const Text('Join live'),
                       ),
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'Reopen live',
                         onPressed: () {
                           final id = _existingSessionController.text.trim();
                           if (id.isEmpty) return;
                           context.go('/realtime/$id?action=resume');
                         },
-                        child: const Text('Reopen live'),
                       ),
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'View live',
                         onPressed: () {
                           final id = _existingSessionController.text.trim();
                           if (id.isEmpty) return;
                           context.go('/realtime/$id');
                         },
-                        child: const Text('View live'),
                       ),
                     ],
                   ),

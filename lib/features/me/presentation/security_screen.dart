@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/ui/aura_card.dart' as ui;
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -44,7 +45,7 @@ class SecurityScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle(title),
-        ui.AuraCard(
+        AuraCard(
           padding: EdgeInsets.zero,
           child: Column(
             children: _withDividers(children),
@@ -63,9 +64,9 @@ class SecurityScreen extends ConsumerWidget {
     bool danger = false,
   }) {
     final active = onTap != null;
-    final titleColor = danger ? Colors.redAccent : AuraSurface.ink;
+    final titleColor = danger ? AuraSurface.dangerInk : AuraSurface.ink;
     final iconColor = danger
-        ? Colors.redAccent
+        ? AuraSurface.dangerInk
         : active
             ? AuraSurface.ink
             : AuraSurface.muted;
@@ -189,48 +190,32 @@ class SecurityScreen extends ConsumerWidget {
       return AuraScaffold(
         showHeader: false,
         body: _cardList([
-          ui.AuraCard(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Sign in', style: AuraText.title),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton(
-                        onPressed: () => context.go('/login'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        child: const Text('Sign in'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () => context.go('/public'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        child: const Text('Back'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          AuraCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sign in to continue', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  'You need to be signed in to view security settings.',
+                  style: AuraText.body.copyWith(color: AuraSurface.muted),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                Row(
+                  children: [
+                    AuraPrimaryButton(
+                      label: 'Sign in',
+                      onPressed: () => context.go('/login'),
+                      icon: Icons.login_rounded,
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    AuraGhostButton(
+                      label: 'Back',
+                      onPressed: () => context.go('/public'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ]),

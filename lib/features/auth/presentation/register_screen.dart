@@ -4,6 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/aura_text.dart';
 import '../../auth/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -55,7 +61,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _nameValidator(String? v, String label) {
     final required = _req(v, label);
     if (required != null) return required;
-
     final t = (v ?? '').trim();
     if (t.length < 2) return '$label looks too short';
     return null;
@@ -64,12 +69,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _handleValidator(String? v) {
     final t = (v ?? '').trim();
     if (t.isEmpty) return null;
-
     final ok = RegExp(r'^[a-zA-Z0-9_.]+$').hasMatch(t);
-    if (!ok) {
-      return 'Handle can use letters, numbers, underscores, and dots only';
-    }
-
+    if (!ok) return 'Handle can use letters, numbers, underscores, and dots only';
     if (t.length < 3) return 'Handle must be at least 3 characters';
     if (t.length > 30) return 'Handle is too long';
     return null;
@@ -78,7 +79,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _emailValidator(String? v) {
     final required = _req(v, 'Email');
     if (required != null) return required;
-
     final t = (v ?? '').trim();
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(t);
     if (!ok) return 'Enter a valid email';
@@ -88,11 +88,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _passwordValidator(String? v) {
     final required = _req(v, 'Password');
     if (required != null) return required;
-
     final t = v ?? '';
-    if (t.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
+    if (t.length < 8) return 'Password must be at least 8 characters';
     return null;
   }
 
@@ -127,9 +124,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final raw = error.toString().trim();
     final msg = raw.toLowerCase();
 
-    if (msg.isEmpty) {
-      return 'We could not create your account right now. Please try again.';
-    }
+    if (msg.isEmpty) return 'We could not create your account right now. Please try again.';
 
     if (msg.contains('email already') ||
         msg.contains('email is already') ||
@@ -147,8 +142,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return 'That handle is already taken. Please choose another one.';
     }
 
-    if (msg.contains('invalid email') ||
-        msg.contains('email is invalid') ||
+    if (msg.contains('invalid email') || msg.contains('email is invalid') ||
         msg.contains('must be a valid email')) {
       return 'Please enter a valid email address.';
     }
@@ -157,34 +151,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return 'Please choose a stronger password.';
     }
 
-    if (msg.contains('password') && msg.contains('at least 8')) {
-      return 'Password must be at least 8 characters.';
-    }
-
     if (msg.contains('network error') ||
         msg.contains('socketexception') ||
         msg.contains('connection error') ||
-        msg.contains('connection refused') ||
         msg.contains('failed host lookup') ||
-        msg.contains('timed out') ||
-        msg.contains('timeoutexception')) {
+        msg.contains('timed out')) {
       return 'We could not reach the server. Check your connection and try again.';
     }
 
-    if (msg.contains('500') ||
-        msg.contains('internal server error') ||
-        msg.contains('server error')) {
+    if (msg.contains('500') || msg.contains('internal server error')) {
       return 'Something went wrong on our side. Please try again in a moment.';
-    }
-
-    if (msg.contains('400') ||
-        msg.contains('bad request') ||
-        msg.contains('validation')) {
-      return 'Some details need another look. Please review the form and try again.';
-    }
-
-    if (msg.contains('403') || msg.contains('forbidden')) {
-      return 'This request could not be completed right now.';
     }
 
     if (msg.contains('429') || msg.contains('too many requests')) {
@@ -196,10 +172,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-
-    setState(() {
-      _error = null;
-    });
+    setState(() => _error = null);
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -212,7 +185,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final repo = ref.read(authRepositoryProvider);
-
       final email = _email.text.trim();
       final firstName = _firstName.text.trim();
       final lastName = _lastName.text.trim();
@@ -252,225 +224,377 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  InputDecoration _decoration({
-    required String label,
-    String? hint,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      suffixIcon: suffixIcon,
-      border: const OutlineInputBorder(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final redirectPath = _safeRedirect(widget.redirectTo);
     final redirect = Uri.encodeComponent(redirectPath);
     final isInstitutionEntry = _isInstitutionRedirect(widget.redirectTo);
 
-    final title =
-        isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
-
+    final title = isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
     final subtitle = isInstitutionEntry
         ? 'Create your account first. After sign-in, Aura will continue to the institutional access check.'
-        : 'Create your account. We’ll email you a verification link.';
+        : "Create your account. We'll email you a verification link.";
 
-    final ctaLabel = _loading ? 'Creating…' : 'Create account';
-
-    final loginLabel = isInstitutionEntry
-        ? 'Already have an account? Sign in to continue'
-        : 'Already have an account? Log in';
-
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    const SizedBox(height: 24),
-                    if (isInstitutionEntry) ...[
-                      const Text(
-                        'Institutional access',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(subtitle),
-                    const SizedBox(height: 16),
-                    if (_error != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.22),
-                          ),
-                        ),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    TextFormField(
-                      controller: _firstName,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'First name',
-                        hint: 'Private',
-                      ),
-                      validator: (v) => _nameValidator(v, 'First name'),
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.givenName],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _lastName,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Last name',
-                        hint: 'Private',
-                      ),
-                      validator: (v) => _nameValidator(v, 'Last name'),
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.familyName],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _displayName,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Display name',
-                        hint: 'Public name shown on Aura',
-                      ),
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.nickname],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _handle,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Handle',
-                        hint: 'Your public identity handle',
-                      ),
-                      validator: _handleValidator,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'[a-zA-Z0-9_.]'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _email,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Email',
-                        hint: 'name@example.com',
-                      ),
-                      validator: _emailValidator,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      autofillHints: const [AutofillHints.email],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _password,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Password',
-                        hint: 'At least 8 characters',
-                        suffixIcon: IconButton(
-                          onPressed: _loading
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                        ),
-                      ),
-                      validator: _passwordValidator,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.newPassword],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: _confirmPassword,
-                      enabled: !_loading,
-                      decoration: _decoration(
-                        label: 'Confirm password',
-                        hint: 'Re-enter your password',
-                        suffixIcon: IconButton(
-                          onPressed: _loading
-                              ? null
-                              : () {
-                                  setState(() {
+    return AuraScaffold(
+      showHeader: false,
+      body: AuraPageShell(
+        maxWidth: 1160,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 960;
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _RegisterHero(
+                                isInstitution: isInstitutionEntry,
+                              ),
+                            ),
+                            const SizedBox(width: AuraSpace.s16),
+                            SizedBox(
+                              width: 480,
+                              child: _RegisterFormCard(
+                                title: title,
+                                subtitle: subtitle,
+                                loading: _loading,
+                                error: _error,
+                                formKey: _formKey,
+                                firstName: _firstName,
+                                lastName: _lastName,
+                                displayName: _displayName,
+                                handle: _handle,
+                                email: _email,
+                                password: _password,
+                                confirmPassword: _confirmPassword,
+                                obscurePassword: _obscurePassword,
+                                obscureConfirmPassword: _obscureConfirmPassword,
+                                nameValidator: _nameValidator,
+                                handleValidator: _handleValidator,
+                                emailValidator: _emailValidator,
+                                passwordValidator: _passwordValidator,
+                                onTogglePassword: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                                onToggleConfirmPassword: () => setState(() =>
                                     _obscureConfirmPassword =
-                                        !_obscureConfirmPassword;
-                                  });
-                                },
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
+                                        !_obscureConfirmPassword),
+                                onSubmit: _submit,
+                                onSignIn: () =>
+                                    context.go('/login?redirect=$redirect'),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _RegisterHero(isInstitution: isInstitutionEntry),
+                            const SizedBox(height: AuraSpace.s16),
+                            _RegisterFormCard(
+                              title: title,
+                              subtitle: subtitle,
+                              loading: _loading,
+                              error: _error,
+                              formKey: _formKey,
+                              firstName: _firstName,
+                              lastName: _lastName,
+                              displayName: _displayName,
+                              handle: _handle,
+                              email: _email,
+                              password: _password,
+                              confirmPassword: _confirmPassword,
+                              obscurePassword: _obscurePassword,
+                              obscureConfirmPassword: _obscureConfirmPassword,
+                              nameValidator: _nameValidator,
+                              handleValidator: _handleValidator,
+                              emailValidator: _emailValidator,
+                              passwordValidator: _passwordValidator,
+                              onTogglePassword: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
+                              onToggleConfirmPassword: () => setState(() =>
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword),
+                              onSubmit: _submit,
+                              onSignIn: () =>
+                                  context.go('/login?redirect=$redirect'),
+                            ),
+                          ],
                         ),
-                      ),
-                      validator: (v) => _req(v, 'Confirm password'),
-                      obscureText: _obscureConfirmPassword,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.newPassword],
-                      onFieldSubmitted: (_) => _loading ? null : _submit(),
-                    ),
-                    const SizedBox(height: 18),
-                    FilledButton(
-                      onPressed: _loading ? null : _submit,
-                      child: Text(ctaLabel),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _loading
-                          ? null
-                          : () => context.go('/login?redirect=$redirect'),
-                      child: Text(loginLabel),
-                    ),
-                  ],
                 ),
               ),
-            ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ── Hero panel ─────────────────────────────────────────────────────────────
+
+class _RegisterHero extends StatelessWidget {
+  const _RegisterHero({required this.isInstitution});
+
+  final bool isInstitution;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AuraBadge(
+            label: isInstitution ? 'Institution access' : 'New membership',
+            icon: isInstitution
+                ? Icons.apartment_outlined
+                : Icons.person_add_alt_1_rounded,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            isInstitution ? 'Create your account' : 'Join Aura',
+            style: AuraText.title.copyWith(fontSize: 32, height: 1.05),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            isInstitution
+                ? 'An account is needed to continue to institutional access. Your account stays private; only your handle and display name are public.'
+                : 'Aura is a place for serious work — writing, correspondence, institutions, and publishing history.',
+            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text(
+            isInstitution
+                ? 'After creating your account, you will be guided through the institutional verification flow.'
+                : 'Your identity, publication record, and conversations stay with you.',
+            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Form card ──────────────────────────────────────────────────────────────
+
+class _RegisterFormCard extends StatelessWidget {
+  const _RegisterFormCard({
+    required this.title,
+    required this.subtitle,
+    required this.loading,
+    required this.error,
+    required this.formKey,
+    required this.firstName,
+    required this.lastName,
+    required this.displayName,
+    required this.handle,
+    required this.email,
+    required this.password,
+    required this.confirmPassword,
+    required this.obscurePassword,
+    required this.obscureConfirmPassword,
+    required this.nameValidator,
+    required this.handleValidator,
+    required this.emailValidator,
+    required this.passwordValidator,
+    required this.onTogglePassword,
+    required this.onToggleConfirmPassword,
+    required this.onSubmit,
+    required this.onSignIn,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool loading;
+  final String? error;
+  final GlobalKey<FormState> formKey;
+  final TextEditingController firstName;
+  final TextEditingController lastName;
+  final TextEditingController displayName;
+  final TextEditingController handle;
+  final TextEditingController email;
+  final TextEditingController password;
+  final TextEditingController confirmPassword;
+  final bool obscurePassword;
+  final bool obscureConfirmPassword;
+  final String? Function(String?, String) nameValidator;
+  final String? Function(String?) handleValidator;
+  final String? Function(String?) emailValidator;
+  final String? Function(String?) passwordValidator;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onToggleConfirmPassword;
+  final VoidCallback onSubmit;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Form(
+        key: formKey,
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: AuraText.title.copyWith(fontSize: 22)),
+              const SizedBox(height: AuraSpace.s6),
+              Text(
+                subtitle,
+                style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: AuraSpace.s12),
+                AuraErrorState(title: 'Registration failed', body: error!),
+              ],
+              const SizedBox(height: AuraSpace.s14),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: firstName,
+                      enabled: !loading,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.givenName],
+                      style: AuraText.body,
+                      validator: (v) => nameValidator(v, 'First name'),
+                      decoration: const InputDecoration(
+                        labelText: 'First name',
+                        hintText: 'Private',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: lastName,
+                      enabled: !loading,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.familyName],
+                      style: AuraText.body,
+                      validator: (v) => nameValidator(v, 'Last name'),
+                      decoration: const InputDecoration(
+                        labelText: 'Last name',
+                        hintText: 'Private',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: displayName,
+                enabled: !loading,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.nickname],
+                style: AuraText.body,
+                decoration: const InputDecoration(
+                  labelText: 'Display name',
+                  hintText: 'Public name shown on Aura',
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: handle,
+                enabled: !loading,
+                textInputAction: TextInputAction.next,
+                autocorrect: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.]')),
+                ],
+                style: AuraText.body,
+                validator: handleValidator,
+                decoration: const InputDecoration(
+                  labelText: 'Handle',
+                  hintText: 'Your public identity handle',
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: email,
+                enabled: !loading,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                style: AuraText.body,
+                validator: emailValidator,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'name@example.com',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: password,
+                enabled: !loading,
+                obscureText: obscurePassword,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+                style: AuraText.body,
+                validator: passwordValidator,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'At least 8 characters',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    onPressed: loading ? null : onTogglePassword,
+                    icon: Icon(
+                      obscurePassword
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: AuraSurface.muted,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: confirmPassword,
+                enabled: !loading,
+                obscureText: obscureConfirmPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.newPassword],
+                style: AuraText.body,
+                onFieldSubmitted: (_) => loading ? null : onSubmit(),
+                decoration: InputDecoration(
+                  labelText: 'Confirm password',
+                  hintText: 'Re-enter your password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    onPressed: loading ? null : onToggleConfirmPassword,
+                    icon: Icon(
+                      obscureConfirmPassword
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: AuraSurface.muted,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              SizedBox(
+                width: double.infinity,
+                child: AuraPrimaryButton(
+                  label: loading ? 'Creating account…' : 'Create account',
+                  onPressed: loading ? null : onSubmit,
+                  icon: Icons.arrow_forward_rounded,
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Center(
+                child: AuraGhostButton(
+                  label: 'Already have an account? Sign in',
+                  onPressed: loading ? null : onSignIn,
+                  icon: Icons.login_rounded,
+                ),
+              ),
+            ],
           ),
         ),
       ),

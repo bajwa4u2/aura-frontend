@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../domain/realtime_models.dart';
@@ -119,9 +120,9 @@ class RealtimeParticipantList extends StatelessWidget {
                     if (canModerate &&
                         participant.userId.isNotEmpty &&
                         participant.userId != (currentUserId ?? '').trim())
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'Remove',
                         onPressed: () => onRemove(participant.userId),
-                        child: const Text('Remove'),
                       ),
                   ],
                 ),

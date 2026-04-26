@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../domain/realtime_models.dart';
@@ -49,14 +50,14 @@ class RealtimeJoinRequestsPanel extends StatelessWidget {
                         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    OutlinedButton(
+                    AuraSecondaryButton(
+                      label: 'Decline',
                       onPressed: () => onReject(request.userId),
-                      child: const Text('Decline'),
                     ),
                     const SizedBox(width: AuraSpace.s8),
-                    FilledButton(
+                    AuraPrimaryButton(
+                      label: 'Allow in',
                       onPressed: () => onApprove(request.userId),
-                      child: const Text('Allow in'),
                     ),
                   ],
                 ),

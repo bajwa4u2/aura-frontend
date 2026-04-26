@@ -8,8 +8,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
@@ -161,116 +164,182 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     final email = (widget.email ?? '').trim();
 
     return AuraScaffold(
-      title: 'Verify email',
+      showHeader: false,
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Email verification', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    _busy
-                        ? 'Verifying your email…'
-                        : (_msg ?? ''),
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  if (_busy) ...[
-                    const LinearProgressIndicator(),
-                  ] else ...[
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s16,
+              vertical: AuraSpace.s24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon + heading
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: _msgIsError
-                            ? Colors.red.withValues(alpha: 0.08)
-                            : Colors.green.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _msgIsError
-                              ? Colors.red.withValues(alpha: 0.22)
-                              : Colors.green.withValues(alpha: 0.22),
-                        ),
+                        color: _busy
+                            ? AuraSurface.accentSoft
+                            : (_ok
+                                ? const Color(0xFF0E2318)
+                                : const Color(0xFF231010)),
+                        shape: BoxShape.circle,
                       ),
-                      child: Text(
-                        _msg ?? '',
-                        style: AuraText.body.copyWith(
-                          color: _msgIsError ? Colors.red : Colors.green,
-                          height: 1.35,
-                        ),
+                      child: Icon(
+                        _busy
+                            ? Icons.hourglass_top_rounded
+                            : (_ok
+                                ? Icons.verified_rounded
+                                : Icons.error_outline_rounded),
+                        size: 22,
+                        color: _busy
+                            ? AuraSurface.accentText
+                            : (_ok
+                                ? AuraSurface.goodInk
+                                : AuraSurface.dangerInk),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    if (_ok)
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
+                    Text('Email verification', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      _busy
+                          ? 'Verifying your email…'
+                          : (_msg ?? ''),
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s20),
+                    if (_busy) ...[
+                      Row(
                         children: [
-                          FilledButton(
-                            onPressed: () {
-                              if (redirect != null) {
-                                context.go(
-                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                );
-                              } else {
-                                context.go('/login');
-                              }
-                            },
-                            child: const Text('Continue'),
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AuraSurface.accent,
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () => context.go('/public'),
-                            child: const Text('Back to public home'),
-                          ),
-                        ],
-                      )
-                    else
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
-                        children: [
-                          FilledButton(
-                            onPressed: () {
-                              final qp = <String, String>{};
-                              if (email.isNotEmpty) {
-                                qp['email'] = email;
-                              }
-                              if (redirect != null) {
-                                qp['redirect'] = redirect;
-                              }
-
-                              final uri = Uri(
-                                path: '/verify-pending',
-                                queryParameters: qp.isEmpty ? null : qp,
-                              );
-                              context.go(uri.toString());
-                            },
-                            child: const Text('Resend verification'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              if (redirect != null) {
-                                context.go(
-                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                );
-                              } else {
-                                context.go('/login');
-                              }
-                            },
-                            child: const Text('Back to login'),
+                          const SizedBox(width: AuraSpace.s12),
+                          Text(
+                            'Please wait…',
+                            style: AuraText.small
+                                .copyWith(color: AuraSurface.muted),
                           ),
                         ],
                       ),
+                    ] else ...[
+                      if (_msg != null)
+                        _MessageBanner(message: _msg!, isError: _msgIsError),
+                      const SizedBox(height: AuraSpace.s16),
+                      if (_ok) ...[
+                        AuraPrimaryButton(
+                          label: 'Continue to sign in',
+                          icon: Icons.login_rounded,
+                          onPressed: () {
+                            if (redirect != null) {
+                              context.go(
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              );
+                            } else {
+                              context.go('/login');
+                            }
+                          },
+                        ),
+                        const SizedBox(height: AuraSpace.s10),
+                        AuraGhostButton(
+                          label: 'Back to public home',
+                          onPressed: () => context.go('/public'),
+                        ),
+                      ] else ...[
+                        AuraPrimaryButton(
+                          label: 'Resend verification',
+                          icon: Icons.send_rounded,
+                          onPressed: () {
+                            final qp = <String, String>{};
+                            if (email.isNotEmpty) qp['email'] = email;
+                            if (redirect != null) qp['redirect'] = redirect;
+
+                            final uri = Uri(
+                              path: '/verify-pending',
+                              queryParameters: qp.isEmpty ? null : qp,
+                            );
+                            context.go(uri.toString());
+                          },
+                        ),
+                        const SizedBox(height: AuraSpace.s10),
+                        AuraGhostButton(
+                          label: 'Back to login',
+                          onPressed: () {
+                            if (redirect != null) {
+                              context.go(
+                                '/login?redirect=${Uri.encodeComponent(redirect)}',
+                              );
+                            } else {
+                              context.go('/login');
+                            }
+                          },
+                        ),
+                      ],
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Shared message banner ─────────────────────────────────────────────────────
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({required this.message, required this.isError});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isError ? AuraSurface.dangerBg : AuraSurface.goodBg;
+    final ink = isError ? AuraSurface.dangerInk : AuraSurface.goodInk;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: ink.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_outline_rounded,
+            size: 16,
+            color: ink,
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Text(
+              message,
+              style: AuraText.small.copyWith(color: ink, height: 1.5),
+            ),
+          ),
+        ],
       ),
     );
   }

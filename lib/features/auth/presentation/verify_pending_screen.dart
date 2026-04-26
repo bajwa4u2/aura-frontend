@@ -7,8 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyPendingScreen extends ConsumerStatefulWidget {
@@ -184,107 +187,166 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     }
 
     return AuraScaffold(
-      title: 'Verify your email',
+      showHeader: false,
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Almost there', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    'We need to verify your email before you can continue. Open the email we sent and click the link.',
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  TextField(
-                    controller: _email,
-                    enabled: !_busy,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.email],
-                    autocorrect: false,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Email (for resend)',
-                      hintText: 'name@example.com',
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _busy ? null : _resend(),
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  if (_busy) ...[
-                    const LinearProgressIndicator(),
-                    const SizedBox(height: AuraSpace.s12),
-                  ],
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: _busy ? null : _resend,
-                        child: Text(
-                          _busy ? 'Sending…' : 'Resend verification',
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () {
-                                if (redirect != null) {
-                                  context.go(
-                                    '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                  );
-                                } else {
-                                  context.go('/login');
-                                }
-                              },
-                        child: const Text('Back to login'),
-                      ),
-                    ],
-                  ),
-                  if (_msg != null) ...[
-                    const SizedBox(height: AuraSpace.s12),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s16,
+              vertical: AuraSpace.s24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon + heading
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: _msgIsError
-                            ? Colors.red.withValues(alpha: 0.08)
-                            : Colors.blue.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _msgIsError
-                              ? Colors.red.withValues(alpha: 0.22)
-                              : Colors.blue.withValues(alpha: 0.22),
-                        ),
+                        color: AuraSurface.accentSoft,
+                        shape: BoxShape.circle,
                       ),
-                      child: Text(
-                        _msg!,
-                        style: AuraText.body.copyWith(
-                          color: _msgIsError ? Colors.red : Colors.blue,
-                          height: 1.35,
-                        ),
+                      child: const Icon(
+                        Icons.mark_email_unread_outlined,
+                        size: 22,
+                        color: AuraSurface.accentText,
                       ),
                     ),
-                  ],
-                  if (verifiedAsync.isLoading) ...[
-                    const SizedBox(height: AuraSpace.s12),
+                    const SizedBox(height: AuraSpace.s14),
+                    Text('Almost there', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
                     Text(
-                      'Checking verification status…',
-                      style: AuraText.body,
+                      'We need to verify your email before you can continue. Open the email we sent and click the link.',
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.5,
+                      ),
                     ),
+                    const SizedBox(height: AuraSpace.s20),
+                    TextField(
+                      controller: _email,
+                      enabled: !_busy,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.email],
+                      autocorrect: false,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                      ],
+                      style: AuraText.body,
+                      decoration: const InputDecoration(
+                        labelText: 'Email (for resend)',
+                        hintText: 'name@example.com',
+                      ),
+                      onSubmitted: (_) => _busy ? null : _resend(),
+                    ),
+                    const SizedBox(height: AuraSpace.s20),
+                    if (_busy) ...[
+                      AuraPrimaryButton(
+                        label: 'Sending…',
+                        onPressed: null,
+                        icon: Icons.refresh_rounded,
+                      ),
+                    ] else ...[
+                      AuraPrimaryButton(
+                        label: 'Resend verification',
+                        onPressed: _resend,
+                        icon: Icons.send_rounded,
+                      ),
+                    ],
+                    const SizedBox(height: AuraSpace.s10),
+                    AuraGhostButton(
+                      label: 'Back to login',
+                      onPressed: _busy
+                          ? null
+                          : () {
+                              if (redirect != null) {
+                                context.go(
+                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
+                                );
+                              } else {
+                                context.go('/login');
+                              }
+                            },
+                    ),
+                    if (_msg != null) ...[
+                      const SizedBox(height: AuraSpace.s16),
+                      _MessageBanner(message: _msg!, isError: _msgIsError),
+                    ],
+                    if (verifiedAsync.isLoading) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AuraSurface.accent,
+                            ),
+                          ),
+                          const SizedBox(width: AuraSpace.s10),
+                          Text(
+                            'Checking verification status…',
+                            style: AuraText.small
+                                .copyWith(color: AuraSurface.muted),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Shared message banner ─────────────────────────────────────────────────────
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({required this.message, required this.isError});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isError ? AuraSurface.dangerBg : AuraSurface.goodBg;
+    final ink = isError ? AuraSurface.dangerInk : AuraSurface.goodInk;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: ink.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_outline_rounded,
+            size: 16,
+            color: ink,
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Text(
+              message,
+              style: AuraText.small.copyWith(color: ink, height: 1.5),
+            ),
+          ),
+        ],
       ),
     );
   }

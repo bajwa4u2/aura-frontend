@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:aura/core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/aura_text.dart';
 import '../updates_repository.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
@@ -84,34 +86,23 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
 
     if (!isAuthed) {
       return AuraScaffold(
-        title: 'Updates',
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            const AuraGradientHeader(
-              title: 'Updates',
-              subtitle: 'Announcements, releases, and public changes appear here.',
+        showHeader: false,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1160),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+              children: [
+                _UpdatesHeader(),
+                const SizedBox(height: AuraSpace.s24),
+                _SignInPrompt(
+                  onSignIn: () => context.go('/login?redirect=%2Fupdates'),
+                  onRegister: () => context.go('/register?redirect=%2Fupdates'),
+                ),
+              ],
             ),
-            const SizedBox(height: AuraSpace.s16),
-            AuraCard(
-              child: Wrap(
-                spacing: AuraSpace.s10,
-                runSpacing: AuraSpace.s10,
-                children: [
-                  AuraPrimaryButton(
-                    label: 'Create account',
-                    onPressed: () => context.go('/register?redirect=%2Fupdates'),
-                    icon: Icons.person_add_alt_1_rounded,
-                  ),
-                  AuraSecondaryButton(
-                    label: 'Login',
-                    onPressed: () => context.go('/login?redirect=%2Fupdates'),
-                    icon: Icons.login_rounded,
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       );
     }
@@ -119,18 +110,17 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
     return AuraScaffold(
       showHeader: false,
       body: RefreshIndicator(
+        color: AuraSurface.accent,
         onRefresh: _load,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
               children: [
-                const AuraGradientHeader(
-                  title: 'Updates',
-                  subtitle: 'A quiet public feed for attention, announcements, and activity.',
-                ),
-                const SizedBox(height: AuraSpace.s16),
+                _UpdatesHeader(),
+                const SizedBox(height: AuraSpace.s24),
                 if (_loading)
                   const AuraLoadingState(message: 'Loading updates…')
                 else if (_error != null)
@@ -146,28 +136,180 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
                 else if (_items.isEmpty)
                   const AuraEmptyState(
                     title: 'No updates yet',
-                    body: 'When Aura has something important to say, it will appear here.',
+                    body:
+                        'When Aura has something important to say, it will appear here.',
                     icon: Icons.notifications_none_rounded,
                   )
                 else
                   ..._items.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                      child: AuraNotificationTile(
-                        title: (item['headline'] ?? 'Update').toString(),
-                        body: [
-                          if ((item['detail'] ?? '').toString().trim().isNotEmpty)
-                            item['detail'].toString(),
-                          if ((item['createdAt'] ?? '').toString().trim().isNotEmpty)
-                            _timeAgo((item['createdAt'] ?? '').toString()),
-                        ].where((s) => s.trim().isNotEmpty).join(' • '),
-                        icon: Icons.campaign_outlined,
+                      child: _UpdateTile(
+                        headline: (item['headline'] ?? 'Update').toString(),
+                        detail: (item['detail'] ?? '').toString().trim(),
+                        createdAt: (item['createdAt'] ?? '').toString().trim(),
                         onTap: () => _openUpdate(item),
                       ),
                     ),
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UpdatesHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Updates', style: AuraText.headline),
+        const SizedBox(height: AuraSpace.s6),
+        Text(
+          'Announcements, releases, and public changes from Aura.',
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+        ),
+      ],
+    );
+  }
+}
+
+class _SignInPrompt extends StatelessWidget {
+  const _SignInPrompt({
+    required this.onSignIn,
+    required this.onRegister,
+  });
+
+  final VoidCallback onSignIn;
+  final VoidCallback onRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sign in to access updates',
+            style: AuraText.subtitle,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Platform announcements, releases, and notices are visible after signing in.',
+            style: AuraText.body.copyWith(color: AuraSurface.muted),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s10,
+            children: [
+              AuraPrimaryButton(
+                label: 'Sign in',
+                onPressed: onSignIn,
+                icon: Icons.login_rounded,
+              ),
+              AuraSecondaryButton(
+                label: 'Create account',
+                onPressed: onRegister,
+                icon: Icons.person_add_alt_1_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdateTile extends StatelessWidget {
+  const _UpdateTile({
+    required this.headline,
+    required this.detail,
+    required this.createdAt,
+    required this.onTap,
+  });
+
+  final String headline;
+  final String detail;
+  final String createdAt;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final timeLabel = createdAt.isNotEmpty ? _timeAgo(createdAt) : '';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                  border: Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                ),
+                child: const Icon(Icons.campaign_outlined,
+                    size: 18, color: AuraSurface.accentText),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      headline,
+                      style: AuraText.small
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (detail.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        detail,
+                        style:
+                            AuraText.small.copyWith(color: AuraSurface.muted),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (timeLabel.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s6),
+                      Text(
+                        timeLabel,
+                        style:
+                            AuraText.micro.copyWith(color: AuraSurface.faint),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 16, color: AuraSurface.faint),
+            ],
           ),
         ),
       ),

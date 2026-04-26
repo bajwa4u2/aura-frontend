@@ -7,8 +7,11 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../search/search_repository.dart';
 import '../application/realtime_controller.dart';
@@ -409,35 +412,33 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             runSpacing: AuraSpace.s8,
             children: [
               if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Return to space',
                   onPressed: () =>
                       context.go(_spaceRouteFromSession(state.session)!),
-                  child: const Text('Return to space'),
                 ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Refresh live',
                 onPressed: () => controller.hydrateSession(widget.sessionId),
-                child: const Text('Refresh live'),
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Leave live',
                 onPressed: controller.leave,
-                child: const Text('Leave live'),
               ),
               if (state.joinState != RealtimeJoinState.joined)
-                FilledButton(
+                AuraPrimaryButton(
+                  label: 'Join ${_contextLabel(state.session)}',
                   onPressed: () => controller.join(widget.sessionId),
-                  child: Text('Join ${_contextLabel(state.session)}'),
                 ),
               if (state.joinState == RealtimeJoinState.locked ||
                   state.joinState == RealtimeJoinState.rejected ||
                   state.joinState == RealtimeJoinState.failed ||
                   roomIsClosed)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: policy?.waitingRoomEnabled == true || roomIsClosed
+                      ? 'Request access'
+                      : 'Try again',
                   onPressed: () => controller.requestJoin(widget.sessionId),
-                  child: Text(
-                    policy?.waitingRoomEnabled == true || roomIsClosed
-                        ? 'Request access'
-                        : 'Try again',
-                  ),
                 ),
             ],
           ),
@@ -523,13 +524,13 @@ class _ConnectionRecoveryCard extends StatelessWidget {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              FilledButton(
+              AuraPrimaryButton(
+                label: 'Reconnect',
                 onPressed: isBusy ? null : onReconnect,
-                child: const Text('Reconnect'),
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Reload state',
                 onPressed: isBusy ? null : onReload,
-                child: const Text('Reload state'),
               ),
             ],
           ),
@@ -647,8 +648,8 @@ class _MetaPill extends StatelessWidget {
         vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,
@@ -797,17 +798,13 @@ class _MediaStageCard extends StatelessWidget {
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              FilledButton.tonal(
+              AuraSecondaryButton(
+                label: microphoneEnabled ? 'Mute microphone' : 'Turn mic on',
                 onPressed: controlsEnabled ? onToggleMicrophone : null,
-                child: Text(
-                  microphoneEnabled ? 'Mute microphone' : 'Turn mic on',
-                ),
               ),
-              FilledButton.tonal(
+              AuraSecondaryButton(
+                label: cameraEnabled ? 'Turn camera off' : 'Turn camera on',
                 onPressed: controlsEnabled ? onToggleCamera : null,
-                child: Text(
-                  cameraEnabled ? 'Turn camera off' : 'Turn camera on',
-                ),
               ),
             ],
           ),
@@ -1049,9 +1046,18 @@ class _RoomInviteCard extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s12),
           if (isSearching)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AuraSpace.s8),
-              child: LinearProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AuraSurface.accent,
+                  ),
+                ),
+              ),
             )
           else if (searchController.text.trim().isEmpty)
             Text(
@@ -1100,9 +1106,9 @@ class _RoomInviteCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    FilledButton(
+                    AuraPrimaryButton(
+                      label: isInviting ? 'Inviting…' : 'Invite',
                       onPressed: isInviting ? null : () => onInvite(user),
-                      child: Text(isInviting ? 'Inviting…' : 'Invite'),
                     ),
                   ],
                 ),

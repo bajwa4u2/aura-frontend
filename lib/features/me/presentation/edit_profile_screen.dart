@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -483,7 +484,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loading) {
       return AuraScaffold(
         title: 'Edit presence',
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: AuraLoadingState(message: 'Loading profile…')),
       );
     }
 
@@ -733,7 +734,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: const Icon(
                 Icons.camera_alt_outlined,
                 size: 17,
-                color: Colors.black,
+                color: AuraSurface.page,
               ),
             ),
           ),
@@ -1051,10 +1052,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               const Spacer(),
-              TextButton.icon(
-                onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline, size: 16),
-                label: const Text('Remove'),
+              GestureDetector(
+                onTap: onRemove,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_outline,
+                        size: 16, color: AuraSurface.dangerInk),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Remove',
+                      style: AuraText.small
+                          .copyWith(color: AuraSurface.dangerInk),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1088,10 +1100,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String label,
     required VoidCallback? onPressed,
   }) {
-    return FilledButton.tonalIcon(
+    return AuraSecondaryButton(
+      label: label,
       onPressed: onPressed,
-      icon: const Icon(Icons.add, size: 16),
-      label: Text(label),
+      icon: Icons.add_rounded,
     );
   }
 
@@ -1247,23 +1259,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                   ),
                 ),
-                TextButton(
+                AuraGhostButton(
+                  label: 'Discard',
                   onPressed: _busy ? null : _discardChanges,
-                  child: const Text('Discard'),
                 ),
                 const SizedBox(width: AuraSpace.s8),
-                FilledButton(
+                AuraPrimaryButton(
+                  label: _saving ? 'Saving…' : 'Save',
                   onPressed: _busy ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Save'),
+                  icon: _saving ? null : Icons.check_rounded,
                 ),
               ],
             ),
@@ -1302,7 +1306,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             label,
             style: AuraText.body.copyWith(
               fontSize: 13,
-              color: Colors.black,
+              color: AuraSurface.ink,
               fontWeight: FontWeight.w600,
             ),
           ),

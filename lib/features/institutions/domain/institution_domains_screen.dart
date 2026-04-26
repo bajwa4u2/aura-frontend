@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/document_scaffold.dart';
@@ -213,26 +214,26 @@ class _InstitutionDomainsScreenState
                 Wrap(
                   spacing: 8,
                   children: [
-                    TextButton(
+                    AuraGhostButton(
+                      label: 'Cloudflare',
                       onPressed: () => _openDnsProvider('cloudflare'),
-                      child: const Text('Cloudflare'),
                     ),
-                    TextButton(
+                    AuraGhostButton(
+                      label: 'GoDaddy',
                       onPressed: () => _openDnsProvider('godaddy'),
-                      child: const Text('GoDaddy'),
                     ),
-                    TextButton(
+                    AuraGhostButton(
+                      label: 'Namecheap',
                       onPressed: () => _openDnsProvider('namecheap'),
-                      child: const Text('Namecheap'),
                     ),
                   ],
                 ),
               ],
             ),
             actions: [
-              TextButton(
+              AuraGhostButton(
+                label: 'Close',
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
               ),
             ],
           );
@@ -354,21 +355,21 @@ class _InstitutionDomainsScreenState
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
             children: [
-              ElevatedButton(
+              AuraSecondaryButton(
+                label: 'DNS challenge',
                 onPressed: () => issueChallenge(id),
-                child: const Text('DNS challenge'),
               ),
-              ElevatedButton(
+              AuraSecondaryButton(
+                label: 'Verify',
                 onPressed: () => verifyDomain(id),
-                child: const Text('Verify'),
               ),
-              ElevatedButton(
+              AuraSecondaryButton(
+                label: 'Auto verify',
                 onPressed: () => startAutoVerify(id),
-                child: const Text('Auto verify'),
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Remove',
                 onPressed: () => removeDomain(id),
-                child: const Text('Remove'),
               ),
             ],
           ),
@@ -481,9 +482,9 @@ class _InstitutionDomainsScreenState
                   },
                 ),
                 SizedBox(height: AuraSpace.s10),
-                ElevatedButton(
+                AuraPrimaryButton(
+                  label: _submitting ? 'Adding...' : 'Add domain',
                   onPressed: _submitting ? null : addDomain,
-                  child: Text(_submitting ? 'Adding...' : 'Add domain'),
                 ),
               ],
             ),
@@ -492,7 +493,7 @@ class _InstitutionDomainsScreenState
           SizedBox(height: AuraSpace.s12),
 
           if (loading)
-            const Center(child: CircularProgressIndicator())
+            Center(child: AuraLoadingState(message: 'Loading domains…'))
           else if (loadError != null)
             AuraCard(child: Text(loadError!))
           else if (!canManageDomains)

@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -587,26 +588,25 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     return AuraScaffold(
       title: 'Presence',
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: AuraLoadingState(message: 'Loading your presence…'))
           : _error != null
-              ? _buildStateCard(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AuraTextBlock(
-                        _error!,
-                        style: AuraText.body,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                      FilledButton(
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.s16),
+                    child: AuraErrorState(
+                      title: 'Could not load your presence',
+                      body: _error!,
+                      action: AuraSecondaryButton(
+                        label: 'Try again',
                         onPressed: _load,
-                        child: const Text('Try again'),
+                        icon: Icons.refresh_rounded,
                       ),
-                    ],
+                    ),
                   ),
                 )
               : RefreshIndicator(
+                  color: AuraSurface.accent,
                   onRefresh: _load,
                   child: _buildContent(context),
                 ),
@@ -1168,25 +1168,29 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             runSpacing: AuraSpace.s8,
             children: [
               if (!connected)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Connect',
                   onPressed: _tiktokActionBusy ? null : _connectTikTok,
-                  child: const Text('Connect'),
+                  icon: Icons.link_rounded,
                 ),
               if (connected)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Refresh',
                   onPressed: _tiktokActionBusy ? null : _refreshTikTokToken,
-                  child: const Text('Refresh'),
+                  icon: Icons.refresh_rounded,
                 ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Check',
                 onPressed: (_tiktokActionBusy || _tiktokLoading)
                     ? null
                     : _reloadTikTokOnly,
-                child: const Text('Check'),
+                icon: Icons.sync_rounded,
               ),
               if (connected)
-                OutlinedButton(
+                AuraGhostButton(
+                  label: 'Disconnect',
                   onPressed: _tiktokActionBusy ? null : _disconnectTikTok,
-                  child: const Text('Disconnect'),
+                  icon: Icons.link_off_rounded,
                 ),
             ],
           ),
@@ -1258,20 +1262,23 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             runSpacing: AuraSpace.s8,
             children: [
               if (!connected)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Connect',
                   onPressed: _linkedinActionBusy ? null : _connectLinkedIn,
-                  child: const Text('Connect'),
+                  icon: Icons.link_rounded,
                 ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Check',
                 onPressed: (_linkedinActionBusy || _linkedinLoading)
                     ? null
                     : _reloadLinkedInOnly,
-                child: const Text('Check'),
+                icon: Icons.sync_rounded,
               ),
               if (connected)
-                OutlinedButton(
+                AuraGhostButton(
+                  label: 'Disconnect',
                   onPressed: _linkedinActionBusy ? null : _disconnectLinkedIn,
-                  child: const Text('Disconnect'),
+                  icon: Icons.link_off_rounded,
                 ),
             ],
           ),
@@ -1545,24 +1552,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (text == 'true' || text == '1' || text == 'yes' || text == 'on') return true;
     if (text == 'false' || text == '0' || text == 'no' || text == 'off') return false;
     return fallback;
-  }
-
-  Widget _buildStateCard({required Widget child}) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: Container(
-          margin: const EdgeInsets.all(AuraSpace.s16),
-          padding: const EdgeInsets.all(AuraSpace.s20),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: child,
-        ),
-      ),
-    );
   }
 
   Widget _section({

@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class FollowRequestItem {
@@ -149,20 +151,21 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
       title: 'Follow requests',
       body: requestsAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(),
+          child: AuraLoadingState(message: 'Loading requests…'),
         ),
-        error: (_, __) => Center(
-          child: Text(
-            'Could not load follow requests',
-            style: AuraText.body,
+        error: (_, __) => const Center(
+          child: AuraErrorState(
+            title: 'Could not load follow requests',
+            body: 'Check your connection and try again.',
           ),
         ),
         data: (items) {
           if (items.isEmpty) {
-            return Center(
-              child: Text(
-                'No follow requests',
-                style: AuraText.body,
+            return const Center(
+              child: AuraEmptyState(
+                icon: Icons.person_add_alt_outlined,
+                title: 'No follow requests',
+                body: 'New requests will appear here.',
               ),
             );
           }
@@ -171,74 +174,74 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
             padding: const EdgeInsets.all(AuraSpace.s16),
             itemCount: items.length,
             separatorBuilder: (_, __) =>
-                const SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s10),
             itemBuilder: (context, index) {
               final item = items[index];
               final handle = item.handle.trim();
               final avatarUrl = item.avatarUrl.trim();
+              final title = _titleFor(item);
               final isBusy = _busyIds.contains(item.id);
 
               return AuraCard(
                 child: Padding(
-                  padding: const EdgeInsets.all(AuraSpace.s12),
+                  padding: const EdgeInsets.all(AuraSpace.s14),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            backgroundImage: avatarUrl.isNotEmpty
-                                ? NetworkImage(avatarUrl)
-                                : null,
-                            child: avatarUrl.isEmpty
-                                ? const Icon(Icons.person_outline)
-                                : null,
+                          AuraAvatar(
+                            name: title,
+                            imageUrl: avatarUrl,
+                            size: 40,
                           ),
                           const SizedBox(width: AuraSpace.s12),
                           Expanded(
-                            child: InkWell(
+                            child: GestureDetector(
                               onTap: handle.isNotEmpty
                                   ? () => context.push('/u/$handle')
                                   : null,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AuraSpace.s4,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: AuraText.body.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (handle.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
                                     Text(
-                                      _titleFor(item),
-                                      style: AuraText.body.copyWith(
-                                        fontWeight: FontWeight.w700,
+                                      '@$handle',
+                                      style: AuraText.small.copyWith(
+                                        color: AuraSurface.muted,
                                       ),
                                     ),
-                                    if (handle.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
-                                        child: Text(
-                                          '@$handle',
-                                          style: AuraText.small,
-                                        ),
-                                      ),
                                   ],
-                                ),
+                                ],
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AuraSpace.s12),
+                      const SizedBox(height: AuraSpace.s14),
                       Row(
                         children: [
-                          FilledButton(
-                            onPressed: isBusy ? null : () => _accept(item),
-                            child: Text(isBusy ? 'Working...' : 'Accept'),
+                          Expanded(
+                            child: AuraPrimaryButton(
+                              label: isBusy ? 'Working…' : 'Accept',
+                              onPressed: isBusy ? null : () => _accept(item),
+                              icon: Icons.check_rounded,
+                            ),
                           ),
                           const SizedBox(width: AuraSpace.s10),
-                          OutlinedButton(
-                            onPressed: isBusy ? null : () => _decline(item),
-                            child: const Text('Deny'),
+                          Expanded(
+                            child: AuraSecondaryButton(
+                              label: 'Deny',
+                              onPressed: isBusy ? null : () => _decline(item),
+                              icon: Icons.close_rounded,
+                            ),
                           ),
                         ],
                       ),

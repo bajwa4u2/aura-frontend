@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -154,16 +154,15 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
 
     if (auth != AuthStatus.authed) {
       return AuraScaffold(
-        title: 'Conversations',
+        showHeader: false,
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
           children: [
-            const AuraGradientHeader(
-              title: 'Conversations',
-              subtitle:
-                  'Ongoing direct threads and shared rooms stay here. Start something new from Correspondence when you need to.',
+            _ConversationsHeader(
+              subtitle: 'Ongoing direct threads and shared rooms.',
             ),
-            const SizedBox(height: AuraSpace.s18),
+            const SizedBox(height: AuraSpace.s24),
             _StateCard(
               title: 'You are signed out',
               body:
@@ -179,32 +178,30 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     final spacesAsync = ref.watch(_conversationSpacesProvider);
 
     return AuraScaffold(
-      title: 'Conversations',
+      showHeader: false,
       body: RefreshIndicator(
+        color: AuraSurface.accent,
         onRefresh: () async {
           ref.invalidate(_conversationSpacesProvider);
           await ref.read(_conversationSpacesProvider.future);
         },
         child: spacesAsync.when(
           loading: () => ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: const [
-              AuraGradientHeader(
-                title: 'Conversations',
-                subtitle: 'Loading active conversations and spaces.',
-              ),
-              SizedBox(height: AuraSpace.s14),
-              AuraLoadingState(message: 'Loading your inbox…'),
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+            children: [
+              _ConversationsHeader(subtitle: 'Loading active conversations…'),
+              const SizedBox(height: AuraSpace.s24),
+              const AuraLoadingState(message: 'Loading your inbox…'),
             ],
           ),
           error: (error, _) => ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
             children: [
-              const AuraGradientHeader(
-                title: 'Conversations',
-                subtitle: 'Could not load your ongoing correspondence.',
-              ),
-              const SizedBox(height: AuraSpace.s18),
+              _ConversationsHeader(
+                  subtitle: 'Could not load your ongoing correspondence.'),
+              const SizedBox(height: AuraSpace.s24),
               AuraErrorState(
                 title: 'Something went wrong',
                 body: '$error',
@@ -227,16 +224,16 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             final items = _buildConversationItems(visible);
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
               children: [
-                const AuraGradientHeader(
-                  title: 'Conversations',
+                _ConversationsHeader(
                   subtitle:
-                      'A living record of direct threads and shared rooms already in motion.',
+                      'Direct threads and shared rooms already in motion.',
                 ),
-                const SizedBox(height: AuraSpace.s14),
+                const SizedBox(height: AuraSpace.s20),
                 const _ConversationQuickActions(),
-                const SizedBox(height: AuraSpace.s14),
+                const SizedBox(height: AuraSpace.s16),
                 _FilterRow(
                   filter: _filter,
                   onFilterChanged: (value) {
@@ -262,6 +259,27 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _ConversationsHeader extends StatelessWidget {
+  const _ConversationsHeader({required this.subtitle});
+
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Conversations', style: AuraText.headline),
+        const SizedBox(height: AuraSpace.s6),
+        Text(
+          subtitle,
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+        ),
+      ],
     );
   }
 }
@@ -314,41 +332,57 @@ class _QuickActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-      child: AuraCard(
-        onTap: () => context.push(route),
-        padding: const EdgeInsets.all(AuraSpace.s12),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AuraSurface.accentSoft,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AuraSurface.accentSoft),
-              ),
-              child: Icon(icon, size: 18, color: AuraSurface.ink),
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push(route),
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+          child: Container(
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            decoration: BoxDecoration(
+              color: AuraSurface.card,
+              borderRadius: BorderRadius.circular(AuraRadius.card),
+              border: Border.all(color: AuraSurface.divider),
             ),
-            const SizedBox(width: AuraSpace.s10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.ink,
-                      fontWeight: FontWeight.w700,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AuraSurface.accentSoft,
+                    borderRadius: BorderRadius.circular(AuraRadius.r10),
+                    border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.25)),
                   ),
-                  const SizedBox(height: AuraSpace.s2),
-                  Text(subtitle, style: AuraText.small),
-                ],
-              ),
+                  child:
+                      Icon(icon, size: 18, color: AuraSurface.accentText),
+                ),
+                const SizedBox(width: AuraSpace.s10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: AuraText.small.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s2),
+                      Text(
+                        subtitle,
+                        style: AuraText.small
+                            .copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -403,9 +437,11 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? AuraSurface.ink : AuraSurface.muted;
+    final foreground = selected ? AuraSurface.accentText : AuraSurface.muted;
     final background = selected ? AuraSurface.accentSoft : Colors.transparent;
-    final borderColor = selected ? AuraSurface.accentSoft : AuraSurface.divider;
+    final borderColor = selected
+        ? AuraSurface.accent.withValues(alpha: 0.4)
+        : AuraSurface.divider;
 
     return InkWell(
       onTap: onTap,
@@ -445,8 +481,13 @@ class _ConversationList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[
@@ -456,7 +497,7 @@ class _ConversationList extends StatelessWidget {
               onTap: () => onOpenConversation(items[i]),
             ),
             if (i != items.length - 1)
-              const Divider(height: 1, color: AuraSurface.divider),
+              const Divider(height: 1, thickness: 1, color: AuraSurface.divider),
           ],
         ],
       ),
@@ -550,9 +591,13 @@ class _ConversationRow extends StatelessWidget {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AuraSurface.accent,
+                    ),
                   )
-                : const Icon(Icons.chevron_right, size: 18, color: AuraSurface.muted),
+                : const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AuraSurface.faint),
           ],
         ),
       ),
@@ -576,19 +621,19 @@ class _ConversationBadge extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AuraSurface.accentSoft,
-        border: Border.all(color: AuraSurface.accentSoft),
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.subtle,
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: badge.isNotEmpty
           ? Text(
               badge,
-              style: AuraText.small.copyWith(
-                color: AuraSurface.ink,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.muted,
                 fontWeight: FontWeight.w700,
               ),
             )
-          : Icon(icon, size: 18, color: AuraSurface.ink),
+          : Icon(icon, size: 18, color: AuraSurface.muted),
     );
   }
 }
@@ -608,7 +653,13 @@ class _StateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -616,13 +667,18 @@ class _StateCard extends StatelessWidget {
             title,
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: AuraSpace.s6),
-          Text(body, style: AuraText.small),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            body,
+            style: AuraText.small.copyWith(
+                color: AuraSurface.muted, height: 1.45),
+          ),
           if (primaryLabel != null && onPrimary != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            OutlinedButton(
-              onPressed: onPrimary,
-              child: Text(primaryLabel!),
+            const SizedBox(height: AuraSpace.s16),
+            AuraPrimaryButton(
+              label: primaryLabel!,
+              onPressed: onPrimary!,
+              icon: Icons.arrow_forward_rounded,
             ),
           ],
         ],

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
@@ -38,49 +39,50 @@ class SavedScreen extends ConsumerWidget {
     final savedAsync = ref.watch(savedPostsProvider);
 
     return AuraScaffold(
-      title: 'Saved',
-      actions: [
-        IconButton(
-          tooltip: 'Refresh',
-          onPressed: () => ref.invalidate(savedPostsProvider),
-          icon: const Icon(Icons.refresh),
-        ),
-      ],
+      showHeader: false,
       body: ListView(
-        padding: EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
-          AuraSpace.s12,
+          AuraSpace.s20,
           AuraSpace.s16,
-          AuraSpace.s24,
+          AuraSpace.s32,
         ),
         children: [
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Return to what you chose to keep.',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Saved', style: AuraText.headline),
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      'Work you chose to keep. Stays private.',
+                      style:
+                          AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
                 ),
-                SizedBox(height: AuraSpace.s6),
-                Text(
-                  'Saved posts stay private.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
+              ),
+              AuraActionPill(
+                icon: Icons.refresh_rounded,
+                label: 'Refresh',
+                onTap: () => ref.invalidate(savedPostsProvider),
+              ),
+            ],
           ),
-          SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s24),
           savedAsync.when(
             data: (raw) {
               final posts = _coercePosts(raw);
 
               if (posts.isEmpty) {
-                return AuraCard(
-                  child: Text(
-                    'Nothing saved yet.',
-                    style: AuraText.body,
-                  ),
+                return const AuraEmptyState(
+                  title: 'Nothing saved yet',
+                  body:
+                      'Use the bookmark action on any work to save it for later.',
+                  icon: Icons.bookmark_border_rounded,
                 );
               }
 
@@ -88,36 +90,26 @@ class SavedScreen extends ConsumerWidget {
                 children: posts
                     .map(
                       (p) => Padding(
-                        padding: EdgeInsets.only(bottom: AuraSpace.s10),
+                        padding:
+                            const EdgeInsets.only(bottom: AuraSpace.s10),
                         child: PostCard(post: p, compact: false),
                       ),
                     )
                     .toList(),
               );
             },
-            loading: () => const _LoadingCard(),
-            error: (e, _) => AuraCard(
-              child: Text(
-                'Could not load saved posts: $e',
-                style: AuraText.body,
+            loading: () => const AuraLoadingState(message: 'Loading saved…'),
+            error: (e, _) => AuraErrorState(
+              title: 'Could not load saved work',
+              body: 'Your saved posts could not be retrieved right now.',
+              action: AuraSecondaryButton(
+                label: 'Try again',
+                onPressed: () => ref.invalidate(savedPostsProvider),
+                icon: Icons.refresh_rounded,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Padding(
-        padding: EdgeInsets.all(AuraSpace.s16),
-        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }

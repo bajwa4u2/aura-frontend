@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -11,7 +13,6 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
 import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
-import '../data/profile_repository.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
 
@@ -228,11 +229,11 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
         : 'Follow first to open direct correspondence or invite this person into a shared space.';
 
     return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        child: Text(
-          message,
-          style: AuraText.body,
+      child: Text(
+        message,
+        style: AuraText.body.copyWith(
+          color: AuraSurface.muted,
+          height: 1.5,
         ),
       ),
     );
@@ -245,18 +246,30 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
       meta.add(
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 6,
+            horizontal: AuraSpace.s10,
+            vertical: AuraSpace.s4,
           ),
           decoration: BoxDecoration(
-            border: Border.all(color: AuraSurface.divider),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            'Verified',
-            style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600,
+            color: AuraSurface.goodBg,
+            border: Border.all(
+              color: AuraSurface.goodInk.withValues(alpha: 0.35),
             ),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.verified_rounded,
+                  size: 12, color: AuraSurface.goodInk),
+              const SizedBox(width: AuraSpace.s4),
+              Text(
+                'Verified',
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.goodInk,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -428,28 +441,18 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
         future: _bundleFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return _pageList(const [
-              AuraCard(
-                child: Padding(
-                  padding: EdgeInsets.all(18),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            ]);
+            return const Center(
+              child: AuraLoadingState(message: 'Loading profile…'),
+            );
           }
 
           if (snapshot.hasError || snapshot.data == null) {
-            return _pageList([
-              AuraCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Text(
-                    'Could not load profile.',
-                    style: AuraText.body,
-                  ),
-                ),
+            return const Center(
+              child: AuraErrorState(
+                title: 'Could not load profile',
+                body: 'Check your connection and try again.',
               ),
-            ]);
+            );
           }
 
           final bundle = snapshot.data!;

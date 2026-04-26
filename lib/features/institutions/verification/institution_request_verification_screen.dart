@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/document_scaffold.dart';
@@ -492,18 +493,9 @@ class _InstitutionRequestVerificationScreenState
           SizedBox(height: AuraSpace.s12),
           SizedBox(
             width: double.infinity,
-            child: FilledButton(
+            child: AuraPrimaryButton(
+              label: buttonLabel,
               onPressed: (_submitting || _submitted) ? null : _submit,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s14,
-                  vertical: AuraSpace.s12,
-                ),
-              ),
-              child: Text(
-                buttonLabel,
-                style: AuraText.body.copyWith(color: Colors.white),
-              ),
             ),
           ),
         ],

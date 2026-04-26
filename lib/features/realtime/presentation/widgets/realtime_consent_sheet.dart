@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../application/realtime_providers.dart';
@@ -44,24 +45,24 @@ class RealtimeConsentSheet extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: AuraSecondaryButton(
+                  label: 'Decline',
                   onPressed: () async {
                     await ref
                         .read(realtimeControllerProvider.notifier)
                         .answerConsent(granted: false);
                   },
-                  child: const Text('Decline'),
                 ),
               ),
               const SizedBox(width: AuraSpace.s8),
               Expanded(
-                child: FilledButton(
+                child: AuraPrimaryButton(
+                  label: 'Grant',
                   onPressed: () async {
                     await ref
                         .read(realtimeControllerProvider.notifier)
                         .answerConsent(granted: true);
                   },
-                  child: const Text('Grant'),
                 ),
               ),
             ],

@@ -14,8 +14,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
@@ -509,7 +512,7 @@ class _ThreadHeaderCard extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
                         roles,
-                        style: AuraText.small.copyWith(color: Colors.black54),
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -774,8 +777,9 @@ class _ThreadStatusStrip extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(14),
+        color: AuraSurface.overlay,
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
       child: Row(
         children: [
@@ -783,7 +787,7 @@ class _ThreadStatusStrip extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: isJoined ? Colors.greenAccent : Colors.white70,
+              color: isJoined ? AuraSurface.goodInk : AuraSurface.muted,
               shape: BoxShape.circle,
             ),
           ),
@@ -803,7 +807,7 @@ class _ThreadStatusStrip extends StatelessWidget {
                     liveDetail,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AuraText.small.copyWith(color: Colors.white70),
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
               ],
             ),
@@ -830,7 +834,7 @@ class _ThreadStatusStrip extends StatelessWidget {
             const SizedBox(width: AuraSpace.s8),
             _StripIconButton(
               icon: Icons.call_end_rounded,
-              tone: Colors.redAccent,
+              tone: AuraSurface.dangerInk,
               onTap: () => onLeave(),
             ),
           ],
@@ -891,9 +895,9 @@ class _ThreadAudioStage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.035),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,9 +926,9 @@ class _ThreadParticipantChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: AuraSurface.divider),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -933,7 +937,7 @@ class _ThreadParticipantChip extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: participant.isPresent ? Colors.green : Colors.black26,
+              color: participant.isPresent ? AuraSurface.goodInk : AuraSurface.faint,
               shape: BoxShape.circle,
             ),
           ),
@@ -948,7 +952,7 @@ class _ThreadParticipantChip extends StatelessWidget {
                       ? Icons.videocam_rounded
                       : Icons.mic_rounded,
               size: 14,
-              color: Colors.black54,
+              color: AuraSurface.muted,
             ),
           ],
         ],
@@ -1728,7 +1732,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.black12)),
+          border: Border(top: BorderSide(color: AuraSurface.divider)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1745,13 +1749,15 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.shade200),
+                  color: AuraSurface.dangerBg,
+                  borderRadius: BorderRadius.circular(AuraRadius.md),
+                  border: Border.all(
+                    color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.fiber_manual_record, size: 14, color: Colors.red.shade700),
+                    Icon(Icons.fiber_manual_record, size: 14, color: AuraSurface.dangerInk),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1759,14 +1765,15 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                         style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    TextButton(
+                    AuraGhostButton(
+                      label: 'Cancel',
                       onPressed: _sending ? null : _cancelAudioRecording,
-                      child: const Text('Cancel'),
                     ),
                     const SizedBox(width: 6),
-                    FilledButton(
+                    AuraPrimaryButton(
+                      label: 'Stop',
+                      icon: Icons.stop_rounded,
                       onPressed: _sending ? null : () => _toggleAudioRecording(),
-                      child: const Text('Stop'),
                     ),
                   ],
                 ),
@@ -1836,16 +1843,10 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                       const SizedBox(height: AuraSpace.s8),
                       Row(
                         children: [
-                          OutlinedButton.icon(
+                          AuraSecondaryButton(
+                            label: _assistBusy ? 'Polishing…' : 'Polish',
+                            icon: Icons.auto_fix_high_outlined,
                             onPressed: !_hasText || _assistBusy ? null : _runAssist,
-                            icon: _assistBusy
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.auto_fix_high_outlined, size: 16),
-                            label: const Text('Polish'),
                           ),
                           const SizedBox(width: AuraSpace.s8),
                           DropdownButton<String>(
@@ -1865,16 +1866,11 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                                   },
                           ),
                           const SizedBox(width: AuraSpace.s8),
-                          OutlinedButton.icon(
-                            onPressed: !_hasText || _translationBusy ? null : _translateDraft,
-                            icon: _translationBusy
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.translate_outlined, size: 16),
-                            label: const Text('Translate'),
+                          AuraSecondaryButton(
+                            label: _translationBusy ? 'Translating…' : 'Translate',
+                            icon: Icons.translate_outlined,
+                            onPressed:
+                                !_hasText || _translationBusy ? null : _translateDraft,
                           ),
                         ],
                       ),
@@ -1882,15 +1878,14 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s10),
-                FilledButton(
+                AuraPrimaryButton(
+                  label: _sending
+                      ? 'Sending…'
+                      : uploadingCount > 0
+                          ? 'Uploading…'
+                          : 'Send',
                   onPressed: _canSend ? _submit : null,
-                  child: Text(
-                    _sending
-                        ? 'Sending...'
-                        : uploadingCount > 0
-                            ? 'Uploading...'
-                            : 'Send',
-                  ),
+                  icon: Icons.send_rounded,
                 ),
               ],
             ),
@@ -1965,8 +1960,9 @@ class _ComposerSuggestionTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(14),
+        color: AuraSurface.subtle,
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1980,14 +1976,15 @@ class _ComposerSuggestionTile extends StatelessWidget {
           const SizedBox(height: AuraSpace.s10),
           Row(
             children: [
-              TextButton(
+              AuraGhostButton(
+                label: 'Dismiss',
                 onPressed: busy ? null : onDismiss,
-                child: const Text('Dismiss'),
               ),
               const SizedBox(width: AuraSpace.s8),
-              FilledButton(
+              AuraPrimaryButton(
+                label: busy ? 'Applying…' : 'Apply',
                 onPressed: busy ? null : onApply,
-                child: Text(busy ? 'Applying...' : 'Apply'),
+                icon: Icons.check_rounded,
               ),
             ],
           ),
@@ -2046,14 +2043,15 @@ class _ComposerTranslationPanel extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             Row(
               children: [
-                TextButton(
+                AuraGhostButton(
+                  label: 'Restore original',
                   onPressed: busy ? null : onRestore,
-                  child: const Text('Restore original'),
                 ),
                 const SizedBox(width: AuraSpace.s8),
-                FilledButton(
+                AuraPrimaryButton(
+                  label: 'Use translation',
                   onPressed: busy ? null : onApply,
-                  child: const Text('Use translation'),
+                  icon: Icons.check_rounded,
                 ),
               ],
             ),
@@ -2114,8 +2112,9 @@ class _AttachmentPreviewCard extends StatelessWidget {
       width: 240,
       padding: const EdgeInsets.all(AuraSpace.s10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(14),
+        color: AuraSurface.subtle,
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
       child: Row(
         children: [
@@ -2237,7 +2236,7 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
                 child: Text(
                   _errorText!,
                   style: AuraText.small.copyWith(
-                    color: Colors.red.shade700,
+                    color: AuraSurface.dangerInk,
                   ),
                 ),
               ),
@@ -2246,13 +2245,14 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AuraGhostButton(
+          label: 'Cancel',
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
         ),
-        FilledButton(
+        AuraPrimaryButton(
+          label: _saving ? 'Saving…' : 'Save',
           onPressed: _saving ? null : _submit,
-          child: Text(_saving ? 'Saving...' : 'Save'),
+          icon: Icons.check_rounded,
         ),
       ],
     );
@@ -2325,15 +2325,15 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                           vertical: AuraSpace.s8,
                         ),
                         decoration: BoxDecoration(
-                          color: active ? Colors.black : Colors.transparent,
-                          border: Border.all(color: Colors.black12),
-                          borderRadius: BorderRadius.circular(999),
+                          color: active ? AuraSurface.overlay : Colors.transparent,
+                          border: Border.all(color: AuraSurface.divider),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                         ),
                         child: Text(
                           entry.value,
                           style: AuraText.small.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: active ? Colors.white : Colors.black87,
+                            color: active ? AuraSurface.ink : AuraSurface.muted,
                           ),
                         ),
                       ),
@@ -2442,13 +2442,14 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
     final isMine =
         currentUserId.trim().isNotEmpty && senderId.trim() == currentUserId.trim();
 
-    final bubbleColor = isMine ? Colors.black : Colors.white;
-    final bubbleBorderColor = isMine ? Colors.black : Colors.black12;
-    final textColor = isMine ? Colors.white : Colors.black87;
-    final metaColor = isMine ? Colors.white70 : Colors.black54;
-    final translatedTextColor = isMine ? Colors.white : Colors.black87;
-    final translatedSurfaceColor =
-        isMine ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03);
+    final bubbleColor = isMine ? AuraSurface.overlay : AuraSurface.elevated;
+    final bubbleBorderColor = isMine
+        ? AuraSurface.accent.withValues(alpha: 0.3)
+        : AuraSurface.divider;
+    final textColor = AuraSurface.ink;
+    final metaColor = AuraSurface.muted;
+    final translatedTextColor = AuraSurface.ink;
+    final translatedSurfaceColor = AuraSurface.subtle;
 
     _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
@@ -2571,7 +2572,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        isMine ? Colors.white70 : Colors.black54,
+                                        AuraSurface.muted,
                                       ),
                                     ),
                                   ),
@@ -2599,9 +2600,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                               vertical: AuraSpace.s6,
                             ),
                             decoration: BoxDecoration(
-                              color: isMine ? Colors.white.withOpacity(0.06) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: isMine ? Colors.white24 : Colors.black12),
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(AuraRadius.pill),
+                              border: Border.all(color: AuraSurface.divider),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -2616,7 +2617,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                                   _languageLabel(_translationTargetLanguage ?? _defaultTranslationLanguage(context)),
                                   style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: isMine ? Colors.white : Colors.black87,
+                                    color: AuraSurface.ink,
                                   ),
                                 ),
                               ],
@@ -2653,7 +2654,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                       Text(
                         _translationError!,
                         style: AuraText.small.copyWith(
-                          color: isMine ? Colors.white70 : Colors.red.shade700,
+                          color: AuraSurface.dangerInk,
                         ),
                       ),
                     ],
@@ -2665,7 +2666,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                         decoration: BoxDecoration(
                           color: translatedSurfaceColor,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: isMine ? Colors.white24 : Colors.black12),
+                          border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2842,13 +2843,13 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                       height: 320,
                       width: 520,
                       decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(18),
+                        color: AuraSurface.overlay,
+                        borderRadius: BorderRadius.circular(AuraRadius.card),
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         'Could not load image.',
-                        style: TextStyle(color: Colors.white),
+                        style: AuraText.body.copyWith(color: AuraSurface.muted),
                       ),
                     ),
                   ),
@@ -2860,8 +2861,8 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
               right: 8,
               child: IconButton(
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.black54,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AuraSurface.overlay,
+                  foregroundColor: AuraSurface.ink,
                 ),
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.close),
@@ -2901,10 +2902,10 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
     final url = _resolveAttachmentUrl(attachment);
     final thumbUrl = _resolveAttachmentThumbUrl(attachment);
 
-    final borderColor = isMine ? Colors.white24 : Colors.black12;
-    final surfaceColor = isMine ? Colors.white.withOpacity(0.08) : Colors.white;
-    final primaryTextColor = isMine ? Colors.white : Colors.black87;
-    final secondaryTextColor = isMine ? Colors.white70 : Colors.black54;
+    final borderColor = AuraSurface.divider;
+    final surfaceColor = AuraSurface.subtle;
+    final primaryTextColor = AuraSurface.ink;
+    final secondaryTextColor = AuraSurface.muted;
 
     void handleTap() {
       if (url.isEmpty) return;
@@ -3303,7 +3304,7 @@ class _BrokenMediaFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: dark ? Colors.black38 : Colors.black12,
+      color: dark ? AuraSurface.overlay : AuraSurface.subtle,
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3329,13 +3330,13 @@ class _CenterOpenIcon extends StatelessWidget {
       height: 52,
       width: 52,
       decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.overlay,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: const Icon(
         Icons.open_in_full,
         size: 24,
-        color: Colors.white,
+        color: AuraSurface.ink,
       ),
     );
   }
@@ -3350,12 +3351,12 @@ class _CenterPlayIcon extends StatelessWidget {
       height: 56,
       width: 56,
       decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.overlay,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: const Icon(
         Icons.play_arrow_rounded,
-        color: Colors.white,
+        color: AuraSurface.ink,
         size: 32,
       ),
     );
@@ -3376,22 +3377,22 @@ class _OpenBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: dark ? Colors.black54 : Colors.white70,
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.overlay,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.open_in_new,
             size: 12,
-            color: dark ? Colors.white : Colors.black87,
+            color: AuraSurface.ink,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: AuraText.small.copyWith(
-              color: dark ? Colors.white : Colors.black87,
+              color: AuraSurface.ink,
             ),
           ),
         ],
@@ -3424,8 +3425,8 @@ class _AttachmentIcon extends StatelessWidget {
       height: 40,
       width: 40,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
       child: Icon(icon),
     );
@@ -3473,9 +3474,10 @@ class _ErrorBlock extends StatelessWidget {
         const SizedBox(height: AuraSpace.s8),
         Text(body, style: AuraText.body),
         const SizedBox(height: AuraSpace.s12),
-        OutlinedButton(
+        AuraSecondaryButton(
+          label: 'Try again',
           onPressed: onRetry,
-          child: const Text('Try again'),
+          icon: Icons.refresh_rounded,
         ),
       ],
     );

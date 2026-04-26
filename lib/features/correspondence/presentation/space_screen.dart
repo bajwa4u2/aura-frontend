@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/spaces_repository.dart';
@@ -163,7 +166,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       return AuraScaffold(
         title: 'Conversation',
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: AuraLoadingState(message: 'Opening conversation…'),
         ),
       );
     }
@@ -206,8 +209,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
               const SizedBox(height: AuraSpace.s14),
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AuraSurface.divider),
+                  borderRadius: BorderRadius.circular(AuraRadius.card),
                 ),
                 child: const TabBar(
                   isScrollable: true,
@@ -320,9 +323,10 @@ class _ThreadsTab extends StatelessWidget {
                       style: AuraText.body,
                     ),
                     const SizedBox(height: AuraSpace.s12),
-                    OutlinedButton(
+                    AuraSecondaryButton(
+                      label: 'Create thread',
                       onPressed: onCreateThread,
-                      child: const Text('Create thread'),
+                      icon: Icons.add_rounded,
                     ),
                   ],
                 ),
@@ -454,9 +458,10 @@ class _InvitesTab extends StatelessWidget {
                       style: AuraText.body,
                     ),
                     const SizedBox(height: AuraSpace.s12),
-                    OutlinedButton(
+                    AuraSecondaryButton(
+                      label: 'Add member',
                       onPressed: onInviteMember,
-                      child: const Text('Add member'),
+                      icon: Icons.person_add_alt_outlined,
                     ),
                   ],
                 ),
@@ -657,13 +662,15 @@ class _SpaceHeaderCard extends StatelessWidget {
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
-              FilledButton(
+              AuraPrimaryButton(
+                label: 'New thread',
                 onPressed: onCreateThread,
-                child: const Text('New thread'),
+                icon: Icons.add_rounded,
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Add member',
                 onPressed: onInviteMember,
-                child: const Text('Add member'),
+                icon: Icons.person_add_alt_outlined,
               ),
             ],
           ),
@@ -766,7 +773,7 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
                   child: Text(
                     _errorText!,
                     style: AuraText.small.copyWith(
-                      color: Colors.red.shade700,
+                      color: AuraSurface.dangerInk,
                     ),
                   ),
                 ),
@@ -776,13 +783,14 @@ class _CreateThreadDialogState extends ConsumerState<_CreateThreadDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AuraGhostButton(
+          label: 'Cancel',
           onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
         ),
-        FilledButton(
+        AuraPrimaryButton(
+          label: _submitting ? 'Creating…' : 'Create',
           onPressed: _submitting ? null : _submit,
-          child: Text(_submitting ? 'Creating...' : 'Create'),
+          icon: Icons.add_rounded,
         ),
       ],
     );
@@ -860,7 +868,7 @@ class _ThreadTile extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s6),
                       AuraTextBlock(
                         participantSummary,
-                        style: AuraText.small.copyWith(color: Colors.black54),
+                        style: AuraText.small.copyWith(color: AuraSurface.muted),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -869,7 +877,7 @@ class _ThreadTile extends StatelessWidget {
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
                         participantRoleSummary,
-                        style: AuraText.small.copyWith(color: Colors.black45),
+                        style: AuraText.small.copyWith(color: AuraSurface.faint),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -974,7 +982,9 @@ class _InviteTile extends StatelessWidget {
               runSpacing: AuraSpace.s10,
               children: [
                 if (canCopyLink)
-                  OutlinedButton(
+                  AuraSecondaryButton(
+                    label: 'Copy link',
+                    icon: Icons.copy_rounded,
                     onPressed: () async {
                       final link =
                           '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
@@ -984,12 +994,12 @@ class _InviteTile extends StatelessWidget {
                         const SnackBar(content: Text('Invite link copied.')),
                       );
                     },
-                    child: const Text('Copy link'),
                   ),
                 if (canRevoke)
-                  OutlinedButton(
+                  AuraSecondaryButton(
+                    label: 'Cancel invite',
+                    icon: Icons.close_rounded,
                     onPressed: onRevoke,
-                    child: const Text('Cancel invite'),
                   ),
               ],
             ),
@@ -1280,23 +1290,23 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = switch (tone) {
       _StatusTone.positive => (
-          border: Colors.green.shade200,
-          text: Colors.green.shade800,
-          fill: Colors.green.shade50,
+          border: AuraSurface.goodInk.withValues(alpha: 0.35),
+          text: AuraSurface.goodInk,
+          fill: AuraSurface.goodBg,
         ),
       _StatusTone.negative => (
-          border: Colors.red.shade200,
-          text: Colors.red.shade800,
-          fill: Colors.red.shade50,
+          border: AuraSurface.dangerInk.withValues(alpha: 0.35),
+          text: AuraSurface.dangerInk,
+          fill: AuraSurface.dangerBg,
         ),
       _StatusTone.accent => (
-          border: Colors.blue.shade200,
-          text: Colors.blue.shade800,
-          fill: Colors.blue.shade50,
+          border: AuraSurface.accent.withValues(alpha: 0.35),
+          text: AuraSurface.accentText,
+          fill: AuraSurface.accentSoft,
         ),
       _StatusTone.neutral => (
-          border: Colors.black12,
-          text: Colors.black87,
+          border: AuraSurface.divider,
+          text: AuraSurface.muted,
           fill: Colors.transparent,
         ),
     };

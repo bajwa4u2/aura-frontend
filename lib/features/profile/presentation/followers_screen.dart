@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../providers.dart';
 import '../domain/profile.dart';
@@ -31,20 +33,21 @@ class FollowersScreen extends ConsumerWidget {
       title: '@$handle followers',
       child: followersAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(),
+          child: AuraLoadingState(message: 'Loading followers…'),
         ),
-        error: (_, __) => Center(
-          child: Text(
-            'Could not load followers',
-            style: AuraText.body,
+        error: (_, __) => const Center(
+          child: AuraErrorState(
+            title: 'Could not load followers',
+            body: 'Check your connection and try again.',
           ),
         ),
         data: (items) {
           if (items.isEmpty) {
-            return Center(
-              child: Text(
-                'No followers yet',
-                style: AuraText.body,
+            return const Center(
+              child: AuraEmptyState(
+                icon: Icons.people_outline,
+                title: 'No followers yet',
+                body: 'When people follow this account, they will appear here.',
               ),
             );
           }
@@ -52,43 +55,57 @@ class FollowersScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(AuraSpace.s16),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s12),
+            separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
             itemBuilder: (context, index) {
               final person = items[index];
               final displayName = (person.displayName ?? '').trim();
               final handleText = person.handle.trim();
               final avatarUrl = (person.avatarUrl ?? '').trim();
+              final label =
+                  displayName.isNotEmpty ? displayName : '@$handleText';
 
               return AuraCard(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12,
-                    vertical: AuraSpace.s4,
+                onTap: handleText.isNotEmpty
+                    ? () => context.push('/u/$handleText')
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s14,
+                    vertical: AuraSpace.s12,
                   ),
-                  leading: CircleAvatar(
-                    backgroundImage:
-                        avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl.isEmpty
-                        ? const Icon(Icons.person_outline)
-                        : null,
+                  child: Row(
+                    children: [
+                      AuraAvatar(name: label, imageUrl: avatarUrl, size: 40),
+                      const SizedBox(width: AuraSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (handleText.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                '@$handleText',
+                                style: AuraText.small.copyWith(
+                                  color: AuraSurface.muted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: AuraSurface.faint,
+                      ),
+                    ],
                   ),
-                  title: Text(
-                    displayName.isNotEmpty ? displayName : '@$handleText',
-                    style: AuraText.body.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  subtitle: handleText.isNotEmpty
-                      ? Text(
-                          '@$handleText',
-                          style: AuraText.small,
-                        )
-                      : null,
-                  onTap: () {
-                    if (handleText.isNotEmpty) {
-                      context.push('/u/$handleText');
-                    }
-                  },
                 ),
               );
             },

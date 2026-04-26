@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/aura_text_block.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 
@@ -68,8 +68,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
     return meAsync.when(
       loading: () => AuraScaffold(
-        title: 'Announcements',
-        showHomeAction: true,
+        showHeader: false,
         body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
       ),
       error: (_, __) {
@@ -90,8 +89,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
         return institutionAsync.when(
           loading: () => AuraScaffold(
-            title: 'Announcements',
-            showHomeAction: true,
+            showHeader: false,
             body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
           ),
           error: (_, __) {
@@ -125,6 +123,32 @@ class AnnouncementsScreen extends ConsumerWidget {
   }
 }
 
+// ── Shared header ──────────────────────────────────────────────────────────
+
+class _AnnouncementsHeader extends StatelessWidget {
+  const _AnnouncementsHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AuraText.headline),
+        const SizedBox(height: AuraSpace.s6),
+        Text(
+          subtitle,
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Public screen ──────────────────────────────────────────────────────────
+
 class _PublicAnnouncementsScreen extends StatelessWidget {
   const _PublicAnnouncementsScreen({
     required this.pinnedAsync,
@@ -137,22 +161,20 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      title: 'Announcements',
-      showHomeAction: true,
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
-          AuraSpace.s12,
+          AuraSpace.s20,
           AuraSpace.s16,
-          AuraSpace.s24,
+          AuraSpace.s32,
         ),
         children: [
-          const AuraGradientHeader(
+          const _AnnouncementsHeader(
             title: 'Announcements',
-            subtitle:
-                'The public announcements surface for official platform notices.',
+            subtitle: 'Official platform notices and public communications.',
           ),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s24),
           _PinnedSection(asyncValue: pinnedAsync),
           const SizedBox(height: AuraSpace.s12),
           _AllSection(asyncValue: listAsync),
@@ -161,6 +183,8 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
     );
   }
 }
+
+// ── Admin screen ───────────────────────────────────────────────────────────
 
 class _AdminAnnouncementsScreen extends ConsumerWidget {
   const _AdminAnnouncementsScreen({
@@ -174,26 +198,25 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AuraScaffold(
-      title: 'Announcements',
-      showHomeAction: true,
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
-          AuraSpace.s12,
+          AuraSpace.s20,
           AuraSpace.s16,
-          AuraSpace.s24,
+          AuraSpace.s32,
         ),
         children: [
-          const AuraGradientHeader(
+          const _AnnouncementsHeader(
             title: 'Admin announcement workspace',
             subtitle:
                 'Review pinned notices, the archive, and the live announcement detail paths.',
           ),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s24),
           AuraAdminTile(
             title: 'Workspace',
             body:
-                'Use this area to review what is live, what is pinned, and how each notice opens on the public path.',
+                'Review what is live, what is pinned, and how each notice opens on the public path.',
             icon: Icons.campaign_outlined,
             action: Wrap(
               spacing: AuraSpace.s10,
@@ -227,7 +250,7 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s20),
           _PinnedSection(
             asyncValue: pinnedAsync,
             title: 'Pinned platform notices',
@@ -245,6 +268,8 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
   }
 }
 
+// ── Institution screen ─────────────────────────────────────────────────────
+
 class _InstitutionAnnouncementsScreen extends StatelessWidget {
   const _InstitutionAnnouncementsScreen({
     required this.access,
@@ -256,7 +281,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
   final AsyncValue<List<Announcement>> pinnedAsync;
   final AsyncValue<List<Announcement>> listAsync;
 
-  Map<String, dynamic> _asMap(dynamic value) {
+  Map<String, dynamic> _asMapLocal(dynamic value) {
     if (value is Map) return Map<String, dynamic>.from(value);
     return <String, dynamic>{};
   }
@@ -264,8 +289,8 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
   String _value(dynamic value) => (value ?? '').toString().trim();
 
   String _institutionName() {
-    final institution = _asMap(access.institution);
-    final request = _asMap(access.request);
+    final institution = _asMapLocal(access.institution);
+    final request = _asMapLocal(access.request);
 
     final fromInstitution = _value(institution['name']);
     if (fromInstitution.isNotEmpty) return fromInstitution;
@@ -277,8 +302,8 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
   }
 
   String _domain() {
-    final institution = _asMap(access.institution);
-    final request = _asMap(access.request);
+    final institution = _asMapLocal(access.institution);
+    final request = _asMapLocal(access.request);
 
     final fromInstitution = _value(institution['domain']);
     if (fromInstitution.isNotEmpty) return fromInstitution;
@@ -306,48 +331,67 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
     final standing = _standingLabel();
 
     return AuraScaffold(
-      title: 'Announcements',
-      showHomeAction: true,
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
-          AuraSpace.s12,
+          AuraSpace.s20,
           AuraSpace.s16,
-          AuraSpace.s24,
+          AuraSpace.s32,
         ),
         children: [
-          AuraCard(
+          _AnnouncementsHeader(
+            title: institutionName,
+            subtitle:
+                'Institution-facing announcement context alongside platform notices.',
+          ),
+          const SizedBox(height: AuraSpace.s24),
+          // Standing + actions card
+          Container(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            decoration: BoxDecoration(
+              color: AuraSurface.card,
+              borderRadius: BorderRadius.circular(AuraRadius.card),
+              border: Border.all(color: AuraSurface.divider),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(institutionName, style: AuraText.title),
+                Text('Standing', style: AuraText.small.copyWith(
+                  color: AuraSurface.faint,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                )),
                 const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'This area holds institution-facing announcement context while platform notices remain visible for reference.',
-                  style: AuraText.body,
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  children: [
+                    _StatusBadge(label: standing),
+                    if (domain.isNotEmpty) _StatusBadge(label: 'Domain: $domain'),
+                  ],
                 ),
-                const SizedBox(height: AuraSpace.s12),
+                const SizedBox(height: AuraSpace.s16),
                 Wrap(
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
                   children: [
-                    _StatusChip(label: standing),
-                    if (domain.isNotEmpty) _StatusChip(label: 'Domain: $domain'),
-                    FilledButton.icon(
+                    AuraPrimaryButton(
+                      label: 'Create institution notice',
                       onPressed: () => context.go('/announcements/create?scope=institution'),
-                      icon: const Icon(Icons.add_circle_outline, size: 18),
-                      label: const Text('Create institution notice'),
+                      icon: Icons.add_circle_outline,
                     ),
-                    OutlinedButton(
+                    AuraSecondaryButton(
+                      label: 'Institution dashboard',
                       onPressed: () => context.go('/institution/dashboard'),
-                      child: const Text('Back to institution dashboard'),
+                      icon: Icons.apartment_outlined,
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s20),
           _PinnedSection(
             asyncValue: pinnedAsync,
             title: 'Pinned platform notices',
@@ -365,8 +409,10 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label});
+// ── Status badge ───────────────────────────────────────────────────────────
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label});
 
   final String label;
 
@@ -378,21 +424,27 @@ class _StatusChip extends StatelessWidget {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        color: AuraSurface.subtle,
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+        style: AuraText.small.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AuraSurface.muted,
+        ),
       ),
     );
   }
 }
 
+// ── Pinned section ─────────────────────────────────────────────────────────
+
 class _PinnedSection extends StatelessWidget {
   const _PinnedSection({
     required this.asyncValue,
-    this.title = 'Pinned platform notices',
+    this.title = 'Pinned notices',
   });
 
   final AsyncValue<List<Announcement>> asyncValue;
@@ -401,52 +453,55 @@ class _PinnedSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return asyncValue.when(
-      loading: () => const _LoadingCard(label: 'Loading pinned…'),
-      error: (e, _) => _ErrorCard(error: e),
+      loading: () => const AuraLoadingState(message: 'Loading pinned…'),
+      error: (e, _) => AuraErrorState(
+        title: 'Could not load pinned notices',
+        body: 'Something went wrong. Try refreshing.',
+      ),
       data: (items) {
-        if (items.isEmpty) {
-          return AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'No pinned notices right now.',
-                  style: AuraText.body,
-                ),
-              ],
-            ),
-          );
-        }
+        if (items.isEmpty) return const SizedBox.shrink();
 
-        return AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              for (final a in items) ...[
-                _AnnouncementRow(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AuraSpace.s4,
+                bottom: AuraSpace.s10,
+              ),
+              child: Text(
+                title,
+                style: AuraText.label.copyWith(
+                  color: AuraSurface.faint,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            ...items.map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                child: _AnnouncementCard(
                   title: a.title.isEmpty ? a.slug : a.title,
-                  subtitle: a.publishedAt == null ? null : a.publishedAt!.toLocal().toString(),
+                  publishedAt: a.publishedAt,
+                  pinned: true,
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
-                const SizedBox(height: AuraSpace.s8),
-              ],
-            ],
-          ),
+              ),
+            ),
+          ],
         );
       },
     );
   }
 }
 
+// ── All section ────────────────────────────────────────────────────────────
+
 class _AllSection extends StatelessWidget {
   const _AllSection({
     required this.asyncValue,
-    this.title = 'All platform notices',
-    this.emptyTitle = 'Nothing yet',
+    this.title = 'All notices',
+    this.emptyTitle = 'Nothing published yet',
     this.emptyBody = 'When platform notices are published, they will appear here.',
   });
 
@@ -458,130 +513,134 @@ class _AllSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return asyncValue.when(
-      loading: () => const _LoadingCard(label: 'Loading announcements…'),
-      error: (e, _) => _ErrorCard(error: e),
+      loading: () => const AuraLoadingState(message: 'Loading announcements…'),
+      error: (e, _) => AuraErrorState(
+        title: 'Could not load announcements',
+        body: 'Something went wrong. Try refreshing.',
+      ),
       data: (items) {
         if (items.isEmpty) {
-          return AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(emptyTitle, style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  emptyBody,
-                  style: AuraText.body,
-                ),
-              ],
-            ),
+          return AuraEmptyState(
+            title: emptyTitle,
+            body: emptyBody,
+            icon: Icons.campaign_outlined,
           );
         }
 
-        return AuraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AuraText.title),
-              const SizedBox(height: AuraSpace.s10),
-              for (final a in items) ...[
-                _AnnouncementRow(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AuraSpace.s4,
+                bottom: AuraSpace.s10,
+              ),
+              child: Text(
+                title,
+                style: AuraText.label.copyWith(
+                  color: AuraSurface.faint,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            ...items.map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                child: _AnnouncementCard(
                   title: a.title.isEmpty ? a.slug : a.title,
-                  subtitle: a.publishedAt == null ? null : a.publishedAt!.toLocal().toString(),
+                  publishedAt: a.publishedAt,
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
-                const SizedBox(height: AuraSpace.s8),
-              ],
-            ],
-          ),
+              ),
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _AnnouncementRow extends StatelessWidget {
-  const _AnnouncementRow({
+// ── Announcement card ──────────────────────────────────────────────────────
+
+class _AnnouncementCard extends StatelessWidget {
+  const _AnnouncementCard({
     required this.title,
     required this.onTap,
-    this.subtitle,
+    this.publishedAt,
+    this.pinned = false,
   });
 
   final String title;
-  final String? subtitle;
+  final DateTime? publishedAt;
+  final bool pinned;
   final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.campaign_outlined, size: 18),
-            const SizedBox(width: AuraSpace.s10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AuraTextBlock(
-                    title,
-                    style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(subtitle!, style: AuraText.small),
-                  ],
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, size: 18),
-          ],
-        ),
-      ),
-    );
+  String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard({required this.label});
-
-  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(color: AuraSurface.divider),
           ),
-          const SizedBox(width: AuraSpace.s10),
-          Text(label, style: AuraText.body),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.error});
-
-  final Object error;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Failed to load', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          Text(error.toString(), style: AuraText.body),
-        ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                  border: Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                ),
+                child: Icon(
+                  pinned ? Icons.push_pin_outlined : Icons.campaign_outlined,
+                  size: 16,
+                  color: AuraSurface.accentText,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (publishedAt != null) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        _formatDate(publishedAt!),
+                        style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 16, color: AuraSurface.faint),
+            ],
+          ),
+        ),
       ),
     );
   }

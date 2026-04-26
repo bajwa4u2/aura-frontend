@@ -6,8 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -111,91 +114,144 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final redirect = _safeRedirect(widget.redirectTo);
 
     return AuraScaffold(
-      title: 'Forgot password',
+      showHeader: false,
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
-              child: AutofillGroup(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Reset your password', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(
-                      'Enter your email and we will send you a secure link to set a new password.',
-                      style: AuraText.body,
-                    ),
-                    const SizedBox(height: AuraSpace.s14),
-                    TextField(
-                      controller: _email,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.email],
-                      autocorrect: false,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'name@example.com',
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (_) => _busy ? null : _submit(),
-                    ),
-                    const SizedBox(height: AuraSpace.s14),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        FilledButton(
-                          onPressed: _busy ? null : _submit,
-                          child: Text(_busy ? 'Sending…' : 'Send reset link'),
-                        ),
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => context.go(
-                                    '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                  ),
-                          child: const Text('Back to login'),
-                        ),
-                      ],
-                    ),
-                    if (_message != null) ...[
-                      const SizedBox(height: AuraSpace.s12),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s16,
+              vertical: AuraSpace.s24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: AuraCard(
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icon + heading
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: _messageIsError
-                              ? Colors.red.withValues(alpha: 0.08)
-                              : Colors.blue.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _messageIsError
-                                ? Colors.red.withValues(alpha: 0.22)
-                                : Colors.blue.withValues(alpha: 0.22),
-                          ),
+                          color: AuraSurface.accentSoft,
+                          shape: BoxShape.circle,
                         ),
-                        child: Text(
-                          _message!,
-                          style: AuraText.body.copyWith(
-                            color:
-                                _messageIsError ? Colors.red : Colors.blue,
-                            height: 1.35,
-                          ),
+                        child: const Icon(
+                          Icons.lock_reset_rounded,
+                          size: 22,
+                          color: AuraSurface.accentText,
                         ),
                       ),
+                      const SizedBox(height: AuraSpace.s14),
+                      Text('Reset your password', style: AuraText.title),
+                      const SizedBox(height: AuraSpace.s8),
+                      Text(
+                        'Enter your email and we will send you a secure link to set a new password.',
+                        style: AuraText.body.copyWith(
+                          color: AuraSurface.muted,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s20),
+                      TextField(
+                        controller: _email,
+                        enabled: !_busy,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.email],
+                        autocorrect: false,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
+                        style: AuraText.body,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          hintText: 'name@example.com',
+                        ),
+                        onSubmitted: (_) => _busy ? null : _submit(),
+                      ),
+                      const SizedBox(height: AuraSpace.s20),
+                      if (_busy) ...[
+                        AuraPrimaryButton(
+                          label: 'Sending…',
+                          onPressed: null,
+                          icon: Icons.send_rounded,
+                        ),
+                      ] else ...[
+                        AuraPrimaryButton(
+                          label: 'Send reset link',
+                          onPressed: _submit,
+                          icon: Icons.send_rounded,
+                        ),
+                      ],
+                      const SizedBox(height: AuraSpace.s10),
+                      AuraGhostButton(
+                        label: 'Back to login',
+                        onPressed: _busy
+                            ? null
+                            : () => context.go(
+                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
+                                ),
+                      ),
+                      if (_message != null) ...[
+                        const SizedBox(height: AuraSpace.s16),
+                        _MessageBanner(
+                          message: _message!,
+                          isError: _messageIsError,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Shared message banner ─────────────────────────────────────────────────────
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({required this.message, required this.isError});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isError ? AuraSurface.dangerBg : AuraSurface.goodBg;
+    final ink = isError ? AuraSurface.dangerInk : AuraSurface.goodInk;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: ink.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_outline_rounded,
+            size: 16,
+            color: ink,
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Text(
+              message,
+              style: AuraText.small.copyWith(color: ink, height: 1.5),
+            ),
+          ),
+        ],
       ),
     );
   }

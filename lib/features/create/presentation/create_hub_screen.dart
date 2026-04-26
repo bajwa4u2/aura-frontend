@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_design_system.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -13,68 +14,68 @@ class CreateHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
-      title: 'Create',
+      showHeader: false,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
               AuraSpace.s16,
+              AuraSpace.s20,
               AuraSpace.s16,
-              AuraSpace.s16,
-              AuraSpace.s24,
+              AuraSpace.s32,
             ),
-            children: const [
-              _CreateLead(),
-              SizedBox(height: AuraSpace.s20),
+            children: [
+              _CreateHero(),
+              const SizedBox(height: AuraSpace.s28),
               _CreateSection(
                 title: 'Writing',
-                items: [
+                items: const [
                   _CreateActionData(
-                    title: 'Work',
-                    subtitle: 'Begin a new piece.',
-                    icon: Icons.edit_outlined,
+                    title: 'New work',
+                    subtitle: 'Begin a piece of writing or long-form content.',
+                    icon: Icons.edit_note_rounded,
                     route: '/compose',
                   ),
                   _CreateActionData(
-                    title: 'Media',
-                    subtitle: 'Open composition with media.',
+                    title: 'With media',
+                    subtitle: 'Open composition with image or video attachment.',
                     icon: Icons.perm_media_outlined,
                     route: '/compose',
                   ),
                 ],
               ),
-              SizedBox(height: AuraSpace.s16),
+              const SizedBox(height: AuraSpace.s20),
               _CreateSection(
                 title: 'Correspondence',
-                items: [
+                items: const [
                   _CreateActionData(
                     title: 'Conversation',
-                    subtitle: 'Begin a direct exchange.',
-                    icon: Icons.forum_outlined,
+                    subtitle: 'Begin a direct private exchange with one person.',
+                    icon: Icons.chat_bubble_outline_rounded,
                     route: '/me/correspondence/create/conversation',
                   ),
                   _CreateActionData(
                     title: 'Space',
-                    subtitle: 'Form a shared place.',
+                    subtitle: 'Form a shared room with clear membership.',
                     icon: Icons.groups_outlined,
                     route: '/me/correspondence/create/space',
                   ),
                 ],
               ),
-              SizedBox(height: AuraSpace.s16),
+              const SizedBox(height: AuraSpace.s20),
               _CreateSection(
                 title: 'System',
-                items: [
+                items: const [
                   _CreateActionData(
                     title: 'Claim audit',
-                    subtitle: 'Open the audit surface.',
+                    subtitle: 'Open the AI-powered claim audit surface.',
                     icon: Icons.fact_check_outlined,
                     route: '/ai/claim-audit',
                   ),
                   _CreateActionData(
                     title: 'Announcement',
-                    subtitle: 'Publish an official notice.',
+                    subtitle: 'Publish an official institution or platform notice.',
                     icon: Icons.campaign_outlined,
                     route: '/announcements/create',
                   ),
@@ -88,25 +89,42 @@ class CreateHubScreen extends StatelessWidget {
   }
 }
 
-class _CreateLead extends StatelessWidget {
-  const _CreateLead();
-
+class _CreateHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s20, AuraSpace.s24, AuraSpace.s20, AuraSpace.s24),
+      decoration: BoxDecoration(
+        gradient: AuraGradients.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+        boxShadow: AuraShadows.card,
+      ),
+      child: Row(
         children: [
-          Text(
-            'Create',
-            style: AuraText.title,
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'Choose what to begin.',
-            style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Create', style: AuraText.headline),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  'Start something — writing, correspondence, or a platform notice.',
+                  style: AuraText.body
+                      .copyWith(color: AuraSurface.muted, height: 1.5),
+                ),
+              ],
             ),
+          ),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: AuraGradients.accent,
+              borderRadius: BorderRadius.circular(AuraRadius.r14),
+            ),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
           ),
         ],
       ),
@@ -129,15 +147,19 @@ class _CreateSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+          padding: const EdgeInsets.only(
+              left: AuraSpace.s4, bottom: AuraSpace.s12),
           child: Text(
             title,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+            style: AuraText.label.copyWith(
+              color: AuraSurface.faint,
+              letterSpacing: 0.8,
+            ),
           ),
         ),
         LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 720;
+            final wide = constraints.maxWidth >= 680;
             if (wide) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +178,7 @@ class _CreateSection extends StatelessWidget {
                 for (var i = 0; i < items.length; i++) ...[
                   _CreateActionCard(data: items[i]),
                   if (i != items.length - 1)
-                    const SizedBox(height: AuraSpace.s12),
+                    const SizedBox(height: AuraSpace.s10),
                 ],
               ],
             );
@@ -174,44 +196,64 @@ class _CreateActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      onTap: () => context.go(data.route),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AuraSurface.elevated,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Icon(data.icon, size: 18, color: AuraSurface.muted),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(data.route),
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(color: AuraSurface.divider),
+            boxShadow: AuraShadows.card,
           ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            data.title,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s6),
-          Text(
-            data.subtitle,
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Open',
-                style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                  border: Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.25)),
+                ),
+                child: Icon(data.icon,
+                    size: AuraIconSize.sm, color: AuraSurface.accentText),
               ),
-              const SizedBox(width: AuraSpace.s6),
-              const Icon(Icons.arrow_forward, size: 16),
+              const SizedBox(height: AuraSpace.s14),
+              Text(
+                data.title,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AuraSpace.s6),
+              Text(
+                data.subtitle,
+                style: AuraText.small.copyWith(
+                    color: AuraSurface.muted, height: 1.4),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              Row(
+                children: [
+                  Text(
+                    'Open',
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AuraSurface.accentText,
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s4),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 14, color: AuraSurface.accentText),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

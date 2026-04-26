@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
+import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../domain/realtime_state.dart';
 
@@ -85,8 +87,8 @@ class _Chip extends StatelessWidget {
         vertical: AuraSpace.s8,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,

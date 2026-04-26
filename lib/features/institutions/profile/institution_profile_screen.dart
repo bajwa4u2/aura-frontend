@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/document_scaffold.dart';
 
@@ -31,7 +33,7 @@ class InstitutionProfileScreen extends StatelessWidget {
               label,
               style: AuraText.body.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.black54,
+                color: AuraSurface.muted,
               ),
             ),
           ),
@@ -60,8 +62,8 @@ class InstitutionProfileScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           child: Ink(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AuraSurface.divider),
+              borderRadius: BorderRadius.circular(AuraRadius.card),
             ),
             padding: EdgeInsets.all(AuraSpace.s14),
             child: Column(
@@ -78,7 +80,7 @@ class InstitutionProfileScreen extends StatelessWidget {
                   status,
                   style: AuraText.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: enabled ? Colors.black87 : Colors.black54,
+                    color: enabled ? AuraSurface.ink : AuraSurface.muted,
                   ),
                 ),
               ],

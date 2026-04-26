@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/route_targets.dart';
 import '../../../core/communication/communication_resolver.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -346,14 +348,15 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 920),
             child: RefreshIndicator(
+              color: AuraSurface.accent,
               onRefresh: () =>
                   ref.read(notificationsControllerProvider.notifier).refresh(force: true),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   AuraSpace.s16,
+                  AuraSpace.s20,
                   AuraSpace.s16,
-                  AuraSpace.s16,
-                  AuraSpace.s24,
+                  AuraSpace.s32,
                 ),
                 children: [
                   _ActivityHeader(
@@ -361,14 +364,20 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                     onMarkAllRead: items.isEmpty ? null : _markAllRead,
                     markingAllRead: state.isRefreshing,
                   ),
-                  const SizedBox(height: AuraSpace.s16),
+                  const SizedBox(height: AuraSpace.s20),
                   if (state.isLoading)
-                    const _ActivityLoadingState()
+                    const _ActivitySkeletonList()
                   else if ((state.error ?? '').isNotEmpty)
-                    _ActivityErrorState(
-                      message: state.error!,
-                      onRetry: () =>
-                          ref.read(notificationsControllerProvider.notifier).refresh(force: true),
+                    AuraErrorState(
+                      title: 'Activity unavailable',
+                      body: state.error!,
+                      action: AuraSecondaryButton(
+                        label: 'Try again',
+                        onPressed: () => ref
+                            .read(notificationsControllerProvider.notifier)
+                            .refresh(force: true),
+                        icon: Icons.refresh_rounded,
+                      ),
                     )
                   else if (items.isEmpty)
                     const _ActivityEmptyState()
@@ -379,15 +388,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                         onTap: () => _handleTap(item),
                       ),
                     if ((state.nextCursor ?? '').isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s16),
+                      const SizedBox(height: AuraSpace.s20),
                       Center(
-                        child: OutlinedButton(
+                        child: AuraSecondaryButton(
+                          label: state.isLoadingMore ? 'Loading…' : 'Load more',
                           onPressed: state.isLoadingMore
                               ? null
                               : () => ref
                                   .read(notificationsControllerProvider.notifier)
                                   .loadMore(),
-                          child: Text(state.isLoadingMore ? 'Loading…' : 'Load more'),
+                          icon: Icons.expand_more_rounded,
                         ),
                       ),
                     ],
@@ -436,72 +446,88 @@ class _ActivityHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Activity', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s6),
-              Text(
-                unreadCount > 0 ? '$unreadCount unread' : 'All caught up',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
+              Text('Activity', style: AuraText.headline),
+              const SizedBox(height: AuraSpace.s4),
+              if (unreadCount > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AuraSurface.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s6),
+                    Text(
+                      '$unreadCount unread',
+                      style: AuraText.small.copyWith(
+                          color: AuraSurface.accentText,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  'All caught up',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
             ],
           ),
         ),
-        const SizedBox(width: AuraSpace.s12),
-        OutlinedButton(
-          onPressed: markingAllRead ? null : onMarkAllRead,
-          child: Text(markingAllRead ? 'Marking…' : 'Mark all read'),
-        ),
+        if (onMarkAllRead != null)
+          AuraActionPill(
+            icon: Icons.done_all_rounded,
+            label: markingAllRead ? 'Marking…' : 'Mark all read',
+            onTap: markingAllRead ? () {} : onMarkAllRead!,
+          ),
       ],
     );
   }
 }
 
-class _ActivityLoadingState extends StatelessWidget {
-  const _ActivityLoadingState();
+class _ActivitySkeletonList extends StatelessWidget {
+  const _ActivitySkeletonList();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
-      child: Column(
-        children: const [
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(strokeWidth: 2.4),
+    return Column(
+      children: List.generate(
+        5,
+        (_) => Padding(
+          padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AuraSkeleton(width: 40, height: 40, radius: AuraRadius.pill),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AuraSkeleton(
+                        width: double.infinity,
+                        height: 14,
+                        radius: AuraRadius.r10),
+                    const SizedBox(height: AuraSpace.s8),
+                    AuraSkeleton(
+                        width: 160, height: 12, radius: AuraRadius.r10),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              AuraSkeleton(width: 32, height: 12, radius: AuraRadius.r10),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityErrorState extends StatelessWidget {
-  const _ActivityErrorState({
-    required this.message,
-    required this.onRetry,
-  });
-
-  final String message;
-  final Future<void> Function() onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, size: 28, color: AuraSurface.muted),
-          const SizedBox(height: AuraSpace.s12),
-          Text(message, style: AuraText.small.copyWith(color: AuraSurface.muted)),
-          const SizedBox(height: AuraSpace.s16),
-          OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-        ],
+        ),
       ),
     );
   }
@@ -516,9 +542,26 @@ class _ActivityEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s32),
       child: Column(
         children: [
-          const Icon(Icons.notifications_none, size: 32, color: AuraSurface.muted),
-          const SizedBox(height: AuraSpace.s12),
-          Text('No activity yet.', style: AuraText.small.copyWith(color: AuraSurface.muted)),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              shape: BoxShape.circle,
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: const Icon(Icons.notifications_none_rounded,
+                size: 24, color: AuraSurface.muted),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Text('No activity yet',
+              style: AuraText.subtitle.copyWith(color: AuraSurface.ink)),
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            'When people interact with your work, you\'ll see it here.',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -543,63 +586,66 @@ class _ActivityTile extends StatelessWidget {
     final timeLabel = _timeAgoLabel(item['createdAt']);
     final unread = _stringOf(item['readAt']).isEmpty;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ActivityLeadingIcon(
-              type: type,
-              avatarUrl: _stringOf(actor['avatarUrl']),
-              unread: unread,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s12, vertical: AuraSpace.s14),
+            decoration: BoxDecoration(
+              color: unread ? AuraSurface.subtle : Colors.transparent,
+              borderRadius: BorderRadius.circular(AuraRadius.card),
+              border: unread
+                  ? Border.all(
+                      color: AuraSurface.accent.withValues(alpha: 0.15))
+                  : null,
             ),
-            const SizedBox(width: AuraSpace.s12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AuraText.small.copyWith(
-                      fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
-                      color: AuraSurface.ink,
-                    ),
-                  ),
-                  if (subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(timeLabel, style: AuraText.small.copyWith(color: AuraSurface.muted)),
-                if (unread) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AuraSurface.ink,
-                      shape: BoxShape.circle,
-                    ),
+                _ActivityLeadingIcon(
+                  type: type,
+                  avatarUrl: _stringOf(actor['avatarUrl']),
+                  unread: unread,
+                ),
+                const SizedBox(width: AuraSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AuraText.small.copyWith(
+                          fontWeight:
+                              unread ? FontWeight.w700 : FontWeight.w600,
+                          color: AuraSurface.ink,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s4),
+                        Text(
+                          subtitle,
+                          style: AuraText.small
+                              .copyWith(color: AuraSurface.muted),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(timeLabel,
+                    style: AuraText.micro
+                        .copyWith(color: AuraSurface.faint)),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -618,9 +664,6 @@ class _ActivityLeadingIcon extends StatelessWidget {
   final bool unread;
 
   IconData _iconForType() {
-    if (type == 'SYSTEM') {
-      return Icons.videocam_outlined;
-    }
     switch (type) {
       case 'FOLLOW':
       case 'FOLLOW_REQUEST':
@@ -630,25 +673,43 @@ class _ActivityLeadingIcon extends StatelessWidget {
       case 'MENTION':
         return Icons.reply_outlined;
       case 'REPOST':
-        return Icons.repeat;
+        return Icons.repeat_rounded;
       case 'LIKE':
-        return Icons.favorite_border;
+        return Icons.favorite_border_rounded;
       case 'SAVE':
-        return Icons.bookmark_border;
+        return Icons.bookmark_border_rounded;
       case 'SPACE_INVITE':
       case 'THREAD_INVITE':
       case 'INVITE_ACCEPTED':
-        return Icons.mail_outline;
+        return Icons.mail_outline_rounded;
       case 'POST_PUBLISHED':
-        return Icons.check_circle_outline;
+        return Icons.check_circle_outline_rounded;
       case 'ANNOUNCEMENT_PUBLISHED':
         return Icons.campaign_outlined;
       case 'MESSAGE_RECEIVED':
-        return Icons.mail_outline;
+        return Icons.mail_outline_rounded;
       case 'POST_PUBLISH_FAILED':
-        return Icons.error_outline;
+        return Icons.error_outline_rounded;
       default:
-        return Icons.notifications_none;
+        return Icons.notifications_none_rounded;
+    }
+  }
+
+  Color _iconColor() {
+    switch (type) {
+      case 'LIKE':
+        return const Color(0xFFE8738A);
+      case 'ANNOUNCEMENT_PUBLISHED':
+      case 'POST_PUBLISHED':
+        return AuraSurface.accentText;
+      case 'POST_PUBLISH_FAILED':
+        return AuraSurface.warnInk;
+      case 'MESSAGE_RECEIVED':
+      case 'THREAD_INVITE':
+      case 'SPACE_INVITE':
+        return AuraSurface.accentText;
+      default:
+        return AuraSurface.muted;
     }
   }
 
@@ -658,39 +719,39 @@ class _ActivityLeadingIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(color: AuraSurface.divider),
           ),
           child: avatarUrl.isNotEmpty
               ? ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
                   child: Image.network(
                     avatarUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Icon(
                       _iconForType(),
                       size: 18,
-                      color: AuraSurface.ink,
+                      color: _iconColor(),
                     ),
                   ),
                 )
-              : Icon(_iconForType(), size: 18, color: AuraSurface.ink),
+              : Icon(_iconForType(), size: 18, color: _iconColor()),
         ),
         if (unread)
           Positioned(
-            right: -1,
-            top: -1,
+            right: -2,
+            top: -2,
             child: Container(
-              width: 10,
-              height: 10,
+              width: 11,
+              height: 11,
               decoration: BoxDecoration(
-                color: AuraSurface.ink,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AuraSurface.page, width: 1.5),
+                color: AuraSurface.accent,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(color: AuraSurface.page, width: 2),
               ),
             ),
           ),
@@ -788,7 +849,9 @@ String _buildSubtitle(Map<String, dynamic> item) {
       _stringOf(data['roomTitle']),
       _stringOf(item['title']),
     ]);
-    return roomTitle.isNotEmpty ? 'Open $roomTitle in correspondence' : 'Return to correspondence';
+    return roomTitle.isNotEmpty
+        ? 'Open $roomTitle in correspondence'
+        : 'Return to correspondence';
   }
 
   switch (type) {

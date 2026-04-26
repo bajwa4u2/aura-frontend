@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -193,19 +196,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     super.dispose();
   }
 
-  InputDecoration _decoration({
-    required String label,
-    String? hint,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      suffixIcon: suffixIcon,
-      border: const OutlineInputBorder(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final redirect = _safeRedirect(widget.redirectTo);
@@ -216,150 +206,193 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         : widget.email!.trim();
 
     return AuraScaffold(
-      title: 'Reset password',
+      showHeader: false,
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Set a new password', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    hasToken
-                        ? 'Choose a new password for $accountLabel.'
-                        : 'This reset link looks incomplete. Please request a new one.',
-                    style: AuraText.body,
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  if (hasToken) ...[
-                    TextField(
-                      controller: _password,
-                      enabled: enabled,
-                      obscureText: _obscurePassword,
-                      autofillHints: const [AutofillHints.newPassword],
-                      textInputAction: TextInputAction.next,
-                      decoration: _decoration(
-                        label: 'New password',
-                        hint: 'At least 8 characters',
-                        suffixIcon: IconButton(
-                          onPressed: enabled
-                              ? () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                }
-                              : null,
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                        ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s16,
+              vertical: AuraSpace.s24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: AuraCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon + heading
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AuraSurface.accentSoft,
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    TextField(
-                      controller: _confirm,
-                      enabled: enabled,
-                      obscureText: _obscureConfirm,
-                      autofillHints: const [AutofillHints.newPassword],
-                      textInputAction: TextInputAction.done,
-                      decoration: _decoration(
-                        label: 'Confirm password',
-                        hint: 'Re-enter your password',
-                        suffixIcon: IconButton(
-                          onPressed: enabled
-                              ? () {
-                                  setState(() {
-                                    _obscureConfirm = !_obscureConfirm;
-                                  });
-                                }
-                              : null,
-                          icon: Icon(
-                            _obscureConfirm
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                        ),
+                      child: const Icon(
+                        Icons.key_rounded,
+                        size: 22,
+                        color: AuraSurface.accentText,
                       ),
-                      onSubmitted: (_) => enabled ? _submit() : null,
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        FilledButton(
-                          onPressed: enabled ? _submit : null,
-                          child: Text(
-                            _done
-                                ? 'Done'
-                                : (_busy ? 'Updating…' : 'Update password'),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => context.go(
-                                    '/login?redirect=${Uri.encodeComponent(redirect)}',
-                                  ),
-                          child: const Text('Back to login'),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        FilledButton(
-                          onPressed: () => context.go(
-                            '/forgot-password?redirect=${Uri.encodeComponent(redirect)}',
-                          ),
-                          child: const Text('Request new reset link'),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go(
-                            '/login?redirect=${Uri.encodeComponent(redirect)}',
-                          ),
-                          child: const Text('Back to login'),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (_msg != null) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _msgIsError
-                            ? Colors.red.withValues(alpha: 0.08)
-                            : Colors.green.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _msgIsError
-                              ? Colors.red.withValues(alpha: 0.22)
-                              : Colors.green.withValues(alpha: 0.22),
-                        ),
-                      ),
-                      child: Text(
-                        _msg!,
-                        style: AuraText.body.copyWith(
-                          color: _msgIsError ? Colors.red : Colors.green,
-                          height: 1.35,
-                        ),
+                    Text('Set a new password', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text(
+                      hasToken
+                          ? 'Choose a new password for $accountLabel.'
+                          : 'This reset link looks incomplete. Please request a new one.',
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.5,
                       ),
                     ),
+                    const SizedBox(height: AuraSpace.s20),
+                    if (hasToken) ...[
+                      TextField(
+                        controller: _password,
+                        enabled: enabled,
+                        obscureText: _obscurePassword,
+                        autofillHints: const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.next,
+                        style: AuraText.body,
+                        decoration: InputDecoration(
+                          labelText: 'New password',
+                          hintText: 'At least 8 characters',
+                          suffixIcon: IconButton(
+                            onPressed: enabled
+                                ? () => setState(
+                                      () => _obscurePassword =
+                                          !_obscurePassword,
+                                    )
+                                : null,
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              color: AuraSurface.muted,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                      TextField(
+                        controller: _confirm,
+                        enabled: enabled,
+                        obscureText: _obscureConfirm,
+                        autofillHints: const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.done,
+                        style: AuraText.body,
+                        decoration: InputDecoration(
+                          labelText: 'Confirm password',
+                          hintText: 'Re-enter your password',
+                          suffixIcon: IconButton(
+                            onPressed: enabled
+                                ? () => setState(
+                                      () =>
+                                          _obscureConfirm = !_obscureConfirm,
+                                    )
+                                : null,
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              color: AuraSurface.muted,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        onSubmitted: (_) => enabled ? _submit() : null,
+                      ),
+                      const SizedBox(height: AuraSpace.s20),
+                      AuraPrimaryButton(
+                        label: _done
+                            ? 'Done'
+                            : (_busy ? 'Updating…' : 'Update password'),
+                        onPressed: enabled ? _submit : null,
+                        icon: _done
+                            ? Icons.check_rounded
+                            : Icons.lock_outline_rounded,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      AuraGhostButton(
+                        label: 'Back to login',
+                        onPressed: _busy
+                            ? null
+                            : () => context.go(
+                                  '/login?redirect=${Uri.encodeComponent(redirect)}',
+                                ),
+                      ),
+                    ] else ...[
+                      AuraPrimaryButton(
+                        label: 'Request new reset link',
+                        onPressed: () => context.go(
+                          '/forgot-password?redirect=${Uri.encodeComponent(redirect)}',
+                        ),
+                        icon: Icons.refresh_rounded,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
+                      AuraGhostButton(
+                        label: 'Back to login',
+                        onPressed: () => context.go(
+                          '/login?redirect=${Uri.encodeComponent(redirect)}',
+                        ),
+                      ),
+                    ],
+                    if (_msg != null) ...[
+                      const SizedBox(height: AuraSpace.s16),
+                      _MessageBanner(message: _msg!, isError: _msgIsError),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Shared message banner ─────────────────────────────────────────────────────
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({required this.message, required this.isError});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isError ? AuraSurface.dangerBg : AuraSurface.goodBg;
+    final ink = isError ? AuraSurface.dangerInk : AuraSurface.goodInk;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: ink.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError
+                ? Icons.error_outline_rounded
+                : Icons.check_circle_outline_rounded,
+            size: 16,
+            color: ink,
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Text(
+              message,
+              style: AuraText.small.copyWith(color: ink, height: 1.5),
+            ),
+          ),
+        ],
       ),
     );
   }

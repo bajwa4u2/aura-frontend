@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -832,22 +833,22 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: AuraSecondaryButton(
+                      label: 'Cancel',
                       onPressed: _submitting ? null : () => context.pop(),
-                      child: const Text('Cancel'),
+                      icon: Icons.close_rounded,
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s12),
                   Expanded(
-                    child: FilledButton(
+                    child: AuraPrimaryButton(
+                      label: _submitting
+                          ? (_isSharedSpaceMode ? 'Creating…' : 'Starting…')
+                          : (_isSharedSpaceMode
+                              ? 'Create space'
+                              : 'Start conversation'),
                       onPressed: _canSubmit ? _submit : null,
-                      child: Text(
-                        _submitting
-                            ? (_isSharedSpaceMode ? 'Creating...' : 'Starting...')
-                            : (_isSharedSpaceMode
-                                ? 'Create space'
-                                : 'Start conversation'),
-                      ),
+                      icon: Icons.arrow_forward_rounded,
                     ),
                   ),
                 ],
@@ -965,16 +966,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   ],
                 ),
               ),
-              OutlinedButton.icon(
-                onPressed: hasDraft && !_suggestionsBusy ? () => _refreshSuggestions() : null,
-                icon: _suggestionsBusy
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_fix_high_outlined),
-                label: Text(_suggestionsBusy ? 'Checking...' : 'Check'),
+              AuraSecondaryButton(
+                label: _suggestionsBusy ? 'Checking…' : 'Check',
+                icon: Icons.auto_fix_high_outlined,
+                onPressed:
+                    hasDraft && !_suggestionsBusy ? () => _refreshSuggestions() : null,
               ),
             ],
           ),
@@ -1031,16 +1027,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
-              OutlinedButton.icon(
+              AuraSecondaryButton(
+                label: _translationBusy ? 'Preparing…' : 'Preview',
+                icon: Icons.translate_outlined,
                 onPressed: hasDraft && !_translationBusy ? _translateDraft : null,
-                icon: _translationBusy
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.translate),
-                label: Text(_translationBusy ? 'Preparing...' : 'Preview'),
               ),
             ],
           ),
@@ -1078,11 +1068,12 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                   const SizedBox(height: AuraSpace.s10),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: FilledButton(
+                    child: AuraPrimaryButton(
+                      label: 'Use translation',
+                      icon: Icons.check_rounded,
                       onPressed: _translationPreview!.translatedText.trim().isEmpty
                           ? null
                           : _applyTranslation,
-                      child: const Text('Use translation'),
                     ),
                   ),
                 ],
@@ -1118,7 +1109,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                       child: SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AuraSurface.accent,
+                        ),
                       ),
                     )
                   : (_searchController.text.trim().isEmpty
@@ -1520,16 +1514,10 @@ class _SuggestionTile extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
+              child: AuraSecondaryButton(
+                label: applying ? 'Applying…' : 'Apply',
+                icon: Icons.check_circle_outline,
                 onPressed: applying ? null : onApply,
-                icon: applying
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline),
-                label: Text(applying ? 'Applying...' : 'Apply'),
               ),
             ),
           ],
@@ -1623,9 +1611,9 @@ class _DirectoryRow extends StatelessWidget {
               ),
             ),
             if (onOpenProfile != null)
-              TextButton(
+              AuraGhostButton(
+                label: 'Profile',
                 onPressed: onOpenProfile,
-                child: const Text('Profile'),
               ),
             trailing,
           ],
@@ -1715,9 +1703,10 @@ class _InlineErrorBlock extends StatelessWidget {
         const SizedBox(height: AuraSpace.s6),
         Text(body, style: AuraText.small),
         const SizedBox(height: AuraSpace.s10),
-        OutlinedButton(
+        AuraSecondaryButton(
+          label: 'Retry',
+          icon: Icons.refresh_rounded,
           onPressed: onRetry,
-          child: const Text('Retry'),
         ),
       ],
     );

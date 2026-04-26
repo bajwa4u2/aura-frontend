@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -29,266 +30,281 @@ class InstitutionDetailScreen extends ConsumerWidget {
     final institutionAsync = ref.watch(institutionDetailProvider(cleanSlug));
 
     return AuraScaffold(
-      title: 'Institution',
+      showHeader: false,
       body: institutionAsync.when(
         loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ),
+          child: AuraLoadingState(message: 'Loading institution…'),
         ),
         error: (e, _) => ListView(
           padding: const EdgeInsets.fromLTRB(
             AuraSpace.s16,
-            AuraSpace.s12,
+            AuraSpace.s20,
             AuraSpace.s16,
-            AuraSpace.s24,
+            AuraSpace.s32,
           ),
           children: [
-            AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Institution could not be loaded.',
-                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    '$e',
-                    style: AuraText.body,
-                  ),
-                ],
-              ),
+            AuraErrorState(
+              title: 'Institution could not be loaded',
+              body: '$e',
             ),
           ],
         ),
-        data: (institution) {
-          final title = institution.name.trim().isNotEmpty
-              ? institution.name.trim()
-              : 'Institution';
+        data: (institution) => _InstitutionDetailBody(institution: institution),
+      ),
+    );
+  }
+}
 
-          final subtitleParts = <String>[
-            if (institution.slug.trim().isNotEmpty) institution.slug.trim(),
-            if (institution.domain.trim().isNotEmpty) institution.domain.trim(),
-          ];
+class _InstitutionDetailBody extends StatelessWidget {
+  const _InstitutionDetailBody({required this.institution});
 
-          final metaParts = <String>[
-            if (institution.jurisdiction.trim().isNotEmpty)
-              institution.jurisdiction.trim(),
-            institution.isVerified ? 'Verified standing' : 'Standing not verified',
-          ];
+  final Institution institution;
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s12,
-              AuraSpace.s16,
-              AuraSpace.s24,
-            ),
+  @override
+  Widget build(BuildContext context) {
+    final title = institution.name.trim().isNotEmpty
+        ? institution.name.trim()
+        : 'Institution';
+
+    final subtitleParts = <String>[
+      if (institution.slug.trim().isNotEmpty) institution.slug.trim(),
+      if (institution.domain.trim().isNotEmpty) institution.domain.trim(),
+    ];
+
+    final isVerified = institution.isVerified;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s20,
+        AuraSpace.s16,
+        AuraSpace.s32,
+      ),
+      children: [
+        // Hero header card
+        Container(
+          padding: const EdgeInsets.all(AuraSpace.s20),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.xl),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AuraSurface.accentSoft,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AuraSurface.accent.withValues(alpha: 0.3)),
+                    ),
+                    child: const Icon(Icons.apartment_outlined,
+                        size: 24, color: AuraSurface.accentText),
+                  ),
+                  const SizedBox(width: AuraSpace.s14),
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AuraSurface.accentSoft,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AuraSurface.divider),
-                          ),
-                          child: const Icon(Icons.apartment_outlined),
-                        ),
-                        const SizedBox(width: AuraSpace.s12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(title, style: AuraText.title),
-                              if (subtitleParts.isNotEmpty) ...[
-                                const SizedBox(height: AuraSpace.s6),
-                                Text(
-                                  subtitleParts.join(' • '),
-                                  style: AuraText.muted,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(title, style: AuraText.title),
+                            ),
+                            if (isVerified) ...[
+                              const SizedBox(width: AuraSpace.s8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AuraSpace.s8,
+                                  vertical: AuraSpace.s4,
                                 ),
-                              ],
-                              const SizedBox(height: AuraSpace.s8),
-                              Text(
-                                metaParts.join(' • '),
-                                style: AuraText.small,
+                                decoration: BoxDecoration(
+                                  color: AuraSurface.goodBg,
+                                  borderRadius:
+                                      BorderRadius.circular(AuraRadius.pill),
+                                  border: Border.all(
+                                      color: AuraSurface.goodInk
+                                          .withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified_rounded,
+                                        size: 12, color: AuraSurface.goodInk),
+                                    const SizedBox(width: AuraSpace.s4),
+                                    Text(
+                                      'Verified',
+                                      style: AuraText.micro.copyWith(
+                                        color: AuraSurface.goodInk,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
-                          ),
+                          ],
                         ),
+                        if (subtitleParts.isNotEmpty) ...[
+                          const SizedBox(height: AuraSpace.s6),
+                          Text(
+                            subtitleParts.join(' · '),
+                            style: AuraText.small.copyWith(
+                                color: AuraSurface.muted),
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: AuraSpace.s14),
-                    Text(
-                      'Public institutional record inside Aura.',
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AuraSpace.s14),
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Standing',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    _StatusRow(
-                      label: 'Verification',
-                      value: institution.isVerified ? 'Verified' : 'Not verified',
-                    ),
-                    _StatusRow(
-                      label: 'Jurisdiction',
-                      value: institution.jurisdiction,
-                    ),
-                    _StatusRow(
-                      label: 'Domain',
-                      value: institution.domain,
-                      isLast: true,
-                    ),
-                  ],
+              if (institution.description.trim().isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s16),
+                Text(
+                  institution.description.trim(),
+                  style: AuraText.body.copyWith(
+                      color: AuraSurface.muted, height: 1.5),
                 ),
-              ),
-              const SizedBox(height: AuraSpace.s14),
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'About',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                    Text(
-                      institution.description.trim().isEmpty
-                          ? 'No public description has been added yet.'
-                          : institution.description.trim(),
-                      style: AuraText.body,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s14),
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Institution details',
-                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: AuraSpace.s12),
-                    _DetailRow(label: 'Name', value: institution.name),
-                    _DetailRow(label: 'Slug', value: institution.slug),
-                    _DetailRow(label: 'Domain', value: institution.domain),
-                    _DetailRow(
-                      label: 'Jurisdiction',
-                      value: institution.jurisdiction,
-                    ),
-                    _DetailRow(label: 'Website', value: institution.website),
-                    _DetailRow(
-                      label: 'Standing',
-                      value: institution.isVerified ? 'Verified' : 'Unverified',
-                      isLast: true,
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.label,
-    required this.value,
-    this.isLast = false,
-  });
-
-  final String label;
-  final String value;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final cleanValue = value.trim().isEmpty ? '—' : value.trim();
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: AuraText.small.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AuraSurface.muted,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s14),
+        // Standing card
+        _InfoSection(
+          title: 'Standing',
+          rows: [
+            _InfoRow(
+              label: 'Verification',
+              value: isVerified ? 'Verified' : 'Not verified',
+              valueColor: isVerified ? AuraSurface.goodInk : AuraSurface.muted,
+            ),
+            if (institution.jurisdiction.trim().isNotEmpty)
+              _InfoRow(
+                label: 'Jurisdiction',
+                value: institution.jurisdiction.trim(),
               ),
+            if (institution.domain.trim().isNotEmpty)
+              _InfoRow(
+                label: 'Domain',
+                value: institution.domain.trim(),
+              ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s14),
+        // Details card
+        _InfoSection(
+          title: 'Details',
+          rows: [
+            _InfoRow(label: 'Name', value: institution.name),
+            _InfoRow(label: 'Slug', value: institution.slug),
+            if (institution.domain.trim().isNotEmpty)
+              _InfoRow(label: 'Domain', value: institution.domain),
+            if (institution.jurisdiction.trim().isNotEmpty)
+              _InfoRow(label: 'Jurisdiction', value: institution.jurisdiction),
+            if (institution.website.trim().isNotEmpty)
+              _InfoRow(label: 'Website', value: institution.website),
+            _InfoRow(
+              label: 'Standing',
+              value: isVerified ? 'Verified' : 'Unverified',
             ),
-          ),
-          Expanded(
-            child: Text(
-              cleanValue,
-              style: AuraText.body,
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.isLast = false,
+// ── Info section ───────────────────────────────────────────────────────────
+
+class _InfoSection extends StatelessWidget {
+  const _InfoSection({
+    required this.title,
+    required this.rows,
   });
 
-  final String label;
-  final String value;
-  final bool isLast;
+  final String title;
+  final List<_InfoRow> rows;
 
   @override
   Widget build(BuildContext context) {
-    final cleanValue = value.trim().isEmpty ? '—' : value.trim();
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s10),
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+            title,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AuraSurface.faint,
+              letterSpacing: 0.6,
+            ),
           ),
-          const SizedBox(height: AuraSpace.s4),
-          Text(
-            cleanValue,
-            style: AuraText.body,
-          ),
+          const SizedBox(height: AuraSpace.s14),
+          ...rows.asMap().entries.map(
+                (e) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: e.key < rows.length - 1 ? AuraSpace.s10 : 0,
+                  ),
+                  child: e.value,
+                ),
+              ),
         ],
       ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleanValue = value.trim().isEmpty ? '—' : value.trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AuraSurface.muted,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            cleanValue,
+            style: AuraText.small.copyWith(
+              color: valueColor ?? AuraSurface.ink,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
