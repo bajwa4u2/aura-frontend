@@ -135,7 +135,7 @@ class PostDetailScreen extends ConsumerWidget {
     final repliesAsync = ref.watch(repliesProvider(postId));
 
     return AuraScaffold(
-      title: 'Post detail',
+      showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,

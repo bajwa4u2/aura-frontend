@@ -339,7 +339,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final unreadCount = state.unreadCount;
 
     return AuraScaffold(
-      title: 'Updates',
+      showHeader: false,
       body: SafeArea(
         bottom: false,
         child: Center(

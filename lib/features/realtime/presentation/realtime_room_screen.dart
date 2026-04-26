@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -239,7 +239,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
-    final roomSessionId = (state.sessionId ?? widget.sessionId).trim();
 
     final myUserId = meAsync.maybeWhen(
       data: (me) => (me['id'] ?? '').toString(),
@@ -284,229 +283,165 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     _syncConsentsIfNeeded(
       controller: controller,
-      sessionId: roomSessionId,
+      sessionId: state.sessionId ?? widget.sessionId,
       canManageConsents: canManageConsents,
     );
 
     return AuraScaffold(
-      showHeader: false,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 1180;
-
-          final hero = AuraGradientHero(
-            badge: 'Live collaboration',
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: [
+          _RoomHeaderCard(
             title: roomTitle,
             subtitle: roomSubtitle,
-            actions: [
-              const AuraTrustBadge(label: 'Realtime room'),
-              if (canModerate)
-                const AuraTrustBadge(label: 'Host controls', icon: Icons.admin_panel_settings_outlined),
-            ],
-            metrics: [
-              AuraMetricCard(label: 'Members', value: memberCountLabel),
-              AuraMetricCard(label: 'Present', value: '$presentCount'),
-              AuraMetricCard(label: 'Media', value: '$mediaActiveCount'),
-            ],
-          );
-
-          final liveStage = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              RealtimeStatusStrip(state: state),
-              const SizedBox(height: AuraSpace.s12),
-              if (showConnectionRecovery) ...[
-                _ConnectionRecoveryCard(
-                  isBusy:
-                      state.isBusy ||
-                      state.connectionStatus ==
-                          RealtimeConnectionStatus.connecting ||
-                      state.connectionStatus ==
-                          RealtimeConnectionStatus.reconnecting,
-                  onReconnect: () => controller.resume(roomSessionId),
-                  onReload: () => controller.hydrateSession(roomSessionId),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-              ],
-              if ((state.errorMessage ?? '').isNotEmpty) ...[
-                AuraErrorState(
-                  title: 'Room attention needed',
-                  body: state.errorMessage!,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-              ],
-              if ((state.mediaError ?? '').isNotEmpty) ...[
-                AuraErrorState(
-                  title: 'Media attention needed',
-                  body: state.mediaError!,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-              ],
-              if ((state.infoMessage ?? '').isNotEmpty) ...[
-                AuraCard(child: Text(state.infoMessage!, style: AuraText.small)),
-                const SizedBox(height: AuraSpace.s12),
-              ],
-              _MediaStageCard(
-                localRenderer: state.localRenderer,
-                remoteRenderers: state.remoteRenderers,
-                microphoneEnabled: state.microphoneEnabled,
-                cameraEnabled: state.cameraEnabled,
-                isMediaReady: state.isMediaReady,
-                isMediaBusy: state.isMediaBusy,
-                mediaError: state.mediaError,
-                onToggleMicrophone: controller.toggleMicrophone,
-                onToggleCamera: controller.toggleCamera,
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              _RoomOverviewCard(
-                session: state.session,
-                policy: policy,
-                participantCount: participantCount,
-                presentCount: presentCount,
-                mediaActiveCount: mediaActiveCount,
-              ),
-            ],
-          );
-
-          final moderatorPanel = SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AuraGlassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AuraSectionHeader(
-                        title: 'Session actions',
-                        subtitle: 'Join, refresh, leave, and recovery controls.',
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      Wrap(
-                        spacing: AuraSpace.s8,
-                        runSpacing: AuraSpace.s8,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => controller.hydrateSession(roomSessionId),
-                            child: const Text('Refresh live'),
-                          ),
-                          OutlinedButton(
-                            onPressed: controller.leave,
-                            child: const Text('Leave live'),
-                          ),
-                          if (state.joinState != RealtimeJoinState.joined)
-                            FilledButton(
-                              onPressed: () => controller.join(roomSessionId),
-                              child: Text('Join ${_contextLabel(state.session)}'),
-                            ),
-                          if (state.joinState == RealtimeJoinState.locked ||
-                              state.joinState == RealtimeJoinState.rejected ||
-                              state.joinState == RealtimeJoinState.failed ||
-                              roomIsClosed)
-                            OutlinedButton(
-                              onPressed: () => controller.requestJoin(roomSessionId),
-                              child: Text(
-                                policy?.waitingRoomEnabled == true || roomIsClosed
-                                    ? 'Request access'
-                                    : 'Try again',
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                AuraGlassCard(
-                  child: RealtimeConsentSheet(
-                    currentUserId: myUserId.isEmpty ? null : myUserId,
-                    consents: state.consents,
-                  ),
-                ),
-                if (state.consents.isNotEmpty) const SizedBox(height: AuraSpace.s16),
-                if (canModerate) ...[
-                  AuraGlassCard(
-                    child: RealtimeHostControls(
-                      session: state.session,
-                      policy: policy,
-                      onToggleWaitingRoom: (value) => controller.setWaitingRoom(value),
-                      onToggleLock: (value) => controller.setLocked(value),
-                      onRequestConsent: () => controller.requestConsent(),
-                      onRequestRecording: () => controller.requestRecording(),
-                      onRequestTranscript: () => controller.requestTranscript(),
-                      onRefresh: () => controller.hydrateSession(roomSessionId),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  AuraGlassCard(
-                    child: _RoomInviteCard(
-                      searchController: _inviteSearchController,
-                      noteController: _inviteNoteController,
-                      isSearching: _inviteSearchBusy,
-                      results: _inviteResults,
-                      invitingUserId: _invitingUserId,
-                      onSearchChanged: (value) => _onInviteSearchChanged(
-                        query: value,
-                        myUserId: myUserId,
-                        participants: state.participants,
-                      ),
-                      onInvite: (user) => _inviteMember(user),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  AuraGlassCard(
-                    child: RealtimeJoinRequestsPanel(
-                      requests: policy?.joinRequests ?? const [],
-                      onApprove: (value) => controller.approveJoinRequest(value),
-                      onReject: (value) => controller.rejectJoinRequest(value),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                ],
-                AuraGlassCard(
-                  child: RealtimeParticipantList(
-                    participants: state.participants,
-                    canModerate: canModerate,
-                    currentUserId: myUserId,
-                    hostUserId: state.session?.startedByUserId,
-                    remoteRenderers: state.remoteRenderers,
-                    onRemove: (value) => controller.removeParticipant(value),
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                AuraGlassCard(
-                  child: _ArtifactBlock(
-                    policy: policy,
-                    recordingCount: state.recordings.length,
-                    transcriptCount: state.transcripts.length,
-                    artifactCount: state.artifacts.length,
-                  ),
-                ),
-              ],
+            sessionId: state.sessionId ?? widget.sessionId,
+            memberCountLabel: memberCountLabel,
+            roomStateLabel: _roomStateLabel(
+              state.session,
+              policy,
+              state.joinState,
             ),
-          );
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          RealtimeStatusStrip(state: state),
+          const SizedBox(height: AuraSpace.s12),
+          if (showConnectionRecovery) ...[
+            _ConnectionRecoveryCard(
+              isBusy:
+                  state.isBusy ||
+                  state.connectionStatus ==
+                      RealtimeConnectionStatus.connecting ||
+                  state.connectionStatus ==
+                      RealtimeConnectionStatus.reconnecting,
+              onReconnect: () => controller.resume(widget.sessionId),
+              onReload: () => controller.hydrateSession(widget.sessionId),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          if ((state.errorMessage ?? '').isNotEmpty) ...[
+            AuraCard(child: Text(state.errorMessage!, style: AuraText.body)),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          if ((state.mediaError ?? '').isNotEmpty) ...[
+            AuraCard(child: Text(state.mediaError!, style: AuraText.body)),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          if ((state.infoMessage ?? '').isNotEmpty) ...[
+            AuraCard(child: Text(state.infoMessage!, style: AuraText.small)),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          _MediaStageCard(
+            localRenderer: state.localRenderer,
+            remoteRenderers: state.remoteRenderers,
+            microphoneEnabled: state.microphoneEnabled,
+            cameraEnabled: state.cameraEnabled,
+            isMediaReady: state.isMediaReady,
+            isMediaBusy: state.isMediaBusy,
+            mediaError: state.mediaError,
+            onToggleMicrophone: controller.toggleMicrophone,
+            onToggleCamera: controller.toggleCamera,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _RoomOverviewCard(
+            session: state.session,
+            policy: policy,
+            participantCount: participantCount,
+            presentCount: presentCount,
+            mediaActiveCount: mediaActiveCount,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          RealtimeConsentSheet(
+            currentUserId: myUserId.isEmpty ? null : myUserId,
+            consents: state.consents,
+          ),
+          if (state.consents.isNotEmpty) const SizedBox(height: AuraSpace.s12),
+          if (canModerate) ...[
+            RealtimeHostControls(
+              session: state.session,
+              policy: policy,
+              onToggleWaitingRoom: (value) => controller.setWaitingRoom(value),
+              onToggleLock: (value) => controller.setLocked(value),
+              onRequestConsent: () => controller.requestConsent(),
+              onRequestRecording: () => controller.requestRecording(),
+              onRequestTranscript: () => controller.requestTranscript(),
+              onRefresh: () => controller.hydrateSession(widget.sessionId),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            _RoomInviteCard(
+              searchController: _inviteSearchController,
+              noteController: _inviteNoteController,
+              isSearching: _inviteSearchBusy,
+              results: _inviteResults,
+              invitingUserId: _invitingUserId,
+              onSearchChanged: (value) => _onInviteSearchChanged(
+                query: value,
+                myUserId: myUserId,
+                participants: state.participants,
+              ),
+              onInvite: (user) => _inviteMember(user),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            RealtimeJoinRequestsPanel(
+              requests: policy?.joinRequests ?? const [],
+              onApprove: (value) => controller.approveJoinRequest(value),
+              onReject: (value) => controller.rejectJoinRequest(value),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+          RealtimeParticipantList(
+            participants: state.participants,
+            canModerate: canModerate,
+            currentUserId: myUserId,
+            hostUserId: state.session?.startedByUserId,
+            remoteRenderers: state.remoteRenderers,
+            onRemove: (value) => controller.removeParticipant(value),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _ArtifactBlock(
+            policy: policy,
+            recordingCount: state.recordings.length,
+            transcriptCount: state.transcripts.length,
+            artifactCount: state.artifacts.length,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
             children: [
-              hero,
-              const SizedBox(height: AuraSpace.s16),
-              if (wide)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: liveStage),
-                    const SizedBox(width: AuraSpace.s16),
-                    SizedBox(width: 380, child: moderatorPanel),
-                  ],
-                )
-              else ...[
-                liveStage,
-                const SizedBox(height: AuraSpace.s16),
-                moderatorPanel,
-              ],
+              if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
+                OutlinedButton(
+                  onPressed: () =>
+                      context.go(_spaceRouteFromSession(state.session)!),
+                  child: const Text('Return to space'),
+                ),
+              OutlinedButton(
+                onPressed: () => controller.hydrateSession(widget.sessionId),
+                child: const Text('Refresh live'),
+              ),
+              OutlinedButton(
+                onPressed: controller.leave,
+                child: const Text('Leave live'),
+              ),
+              if (state.joinState != RealtimeJoinState.joined)
+                FilledButton(
+                  onPressed: () => controller.join(widget.sessionId),
+                  child: Text('Join ${_contextLabel(state.session)}'),
+                ),
+              if (state.joinState == RealtimeJoinState.locked ||
+                  state.joinState == RealtimeJoinState.rejected ||
+                  state.joinState == RealtimeJoinState.failed ||
+                  roomIsClosed)
+                OutlinedButton(
+                  onPressed: () => controller.requestJoin(widget.sessionId),
+                  child: Text(
+                    policy?.waitingRoomEnabled == true || roomIsClosed
+                        ? 'Request access'
+                        : 'Try again',
+                  ),
+                ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

@@ -14,7 +14,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -23,7 +22,6 @@ import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
-import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
 
@@ -216,6 +214,18 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     ref.invalidate(messagesProvider(widget.threadId));
   }
 
+  Future<void> _refreshAll() async {
+    ref.invalidate(threadOpenProvider(widget.threadId));
+    _refreshThreadData();
+    ref.invalidate(currentUserProvider);
+    await Future.wait([
+      ref.read(threadOpenProvider(widget.threadId).future),
+      ref.read(threadDetailProvider(widget.threadId).future),
+      ref.read(messagesProvider(widget.threadId).future),
+      ref.read(currentUserProvider.future),
+    ]);
+  }
+
   Future<void> _startLive({
     required Map<String, dynamic> thread,
     required String kind,
@@ -243,23 +253,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final messagesAsync = ref.watch(messagesProvider(threadId));
     final meAsync = ref.watch(currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    final liveContextLabel = () {
-      final session = liveState.session;
-      if (session == null) return 'live';
-      switch (session.surfaceType) {
-        case RealtimeSurfaceType.dm:
-        case RealtimeSurfaceType.thread:
-          return 'conversation live';
-        case RealtimeSurfaceType.space:
-        case RealtimeSurfaceType.room:
-          return 'space live';
-        case RealtimeSurfaceType.institution:
-          return 'institution live';
-        case RealtimeSurfaceType.unknown:
-          return 'live';
-      }
-    }();
     final currentUserId = meAsync.maybeWhen(
       data: (me) => _pickString(
         me,
@@ -269,330 +262,160 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     );
 
     return AuraScaffold(
-      showHeader: false,
-      body: threadAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: AuraLoadingState(message: 'Loading thread…'),
-          ),
-        ),
-        error: (error, _) => Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: AuraErrorState(
-                title: 'Could not load thread',
-                body: '$error',
-                action: AuraPrimaryButton(
-                  label: 'Try again',
-                  onPressed: _refreshThreadData,
-                  icon: Icons.refresh_rounded,
-                ),
-              ),
-            ),
-          ),
-        ),
-        data: (thread) {
-          final threadTitle = _threadScreenTitle(thread);
-          final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-          final sessionId = _threadResolvedSessionId(
-            thread,
-            liveState,
-            widget.threadId,
-          );
-          final hero = AuraGradientHero(
-            badge: 'Correspondence',
-            title: threadTitle,
-            subtitle:
-                'A premium conversation surface for messages, attachments, invites, and live sessions.',
-            actions: [
-              const AuraTrustBadge(label: 'Record keeping'),
-              if (sessionId.isNotEmpty)
-                const AuraTrustBadge(label: 'Live linked', icon: Icons.videocam_outlined),
-            ],
-            metrics: [
-              AuraMetricCard(label: 'Thread', value: threadId),
-              AuraMetricCard(label: 'Messages', value: messagesAsync.maybeWhen(
-                data: (items) => '${items.length}',
-                orElse: () => '…',
-              )),
-              AuraMetricCard(label: 'Space', value: spaceId.isEmpty ? 'Standalone' : 'Linked'),
-            ],
-          );
-
-          final messagesPane = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AuraGlassCard(
-                child: _ThreadHeaderCard(
-                  thread: thread,
-                  liveState: liveState,
-                  currentUserId: currentUserId,
-                  onOpenSpace: () {
-                    if (spaceId.isEmpty) return;
-                    context.push('/me/correspondence/$spaceId');
-                  },
-                  onInvite: () async {
-                    if (spaceId.isEmpty) return;
-                    final returnTo = '/me/correspondence/$spaceId/thread/$threadId';
-                    final inviteRoute = Uri(
-                      path: '/invite/create',
-                      queryParameters: {
-                        'destinationType': 'JOIN_SPACE',
-                        'spaceId': spaceId,
-                        'threadId': threadId,
-                        'returnTo': returnTo,
-                      },
-                    ).toString();
-                    await context.push(inviteRoute);
-                    if (!context.mounted) return;
-                    _refreshThreadData();
-                  },
-                  onAddMembers: () async {
-                    if (spaceId.isEmpty) return;
-                    await context.push('/me/correspondence/$spaceId/invite');
-                    if (!context.mounted) return;
-                    _refreshThreadData();
-                  },
-                  onStartAudio: () => _startLive(thread: thread, kind: 'AUDIO'),
-                  onStartVideo: () => _startLive(thread: thread, kind: 'VIDEO'),
-                  onJoinLive: () async {
-                    if (sessionId.isEmpty) return;
-                    final controller = ref.read(realtimeControllerProvider.notifier);
-                    await controller.join(sessionId);
-                  },
-                  onLeaveLive: () async {
-                    await ref.read(realtimeControllerProvider.notifier).leave();
-                  },
-                  onToggleMicrophone: () async {
-                    await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
-                  },
-                  onToggleCamera: () async {
-                    await ref.read(realtimeControllerProvider.notifier).toggleCamera();
-                  },
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              AuraGlassCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AuraSectionHeader(
-                      title: 'Messages',
-                      subtitle: 'Conversation history and attachments',
+      title: threadAsync.maybeWhen(
+        data: (thread) => _threadScreenTitle(thread),
+        orElse: () => 'Conversation',
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshAll,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  threadAsync.when(
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading thread...'),
                     ),
-                    const SizedBox(height: AuraSpace.s12),
-                    messagesAsync.when(
-                      loading: () => const AuraLoadingState(message: 'Loading messages…'),
-                      error: (error, _) => AuraErrorState(
+                    error: (error, _) => AuraCard(
+                      child: _ErrorBlock(
+                        title: 'Could not load thread',
+                        body: '$error',
+                        onRetry: _refreshThreadData,
+                      ),
+                    ),
+                    data: (thread) => _ThreadHeaderCard(
+                      thread: thread,
+                      liveState: liveState,
+                      currentUserId: currentUserId,
+                      onOpenSpace: () {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        context.push('/me/correspondence/$spaceId');
+                      },
+                      onInvite: () async {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        final returnTo = '/me/correspondence/$spaceId/thread/$threadId';
+                        final inviteRoute = Uri(
+                          path: '/invite/create',
+                          queryParameters: {
+                            'destinationType': 'JOIN_SPACE',
+                            'spaceId': spaceId,
+                            'threadId': threadId,
+                            'returnTo': returnTo,
+                          },
+                        ).toString();
+                        await context.push(inviteRoute);
+                        if (!context.mounted) return;
+                        _refreshThreadData();
+                      },
+                      onAddMembers: () async {
+                        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+                        if (spaceId.isEmpty) return;
+                        await context.push('/me/correspondence/$spaceId/invite');
+                        if (!context.mounted) return;
+                        _refreshThreadData();
+                      },
+                      onStartAudio: () => _startLive(thread: thread, kind: 'AUDIO'),
+                      onStartVideo: () => _startLive(thread: thread, kind: 'VIDEO'),
+                      onJoinLive: () async {
+                        final sessionId = _threadResolvedSessionId(
+                          thread,
+                          liveState,
+                          widget.threadId,
+                        );
+                        if (sessionId.isEmpty) return;
+                        final controller = ref.read(realtimeControllerProvider.notifier);
+                        await controller.join(sessionId);
+                      },
+                      onLeaveLive: () async {
+                        await ref.read(realtimeControllerProvider.notifier).leave();
+                      },
+                      onToggleMicrophone: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleMicrophone();
+                      },
+                      onToggleCamera: () async {
+                        await ref.read(realtimeControllerProvider.notifier).toggleCamera();
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  Text('Messages', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
+                  messagesAsync.when(
+                    loading: () => const AuraCard(
+                      child: _LoadingBlock(label: 'Loading messages...'),
+                    ),
+                    error: (error, _) => AuraCard(
+                      child: _ErrorBlock(
                         title: 'Could not load messages',
                         body: '$error',
-                        action: AuraSecondaryButton(
-                          label: 'Retry',
-                          onPressed: _refreshThreadData,
-                          icon: Icons.refresh_rounded,
-                        ),
+                        onRetry: _refreshThreadData,
                       ),
-                      data: (messages) {
-                        if (messages.isEmpty) {
-                          return const AuraEmptyState(
-                            title: 'No messages yet',
-                            body: 'Nothing has been said here yet.',
-                            icon: Icons.chat_bubble_outline,
-                          );
-                        }
-
-                        return Column(
-                          children: [
-                            for (var i = 0; i < messages.length; i++) ...[
-                              _MessageTile(
-                                message: messages[i],
-                                currentUserId: currentUserId,
-                                showAuthorHeader: !_isSameSender(
-                                  messages[i],
-                                  i > 0 ? messages[i - 1] : null,
-                                ),
-                                onEdit: () => _showEditMessageDialog(
-                                  context,
-                                  ref,
-                                  messages[i],
-                                ),
-                                onDelete: () async {
-                                  final messageId = _pickString(
-                                    messages[i],
-                                    const ['id', 'messageId'],
-                                  );
-                                  if (messageId.isEmpty) return;
-                                  await ref
-                                      .read(messagesRepositoryProvider)
-                                      .deleteMessage(messageId);
-                                  _refreshThreadData();
-                                },
-                              ),
-                              if (i != messages.length - 1)
-                                const SizedBox(height: AuraSpace.s10),
-                            ],
-                          ],
-                        );
-                      },
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-              _ComposerBar(
-                threadId: threadId,
-                onSent: _refreshThreadData,
-              ),
-            ],
-          );
-
-          final sidePane = SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AuraGlassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AuraSectionHeader(
-                        title: 'Thread controls',
-                        subtitle: 'Live, invite, and correspondence tools.',
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      Wrap(
-                        spacing: AuraSpace.s8,
-                        runSpacing: AuraSpace.s8,
-                        children: [
-                          if (spaceId.isNotEmpty)
-                            AuraSecondaryButton(
-                              label: 'Open space',
-                              onPressed: () => context.push('/me/correspondence/$spaceId'),
-                              icon: Icons.space_dashboard_outlined,
-                            ),
-                          AuraSecondaryButton(
-                            label: 'Invite',
-                            onPressed: spaceId.isEmpty
-                                ? null
-                                : () async {
-                                    final returnTo = '/me/correspondence/$spaceId/thread/$threadId';
-                                    final inviteRoute = Uri(
-                                      path: '/invite/create',
-                                      queryParameters: {
-                                        'destinationType': 'JOIN_SPACE',
-                                        'spaceId': spaceId,
-                                        'threadId': threadId,
-                                        'returnTo': returnTo,
-                                      },
-                                    ).toString();
-                                    await context.push(inviteRoute);
-                                    if (!context.mounted) return;
-                                    _refreshThreadData();
-                                  },
-                            icon: Icons.person_add_alt_1,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                AuraGlassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AuraSectionHeader(
-                        title: 'Artifacts',
-                        subtitle: 'Recordings, transcripts, and saved outputs.',
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      Wrap(
-                        spacing: AuraSpace.s8,
-                        runSpacing: AuraSpace.s8,
-                        children: [
-                          AuraTrustBadge(label: '${liveState.recordings.length} recordings'),
-                          AuraTrustBadge(label: '${liveState.transcripts.length} transcripts'),
-                          AuraTrustBadge(label: '${liveState.artifacts.length} artifacts'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                AuraGlassCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AuraSectionHeader(
-                        title: 'Live status',
-                        subtitle: 'Join, leave, and media controls.',
-                      ),
-                      const SizedBox(height: AuraSpace.s12),
-                      Wrap(
-                        spacing: AuraSpace.s8,
-                        runSpacing: AuraSpace.s8,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => controller.hydrateSession(threadId),
-                            child: const Text('Refresh live'),
-                          ),
-                          OutlinedButton(
-                            onPressed: controller.leave,
-                            child: const Text('Leave live'),
-                          ),
-                          if (liveState.joinState != RealtimeJoinState.joined)
-                            FilledButton(
-                              onPressed: () => controller.join(threadId),
-                              child: Text('Join $liveContextLabel'),
-                            ),
-                          if (liveState.joinState == RealtimeJoinState.locked ||
-                              liveState.joinState == RealtimeJoinState.rejected ||
-                              liveState.joinState == RealtimeJoinState.failed ||
-                              (liveState.session?.isLocked == true))
-                            OutlinedButton(
-                              onPressed: () => controller.requestJoin(threadId),
-                              child: Text(
-                                liveState.policy?.waitingRoomEnabled == true ||
-                                        liveState.session?.isLocked == true
-                                    ? 'Request access'
-                                    : 'Try again',
+                    data: (messages) {
+                      if (messages.isEmpty) {
+                        return const AuraCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('No messages yet', style: AuraText.title),
+                              SizedBox(height: AuraSpace.s8),
+                              Text(
+                                'Nothing has been said here yet.',
+                                style: AuraText.body,
                               ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
+                            ],
+                          ),
+                        );
+                      }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 1180;
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  hero,
-                  const SizedBox(height: AuraSpace.s16),
-                  if (wide)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 3, child: messagesPane),
-                        const SizedBox(width: AuraSpace.s16),
-                        SizedBox(width: 360, child: sidePane),
-                      ],
-                    )
-                  else
-                    messagesPane,
+                      return Column(
+                        children: [
+                          for (var i = 0; i < messages.length; i++) ...[
+                            _MessageTile(
+                              message: messages[i],
+                              currentUserId: currentUserId,
+                              showAuthorHeader:
+                                  !_isSameSender(
+                                    messages[i],
+                                    i > 0 ? messages[i - 1] : null,
+                                  ),
+                              onEdit: () => _showEditMessageDialog(
+                                context,
+                                ref,
+                                messages[i],
+                              ),
+                              onDelete: () async {
+                                final messageId = _pickString(
+                                  messages[i],
+                                  const ['id', 'messageId'],
+                                );
+                                if (messageId.isEmpty) return;
+                                await ref
+                                    .read(messagesRepositoryProvider)
+                                    .deleteMessage(messageId);
+                                _refreshThreadData();
+                              },
+                            ),
+                            if (i != messages.length - 1)
+                              const SizedBox(height: AuraSpace.s10),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
                 ],
-              );
-            },
-          );
-        },
+              ),
+            ),
+          ),
+          _ComposerBar(
+            threadId: threadId,
+            onSent: _refreshThreadData,
+          ),
+        ],
       ),
     );
   }

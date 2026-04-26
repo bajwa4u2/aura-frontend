@@ -38,10 +38,6 @@ class AppShell extends ConsumerWidget {
   }
 }
 
-class AuraAppShell extends AppShell {
-  const AuraAppShell({super.key, required super.child});
-}
-
 class PublicShell extends StatelessWidget {
   const PublicShell({super.key, required this.child});
 
@@ -79,10 +75,6 @@ class PublicShell extends StatelessWidget {
       },
     );
   }
-}
-
-class AuraPublicShell extends PublicShell {
-  const AuraPublicShell({super.key, required super.child});
 }
 
 class MemberShell extends StatelessWidget {
@@ -211,10 +203,6 @@ class MemberShell extends StatelessWidget {
   }
 }
 
-class AuraMemberShell extends MemberShell {
-  const AuraMemberShell({super.key, required super.child});
-}
-
 
 bool _showMemberFooter(String path) {
   if (path.startsWith('/realtime')) return false;
@@ -320,10 +308,6 @@ class InstitutionShell extends StatelessWidget {
       },
     );
   }
-}
-
-class AuraInstitutionShell extends InstitutionShell {
-  const AuraInstitutionShell({super.key, required super.child});
 }
 
 class _PublicHeader extends StatelessWidget {

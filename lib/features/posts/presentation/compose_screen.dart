@@ -12,7 +12,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -3054,120 +3053,28 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 12 : 0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 1180;
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AuraSpace.s16,
-                      AuraSpace.s12,
-                      AuraSpace.s16,
-                      AuraSpace.s20,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s12,
+                  AuraSpace.s16,
+                  AuraSpace.s20,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 920),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPageTopBar(),
+                        const SizedBox(height: AuraSpace.s12),
+                        _buildActionRow(),
+                        const SizedBox(height: AuraSpace.s16),
+_buildMainCard(),
+                      ],
                     ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1280),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AuraGradientHero(
-                              badge: _isReply ? 'Response editor' : 'Publishing desk',
-                              title: _isReply ? 'Respond to the record' : 'Add to the record',
-                              subtitle:
-                                  'Write, review, translate, attach media, and publish from one governed Aura workspace.',
-                              actions: const [
-                                AuraTrustBadge(label: 'AI aware'),
-                                AuraTrustBadge(label: 'Media ready', icon: Icons.perm_media_outlined),
-                              ],
-                              metrics: [
-                                AuraMetricCard(label: 'State', value: _isReply ? 'Reply' : 'Draft'),
-                                AuraMetricCard(
-                                  label: 'Attachments',
-                                  value: _attachments.isEmpty ? '0' : '${_attachments.length}',
-                                ),
-                                AuraMetricCard(
-                                  label: 'Visibility',
-                                  value: _visibilityLabel(_visibility),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AuraSpace.s16),
-                            if (wide)
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        _buildPageTopBar(),
-                                        const SizedBox(height: AuraSpace.s12),
-                                        _buildActionRow(),
-                                        const SizedBox(height: AuraSpace.s16),
-                                        _buildMainCard(),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: AuraSpace.s16),
-                                  SizedBox(
-                                    width: 360,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        AuraGlassCard(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const AuraSectionHeader(
-                                                title: 'Composer controls',
-                                                subtitle: 'Review, translate, and publish.',
-                                              ),
-                                              const SizedBox(height: AuraSpace.s12),
-                                              _buildActionRow(),
-                                              const SizedBox(height: AuraSpace.s12),
-                                              Text(
-                                                _savedLine(),
-                                                style: AuraText.small.copyWith(color: AuraSurface.muted),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: AuraSpace.s16),
-                                        AuraGlassCard(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const AuraSectionHeader(
-                                                title: 'Publishing posture',
-                                                subtitle: 'Where this work is going next.',
-                                              ),
-                                              const SizedBox(height: AuraSpace.s12),
-                                              _buildIntentCard(),
-                                              const SizedBox(height: AuraSpace.s12),
-                                              if (!_isReply) _buildAudienceBlock(),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else ...[
-                              _buildPageTopBar(),
-                              const SizedBox(height: AuraSpace.s12),
-                              _buildActionRow(),
-                              const SizedBox(height: AuraSpace.s16),
-                              _buildMainCard(),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),

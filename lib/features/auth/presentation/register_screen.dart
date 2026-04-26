@@ -4,10 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_text.dart';
 import '../../auth/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -288,211 +284,195 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ? 'Already have an account? Sign in to continue'
         : 'Already have an account? Log in';
 
-    return AuraScaffold(
-      title: title,
-      showHomeAction: true,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.lg,
-          AuraSpace.lg,
-          AuraSpace.lg,
-          AuraSpace.xl,
-        ),
-        children: [
-          AuraGradientHero(
-            badge: isInstitutionEntry ? 'Institutional access' : 'Create account',
-            title: title,
-            subtitle: subtitle,
-            actions: const [
-              AuraTrustBadge(label: 'Verified access'),
-              AuraTrustBadge(label: 'Identity bound', icon: Icons.badge_outlined),
-            ],
-            metrics: const [
-              AuraMetricCard(label: 'Access', value: 'Secure'),
-              AuraMetricCard(label: 'Identity', value: 'Verified'),
-              AuraMetricCard(label: 'Onboarding', value: 'Fast'),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.lg),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: AuraGlassCard(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Account details',
-                              style: AuraText.title.copyWith(fontSize: 18),
-                            ),
-                          ),
-                          if (isInstitutionEntry)
-                            const AuraTrustBadge(
-                              label: 'Institution flow',
-                              icon: Icons.apartment_outlined,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(
-                        subtitle,
-                        style: AuraText.muted,
-                      ),
-                      const SizedBox(height: AuraSpace.lg),
-                      if (_error != null) ...[
-                        AuraErrorState(
-                          title: 'Registration could not finish',
-                          body: _error!,
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    const SizedBox(height: 24),
+                    if (isInstitutionEntry) ...[
+                      const Text(
+                        'Institutional access',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: AuraSpace.md),
-                      ],
-                      TextFormField(
-                        controller: _firstName,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'First name',
-                          hint: 'Private',
-                        ),
-                        validator: (v) => _nameValidator(v, 'First name'),
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.givenName],
                       ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _lastName,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Last name',
-                          hint: 'Private',
-                        ),
-                        validator: (v) => _nameValidator(v, 'Last name'),
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.familyName],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _displayName,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Display name',
-                          hint: 'Public name shown on Aura',
-                        ),
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.nickname],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _handle,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Handle',
-                          hint: 'Your public identity handle',
-                        ),
-                        validator: _handleValidator,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-zA-Z0-9_.]'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _email,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Email',
-                          hint: 'name@example.com',
-                        ),
-                        validator: _emailValidator,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        autofillHints: const [AutofillHints.email],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _password,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Password',
-                          hint: 'At least 8 characters',
-                          suffixIcon: IconButton(
-                            onPressed: _loading
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                          ),
-                        ),
-                        validator: _passwordValidator,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.newPassword],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _confirmPassword,
-                        enabled: !_loading,
-                        decoration: _decoration(
-                          label: 'Confirm password',
-                          hint: 'Re-enter your password',
-                          suffixIcon: IconButton(
-                            onPressed: _loading
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _obscureConfirmPassword =
-                                          !_obscureConfirmPassword;
-                                    });
-                                  },
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                          ),
-                        ),
-                        validator: (v) => _req(v, 'Confirm password'),
-                        obscureText: _obscureConfirmPassword,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.newPassword],
-                        onFieldSubmitted: (_) => _loading ? null : _submit(),
-                      ),
-                      const SizedBox(height: AuraSpace.lg),
-                      AuraPrimaryButton(
-                        label: ctaLabel,
-                        onPressed: _loading ? null : _submit,
-                        icon: Icons.verified_user_outlined,
-                      ),
-                      const SizedBox(height: AuraSpace.sm),
-                      AuraSecondaryButton(
-                        label: loginLabel,
-                        onPressed: _loading
-                            ? null
-                            : () => context.go('/login?redirect=$redirect'),
-                        icon: Icons.login_rounded,
-                      ),
+                      const SizedBox(height: 8),
                     ],
-                  ),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(subtitle),
+                    const SizedBox(height: 16),
+                    if (_error != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    TextFormField(
+                      controller: _firstName,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'First name',
+                        hint: 'Private',
+                      ),
+                      validator: (v) => _nameValidator(v, 'First name'),
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.givenName],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _lastName,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Last name',
+                        hint: 'Private',
+                      ),
+                      validator: (v) => _nameValidator(v, 'Last name'),
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.familyName],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _displayName,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Display name',
+                        hint: 'Public name shown on Aura',
+                      ),
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.nickname],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _handle,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Handle',
+                        hint: 'Your public identity handle',
+                      ),
+                      validator: _handleValidator,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[a-zA-Z0-9_.]'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _email,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Email',
+                        hint: 'name@example.com',
+                      ),
+                      validator: _emailValidator,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      autofillHints: const [AutofillHints.email],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _password,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Password',
+                        hint: 'At least 8 characters',
+                        suffixIcon: IconButton(
+                          onPressed: _loading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                        ),
+                      ),
+                      validator: _passwordValidator,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _confirmPassword,
+                      enabled: !_loading,
+                      decoration: _decoration(
+                        label: 'Confirm password',
+                        hint: 'Re-enter your password',
+                        suffixIcon: IconButton(
+                          onPressed: _loading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _obscureConfirmPassword =
+                                        !_obscureConfirmPassword;
+                                  });
+                                },
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                        ),
+                      ),
+                      validator: (v) => _req(v, 'Confirm password'),
+                      obscureText: _obscureConfirmPassword,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.newPassword],
+                      onFieldSubmitted: (_) => _loading ? null : _submit(),
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      onPressed: _loading ? null : _submit,
+                      child: Text(ctaLabel),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () => context.go('/login?redirect=$redirect'),
+                      child: Text(loginLabel),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-import 'aura_space.dart';
 import 'aura_platform_components.dart';
 import 'aura_surface.dart';
 
@@ -60,61 +58,8 @@ class AuraScaffold extends StatelessWidget {
       body: AuraPageShell(
         maxWidth: maxWidth ?? _defaultMaxWidth,
         padding: EdgeInsets.zero,
-        child: showHeader && title.trim().isNotEmpty
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AuraSpace.md,
-                      AuraSpace.lg,
-                      AuraSpace.md,
-                      AuraSpace.sm,
-                    ),
-                    child: AuraGradientHeader(
-                      title: title,
-                      subtitle: _subtitleForTitle(title),
-                      trailing: showHomeAction
-                          ? IconButton(
-                              onPressed: () => context.go(homePath),
-                              icon: const Icon(Icons.home_outlined),
-                              tooltip: 'Home',
-                            )
-                          : null,
-                    ),
-                  ),
-                  Expanded(child: content),
-                ],
-              )
-            : content,
+        child: content,
       ),
     );
-  }
-
-  String? _subtitleForTitle(String value) {
-    final title = value.trim().toLowerCase();
-    if (title.isEmpty) return null;
-    if (title.contains('message') || title.contains('conversation')) {
-      return 'A premium communication surface for Aura.';
-    }
-    if (title.contains('profile') || title.contains('presence') || title.contains('me')) {
-      return 'Trusted identity and public record.';
-    }
-    if (title.contains('institution')) {
-      return 'Institutional voice, governance, and continuity.';
-    }
-    if (title.contains('announcement')) {
-      return 'Official communication and publication.';
-    }
-    if (title.contains('realtime') || title.contains('live')) {
-      return 'Live collaboration and call control.';
-    }
-    if (title.contains('auth') || title.contains('login') || title.contains('register')) {
-      return 'Secure access and onboarding.';
-    }
-    if (title.contains('saved') || title.contains('updates') || title.contains('activity')) {
-      return 'A quiet signal center.';
-    }
-    return null;
   }
 }

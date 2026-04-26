@@ -182,206 +182,112 @@ class MemberHomeScreen extends ConsumerWidget {
       showHeader: false,
       body: RefreshIndicator(
         onRefresh: () => _refresh(ref),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 1120;
-            return ListView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1160),
+            child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               children: [
-                AuraGradientHero(
-                  badge: 'Signal center',
+                const AuraGradientHeader(
                   title: 'Aura home',
                   subtitle:
-                      'Held drafts, public work, announcements, and attention signals in one place.',
-                  actions: const [
-                    AuraTrustBadge(label: 'Trusted record'),
-                    AuraTrustBadge(label: 'Attention aware', icon: Icons.notifications_none_outlined),
-                  ],
-                  metrics: const [
-                    AuraMetricCard(label: 'Works', value: 'Live'),
-                    AuraMetricCard(label: 'Drafts', value: 'Held'),
-                    AuraMetricCard(label: 'Updates', value: 'Quiet'),
-                  ],
+                      'Your held drafts, public work, announcements, and attention signals in one place.',
                 ),
                 const SizedBox(height: AuraSpace.s16),
-                if (isWide)
-                  Row(
+                const _PinnedAnnouncementBanner(),
+                const SizedBox(height: AuraSpace.s16),
+                heldAsync.when(
+                  data: (held) {
+                    final heldMap = _asMap(held);
+                    final hasHeld = heldMap.isNotEmpty;
+                    final heldId = heldMap['id']?.toString();
+
+                    return _ComposerEntryCard(
+                      hasHeld: hasHeld,
+                      heldText: heldMap['text']?.toString(),
+                      onTap: () => _openCompose(context, ref, heldId: heldId),
+                    );
+                  },
+                  loading: () => const AuraLoadingState(message: 'Loading held work…'),
+                  error: (_, __) => _ComposerEntryCard(
+                    hasHeld: false,
+                    onTap: () => _openCompose(context, ref),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s24),
+                if (feedState.isLoading && feedState.items.isEmpty)
+                  const AuraLoadingState(message: 'Loading works…')
+                else if (feedState.error != null && feedState.items.isEmpty)
+                  AuraErrorState(
+                    title: 'Could not load works',
+                    body: 'Refresh the feed or try again in a moment.',
+                    action: AuraSecondaryButton(
+                      label: 'Refresh',
+                      onPressed: () => ref.read(feedControllerProvider.notifier).loadInitial(),
+                      icon: Icons.refresh_rounded,
+                    ),
+                  )
+                else if (feedState.items.isEmpty)
+                  const AuraEmptyState(
+                    title: 'No works yet',
+                    body: 'When you publish, your latest work will appear here.',
+                    icon: Icons.auto_stories_outlined,
+                  )
+                else
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const _PinnedAnnouncementBanner(),
-                            const SizedBox(height: AuraSpace.s16),
-                            heldAsync.when(
-                              data: (held) {
-                                final heldMap = _asMap(held);
-                                final hasHeld = heldMap.isNotEmpty;
-                                final heldId = heldMap['id']?.toString();
-
-                                return _ComposerEntryCard(
-                                  hasHeld: hasHeld,
-                                  heldText: heldMap['text']?.toString(),
-                                  onTap: () => _openCompose(context, ref, heldId: heldId),
-                                );
-                              },
-                              loading: () => const AuraLoadingState(message: 'Loading held work…'),
-                              error: (_, __) => _ComposerEntryCard(
-                                hasHeld: false,
-                                onTap: () => _openCompose(context, ref),
-                              ),
-                            ),
-                            const SizedBox(height: AuraSpace.s20),
-                            _buildFeedSurface(context, ref, feedState),
-                          ],
-                        ),
+                      AuraSectionHeader(
+                        title: 'Works',
+                        subtitle: '${feedState.items.length} in view',
                       ),
-                      const SizedBox(width: AuraSpace.s16),
-                      SizedBox(
-                        width: 344,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AuraGlassCard(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const AuraSectionHeader(
-                                    title: 'Quick actions',
-                                    subtitle: 'Start a new work or reopen held work.',
-                                  ),
-                                  const SizedBox(height: AuraSpace.s12),
-                                  AuraActionTile(
-                                    title: 'Compose',
-                                    body: 'Write a new work for your public record.',
-                                    icon: Icons.edit_outlined,
-                                    onTap: () => _openCompose(context, ref),
-                                  ),
-                                  const SizedBox(height: AuraSpace.s10),
-                                  AuraActionTile(
-                                    title: 'Held work',
-                                    body: 'Return to the latest saved draft.',
-                                    icon: Icons.inventory_2_outlined,
-                                    onTap: () => _openCompose(context, ref),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AuraSpace.s16),
-                            const _PinnedAnnouncementBanner(),
-                          ],
-                        ),
+                      const SizedBox(height: AuraSpace.s14),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: feedState.items.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AuraSpace.s18),
+                        itemBuilder: (context, i) {
+                          return PostCard(post: feedState.items[i]);
+                        },
                       ),
+                      const SizedBox(height: AuraSpace.s20),
+                      if (feedState.isLoadingMore)
+                        const Padding(
+                          padding: EdgeInsets.only(top: AuraSpace.s4),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
+                      if (feedState.nextCursor != null &&
+                          feedState.nextCursor!.trim().isNotEmpty &&
+                          !feedState.isLoadingMore) ...[
+                        const SizedBox(height: AuraSpace.s4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: AuraGhostButton(
+                            label: 'Load more',
+                            onPressed: () {
+                              ref
+                                  .read(feedControllerProvider.notifier)
+                                  .loadMore();
+                            },
+                            icon: Icons.expand_more_rounded,
+                          ),
+                        ),
+                      ],
                     ],
-                  )
-                else ...[
-                  const _PinnedAnnouncementBanner(),
-                  const SizedBox(height: AuraSpace.s16),
-                  heldAsync.when(
-                    data: (held) {
-                      final heldMap = _asMap(held);
-                      final hasHeld = heldMap.isNotEmpty;
-                      final heldId = heldMap['id']?.toString();
-
-                      return _ComposerEntryCard(
-                        hasHeld: hasHeld,
-                        heldText: heldMap['text']?.toString(),
-                        onTap: () => _openCompose(context, ref, heldId: heldId),
-                      );
-                    },
-                    loading: () => const AuraLoadingState(message: 'Loading held work…'),
-                    error: (_, __) => _ComposerEntryCard(
-                      hasHeld: false,
-                      onTap: () => _openCompose(context, ref),
-                    ),
                   ),
-                  const SizedBox(height: AuraSpace.s20),
-                  _buildFeedSurface(context, ref, feedState),
-                ],
               ],
-            );
-          },
+            ),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFeedSurface(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic feedState,
-  ) {
-    if (feedState.isLoading && feedState.items.isEmpty) {
-      return const AuraLoadingState(message: 'Loading works…');
-    }
-
-    if (feedState.error != null && feedState.items.isEmpty) {
-      return AuraErrorState(
-        title: 'Could not load works',
-        body: 'Refresh the feed or try again in a moment.',
-        action: AuraSecondaryButton(
-          label: 'Refresh',
-          onPressed: () => ref.read(feedControllerProvider.notifier).loadInitial(),
-          icon: Icons.refresh_rounded,
-        ),
-      );
-    }
-
-    if (feedState.items.isEmpty) {
-      return const AuraEmptyState(
-        title: 'No works yet',
-        body: 'When you publish, your latest work will appear here.',
-        icon: Icons.auto_stories_outlined,
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AuraSectionHeader(
-          title: 'Works',
-          subtitle: '${feedState.items.length} in view',
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: feedState.items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s18),
-          itemBuilder: (context, i) {
-            return PostCard(post: feedState.items[i]);
-          },
-        ),
-        const SizedBox(height: AuraSpace.s20),
-        if (feedState.isLoadingMore)
-          const Padding(
-            padding: EdgeInsets.only(top: AuraSpace.s4),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
-        if (feedState.nextCursor != null &&
-            feedState.nextCursor!.trim().isNotEmpty &&
-            !feedState.isLoadingMore) ...[
-          const SizedBox(height: AuraSpace.s4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AuraGhostButton(
-              label: 'Load more',
-              onPressed: () {
-                ref.read(feedControllerProvider.notifier).loadMore();
-              },
-              icon: Icons.expand_more_rounded,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
