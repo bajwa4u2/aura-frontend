@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -56,9 +57,9 @@ class SupportScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: AuraSpace.s18),
-          FilledButton(
+          AuraPrimaryButton(
+            label: 'Back',
             onPressed: () => context.pop(),
-            child: const Text('Back'),
           ),
         ],
       ),

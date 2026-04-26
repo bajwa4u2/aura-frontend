@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -1642,7 +1643,7 @@ class _SelectedChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.elevated,
         border: Border.all(color: AuraSurface.divider),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

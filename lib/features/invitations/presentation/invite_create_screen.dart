@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -413,16 +415,16 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: AuraGhostButton(
+                    label: 'Cancel',
                     onPressed: _submitting ? null : _leaveInviteFlow,
-                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
-                  child: FilledButton(
+                  child: AuraPrimaryButton(
+                    label: _submitting ? 'Working...' : _primaryActionLabel,
                     onPressed: _submitting ? null : _submit,
-                    child: Text(_submitting ? 'Working...' : _primaryActionLabel),
                   ),
                 ),
               ],
@@ -621,16 +623,16 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: AuraGhostButton(
+                  label: 'Cancel',
                   onPressed: _submitting ? null : _leaveInviteFlow,
-                  child: const Text('Cancel'),
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
-                child: FilledButton(
+                child: AuraPrimaryButton(
+                  label: _submitting ? 'Creating...' : 'Create invite',
                   onPressed: _submitting ? null : _submit,
-                  child: Text(_submitting ? 'Creating...' : 'Create invite'),
                 ),
               ),
             ],
@@ -659,7 +661,7 @@ class _SelectedCandidateChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

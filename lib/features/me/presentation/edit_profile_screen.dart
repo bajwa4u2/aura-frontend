@@ -10,6 +10,7 @@ import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -1115,7 +1116,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       decoration: BoxDecoration(
         color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: AuraTextBlock(
@@ -1293,10 +1294,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }) {
     return Material(
       color: Colors.white.withOpacity(0.92),
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s14,

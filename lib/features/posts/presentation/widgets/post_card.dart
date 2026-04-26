@@ -399,7 +399,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     final active = entry.key == current;
                     return InkWell(
                       onTap: () => Navigator.of(ctx).pop(entry.key),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AuraRadius.pill),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AuraSpace.s12,
@@ -407,7 +407,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         ),
                         decoration: BoxDecoration(
                           color: active ? AuraSurface.elevated : AuraSurface.page,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                           border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Text(
@@ -771,13 +771,13 @@ class _PostCardState extends ConsumerState<PostCard> {
             'This will remove the work from the record. This action cannot be undone.',
           ),
           actions: [
-            TextButton(
+            AuraGhostButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
             ),
-            FilledButton(
+            AuraPrimaryButton(
+              label: 'Delete',
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
             ),
           ],
         );
@@ -956,7 +956,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
                   children: [
-                    OutlinedButton.icon(
+                    AuraSecondaryButton(
+                      label: 'Copy link',
+                      icon: Icons.link_outlined,
                       onPressed: () async {
                         await _copyToClipboard(
                           ctx,
@@ -964,10 +966,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                           message: 'Work link copied',
                         );
                       },
-                      icon: const Icon(Icons.link_outlined),
-                      label: const Text('Copy link'),
                     ),
-                    OutlinedButton.icon(
+                    AuraSecondaryButton(
+                      label: 'Share to LinkedIn',
+                      icon: Icons.work_outline,
                       onPressed: () async {
                         await _openExternalUrl(
                           ctx,
@@ -975,10 +977,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                           fallbackCopyMessage: 'LinkedIn share link copied',
                         );
                       },
-                      icon: const Icon(Icons.work_outline),
-                      label: const Text('Share to LinkedIn'),
                     ),
-                    OutlinedButton.icon(
+                    AuraSecondaryButton(
+                      label: 'Share to Email',
+                      icon: Icons.email_outlined,
                       onPressed: () async {
                         await _openExternalUrl(
                           ctx,
@@ -986,17 +988,15 @@ class _PostCardState extends ConsumerState<PostCard> {
                           fallbackCopyMessage: 'Email share link copied',
                         );
                       },
-                      icon: const Icon(Icons.email_outlined),
-                      label: const Text('Share to Email'),
                     ),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
+                  child: AuraGhostButton(
+                    label: 'Done',
                     onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('Done'),
                   ),
                 ),
               ],
@@ -1190,7 +1190,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         const SizedBox(height: AuraSpace.s8),
                         InkWell(
                           onTap: _toggleExpanded,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AuraSpace.s10,
@@ -1216,7 +1216,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                             onTap: _translationBusy
                                 ? null
                                 : () => _translatePostText(context, text),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
@@ -1248,7 +1248,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                           ),
                           InkWell(
                             onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s10,
@@ -1256,7 +1256,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                               ),
                               decoration: BoxDecoration(
                                 color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(AuraRadius.pill),
                                 border: Border.all(color: AuraSurface.divider),
                               ),
                               child: Row(
@@ -1280,7 +1280,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                                   _translationError = null;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: BorderRadius.circular(AuraRadius.pill),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AuraSpace.s6,
@@ -1800,7 +1800,7 @@ class _SingleMediaCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1982,16 +1982,13 @@ class _MediaViewerDialogState extends State<_MediaViewerDialog> {
                           ),
                           const Spacer(),
                           if (item.playableUrl.isNotEmpty)
-                            TextButton.icon(
+                            AuraGhostButton(
+                              label: item.isVideo ? 'Open video' : 'Open image',
+                              icon: Icons.open_in_new,
                               onPressed: () => _openExternalUrl(
                                 context,
                                 item.playableUrl,
                                 fallbackCopyMessage: 'Media link copied',
-                              ),
-                              icon: const Icon(Icons.open_in_new, color: Colors.white),
-                              label: Text(
-                                item.isVideo ? 'Open video' : 'Open image',
-                                style: AuraText.small.copyWith(color: Colors.white),
                               ),
                             ),
                         ],
@@ -2210,7 +2207,9 @@ class _VideoViewerState extends State<_VideoViewer> {
               runSpacing: 10,
               alignment: WrapAlignment.center,
               children: [
-                FilledButton.icon(
+                AuraPrimaryButton(
+                  label: controller.value.isPlaying ? 'Pause' : 'Play',
+                  icon: controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
                   onPressed: () async {
                     if (controller.value.isPlaying) {
                       await controller.pause();
@@ -2221,14 +2220,10 @@ class _VideoViewerState extends State<_VideoViewer> {
                       setState(() {});
                     }
                   },
-                  icon: Icon(
-                    controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                  ),
-                  label: Text(
-                    controller.value.isPlaying ? 'Pause' : 'Play',
-                  ),
                 ),
-                OutlinedButton.icon(
+                AuraSecondaryButton(
+                  label: 'Restart',
+                  icon: Icons.replay,
                   onPressed: () async {
                     await controller.seekTo(Duration.zero);
                     if (!controller.value.isPlaying) {
@@ -2238,17 +2233,15 @@ class _VideoViewerState extends State<_VideoViewer> {
                       setState(() {});
                     }
                   },
-                  icon: const Icon(Icons.replay),
-                  label: const Text('Restart'),
                 ),
-                OutlinedButton.icon(
+                AuraSecondaryButton(
+                  label: 'Open externally',
+                  icon: Icons.open_in_new,
                   onPressed: () => _openExternalUrl(
                     context,
                     widget.url,
                     fallbackCopyMessage: 'Video link copied',
                   ),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open externally'),
                 ),
               ],
             ),
@@ -2293,14 +2286,14 @@ class _VideoFallback extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
-          OutlinedButton.icon(
+          AuraSecondaryButton(
+            label: 'Open video',
+            icon: Icons.open_in_new,
             onPressed: () => _openExternalUrl(
               context,
               url,
               fallbackCopyMessage: 'Video link copied',
             ),
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('Open video'),
           ),
         ],
       ),
@@ -2386,13 +2379,13 @@ class _ActionRow extends ConsumerWidget {
                 ),
               ),
               actions: [
-                TextButton(
+                AuraGhostButton(
+                  label: 'Cancel',
                   onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Cancel'),
                 ),
-                FilledButton(
+                AuraPrimaryButton(
+                  label: 'Repost',
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Repost'),
                 ),
               ],
             );
@@ -2449,7 +2442,9 @@ class _ActionRow extends ConsumerWidget {
                     spacing: AuraSpace.s10,
                     runSpacing: AuraSpace.s10,
                     children: [
-                      OutlinedButton.icon(
+                      AuraSecondaryButton(
+                        label: 'Copy link',
+                        icon: Icons.link_outlined,
                         onPressed: () async {
                           await _copyToClipboard(
                             ctx,
@@ -2457,10 +2452,10 @@ class _ActionRow extends ConsumerWidget {
                             message: 'Work link copied',
                           );
                         },
-                        icon: const Icon(Icons.link_outlined),
-                        label: const Text('Copy link'),
                       ),
-                      OutlinedButton.icon(
+                      AuraSecondaryButton(
+                        label: 'Share to LinkedIn',
+                        icon: Icons.work_outline,
                         onPressed: () async {
                           await _openExternalUrl(
                             ctx,
@@ -2468,10 +2463,10 @@ class _ActionRow extends ConsumerWidget {
                             fallbackCopyMessage: 'LinkedIn share link copied',
                           );
                         },
-                        icon: const Icon(Icons.work_outline),
-                        label: const Text('Share to LinkedIn'),
                       ),
-                      OutlinedButton.icon(
+                      AuraSecondaryButton(
+                        label: 'Share to Email',
+                        icon: Icons.email_outlined,
                         onPressed: () async {
                           await _openExternalUrl(
                             ctx,
@@ -2479,17 +2474,15 @@ class _ActionRow extends ConsumerWidget {
                             fallbackCopyMessage: 'Email share link copied',
                           );
                         },
-                        icon: const Icon(Icons.email_outlined),
-                        label: const Text('Share to Email'),
                       ),
                     ],
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton(
+                    child: AuraGhostButton(
+                      label: 'Done',
                       onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Done'),
                     ),
                   ),
                 ],
@@ -2599,7 +2592,7 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: Text(

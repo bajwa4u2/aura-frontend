@@ -1319,7 +1319,7 @@ class _StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.fill,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,
@@ -1414,9 +1414,10 @@ class _ErrorBlock extends StatelessWidget {
         const SizedBox(height: AuraSpace.s8),
         Text(body, style: AuraText.body),
         const SizedBox(height: AuraSpace.s12),
-        OutlinedButton(
+        AuraSecondaryButton(
+          label: 'Try again',
+          icon: Icons.refresh_rounded,
           onPressed: onRetry,
-          child: const Text('Try again'),
         ),
       ],
     );
@@ -1441,7 +1442,7 @@ class _MetaChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         '$label: $value',
@@ -1465,7 +1466,7 @@ class _Pill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,

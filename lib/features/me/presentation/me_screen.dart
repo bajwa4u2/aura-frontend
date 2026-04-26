@@ -11,6 +11,7 @@ import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -279,13 +280,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             'This will remove your LinkedIn connection from Aura.',
           ),
           actions: [
-            TextButton(
+            AuraGhostButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
             ),
-            FilledButton(
+            AuraPrimaryButton(
+              label: 'Disconnect',
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Disconnect'),
             ),
           ],
         );
@@ -496,13 +497,13 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             'This will remove your TikTok connection from Aura.',
           ),
           actions: [
-            TextButton(
+            AuraGhostButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
             ),
-            FilledButton(
+            AuraPrimaryButton(
+              label: 'Disconnect',
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Disconnect'),
             ),
           ],
         );
@@ -991,12 +992,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AuraRadius.card),
       child: Container(
         padding: const EdgeInsets.all(AuraSpace.s16),
         decoration: BoxDecoration(
           color: AuraSurface.elevated,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AuraRadius.card),
           border: Border.all(color: AuraSurface.divider),
         ),
         child: Row(
@@ -1293,9 +1294,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     if (_communicationLoading && prefs == null) {
       return [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: AuraSpace.s12),
-          child: Center(child: CircularProgressIndicator()),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s12),
+          child: Center(child: AuraLoadingState(message: 'Loading preferences…')),
         ),
       ];
     }
@@ -1563,7 +1564,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: Padding(
@@ -1607,7 +1608,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AuraRadius.card),
       child: Opacity(
         opacity: enabled ? 1 : 0.72,
         child: Padding(
@@ -1666,7 +1667,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: _metaChip(label: label),
       ),
     );
@@ -1680,7 +1681,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       ),
       decoration: BoxDecoration(
         color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: AuraTextBlock(

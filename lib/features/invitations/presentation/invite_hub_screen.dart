@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -120,9 +122,9 @@ class InviteHubScreen extends StatelessWidget {
             if (i != options.length - 1) const SizedBox(height: AuraSpace.s12),
           ],
           const SizedBox(height: AuraSpace.s14),
-          OutlinedButton(
+          AuraSecondaryButton(
+            label: 'Open invitations',
             onPressed: () => context.push('/me/invitations'),
-            child: const Text('Open invitations'),
           ),
         ],
       ),
@@ -176,7 +178,7 @@ class _InviteOptionCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
                 ),
                 child: Icon(data.icon, size: 18),
               ),

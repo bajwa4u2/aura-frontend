@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -96,13 +98,13 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
                     spacing: AuraSpace.s8,
                     runSpacing: AuraSpace.s8,
                     children: [
-                      FilledButton(
+                      AuraPrimaryButton(
+                        label: 'New invite',
                         onPressed: () => context.push('/invite'),
-                        child: const Text('New invite'),
                       ),
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'Open correspondence',
                         onPressed: () => context.push('/me/correspondence'),
-                        child: const Text('Open correspondence'),
                       ),
                     ],
                   ),
@@ -172,7 +174,7 @@ class _SectionHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
             ),
             child: Text('$count', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
           ),
@@ -294,7 +296,8 @@ class _IncomingInviteCard extends ConsumerWidget {
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
-              FilledButton(
+              AuraPrimaryButton(
+                label: 'Accept',
                 onPressed: () async {
                   try {
                     await respond('ACCEPT');
@@ -308,9 +311,9 @@ class _IncomingInviteCard extends ConsumerWidget {
                     }
                   }
                 },
-                child: const Text('Accept'),
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Decline',
                 onPressed: () async {
                   try {
                     await respond('DECLINE');
@@ -320,12 +323,11 @@ class _IncomingInviteCard extends ConsumerWidget {
                     }
                   }
                 },
-                child: const Text('Decline'),
               ),
               if (token.isNotEmpty)
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Open invite',
                   onPressed: () => context.push('/invite/accept?token=${Uri.encodeComponent(token)}'),
-                  child: const Text('Open invite'),
                 ),
             ],
           ),
@@ -384,7 +386,9 @@ class _SentInviteCard extends ConsumerWidget {
             runSpacing: AuraSpace.s10,
             children: [
               if (token.isNotEmpty && _inviteIsActive(invite))
-                OutlinedButton(
+                AuraSecondaryButton(
+                  label: 'Copy link',
+                  icon: Icons.link_outlined,
                   onPressed: () async {
                     final link = Uri.base.origin + '/invite/accept?token=${Uri.encodeComponent(token)}';
                     await Clipboard.setData(ClipboardData(text: link));
@@ -393,9 +397,9 @@ class _SentInviteCard extends ConsumerWidget {
                       const SnackBar(content: Text('Invite link copied.')),
                     );
                   },
-                  child: const Text('Copy link'),
                 ),
-              OutlinedButton(
+              AuraGhostButton(
+                label: 'Cancel invite',
                 onPressed: inviteId.isEmpty || !_inviteIsActive(invite)
                     ? null
                     : () async {
@@ -410,7 +414,6 @@ class _SentInviteCard extends ConsumerWidget {
                           }
                         }
                       },
-                child: const Text('Cancel invite'),
               ),
             ],
           ),
@@ -497,7 +500,7 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(text, style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
     );
@@ -526,7 +529,7 @@ class _StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.fill,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(label, style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: palette.text)),
     );

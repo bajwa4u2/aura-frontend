@@ -445,7 +445,7 @@ class _FilterPill extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s12,
@@ -454,7 +454,7 @@ class _FilterPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           border: Border.all(color: borderColor),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
         ),
         child: Text(
           label,

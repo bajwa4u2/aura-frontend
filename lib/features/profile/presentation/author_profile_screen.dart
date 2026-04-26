@@ -285,7 +285,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
           ),
           decoration: BoxDecoration(
             border: Border.all(color: AuraSurface.divider),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Text(
             location,

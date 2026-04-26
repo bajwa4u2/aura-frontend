@@ -12,6 +12,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -1455,19 +1457,17 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       runSpacing: AuraSpace.s8,
                       children: [
                         if (suggestion.canApply)
-                          FilledButton(
+                          AuraPrimaryButton(
+                            label: _applyingSuggestionIds.contains(suggestion.id)
+                                ? 'Applying...'
+                                : 'Apply',
                             onPressed: _applyingSuggestionIds.contains(suggestion.id)
                                 ? null
                                 : () => _applyCompositionSuggestion(suggestion),
-                            child: Text(
-                              _applyingSuggestionIds.contains(suggestion.id)
-                                  ? 'Applying...'
-                                  : 'Apply',
-                            ),
                           ),
-                        TextButton(
+                        AuraGhostButton(
+                          label: 'Dismiss',
                           onPressed: () => _dismissSuggestion(suggestion.id),
-                          child: const Text('Dismiss'),
                         ),
                       ],
                     ),
@@ -1569,11 +1569,12 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
               spacing: AuraSpace.s8,
               runSpacing: AuraSpace.s8,
               children: [
-                FilledButton(
+                AuraPrimaryButton(
+                  label: 'Use translation',
                   onPressed: _posting ? null : _applyTranslationPreview,
-                  child: const Text('Use translation'),
                 ),
-                TextButton(
+                AuraGhostButton(
+                  label: 'Clear',
                   onPressed: _posting
                       ? null
                       : () {
@@ -1583,15 +1584,14 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                             _translationSnapshot = null;
                           });
                         },
-                  child: const Text('Clear'),
                 ),
               ],
             ),
           ] else ...[
             const SizedBox(height: AuraSpace.s10),
-            OutlinedButton(
+            AuraSecondaryButton(
+              label: _translationBusy ? 'Translating...' : 'Preview translation',
               onPressed: (_posting || _translationBusy) ? null : _translateDraft,
-              child: Text(_translationBusy ? 'Translating...' : 'Preview translation'),
             ),
           ],
         ],
@@ -2400,25 +2400,23 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                         runSpacing: AuraSpace.s10,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          OutlinedButton(
+                          AuraSecondaryButton(
+                            label: publishMode ? 'Edit' : 'Close',
                             onPressed: _auditBusy
                                 ? null
                                 : () => Navigator.of(ctx).pop(false),
-                            child: Text(publishMode ? 'Edit' : 'Close'),
                           ),
-                          OutlinedButton(
+                          AuraSecondaryButton(
+                            label: _auditCooldownActive ? 'Please wait…' : 'Run again',
                             onPressed:
                                 (_auditBusy || _auditCooldownActive) ? null : rerun,
-                            child: Text(
-                              _auditCooldownActive ? 'Please wait…' : 'Run again',
-                            ),
                           ),
                           if (publishMode)
-                            FilledButton(
+                            AuraPrimaryButton(
+                              label: _isReply ? 'Publish reply' : 'Publish',
                               onPressed: _auditBusy
                                   ? null
                                   : () => Navigator.of(ctx).pop(true),
-                              child: Text(_isReply ? 'Publish reply' : 'Publish'),
                             ),
                         ],
                       ),
@@ -2529,14 +2527,14 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       runSpacing: AuraSpace.s10,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        OutlinedButton.icon(
+        AuraSecondaryButton(
+          label: 'Back',
+          icon: Icons.arrow_back,
           onPressed: _posting
               ? null
               : () {
                   context.pop();
                 },
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Back'),
         ),
         Text(
           _isReply ? 'Respond to record' : 'Add to record',
@@ -2555,19 +2553,19 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
       children: [
-        OutlinedButton.icon(
+        AuraSecondaryButton(
+          label: _compositionBusy ? 'Reviewing…' : 'Review',
+          icon: Icons.fact_check_outlined,
           onPressed: (_posting || _compositionBusy) ? null : () => _runCompositionReview(),
-          icon: const Icon(Icons.fact_check_outlined),
-          label: Text(_compositionBusy ? 'Reviewing…' : 'Review'),
         ),
-        OutlinedButton.icon(
+        AuraSecondaryButton(
+          label: _translationBusy ? 'Translating…' : 'Translate',
+          icon: Icons.translate_outlined,
           onPressed: (_posting || _translationBusy) ? null : _translateDraft,
-          icon: const Icon(Icons.translate_outlined),
-          label: Text(_translationBusy ? 'Translating…' : 'Translate'),
         ),
-        TextButton(
+        AuraGhostButton(
+          label: 'Discard',
           onPressed: _posting ? null : _discardAndClose,
-          child: const Text('Discard'),
         ),
       ],
     );
@@ -2586,7 +2584,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           ),
           decoration: BoxDecoration(
             color: AuraSurface.elevated,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(color: AuraSurface.divider),
           ),
           child: Text(
@@ -2756,11 +2754,11 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
           spacing: AuraSpace.s10,
           runSpacing: AuraSpace.s10,
           children: [
-            OutlinedButton.icon(
+            AuraSecondaryButton(
+              label: 'Add attachment',
+              icon: Icons.add,
               onPressed:
                   (_posting || !_canAddMoreAttachments) ? null : _showAddAttachmentSheet,
-              icon: const Icon(Icons.add),
-              label: const Text('Add attachment'),
             ),
           ],
         ),
@@ -3003,7 +3001,8 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
       child: Row(
         children: [
           Expanded(
-            child: TextButton(
+            child: AuraGhostButton(
+              label: _isReply ? 'Holding disabled for replies' : 'Hold for later',
               onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
                   ? null
                   : () {
@@ -3013,11 +3012,15 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                       }
                       _saveDraft(silent: false);
                     },
-              child: Text(_isReply ? 'Holding disabled for replies' : 'Hold for later'),
             ),
           ),
           const SizedBox(width: AuraSpace.s12),
-          FilledButton(
+          AuraPrimaryButton(
+            label: _posting
+                ? (_isReply
+                    ? 'Publishing reply…'
+                    : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
+                : (_isReply ? 'Publish response' : 'Publish to record'),
             onPressed: (_posting || !_canPublish)
                 ? null
                 : () {
@@ -3027,13 +3030,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                     }
                     _publish();
                   },
-            child: Text(
-              _posting
-                  ? (_isReply
-                      ? 'Publishing reply…'
-                      : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
-                  : (_isReply ? 'Publish response' : 'Publish to record'),
-            ),
           ),
         ],
       ),
@@ -3099,7 +3095,7 @@ class _VisibilityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -3108,7 +3104,7 @@ class _VisibilityChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: selected ? AuraSurface.card : AuraSurface.page,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
           border: Border.all(color: AuraSurface.divider),
         ),
         child: Text(
@@ -3137,13 +3133,10 @@ class _AttachmentActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
+      child: AuraSecondaryButton(
+        label: label,
+        icon: icon,
         onPressed: onTap,
-        icon: Icon(icon),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(label),
-        ),
       ),
     );
   }

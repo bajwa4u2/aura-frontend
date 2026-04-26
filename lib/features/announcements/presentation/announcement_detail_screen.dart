@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -136,7 +138,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                     final active = entry.key == current;
                     return InkWell(
                       onTap: () => Navigator.of(ctx).pop(entry.key),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AuraRadius.pill),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AuraSpace.s12,
@@ -144,7 +146,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                         ),
                         decoration: BoxDecoration(
                           color: active ? AuraSurface.elevated : AuraSurface.page,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                           border: Border.all(color: AuraSurface.divider),
                         ),
                         child: Text(
@@ -257,7 +259,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
       title: 'Announcement',
       showHomeAction: true,
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: AuraLoadingState(message: 'Loading…')),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (a) {
           if (a == null) {
@@ -329,7 +331,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                                       summary: summary,
                                       body: body,
                                     ),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
@@ -360,7 +362,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                           ),
                           InkWell(
                             onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s10,
@@ -368,7 +370,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                               ),
                               decoration: BoxDecoration(
                                 color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(AuraRadius.pill),
                                 border: Border.all(color: AuraSurface.divider),
                               ),
                               child: Row(
@@ -394,7 +396,7 @@ class _AnnouncementDetailScreenState extends ConsumerState<AnnouncementDetailScr
                                   _translationError = null;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: BorderRadius.circular(AuraRadius.pill),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AuraSpace.s6,

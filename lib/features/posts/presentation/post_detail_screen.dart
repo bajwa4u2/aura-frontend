@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -179,9 +181,9 @@ class PostDetailScreen extends ConsumerWidget {
                             spacing: AuraSpace.s10,
                             runSpacing: AuraSpace.s10,
                             children: [
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.reply_outlined),
-                                label: const Text('Respond'),
+                              AuraSecondaryButton(
+                                label: 'Respond',
+                                icon: Icons.reply_outlined,
                                 onPressed: () =>
                                     context.push('/compose?replyTo=$postId'),
                               ),
@@ -247,9 +249,9 @@ class PostDetailScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: AuraSpace.s12),
-                                OutlinedButton.icon(
-                                  icon: const Icon(Icons.reply_outlined),
-                                  label: const Text('Respond'),
+                                AuraSecondaryButton(
+                                  label: 'Respond',
+                                  icon: Icons.reply_outlined,
                                   onPressed: () =>
                                       context.push('/compose?replyTo=$postId'),
                                 ),
@@ -302,7 +304,9 @@ class _TopBar extends StatelessWidget {
       runSpacing: AuraSpace.s10,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        OutlinedButton.icon(
+        AuraSecondaryButton(
+          label: 'Back',
+          icon: Icons.arrow_back,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -310,8 +314,6 @@ class _TopBar extends StatelessWidget {
             }
             context.go('/search');
           },
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Back'),
         ),
         Text(
           'Record',
@@ -356,7 +358,7 @@ class _CountPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(color: AuraSurface.divider),
       ),
       child: Text(

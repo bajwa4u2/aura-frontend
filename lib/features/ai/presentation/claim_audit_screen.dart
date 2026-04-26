@@ -401,7 +401,9 @@ class _CopySuggestionBox extends StatelessWidget {
         const SizedBox(height: AuraSpace.s10),
         Align(
           alignment: Alignment.centerLeft,
-          child: OutlinedButton(
+          child: AuraSecondaryButton(
+            label: 'Copy suggestion',
+            icon: Icons.copy_outlined,
             onPressed: cleaned.isEmpty
                 ? null
                 : () async {
@@ -411,7 +413,6 @@ class _CopySuggestionBox extends StatelessWidget {
                       const SnackBar(content: Text('Suggestion copied')),
                     );
                   },
-            child: const Text('Copy suggestion'),
           ),
         ),
       ],

@@ -12,6 +12,7 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -991,11 +992,11 @@ class _AnnouncementEditorScreenState
                       ),
                     ),
                     const SizedBox(width: 12),
-                    FilledButton.tonal(
+                    AuraSecondaryButton(
+                      label: applying ? 'Applying' : 'Apply',
                       onPressed: applying || !suggestion.canApply
                           ? null
                           : () => _applySuggestion(suggestion),
-                      child: Text(applying ? 'Applying' : 'Apply'),
                     ),
                   ],
                 ),
@@ -1048,9 +1049,9 @@ class _AnnouncementEditorScreenState
                     style: _sectionTitleStyle,
                   ),
                 ),
-                TextButton(
+                AuraGhostButton(
+                  label: 'Dismiss',
                   onPressed: () => setState(() => _translationPreview = null),
-                  child: const Text('Dismiss'),
                 ),
               ],
             ),
@@ -1099,9 +1100,9 @@ class _AnnouncementEditorScreenState
             const SizedBox(height: 14),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.tonal(
+              child: AuraSecondaryButton(
+                label: 'Apply translation',
                 onPressed: _applyTranslationPreview,
-                child: const Text('Apply translation'),
               ),
             ),
           ],
@@ -1221,11 +1222,9 @@ class _AnnouncementEditorScreenState
                       runSpacing: 10,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        FilledButton.tonal(
+                        AuraSecondaryButton(
+                          label: _reviewing ? 'Reviewing' : 'Review wording',
                           onPressed: _reviewing ? null : _reviewAnnouncement,
-                          child: Text(
-                            _reviewing ? 'Reviewing' : 'Review wording',
-                          ),
                         ),
                         SizedBox(
                           width: 180,
@@ -1257,13 +1256,9 @@ class _AnnouncementEditorScreenState
                                   },
                           ),
                         ),
-                        FilledButton.tonal(
+                        AuraSecondaryButton(
+                          label: _translating ? 'Translating' : 'Preview translation',
                           onPressed: _translating ? null : _translateDraft,
-                          child: Text(
-                            _translating
-                                ? 'Translating'
-                                : 'Preview translation',
-                          ),
                         ),
                       ],
                     ),
@@ -1288,10 +1283,10 @@ class _AnnouncementEditorScreenState
                   children: [
                     Text('Media', style: _sectionTitleStyle),
                     const SizedBox(height: 12),
-                    OutlinedButton.icon(
+                    AuraSecondaryButton(
+                      label: _mediaUploading ? 'Uploading...' : 'Add image or video',
+                      icon: Icons.attach_file,
                       onPressed: (_submitting || _mediaUploading) ? null : _pickMedia,
-                      icon: const Icon(Icons.attach_file),
-                      label: Text(_mediaUploading ? 'Uploading...' : 'Add image or video'),
                     ),
                     const SizedBox(height: 10),
                     const Text(
@@ -1451,16 +1446,14 @@ class _AnnouncementEditorScreenState
             const SizedBox(height: 22),
             Row(
               children: [
-                OutlinedButton(
+                AuraGhostButton(
+                  label: 'Cancel',
                   onPressed: _submitting ? null : _cancelEditor,
-                  child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 12),
-                FilledButton(
+                AuraPrimaryButton(
+                  label: _submitting ? 'Publishing' : 'Publish announcement',
                   onPressed: _canSubmit ? _submitAnnouncement : null,
-                  child: Text(
-                    _submitting ? 'Publishing' : 'Publish announcement',
-                  ),
                 ),
               ],
             ),

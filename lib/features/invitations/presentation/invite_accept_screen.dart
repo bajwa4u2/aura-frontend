@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -55,13 +57,13 @@ class InviteAcceptScreen extends ConsumerWidget {
                     spacing: AuraSpace.s10,
                     runSpacing: AuraSpace.s10,
                     children: [
-                      FilledButton(
+                      AuraPrimaryButton(
+                        label: 'Sign in',
                         onPressed: () => context.push('/login?redirect=${Uri.encodeComponent('/invite/accept?token=$trimmedToken')}'),
-                        child: const Text('Sign in'),
                       ),
-                      OutlinedButton(
+                      AuraSecondaryButton(
+                        label: 'Join Aura',
                         onPressed: () => context.push('/register?redirect=${Uri.encodeComponent('/invite/accept?token=$trimmedToken')}'),
-                        child: const Text('Join Aura'),
                       ),
                     ],
                   ),
@@ -177,13 +179,13 @@ class _InviteAcceptCardState extends ConsumerState<_InviteAcceptCard> {
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
-              FilledButton(
+              AuraPrimaryButton(
+                label: _busy ? 'Working...' : 'Accept',
                 onPressed: _busy ? null : () => _respond('ACCEPT'),
-                child: Text(_busy ? 'Working...' : 'Accept'),
               ),
-              OutlinedButton(
+              AuraSecondaryButton(
+                label: 'Decline',
                 onPressed: _busy ? null : () => _respond('DECLINE'),
-                child: const Text('Decline'),
               ),
             ],
           ),
@@ -250,7 +252,7 @@ class _Pill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Text(
         label,

@@ -1049,7 +1049,7 @@ class _ThreadVideoTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
               ),
               child: Text(
                 label,
@@ -2318,7 +2318,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                     final active = entry.key == current;
                     return InkWell(
                       onTap: () => Navigator.of(ctx).pop(entry.key),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AuraRadius.pill),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AuraSpace.s12,
@@ -2556,7 +2556,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                           onTap: _translationBusy
                               ? null
                               : () => _translateMessage(context, body),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AuraSpace.s6,
@@ -2593,7 +2593,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                         ),
                         InkWell(
                           onTap: () => _pickTranslationLanguage(context),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AuraSpace.s10,
@@ -2632,7 +2632,7 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                                 _translationError = null;
                               });
                             },
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
