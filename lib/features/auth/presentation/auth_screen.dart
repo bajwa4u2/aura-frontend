@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -167,69 +168,74 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 960;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1160),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _AuthHero(
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1160),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _AuthHero(
+                                  title: 'Welcome back',
+                                  body: 'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                  accent: 'Aura keeps communication, identity, and publication in one place.',
+                                ),
+                              ),
+                              const SizedBox(width: AuraSpace.s16),
+                              SizedBox(
+                                width: 460,
+                                child: _LoginFormCard(
+                                  busy: _busy,
+                                  error: _error,
+                                  formKey: _formKey,
+                                  emailCtrl: _emailCtrl,
+                                  passwordCtrl: _passwordCtrl,
+                                  obscurePassword: _obscurePassword,
+                                  emailValidator: _emailValidator,
+                                  passwordValidator: _passwordValidator,
+                                  onTogglePassword: () => setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  }),
+                                  onLogin: _login,
+                                  onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+                                  onCreateAccount: () => context.push(_withRedirect('/register')),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              _AuthHero(
                                 title: 'Welcome back',
-                                body:
-                                    'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                body: 'Sign in to continue your work, conversations, institutions, and publishing history.',
                                 accent: 'Aura keeps communication, identity, and publication in one place.',
                               ),
-                            ),
-                            const SizedBox(width: AuraSpace.s16),
-                            SizedBox(width: 460, child: _LoginFormCard(
-                              busy: _busy,
-                              error: _error,
-                              formKey: _formKey,
-                              emailCtrl: _emailCtrl,
-                              passwordCtrl: _passwordCtrl,
-                              obscurePassword: _obscurePassword,
-                              emailValidator: _emailValidator,
-                              passwordValidator: _passwordValidator,
-                              onTogglePassword: () => setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              }),
-                              onLogin: _login,
-                              onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
-                              onCreateAccount: () => context.push(_withRedirect('/register')),
-                            )),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _AuthHero(
-                              title: 'Welcome back',
-                              body:
-                                  'Sign in to continue your work, conversations, institutions, and publishing history.',
-                              accent: 'Aura keeps communication, identity, and publication in one place.',
-                            ),
-                            const SizedBox(height: AuraSpace.s16),
-                            _LoginFormCard(
-                              busy: _busy,
-                              error: _error,
-                              formKey: _formKey,
-                              emailCtrl: _emailCtrl,
-                              passwordCtrl: _passwordCtrl,
-                              obscurePassword: _obscurePassword,
-                              emailValidator: _emailValidator,
-                              passwordValidator: _passwordValidator,
-                              onTogglePassword: () => setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              }),
-                              onLogin: _login,
-                              onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
-                              onCreateAccount: () => context.push(_withRedirect('/register')),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(height: AuraSpace.s16),
+                              _LoginFormCard(
+                                busy: _busy,
+                                error: _error,
+                                formKey: _formKey,
+                                emailCtrl: _emailCtrl,
+                                passwordCtrl: _passwordCtrl,
+                                obscurePassword: _obscurePassword,
+                                emailValidator: _emailValidator,
+                                passwordValidator: _passwordValidator,
+                                onTogglePassword: () => setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                }),
+                                onLogin: _login,
+                                onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+                                onCreateAccount: () => context.push(_withRedirect('/register')),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             );
@@ -262,14 +268,58 @@ class _AuthHero extends StatelessWidget {
             label: 'Trusted access',
             icon: Icons.shield_outlined,
           ),
+          const SizedBox(height: AuraSpace.s16),
+          Text(title, style: AuraText.title.copyWith(fontSize: 34, height: 1.05)),
           const SizedBox(height: AuraSpace.s12),
-          Text(title, style: AuraText.title.copyWith(fontSize: 32, height: 1.05)),
-          const SizedBox(height: AuraSpace.s12),
-          Text(body, style: AuraText.body),
-          const SizedBox(height: AuraSpace.s14),
-          Text(accent, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+          Text(body, style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6)),
+          const SizedBox(height: AuraSpace.s20),
+          const _AuthFeatureRow(
+            icon: Icons.edit_note_rounded,
+            label: 'Your publishing record and work history',
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          const _AuthFeatureRow(
+            icon: Icons.apartment_rounded,
+            label: 'Institutional affiliations and credentials',
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          const _AuthFeatureRow(
+            icon: Icons.mail_outline_rounded,
+            label: 'Direct correspondence and shared spaces',
+          ),
+          const SizedBox(height: AuraSpace.s20),
+          Text(accent, style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5)),
         ],
       ),
+    );
+  }
+}
+
+class _AuthFeatureRow extends StatelessWidget {
+  const _AuthFeatureRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.sm),
+            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon, size: 14, color: AuraSurface.accentText),
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4)),
+        ),
+      ],
     );
   }
 }

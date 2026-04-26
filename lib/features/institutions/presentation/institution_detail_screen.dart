@@ -62,6 +62,31 @@ class _InstitutionDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 920),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16,
+                AuraSpace.s20,
+                AuraSpace.s16,
+                AuraSpace.s32,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _buildContent(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildContent() {
     final title = institution.name.trim().isNotEmpty
         ? institution.name.trim()
         : 'Institution';
@@ -73,14 +98,7 @@ class _InstitutionDetailBody extends StatelessWidget {
 
     final isVerified = institution.isVerified;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s20,
-        AuraSpace.s16,
-        AuraSpace.s32,
-      ),
-      children: [
+    return [
         // Hero header card
         Container(
           padding: const EdgeInsets.all(AuraSpace.s20),
@@ -217,8 +235,7 @@ class _InstitutionDetailBody extends StatelessWidget {
             ),
           ],
         ),
-      ],
-    );
+      ];
   }
 }
 

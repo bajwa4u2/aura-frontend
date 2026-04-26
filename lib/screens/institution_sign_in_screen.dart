@@ -6,7 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
+import '../core/ui/aura_platform_components.dart';
+import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_space.dart';
+import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
@@ -133,10 +136,11 @@ class _InstitutionSignInScreenState
               width: double.infinity,
               padding: const EdgeInsets.all(AuraSpace.s12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black12),
-                borderRadius: BorderRadius.circular(12),
+                color: AuraSurface.dangerBg,
+                border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.35)),
+                borderRadius: BorderRadius.circular(AuraRadius.md),
               ),
-              child: Text(_statusMessage!, style: AuraText.body),
+              child: Text(_statusMessage!, style: AuraText.body.copyWith(color: AuraSurface.dangerInk)),
             ),
             const SizedBox(height: AuraSpace.s12),
           ],
@@ -145,16 +149,13 @@ class _InstitutionSignInScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Institution email', style: AuraText.body),
-                const SizedBox(height: AuraSpace.s8),
-                TextFormField(
+                AuraInput(
                   controller: _emailController,
+                  label: 'Institution email',
+                  hint: 'name@institution.org',
                   keyboardType: TextInputType.emailAddress,
-                  enabled: !_submitting,
-                  decoration: const InputDecoration(
-                    hintText: 'name@institution.org',
-                    border: OutlineInputBorder(),
-                  ),
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: const Icon(Icons.apartment_outlined),
                   validator: (value) {
                     final v = (value ?? '').trim();
                     if (v.isEmpty) return 'Institution email is required';
@@ -162,50 +163,35 @@ class _InstitutionSignInScreenState
                     return null;
                   },
                 ),
-                const SizedBox(height: AuraSpace.s12),
-                Text('Password', style: AuraText.body),
-                const SizedBox(height: AuraSpace.s8),
-                TextFormField(
+                const SizedBox(height: AuraSpace.s10),
+                AuraInput(
                   controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Enter password',
                   obscureText: true,
-                  enabled: !_submitting,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter password',
-                    border: OutlineInputBorder(),
-                  ),
+                  textInputAction: TextInputAction.done,
+                  prefixIcon: const Icon(Icons.lock_outline),
                   validator: (value) {
                     final v = value ?? '';
                     if (v.isEmpty) return 'Password is required';
                     if (v.length < 8) return 'Minimum 8 characters';
                     return null;
                   },
-                  onFieldSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: AuraSpace.s16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _submitting ? null : _submit,
-                        child: Text(
-                          _submitting ? 'Signing in...' : 'Institution sign in',
-                          style: AuraText.body.copyWith(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _submitting
-                            ? null
-                            : () => context.go(_institutionCreateRoute),
-                        child: Text(
-                          'Create institutional account',
-                          style: AuraText.body,
-                        ),
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: AuraPrimaryButton(
+                    label: _submitting ? 'Signing in…' : 'Institution sign in',
+                    onPressed: _submitting ? null : _submit,
+                    icon: Icons.arrow_forward_rounded,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                AuraGhostButton(
+                  label: 'Create institutional account',
+                  onPressed: _submitting ? null : () => context.go(_institutionCreateRoute),
+                  icon: Icons.apartment_outlined,
                 ),
               ],
             ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -242,24 +243,60 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 960;
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1160),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _RegisterHero(
-                                isInstitution: isInstitutionEntry,
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1160),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _RegisterHero(
+                                  isInstitution: isInstitutionEntry,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: AuraSpace.s16),
-                            SizedBox(
-                              width: 480,
-                              child: _RegisterFormCard(
+                              const SizedBox(width: AuraSpace.s16),
+                              SizedBox(
+                                width: 480,
+                                child: _RegisterFormCard(
+                                  title: title,
+                                  subtitle: subtitle,
+                                  loading: _loading,
+                                  error: _error,
+                                  formKey: _formKey,
+                                  firstName: _firstName,
+                                  lastName: _lastName,
+                                  displayName: _displayName,
+                                  handle: _handle,
+                                  email: _email,
+                                  password: _password,
+                                  confirmPassword: _confirmPassword,
+                                  obscurePassword: _obscurePassword,
+                                  obscureConfirmPassword: _obscureConfirmPassword,
+                                  nameValidator: _nameValidator,
+                                  handleValidator: _handleValidator,
+                                  emailValidator: _emailValidator,
+                                  passwordValidator: _passwordValidator,
+                                  onTogglePassword: () => setState(
+                                      () => _obscurePassword = !_obscurePassword),
+                                  onToggleConfirmPassword: () => setState(() =>
+                                      _obscureConfirmPassword = !_obscureConfirmPassword),
+                                  onSubmit: _submit,
+                                  onSignIn: () => context.go('/login?redirect=$redirect'),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              _RegisterHero(isInstitution: isInstitutionEntry),
+                              const SizedBox(height: AuraSpace.s16),
+                              _RegisterFormCard(
                                 title: title,
                                 subtitle: subtitle,
                                 loading: _loading,
@@ -281,49 +318,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 onTogglePassword: () => setState(
                                     () => _obscurePassword = !_obscurePassword),
                                 onToggleConfirmPassword: () => setState(() =>
-                                    _obscureConfirmPassword =
-                                        !_obscureConfirmPassword),
+                                    _obscureConfirmPassword = !_obscureConfirmPassword),
                                 onSubmit: _submit,
-                                onSignIn: () =>
-                                    context.go('/login?redirect=$redirect'),
+                                onSignIn: () => context.go('/login?redirect=$redirect'),
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _RegisterHero(isInstitution: isInstitutionEntry),
-                            const SizedBox(height: AuraSpace.s16),
-                            _RegisterFormCard(
-                              title: title,
-                              subtitle: subtitle,
-                              loading: _loading,
-                              error: _error,
-                              formKey: _formKey,
-                              firstName: _firstName,
-                              lastName: _lastName,
-                              displayName: _displayName,
-                              handle: _handle,
-                              email: _email,
-                              password: _password,
-                              confirmPassword: _confirmPassword,
-                              obscurePassword: _obscurePassword,
-                              obscureConfirmPassword: _obscureConfirmPassword,
-                              nameValidator: _nameValidator,
-                              handleValidator: _handleValidator,
-                              emailValidator: _emailValidator,
-                              passwordValidator: _passwordValidator,
-                              onTogglePassword: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
-                              onToggleConfirmPassword: () => setState(() =>
-                                  _obscureConfirmPassword =
-                                      !_obscureConfirmPassword),
-                              onSubmit: _submit,
-                              onSignIn: () =>
-                                  context.go('/login?redirect=$redirect'),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             );
@@ -343,6 +344,18 @@ class _RegisterHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final features = isInstitution
+        ? const [
+            _HeroFeatureRow(icon: Icons.apartment_rounded, label: 'Access institutional resources and announcements'),
+            _HeroFeatureRow(icon: Icons.verified_user_outlined, label: 'Verify your affiliation with trusted institutions'),
+            _HeroFeatureRow(icon: Icons.lock_outline_rounded, label: 'Private by default — only handle and name are public'),
+          ]
+        : const [
+            _HeroFeatureRow(icon: Icons.edit_note_rounded, label: 'Publish writing, media, and long-form works'),
+            _HeroFeatureRow(icon: Icons.apartment_rounded, label: 'Connect with institutions and build credentials'),
+            _HeroFeatureRow(icon: Icons.mail_outline_rounded, label: 'Structured correspondence with the people that matter'),
+          ];
+
     return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s24),
       child: Column(
@@ -354,27 +367,58 @@ class _RegisterHero extends StatelessWidget {
                 ? Icons.apartment_outlined
                 : Icons.person_add_alt_1_rounded,
           ),
-          const SizedBox(height: AuraSpace.s12),
+          const SizedBox(height: AuraSpace.s16),
           Text(
             isInstitution ? 'Create your account' : 'Join Aura',
-            style: AuraText.title.copyWith(fontSize: 32, height: 1.05),
+            style: AuraText.title.copyWith(fontSize: 34, height: 1.05),
           ),
           const SizedBox(height: AuraSpace.s12),
           Text(
             isInstitution
                 ? 'An account is needed to continue to institutional access. Your account stays private; only your handle and display name are public.'
                 : 'Aura is a place for serious work — writing, correspondence, institutions, and publishing history.',
-            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
           ),
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s20),
+          ...features.expand((f) => [f, const SizedBox(height: AuraSpace.s10)]).toList()..removeLast(),
+          const SizedBox(height: AuraSpace.s20),
           Text(
             isInstitution
                 ? 'After creating your account, you will be guided through the institutional verification flow.'
                 : 'Your identity, publication record, and conversations stay with you.',
-            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.4),
+            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroFeatureRow extends StatelessWidget {
+  const _HeroFeatureRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.sm),
+            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon, size: 14, color: AuraSurface.accentText),
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4)),
+        ),
+      ],
     );
   }
 }

@@ -271,21 +271,25 @@ class _HeroPlatformCard extends StatelessWidget {
             body: 'Private, structured messaging for serious communication.',
           ),
           const SizedBox(height: AuraSpace.s20),
-          GestureDetector(
-            onTap: onInstitutions,
-            child: Row(
-              children: [
-                Text(
-                  'Browse institutions',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.accentText,
-                    fontWeight: FontWeight.w600,
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: onInstitutions,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Browse institutions',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.accentText,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AuraSpace.s6),
-                const Icon(Icons.arrow_forward_rounded,
-                    size: 14, color: AuraSurface.accentText),
-              ],
+                  const SizedBox(width: AuraSpace.s6),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 14, color: AuraSurface.accentText),
+                ],
+              ),
             ),
           ),
         ],
