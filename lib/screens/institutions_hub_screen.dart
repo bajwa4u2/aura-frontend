@@ -30,7 +30,7 @@ class InstitutionsHubScreen extends StatelessWidget {
               AuraSpace.s16,
               AuraSpace.s28,
               AuraSpace.s16,
-              AuraSpace.s40,
+              AuraSpace.xxl,
             ),
             child: Center(
               child: ConstrainedBox(
