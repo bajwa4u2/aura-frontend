@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -152,6 +153,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool get _hasUploadingAttachments => _attachments.any((a) => a.uploading);
   bool get _canAddMoreAttachments =>
       !_isReply && _attachments.length < _maxAttachments;
+  bool get _supportsCameraCapture => !kIsWeb;
 
   _ComposeAttachment? get _primaryTikTokVideoAttachment {
     for (final attachment in _attachments) {
@@ -354,15 +356,6 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
     return _translationPreviewDirection() == TextDirection.rtl
         ? TextAlign.right
         : TextAlign.left;
-  }
-
-  Dio _cleanUploadDio() {
-    return Dio(
-      BaseOptions(
-        responseType: ResponseType.plain,
-        followRedirects: true,
-      ),
-    );
   }
 
   Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
@@ -792,6 +785,16 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
   Future<void> _pickImageFromCamera() async {
     if (!_canAddMoreAttachments || _posting) return;
+    if (!_supportsCameraCapture) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera capture is not available here. Choose a file instead.'),
+        ),
+      );
+      await _pickImageFromGallery();
+      return;
+    }
 
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.camera);
@@ -820,6 +823,16 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
 
   Future<void> _pickVideoFromCamera() async {
     if (!_canAddMoreAttachments || _posting) return;
+    if (!_supportsCameraCapture) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Video recording is not available here. Choose a file instead.'),
+        ),
+      );
+      await _pickVideoFromGallery();
+      return;
+    }
 
     final picker = ImagePicker();
     final file = await picker.pickVideo(
@@ -905,92 +918,39 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
   }
 
   Future<void> _uploadAttachment(_ComposeAttachment attachment) async {
-    final dio = ref.read(dioProvider);
     final file = attachment.localFile;
     if (file == null) {
       throw Exception('Attachment file missing.');
     }
 
-    final bytes = await file.readAsBytes();
     final mime = _inferMime(file.name);
-
-    final pres = await dio.post(
-      '/media/presign',
-      data: {
-        'fileName': file.name,
-        'mimeType': mime,
-        'bytes': bytes.length,
-        'kind': attachment.isImage ? 'IMAGE' : 'VIDEO',
-        'source':
-            attachment.source == _AttachmentSource.camera ? 'CAMERA' : 'GALLERY',
-        if (attachment.isImage) 'width': attachment.width,
-        if (attachment.isImage) 'height': attachment.height,
-        if (attachment.isVideo && attachment.durationMs != null)
-          'duration': attachment.durationMs,
+    final result = await uploadAuraMedia(
+      dio: ref.read(dioProvider),
+      bytes: await file.readAsBytes(),
+      fileName: file.name,
+      mimeType: mime,
+      kind: attachment.isImage ? 'IMAGE' : 'VIDEO',
+      source:
+          attachment.source == _AttachmentSource.camera ? 'CAMERA' : 'GALLERY',
+      width: attachment.isImage ? attachment.width : null,
+      height: attachment.isImage ? attachment.height : null,
+      duration: attachment.isVideo ? attachment.durationMs : null,
+      metadataPatch: <String, dynamic>{
+        'caption': attachment.captionController.text.trim().isEmpty
+            ? null
+            : attachment.captionController.text.trim(),
+        'editDisclosure': false,
+        if (attachment.width != null) 'width': attachment.width,
+        if (attachment.height != null) 'height': attachment.height,
       },
     );
-
-    final presigned = _unwrapDataMap(pres.data);
-    final mediaMap = _asMap(presigned['media']);
-    final mediaId = _str(mediaMap['id']);
-    final upload = _asMap(presigned['upload']);
-    final uploadUrl = _str(upload['url']);
-    final headers = _asMap(upload['headers']);
-
-    if (mediaId.isEmpty) {
-      throw Exception('Media ID missing from presign response.');
-    }
-    if (uploadUrl.isEmpty) {
-      throw Exception('Upload URL missing from presign response.');
-    }
-
-    final uploadDio = _cleanUploadDio();
-    final uploadHeaders = <String, String>{};
-    headers.forEach((k, v) {
-      if (v == null) return;
-      uploadHeaders[k.toString()] = v.toString();
-    });
-    if (!uploadHeaders.containsKey('Content-Type')) {
-      uploadHeaders['Content-Type'] = mime;
-    }
-
-    await uploadDio.put(
-      uploadUrl,
-      data: bytes,
-      options: Options(
-        headers: uploadHeaders,
-        contentType: uploadHeaders['Content-Type'],
-        responseType: ResponseType.plain,
-        followRedirects: true,
-        validateStatus: (code) => code != null && code >= 200 && code < 300,
-      ),
-    );
-
-    await dio.post('/media/$mediaId/confirm');
-    final patchBody = <String, dynamic>{
-      'caption': attachment.captionController.text.trim().isEmpty
-          ? null
-          : attachment.captionController.text.trim(),
-      'editDisclosure': false,
-      if (attachment.width != null) 'width': attachment.width,
-      if (attachment.height != null) 'height': attachment.height,
-    };
-
-    final patch = await dio.patch('/media/$mediaId', data: patchBody);
-    final patched = _unwrapDataMap(patch.data);
 
     if (!mounted) return;
 
     setState(() {
-      attachment.mediaId = mediaId;
-      attachment.url = _str(patched['displayUrl']).isNotEmpty
-          ? _str(patched['displayUrl'])
-          : (_str(patched['url']).isNotEmpty ? _str(patched['url']) : null);
-      attachment.thumbUrl = _str(patched['thumbnailUrl']).isNotEmpty
-          ? _str(patched['thumbnailUrl'])
-          : (_str(patched['thumbUrl']).isNotEmpty
-              ? _str(patched['thumbUrl'])
-              : null);
+      attachment.mediaId = result.mediaId;
+      attachment.url = result.url.isNotEmpty ? result.url : null;
+      attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
       attachment.uploading = false;
       attachment.error = null;
       _syncExternalPublishingToggles();
@@ -2514,7 +2474,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 const SizedBox(height: AuraSpace.s12),
                 _AttachmentActionButton(
                   icon: Icons.camera_alt_outlined,
-                  label: 'Take photo',
+                  label: _supportsCameraCapture ? 'Take photo' : 'Choose photo',
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await _pickImageFromCamera();
@@ -2532,7 +2492,7 @@ List<String> _listOfString(dynamic v, {int take = 3}) {
                 const SizedBox(height: AuraSpace.s10),
                 _AttachmentActionButton(
                   icon: Icons.videocam_outlined,
-                  label: 'Record video',
+                  label: _supportsCameraCapture ? 'Record video' : 'Choose video',
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await _pickVideoFromCamera();

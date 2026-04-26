@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +11,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -1127,6 +1126,8 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
   bool _sending = false;
   bool _recordingAudio = false;
+  DateTime? _recordingStartedAt;
+  Timer? _recordingTicker;
   bool _assistBusy = false;
   String? _assistError;
   String? _assistSessionId;
@@ -1138,9 +1139,12 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   String? _translationPreview;
   String? _translationSnapshot;
   String _translationTargetLanguage = 'ur';
+  bool get _supportsCameraCapture => !kIsWeb;
+  bool get _supportsAudioRecording => !kIsWeb;
 
   @override
   void dispose() {
+    _recordingTicker?.cancel();
     _controller.dispose();
     _audioRecorder.dispose();
     super.dispose();
@@ -1148,6 +1152,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
   bool get _canSend {
     if (_sending) return false;
+    if (_recordingAudio) return false;
     if (_attachments.any((a) => a.uploading)) return false;
     return _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
   }
@@ -1172,6 +1177,16 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   }
 
   Future<void> _pickImageFromCamera() async {
+    if (!_supportsCameraCapture) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera capture is not available here. Choose a file instead.'),
+        ),
+      );
+      await _pickImageFromGallery();
+      return;
+    }
     final file = await _picker.pickImage(source: ImageSource.camera);
     if (file == null) return;
     await _addAttachment(
@@ -1188,6 +1203,16 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   }
 
   Future<void> _pickVideoFromCamera() async {
+    if (!_supportsCameraCapture) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Video capture is not available here. Choose a file instead.'),
+        ),
+      );
+      await _pickVideoFromGallery();
+      return;
+    }
     final file = await _picker.pickVideo(
       source: ImageSource.camera,
       maxDuration: const Duration(seconds: 60),
@@ -1234,23 +1259,16 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     if (_sending) return;
 
     if (_recordingAudio) {
-      final path = await _audioRecorder.stop();
+      await _finishAudioRecording(keep: true);
+      return;
+    }
+
+    if (!_supportsAudioRecording) {
       if (!mounted) return;
-
-      setState(() => _recordingAudio = false);
-
-      if (path == null || path.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save audio recording.')),
-        );
-        return;
-      }
-
-      final file = XFile(path, mimeType: 'audio/aac');
-      await _addAttachment(
-        file,
-        kind: _AttachmentKind.audio,
-        source: _AttachmentSource.recording,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Audio recording is not available here. Upload an audio file instead.'),
+        ),
       );
       return;
     }
@@ -1270,13 +1288,58 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     );
 
     if (!mounted) return;
+    _recordingTicker?.cancel();
+    _recordingStartedAt = DateTime.now();
+    _recordingTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_recordingAudio || _recordingStartedAt == null) return;
+      setState(() {});
+    });
     setState(() => _recordingAudio = true);
+  }
+
+  Future<void> _cancelAudioRecording() async {
+    await _finishAudioRecording(keep: false);
+  }
+
+  Future<void> _finishAudioRecording({required bool keep}) async {
+    if (!_recordingAudio) return;
+
+    final startedAt = _recordingStartedAt;
+    final path = await _audioRecorder.stop();
+    if (!mounted) return;
+
+    _recordingTicker?.cancel();
+    _recordingTicker = null;
+    _recordingStartedAt = null;
+
+    setState(() => _recordingAudio = false);
+
+    if (!keep) return;
+
+    if (path == null || path.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save audio recording.')),
+      );
+      return;
+    }
+
+    final file = XFile(path, mimeType: 'audio/aac');
+    final elapsed = startedAt == null
+        ? null
+        : DateTime.now().difference(startedAt);
+    await _addAttachment(
+      file,
+      kind: _AttachmentKind.audio,
+      source: _AttachmentSource.recording,
+      duration: elapsed,
+    );
   }
 
   Future<void> _addAttachment(
     XFile file, {
     required _AttachmentKind kind,
     _AttachmentSource source = _AttachmentSource.gallery,
+    Duration? duration,
   }) async {
     final bytes = await file.readAsBytes();
 
@@ -1301,8 +1364,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
       height: height,
       mimeType: file.mimeType ?? _inferMime(file.name),
       sizeBytes: bytes.length,
-      uploading: true,
+      durationSec: duration?.inSeconds,
     );
+    attachment.uploading = true;
 
     setState(() {
       _attachments.add(attachment);
@@ -1325,130 +1389,26 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   }
 
   Future<void> _uploadAttachment(_DraftAttachment attachment) async {
-    final dio = ref.read(dioProvider);
-    final mime = attachment.mimeType;
-
-    final pres = await dio.post(
-      '/media/presign',
-      data: {
-        'fileName': attachment.file.name,
-        'mimeType': mime,
-        'bytes': attachment.sizeBytes,
-        'kind': _mediaKindValue(attachment.kind),
-        'source': _mediaSourceValue(attachment.source),
+    final result = await uploadAuraMedia(
+      dio: ref.read(dioProvider),
+      bytes: attachment.bytes,
+      fileName: attachment.file.name,
+      mimeType: attachment.mimeType,
+      kind: _mediaKindValue(attachment.kind),
+      source: _mediaSourceValue(attachment.source),
+      width: attachment.width,
+      height: attachment.height,
+      duration: attachment.kind == _AttachmentKind.audio ? attachment.durationSec : null,
+      metadataPatch: <String, dynamic>{
         if (attachment.width != null) 'width': attachment.width,
         if (attachment.height != null) 'height': attachment.height,
+        'editDisclosure': false,
       },
     );
 
-    final presigned = _unwrapDataMap(pres.data);
-    final mediaMap = _asMap(presigned['media']);
-    final upload = _asMap(presigned['upload']);
-    final uploadUrl = _str(upload['url']);
-    final headers = _asMap(upload['headers']);
-
-    if (uploadUrl.isEmpty) {
-      throw Exception('Upload URL missing from presign response.');
-    }
-
-    final uploadHeaders = <String, String>{};
-    headers.forEach((k, v) {
-      if (v == null) return;
-      uploadHeaders[k.toString()] = v.toString();
-    });
-    if (!uploadHeaders.containsKey('Content-Type')) {
-      uploadHeaders['Content-Type'] = mime;
-    }
-
-    final uploadDio = _cleanUploadDio();
-    await uploadDio.put(
-      uploadUrl,
-      data: attachment.bytes,
-      options: Options(
-        headers: uploadHeaders,
-        contentType: uploadHeaders['Content-Type'],
-        responseType: ResponseType.plain,
-        followRedirects: true,
-        validateStatus: (code) => code != null && code >= 200 && code < 300,
-      ),
-    );
-
-    final mediaId = _firstNonEmpty(mediaMap, const ['id', 'mediaId']);
-    if (mediaId.isNotEmpty) {
-      await dio.post('/media/$mediaId/confirm');
-      final patch = await dio.patch(
-        '/media/$mediaId',
-        data: {
-          if (attachment.width != null) 'width': attachment.width,
-          if (attachment.height != null) 'height': attachment.height,
-          'editDisclosure': false,
-        },
-      );
-
-      final patched = _unwrapDataMap(patch.data);
-
-      attachment.url = _firstNonEmpty(
-        patched,
-        const [
-          'displayUrl',
-          'url',
-          'publicUrl',
-          'signedUrl',
-          'sourceUrl',
-          'fileUrl',
-        ],
-      );
-      attachment.thumbUrl = _firstNonEmpty(
-        patched,
-        const [
-          'thumbnailUrl',
-          'thumbUrl',
-          'previewUrl',
-          'displayUrl',
-          'url',
-        ],
-      );
-
-      attachment.storageKey = _firstNonEmpty(patched, const [
-        'storageKey',
-        'objectKey',
-        'key',
-        'path',
-      ]);
-
-      if (attachment.storageKey.isEmpty) {
-        attachment.storageKey = _firstNonEmpty(mediaMap, const [
-          'storageKey',
-          'objectKey',
-          'key',
-          'path',
-        ]);
-      }
-    }
-
-    if (attachment.storageKey.isEmpty) {
-      attachment.storageKey = _firstNonEmpty(upload, const [
-        'objectKey',
-        'storageKey',
-        'key',
-        'path',
-      ]);
-    }
-
-    if (attachment.storageKey.isEmpty) {
-      attachment.storageKey = _firstNonEmpty(presigned, const [
-        'storageKey',
-        'objectKey',
-        'key',
-        'path',
-      ]);
-    }
-
-    if (attachment.storageKey.isEmpty) {
-      throw Exception(
-        'Storage key missing from upload response. Message attachment cannot be finalized yet.',
-      );
-    }
+    attachment.storageKey = result.storageKey;
+    attachment.url = result.url.isNotEmpty ? result.url : null;
+    attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
 
     attachment.uploading = false;
     attachment.error = null;
@@ -1711,7 +1671,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take photo'),
+                title: Text(_supportsCameraCapture ? 'Take photo' : 'Choose photo'),
                 onTap: () => closeAnd(_pickImageFromCamera),
               ),
               ListTile(
@@ -1721,7 +1681,7 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
               ),
               ListTile(
                 leading: const Icon(Icons.videocam_outlined),
-                title: const Text('Record video'),
+                title: Text(_supportsCameraCapture ? 'Record video' : 'Choose video'),
                 onTap: () => closeAnd(_pickVideoFromCamera),
               ),
               ListTile(
@@ -1734,9 +1694,15 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                   _recordingAudio ? Icons.stop_circle_outlined : Icons.mic_none,
                 ),
                 title: Text(
-                  _recordingAudio ? 'Stop audio recording' : 'Record audio',
+                  _recordingAudio
+                      ? 'Stop audio recording'
+                      : _supportsAudioRecording
+                          ? 'Record audio'
+                          : 'Audio recording unavailable',
                 ),
-                onTap: () => closeAnd(_toggleAudioRecording),
+                onTap: _supportsAudioRecording
+                    ? () => closeAnd(_toggleAudioRecording)
+                    : null,
               ),
               ListTile(
                 leading: const Icon(Icons.audio_file_outlined),
@@ -1753,6 +1719,9 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   @override
   Widget build(BuildContext context) {
     final uploadingCount = _attachments.where((a) => a.uploading).length;
+    final recordingElapsed = _recordingStartedAt == null
+        ? Duration.zero
+        : DateTime.now().difference(_recordingStartedAt!);
 
     return SafeArea(
       top: false,
@@ -1768,6 +1737,39 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
               _AttachmentPreviewRow(
                 attachments: _attachments,
                 onRemove: _removeAttachment,
+              ),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+            if (_recordingAudio) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.fiber_manual_record, size: 14, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Recording audio ${_formatRecordingDuration(recordingElapsed)}',
+                        style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _sending ? null : _cancelAudioRecording,
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 6),
+                    FilledButton(
+                      onPressed: _sending ? null : () => _toggleAudioRecording(),
+                      child: const Text('Stop'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: AuraSpace.s10),
             ],
@@ -2255,6 +2257,13 @@ class _EditMessageDialogState extends ConsumerState<_EditMessageDialog> {
       ],
     );
   }
+}
+
+String _formatRecordingDuration(Duration duration) {
+  final totalSeconds = duration.inSeconds;
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
 class _MessageTile extends ConsumerStatefulWidget {
@@ -3485,11 +3494,6 @@ class _DraftAttachment {
     this.width,
     this.height,
     this.durationSec,
-    this.url,
-    this.thumbUrl,
-    this.storageKey = '',
-    this.uploading = false,
-    this.error,
   });
 
   final String localId;
@@ -3504,8 +3508,8 @@ class _DraftAttachment {
   int? durationSec;
   String? url;
   String? thumbUrl;
-  String storageKey;
-  bool uploading;
+  String storageKey = '';
+  bool uploading = false;
   String? error;
 
   Map<String, dynamic> toMessagePayload() {
@@ -3606,15 +3610,6 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
     'width': image.width,
     'height': image.height,
   };
-}
-
-Dio _cleanUploadDio() {
-  return Dio(
-    BaseOptions(
-      responseType: ResponseType.plain,
-      followRedirects: true,
-    ),
-  );
 }
 
 Map<String, dynamic> _unwrapDataMap(dynamic raw) {

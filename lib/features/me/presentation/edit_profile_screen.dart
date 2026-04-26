@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
@@ -276,86 +277,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<String> _uploadImage(XFile file) async {
-    final dio = ref.read(dioProvider);
     final bytes = await file.readAsBytes();
     final mimeType = file.mimeType ?? _inferMime(file.name);
     final size = await _decodeImageSize(bytes);
-
-    final presignRes = await dio.post(
-      '/media/presign',
-      data: {
-        'fileName': file.name,
-        'mimeType': mimeType,
-        'bytes': bytes.length,
-        'kind': 'IMAGE',
-        'source': 'UPLOAD',
-        if (size?['width'] != null) 'width': size!['width'],
-        if (size?['height'] != null) 'height': size!['height'],
-      },
-    );
-
-    final presigned = _unwrapDataMap(presignRes.data);
-    final mediaMap = _asMap(presigned['media']);
-    final uploadMap = _asMap(presigned['upload']);
-
-    final uploadUrl = _readString(uploadMap, const ['url']);
-    if (uploadUrl.isEmpty) {
-      throw Exception('Upload URL missing.');
-    }
-
-    final uploadHeaders = <String, String>{};
-    final rawHeaders = _asMap(uploadMap['headers']);
-    rawHeaders.forEach((key, value) {
-      if (value == null) return;
-      uploadHeaders[key.toString()] = value.toString();
-    });
-    uploadHeaders.putIfAbsent('Content-Type', () => mimeType);
-
-    final uploadDio = Dio(
-      BaseOptions(
-        responseType: ResponseType.plain,
-        followRedirects: true,
-      ),
-    );
-
-    await uploadDio.put(
-      uploadUrl,
-      data: bytes,
-      options: Options(
-        headers: uploadHeaders,
-        contentType: uploadHeaders['Content-Type'],
-        validateStatus: (code) => code != null && code >= 200 && code < 300,
-      ),
-    );
-
-    final mediaId = _readString(mediaMap, const ['id', 'mediaId']);
-    if (mediaId.isEmpty) {
-      throw Exception('Media id missing.');
-    }
-
-    await dio.post('/media/$mediaId/confirm');
-    final patchRes = await dio.patch(
-      '/media/$mediaId',
-      data: {
+    final result = await uploadAuraMedia(
+      dio: ref.read(dioProvider),
+      bytes: bytes,
+      fileName: file.name,
+      mimeType: mimeType,
+      kind: 'IMAGE',
+      source: 'UPLOAD',
+      width: size?['width'],
+      height: size?['height'],
+      metadataPatch: <String, dynamic>{
         if (size?['width'] != null) 'width': size!['width'],
         if (size?['height'] != null) 'height': size!['height'],
         'editDisclosure': false,
       },
     );
 
-    final patched = _unwrapDataMap(patchRes.data);
-
-    final url = _readString(
-      patched,
-      const ['displayUrl', 'url', 'publicUrl', 'sourceUrl', 'originalUrl'],
-    );
+    final url = result.url.trim();
     if (url.isNotEmpty) return url;
-
-    final fallback = _readString(
-      mediaMap,
-      const ['displayUrl', 'url', 'publicUrl', 'sourceUrl', 'originalUrl'],
-    );
-    if (fallback.isNotEmpty) return fallback;
 
     throw Exception('Uploaded image URL missing.');
   }

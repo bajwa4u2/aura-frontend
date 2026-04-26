@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config.dart';
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
@@ -240,81 +241,24 @@ class _AnnouncementEditorScreenState
   }
 
   Future<void> _uploadAttachment(_AnnouncementEditorMediaAttachment attachment) async {
-    final dio = ref.read(dioProvider);
-
     try {
-      final presign = await dio.post('/media/presign', data: {
-        'fileName': attachment.name,
-        'mimeType': attachment.mimeType,
-        'bytes': attachment.bytes.length,
-        'kind': attachment.kind,
-      });
-
-      final root = _asMap(presign.data);
-      final data = _asMap(root['data']).isNotEmpty ? _asMap(root['data']) : root;
-      final media = _asMap(data['media']);
-      final upload = _asMap(data['upload']);
-
-      final mediaId = _firstNonEmpty([
-        media['id']?.toString(),
-        data['id']?.toString(),
-      ]);
-      final uploadUrl = _firstNonEmpty([
-        upload['url']?.toString(),
-        data['uploadUrl']?.toString(),
-      ]);
-
-      if (mediaId.isEmpty || uploadUrl.isEmpty) {
-        throw Exception('Media upload could not be initialized.');
-      }
-
-      final uploadHeaders = <String, String>{};
-      final rawHeaders = _asMap(upload['headers']);
-      rawHeaders.forEach((key, value) {
-        if (value == null) return;
-        uploadHeaders[key.toString()] = value.toString();
-      });
-      if (!uploadHeaders.containsKey('Content-Type')) {
-        uploadHeaders['Content-Type'] = attachment.mimeType;
-      }
-
-      final uploadDio = Dio(
-        BaseOptions(
-          responseType: ResponseType.plain,
-          followRedirects: true,
-        ),
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: attachment.bytes,
+        fileName: attachment.name,
+        mimeType: attachment.mimeType,
+        kind: attachment.kind,
+        source: 'GALLERY',
+        metadataPatch: const <String, dynamic>{
+          'caption': null,
+        },
       );
-
-      await uploadDio.put(
-        uploadUrl,
-        data: attachment.bytes,
-        options: Options(
-          headers: uploadHeaders,
-          contentType: uploadHeaders['Content-Type'],
-          responseType: ResponseType.plain,
-          followRedirects: true,
-          validateStatus: (code) => code != null && code >= 200 && code < 300,
-        ),
-      );
-
-      await dio.post('/media/$mediaId/confirm');
-      final patched = await dio.patch('/media/$mediaId', data: {
-        'caption': null,
-      });
-      final patchRoot = _asMap(patched.data);
-      final patchData = _asMap(patchRoot['data']).isNotEmpty ? _asMap(patchRoot['data']) : patchRoot;
 
       if (!mounted) return;
       setState(() {
-        attachment.mediaId = mediaId;
-        attachment.url = _firstNonEmpty([
-          patchData['displayUrl']?.toString(),
-          patchData['url']?.toString(),
-        ]);
-        attachment.thumbUrl = _firstNonEmpty([
-          patchData['thumbnailUrl']?.toString(),
-          patchData['thumbUrl']?.toString(),
-        ]);
+        attachment.mediaId = result.mediaId;
+        attachment.url = result.url.isNotEmpty ? result.url : null;
+        attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
         attachment.uploading = false;
         attachment.error = null;
       });
