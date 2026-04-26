@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -69,7 +70,7 @@ class AnnouncementsScreen extends ConsumerWidget {
       loading: () => AuraScaffold(
         title: 'Announcements',
         showHomeAction: true,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
       ),
       error: (_, __) {
         return _PublicAnnouncementsScreen(
@@ -91,7 +92,7 @@ class AnnouncementsScreen extends ConsumerWidget {
           loading: () => AuraScaffold(
             title: 'Announcements',
             showHomeAction: true,
-            body: const Center(child: CircularProgressIndicator()),
+            body: const Center(child: AuraLoadingState(message: 'Loading announcements…')),
           ),
           error: (_, __) {
             return _PublicAnnouncementsScreen(
@@ -146,9 +147,10 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
           AuraSpace.s24,
         ),
         children: [
-          const _IntroCard(
+          const AuraGradientHeader(
             title: 'Announcements',
-            body: 'This is the public announcements surface for official platform notices.',
+            subtitle:
+                'The public announcements surface for official platform notices.',
           ),
           const SizedBox(height: AuraSpace.s12),
           _PinnedSection(asyncValue: pinnedAsync),
@@ -182,53 +184,45 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
           AuraSpace.s24,
         ),
         children: [
-          const _IntroCard(
+          const AuraGradientHeader(
             title: 'Admin announcement workspace',
-            body:
-                'This is the working surface for platform notices. It is for reviewing pinned notices, the public archive, and the live announcement detail paths.',
+            subtitle:
+                'Review pinned notices, the archive, and the live announcement detail paths.',
           ),
           const SizedBox(height: AuraSpace.s12),
-          AuraCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          AuraAdminTile(
+            title: 'Workspace',
+            body:
+                'Use this area to review what is live, what is pinned, and how each notice opens on the public path.',
+            icon: Icons.campaign_outlined,
+            action: Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
               children: [
-                Text('Workspace', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Use this area to review what is live, what is pinned, and how each notice opens on the public path.',
-                  style: AuraText.body,
+                AuraPrimaryButton(
+                  label: 'Create platform notice',
+                  onPressed: () => context.go('/announcements/create?scope=platform'),
+                  icon: Icons.add_circle_outline,
                 ),
-                const SizedBox(height: AuraSpace.s14),
-                Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: () => context.go('/announcements/create?scope=platform'),
-                      icon: const Icon(Icons.add_circle_outline, size: 18),
-                      label: const Text('Create platform notice'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () => ref.invalidate(announcementsProvider),
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('Refresh archive'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () => ref.invalidate(pinnedAnnouncementsProvider),
-                      icon: const Icon(Icons.push_pin_outlined, size: 18),
-                      label: const Text('Refresh pinned'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/updates'),
-                      icon: const Icon(Icons.notifications_none_outlined, size: 18),
-                      label: const Text('Open updates'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/public'),
-                      icon: const Icon(Icons.public_outlined, size: 18),
-                      label: const Text('Public home'),
-                    ),
-                  ],
+                AuraSecondaryButton(
+                  label: 'Refresh archive',
+                  onPressed: () => ref.invalidate(announcementsProvider),
+                  icon: Icons.refresh_rounded,
+                ),
+                AuraSecondaryButton(
+                  label: 'Refresh pinned',
+                  onPressed: () => ref.invalidate(pinnedAnnouncementsProvider),
+                  icon: Icons.push_pin_outlined,
+                ),
+                AuraGhostButton(
+                  label: 'Open updates',
+                  onPressed: () => context.go('/updates'),
+                  icon: Icons.notifications_none_outlined,
+                ),
+                AuraGhostButton(
+                  label: 'Public home',
+                  onPressed: () => context.go('/public'),
+                  icon: Icons.public_outlined,
                 ),
               ],
             ),
@@ -365,30 +359,6 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
             emptyTitle: 'Nothing yet',
             emptyBody: 'Platform notices will appear here when published.',
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IntroCard extends StatelessWidget {
-  const _IntroCard({
-    required this.title,
-    required this.body,
-  });
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          Text(body, style: AuraText.body),
         ],
       ),
     );

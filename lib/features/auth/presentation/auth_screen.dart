@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../auth_controller.dart';
 
@@ -157,137 +158,223 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.dispose();
   }
 
-  InputDecoration _decoration({
-    required String label,
-    String? hint,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      suffixIcon: suffixIcon,
-      border: const OutlineInputBorder(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return AuraScaffold(
       title: 'Login',
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: AuraCard(
-              child: Form(
-                key: _formKey,
-                child: AutofillGroup(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Welcome back', style: AuraText.title),
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(
-                        'Sign in to continue.',
-                        style: AuraText.body,
-                      ),
-                      const SizedBox(height: AuraSpace.s14),
-                      if (_error != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.22),
+      body: AuraPageShell(
+        maxWidth: 1160,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 960;
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _AuthHero(
+                                title: 'Welcome back',
+                                body:
+                                    'Sign in to continue your work, conversations, institutions, and publishing history.',
+                                accent: 'Aura keeps communication, identity, and publication in one place.',
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            _error!,
-                            style: AuraText.body.copyWith(
-                              color: Colors.red,
-                              height: 1.3,
+                            const SizedBox(width: AuraSpace.s16),
+                            SizedBox(width: 460, child: _LoginFormCard(
+                              busy: _busy,
+                              error: _error,
+                              formKey: _formKey,
+                              emailCtrl: _emailCtrl,
+                              passwordCtrl: _passwordCtrl,
+                              obscurePassword: _obscurePassword,
+                              emailValidator: _emailValidator,
+                              passwordValidator: _passwordValidator,
+                              onTogglePassword: () => setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              }),
+                              onLogin: _login,
+                              onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+                              onCreateAccount: () => context.push(_withRedirect('/register')),
+                            )),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _AuthHero(
+                              title: 'Welcome back',
+                              body:
+                                  'Sign in to continue your work, conversations, institutions, and publishing history.',
+                              accent: 'Aura keeps communication, identity, and publication in one place.',
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                      ],
-                      TextFormField(
-                        controller: _emailCtrl,
-                        enabled: !_busy,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _decoration(
-                          label: 'Email',
-                          hint: 'name@example.com',
-                        ),
-                        validator: _emailValidator,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        autofillHints: const [AutofillHints.username, AutofillHints.email],
-                        inputFormatters: [
-                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                        ],
-                      ),
-                      const SizedBox(height: AuraSpace.s10),
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        enabled: !_busy,
-                        obscureText: _obscurePassword,
-                        decoration: _decoration(
-                          label: 'Password',
-                          suffixIcon: IconButton(
-                            onPressed: _busy
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                            const SizedBox(height: AuraSpace.s16),
+                            _LoginFormCard(
+                              busy: _busy,
+                              error: _error,
+                              formKey: _formKey,
+                              emailCtrl: _emailCtrl,
+                              passwordCtrl: _passwordCtrl,
+                              obscurePassword: _obscurePassword,
+                              emailValidator: _emailValidator,
+                              passwordValidator: _passwordValidator,
+                              onTogglePassword: () => setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              }),
+                              onLogin: _login,
+                              onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+                              onCreateAccount: () => context.push(_withRedirect('/register')),
                             ),
-                          ),
+                          ],
                         ),
-                        validator: _passwordValidator,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.password],
-                        onFieldSubmitted: (_) => _busy ? null : _login(),
-                      ),
-                      const SizedBox(height: AuraSpace.s14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: _busy ? null : _login,
-                          child: Text(_busy ? 'Signing in…' : 'Sign in'),
-                        ),
-                      ),
-                      const SizedBox(height: AuraSpace.s10),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () => context.push(_withRedirect('/forgot-password')),
-                            child: const Text('Forgot password'),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () => context.push(_withRedirect('/register')),
-                            child: const Text('Create account'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
               ),
-            ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthHero extends StatelessWidget {
+  const _AuthHero({
+    required this.title,
+    required this.body,
+    required this.accent,
+  });
+
+  final String title;
+  final String body;
+  final String accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraBadge(
+            label: 'Trusted access',
+            icon: Icons.shield_outlined,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Text(title, style: AuraText.title.copyWith(fontSize: 32, height: 1.05)),
+          const SizedBox(height: AuraSpace.s12),
+          Text(body, style: AuraText.body),
+          const SizedBox(height: AuraSpace.s14),
+          Text(accent, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoginFormCard extends StatelessWidget {
+  const _LoginFormCard({
+    required this.busy,
+    required this.error,
+    required this.formKey,
+    required this.emailCtrl,
+    required this.passwordCtrl,
+    required this.obscurePassword,
+    required this.emailValidator,
+    required this.passwordValidator,
+    required this.onTogglePassword,
+    required this.onLogin,
+    required this.onForgotPassword,
+    required this.onCreateAccount,
+  });
+
+  final bool busy;
+  final String? error;
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailCtrl;
+  final TextEditingController passwordCtrl;
+  final bool obscurePassword;
+  final String? Function(String?) emailValidator;
+  final String? Function(String?) passwordValidator;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onLogin;
+  final VoidCallback onForgotPassword;
+  final VoidCallback onCreateAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Form(
+        key: formKey,
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Sign in', style: AuraText.title.copyWith(fontSize: 26)),
+              const SizedBox(height: AuraSpace.s8),
+              const Text(
+                'Continue with your current session and keep your work connected.',
+                style: AuraText.body,
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              if (error != null) ...[
+                AuraErrorState(
+                  title: 'Sign-in failed',
+                  body: error!,
+                ),
+                const SizedBox(height: AuraSpace.s10),
+              ],
+              AuraInput(
+                controller: emailCtrl,
+                label: 'Email',
+                hint: 'name@example.com',
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                validator: emailValidator,
+                prefixIcon: const Icon(Icons.email_outlined),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              AuraInput(
+                controller: passwordCtrl,
+                label: 'Password',
+                obscureText: obscurePassword,
+                textInputAction: TextInputAction.done,
+                validator: passwordValidator,
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  onPressed: busy ? null : onTogglePassword,
+                  icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              SizedBox(
+                width: double.infinity,
+                child: AuraPrimaryButton(
+                  label: busy ? 'Signing in…' : 'Sign in',
+                  onPressed: busy ? null : onLogin,
+                  icon: Icons.arrow_forward_rounded,
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Row(
+                children: [
+                  AuraGhostButton(
+                    label: 'Forgot password',
+                    onPressed: busy ? null : onForgotPassword,
+                    icon: Icons.lock_reset_rounded,
+                  ),
+                  const Spacer(),
+                  AuraSecondaryButton(
+                    label: 'Create account',
+                    onPressed: busy ? null : onCreateAccount,
+                    icon: Icons.person_add_alt_1_rounded,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

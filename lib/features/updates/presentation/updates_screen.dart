@@ -5,10 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_surface.dart';
-import '../../../core/ui/aura_text.dart';
 import '../updates_repository.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
@@ -89,32 +88,25 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const Text('Updates', style: AuraText.title),
+            const AuraGradientHeader(
+              title: 'Updates',
+              subtitle: 'Announcements, releases, and public changes appear here.',
+            ),
             const SizedBox(height: AuraSpace.s16),
             AuraCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
+                spacing: AuraSpace.s10,
+                runSpacing: AuraSpace.s10,
                 children: [
-                  Text('Public record', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: AuraSpace.s8),
-                  const Text(
-                    'Announcements, releases, and public changes appear here.',
-                    style: AuraText.small,
+                  AuraPrimaryButton(
+                    label: 'Create account',
+                    onPressed: () => context.go('/register?redirect=%2Fupdates'),
+                    icon: Icons.person_add_alt_1_rounded,
                   ),
-                  const SizedBox(height: AuraSpace.s16),
-                  Wrap(
-                    spacing: AuraSpace.s10,
-                    runSpacing: AuraSpace.s10,
-                    children: [
-                      FilledButton(
-                        onPressed: () => context.go('/register?redirect=%2Fupdates'),
-                        child: const Text('Create account'),
-                      ),
-                      OutlinedButton(
-                        onPressed: () => context.go('/login?redirect=%2Fupdates'),
-                        child: const Text('Login'),
-                      ),
-                    ],
+                  AuraSecondaryButton(
+                    label: 'Login',
+                    onPressed: () => context.go('/login?redirect=%2Fupdates'),
+                    icon: Icons.login_rounded,
                   ),
                 ],
               ),
@@ -130,85 +122,47 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         onRefresh: _load,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
+            constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s16,
-                AuraSpace.s16,
-                AuraSpace.s24,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                Row(
-                  children: [
-                    const Expanded(child: Text('Updates', style: AuraText.title)),
-                    OutlinedButton(
-                      onPressed: _load,
-                      child: const Text('Refresh'),
-                    ),
-                  ],
+                const AuraGradientHeader(
+                  title: 'Updates',
+                  subtitle: 'A quiet public feed for attention, announcements, and activity.',
                 ),
                 const SizedBox(height: AuraSpace.s16),
                 if (_loading)
-                  const Center(child: CircularProgressIndicator())
+                  const AuraLoadingState(message: 'Loading updates…')
                 else if (_error != null)
-                  AuraCard(
-                    child: Text(_error!, style: AuraText.small),
+                  AuraErrorState(
+                    title: 'Could not load updates',
+                    body: _error!,
+                    action: AuraSecondaryButton(
+                      label: 'Refresh',
+                      onPressed: _load,
+                      icon: Icons.refresh_rounded,
+                    ),
                   )
                 else if (_items.isEmpty)
-                  const AuraCard(
-                    child: Text('No updates yet.', style: AuraText.small),
+                  const AuraEmptyState(
+                    title: 'No updates yet',
+                    body: 'When Aura has something important to say, it will appear here.',
+                    icon: Icons.notifications_none_rounded,
                   )
                 else
                   ..._items.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                      child: AuraCard(
-                        child: InkWell(
-                          onTap: () => _openUpdate(item),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: AuraSurface.card,
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(color: AuraSurface.divider),
-                                ),
-                                child: const Icon(Icons.campaign_outlined, size: 18),
-                              ),
-                              const SizedBox(width: AuraSpace.s12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      (item['headline'] ?? 'Update').toString(),
-                                      style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                                    ),
-                                    if ((item['detail'] ?? '').toString().trim().isNotEmpty) ...[
-                                      const SizedBox(height: AuraSpace.s6),
-                                      Text(
-                                        item['detail'].toString(),
-                                        style: AuraText.small.copyWith(color: AuraSurface.muted),
-                                      ),
-                                    ],
-                                    if ((item['createdAt'] ?? '').toString().trim().isNotEmpty) ...[
-                                      const SizedBox(height: AuraSpace.s8),
-                                      Text(
-                                        _timeAgo((item['createdAt'] ?? '').toString()),
-                                        style: AuraText.small.copyWith(color: AuraSurface.muted),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      child: AuraNotificationTile(
+                        title: (item['headline'] ?? 'Update').toString(),
+                        body: [
+                          if ((item['detail'] ?? '').toString().trim().isNotEmpty)
+                            item['detail'].toString(),
+                          if ((item['createdAt'] ?? '').toString().trim().isNotEmpty)
+                            _timeAgo((item['createdAt'] ?? '').toString()),
+                        ].where((s) => s.trim().isNotEmpty).join(' • '),
+                        icon: Icons.campaign_outlined,
+                        onTap: () => _openUpdate(item),
                       ),
                     ),
                   ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -104,9 +105,14 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Aura Editor', style: AuraText.title),
+                const AuraBadge(
+                  label: 'AI review',
+                  icon: Icons.auto_awesome_outlined,
+                ),
                 const SizedBox(height: AuraSpace.s10),
-                Text(
+                Text('Aura Editor', style: AuraText.title.copyWith(fontSize: 26)),
+                const SizedBox(height: AuraSpace.s10),
+                const Text(
                   'A calm editorial review for clarity, responsibility, and civic impact.',
                   style: AuraText.body,
                 ),
@@ -116,7 +122,6 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   maxLines: 8,
                   decoration: const InputDecoration(
                     labelText: 'Draft to review',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s12),
@@ -124,11 +129,13 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   spacing: AuraSpace.s10,
                   runSpacing: AuraSpace.s10,
                   children: [
-                    FilledButton(
+                    AuraPrimaryButton(
+                      label: _busy ? 'Reviewing…' : 'Review with Aura Editor',
                       onPressed: _busy ? null : _run,
-                      child: Text(_busy ? 'Reviewing…' : 'Review with Aura Editor'),
+                      icon: Icons.auto_fix_high_outlined,
                     ),
-                    OutlinedButton(
+                    AuraSecondaryButton(
+                      label: 'Clear',
                       onPressed: _busy
                           ? null
                           : () {
@@ -138,7 +145,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                                 _error = null;
                               });
                             },
-                      child: const Text('Clear'),
+                      icon: Icons.clear_rounded,
                     ),
                   ],
                 ),

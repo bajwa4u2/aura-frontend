@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
+import 'aura_design_system.dart';
 import 'aura_radius.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
@@ -28,26 +31,26 @@ class AuraCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final double radius = AuraRadius.card;
 
-    final card = Container(
-      margin: margin,
-      padding: padding ?? const EdgeInsets.all(AuraSpace.md),
-      decoration: BoxDecoration(
-        color: color ?? AuraSurface.card,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: borderColor ?? AuraSurface.divider,
-          width: 1,
-        ),
-        boxShadow: const [
-          // Soft cinematic lift (not harsh Material shadow)
-          BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 24,
-            offset: Offset(0, 12),
+    final card = ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          margin: margin,
+          padding: padding ?? const EdgeInsets.all(AuraSpace.md),
+          decoration: BoxDecoration(
+            gradient: AuraGradients.card,
+            color: (color ?? AuraSurface.card).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: borderColor ?? AuraSurface.divider,
+              width: 1,
+            ),
+            boxShadow: AuraShadows.panel,
           ),
-        ],
+          child: child,
+        ),
       ),
-      child: child,
     );
 
     if (onTap == null) return card;

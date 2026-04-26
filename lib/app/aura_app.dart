@@ -19,6 +19,7 @@ class AuraApp extends ConsumerWidget {
 
       scaffoldBackgroundColor: AuraSurface.page,
       canvasColor: AuraSurface.page,
+      cardColor: AuraSurface.card,
 
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
@@ -30,6 +31,63 @@ class AuraApp extends ConsumerWidget {
         onError: Colors.black,
         surface: AuraSurface.card,
         onSurface: AuraSurface.ink,
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AuraSurface.card.withValues(alpha: 0.9),
+        labelStyle: const TextStyle(color: AuraSurface.muted),
+        hintStyle: const TextStyle(color: AuraSurface.muted),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraSurface.divider),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraSurface.divider),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AuraSurface.accent),
+        ),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: AuraSurface.accent,
+          foregroundColor: Colors.white,
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          foregroundColor: AuraSurface.ink,
+          side: const BorderSide(color: AuraSurface.divider),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AuraSurface.ink,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        ),
+      ),
+
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: AuraSurface.card,
+        indicatorColor: AuraSurface.accentSoft,
       ),
 
       textTheme: const TextTheme(
@@ -46,11 +104,6 @@ class AuraApp extends ConsumerWidget {
         backgroundColor: AuraSurface.page,
         elevation: 0,
         centerTitle: false,
-      ),
-
-      navigationBarTheme: const NavigationBarThemeData(
-        backgroundColor: AuraSurface.card,
-        indicatorColor: AuraSurface.accentSoft,
       ),
 
       splashColor: AuraSurface.accentSoft,

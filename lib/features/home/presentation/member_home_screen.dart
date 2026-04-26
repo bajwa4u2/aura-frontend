@@ -6,6 +6,7 @@ import 'package:aura/core/auth/session_providers.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -183,15 +184,16 @@ class MemberHomeScreen extends ConsumerWidget {
         onRefresh: () => _refresh(ref),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 880),
+            constraints: const BoxConstraints(maxWidth: 1160),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s12,
-                AuraSpace.s16,
-                AuraSpace.s28,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               children: [
+                const AuraGradientHeader(
+                  title: 'Aura home',
+                  subtitle:
+                      'Your held drafts, public work, announcements, and attention signals in one place.',
+                ),
+                const SizedBox(height: AuraSpace.s16),
                 const _PinnedAnnouncementBanner(),
                 const SizedBox(height: AuraSpace.s16),
                 heldAsync.when(
@@ -206,10 +208,7 @@ class MemberHomeScreen extends ConsumerWidget {
                       onTap: () => _openCompose(context, ref, heldId: heldId),
                     );
                   },
-                  loading: () => _ComposerEntryCard(
-                    hasHeld: false,
-                    onTap: () => _openCompose(context, ref),
-                  ),
+                  loading: () => const AuraLoadingState(message: 'Loading held work…'),
                   error: (_, __) => _ComposerEntryCard(
                     hasHeld: false,
                     onTap: () => _openCompose(context, ref),
@@ -217,21 +216,28 @@ class MemberHomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AuraSpace.s24),
                 if (feedState.isLoading && feedState.items.isEmpty)
-                  const _LoadingCard()
+                  const AuraLoadingState(message: 'Loading works…')
                 else if (feedState.error != null && feedState.items.isEmpty)
-                  AuraCard(
-                    child: Text(
-                      'Could not load works.',
-                      style: AuraText.body,
+                  AuraErrorState(
+                    title: 'Could not load works',
+                    body: 'Refresh the feed or try again in a moment.',
+                    action: AuraSecondaryButton(
+                      label: 'Refresh',
+                      onPressed: () => ref.read(feedControllerProvider.notifier).loadInitial(),
+                      icon: Icons.refresh_rounded,
                     ),
                   )
                 else if (feedState.items.isEmpty)
-                  const _EmptyWorksCard()
+                  const AuraEmptyState(
+                    title: 'No works yet',
+                    body: 'When you publish, your latest work will appear here.',
+                    icon: Icons.auto_stories_outlined,
+                  )
                 else
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionHeader(
+                      AuraSectionHeader(
                         title: 'Works',
                         subtitle: '${feedState.items.length} in view',
                       ),
@@ -264,13 +270,14 @@ class MemberHomeScreen extends ConsumerWidget {
                         const SizedBox(height: AuraSpace.s4),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: TextButton(
+                          child: AuraGhostButton(
+                            label: 'Load more',
                             onPressed: () {
                               ref
                                   .read(feedControllerProvider.notifier)
                                   .loadMore();
                             },
-                            child: const Text('Load more'),
+                            icon: Icons.expand_more_rounded,
                           ),
                         ),
                       ],
@@ -312,15 +319,20 @@ class _ComposerEntryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const AuraBadge(
+            label: 'Composer',
+            icon: Icons.edit_outlined,
+          ),
+          const SizedBox(height: AuraSpace.s10),
           Text(
             hasHeld ? 'Continue where you left' : 'New work',
-            style: AuraText.title,
+            style: AuraText.title.copyWith(fontSize: 26, height: 1.1),
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
             hasHeld
                 ? 'Return to the latest work you are holding.'
-                : 'Start a new work.',
+                : 'Start a new work with the same calm editing surface.',
             style: AuraText.body,
           ),
           if (hasHeld && preview.isNotEmpty) ...[
@@ -368,7 +380,10 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.campaign_outlined, size: 18),
+                  const AuraBadge(
+                    label: 'Pinned',
+                    icon: Icons.push_pin_outlined,
+                  ),
                   const SizedBox(width: AuraSpace.s8),
                   Expanded(
                     child: Text(
@@ -404,64 +419,6 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ),
-        Text(
-          subtitle,
-          style: AuraText.small,
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyWorksCard extends StatelessWidget {
-  const _EmptyWorksCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Text(
-        'No works yet.',
-        style: AuraText.body,
-      ),
-    );
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
     );
   }
 }

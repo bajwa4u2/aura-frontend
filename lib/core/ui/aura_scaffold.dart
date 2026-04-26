@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'aura_platform_components.dart';
 import 'aura_surface.dart';
 
 class AuraScaffold extends StatelessWidget {
@@ -41,20 +42,6 @@ class AuraScaffold extends StatelessWidget {
 
   static const double _defaultMaxWidth = 920;
 
-  Widget _wrapBody(Widget child) {
-    final width = maxWidth ?? _defaultMaxWidth;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: width),
-        child: SizedBox(
-          width: double.infinity,
-          child: child,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     Widget content = body;
@@ -66,11 +53,11 @@ class AuraScaffold extends StatelessWidget {
       );
     }
 
-    content = _wrapBody(content);
-
     return Scaffold(
       backgroundColor: AuraSurface.page,
-      body: SafeArea(
+      body: AuraPageShell(
+        maxWidth: maxWidth ?? _defaultMaxWidth,
+        padding: EdgeInsets.zero,
         child: content,
       ),
     );

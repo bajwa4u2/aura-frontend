@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
@@ -25,10 +26,10 @@ class CorrespondenceHubScreen extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const _HeroCard(
+            const AuraGradientHeader(
               title: 'Correspondence',
-              body:
-                  'Private exchange, shared rooms, and invitations should feel like one system. Sign in to continue where your conversations already live.',
+              subtitle:
+                  'Private exchange, shared rooms, and invitations should feel like one system.',
             ),
             const SizedBox(height: AuraSpace.s16),
             _StateCard(
@@ -57,10 +58,10 @@ class CorrespondenceHubScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: const [
-          _HeroCard(
+          AuraGradientHeader(
             title: 'Correspondence',
-            body:
-                'Start privately, gather people into a shared room, or bring someone into an existing exchange. Invitations belong to what already exists. They are not a second conversation system.',
+            subtitle:
+                'Start privately, gather people into a shared room, or bring someone into an existing exchange.',
           ),
           SizedBox(height: AuraSpace.s16),
           _ActionBlock(
@@ -93,35 +94,6 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             buttonLabel: 'Open invitations',
             icon: Icons.mail_outline,
             route: '/me/invitations',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AuraTextBlock(
-            title,
-            style: AuraText.title,
-            maxLines: 2,
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          AuraTextBlock(
-            body,
-            style: AuraText.body,
-            maxLines: 6,
           ),
         ],
       ),

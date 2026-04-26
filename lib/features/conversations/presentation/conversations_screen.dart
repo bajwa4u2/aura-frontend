@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -157,9 +158,9 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            const _PageIntro(
+            const AuraGradientHeader(
               title: 'Conversations',
-              body:
+              subtitle:
                   'Ongoing direct threads and shared rooms stay here. Start something new from Correspondence when you need to.',
             ),
             const SizedBox(height: AuraSpace.s18),
@@ -188,29 +189,30 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
           loading: () => ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: const [
-              _PageIntro(
+              AuraGradientHeader(
                 title: 'Conversations',
-                body: 'Loading active conversations and spaces.',
+                subtitle: 'Loading active conversations and spaces.',
               ),
               SizedBox(height: AuraSpace.s14),
-              _FilterRowSkeleton(),
-              SizedBox(height: AuraSpace.s16),
-              _ConversationListSkeleton(),
+              AuraLoadingState(message: 'Loading your inbox…'),
             ],
           ),
           error: (error, _) => ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              const _PageIntro(
+              const AuraGradientHeader(
                 title: 'Conversations',
-                body: 'Could not load your ongoing correspondence.',
+                subtitle: 'Could not load your ongoing correspondence.',
               ),
               const SizedBox(height: AuraSpace.s18),
-              _StateCard(
+              AuraErrorState(
                 title: 'Something went wrong',
                 body: '$error',
-                primaryLabel: 'Try again',
-                onPrimary: () => ref.invalidate(_conversationSpacesProvider),
+                action: AuraSecondaryButton(
+                  label: 'Try again',
+                  onPressed: () => ref.invalidate(_conversationSpacesProvider),
+                  icon: Icons.refresh_rounded,
+                ),
               ),
             ],
           ),
@@ -227,9 +229,9 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                const _PageIntro(
+                const AuraGradientHeader(
                   title: 'Conversations',
-                  body:
+                  subtitle:
                       'A living record of direct threads and shared rooms already in motion.',
                 ),
                 const SizedBox(height: AuraSpace.s14),
@@ -259,47 +261,6 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-
-class _PageIntro extends StatelessWidget {
-  const _PageIntro({
-    required this.title,
-    required this.body,
-  });
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      color: AuraSurface.elevated,
-      borderColor: AuraSurface.accentSoft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'CONVERSATIONS',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            title,
-            style: AuraText.title.copyWith(fontSize: 24, height: 1.2),
-          ),
-          if (body.trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Text(body, style: AuraText.body),
-          ],
-        ],
       ),
     );
   }
@@ -664,102 +625,6 @@ class _StateCard extends StatelessWidget {
               child: Text(primaryLabel!),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterRowSkeleton extends StatelessWidget {
-  const _FilterRowSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AuraSpace.s8,
-      runSpacing: AuraSpace.s8,
-      children: const [
-        _SkeletonPill(width: 52),
-        _SkeletonPill(width: 72),
-        _SkeletonPill(width: 102),
-      ],
-    );
-  }
-}
-
-class _SkeletonPill extends StatelessWidget {
-  const _SkeletonPill({
-    required this.width,
-  });
-
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: 34,
-      decoration: BoxDecoration(
-        color: AuraSurface.divider,
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
-
-class _ConversationListSkeleton extends StatelessWidget {
-  const _ConversationListSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: const [
-          _ConversationRowSkeleton(),
-          Divider(height: 1, color: AuraSurface.divider),
-          _ConversationRowSkeleton(),
-          Divider(height: 1, color: AuraSurface.divider),
-          _ConversationRowSkeleton(),
-          Divider(height: 1, color: AuraSurface.divider),
-          _ConversationRowSkeleton(),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConversationRowSkeleton extends StatelessWidget {
-  const _ConversationRowSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AuraSurface.divider,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(height: 14, width: 170, color: AuraSurface.divider),
-                const SizedBox(height: AuraSpace.s8),
-                Container(height: 12, width: double.infinity, color: AuraSurface.divider),
-                const SizedBox(height: AuraSpace.s6),
-                Container(height: 12, width: 150, color: AuraSurface.divider),
-              ],
-            ),
-          ),
         ],
       ),
     );

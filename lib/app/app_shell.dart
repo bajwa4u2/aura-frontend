@@ -11,6 +11,7 @@ import 'route_targets.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/net/dio_provider.dart';
+import '../core/ui/aura_design_system.dart';
 import '../features/realtime/presentation/incoming_live_overlay.dart';
 import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
@@ -328,7 +329,7 @@ class _PublicHeader extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: AuraSurface.page,
+        gradient: AuraGradients.header,
         border: Border(
           bottom: BorderSide(color: AuraSurface.divider),
         ),
@@ -409,7 +410,7 @@ class _MemberHeader extends StatelessWidget {
     return Container(
       height: MemberShell._headerHeight,
       decoration: const BoxDecoration(
-        color: AuraSurface.page,
+        gradient: AuraGradients.header,
         border: Border(
           bottom: BorderSide(color: AuraSurface.divider),
         ),
@@ -465,7 +466,7 @@ class _InstitutionHeader extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: AuraSurface.page,
+        gradient: AuraGradients.header,
         border: Border(
           bottom: BorderSide(color: AuraSurface.divider),
         ),
@@ -1212,7 +1213,11 @@ class _MemberSideNav extends StatelessWidget {
     return Container(
       width: 248,
       decoration: const BoxDecoration(
-        color: AuraSurface.page,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF12161E), Color(0xFF0E1116)],
+        ),
         border: Border(
           right: BorderSide(color: AuraSurface.divider),
         ),
@@ -1331,7 +1336,11 @@ class _MemberBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AuraSurface.card,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1A1E24), Color(0xFF151922)],
+        ),
         border: Border(
           top: BorderSide(color: AuraSurface.divider),
         ),
@@ -1507,7 +1516,11 @@ class _ShellFooter extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: AuraSurface.page,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0F1218), Color(0xFF0B0D12)],
+        ),
         border: Border(
           top: BorderSide(color: AuraSurface.divider),
         ),
