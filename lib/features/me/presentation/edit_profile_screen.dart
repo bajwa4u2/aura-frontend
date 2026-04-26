@@ -8,6 +8,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_design_system.dart';
+import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -502,9 +505,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                      const AuraGradientHero(
+                        badge: 'Presence editor',
+                        title: 'Shape how Aura knows you',
+                        subtitle:
+                            'Refine your public identity, profile media, and the records that travel with your name.',
+                      ),
+                      const SizedBox(height: AuraSpace.s16),
                       _buildCoverSurface(),
                       Transform.translate(
                         offset: const Offset(0, -36),
@@ -999,12 +1009,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _panel({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AuraSurface.divider),
-        color: AuraSurface.card,
-      ),
+    return AuraGlassCard(
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: child,
     );
@@ -1032,24 +1037,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required Widget child,
     required VoidCallback? onRemove,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AuraSurface.divider),
-      ),
+    return AuraCard(
       padding: const EdgeInsets.all(AuraSpace.s16),
       child: Column(
         children: [
           Row(
             children: [
-              Text(
-                indexLabel,
-                style: AuraText.muted.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              AuraTrustBadge(label: indexLabel, icon: Icons.layers_outlined),
               const Spacer(),
               TextButton.icon(
                 onPressed: onRemove,
@@ -1066,17 +1060,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _emptySurface(String label) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s18,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AuraSurface.divider),
-      ),
+    return AuraCard(
       child: Text(
         label,
         style: AuraText.muted,
@@ -1096,20 +1080,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _previewChip({required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s8,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: AuraTextBlock(
-        label,
-        style: AuraText.muted.copyWith(fontSize: 13),
-      ),
+    return AuraTrustBadge(
+      label: label,
+      icon: Icons.link_outlined,
     );
   }
 
@@ -1192,23 +1165,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildErrorBanner() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AuraSurface.dangerBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AuraSurface.dangerInk.withOpacity(0.35)),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s14,
-      ),
-      child: AuraTextBlock(
-        _errorText ?? '',
-        style: AuraText.body.copyWith(
-          color: AuraSurface.dangerInk,
-        ),
-      ),
+    return AuraErrorState(
+      title: 'Could not save presence',
+      body: _errorText ?? '',
     );
   }
 
@@ -1222,16 +1181,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           constraints: const BoxConstraints(maxWidth: 860),
           child: Container(
             decoration: BoxDecoration(
-              color: AuraSurface.card,
-              borderRadius: BorderRadius.circular(20),
+              gradient: AuraGradients.header,
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(color: AuraSurface.divider),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                  color: Colors.black.withOpacity(0.18),
-                ),
-              ],
+              boxShadow: AuraShadows.panel,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s16,
@@ -1239,14 +1192,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    _saving ? 'Saving...' : 'Unsaved changes',
-                    style: AuraText.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                const AuraTrustBadge(label: 'Unsaved changes', icon: Icons.edit_outlined),
+                const Spacer(),
                 TextButton(
                   onPressed: _busy ? null : _discardChanges,
                   child: const Text('Discard'),
@@ -1274,12 +1221,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildSectionLabel(String text) {
-    return Text(
-      text,
-      style: AuraText.muted.copyWith(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-      ),
+    return AuraSectionHeader(
+      title: text,
     );
   }
 
@@ -1287,28 +1230,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String label,
     required VoidCallback? onPressed,
   }) {
-    return Material(
-      color: Colors.white.withOpacity(0.92),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s14,
-            vertical: 9,
-          ),
-          child: Text(
-            label,
-            style: AuraText.body.copyWith(
-              fontSize: 13,
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
+    return AuraSecondaryButton(label: label, onPressed: onPressed, icon: Icons.swap_horiz_rounded);
   }
 
   Widget _divider() {
