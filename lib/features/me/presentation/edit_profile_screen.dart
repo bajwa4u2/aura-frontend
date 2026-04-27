@@ -15,6 +15,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import 'edit_profile/edit_profile_widgets.dart';
 
 enum _EditSection { identity, coverAndAvatar, presence, publications, links, account }
 
@@ -766,8 +767,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             runSpacing: AuraSpace.s8,
             alignment: WrapAlignment.center,
             children: [
-              if (_location.isNotEmpty) _previewChip(label: _location),
-              if (_website.isNotEmpty) _previewChip(label: _website),
+              if (_location.isNotEmpty) EditProfilePreviewChip(label: _location),
+              if (_website.isNotEmpty) EditProfilePreviewChip(label: _website),
             ],
           ),
         ],
@@ -776,23 +777,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildIdentityBlock() {
-    return _panel(
+    return EditProfilePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _panelHeader(
+          const EditProfilePanelHeader(
             title: 'How you appear',
             subtitle: 'Name and short statement',
           ),
           const SizedBox(height: AuraSpace.s18),
-          _buildField(
+          EditProfileField(
             label: 'Display name',
             controller: _displayNameController,
             textInputAction: TextInputAction.next,
             maxLines: 1,
           ),
           const SizedBox(height: AuraSpace.s16),
-          _buildField(
+          EditProfileField(
             label: 'Bio',
             controller: _bioController,
             textInputAction: TextInputAction.newline,
@@ -805,23 +806,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildPresenceBlock() {
-    return _panel(
+    return EditProfilePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _panelHeader(
+          const EditProfilePanelHeader(
             title: 'Where you are found',
             subtitle: 'Place and primary site',
           ),
           const SizedBox(height: AuraSpace.s18),
-          _buildField(
+          EditProfileField(
             label: 'Location',
             controller: _locationController,
             textInputAction: TextInputAction.next,
             maxLines: 1,
           ),
           const SizedBox(height: AuraSpace.s16),
-          _buildField(
+          EditProfileField(
             label: 'Website',
             controller: _websiteController,
             textInputAction: TextInputAction.done,
@@ -833,19 +834,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildPublicationsBlock() {
-    return _panel(
+    return EditProfilePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: _panelHeader(
+              const Expanded(
+                child: EditProfilePanelHeader(
                   title: 'Published record',
                   subtitle: 'Works you want carried into your presence',
                 ),
               ),
-              _inlineAddButton(
+              EditProfileInlineAddButton(
                 label: 'Add publication',
                 onPressed: _busy ? null : _addPublication,
               ),
@@ -853,7 +854,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: AuraSpace.s18),
           if (_publications.isEmpty)
-            _emptySurface('No publications added')
+            const EditProfileEmptySurface('No publications added')
           else
             Column(
               children: List.generate(_publications.length, (index) {
@@ -864,26 +865,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ? 0
                         : AuraSpace.s14,
                   ),
-                  child: _entryCard(
+                  child: EditProfileEntryCard(
                     indexLabel: 'Publication ${index + 1}',
                     onRemove: _busy ? null : () => _removePublicationAt(index),
                     child: Column(
                       children: [
-                        _buildField(
+                        EditProfileField(
                           label: 'Title',
                           controller: item.titleController,
                           textInputAction: TextInputAction.next,
                           maxLines: 1,
                         ),
                         const SizedBox(height: AuraSpace.s14),
-                        _buildField(
+                        EditProfileField(
                           label: 'Link',
                           controller: item.linkController,
                           textInputAction: TextInputAction.next,
                           maxLines: 1,
                         ),
                         const SizedBox(height: AuraSpace.s14),
-                        _buildField(
+                        EditProfileField(
                           label: 'Description',
                           controller: item.descriptionController,
                           textInputAction: TextInputAction.newline,
@@ -902,19 +903,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildLinksBlock() {
-    return _panel(
+    return EditProfilePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: _panelHeader(
+              const Expanded(
+                child: EditProfilePanelHeader(
                   title: 'Linked references',
                   subtitle: 'Places that belong beside your name',
                 ),
               ),
-              _inlineAddButton(
+              EditProfileInlineAddButton(
                 label: 'Add link',
                 onPressed: _busy ? null : _addLink,
               ),
@@ -922,7 +923,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: AuraSpace.s18),
           if (_links.isEmpty)
-            _emptySurface('No links added')
+            const EditProfileEmptySurface('No links added')
           else
             Column(
               children: List.generate(_links.length, (index) {
@@ -931,19 +932,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   padding: EdgeInsets.only(
                     bottom: index == _links.length - 1 ? 0 : AuraSpace.s14,
                   ),
-                  child: _entryCard(
+                  child: EditProfileEntryCard(
                     indexLabel: 'Link ${index + 1}',
                     onRemove: _busy ? null : () => _removeLinkAt(index),
                     child: Column(
                       children: [
-                        _buildField(
+                        EditProfileField(
                           label: 'Label',
                           controller: item.labelController,
                           textInputAction: TextInputAction.next,
                           maxLines: 1,
                         ),
                         const SizedBox(height: AuraSpace.s14),
-                        _buildField(
+                        EditProfileField(
                           label: 'URL',
                           controller: item.urlController,
                           textInputAction: TextInputAction.done,
@@ -961,228 +962,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildAccountRecordBlock() {
-    return _panel(
+    return EditProfilePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _panelHeader(
+          const EditProfilePanelHeader(
             title: 'Fixed record',
             subtitle: 'Account fields currently held outside this editor',
           ),
           const SizedBox(height: AuraSpace.s10),
-          _recordRow('Handle', _handle.isEmpty ? '—' : '@$_handle'),
+          EditProfileRecordRow('Handle', _handle.isEmpty ? '—' : '@$_handle'),
           _divider(),
-          _recordRow('Email', _email.isEmpty ? '—' : _email),
+          EditProfileRecordRow('Email', _email.isEmpty ? '—' : _email),
           _divider(),
-          _recordRow('First name', _firstName.isEmpty ? '—' : _firstName),
+          EditProfileRecordRow('First name', _firstName.isEmpty ? '—' : _firstName),
           _divider(),
-          _recordRow('Last name', _lastName.isEmpty ? '—' : _lastName),
+          EditProfileRecordRow('Last name', _lastName.isEmpty ? '—' : _lastName),
         ],
       ),
     );
   }
 
-  Widget _panel({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AuraSurface.divider),
-        color: AuraSurface.card,
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      child: child,
-    );
-  }
-
-  Widget _panelHeader({required String title, required String subtitle}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: AuraText.title.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(subtitle, style: AuraText.muted.copyWith(fontSize: 13)),
-      ],
-    );
-  }
-
-  Widget _entryCard({
-    required String indexLabel,
-    required Widget child,
-    required VoidCallback? onRemove,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                indexLabel,
-                style: AuraText.muted.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: onRemove,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: AuraSurface.dangerInk,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Remove',
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.dangerInk,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _emptySurface(String label) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s18,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Text(label, style: AuraText.muted),
-    );
-  }
-
-  Widget _inlineAddButton({
-    required String label,
-    required VoidCallback? onPressed,
-  }) {
-    return AuraSecondaryButton(
-      label: label,
-      onPressed: onPressed,
-      icon: Icons.add_rounded,
-    );
-  }
-
-  Widget _previewChip({required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s12,
-        vertical: AuraSpace.s8,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: AuraTextBlock(label, style: AuraText.muted.copyWith(fontSize: 13)),
-    );
-  }
-
-  Widget _recordRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s20,
-        vertical: AuraSpace.s16,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s16),
-          Flexible(
-            child: AuraTextBlock(
-              value,
-              textAlign: TextAlign.right,
-              style: AuraText.muted,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildField({
-    required String label,
-    required TextEditingController controller,
-    required TextInputAction textInputAction,
-    int minLines = 1,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AuraText.muted.copyWith(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        TextField(
-          controller: controller,
-          textInputAction: textInputAction,
-          minLines: minLines,
-          maxLines: maxLines,
-          style: AuraText.body,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AuraSurface.card,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s16,
-              vertical: AuraSpace.s16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AuraSurface.divider),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AuraSurface.divider),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AuraSurface.ink, width: 1.1),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildErrorBanner() {
     return Container(
@@ -1253,13 +1053,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionLabel(String text) {
-    return Text(
-      text,
-      style: AuraText.muted.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
     );
   }
 
@@ -1355,7 +1148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _buildErrorBanner(),
                     const SizedBox(height: AuraSpace.s20),
                   ],
-                  _buildSectionLabel(
+                  EditProfileSectionLabel(
                     _kSections
                         .firstWhere((s) => s.section == _activeSection)
                         .label,

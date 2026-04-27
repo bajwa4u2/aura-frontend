@@ -21,6 +21,8 @@ import '../../../core/ui/aura_text.dart';
 import '../../ai/providers.dart';
 import '../../feed/providers.dart';
 import '../../composition/domain/composition_models.dart';
+import 'compose/compose_models.dart';
+import 'compose/compose_widgets.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
@@ -38,84 +40,6 @@ class ComposeScreen extends ConsumerStatefulWidget {
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
-enum _PostVisibility { public, followers, private }
-
-enum _AttachmentType { image, video }
-
-enum _AttachmentSource { camera, gallery }
-
-const Map<String, String> _composeLanguageLabels = {
-  'en': 'English',
-  'ur': 'Urdu',
-  'ar': 'Arabic',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'tr': 'Turkish',
-  'fa': 'Persian',
-  'hi': 'Hindi',
-  'bn': 'Bengali',
-  'zh': 'Chinese',
-  'ja': 'Japanese',
-  'ko': 'Korean',
-  'ru': 'Russian',
-};
-
-String _languageLabel(String code) {
-  final key = code.trim().toLowerCase();
-  if (key.isEmpty) return '';
-  return _composeLanguageLabels[key] ?? key.toUpperCase();
-}
-
-class _ComposeAttachment {
-  _ComposeAttachment({
-    required this.localId,
-    required this.type,
-    required this.source,
-    required this.captionController,
-    this.localFile,
-    this.localBytes,
-    this.width,
-    this.height,
-    this.durationMs,
-    this.mediaId,
-    this.url,
-    this.thumbUrl,
-    this.uploading = false,
-    this.attachedToDraft = false,
-  });
-
-  final String localId;
-  final _AttachmentType type;
-  final _AttachmentSource source;
-  final TextEditingController captionController;
-
-  XFile? localFile;
-  Uint8List? localBytes;
-
-  int? width;
-  int? height;
-  int? durationMs;
-
-  String? mediaId;
-  String? url;
-  String? thumbUrl;
-
-  bool uploading;
-  bool attachedToDraft;
-  String? error;
-
-  bool get isImage => type == _AttachmentType.image;
-  bool get isVideo => type == _AttachmentType.video;
-  bool get isUploaded => (mediaId ?? '').trim().isNotEmpty;
-
-  void dispose() {
-    captionController.dispose();
-  }
-}
-
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   static const int _limit = 2000;
   static const int _maxAttachments = 5;
@@ -127,9 +51,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _showTextError = false;
   bool _uploadingMedia = false;
 
-  _PostVisibility _visibility = _PostVisibility.public;
+  PostVisibility _visibility = PostVisibility.public;
 
-  final List<_ComposeAttachment> _attachments = [];
+  final List<ComposeAttachment> _attachments = [];
 
   DateTime? _lastSavedAt;
   Timer? _autosaveDebounce;
@@ -178,7 +102,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       !_isReply && _attachments.length < _maxAttachments;
   bool get _supportsCameraCapture => !kIsWeb;
 
-  _ComposeAttachment? get _primaryTikTokVideoAttachment {
+  ComposeAttachment? get _primaryTikTokVideoAttachment {
     for (final attachment in _attachments) {
       final url = (attachment.url ?? '').trim();
       if (attachment.isVideo &&
@@ -282,48 +206,48 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return 'application/octet-stream';
   }
 
-  String _visibilityApiValue(_PostVisibility value) {
+  String _visibilityApiValue(PostVisibility value) {
     switch (value) {
-      case _PostVisibility.public:
+      case PostVisibility.public:
         return 'PUBLIC';
-      case _PostVisibility.followers:
+      case PostVisibility.followers:
         return 'FOLLOWERS';
-      case _PostVisibility.private:
+      case PostVisibility.private:
         return 'PRIVATE';
     }
   }
 
-  _PostVisibility _visibilityFromApi(dynamic value) {
+  PostVisibility _visibilityFromApi(dynamic value) {
     final raw = (value ?? '').toString().trim().toUpperCase();
     switch (raw) {
       case 'FOLLOWERS':
-        return _PostVisibility.followers;
+        return PostVisibility.followers;
       case 'PRIVATE':
-        return _PostVisibility.private;
+        return PostVisibility.private;
       case 'PUBLIC':
       default:
-        return _PostVisibility.public;
+        return PostVisibility.public;
     }
   }
 
-  String _visibilityLabel(_PostVisibility value) {
+  String _visibilityLabel(PostVisibility value) {
     switch (value) {
-      case _PostVisibility.public:
+      case PostVisibility.public:
         return 'Public';
-      case _PostVisibility.followers:
+      case PostVisibility.followers:
         return 'Followers';
-      case _PostVisibility.private:
+      case PostVisibility.private:
         return 'Private';
     }
   }
 
-  String _visibilityHelp(_PostVisibility value) {
+  String _visibilityHelp(PostVisibility value) {
     switch (value) {
-      case _PostVisibility.public:
+      case PostVisibility.public:
         return 'Visible to everyone, including visitors.';
-      case _PostVisibility.followers:
+      case PostVisibility.followers:
         return 'Visible only to followers and approved member surfaces.';
-      case _PostVisibility.private:
+      case PostVisibility.private:
         return 'Visible only to you.';
     }
   }
@@ -691,7 +615,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       final mediaItems = _listOfMap(draft['media']);
 
-      final loadedAttachments = <_ComposeAttachment>[];
+      final loadedAttachments = <ComposeAttachment>[];
       for (final item in mediaItems) {
         final typeRaw = _str(item['type']).toUpperCase();
         final mediaId = _str(item['id']);
@@ -704,10 +628,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         captionController.addListener(_scheduleAutosave);
 
         loadedAttachments.add(
-          _ComposeAttachment(
+          ComposeAttachment(
             localId: mediaId,
-            type: isVideo ? _AttachmentType.video : _AttachmentType.image,
-            source: _AttachmentSource.gallery,
+            type: isVideo ? ComposeAttachmentType.video : ComposeAttachmentType.image,
+            source: ComposeAttachmentSource.gallery,
             captionController: captionController,
             mediaId: mediaId,
             url: _str(item['displayUrl']).isNotEmpty
@@ -763,7 +687,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
-  void _setVisibility(_PostVisibility next) {
+  void _setVisibility(PostVisibility next) {
     if (_posting) return;
     if (_visibility == next) return;
 
@@ -783,8 +707,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: _AttachmentType.image,
-      source: _AttachmentSource.gallery,
+      type: ComposeAttachmentType.image,
+      source: ComposeAttachmentSource.gallery,
     );
   }
 
@@ -809,8 +733,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: _AttachmentType.image,
-      source: _AttachmentSource.camera,
+      type: ComposeAttachmentType.image,
+      source: ComposeAttachmentSource.camera,
     );
   }
 
@@ -823,8 +747,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: _AttachmentType.video,
-      source: _AttachmentSource.gallery,
+      type: ComposeAttachmentType.video,
+      source: ComposeAttachmentSource.gallery,
     );
   }
 
@@ -852,15 +776,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: _AttachmentType.video,
-      source: _AttachmentSource.camera,
+      type: ComposeAttachmentType.video,
+      source: ComposeAttachmentSource.camera,
     );
   }
 
   Future<void> _addPickedFile(
     XFile file, {
-    required _AttachmentType type,
-    required _AttachmentSource source,
+    required ComposeAttachmentType type,
+    required ComposeAttachmentSource source,
   }) async {
     if (_attachments.length >= _maxAttachments) {
       if (!mounted) return;
@@ -874,7 +798,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     int? width;
     int? height;
 
-    if (type == _AttachmentType.image) {
+    if (type == ComposeAttachmentType.image) {
       bytes = await file.readAsBytes();
       try {
         final size = await _decodeImageSize(bytes);
@@ -883,7 +807,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       } catch (_) {}
     }
 
-    final attachment = _ComposeAttachment(
+    final attachment = ComposeAttachment(
       localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}',
       type: type,
       source: source,
@@ -926,7 +850,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _uploadAttachment(_ComposeAttachment attachment) async {
+  Future<void> _uploadAttachment(ComposeAttachment attachment) async {
     final file = attachment.localFile;
     if (file == null) {
       throw Exception('Attachment file missing.');
@@ -939,7 +863,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       fileName: file.name,
       mimeType: mime,
       kind: attachment.isImage ? 'IMAGE' : 'VIDEO',
-      source: attachment.source == _AttachmentSource.camera
+      source: attachment.source == ComposeAttachmentSource.camera
           ? 'CAMERA'
           : 'GALLERY',
       width: attachment.isImage ? attachment.width : null,
@@ -967,7 +891,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
-  Future<void> _persistAttachmentMetadata(_ComposeAttachment attachment) async {
+  Future<void> _persistAttachmentMetadata(ComposeAttachment attachment) async {
     final mediaId = (attachment.mediaId ?? '').trim();
     if (mediaId.isEmpty) return;
 
@@ -986,7 +910,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _removeAttachment(_ComposeAttachment attachment) async {
+  Future<void> _removeAttachment(ComposeAttachment attachment) async {
     if (_posting) return;
 
     final mediaId = (attachment.mediaId ?? '').trim();
@@ -1776,7 +1700,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ),
               AuraStatusChip(
                 label: translated
-                    ? 'Translated ${_languageLabel(translatedLanguage)}'
+                    ? 'Translated ${composeLanguageLabel(translatedLanguage)}'
                     : 'No translation preview',
                 backgroundColor:
                     translated ? AuraSurface.goodBg : AuraSurface.subtle,
@@ -2112,7 +2036,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         'postId': postId,
         'mediaUrl': mediaUrl,
         'caption': _buildTikTokCaption(),
-        if (_visibility == _PostVisibility.public)
+        if (_visibility == PostVisibility.public)
           'privacyLevel': 'PUBLIC_TO_EVERYONE',
       },
     );
@@ -2648,7 +2572,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() {
       _textController.clear();
       _attachments.clear();
-      _visibility = _PostVisibility.public;
+      _visibility = PostVisibility.public;
       _showTextError = false;
       _auditResult = null;
       _auditError = null;
@@ -2675,7 +2599,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               children: [
                 const Text('Add attachment', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
-                _AttachmentActionButton(
+                ComposeAttachmentActionButton(
                   icon: Icons.camera_alt_outlined,
                   label: _supportsCameraCapture ? 'Take photo' : 'Choose photo',
                   onTap: () async {
@@ -2684,7 +2608,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   },
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
+                ComposeAttachmentActionButton(
                   icon: Icons.photo_library_outlined,
                   label: 'Choose photo',
                   onTap: () async {
@@ -2693,7 +2617,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   },
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
+                ComposeAttachmentActionButton(
                   icon: Icons.videocam_outlined,
                   label: _supportsCameraCapture
                       ? 'Record video'
@@ -2704,7 +2628,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   },
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                _AttachmentActionButton(
+                ComposeAttachmentActionButton(
                   icon: Icons.video_library_outlined,
                   label: 'Choose video',
                   onTap: () async {
@@ -2875,9 +2799,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         Wrap(
           spacing: AuraSpace.s8,
           runSpacing: AuraSpace.s8,
-          children: _PostVisibility.values
+          children: PostVisibility.values
               .map(
-                (v) => _VisibilityChip(
+                (v) => ComposeVisibilityChip(
                   label: _visibilityLabel(v),
                   selected: _visibility == v,
                   onTap: _posting ? null : () => _setVisibility(v),
@@ -3002,7 +2926,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   final attachment = entry.value;
                   return SizedBox(
                     width: itemWidth,
-                    child: _AttachmentCard(
+                    child: ComposeAttachmentCard(
                       attachment: attachment,
                       index: index,
                       count: _attachments.length,
@@ -3303,325 +3227,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ),
           _buildBottomBar(context),
-        ],
-      ),
-    );
-  }
-}
-
-class _VisibilityChip extends StatelessWidget {
-  const _VisibilityChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AuraSurface.card : AuraSurface.page,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Text(
-          label,
-          style: selected
-              ? AuraText.body.copyWith(fontWeight: FontWeight.w700)
-              : AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      ),
-    );
-  }
-}
-
-class _AttachmentActionButton extends StatelessWidget {
-  const _AttachmentActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: AuraSecondaryButton(label: label, icon: icon, onPressed: onTap),
-    );
-  }
-}
-
-class _AttachmentCard extends StatelessWidget {
-  const _AttachmentCard({
-    required this.attachment,
-    required this.index,
-    required this.count,
-    required this.busy,
-    required this.onRemove,
-    this.onMoveLeft,
-    this.onMoveRight,
-  });
-
-  final _ComposeAttachment attachment;
-  final int index;
-  final int count;
-  final bool busy;
-  final VoidCallback onRemove;
-  final VoidCallback? onMoveLeft;
-  final VoidCallback? onMoveRight;
-
-  String _durationText(int? durationMs) {
-    if (durationMs == null || durationMs <= 0) return '';
-    final totalSeconds = (durationMs / 1000).round();
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.page,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  attachment.isImage
-                      ? 'Image ${index + 1}'
-                      : 'Video ${index + 1}',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (attachment.uploading)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              if (!attachment.uploading)
-                IconButton(
-                  tooltip: 'Remove',
-                  onPressed: busy ? null : onRemove,
-                  icon: const Icon(Icons.close),
-                ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          _AttachmentPreview(attachment: attachment),
-          const SizedBox(height: AuraSpace.s10),
-          Row(
-            children: [
-              if (onMoveLeft != null)
-                IconButton(
-                  onPressed: busy ? null : onMoveLeft,
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Move left',
-                ),
-              if (onMoveRight != null)
-                IconButton(
-                  onPressed: busy ? null : onMoveRight,
-                  icon: const Icon(Icons.arrow_forward),
-                  tooltip: 'Move right',
-                ),
-              const Spacer(),
-              Text(
-                '${index + 1}/$count',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            ],
-          ),
-          if (attachment.isVideo &&
-              _durationText(attachment.durationMs).isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-              child: Text(
-                _durationText(attachment.durationMs),
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            ),
-          if ((attachment.error ?? '').trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-              child: Text(
-                attachment.error!,
-                style: AuraText.small.copyWith(color: AuraSurface.warnInk),
-              ),
-            ),
-          Container(
-            decoration: BoxDecoration(
-              color: AuraSurface.card,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s10,
-              vertical: AuraSpace.s8,
-            ),
-            child: TextField(
-              controller: attachment.captionController,
-              enabled: !busy && !attachment.uploading,
-              maxLines: null,
-              minLines: 2,
-              style: AuraText.body,
-              decoration: InputDecoration(
-                hintText: 'Caption for this attachment (optional)',
-                hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({required this.attachment});
-
-  final _ComposeAttachment attachment;
-
-  @override
-  Widget build(BuildContext context) {
-    if (attachment.isImage) {
-      if (attachment.localBytes != null) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: _aspectRatio(),
-            child: Image.memory(
-              attachment.localBytes!,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-          ),
-        );
-      }
-
-      final imageUrl = (attachment.thumbUrl ?? attachment.url ?? '').trim();
-      if (imageUrl.isNotEmpty) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: _aspectRatio(),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              errorBuilder: (_, __, ___) => _fallbackPreview(),
-            ),
-          ),
-        );
-      }
-
-      return _fallbackPreview();
-    }
-
-    final thumbUrl = (attachment.thumbUrl ?? '').trim();
-    if (thumbUrl.isNotEmpty) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                thumbUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => _videoFallback(),
-              ),
-            ),
-          ),
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white),
-          ),
-        ],
-      );
-    }
-
-    return _videoFallback();
-  }
-
-  double _aspectRatio() {
-    final w = attachment.width;
-    final h = attachment.height;
-    if (w != null && h != null && w > 0 && h > 0) {
-      var ratio = w / h;
-      if (ratio < 0.7) ratio = 0.7;
-      if (ratio > 1.8) ratio = 1.8;
-      return ratio;
-    }
-    return 4 / 3;
-  }
-
-  Widget _fallbackPreview() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.image_outlined,
-        color: AuraSurface.muted,
-        size: 36,
-      ),
-    );
-  }
-
-  Widget _videoFallback() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.videocam_outlined,
-            color: AuraSurface.muted,
-            size: 36,
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            attachment.localFile?.name ?? 'Video attachment',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );

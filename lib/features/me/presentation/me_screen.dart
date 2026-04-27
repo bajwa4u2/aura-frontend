@@ -11,7 +11,6 @@ import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -19,6 +18,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/profile_header.dart';
 import '../../communications/communication_preferences_repository.dart';
+import 'me/me_widgets.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -653,9 +653,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final displayHandle = handle;
 
     final meta = <Widget>[
-      if (locationText.isNotEmpty) _metaChip(label: locationText),
+      if (locationText.isNotEmpty) MeMetaChip(label: locationText),
       if (websiteLabel.isNotEmpty)
-        _metaLinkChip(
+        MeMetaLinkChip(
           label: websiteLabel,
           onTap: () async {
             final uri = Uri.tryParse(websiteUrl);
@@ -664,17 +664,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           },
         ),
       if (handle.isNotEmpty)
-        _metaLinkChip(
+        MeMetaLinkChip(
           label: '$_followersCount Followers',
           onTap: () => context.push('/u/$handle/followers'),
         ),
       if (handle.isNotEmpty)
-        _metaLinkChip(
+        MeMetaLinkChip(
           label: '$_followingCount Following',
           onTap: () => context.push('/u/$handle/following'),
         ),
       if (_incomingRequestsCount > 0 || _outgoingRequestsCount > 0)
-        _metaLinkChip(
+        MeMetaLinkChip(
           label: _outgoingRequestsCount > 0
               ? 'Requests $_incomingRequestsCount / $_outgoingRequestsCount'
               : 'Requests $_incomingRequestsCount',
@@ -683,12 +683,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       if (_incomingInvitesCount > 0 ||
           _sentInvitesCount > 0 ||
           _approvalInvitesCount > 0)
-        _metaLinkChip(
+        MeMetaLinkChip(
           label: 'Invitations $_incomingInvitesCount / $_sentInvitesCount',
           onTap: () => context.push('/me/invitations'),
         ),
-      if (isAppAdmin) _metaChip(label: 'Platform admin'),
-      if (institutionLabel.isNotEmpty) _metaChip(label: institutionLabel),
+      if (isAppAdmin) const MeMetaChip(label: 'Platform admin'),
+      if (institutionLabel.isNotEmpty) MeMetaChip(label: institutionLabel),
     ];
 
     final workspaceActions = <PresenceHeaderAction>[
@@ -747,11 +747,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ],
                   workspaceActions: workspaceActions,
                 ),
-                _section(
+                MeSection(
                   title: 'Identity',
                   children: [
                     if (handle.isNotEmpty)
-                      _item(
+                      MeSettingsItem(
                         label: 'View public presence',
                         icon: Icons.visibility_outlined,
                         subtitle: '@$handle',
@@ -760,10 +760,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ],
                 ),
                 const SizedBox(height: AuraSpace.lg),
-                _section(
+                MeSection(
                   title: 'Invitations',
                   children: [
-                    _item(
+                    MeSettingsItem(
                       label: 'Open invitation center',
                       icon: Icons.outbound_outlined,
                       subtitle:
@@ -774,7 +774,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           : 'Create, review, and manage invitation flow',
                       onTap: () => context.push('/me/invitations'),
                     ),
-                    _item(
+                    MeSettingsItem(
                       label: 'New invite',
                       icon: Icons.add_link_outlined,
                       subtitle:
@@ -785,7 +785,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ),
                 if (_publicationsFromUser(user).isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
-                  _section(
+                  MeSection(
                     title: 'Public record',
                     children: _buildPublicationItems(
                       _publicationsFromUser(user),
@@ -794,28 +794,28 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 ],
                 if (_linksFromUser(user).isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
-                  _section(
+                  MeSection(
                     title: 'Elsewhere',
                     children: _buildLinkItems(_linksFromUser(user)),
                   ),
                 ],
                 const SizedBox(height: AuraSpace.lg),
-                _section(
+                MeSection(
                   title: 'Record Room',
                   children: [
-                    _item(
+                    MeSettingsItem(
                       label: 'Saved posts',
                       icon: Icons.bookmark_outline,
                       subtitle: 'Things you chose to keep close',
                       onTap: () => context.push('/saved?kind=saved'),
                     ),
-                    _item(
+                    MeSettingsItem(
                       label: 'Held for later',
                       icon: Icons.schedule_outlined,
                       subtitle: 'Work not released yet',
                       onTap: () => context.push('/saved?kind=held'),
                     ),
-                    _item(
+                    MeSettingsItem(
                       label: 'Private posts',
                       icon: Icons.lock_outline,
                       subtitle: 'Visible only to you',
@@ -824,12 +824,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ],
                 ),
                 const SizedBox(height: AuraSpace.lg),
-                _section(
+                MeSection(
                   title: 'Connected accounts',
                   children: [_linkedinBlock(), _tiktokBlock()],
                 ),
                 const SizedBox(height: AuraSpace.lg),
-                _section(
+                MeSection(
                   title: 'Communication',
                   children: _buildCommunicationPreferenceItems(),
                 ),
@@ -943,7 +943,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   List<Widget> _buildPublicationItems(List<_PresencePublication> publications) {
     return publications
         .map(
-          (publication) => _recordItemCard(
+          (publication) => MeRecordItemCard(
             icon: Icons.menu_book_outlined,
             title: publication.title.isNotEmpty
                 ? publication.title
@@ -963,7 +963,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   List<Widget> _buildLinkItems(List<_PresenceLink> links) {
     return links
         .map(
-          (link) => _recordItemCard(
+          (link) => MeRecordItemCard(
             icon: Icons.link_outlined,
             title: link.label.isNotEmpty ? link.label : 'Link',
             trailingLabel: link.url.isNotEmpty ? _websiteLabel(link.url) : null,
@@ -973,92 +973,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           ),
         )
         .toList();
-  }
-
-  Widget _recordItemCard({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    String? trailingLabel,
-    VoidCallback? onTap,
-  }) {
-    final enabled = onTap != null;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: Container(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        decoration: BoxDecoration(
-          color: AuraSurface.elevated,
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AuraSurface.card,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AuraSurface.divider),
-              ),
-              child: Icon(icon, size: 18, color: AuraSurface.ink),
-            ),
-            const SizedBox(width: AuraSpace.s12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AuraTextBlock(
-                    title,
-                    style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (subtitle != null && subtitle.trim().isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    AuraTextBlock(
-                      subtitle.trim(),
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                        height: 1.4,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (trailingLabel != null &&
-                      trailingLabel.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    AuraTextBlock(
-                      trailingLabel.trim(),
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (enabled)
-              const Padding(
-                padding: EdgeInsets.only(left: AuraSpace.s8, top: 2),
-                child: Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: AuraSurface.muted,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _openExternalUrl(String raw) async {
@@ -1302,7 +1216,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
     if (prefs == null) {
       return [
-        _item(
+        MeSettingsItem(
           label: 'Communication settings unavailable',
           icon: Icons.tune_outlined,
           subtitle: 'Could not load your communication preferences.',
@@ -1314,7 +1228,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final emailEnabled = _prefBool('emailEnabled', fallback: true);
 
     return [
-      _item(
+      MeSettingsItem(
         label: 'Open communication center',
         icon: Icons.tune_outlined,
         subtitle:
@@ -1590,146 +1504,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       return false;
     }
     return fallback;
-  }
-
-  Widget _section({required String title, required List<Widget> children}) {
-    final visibleChildren = children
-        .where((child) => child is! SizedBox)
-        .toList();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: AuraText.title),
-            const SizedBox(height: AuraSpace.s14),
-            ..._withDividers(visibleChildren),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> children) {
-    final items = <Widget>[];
-    for (var i = 0; i < children.length; i++) {
-      items.add(children[i]);
-      if (i != children.length - 1) {
-        items.add(
-          Container(
-            height: 1,
-            margin: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
-            color: AuraSurface.divider,
-          ),
-        );
-      }
-    }
-    return items;
-  }
-
-  Widget _item({
-    required String label,
-    required IconData icon,
-    String? subtitle,
-    VoidCallback? onTap,
-  }) {
-    final enabled = onTap != null;
-
-    return MouseRegion(
-      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        child: Opacity(
-          opacity: enabled ? 1 : 0.72,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: AuraSpace.s12,
-              horizontal: AuraSpace.s4,
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: AuraSurface.ink),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AuraTextBlock(
-                        label,
-                        style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle != null && subtitle.trim().isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        AuraTextBlock(
-                          subtitle.trim(),
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (enabled)
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: AuraSurface.muted,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _metaLinkChip({required String label, required VoidCallback onTap}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        child: _metaChip(label: label),
-      ),
-    );
-  }
-
-  Widget _metaChip({required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: AuraTextBlock(
-        label,
-        style: AuraText.small.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AuraSurface.muted,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
   }
 
   Future<Response<dynamic>> _getFirstSuccessful(

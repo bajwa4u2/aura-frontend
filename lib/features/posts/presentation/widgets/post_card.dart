@@ -1,11 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
@@ -17,6 +13,10 @@ import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
+import 'post_card/post_card_media.dart';
+import 'post_card/post_card_models.dart';
+import 'post_card/post_card_parts.dart';
+import 'post_card/post_card_utils.dart';
 
 String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   final url = (raw ?? '').trim();
@@ -38,32 +38,10 @@ String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
   return '$base$url';
 }
 
-const String _kAuraWebBaseUrl = String.fromEnvironment(
-  'AURA_WEB_BASE_URL',
-  defaultValue: 'https://app.auraplatform.org',
-);
-
-String _canonicalPostUrl(String postId) {
-  var base = _kAuraWebBaseUrl.trim();
-  if (base.endsWith('/')) base = base.substring(0, base.length - 1);
-  return '$base/posts/$postId';
-}
-
 String? _cleanNullableText(dynamic value) {
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return null;
   return text;
-}
-
-String _linkedInShareUrl(String postUrl) {
-  final u = Uri.encodeComponent(postUrl);
-  return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
-}
-
-String _emailShareUrl(String postUrl) {
-  final subject = Uri.encodeComponent('Aura post');
-  final body = Uri.encodeComponent(postUrl);
-  return 'mailto:?subject=$subject&body=$body';
 }
 
 const Map<String, String> _translationLanguageLabels = {
@@ -174,51 +152,6 @@ IconData _visibilityIcon(String? raw) {
   }
 }
 
-Future<void> _copyToClipboard(
-  BuildContext context,
-  String value, {
-  required String message,
-}) async {
-  await Clipboard.setData(ClipboardData(text: value));
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-}
-
-Future<void> _openExternalUrl(
-  BuildContext context,
-  String rawUrl, {
-  String fallbackCopyMessage = 'Link copied',
-}) async {
-  final trimmed = rawUrl.trim();
-  if (trimmed.isEmpty) return;
-
-  Uri? uri = Uri.tryParse(trimmed);
-  if (uri == null) {
-    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
-    return;
-  }
-
-  if (!uri.hasScheme) {
-    uri = Uri.tryParse('https://$trimmed');
-  }
-
-  if (uri == null) {
-    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
-    return;
-  }
-
-  try {
-    final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
-
-    if (!launched) {
-      if (!context.mounted) return;
-      await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
-    }
-  } catch (_) {
-    if (!context.mounted) return;
-    await _copyToClipboard(context, trimmed, message: fallbackCopyMessage);
-  }
-}
 
 class _ViewerIdentity {
   const _ViewerIdentity({required this.id, required this.handle});
@@ -287,45 +220,6 @@ final isSavedProvider = FutureProvider.family<bool, String>((
     return false;
   }
 });
-
-class _ResolvedMediaItem {
-  const _ResolvedMediaItem({
-    required this.id,
-    required this.type,
-    required this.url,
-    required this.thumbUrl,
-    required this.caption,
-    required this.width,
-    required this.height,
-    required this.duration,
-    required this.editDisclosure,
-  });
-
-  final String id;
-  final String type;
-  final String? url;
-  final String? thumbUrl;
-  final String? caption;
-  final int? width;
-  final int? height;
-  final int? duration;
-  final bool editDisclosure;
-
-  bool get isVideo => type.toUpperCase().contains('VIDEO');
-  bool get isSvg =>
-      type.toUpperCase().contains('SVG') ||
-      ((url ?? '').toLowerCase().endsWith('.svg'));
-
-  String get playableUrl => (url ?? '').trim();
-  String get previewUrl {
-    if (isVideo) {
-      final thumb = (thumbUrl ?? '').trim();
-      if (thumb.isNotEmpty) return thumb;
-      return playableUrl;
-    }
-    return playableUrl;
-  }
-}
 
 class PostCard extends ConsumerStatefulWidget {
   const PostCard({
@@ -557,8 +451,8 @@ class _PostCardState extends ConsumerState<PostCard> {
     return tp.didExceedMaxLines;
   }
 
-  List<_ResolvedMediaItem> _extractStructuredMedia(dynamic dyn) {
-    final out = <_ResolvedMediaItem>[];
+  List<PostCardResolvedMediaItem> _extractStructuredMedia(dynamic dyn) {
+    final out = <PostCardResolvedMediaItem>[];
 
     List<dynamic> rawList = const [];
     try {
@@ -609,7 +503,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       if ((url ?? '').isEmpty && (thumbUrl ?? '').isEmpty) continue;
 
       out.add(
-        _ResolvedMediaItem(
+        PostCardResolvedMediaItem(
           id: id.isEmpty ? '${out.length}' : id,
           type: type,
           url: url,
@@ -685,7 +579,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
 
     out.add(
-      _ResolvedMediaItem(
+      PostCardResolvedMediaItem(
         id: 'legacy',
         type: (mediaType ?? 'IMAGE').toUpperCase(),
         url: resolvedMediaUrl,
@@ -829,39 +723,39 @@ class _PostCardState extends ConsumerState<PostCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isOwnPost)
-                  _MenuActionTile(
+                  PostCardMenuActionTile(
                     icon: Icons.edit_outlined,
                     label: 'Edit work',
                     onTap: () => Navigator.of(ctx).pop('edit_post'),
                   ),
                 if (isOwnPost)
-                  _MenuActionTile(
+                  PostCardMenuActionTile(
                     icon: Icons.delete_outline,
                     label: 'Delete work',
                     onTap: () => Navigator.of(ctx).pop('delete_post'),
                   ),
-                _MenuActionTile(
+                PostCardMenuActionTile(
                   icon: Icons.article_outlined,
                   label: 'Open work',
                   onTap: () => Navigator.of(ctx).pop('open_post'),
                 ),
                 if ((handle ?? '').trim().isNotEmpty)
-                  _MenuActionTile(
+                  PostCardMenuActionTile(
                     icon: Icons.person_outline,
                     label: 'Open profile',
                     onTap: () => Navigator.of(ctx).pop('open_profile'),
                   ),
-                _MenuActionTile(
+                PostCardMenuActionTile(
                   icon: Icons.link_outlined,
                   label: 'Copy link',
                   onTap: () => Navigator.of(ctx).pop('copy_link'),
                 ),
-                _MenuActionTile(
+                PostCardMenuActionTile(
                   icon: Icons.work_outline,
                   label: 'Share to LinkedIn',
                   onTap: () => Navigator.of(ctx).pop('share_linkedin'),
                 ),
-                _MenuActionTile(
+                PostCardMenuActionTile(
                   icon: Icons.email_outlined,
                   label: 'Share to Email',
                   onTap: () => Navigator.of(ctx).pop('share_email'),
@@ -893,19 +787,19 @@ class _PostCardState extends ConsumerState<PostCard> {
         }
         break;
       case 'copy_link':
-        await _copyToClipboard(context, postUrl, message: 'Work link copied');
+        await copyToClipboard(context, postUrl, message: 'Work link copied');
         break;
       case 'share_linkedin':
-        await _openExternalUrl(
+        await openExternalUrl(
           context,
-          _linkedInShareUrl(postUrl),
+          linkedInShareUrl(postUrl),
           fallbackCopyMessage: 'LinkedIn share link copied',
         );
         break;
       case 'share_email':
-        await _openExternalUrl(
+        await openExternalUrl(
           context,
-          _emailShareUrl(postUrl),
+          emailShareUrl(postUrl),
           fallbackCopyMessage: 'Email share link copied',
         );
         break;
@@ -920,7 +814,7 @@ class _PostCardState extends ConsumerState<PostCard> {
 
   Future<void> _openMediaViewer(
     BuildContext context,
-    List<_ResolvedMediaItem> items,
+    List<PostCardResolvedMediaItem> items,
     int initialIndex,
   ) async {
     await showDialog<void>(
@@ -929,7 +823,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: _MediaViewerDialog(items: items, initialIndex: initialIndex),
+        child: PostCardMediaViewerDialog(items: items, initialIndex: initialIndex),
       ),
     );
   }
@@ -999,7 +893,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
 
     final postId = post.id;
-    final postUrl = _canonicalPostUrl(postId);
+    final postUrl = canonicalPostUrl(postId);
     final text = (post.text).trim();
     _translationTargetLanguage ??= _defaultTranslationLanguage(context);
 
@@ -1021,7 +915,7 @@ class _PostCardState extends ConsumerState<PostCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _IdentityHeader(
+            PostCardIdentityHeader(
               displayName: headerName,
               handle: handle,
               contextLine: contextLine,
@@ -1048,16 +942,16 @@ class _PostCardState extends ConsumerState<PostCard> {
                 runSpacing: AuraSpace.s10,
                 children: [
                   if ((status ?? '').trim().isNotEmpty)
-                    _Badge(
+                    PostCardBadge(
                       text: (status ?? '').toUpperCase(),
                       tone: (status ?? '').toLowerCase().contains('published')
-                          ? _BadgeTone.good
-                          : _BadgeTone.warn,
+                          ? PostCardBadgeTone.good
+                          : PostCardBadgeTone.warn,
                     ),
                   if ((visibility ?? '').trim().isNotEmpty)
-                    _Badge(
+                    PostCardBadge(
                       text: (visibility ?? '').toUpperCase(),
-                      tone: _BadgeTone.neutral,
+                      tone: PostCardBadgeTone.neutral,
                     ),
                 ],
               ),
@@ -1285,7 +1179,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget _finalAttachmentBlock(
     BuildContext context, {
     required String postId,
-    required List<_ResolvedMediaItem> mediaItems,
+    required List<PostCardResolvedMediaItem> mediaItems,
     required String? linkUrl,
     required String? linkTitle,
     required String? linkSubtitle,
@@ -1299,7 +1193,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (mediaItems.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: AuraSpace.s14),
-        child: _PostMediaBlock(
+        child: PostCardMediaBlock(
           items: mediaItems,
           postId: postId,
           maxHeight: _mediaMaxHeight(context),
@@ -1338,13 +1232,13 @@ class _PostCardState extends ConsumerState<PostCard> {
       padding: const EdgeInsets.only(top: AuraSpace.s14),
       child: InkWell(
         borderRadius: radius,
-        onTap: () => _openExternalUrl(
+        onTap: () => openExternalUrl(
           context,
           lUrl,
           fallbackCopyMessage: 'Could not open link. Link copied instead.',
         ),
         onLongPress: () =>
-            _copyToClipboard(context, lUrl, message: 'Link copied'),
+            copyToClipboard(context, lUrl, message: 'Link copied'),
         child: ClipRRect(
           borderRadius: radius,
           child: Container(
@@ -1418,805 +1312,6 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _IdentityHeader extends StatelessWidget {
-  const _IdentityHeader({
-    required this.displayName,
-    required this.handle,
-    required this.contextLine,
-    required this.avatarUrl,
-    required this.createdLabel,
-    required this.visibilityLabel,
-    required this.visibilityIcon,
-    required this.compact,
-    required this.onMenuTap,
-    this.onProfileTap,
-  });
-
-  final String displayName;
-  final String handle;
-  final String contextLine;
-  final String? avatarUrl;
-  final String createdLabel;
-  final String visibilityLabel;
-  final IconData visibilityIcon;
-  final bool compact;
-  final VoidCallback? onProfileTap;
-  final VoidCallback onMenuTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final metaParts = <String>[
-      if (handle.trim().isNotEmpty) '@${handle.trim()}',
-      if (createdLabel.trim().isNotEmpty) createdLabel.trim(),
-    ];
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onProfileTap,
-            child: Padding(
-              padding: const EdgeInsets.only(
-                right: AuraSpace.s8,
-                top: 2,
-                bottom: 2,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AuraAvatar(
-                    name: displayName,
-                    imageUrl: avatarUrl,
-                    size: compact ? 36.0 : 40.0,
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (metaParts.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              metaParts.join(' · '),
-                              style: AuraText.small.copyWith(
-                                color: AuraSurface.muted,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        if (!compact && contextLine.trim().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              contextLine.trim(),
-                              style: AuraText.small.copyWith(
-                                color: AuraSurface.muted,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        if (visibilityLabel.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: _VisibilityMeta(
-                              icon: visibilityIcon,
-                              label: visibilityLabel,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        GestureDetector(
-          onTap: onMenuTap,
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.pill),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.more_horiz,
-              size: 18,
-              color: AuraSurface.muted,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PostMediaBlock extends StatelessWidget {
-  const _PostMediaBlock({
-    required this.items,
-    required this.postId,
-    required this.maxHeight,
-    required this.onOpenMediaAt,
-  });
-
-  final List<_ResolvedMediaItem> items;
-  final String postId;
-  final double maxHeight;
-  final ValueChanged<int> onOpenMediaAt;
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.length == 1) {
-      return _SingleMediaCard(
-        item: items.first,
-        maxHeight: maxHeight,
-        onTap: () => onOpenMediaAt(0),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = AuraSpace.s12;
-        final totalWidth = constraints.maxWidth;
-        final columns = totalWidth >= 760 ? 2 : 1;
-        final cardWidth = columns == 1
-            ? totalWidth
-            : (totalWidth - spacing) / 2;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: List.generate(items.length, (index) {
-            final item = items[index];
-            return SizedBox(
-              width: cardWidth,
-              child: _SingleMediaCard(
-                item: item,
-                maxHeight: columns == 1 ? maxHeight : 260,
-                onTap: () => onOpenMediaAt(index),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-}
-
-class _SingleMediaCard extends StatelessWidget {
-  const _SingleMediaCard({
-    required this.item,
-    required this.maxHeight,
-    required this.onTap,
-  });
-
-  final _ResolvedMediaItem item;
-  final double maxHeight;
-  final VoidCallback onTap;
-
-  double? _ratio() {
-    final w = item.width;
-    final h = item.height;
-    if (w != null && h != null && w > 0 && h > 0) {
-      var ratio = w / h;
-      if (ratio < 0.6) ratio = 0.6;
-      if (ratio > 1.9) ratio = 1.9;
-      return ratio;
-    }
-    return item.isVideo ? (16 / 9) : null;
-  }
-
-  String _durationLabel() {
-    final ms = item.duration;
-    if (ms == null || ms <= 0) return '';
-    final totalSeconds = (ms / 1000).round();
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final border = Border.all(color: AuraSurface.divider);
-    final radius = BorderRadius.circular(16);
-    final ratio = _ratio();
-
-    final imageUrl = item.previewUrl;
-
-    Widget mediaWidget;
-
-    if (item.isSvg && imageUrl.isNotEmpty) {
-      mediaWidget = SvgPicture.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        placeholderBuilder: (_) => const SizedBox(
-          height: 140,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-      );
-    } else if (imageUrl.isNotEmpty) {
-      mediaWidget = Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          constraints: const BoxConstraints(minHeight: 180),
-          alignment: Alignment.center,
-          child: Text(
-            item.isVideo ? 'Video unavailable' : 'Media unavailable',
-            style: AuraText.small,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        loadingBuilder: (c, child, p) {
-          if (p == null) return child;
-          return SizedBox(
-            height: 220,
-            child: Center(
-              child: CircularProgressIndicator(
-                value: (p.expectedTotalBytes != null)
-                    ? (p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 1))
-                    : null,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      mediaWidget = Container(
-        constraints: const BoxConstraints(minHeight: 180),
-        alignment: Alignment.center,
-        child: Text(
-          item.isVideo ? 'Video unavailable' : 'Media unavailable',
-          style: AuraText.small,
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    Widget content = Stack(
-      children: [
-        Positioned.fill(child: mediaWidget),
-        if (item.isVideo)
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.58),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  size: 38,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        if (item.isVideo)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.videocam, size: 14, color: Colors.white),
-                  if (_durationLabel().isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      _durationLabel(),
-                      style: AuraText.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-
-    Widget mediaBox = ClipRRect(
-      borderRadius: radius,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          border: border,
-          color: AuraSurface.elevated,
-        ),
-        child: ratio == null
-            ? ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                child: content,
-              )
-            : AspectRatio(aspectRatio: ratio, child: content),
-      ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(borderRadius: radius, onTap: onTap, child: mediaBox),
-        if ((item.caption ?? '').trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            item.caption!.trim(),
-            style: AuraText.small.copyWith(height: 1.35),
-          ),
-        ],
-        if (item.editDisclosure) ...[
-          const SizedBox(height: AuraSpace.s6),
-          Text(
-            'Edited for clarity or privacy',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _MediaViewerDialog extends StatefulWidget {
-  const _MediaViewerDialog({required this.items, required this.initialIndex});
-
-  final List<_ResolvedMediaItem> items;
-  final int initialIndex;
-
-  @override
-  State<_MediaViewerDialog> createState() => _MediaViewerDialogState();
-}
-
-class _MediaViewerDialogState extends State<_MediaViewerDialog> {
-  late final PageController _pageController;
-  late int _index;
-
-  @override
-  void initState() {
-    super.initState();
-    _index = widget.initialIndex.clamp(0, widget.items.length - 1);
-    _pageController = PageController(initialPage: _index);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _jump(int next) {
-    if (next < 0 || next >= widget.items.length) return;
-    _pageController.animateToPage(
-      next,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final item = widget.items[_index];
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white12),
-        ),
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: widget.items.length,
-                    onPageChanged: (value) {
-                      setState(() {
-                        _index = value;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final media = widget.items[index];
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(
-                          child: media.isVideo
-                              ? _VideoViewer(url: media.playableUrl)
-                              : _ImageViewer(url: media.previewUrl),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Colors.white12)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if ((item.caption ?? '').trim().isNotEmpty)
-                        Text(
-                          item.caption!.trim(),
-                          style: AuraText.body.copyWith(color: Colors.white),
-                        ),
-                      if ((item.caption ?? '').trim().isNotEmpty)
-                        const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Text(
-                            '${_index + 1} / ${widget.items.length}',
-                            style: AuraText.small.copyWith(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (item.playableUrl.isNotEmpty)
-                            AuraGhostButton(
-                              label: item.isVideo ? 'Open video' : 'Open image',
-                              icon: Icons.open_in_new,
-                              onPressed: () => _openExternalUrl(
-                                context,
-                                item.playableUrl,
-                                fallbackCopyMessage: 'Media link copied',
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: Colors.white),
-              ),
-            ),
-            if (_index > 0)
-              Positioned(
-                left: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: _ViewerArrowButton(
-                    icon: Icons.chevron_left,
-                    onTap: () => _jump(_index - 1),
-                  ),
-                ),
-              ),
-            if (_index < widget.items.length - 1)
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: _ViewerArrowButton(
-                    icon: Icons.chevron_right,
-                    onTap: () => _jump(_index + 1),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ViewerArrowButton extends StatelessWidget {
-  const _ViewerArrowButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.45),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(icon, color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-class _ImageViewer extends StatelessWidget {
-  const _ImageViewer({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    if (url.trim().isEmpty) {
-      return Text(
-        'Image unavailable',
-        style: AuraText.body.copyWith(color: Colors.white),
-      );
-    }
-
-    return InteractiveViewer(
-      minScale: 0.8,
-      maxScale: 4.0,
-      child: Image.network(
-        url,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Text(
-          'Image unavailable',
-          style: AuraText.body.copyWith(color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-class _VideoViewer extends StatefulWidget {
-  const _VideoViewer({required this.url});
-
-  final String url;
-
-  @override
-  State<_VideoViewer> createState() => _VideoViewerState();
-}
-
-class _VideoViewerState extends State<_VideoViewer> {
-  VideoPlayerController? _controller;
-  Future<void>? _initializeFuture;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _setup();
-  }
-
-  void _setup() {
-    final url = widget.url.trim();
-    if (url.isEmpty) {
-      _error = 'Video URL is missing';
-      return;
-    }
-
-    try {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      _controller = controller;
-      _initializeFuture = controller
-          .initialize()
-          .then((_) async {
-            await controller.setLooping(true);
-            if (mounted) {
-              setState(() {});
-            }
-          })
-          .catchError((_) {
-            _error = 'Could not load video';
-            if (mounted) {
-              setState(() {});
-            }
-          });
-    } catch (_) {
-      _error = 'Could not open video';
-    }
-  }
-
-  @override
-  void dispose() {
-    final controller = _controller;
-    _controller = null;
-    controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if ((_error ?? '').trim().isNotEmpty) {
-      return _VideoFallback(message: _error!, url: widget.url);
-    }
-
-    final controller = _controller;
-    final initializeFuture = _initializeFuture;
-
-    if (controller == null || initializeFuture == null) {
-      return _VideoFallback(message: 'Video unavailable', url: widget.url);
-    }
-
-    return FutureBuilder<void>(
-      future: initializeFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return _VideoFallback(
-            message: 'Could not load video',
-            url: widget.url,
-          );
-        }
-
-        if (snapshot.connectionState != ConnectionState.done ||
-            !controller.value.isInitialized) {
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-        }
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: AspectRatio(
-                aspectRatio: controller.value.aspectRatio > 0
-                    ? controller.value.aspectRatio
-                    : (16 / 9),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: VideoPlayer(controller),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              alignment: WrapAlignment.center,
-              children: [
-                AuraPrimaryButton(
-                  label: controller.value.isPlaying ? 'Pause' : 'Play',
-                  icon: controller.value.isPlaying
-                      ? Icons.pause
-                      : Icons.play_arrow,
-                  onPressed: () async {
-                    if (controller.value.isPlaying) {
-                      await controller.pause();
-                    } else {
-                      await controller.play();
-                    }
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                ),
-                AuraSecondaryButton(
-                  label: 'Restart',
-                  icon: Icons.replay,
-                  onPressed: () async {
-                    await controller.seekTo(Duration.zero);
-                    if (!controller.value.isPlaying) {
-                      await controller.play();
-                    }
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                ),
-                AuraSecondaryButton(
-                  label: 'Open externally',
-                  icon: Icons.open_in_new,
-                  onPressed: () => _openExternalUrl(
-                    context,
-                    widget.url,
-                    fallbackCopyMessage: 'Video link copied',
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _VideoFallback extends StatelessWidget {
-  const _VideoFallback({required this.message, required this.url});
-
-  final String message;
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 220, minWidth: 320),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.videocam_outlined, size: 40, color: Colors.white70),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: AuraText.body.copyWith(color: Colors.white),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 14),
-          AuraSecondaryButton(
-            label: 'Open video',
-            icon: Icons.open_in_new,
-            onPressed: () => _openExternalUrl(
-              context,
-              url,
-              fallbackCopyMessage: 'Video link copied',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VisibilityMeta extends StatelessWidget {
-  const _VisibilityMeta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: AuraSurface.muted),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -2330,9 +1425,9 @@ class _ActionRow extends ConsumerWidget {
                         label: 'Copy link',
                         icon: Icons.link_outlined,
                         onPressed: () async {
-                          await _copyToClipboard(
+                          await copyToClipboard(
                             ctx,
-                            _canonicalPostUrl(postId),
+                            canonicalPostUrl(postId),
                             message: 'Work link copied',
                           );
                         },
@@ -2341,9 +1436,9 @@ class _ActionRow extends ConsumerWidget {
                         label: 'Share to LinkedIn',
                         icon: Icons.work_outline,
                         onPressed: () async {
-                          await _openExternalUrl(
+                          await openExternalUrl(
                             ctx,
-                            _linkedInShareUrl(_canonicalPostUrl(postId)),
+                            linkedInShareUrl(canonicalPostUrl(postId)),
                             fallbackCopyMessage: 'LinkedIn share link copied',
                           );
                         },
@@ -2352,9 +1447,9 @@ class _ActionRow extends ConsumerWidget {
                         label: 'Share to Email',
                         icon: Icons.email_outlined,
                         onPressed: () async {
-                          await _openExternalUrl(
+                          await openExternalUrl(
                             ctx,
-                            _emailShareUrl(_canonicalPostUrl(postId)),
+                            emailShareUrl(canonicalPostUrl(postId)),
                             fallbackCopyMessage: 'Email share link copied',
                           );
                         },
@@ -2411,71 +1506,6 @@ class _ActionRow extends ConsumerWidget {
           onTap: share,
         ),
       ],
-    );
-  }
-}
-
-class _MenuActionTile extends StatelessWidget {
-  const _MenuActionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(label, style: AuraText.body),
-      onTap: onTap,
-    );
-  }
-}
-
-enum _BadgeTone { neutral, good, warn }
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.text, required this.tone});
-
-  final String text;
-  final _BadgeTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
-
-    switch (tone) {
-      case _BadgeTone.good:
-        bg = AuraSurface.goodBg;
-        fg = AuraSurface.goodInk;
-        break;
-      case _BadgeTone.warn:
-        bg = AuraSurface.warnBg;
-        fg = AuraSurface.warnInk;
-        break;
-      case _BadgeTone.neutral:
-        bg = AuraSurface.elevated;
-        fg = AuraSurface.ink;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Text(
-        text,
-        style: AuraText.small.copyWith(color: fg, fontWeight: FontWeight.w800),
-      ),
     );
   }
 }
