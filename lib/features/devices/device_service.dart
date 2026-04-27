@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'device_repository.dart';
+import 'web_push_service.dart';
 
 class DeviceService {
   DeviceService(this._repository);
@@ -16,7 +17,7 @@ class DeviceService {
 
   Future<void> registerCurrentDevice() async {
     try {
-      final payload = _buildPayload();
+      final payload = await _buildPayload();
       final device = await _repository.register(payload);
       if (device.id.isNotEmpty) {
         _cachedDeviceId = device.id;
@@ -35,7 +36,7 @@ class DeviceService {
     } catch (_) {}
   }
 
-  /// Re-registers the device on app resume, throttled to once per 30 minutes.
+  /// Re-registers on app resume, throttled to once per 30 minutes.
   Future<void> refreshPresence() async {
     final now = DateTime.now();
     if (_lastPresenceRefresh != null &&
@@ -46,27 +47,80 @@ class DeviceService {
     await registerCurrentDevice();
   }
 
-  Map<String, dynamic> _buildPayload() {
-    String platform;
-    String provider;
+  /// Called from user-initiated permission UX.
+  /// Requests browser notification permission, subscribes, then updates
+  /// the backend device record (PATCH if device ID known, else register).
+  Future<bool> requestAndRegisterWebPush(String vapidKey) async {
+    if (!kIsWeb) return false;
+    try {
+      final perm = await WebPushService.requestPermission();
+      if (perm != 'granted') return false;
 
-    if (kIsWeb) {
-      platform = 'WEB';
-      provider = 'WEB_PUSH';
-    } else {
-      switch (defaultTargetPlatform) {
-        case TargetPlatform.android:
-          platform = 'ANDROID';
-          provider = 'FCM';
-        case TargetPlatform.iOS:
-          platform = 'IOS';
-          provider = 'APNS';
-        default:
-          platform = 'DESKTOP';
-          provider = 'FCM';
+      final sub = await WebPushService.subscribe(vapidKey);
+      if (sub == null || sub.endpoint.isEmpty) return false;
+
+      final payload = _webPushPayload(sub);
+
+      final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
+      if (id != null && id.isNotEmpty) {
+        await _repository.updateDevice(id, payload);
+      } else {
+        final device = await _repository.register(payload);
+        if (device.id.isNotEmpty) {
+          _cachedDeviceId = device.id;
+          await _persistDeviceId(device.id);
+        }
       }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Payload builders ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> _buildPayload() async {
+    if (kIsWeb) {
+      final sub = await WebPushService.getExistingSubscription();
+      if (sub != null && sub.endpoint.isNotEmpty) {
+        return _webPushPayload(sub);
+      }
+      return _metadataPayload(platform: 'WEB', provider: 'WEB_PUSH');
     }
 
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return _metadataPayload(platform: 'ANDROID', provider: 'FCM');
+      case TargetPlatform.iOS:
+        return _metadataPayload(platform: 'IOS', provider: 'APNS');
+      default:
+        return _metadataPayload(platform: 'DESKTOP', provider: 'FCM');
+    }
+  }
+
+  Map<String, dynamic> _webPushPayload(WebPushResult sub) {
+    return {
+      'platform': 'WEB',
+      'provider': 'WEB_PUSH',
+      // endpoint doubles as the stable token for upsert keying
+      'token': sub.endpoint,
+      'endpoint': sub.endpoint,
+      'webPushP256dh': sub.p256dh ?? '',
+      'webPushAuth': sub.auth ?? '',
+      'deviceName': _resolveDeviceName(),
+      'appVersion': const String.fromEnvironment(
+        'APP_VERSION',
+        defaultValue: '1.0.0',
+      ),
+      'locale': _resolveLocale(),
+      'timezone': _resolveTimezone(),
+    };
+  }
+
+  Map<String, dynamic> _metadataPayload({
+    required String platform,
+    required String provider,
+  }) {
     return {
       'platform': platform,
       'provider': provider,
@@ -80,6 +134,8 @@ class DeviceService {
       'timezone': _resolveTimezone(),
     };
   }
+
+  // ── Metadata helpers ──────────────────────────────────────────────────────
 
   String _resolveDeviceName() {
     if (kIsWeb) return 'Web';
@@ -114,6 +170,8 @@ class DeviceService {
       return '';
     }
   }
+
+  // ── Local persistence ─────────────────────────────────────────────────────
 
   Future<void> _persistDeviceId(String id) async {
     try {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -9,6 +11,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import 'notification_permission_tile.dart';
 
 class SecurityScreen extends ConsumerWidget {
   const SecurityScreen({super.key});
@@ -252,6 +255,7 @@ class SecurityScreen extends ConsumerWidget {
             ),
           ],
         ),
+        if (kIsWeb) const BrowserNotificationsSection(),
         _section(
           title: 'Account',
           children: [

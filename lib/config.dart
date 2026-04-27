@@ -35,4 +35,16 @@ class AppConfig {
 
     return u;
   }
+
+  /// VAPID public key for Web Push.
+  ///
+  /// Supply via:
+  /// flutter build web --dart-define=AURA_WEB_PUSH_VAPID_PUBLIC_KEY=<base64url-key>
+  ///
+  /// When empty, web push subscription acquisition is skipped and device
+  /// registration falls back to metadata-only (empty token).
+  static String get vapidPublicKey => const String.fromEnvironment(
+    'AURA_WEB_PUSH_VAPID_PUBLIC_KEY',
+    defaultValue: '',
+  ).trim();
 }
