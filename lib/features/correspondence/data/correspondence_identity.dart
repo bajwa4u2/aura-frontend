@@ -1,6 +1,22 @@
 class CorrespondenceIdentity {
   const CorrespondenceIdentity._();
 
+  static const Set<String> _genericThreadTitles = {
+    'conversation',
+    'direct conversation',
+    'group conversation',
+    'private conversation',
+    'shared space',
+    'thread',
+    'message',
+    'messages',
+    'chat',
+    'general',
+    'untitled',
+    'untitled conversation',
+    'untitled thread',
+  };
+
   static String pickString(Map<String, dynamic> map, List<String> keys) {
     for (final key in keys) {
       final value = map[key];
@@ -111,35 +127,416 @@ class CorrespondenceIdentity {
   }
 
   static String threadTitle(Map<String, dynamic> thread) {
-    final explicit = pickString(thread, const ['title', 'name']);
-    if (explicit.isNotEmpty) return explicit;
+    return resolveThreadContext(thread).title;
+  }
 
+  static CorrespondenceThreadContext resolveThreadContext(
+    Map<String, dynamic> thread, {
+    String? currentUserId,
+  }) {
     final participants = extractParticipants(thread);
-    final names = participants.map(identityLabel).where((e) => e.isNotEmpty).toList(growable: false);
+    final dedupedParticipants = _dedupeParticipants(participants);
+    final explicit = pickString(thread, const ['title', 'name']);
     final preview = threadPreview(thread);
     final spaceTitle = pickNested(thread, const [
       ['space', 'title'],
       ['space', 'name'],
     ]);
+    final spaceId = pickString(thread, const ['spaceId', 'space_id']);
+    final kindValue = pickString(thread, const [
+      'kind',
+      'type',
+      'threadType',
+      'conversationType',
+    ]).toUpperCase();
 
-    if (names.isNotEmpty) {
-      if (names.length == 1) return names.first;
-      if (names.length == 2) return '${names.first} and ${names.last}';
-      final base = '${names.first}, ${names[1]} +${names.length - 2}';
-      if (spaceTitle.isNotEmpty) return '$base · $spaceTitle';
-      return base;
-    }
+    final kind = _resolveThreadKind(
+      kindValue: kindValue,
+      participantCount: dedupedParticipants.length,
+      spaceTitle: spaceTitle,
+      spaceId: spaceId,
+    );
 
-    if (preview.isNotEmpty) {
-      if (spaceTitle.isNotEmpty) return '$spaceTitle · ${truncate(preview, max: 28)}';
-      return truncate(preview, max: 42);
-    }
+    final participantLabels = _threadParticipantLabels(
+      dedupedParticipants,
+      currentUserId: currentUserId,
+    );
+    final participantSummary =
+        threadParticipantSummaryFromParticipants(dedupedParticipants);
+    final roleSummary = threadParticipantRoleSummary({
+      'participants': dedupedParticipants,
+    });
+    final activityWeight = threadRecentWeight(thread);
+    final threadLabel = _threadDisplayTitle(
+      thread,
+      kind: kind,
+      explicitTitle: explicit,
+      preview: preview,
+      spaceTitle: spaceTitle,
+      participants: dedupedParticipants,
+      participantLabels: participantLabels,
+      participantSummary: participantSummary,
+      currentUserId: currentUserId,
+    );
+    final subtitle = _threadDisplaySubtitle(
+      kind: kind,
+      spaceTitle: spaceTitle,
+      explicitTitle: explicit,
+      participantSummary: participantSummary,
+      roleSummary: roleSummary,
+      activityWeight: activityWeight,
+      preview: preview,
+    );
+    final avatarUrl = _threadDisplayAvatarUrl(
+      thread,
+      participants: dedupedParticipants,
+      currentUserId: currentUserId,
+    );
 
-    if (spaceTitle.isNotEmpty) return '$spaceTitle conversation';
-    return 'Conversation';
+    return CorrespondenceThreadContext(
+      kind: kind,
+      title: threadLabel,
+      subtitle: subtitle,
+      participantSummary: participantSummary,
+      roleSummary: roleSummary,
+      activityWeight: activityWeight,
+      kindLabel: _threadKindLabel(kind),
+      participantChips: participantLabels,
+      avatarUrl: avatarUrl,
+      spaceTitle: spaceTitle,
+      explicitTitle: explicit,
+      hasSpace: spaceId.isNotEmpty || spaceTitle.isNotEmpty,
+    );
   }
 
-  static String threadParticipantSummaryFromParticipants(List<Map<String, dynamic>> participants) {
+  static String threadDisplayTitle(
+    Map<String, dynamic> thread, {
+    String? currentUserId,
+  }) {
+    return resolveThreadContext(thread, currentUserId: currentUserId).title;
+  }
+
+  static String threadDisplaySubtitle(
+    Map<String, dynamic> thread, {
+    String? currentUserId,
+  }) {
+    return resolveThreadContext(thread, currentUserId: currentUserId).subtitle;
+  }
+
+  static List<String> threadIdentityChips(
+    Map<String, dynamic> thread, {
+    String? currentUserId,
+  }) {
+    return resolveThreadContext(thread, currentUserId: currentUserId)
+        .participantChips;
+  }
+
+  static String threadConversationKindLabel(Map<String, dynamic> thread) {
+    return _threadKindLabel(
+      _resolveThreadKind(
+        kindValue: pickString(thread, const [
+          'kind',
+          'type',
+          'threadType',
+          'conversationType',
+        ]).toUpperCase(),
+        participantCount: extractParticipants(thread).length,
+        spaceTitle: pickNested(thread, const [
+          ['space', 'title'],
+          ['space', 'name'],
+        ]),
+        spaceId: pickString(thread, const ['spaceId', 'space_id']),
+      ),
+    );
+  }
+
+  static String threadDisplayAvatarUrl(
+    Map<String, dynamic> thread, {
+    String? currentUserId,
+  }) {
+    return resolveThreadContext(thread, currentUserId: currentUserId).avatarUrl;
+  }
+
+  static bool isGenericThreadLabel(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized.isEmpty || _genericThreadTitles.contains(normalized);
+  }
+
+  static String _threadDisplayTitle(
+    Map<String, dynamic> thread, {
+    required CorrespondenceThreadKind kind,
+    required String explicitTitle,
+    required String preview,
+    required String spaceTitle,
+    required List<Map<String, dynamic>> participants,
+    required List<String> participantLabels,
+    required String participantSummary,
+    String? currentUserId,
+  }) {
+    final explicitIsGeneric = isGenericThreadLabel(explicitTitle);
+
+    switch (kind) {
+      case CorrespondenceThreadKind.direct:
+        final directLabel = _directThreadTitle(
+          participants: participants,
+          participantLabels: participantLabels,
+          participantSummary: participantSummary,
+          currentUserId: currentUserId,
+        );
+        if (directLabel.isNotEmpty) return directLabel;
+        if (!explicitIsGeneric && explicitTitle.isNotEmpty) {
+          return explicitTitle;
+        }
+        return 'Private conversation';
+      case CorrespondenceThreadKind.group:
+        if (!explicitIsGeneric && explicitTitle.isNotEmpty) return explicitTitle;
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (preview.isNotEmpty) return truncate(preview, max: 42);
+        return 'Group conversation';
+      case CorrespondenceThreadKind.space:
+        if (spaceTitle.isNotEmpty) {
+          if (!explicitIsGeneric && explicitTitle.isNotEmpty) {
+            if (explicitTitle.toLowerCase() != spaceTitle.toLowerCase()) {
+              return '$spaceTitle · $explicitTitle';
+            }
+            return explicitTitle;
+          }
+          return '$spaceTitle · General';
+        }
+        if (!explicitIsGeneric && explicitTitle.isNotEmpty) return explicitTitle;
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (preview.isNotEmpty) return truncate(preview, max: 42);
+        return 'Shared space';
+      case CorrespondenceThreadKind.unknown:
+        if (!explicitIsGeneric && explicitTitle.isNotEmpty) return explicitTitle;
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (spaceTitle.isNotEmpty) return '$spaceTitle conversation';
+        if (preview.isNotEmpty) return truncate(preview, max: 42);
+        return 'Conversation';
+    }
+  }
+
+  static String _threadDisplaySubtitle({
+    required CorrespondenceThreadKind kind,
+    required String spaceTitle,
+    required String explicitTitle,
+    required String participantSummary,
+    required String roleSummary,
+    required String activityWeight,
+    required String preview,
+  }) {
+    final nonGenericExplicit = !isGenericThreadLabel(explicitTitle) &&
+        explicitTitle.trim().isNotEmpty;
+
+    switch (kind) {
+      case CorrespondenceThreadKind.direct:
+        if (roleSummary.isNotEmpty) return roleSummary;
+        if (participantSummary.isNotEmpty) return participantSummary;
+        return 'Private conversation';
+      case CorrespondenceThreadKind.group:
+        if (roleSummary.isNotEmpty) return roleSummary;
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (activityWeight.isNotEmpty) return activityWeight;
+        return 'Group conversation';
+      case CorrespondenceThreadKind.space:
+        if (spaceTitle.isNotEmpty && nonGenericExplicit) {
+          return '$spaceTitle · $explicitTitle';
+        }
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (activityWeight.isNotEmpty) return activityWeight;
+        return spaceTitle.isNotEmpty ? 'Shared space' : 'Shared conversation';
+      case CorrespondenceThreadKind.unknown:
+        if (participantSummary.isNotEmpty) return participantSummary;
+        if (activityWeight.isNotEmpty) return activityWeight;
+        if (preview.isNotEmpty) return truncate(preview, max: 72);
+        return 'Conversation';
+    }
+  }
+
+  static String _threadDisplayAvatarUrl(
+    Map<String, dynamic> thread, {
+    required List<Map<String, dynamic>> participants,
+    String? currentUserId,
+  }) {
+    final explicit = pickString(thread, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+    if (explicit.isNotEmpty) return explicit;
+
+    final spaceAvatar = pickNested(thread, const [
+      ['space', 'avatarUrl'],
+      ['space', 'imageUrl'],
+      ['space', 'photoUrl'],
+    ]);
+    if (spaceAvatar.isNotEmpty) return spaceAvatar;
+
+    final directAvatar = _directParticipantAvatar(
+      participants,
+      currentUserId: currentUserId,
+    );
+    if (directAvatar.isNotEmpty) return directAvatar;
+
+    return threadAvatarUrl(thread);
+  }
+
+  static String _directThreadTitle({
+    required List<Map<String, dynamic>> participants,
+    required List<String> participantLabels,
+    required String participantSummary,
+    String? currentUserId,
+  }) {
+    final others = _otherParticipantLabels(
+      participants,
+      currentUserId: currentUserId,
+    );
+    if (others.isNotEmpty) {
+      if (others.length == 1) return others.first;
+      if (others.length == 2) return '${others.first} and ${others.last}';
+      return '${others.first}, ${others[1]} +${others.length - 2}';
+    }
+
+    if (participantLabels.length == 1) return participantLabels.first;
+    if (participantSummary.isNotEmpty) return participantSummary;
+    return '';
+  }
+
+  static List<String> _threadParticipantLabels(
+    List<Map<String, dynamic>> participants, {
+    String? currentUserId,
+  }) {
+    final labels = <String>[];
+    for (final participant in participants) {
+      final label = identityLabel(participant);
+      if (label.isEmpty) continue;
+      final id = pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+      if ((currentUserId ?? '').trim().isNotEmpty &&
+          id.trim().isNotEmpty &&
+          id.trim() == currentUserId!.trim()) {
+        continue;
+      }
+      if (!labels.contains(label)) {
+        labels.add(label);
+      }
+      if (labels.length >= 3) break;
+    }
+    if (labels.isEmpty) {
+      for (final participant in participants) {
+        final label = identityLine(participant, preferHandle: true);
+        if (label.isEmpty || labels.contains(label)) continue;
+        labels.add(label);
+        if (labels.length >= 3) break;
+      }
+    }
+    return labels;
+  }
+
+  static List<Map<String, dynamic>> _dedupeParticipants(
+    List<Map<String, dynamic>> participants,
+  ) {
+    final out = <Map<String, dynamic>>[];
+    final seen = <String>{};
+    for (final participant in participants) {
+      final id = pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+      final key = id.isNotEmpty
+          ? id
+          : identityLine(participant, preferHandle: false);
+      if (key.isEmpty || seen.contains(key)) continue;
+      seen.add(key);
+      out.add(participant);
+    }
+    return out;
+  }
+
+  static List<String> _otherParticipantLabels(
+    List<Map<String, dynamic>> participants, {
+    String? currentUserId,
+  }) {
+    final me = (currentUserId ?? '').trim();
+    final out = <String>[];
+    for (final participant in participants) {
+      final id = pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+      if (me.isNotEmpty && id.trim().isNotEmpty && id.trim() == me) {
+        continue;
+      }
+      final label = identityLabel(participant);
+      if (label.isNotEmpty && !out.contains(label)) {
+        out.add(label);
+      }
+    }
+    return out;
+  }
+
+  static String _directParticipantAvatar(
+    List<Map<String, dynamic>> participants, {
+    String? currentUserId,
+  }) {
+    final me = (currentUserId ?? '').trim();
+    for (final participant in participants) {
+      final id = pickString(participant, const ['id', '_id', 'userId', 'memberId']);
+      if (me.isNotEmpty && id.trim().isNotEmpty && id.trim() == me) {
+        continue;
+      }
+      final avatar = identityAvatarUrl(participant);
+      if (avatar.isNotEmpty) return avatar;
+    }
+    return '';
+  }
+
+  static CorrespondenceThreadKind _resolveThreadKind({
+    required String kindValue,
+    required int participantCount,
+    required String spaceTitle,
+    required String spaceId,
+  }) {
+    const directKinds = {
+      'DIRECT',
+      'PRIVATE',
+      'DM',
+      'ONE_TO_ONE',
+      '1:1',
+      'ONEONONE',
+    };
+    const groupKinds = {
+      'GROUP',
+      'GROUP_CHAT',
+      'CHANNEL',
+      'ROOM',
+    };
+    const spaceKinds = {
+      'MAIN',
+      'SPACE',
+      'THREAD',
+      'TOPIC',
+      'GENERAL',
+    };
+
+    if (directKinds.contains(kindValue)) {
+      return CorrespondenceThreadKind.direct;
+    }
+    if (groupKinds.contains(kindValue) || participantCount >= 3) {
+      return CorrespondenceThreadKind.group;
+    }
+    if (spaceKinds.contains(kindValue) ||
+        spaceTitle.trim().isNotEmpty ||
+        spaceId.trim().isNotEmpty) {
+      return CorrespondenceThreadKind.space;
+    }
+    return CorrespondenceThreadKind.unknown;
+  }
+
+  static String _threadKindLabel(CorrespondenceThreadKind kind) {
+    switch (kind) {
+      case CorrespondenceThreadKind.direct:
+        return 'Private conversation';
+      case CorrespondenceThreadKind.group:
+        return 'Group conversation';
+      case CorrespondenceThreadKind.space:
+        return 'Shared space';
+      case CorrespondenceThreadKind.unknown:
+        return 'Conversation';
+    }
+  }
+  static String threadParticipantSummaryFromParticipants(
+    List<Map<String, dynamic>> participants,
+  ) {
     final labels = participants.map((p) => identityLine(p, preferHandle: false)).where((e) => e.isNotEmpty).toList(growable: false);
     if (labels.isEmpty) return '';
     if (labels.length <= 3) return labels.join(' · ');
@@ -178,6 +575,16 @@ class CorrespondenceIdentity {
   }
 
   static String threadAvatarUrl(Map<String, dynamic> thread) {
+    final directAvatar = pickString(thread, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+    if (directAvatar.isNotEmpty) return directAvatar;
+
+    final spaceAvatar = pickNested(thread, const [
+      ['space', 'avatarUrl'],
+      ['space', 'imageUrl'],
+      ['space', 'photoUrl'],
+    ]);
+    if (spaceAvatar.isNotEmpty) return spaceAvatar;
+
     for (final participant in extractParticipants(thread)) {
       final url = identityAvatarUrl(participant);
       if (url.isNotEmpty) return url;
@@ -289,4 +696,41 @@ class CorrespondenceIdentity {
     if (parts.length == 1) return parts.first[0].toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
+}
+
+enum CorrespondenceThreadKind { direct, group, space, unknown }
+
+class CorrespondenceThreadContext {
+  const CorrespondenceThreadContext({
+    required this.kind,
+    required this.title,
+    required this.subtitle,
+    required this.participantSummary,
+    required this.roleSummary,
+    required this.activityWeight,
+    required this.kindLabel,
+    required this.participantChips,
+    required this.avatarUrl,
+    required this.spaceTitle,
+    required this.explicitTitle,
+    required this.hasSpace,
+  });
+
+  final CorrespondenceThreadKind kind;
+  final String title;
+  final String subtitle;
+  final String participantSummary;
+  final String roleSummary;
+  final String activityWeight;
+  final String kindLabel;
+  final List<String> participantChips;
+  final String avatarUrl;
+  final String spaceTitle;
+  final String explicitTitle;
+  final bool hasSpace;
+
+  bool get isDirect => kind == CorrespondenceThreadKind.direct;
+  bool get isGroup => kind == CorrespondenceThreadKind.group;
+  bool get isSpace => kind == CorrespondenceThreadKind.space;
+  bool get isUnknown => kind == CorrespondenceThreadKind.unknown;
 }

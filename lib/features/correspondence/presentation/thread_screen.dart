@@ -263,12 +263,28 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       data: (me) => _pickString(me, const ['id', '_id', 'userId']),
       orElse: () => '',
     );
+    final thread = threadAsync.maybeWhen(
+      data: (data) => data,
+      orElse: () => null,
+    );
+    final threadContext = thread == null
+        ? null
+        : CorrespondenceIdentity.resolveThreadContext(
+            thread,
+            currentUserId: currentUserId,
+          );
+    final pageTitle = threadContext?.title ??
+        threadAsync.maybeWhen(
+          data: (thread) => _threadScreenTitle(
+            thread,
+            currentUserId: currentUserId,
+          ),
+          orElse: () => 'Conversation',
+        ) ??
+        'Conversation';
 
     return AuraScaffold(
-      title: threadAsync.maybeWhen(
-        data: (thread) => _threadScreenTitle(thread),
-        orElse: () => 'Conversation',
-      ),
+      title: pageTitle,
       body: Column(
         children: [
           Expanded(
@@ -288,168 +304,169 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         onRetry: _refreshThreadData,
                       ),
                     ),
-                    data: (thread) => _ThreadHeaderCard(
-                      thread: thread,
-                      liveState: liveState,
-                      currentUserId: currentUserId,
-                      onOpenSpace: () {
-                        final spaceId = _pickString(thread, const [
-                          'spaceId',
-                          'space_id',
-                        ]);
-                        if (spaceId.isEmpty) return;
-                        context.push('/me/correspondence/$spaceId');
-                      },
-                      onInvite: () async {
-                        final spaceId = _pickString(thread, const [
-                          'spaceId',
-                          'space_id',
-                        ]);
-                        if (spaceId.isEmpty) return;
-                        final returnTo =
-                            '/me/correspondence/$spaceId/thread/$threadId';
-                        final inviteRoute = Uri(
-                          path: '/invite/create',
-                          queryParameters: {
-                            'destinationType': 'JOIN_SPACE',
-                            'spaceId': spaceId,
-                            'threadId': threadId,
-                            'returnTo': returnTo,
-                          },
-                        ).toString();
-                        await context.push(inviteRoute);
-                        if (!context.mounted) return;
-                        _refreshThreadData();
-                      },
-                      onAddMembers: () async {
-                        final spaceId = _pickString(thread, const [
-                          'spaceId',
-                          'space_id',
-                        ]);
-                        if (spaceId.isEmpty) return;
-                        await context.push(
-                          '/me/correspondence/$spaceId/invite',
-                        );
-                        if (!context.mounted) return;
-                        _refreshThreadData();
-                      },
-                      onStartAudio: () =>
-                          _startLive(thread: thread, kind: 'AUDIO'),
-                      onStartVideo: () =>
-                          _startLive(thread: thread, kind: 'VIDEO'),
-                      onJoinLive: () async {
-                        final sessionId = _threadResolvedSessionId(
-                          thread,
-                          liveState,
-                          widget.threadId,
-                        );
-                        if (sessionId.isEmpty) return;
-                        final controller = ref.read(
-                          realtimeControllerProvider.notifier,
-                        );
-                        await controller.join(sessionId);
-                      },
-                      onLeaveLive: () async {
-                        await ref
-                            .read(realtimeControllerProvider.notifier)
-                            .leave();
-                      },
-                      onToggleMicrophone: () async {
-                        await ref
-                            .read(realtimeControllerProvider.notifier)
-                            .toggleMicrophone();
-                      },
-                      onToggleCamera: () async {
-                        await ref
-                            .read(realtimeControllerProvider.notifier)
-                            .toggleCamera();
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  Row(
-                    children: [
-                      const Text('Messages', style: AuraText.title),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AuraSpace.s10,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AuraSurface.subtle,
-                          borderRadius: BorderRadius.circular(AuraRadius.pill),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: Text(
-                          'Thread',
-                          style: AuraText.micro.copyWith(
-                            color: AuraSurface.muted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                  messagesAsync.when(
-                    loading: () => const AuraCard(
-                      child: _LoadingBlock(label: 'Loading messages...'),
-                    ),
-                    error: (error, _) => AuraCard(
-                      child: _ErrorBlock(
-                        title: 'Could not load messages',
-                        body: '$error',
-                        onRetry: _refreshThreadData,
-                      ),
-                    ),
-                    data: (messages) {
-                      if (messages.isEmpty) {
-                        return const AuraCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('No messages yet', style: AuraText.title),
-                              SizedBox(height: AuraSpace.s8),
-                              Text(
-                                'Nothing has been said here yet.',
-                                style: AuraText.body,
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                    data: (thread) {
+                      final contextData = CorrespondenceIdentity.resolveThreadContext(
+                        thread,
+                        currentUserId: currentUserId,
+                      );
 
                       return Column(
                         children: [
-                          for (var i = 0; i < messages.length; i++) ...[
-                            _MessageTile(
-                              message: messages[i],
-                              currentUserId: currentUserId,
-                              showAuthorHeader: !_isSameSender(
-                                messages[i],
-                                i > 0 ? messages[i - 1] : null,
-                              ),
-                              onEdit: () => _showEditMessageDialog(
-                                context,
-                                ref,
-                                messages[i],
-                              ),
-                              onDelete: () async {
-                                final messageId = _pickString(
-                                  messages[i],
-                                  const ['id', 'messageId'],
+                          _ThreadHeaderCard(
+                            thread: thread,
+                            contextData: contextData,
+                            liveState: liveState,
+                            onOpenSpace: () {
+                              final spaceId = _pickString(thread, const [
+                                'spaceId',
+                                'space_id',
+                              ]);
+                              if (spaceId.isEmpty) return;
+                              context.push('/me/correspondence/$spaceId');
+                            },
+                            onInvite: () async {
+                              final spaceId = _pickString(thread, const [
+                                'spaceId',
+                                'space_id',
+                              ]);
+                              if (spaceId.isEmpty) return;
+                              final returnTo =
+                                  '/me/correspondence/$spaceId/thread/$threadId';
+                              final inviteRoute = Uri(
+                                path: '/invite/create',
+                                queryParameters: {
+                                  'destinationType': 'JOIN_SPACE',
+                                  'spaceId': spaceId,
+                                  'threadId': threadId,
+                                  'returnTo': returnTo,
+                                },
+                              ).toString();
+                              await context.push(inviteRoute);
+                              if (!context.mounted) return;
+                              _refreshThreadData();
+                            },
+                            onAddMembers: () async {
+                              final spaceId = _pickString(thread, const [
+                                'spaceId',
+                                'space_id',
+                              ]);
+                              if (spaceId.isEmpty) return;
+                              await context.push(
+                                '/me/correspondence/$spaceId/invite',
+                              );
+                              if (!context.mounted) return;
+                              _refreshThreadData();
+                            },
+                            onStartAudio: () =>
+                                _startLive(thread: thread, kind: 'AUDIO'),
+                            onStartVideo: () =>
+                                _startLive(thread: thread, kind: 'VIDEO'),
+                            onJoinLive: () async {
+                              final sessionId = _threadResolvedSessionId(
+                                thread,
+                                liveState,
+                                widget.threadId,
+                              );
+                              if (sessionId.isEmpty) return;
+                              final controller = ref.read(
+                                realtimeControllerProvider.notifier,
+                              );
+                              await controller.join(sessionId);
+                            },
+                            onLeaveLive: () async {
+                              await ref
+                                  .read(realtimeControllerProvider.notifier)
+                                  .leave();
+                            },
+                            onToggleMicrophone: () async {
+                              await ref
+                                  .read(realtimeControllerProvider.notifier)
+                                  .toggleMicrophone();
+                            },
+                            onToggleCamera: () async {
+                              await ref
+                                  .read(realtimeControllerProvider.notifier)
+                                  .toggleCamera();
+                            },
+                          ),
+                          const SizedBox(height: AuraSpace.s16),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final wide = constraints.maxWidth >= 1180;
+                              final conversationPanel = _ThreadConversationPanel(
+                                threadId: threadId,
+                                messagesAsync: messagesAsync,
+                                currentUserId: currentUserId,
+                                onRefresh: _refreshThreadData,
+                                onEditMessage: (message) =>
+                                    _showEditMessageDialog(
+                                  context,
+                                  ref,
+                                  message,
+                                ),
+                                onDeleteMessage: (message) async {
+                                  final messageId = _pickString(
+                                    message,
+                                    const ['id', 'messageId'],
+                                  );
+                                  if (messageId.isEmpty) return;
+                                  await ref
+                                      .read(messagesRepositoryProvider)
+                                      .deleteMessage(messageId);
+                                  _refreshThreadData();
+                                },
+                              );
+
+                              final sideRail = _ThreadSideRail(
+                                threadAsync: threadAsync,
+                                liveState: liveState,
+                                currentUserId: currentUserId,
+                                onOpenSpace: () {
+                                  final spaceId = _pickString(
+                                    thread,
+                                    const ['spaceId', 'space_id'],
+                                  );
+                                  if (spaceId.isEmpty) return;
+                                  context.push('/me/correspondence/$spaceId');
+                                },
+                                onOpenInvites: () async {
+                                  final spaceId = _pickString(
+                                    thread,
+                                    const ['spaceId', 'space_id'],
+                                  );
+                                  if (spaceId.isEmpty) return;
+                                  await context.push(
+                                    '/me/correspondence/$spaceId/invite',
+                                  );
+                                  if (!context.mounted) return;
+                                  _refreshThreadData();
+                                },
+                                onStartAudio: () =>
+                                    _startLive(thread: thread, kind: 'AUDIO'),
+                                onStartVideo: () =>
+                                    _startLive(thread: thread, kind: 'VIDEO'),
+                              );
+
+                              if (wide) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(flex: 7, child: conversationPanel),
+                                    const SizedBox(width: AuraSpace.s16),
+                                    SizedBox(width: 352, child: sideRail),
+                                  ],
                                 );
-                                if (messageId.isEmpty) return;
-                                await ref
-                                    .read(messagesRepositoryProvider)
-                                    .deleteMessage(messageId);
-                                _refreshThreadData();
-                              },
-                            ),
-                            if (i != messages.length - 1)
-                              const SizedBox(height: AuraSpace.s10),
-                          ],
+                              }
+
+                              return Column(
+                                children: [
+                                  conversationPanel,
+                                  const SizedBox(height: AuraSpace.s16),
+                                  sideRail,
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       );
                     },
@@ -458,7 +475,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               ),
             ),
           ),
-          _ComposerBar(threadId: threadId, onSent: _refreshThreadData),
         ],
       ),
     );
@@ -484,8 +500,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 class _ThreadHeaderCard extends StatelessWidget {
   const _ThreadHeaderCard({
     required this.thread,
+    required this.contextData,
     required this.liveState,
-    required this.currentUserId,
     required this.onOpenSpace,
     required this.onInvite,
     required this.onAddMembers,
@@ -498,8 +514,8 @@ class _ThreadHeaderCard extends StatelessWidget {
   });
 
   final Map<String, dynamic> thread;
+  final CorrespondenceThreadContext contextData;
   final RealtimeState liveState;
-  final String currentUserId;
   final VoidCallback onOpenSpace;
   final VoidCallback onInvite;
   final VoidCallback onAddMembers;
@@ -512,44 +528,78 @@ class _ThreadHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _threadScreenTitle(thread);
-    final participants = _extractParticipants(thread);
-    final summary = _participantSummary(participants);
-    final roles = _participantRoleSummary(participants);
     final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+    final chips = contextData.participantChips;
+    final kindLabel = contextData.kindLabel;
 
     return AuraCard(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IdentityAvatar(
-                label: title,
-                imageUrl: _threadAvatarUrl(thread),
-                radius: 22,
+              AuraAvatar(
+                name: contextData.title,
+                imageUrl: contextData.avatarUrl,
+                size: 44,
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AuraText.title),
-                    if (summary.isNotEmpty) ...[
+                    Wrap(
+                      spacing: AuraSpace.s8,
+                      runSpacing: AuraSpace.s8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(contextData.title, style: AuraText.title),
+                        AuraStatusChip(label: kindLabel),
+                          if (spaceId.isNotEmpty)
+                            const AuraStatusChip(
+                              label: 'Space',
+                              backgroundColor: AuraSurface.goodBg,
+                              textColor: AuraSurface.goodInk,
+                            ),
+                      ],
+                    ),
+                    if (contextData.subtitle.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
-                        summary,
+                        contextData.subtitle,
                         style: AuraText.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    if (roles.isNotEmpty) ...[
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s10),
+                      Wrap(
+                        spacing: AuraSpace.s8,
+                        runSpacing: AuraSpace.s8,
+                        children: chips
+                            .map(
+                              (label) => AuraStatusChip(
+                                label: label,
+                                backgroundColor: AuraSurface.subtle,
+                                textColor: AuraSurface.ink,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                    if (contextData.roleSummary.isNotEmpty ||
+                        contextData.activityWeight.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
-                        roles,
+                        [
+                          if (contextData.roleSummary.isNotEmpty)
+                            contextData.roleSummary,
+                          if (contextData.activityWeight.isNotEmpty)
+                            contextData.activityWeight,
+                        ].join(' · '),
                         style: AuraText.small.copyWith(
                           color: AuraSurface.muted,
                         ),
@@ -642,31 +692,275 @@ class _HeaderIconAction extends StatelessWidget {
   }
 }
 
-String _threadScreenTitle(Map<String, dynamic> thread) {
-  return CorrespondenceIdentity.threadTitle(thread);
+class _ThreadConversationPanel extends StatelessWidget {
+  const _ThreadConversationPanel({
+    required this.threadId,
+    required this.messagesAsync,
+    required this.currentUserId,
+    required this.onRefresh,
+    required this.onEditMessage,
+    required this.onDeleteMessage,
+  });
+
+  final String threadId;
+  final AsyncValue<List<Map<String, dynamic>>> messagesAsync;
+  final String currentUserId;
+  final VoidCallback onRefresh;
+  final void Function(Map<String, dynamic> message) onEditMessage;
+  final Future<void> Function(Map<String, dynamic> message) onDeleteMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Expanded(
+                child: Text('Messages', style: AuraText.title),
+              ),
+              AuraStatusChip(
+                label: 'Thread',
+                backgroundColor: AuraSurface.subtle,
+                textColor: AuraSurface.muted,
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          messagesAsync.when(
+            loading: () => const AuraCard(
+              child: _LoadingBlock(label: 'Loading messages...'),
+            ),
+            error: (error, _) => AuraCard(
+              child: _ErrorBlock(
+                title: 'Could not load messages',
+                body: '$error',
+                onRetry: onRefresh,
+              ),
+            ),
+            data: (messages) {
+              if (messages.isEmpty) {
+                return const AuraEmptyState(
+                  title: 'No messages yet',
+                  body: 'This conversation has not started yet. Your first note will appear here.',
+                  icon: Icons.forum_outlined,
+                );
+              }
+
+              return Column(
+                children: [
+                  for (var i = 0; i < messages.length; i++) ...[
+                    _MessageTile(
+                      message: messages[i],
+                      currentUserId: currentUserId,
+                      showAuthorHeader: !_isSameSender(
+                        messages[i],
+                        i > 0 ? messages[i - 1] : null,
+                      ),
+                      onEdit: () => onEditMessage(messages[i]),
+                      onDelete: () => onDeleteMessage(messages[i]),
+                    ),
+                    if (i != messages.length - 1)
+                      const SizedBox(height: AuraSpace.s10),
+                  ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          _ComposerBar(threadId: threadId, onSent: onRefresh),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadSideRail extends StatelessWidget {
+  const _ThreadSideRail({
+    required this.threadAsync,
+    required this.liveState,
+    required this.currentUserId,
+    this.onOpenSpace,
+    this.onOpenInvites,
+    this.onStartAudio,
+    this.onStartVideo,
+  });
+
+  final AsyncValue<Map<String, dynamic>> threadAsync;
+  final RealtimeState liveState;
+  final String currentUserId;
+  final VoidCallback? onOpenSpace;
+  final Future<void> Function()? onOpenInvites;
+  final Future<void> Function()? onStartAudio;
+  final Future<void> Function()? onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return threadAsync.when(
+      loading: () => const AuraCard(
+        child: _LoadingBlock(label: 'Loading context...'),
+      ),
+      error: (error, _) => AuraErrorState(
+        title: 'Could not load thread context',
+        body: '$error',
+      ),
+      data: (thread) {
+        final threadContext = CorrespondenceIdentity.resolveThreadContext(
+          thread,
+          currentUserId: currentUserId,
+        );
+        final participants = CorrespondenceIdentity.extractParticipants(thread);
+        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+        final showSpaceActions = spaceId.isNotEmpty;
+        final joinedCount = liveState.participants.where((p) => p.isPresent).length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuraCard(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Conversation brief', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s12),
+                  AuraAvatar(
+                    name: threadContext.title,
+                    imageUrl: threadContext.avatarUrl,
+                    size: 52,
+                  ),
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(threadContext.title, style: AuraText.subtitle),
+                  if (threadContext.subtitle.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text(
+                      threadContext.subtitle,
+                      style: AuraText.muted,
+                    ),
+                  ],
+                  if (threadContext.participantChips.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Wrap(
+                      spacing: AuraSpace.s8,
+                      runSpacing: AuraSpace.s8,
+                      children: threadContext.participantChips
+                          .map(
+                            (label) => AuraStatusChip(
+                              label: label,
+                              backgroundColor: AuraSurface.subtle,
+                              textColor: AuraSurface.ink,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                  if (threadContext.roleSummary.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Text(threadContext.roleSummary, style: AuraText.small),
+                  ],
+                  if (threadContext.activityWeight.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s6),
+                    Text(threadContext.activityWeight, style: AuraText.small),
+                  ],
+                  if (participants.isNotEmpty) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Text(
+                      '${participants.length} participant${participants.length == 1 ? '' : 's'}',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            AuraCard(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Live status', style: AuraText.title),
+                  const SizedBox(height: AuraSpace.s10),
+                  Text(
+                    joinedCount > 0
+                        ? 'Live participants present now.'
+                        : 'No one is currently joined.',
+                    style: AuraText.body,
+                  ),
+                  if (onStartAudio != null || onStartVideo != null) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    Wrap(
+                      spacing: AuraSpace.s10,
+                      runSpacing: AuraSpace.s10,
+                      children: [
+                        if (onStartAudio != null)
+                          AuraSecondaryButton(
+                            label: 'Audio call',
+                            icon: Icons.call_rounded,
+                            onPressed: () => onStartAudio!(),
+                          ),
+                        if (onStartVideo != null)
+                          AuraSecondaryButton(
+                            label: 'Video call',
+                            icon: Icons.videocam_rounded,
+                            onPressed: () => onStartVideo!(),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (showSpaceActions) ...[
+              const SizedBox(height: AuraSpace.s12),
+              AuraCard(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Space actions', style: AuraText.title),
+                    const SizedBox(height: AuraSpace.s10),
+                    if (onOpenSpace != null)
+                      AuraSecondaryButton(
+                        label: 'Open space',
+                        icon: Icons.open_in_new_rounded,
+                        onPressed: onOpenSpace,
+                      ),
+                    const SizedBox(height: AuraSpace.s10),
+                    if (onOpenInvites != null)
+                      AuraSecondaryButton(
+                        label: 'Manage invites',
+                        icon: Icons.mail_outline_rounded,
+                        onPressed: () => onOpenInvites!(),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+String _threadScreenTitle(
+  Map<String, dynamic> thread, {
+  String? currentUserId,
+}) {
+  return CorrespondenceIdentity.threadDisplayTitle(
+    thread,
+    currentUserId: currentUserId,
+  );
 }
 
 List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> thread) {
   return CorrespondenceIdentity.extractParticipants(thread);
 }
 
-String _participantSummary(List<Map<String, dynamic>> participants) {
-  return CorrespondenceIdentity.threadParticipantSummaryFromParticipants(
-    participants,
-  );
-}
-
-String _participantRoleSummary(List<Map<String, dynamic>> participants) {
-  final thread = <String, dynamic>{'participants': participants};
-  return CorrespondenceIdentity.threadParticipantRoleSummary(thread);
-}
-
 String _identityLabel(Map<String, dynamic> entity) {
   return CorrespondenceIdentity.identityLabel(entity);
-}
-
-String _threadAvatarUrl(Map<String, dynamic> thread) {
-  return CorrespondenceIdentity.threadAvatarUrl(thread);
 }
 
 String _threadLiveSurfaceType(Map<String, dynamic> thread) {
@@ -1152,36 +1446,6 @@ class _ThreadVideoTile extends StatelessWidget {
   }
 }
 
-class _IdentityAvatar extends StatelessWidget {
-  const _IdentityAvatar({
-    required this.label,
-    this.imageUrl = '',
-    this.radius = 20,
-  });
-
-  final String label;
-  final String imageUrl;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final initials = _initials(label);
-    if (imageUrl.trim().isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: NetworkImage(imageUrl.trim()),
-      );
-    }
-    return CircleAvatar(
-      radius: radius,
-      child: Text(
-        initials,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
 String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
   for (final path in paths) {
     dynamic current = map;
@@ -1196,17 +1460,6 @@ String _pickNested(Map<String, dynamic> map, List<List<String>> paths) {
     if (text.isNotEmpty) return text;
   }
   return '';
-}
-
-String _initials(String value) {
-  final parts = value
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((e) => e.isNotEmpty)
-      .toList(growable: false);
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first[0].toUpperCase();
-  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 class _ComposerBar extends ConsumerStatefulWidget {
@@ -1243,8 +1496,14 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   String? _translationPreview;
   String? _translationSnapshot;
   String _translationTargetLanguage = 'ur';
-  bool get _supportsCameraCapture => !kIsWeb;
-  bool get _supportsAudioRecording => !kIsWeb;
+  bool get _isMobileCapturePlatform {
+    return !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+  }
+
+  bool get _supportsCameraCapture => _isMobileCapturePlatform;
+  bool get _supportsAudioRecording => _isMobileCapturePlatform;
 
   @override
   void dispose() {
@@ -1770,66 +2029,154 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
   Future<void> _showAttachmentSheet() async {
     if (_sending) return;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        void closeAnd(Future<void> Function() action) {
-          Navigator.of(sheetContext).pop();
-          Future<void>.microtask(action);
-        }
+    final width = MediaQuery.sizeOf(context).width;
+    final desktopSheet = width >= 760;
 
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: Text(
-                  _supportsCameraCapture ? 'Take photo' : 'Choose photo',
-                ),
-                onTap: () => closeAnd(_pickImageFromCamera),
+    Widget buildSheet(BuildContext sheetContext) {
+      Future<void> openAction(Future<void> Function() action) async {
+        Navigator.of(sheetContext).pop();
+        await Future<void>.microtask(action);
+      }
+
+      final actions = _attachmentActions(sheetContext, onTap: openAction);
+      final body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: actions,
+      );
+
+      if (desktopSheet) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: AuraCard(
+                padding: const EdgeInsets.all(16),
+                child: body,
               ),
-              ListTile(
-                leading: const Icon(Icons.image_outlined),
-                title: const Text('Upload image'),
-                onTap: () => closeAnd(_pickImageFromGallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.videocam_outlined),
-                title: Text(
-                  _supportsCameraCapture ? 'Record video' : 'Choose video',
-                ),
-                onTap: () => closeAnd(_pickVideoFromCamera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.video_library_outlined),
-                title: const Text('Upload video'),
-                onTap: () => closeAnd(_pickVideoFromGallery),
-              ),
-              ListTile(
-                leading: Icon(
-                  _recordingAudio ? Icons.stop_circle_outlined : Icons.mic_none,
-                ),
-                title: Text(
-                  _recordingAudio
-                      ? 'Stop audio recording'
-                      : _supportsAudioRecording
-                      ? 'Record audio'
-                      : 'Audio recording unavailable',
-                ),
-                onTap: _supportsAudioRecording
-                    ? () => closeAnd(_toggleAudioRecording)
-                    : null,
-              ),
-              ListTile(
-                leading: const Icon(Icons.audio_file_outlined),
-                title: const Text('Upload audio'),
-                onTap: () => closeAnd(_pickAudioFile),
-              ),
-            ],
+            ),
           ),
         );
-      },
+      }
+
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+          child: AuraCard(
+            padding: const EdgeInsets.all(12),
+            child: body,
+          ),
+        ),
+      );
+    }
+
+    if (desktopSheet) {
+      await showDialog<void>(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: buildSheet,
+      );
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: buildSheet,
     );
+  }
+
+  List<Widget> _attachmentActions(
+    BuildContext context, {
+    required Future<void> Function(Future<void> Function() action) onTap,
+  }) {
+    final children = <Widget>[];
+
+    if (_supportsCameraCapture) {
+      children.addAll([
+        _AttachmentActionTile(
+          icon: Icons.photo_camera_outlined,
+          title: 'Take photo',
+          subtitle: 'Open the camera',
+          onTap: () => onTap(_pickImageFromCamera),
+        ),
+        _AttachmentActionTile(
+          icon: Icons.image_outlined,
+          title: 'Choose photo',
+          subtitle: 'Pick from your library',
+          onTap: () => onTap(_pickImageFromGallery),
+        ),
+        _AttachmentActionTile(
+          icon: Icons.videocam_outlined,
+          title: 'Record video',
+          subtitle: 'Capture a short video',
+          onTap: () => onTap(_pickVideoFromCamera),
+        ),
+        _AttachmentActionTile(
+          icon: Icons.video_library_outlined,
+          title: 'Choose video',
+          subtitle: 'Pick a video file',
+          onTap: () => onTap(_pickVideoFromGallery),
+        ),
+      ]);
+    } else {
+      children.addAll([
+        _AttachmentActionTile(
+          icon: Icons.image_outlined,
+          title: 'Choose photo',
+          subtitle: kIsWeb
+              ? 'Upload an image from this browser'
+              : 'Pick an image from this device',
+          onTap: () => onTap(_pickImageFromGallery),
+        ),
+        _AttachmentActionTile(
+          icon: Icons.videocam_outlined,
+          title: 'Choose video',
+          subtitle: kIsWeb
+              ? 'Upload a video from this browser'
+              : 'Pick a video from this device',
+          onTap: () => onTap(_pickVideoFromGallery),
+        ),
+      ]);
+    }
+
+    if (_supportsAudioRecording) {
+      children.add(
+        _AttachmentActionTile(
+          icon: _recordingAudio
+              ? Icons.stop_circle_outlined
+              : Icons.mic_none_rounded,
+          title: _recordingAudio ? 'Stop audio recording' : 'Record audio',
+          subtitle: _recordingAudio
+              ? 'Finishing current recording'
+              : 'Capture a voice note',
+          onTap: () => onTap(_toggleAudioRecording),
+        ),
+      );
+    } else {
+      children.add(
+        const _AttachmentActionTile(
+          icon: Icons.mic_none_rounded,
+          title: 'Audio recording unavailable',
+          subtitle: 'This device or browser does not support recording.',
+          enabled: false,
+          onTap: null,
+        ),
+      );
+    }
+
+    children.add(
+      _AttachmentActionTile(
+        icon: Icons.audio_file_outlined,
+        title: 'Upload audio',
+        subtitle: 'Attach an audio file',
+        onTap: () => onTap(_pickAudioFile),
+      ),
+    );
+
+    return children;
   }
 
   Future<void> _pickComposerLanguage() async {
@@ -1911,226 +2258,328 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
 
     return SafeArea(
       top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AuraSurface.divider)),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_attachments.isNotEmpty) ...[
-              _AttachmentPreviewRow(
-                attachments: _attachments,
-                onRemove: _removeAttachment,
-              ),
-              const SizedBox(height: AuraSpace.s10),
-            ],
-            if (_recordingAudio) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AuraSurface.dangerBg,
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
-                  border: Border.all(
-                    color: AuraSurface.dangerInk.withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.fiber_manual_record,
-                      size: 14,
-                      color: AuraSurface.dangerInk,
+            AuraCard(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_attachments.isNotEmpty) ...[
+                    _AttachmentPreviewRow(
+                      attachments: _attachments,
+                      onRemove: _removeAttachment,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Recording audio ${_formatRecordingDuration(recordingElapsed)}',
-                        style: AuraText.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    AuraGhostButton(
-                      label: 'Cancel',
-                      onPressed: _sending ? null : _cancelAudioRecording,
-                    ),
-                    const SizedBox(width: 6),
-                    AuraPrimaryButton(
-                      label: 'Stop',
-                      icon: Icons.stop_rounded,
-                      onPressed: _sending
-                          ? null
-                          : () => _toggleAudioRecording(),
-                    ),
+                    const SizedBox(height: AuraSpace.s10),
                   ],
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s10),
-            ],
-            if (_visibleSuggestions.isNotEmpty || _assistError != null) ...[
-              _ComposerAssistPanel(
-                suggestions: _visibleSuggestions,
-                errorText: _assistError,
-                applyingIds: _applyingSuggestionIds,
-                onApply: _applySuggestion,
-                onDismiss: (suggestion) {
-                  final id = _firstNonEmpty(suggestion, const [
-                    'id',
-                    'findingId',
-                  ]);
-                  if (id.isEmpty) return;
-                  setState(() => _dismissedSuggestionIds.add(id));
-                },
-              ),
-              const SizedBox(height: AuraSpace.s10),
-            ],
-            if (_translationPreview != null || _translationError != null) ...[
-              _ComposerTranslationPanel(
-                targetLanguage: _translationTargetLanguage,
-                preview: _translationPreview,
-                errorText: _translationError,
-                busy: _translationBusy,
-                onApply: _translationPreview == null ? null : _applyTranslation,
-                onRestore: _translationSnapshot == null
-                    ? null
-                    : _restoreBeforeTranslation,
-              ),
-              const SizedBox(height: AuraSpace.s10),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                IconButton(
-                  onPressed: _sending ? null : _showAttachmentSheet,
-                  icon: const Icon(Icons.add_circle_outline),
-                  tooltip: 'Add attachment',
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _controller,
-                        minLines: 1,
-                        maxLines: 6,
-                        decoration: InputDecoration(
-                          hintText: _recordingAudio
-                              ? 'Recording audio...'
-                              : 'Write a message',
-                        ),
-                        onChanged: (_) {
-                          setState(() {
-                            if ((_assistSnapshot ?? '') !=
-                                _controller.text.trim()) {
-                              _suggestions = const [];
-                              _assistError = null;
-                              _assistSessionId = null;
-                              _dismissedSuggestionIds.clear();
-                            }
-                            if ((_translationSnapshot ?? '') !=
-                                _controller.text.trim()) {
-                              _translationPreview = null;
-                              _translationError = null;
-                            }
-                          });
-                        },
+                  if (_recordingAudio) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
                       ),
-                      const SizedBox(height: AuraSpace.s8),
-                      Row(
+                      decoration: BoxDecoration(
+                        color: AuraSurface.dangerBg,
+                        borderRadius: BorderRadius.circular(AuraRadius.md),
+                        border: Border.all(
+                          color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          AuraSecondaryButton(
-                            label: _assistBusy ? 'Polishing…' : 'Polish',
-                            icon: Icons.auto_fix_high_outlined,
-                            onPressed: !_hasText || _assistBusy
-                                ? null
-                                : _runAssist,
+                          const Icon(
+                            Icons.fiber_manual_record,
+                            size: 14,
+                            color: AuraSurface.dangerInk,
                           ),
-                          const SizedBox(width: AuraSpace.s8),
-                          MouseRegion(
-                            cursor: _translationBusy
-                                ? SystemMouseCursors.basic
-                                : SystemMouseCursors.click,
-                            child: InkWell(
-                              onTap: _translationBusy
-                                  ? null
-                                  : _pickComposerLanguage,
-                              borderRadius:
-                                  BorderRadius.circular(AuraRadius.pill),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s12,
-                                  vertical: AuraSpace.s8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AuraSurface.subtle,
-                                  border:
-                                      Border.all(color: AuraSurface.divider),
-                                  borderRadius:
-                                      BorderRadius.circular(AuraRadius.pill),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.translate,
-                                      size: 14,
-                                      color: AuraSurface.muted,
-                                    ),
-                                    const SizedBox(width: AuraSpace.s6),
-                                    Text(
-                                      _languageLabel(
-                                        _translationTargetLanguage,
-                                      ),
-                                      style: AuraText.small.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(width: AuraSpace.s4),
-                                    const Icon(
-                                      Icons.arrow_drop_down_rounded,
-                                      size: 16,
-                                      color: AuraSurface.muted,
-                                    ),
-                                  ],
-                                ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Recording audio ${_formatRecordingDuration(recordingElapsed)}',
+                              style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          const SizedBox(width: AuraSpace.s8),
-                          AuraSecondaryButton(
-                            label: _translationBusy
-                                ? 'Translating…'
-                                : 'Translate',
-                            icon: Icons.translate_outlined,
-                            onPressed: !_hasText || _translationBusy
+                          AuraGhostButton(
+                            label: 'Cancel',
+                            onPressed: _sending ? null : _cancelAudioRecording,
+                          ),
+                          const SizedBox(width: 6),
+                          AuraPrimaryButton(
+                            label: 'Stop',
+                            icon: Icons.stop_rounded,
+                            onPressed: _sending
                                 ? null
-                                : _translateDraft,
+                                : () => _toggleAudioRecording(),
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                  if (_visibleSuggestions.isNotEmpty || _assistError != null) ...[
+                    _ComposerAssistPanel(
+                      suggestions: _visibleSuggestions,
+                      errorText: _assistError,
+                      applyingIds: _applyingSuggestionIds,
+                      onApply: _applySuggestion,
+                      onDismiss: (suggestion) {
+                        final id = _firstNonEmpty(suggestion, const [
+                          'id',
+                          'findingId',
+                        ]);
+                        if (id.isEmpty) return;
+                        setState(() => _dismissedSuggestionIds.add(id));
+                      },
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                  if (_translationPreview != null ||
+                      _translationError != null) ...[
+                    _ComposerTranslationPanel(
+                      targetLanguage: _translationTargetLanguage,
+                      preview: _translationPreview,
+                      errorText: _translationError,
+                      busy: _translationBusy,
+                      onApply:
+                          _translationPreview == null ? null : _applyTranslation,
+                      onRestore: _translationSnapshot == null
+                          ? null
+                          : _restoreBeforeTranslation,
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AuraSurface.subtle,
+                          borderRadius: BorderRadius.circular(
+                            AuraRadius.r14,
+                          ),
+                          border: Border.all(color: AuraSurface.divider),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _sending ? null : _showAttachmentSheet,
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Add attachment',
+                        ),
+                      ),
+                      const SizedBox(width: AuraSpace.s10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _controller,
+                              minLines: 1,
+                              maxLines: 6,
+                              decoration: InputDecoration(
+                                hintText: _recordingAudio
+                                    ? 'Recording audio...'
+                                    : 'Write a message',
+                                filled: true,
+                                fillColor: AuraSurface.subtle,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AuraRadius.r16,
+                                  ),
+                                  borderSide:
+                                      const BorderSide(color: AuraSurface.divider),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AuraRadius.r16,
+                                  ),
+                                  borderSide:
+                                      const BorderSide(color: AuraSurface.divider),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AuraRadius.r16,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: AuraSurface.accent,
+                                  ),
+                                ),
+                              ),
+                              onChanged: (_) {
+                                setState(() {
+                                  if ((_assistSnapshot ?? '') !=
+                                      _controller.text.trim()) {
+                                    _suggestions = const [];
+                                    _assistError = null;
+                                    _assistSessionId = null;
+                                    _dismissedSuggestionIds.clear();
+                                  }
+                                  if ((_translationSnapshot ?? '') !=
+                                      _controller.text.trim()) {
+                                    _translationPreview = null;
+                                    _translationError = null;
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AuraSpace.s8),
+                            Wrap(
+                              spacing: AuraSpace.s8,
+                              runSpacing: AuraSpace.s8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                AuraSecondaryButton(
+                                  label: _assistBusy ? 'Polishing…' : 'Polish',
+                                  icon: Icons.auto_fix_high_outlined,
+                                  onPressed: !_hasText || _assistBusy
+                                      ? null
+                                      : _runAssist,
+                                ),
+                                MouseRegion(
+                                  cursor: _translationBusy
+                                      ? SystemMouseCursors.basic
+                                      : SystemMouseCursors.click,
+                                  child: InkWell(
+                                    onTap: _translationBusy
+                                        ? null
+                                        : _pickComposerLanguage,
+                                    borderRadius: BorderRadius.circular(
+                                      AuraRadius.pill,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AuraSpace.s12,
+                                        vertical: AuraSpace.s8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AuraSurface.subtle,
+                                        border: Border.all(
+                                          color: AuraSurface.divider,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AuraRadius.pill,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.translate,
+                                            size: 14,
+                                            color: AuraSurface.muted,
+                                          ),
+                                          const SizedBox(width: AuraSpace.s6),
+                                          Text(
+                                            _languageLabel(
+                                              _translationTargetLanguage,
+                                            ),
+                                            style: AuraText.small.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(width: AuraSpace.s4),
+                                          const Icon(
+                                            Icons.arrow_drop_down_rounded,
+                                            size: 16,
+                                            color: AuraSurface.muted,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                AuraSecondaryButton(
+                                  label: _translationBusy
+                                      ? 'Translating…'
+                                      : 'Translate',
+                                  icon: Icons.translate_outlined,
+                                  onPressed: !_hasText || _translationBusy
+                                      ? null
+                                      : _translateDraft,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AuraSpace.s10),
+                      AuraPrimaryButton(
+                        label: _sending
+                            ? 'Sending…'
+                            : uploadingCount > 0
+                                ? 'Uploading…'
+                                : 'Send',
+                        onPressed: _canSend ? _submit : null,
+                        icon: Icons.send_rounded,
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: AuraSpace.s10),
-                AuraPrimaryButton(
-                  label: _sending
-                      ? 'Sending…'
-                      : uploadingCount > 0
-                      ? 'Uploading…'
-                      : 'Send',
-                  onPressed: _canSend ? _submit : null,
-                  icon: Icons.send_rounded,
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AttachmentActionTile extends StatelessWidget {
+  const _AttachmentActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.enabled = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = enabled && onTap != null;
+    return ListTile(
+      enabled: active,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.r12),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Icon(
+          icon,
+          color: active ? AuraSurface.ink : AuraSurface.faint,
+          size: 18,
+        ),
+      ),
+      title: Text(
+        title,
+        style: AuraText.body.copyWith(
+          fontWeight: FontWeight.w700,
+          color: active ? AuraSurface.ink : AuraSurface.faint,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AuraText.small.copyWith(
+          color: active ? AuraSurface.muted : AuraSurface.faint,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }

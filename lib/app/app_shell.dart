@@ -186,7 +186,7 @@ class MemberShell extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!isDesktop)
+                  if (!isDesktop && _showMemberBottomNav(path))
                     _MemberBottomNav(
                       items: _items,
                       selectedIndex: selectedIndex,
@@ -210,6 +210,15 @@ bool _showMemberFooter(String path) {
   }
   if (path.startsWith('/me/correspondence/')) return false;
   if (path.startsWith('/spaces/') || path.startsWith('/space/')) return false;
+  return true;
+}
+
+bool _showMemberBottomNav(String path) {
+  if (path.startsWith('/realtime')) return false;
+  if (path.startsWith('/me/correspondence/') &&
+      (path.contains('/thread/') || path.contains('/live/'))) {
+    return false;
+  }
   return true;
 }
 
