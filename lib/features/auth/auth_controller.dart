@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
+import '../devices/device_providers.dart';
 
 /// A thin controller around the auth endpoints.
 ///
@@ -134,6 +137,8 @@ class AuthController {
   /// logout(context) OR logout()
   Future<void> logout([BuildContext? _]) async {
     try {
+      // Best-effort: revoke device before token is cleared; never blocks logout
+      unawaited(ref.read(deviceServiceProvider).revokeCurrentDevice());
       final rt = _store().refreshToken;
 
       if (kIsWeb) {

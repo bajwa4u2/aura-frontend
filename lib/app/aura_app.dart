@@ -1,17 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/auth/session_providers.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 import '../core/notifications/notification_bridge.dart';
+import '../features/devices/device_providers.dart';
 import '../router.dart';
 
-class AuraApp extends ConsumerWidget {
+class AuraApp extends ConsumerStatefulWidget {
   const AuraApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuraApp> createState() => _AuraAppState();
+}
+
+class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Register device if already authed at startup (stored token from prior session)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(isAuthedProvider)) {
+        try {
+          ref.read(deviceServiceProvider).registerCurrentDevice();
+        } catch (_) {}
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      try {
+        ref.read(deviceServiceProvider).refreshPresence();
+      } catch (_) {}
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Register device on any auth transition to authed (login, session restore via bootstrap)
+    ref.listen<bool>(isAuthedProvider, (prev, next) {
+      if (next && !(prev ?? false)) {
+        try {
+          ref.read(deviceServiceProvider).registerCurrentDevice();
+        } catch (_) {}
+      }
+    });
+
     final router = ref.watch(routerProvider);
 
     final theme = _buildTheme();
