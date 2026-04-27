@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/net/dio_provider.dart';
+import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
@@ -181,22 +182,16 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
 
     final body = pickString(message, const ['body', 'text', 'content']);
     final authorMap = extractAuthorMap(message);
-    final author = pickString(
-      authorMap.isNotEmpty ? authorMap : message,
-      const ['displayName', 'authorName', 'senderName', 'name', 'userName'],
-    );
-    final handle = pickString(
-      authorMap.isNotEmpty ? authorMap : message,
-      const ['handle', 'authorHandle', 'senderHandle', 'username'],
-    );
-    final contextLine = pickString(
-      authorMap.isNotEmpty ? authorMap : message,
-      const ['authorContext', 'senderContext', 'bio', 'tagline', 'headline'],
-    );
+    final src = authorMap.isNotEmpty ? authorMap : message;
+    final author = pickString(src, const [
+      'displayName', 'authorName', 'senderName', 'name', 'userName',
+    ]);
+    final handle = pickString(src, const [
+      'handle', 'authorHandle', 'senderHandle', 'username',
+    ]);
+    final avatarUrl = pickString(src, const ['avatarUrl', 'imageUrl', 'photoUrl']);
     final createdAt = pickString(message, const [
-      'createdAt',
-      'sentAt',
-      'timestamp',
+      'createdAt', 'sentAt', 'timestamp',
     ]);
     final attachments = listOfMap(message['attachments']);
     final senderId = extractSenderId(message);
@@ -204,10 +199,6 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
         currentUserId.trim().isNotEmpty &&
         senderId.trim() == currentUserId.trim();
 
-    final bubbleColor = isMine ? AuraSurface.overlay : AuraSurface.elevated;
-    final bubbleBorderColor = isMine
-        ? AuraSurface.accent.withValues(alpha: 0.3)
-        : AuraSurface.divider;
     const textColor = AuraSurface.ink;
     const metaColor = AuraSurface.muted;
     const translatedTextColor = AuraSurface.ink;
@@ -215,336 +206,326 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
 
     _translationTargetLanguage ??= defaultTranslationLanguage(context);
 
-    return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width > 900 ? 660 : 560,
-        ),
-        child: Column(
-          crossAxisAlignment: isMine
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            if (!isMine && showAuthorHeader && author.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 6, bottom: 6),
-                child: MouseRegion(
-                  cursor: handle.isEmpty
+    // ── Bubble decoration ────────────────────────────────────────────────────
+    final bubbleDecoration = isMine
+        ? BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1E2756),
+                AuraSurface.overlay,
+              ],
+            ),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.22),
+            ),
+            borderRadius: BorderRadius.circular(20),
+          )
+        : BoxDecoration(
+            color: AuraSurface.elevated,
+            border: Border.all(color: AuraSurface.divider),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                blurRadius: 8,
+                offset: Offset(0, 2),
+                color: Color(0x08000000),
+              ),
+            ],
+          );
+
+    // ── Bubble body ──────────────────────────────────────────────────────────
+    final bubble = Container(
+      decoration: bubbleDecoration,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (body.isNotEmpty) ...[
+            Directionality(
+              textDirection: directionForText(body),
+              child: AuraTextBlock(
+                body,
+                textAlign: alignForText(body),
+                style: AuraText.body.copyWith(color: textColor),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                MouseRegion(
+                  cursor: _translationBusy
                       ? SystemMouseCursors.basic
                       : SystemMouseCursors.click,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: handle.isEmpty
+                    onTap: _translationBusy
                         ? null
-                        : () => context.push('/u/$handle'),
+                        : () => _translateMessage(context, body),
+                    borderRadius:
+                        BorderRadius.circular(AuraRadius.pill),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 2,
+                        horizontal: AuraSpace.s6,
+                        vertical: AuraSpace.s6,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Directionality(
-                            textDirection: directionForText(author),
-                            child: Text(
-                              author,
-                              textAlign: alignForText(author),
-                              style: AuraText.small.copyWith(
-                                fontWeight: FontWeight.w700,
+                          if (_translationBusy) ...[
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AuraSurface.muted,
+                                ),
                               ),
+                            ),
+                            const SizedBox(width: AuraSpace.s8),
+                          ],
+                          Text(
+                            _translationBusy
+                                ? 'Translating...'
+                                : (_showTranslation
+                                      ? 'Refresh translation'
+                                      : 'Translate'),
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: metaColor,
                             ),
                           ),
-                          if (handle.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.s4),
-                            Directionality(
-                              textDirection: directionForText(handle),
-                              child: Text(
-                                '@$handle',
-                                textAlign: alignForText(handle),
-                                style: AuraText.small,
-                              ),
-                            ),
-                          ],
-                          if (contextLine.isNotEmpty) ...[
-                            const SizedBox(height: AuraSpace.s4),
-                            Directionality(
-                              textDirection: directionForText(contextLine),
-                              child: Text(
-                                contextLine,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: alignForText(contextLine),
-                                style: AuraText.small,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),
                   ),
                 ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: InkWell(
+                    onTap: () => _pickTranslationLanguage(context),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s10,
+                        vertical: AuraSpace.s6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AuraRadius.pill),
+                        border: Border.all(color: AuraSurface.divider),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.translate, size: 14, color: metaColor),
+                          const SizedBox(width: AuraSpace.s6),
+                          Text(
+                            languageLabel(
+                              _translationTargetLanguage ??
+                                  defaultTranslationLanguage(context),
+                            ),
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AuraSurface.ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (_showTranslation)
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showTranslation = false;
+                          _translationError = null;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(AuraRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AuraSpace.s6,
+                          vertical: AuraSpace.s6,
+                        ),
+                        child: Text(
+                          'Hide translation',
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: metaColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if ((_translationError ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                _translationError!,
+                style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
               ),
             ],
-            Container(
-              decoration: BoxDecoration(
-                color: bubbleColor,
-                border: Border.all(color: bubbleBorderColor),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: isMine
-                    ? null
-                    : const [
-                        BoxShadow(
-                          blurRadius: 12,
-                          offset: Offset(0, 3),
-                          color: Color(0x08000000),
+            if (_showTranslation &&
+                (_translatedText ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AuraSpace.s10),
+                decoration: BoxDecoration(
+                  color: translatedSurfaceColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Translation · ${languageLabel(_translationTargetLanguage ?? defaultTranslationLanguage(context))}',
+                      style: AuraText.small.copyWith(
+                        color: metaColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s6),
+                    Directionality(
+                      textDirection: directionForText(_translatedText!),
+                      child: AuraTextBlock(
+                        _translatedText!,
+                        textAlign: alignForText(_translatedText!),
+                        style: AuraText.body.copyWith(
+                          color: translatedTextColor,
                         ),
-                      ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            ],
+            if (attachments.isNotEmpty) const SizedBox(height: AuraSpace.s10),
+          ],
+          if (attachments.isNotEmpty) ...[
+            _MessageAttachmentList(attachments: attachments, isMine: isMine),
+            const SizedBox(height: AuraSpace.s10),
+          ] else if (body.isEmpty) ...[
+            Text(
+              '(empty message)',
+              style: AuraText.body.copyWith(color: textColor),
+            ),
+            const SizedBox(height: AuraSpace.s10),
+          ],
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (formatMessageTimestamp(createdAt).isNotEmpty)
+                Flexible(
+                  child: Text(
+                    formatMessageTimestamp(createdAt),
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(color: metaColor),
+                  ),
+                ),
+              if (isMine) ...[
+                const SizedBox(width: AuraSpace.s8),
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.more_horiz, size: 18, color: metaColor),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit();
+                    } else if (value == 'delete') {
+                      onDelete();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+
+    // ── Layout ────────────────────────────────────────────────────────────────
+    final maxW = MediaQuery.of(context).size.width > 900.0 ? 620.0 : 500.0;
+
+    if (isMine) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxW),
+          child: bubble,
+        ),
+      );
+    }
+
+    // Received: avatar column + bubble
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxW + 38.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            SizedBox(
+              width: 32,
+              child: (showAuthorHeader && author.isNotEmpty)
+                  ? AuraAvatar(name: author, imageUrl: avatarUrl, size: 28)
+                  : null,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (body.isNotEmpty) ...[
-                    Directionality(
-                      textDirection: directionForText(body),
-                      child: AuraTextBlock(
-                        body,
-                        textAlign: alignForText(body),
-                        style: AuraText.body.copyWith(color: textColor),
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s8),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        MouseRegion(
-                          cursor: _translationBusy
-                              ? SystemMouseCursors.basic
-                              : SystemMouseCursors.click,
-                          child: InkWell(
-                            onTap: _translationBusy
-                                ? null
-                                : () => _translateMessage(context, body),
-                            borderRadius:
-                                BorderRadius.circular(AuraRadius.pill),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s6,
-                                vertical: AuraSpace.s6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_translationBusy) ...[
-                                    const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          AuraSurface.muted,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: AuraSpace.s8),
-                                  ],
-                                  Text(
-                                    _translationBusy
-                                        ? 'Translating...'
-                                        : (_showTranslation
-                                              ? 'Refresh translation'
-                                              : 'Translate'),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: metaColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                  if (showAuthorHeader && author.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 4),
+                      child: MouseRegion(
+                        cursor: handle.isEmpty
+                            ? SystemMouseCursors.basic
+                            : SystemMouseCursors.click,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: handle.isEmpty
+                              ? null
+                              : () => context.push('/u/$handle'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
                             ),
-                          ),
-                        ),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: InkWell(
-                            onTap: () => _pickTranslationLanguage(context),
-                            borderRadius:
-                                BorderRadius.circular(AuraRadius.pill),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s10,
-                                vertical: AuraSpace.s6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(
-                                  AuraRadius.pill,
-                                ),
-                                border: Border.all(color: AuraSurface.divider),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.translate,
-                                    size: 14,
-                                    color: metaColor,
-                                  ),
-                                  const SizedBox(width: AuraSpace.s6),
-                                  Text(
-                                    languageLabel(
-                                      _translationTargetLanguage ??
-                                          defaultTranslationLanguage(context),
-                                    ),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: AuraSurface.ink,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_showTranslation)
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _showTranslation = false;
-                                  _translationError = null;
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(
-                                AuraRadius.pill,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AuraSpace.s6,
-                                  vertical: AuraSpace.s6,
-                                ),
-                                child: Text(
-                                  'Hide translation',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  author,
                                   style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: metaColor,
                                   ),
                                 ),
-                              ),
+                                if (handle.isNotEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  Text('@$handle', style: AuraText.small),
+                                ],
+                              ],
                             ),
                           ),
-                      ],
-                    ),
-                    if ((_translationError ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s8),
-                      Text(
-                        _translationError!,
-                        style: AuraText.small.copyWith(
-                          color: AuraSurface.dangerInk,
                         ),
                       ),
-                    ],
-                    if (_showTranslation &&
-                        (_translatedText ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AuraSpace.s10),
-                        decoration: BoxDecoration(
-                          color: translatedSurfaceColor,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Translation · ${languageLabel(_translationTargetLanguage ?? defaultTranslationLanguage(context))}',
-                              style: AuraText.small.copyWith(
-                                color: metaColor,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: AuraSpace.s6),
-                            Directionality(
-                              textDirection: directionForText(
-                                _translatedText!,
-                              ),
-                              child: AuraTextBlock(
-                                _translatedText!,
-                                textAlign: alignForText(_translatedText!),
-                                style: AuraText.body.copyWith(
-                                  color: translatedTextColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (attachments.isNotEmpty)
-                      const SizedBox(height: AuraSpace.s10),
-                  ],
-                  if (attachments.isNotEmpty) ...[
-                    _MessageAttachmentList(
-                      attachments: attachments,
-                      isMine: isMine,
                     ),
-                    const SizedBox(height: AuraSpace.s10),
-                  ] else if (body.isEmpty) ...[
-                    Text(
-                      '(empty message)',
-                      style: AuraText.body.copyWith(color: textColor),
-                    ),
-                    const SizedBox(height: AuraSpace.s10),
-                  ],
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (formatMessageTimestamp(createdAt).isNotEmpty)
-                        Flexible(
-                          child: Text(
-                            formatMessageTimestamp(createdAt),
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.small.copyWith(color: metaColor),
-                          ),
-                        ),
-                      if (isMine) ...[
-                        const SizedBox(width: AuraSpace.s8),
-                        PopupMenuButton<String>(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.more_horiz,
-                            size: 18,
-                            color: metaColor,
-                          ),
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              onEdit();
-                            } else if (value == 'delete') {
-                              onDelete();
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem<String>(
-                              value: 'edit',
-                              child: Text('Edit'),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
+                  bubble,
                 ],
               ),
             ),

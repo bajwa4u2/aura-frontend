@@ -839,24 +839,34 @@ class _ThreadConversationPanel extends StatelessWidget {
                 );
               }
 
-              return Column(
-                children: [
-                  for (var i = 0; i < messages.length; i++) ...[
-                    ThreadMessageTile(
-                      message: messages[i],
-                      currentUserId: currentUserId,
-                      showAuthorHeader: !isSameSender(
-                        messages[i],
-                        i > 0 ? messages[i - 1] : null,
-                      ),
-                      onEdit: () => onEditMessage(messages[i]),
-                      onDelete: () => onDeleteMessage(messages[i]),
+              final tiles = <Widget>[];
+              for (var i = 0; i < messages.length; i++) {
+                final showDate = i == 0 ||
+                    !_isSameDay(messages[i], messages[i - 1]);
+                if (showDate) {
+                  if (tiles.isNotEmpty) {
+                    tiles.add(const SizedBox(height: AuraSpace.s12));
+                  }
+                  tiles.add(_DateSeparator(message: messages[i]));
+                  tiles.add(const SizedBox(height: AuraSpace.s10));
+                }
+                tiles.add(
+                  ThreadMessageTile(
+                    message: messages[i],
+                    currentUserId: currentUserId,
+                    showAuthorHeader: !isSameSender(
+                      messages[i],
+                      i > 0 ? messages[i - 1] : null,
                     ),
-                    if (i != messages.length - 1)
-                      const SizedBox(height: AuraSpace.s10),
-                  ],
-                ],
-              );
+                    onEdit: () => onEditMessage(messages[i]),
+                    onDelete: () => onDeleteMessage(messages[i]),
+                  ),
+                );
+                if (i != messages.length - 1) {
+                  tiles.add(const SizedBox(height: AuraSpace.s8));
+                }
+              }
+              return Column(children: tiles);
             },
           ),
         ],
@@ -1770,6 +1780,66 @@ class _ThreadVideoTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+bool _isSameDay(Map<String, dynamic> a, Map<String, dynamic> b) {
+  final aRaw = pickString(a, const ['createdAt', 'sentAt', 'timestamp']);
+  final bRaw = pickString(b, const ['createdAt', 'sentAt', 'timestamp']);
+  final aDate = DateTime.tryParse(aRaw)?.toLocal();
+  final bDate = DateTime.tryParse(bRaw)?.toLocal();
+  if (aDate == null || bDate == null) return true;
+  return aDate.year == bDate.year &&
+      aDate.month == bDate.month &&
+      aDate.day == bDate.day;
+}
+
+class _DateSeparator extends StatelessWidget {
+  const _DateSeparator({required this.message});
+  final Map<String, dynamic> message;
+
+  @override
+  Widget build(BuildContext context) {
+    final raw = pickString(message, const ['createdAt', 'sentAt', 'timestamp']);
+    final date = DateTime.tryParse(raw)?.toLocal();
+    if (date == null) return const SizedBox.shrink();
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime(date.year, date.month, date.day);
+
+    String label;
+    if (d == today) {
+      label = 'Today';
+    } else if (d == today.subtract(const Duration(days: 1))) {
+      label = 'Yesterday';
+    } else {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      label = '${months[date.month - 1]} ${date.day}';
+      if (date.year != now.year) label += ', ${date.year}';
+    }
+
+    return Row(
+      children: [
+        const Expanded(
+          child: Divider(color: AuraSurface.divider, height: 1, thickness: 1),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+          child: Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const Expanded(
+          child: Divider(color: AuraSurface.divider, height: 1, thickness: 1),
+        ),
+      ],
     );
   }
 }

@@ -14,6 +14,7 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../correspondence/data/spaces_repository.dart';
 import '../../correspondence/data/threads_repository.dart';
 
+
 final _conversationSpacesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
       final auth = ref.watch(authStatusProvider);
@@ -544,116 +545,135 @@ class _ConversationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasUnread = item.unreadCount > 0;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ConversationBadge(isPrivate: item.isPrivate, icon: item.icon),
-            const SizedBox(width: AuraSpace.s12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AuraTextBlock(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (item.timestamp.isNotEmpty) ...[
-                        const SizedBox(width: AuraSpace.s10),
-                        Text(
-                          item.timestamp,
-                          style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AuraSurface.muted,
-                          ),
-                        ),
-                      ],
-                    ],
+                  AuraAvatar(
+                    name: item.title,
+                    imageUrl: item.avatarUrl,
+                    size: 44,
                   ),
-                  if (item.preview.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    AuraTextBlock(
-                      item.preview,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(color: AuraSurface.ink),
-                    ),
-                  ],
-                  if (item.meta.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(
-                      item.meta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AuraSurface.muted,
+                  if (hasUnread)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AuraSurface.accent,
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
+                          border: Border.all(
+                            color: AuraSurface.card,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          item.unreadCount > 99
+                              ? '99+'
+                              : '${item.unreadCount}',
+                          style: AuraText.micro.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  ],
                 ],
               ),
-            ),
-            const SizedBox(width: AuraSpace.s10),
-            opening
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AuraSurface.accent,
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AuraTextBlock(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.body.copyWith(
+                              fontWeight: hasUnread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (item.timestamp.isNotEmpty) ...[
+                          const SizedBox(width: AuraSpace.s10),
+                          Text(
+                            item.timestamp,
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: hasUnread
+                                  ? AuraSurface.accentText
+                                  : AuraSurface.muted,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  )
-                : const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AuraSurface.faint,
-                  ),
-          ],
+                    if (item.preview.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      AuraTextBlock(
+                        item.preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.small.copyWith(
+                          color: hasUnread
+                              ? AuraSurface.ink
+                              : AuraSurface.muted,
+                          fontWeight: hasUnread
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              opening
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AuraSurface.accent,
+                      ),
+                    )
+                  : Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: hasUnread
+                          ? AuraSurface.accentText
+                          : AuraSurface.faint,
+                    ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-  }
-}
-
-class _ConversationBadge extends StatelessWidget {
-  const _ConversationBadge({required this.isPrivate, required this.icon});
-
-  final bool isPrivate;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = isPrivate ? AuraSurface.accentSoft : const Color(0x1A3D9B4F);
-    final border = isPrivate
-        ? AuraSurface.accent.withValues(alpha: 0.28)
-        : const Color(0x3A3D9B4F);
-    final iconColor = isPrivate ? AuraSurface.accentText : AuraSurface.goodInk;
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Icon(icon, size: 18, color: iconColor),
     );
   }
 }
@@ -722,6 +742,8 @@ class _ConversationItem {
     required this.sortDate,
     required this.isPrivate,
     required this.directThreadId,
+    this.unreadCount = 0,
+    this.avatarUrl = '',
   });
 
   final String id;
@@ -735,6 +757,8 @@ class _ConversationItem {
   final DateTime sortDate;
   final bool isPrivate;
   final String directThreadId;
+  final int unreadCount;
+  final String avatarUrl;
 }
 
 List<Map<String, dynamic>> _filterSpaces(
@@ -811,6 +835,18 @@ List<_ConversationItem> _buildConversationItems(
       metaParts.add('Members $memberCount');
     }
 
+    final unreadCount = _pickInt(space, const ['unreadCount', 'unreadMessages']);
+    final avatarDirect = _pickString(space, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+    final avatarUrl = avatarDirect.isNotEmpty
+        ? avatarDirect
+        : () {
+            for (final m in _extractMembers(space)) {
+              final u = _pickString(m, const ['avatarUrl', 'imageUrl', 'photoUrl']);
+              if (u.isNotEmpty) return u;
+            }
+            return '';
+          }();
+
     return _ConversationItem(
       id: id,
       title: title,
@@ -823,6 +859,8 @@ List<_ConversationItem> _buildConversationItems(
       sortDate: updatedAt,
       isPrivate: type == 'PRIVATE',
       directThreadId: directThreadId,
+      unreadCount: unreadCount,
+      avatarUrl: avatarUrl,
     );
   }).toList();
 
