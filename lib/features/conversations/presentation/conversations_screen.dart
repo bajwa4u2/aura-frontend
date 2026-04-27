@@ -351,55 +351,58 @@ class _QuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.push(route),
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          child: Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.card,
-              borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
-                    borderRadius: BorderRadius.circular(AuraRadius.r10),
-                    border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.25),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.push(route),
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            child: Container(
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              decoration: BoxDecoration(
+                color: AuraSurface.card,
+                borderRadius: BorderRadius.circular(AuraRadius.card),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AuraSurface.accentSoft,
+                      borderRadius: BorderRadius.circular(AuraRadius.r10),
+                      border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Icon(icon, size: 18, color: AuraSurface.accentText),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: AuraSpace.s2),
+                        Text(
+                          subtitle,
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Icon(icon, size: 18, color: AuraSurface.accentText),
-                ),
-                const SizedBox(width: AuraSpace.s10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: AuraText.small.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: AuraSpace.s2),
-                      Text(
-                        subtitle,
-                        style: AuraText.small.copyWith(
-                          color: AuraSurface.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -551,7 +554,7 @@ class _ConversationRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ConversationBadge(badge: item.badge, icon: item.icon),
+            _ConversationBadge(isPrivate: item.isPrivate, icon: item.icon),
             const SizedBox(width: AuraSpace.s12),
             Expanded(
               child: Column(
@@ -629,31 +632,28 @@ class _ConversationRow extends StatelessWidget {
 }
 
 class _ConversationBadge extends StatelessWidget {
-  const _ConversationBadge({required this.badge, required this.icon});
+  const _ConversationBadge({required this.isPrivate, required this.icon});
 
-  final String badge;
+  final bool isPrivate;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
+    final bg = isPrivate ? AuraSurface.accentSoft : const Color(0x1A3D9B4F);
+    final border = isPrivate
+        ? AuraSurface.accent.withValues(alpha: 0.28)
+        : const Color(0x3A3D9B4F);
+    final iconColor = isPrivate ? AuraSurface.accentText : AuraSurface.goodInk;
     return Container(
       width: 42,
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border.all(color: AuraSurface.divider),
+        color: bg,
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
-      child: badge.isNotEmpty
-          ? Text(
-              badge,
-              style: AuraText.micro.copyWith(
-                color: AuraSurface.muted,
-                fontWeight: FontWeight.w700,
-              ),
-            )
-          : Icon(icon, size: 18, color: AuraSurface.muted),
+      child: Icon(icon, size: 18, color: iconColor),
     );
   }
 }

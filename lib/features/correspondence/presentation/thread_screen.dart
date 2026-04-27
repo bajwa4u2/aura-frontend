@@ -367,7 +367,30 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s16),
-                  const Text('Messages', style: AuraText.title),
+                  Row(
+                    children: [
+                      const Text('Messages', style: AuraText.title),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AuraSpace.s10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AuraSurface.subtle,
+                          borderRadius: BorderRadius.circular(AuraRadius.pill),
+                          border: Border.all(color: AuraSurface.divider),
+                        ),
+                        child: Text(
+                          'Thread',
+                          style: AuraText.micro.copyWith(
+                            color: AuraSurface.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: AuraSpace.s10),
                   messagesAsync.when(
                     loading: () => const AuraCard(
@@ -599,18 +622,21 @@ class _HeaderIconAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onPressed,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onPressed,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Icon(icon, size: 18, color: Colors.white),
         ),
-        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }
@@ -906,17 +932,20 @@ class _StripIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = enabled ? (tone ?? Colors.white) : Colors.white38;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: color),
         ),
-        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
@@ -1803,6 +1832,76 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
     );
   }
 
+  Future<void> _pickComposerLanguage() async {
+    if (_translationBusy) return;
+    final current = _translationTargetLanguage.trim().toLowerCase();
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Translate to',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: _translationLanguageLabels.entries.map((entry) {
+                    final active = entry.key == current;
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: InkWell(
+                        onTap: () => Navigator.of(ctx).pop(entry.key),
+                        borderRadius: BorderRadius.circular(AuraRadius.pill),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AuraSpace.s12,
+                            vertical: AuraSpace.s8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? AuraSurface.overlay
+                                : Colors.transparent,
+                            border: Border.all(color: AuraSurface.divider),
+                            borderRadius:
+                                BorderRadius.circular(AuraRadius.pill),
+                          ),
+                          child: Text(
+                            entry.value,
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: active
+                                  ? AuraSurface.ink
+                                  : AuraSurface.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null || selected.trim().isEmpty) return;
+    setState(() {
+      _translationTargetLanguage = selected.trim().toLowerCase();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final uploadingCount = _attachments.where((a) => a.uploading).length;
@@ -1952,30 +2051,55 @@ class _ComposerBarState extends ConsumerState<_ComposerBar> {
                                 : _runAssist,
                           ),
                           const SizedBox(width: AuraSpace.s8),
-                          DropdownButton<String>(
-                            value: _translationTargetLanguage,
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'ur',
-                                child: Text('Urdu'),
+                          MouseRegion(
+                            cursor: _translationBusy
+                                ? SystemMouseCursors.basic
+                                : SystemMouseCursors.click,
+                            child: InkWell(
+                              onTap: _translationBusy
+                                  ? null
+                                  : _pickComposerLanguage,
+                              borderRadius:
+                                  BorderRadius.circular(AuraRadius.pill),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AuraSpace.s12,
+                                  vertical: AuraSpace.s8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AuraSurface.subtle,
+                                  border:
+                                      Border.all(color: AuraSurface.divider),
+                                  borderRadius:
+                                      BorderRadius.circular(AuraRadius.pill),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.translate,
+                                      size: 14,
+                                      color: AuraSurface.muted,
+                                    ),
+                                    const SizedBox(width: AuraSpace.s6),
+                                    Text(
+                                      _languageLabel(
+                                        _translationTargetLanguage,
+                                      ),
+                                      style: AuraText.small.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AuraSpace.s4),
+                                    const Icon(
+                                      Icons.arrow_drop_down_rounded,
+                                      size: 16,
+                                      color: AuraSurface.muted,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'ar',
-                                child: Text('Arabic'),
-                              ),
-                            ],
-                            onChanged: _translationBusy
-                                ? null
-                                : (value) {
-                                    if (value == null) return;
-                                    setState(() {
-                                      _translationTargetLanguage = value;
-                                    });
-                                  },
+                            ),
                           ),
                           const SizedBox(width: AuraSpace.s8),
                           AuraSecondaryButton(
@@ -2440,7 +2564,9 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                   runSpacing: AuraSpace.s10,
                   children: _translationLanguageLabels.entries.map((entry) {
                     final active = entry.key == current;
-                    return InkWell(
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: InkWell(
                       onTap: () => Navigator.of(ctx).pop(entry.key),
                       borderRadius: BorderRadius.circular(AuraRadius.pill),
                       child: Container(
@@ -2463,7 +2589,8 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                           ),
                         ),
                       ),
-                    );
+                    ),
+                  );
                   }).toList(),
                 ),
               ],
@@ -2596,54 +2723,59 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
             if (!isMine && showAuthorHeader && author.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 6, bottom: 6),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: handle.isEmpty
-                      ? null
-                      : () => context.push('/u/$handle'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Directionality(
-                          textDirection: _directionForText(author),
-                          child: Text(
-                            author,
-                            textAlign: _alignForText(author),
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        if (handle.isNotEmpty) ...[
-                          const SizedBox(height: AuraSpace.s4),
+                child: MouseRegion(
+                  cursor: handle.isEmpty
+                      ? SystemMouseCursors.basic
+                      : SystemMouseCursors.click,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: handle.isEmpty
+                        ? null
+                        : () => context.push('/u/$handle'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Directionality(
-                            textDirection: _directionForText(handle),
+                            textDirection: _directionForText(author),
                             child: Text(
-                              '@$handle',
-                              textAlign: _alignForText(handle),
-                              style: AuraText.small,
+                              author,
+                              textAlign: _alignForText(author),
+                              style: AuraText.small.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ],
-                        if (contextLine.isNotEmpty) ...[
-                          const SizedBox(height: AuraSpace.s4),
-                          Directionality(
-                            textDirection: _directionForText(contextLine),
-                            child: Text(
-                              contextLine,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: _alignForText(contextLine),
-                              style: AuraText.small,
+                          if (handle.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s4),
+                            Directionality(
+                              textDirection: _directionForText(handle),
+                              child: Text(
+                                '@$handle',
+                                textAlign: _alignForText(handle),
+                                style: AuraText.small,
+                              ),
                             ),
-                          ),
+                          ],
+                          if (contextLine.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.s4),
+                            Directionality(
+                              textDirection: _directionForText(contextLine),
+                              child: Text(
+                                contextLine,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: _alignForText(contextLine),
+                                style: AuraText.small,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -2683,106 +2815,118 @@ class _MessageTileState extends ConsumerState<_MessageTile> {
                       runSpacing: AuraSpace.s8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        InkWell(
-                          onTap: _translationBusy
-                              ? null
-                              : () => _translateMessage(context, body),
-                          borderRadius: BorderRadius.circular(AuraRadius.pill),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AuraSpace.s6,
-                              vertical: AuraSpace.s6,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_translationBusy) ...[
-                                  const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        AuraSurface.muted,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: AuraSpace.s8),
-                                ],
-                                Text(
-                                  _translationBusy
-                                      ? 'Translating...'
-                                      : (_showTranslation
-                                            ? 'Refresh translation'
-                                            : 'Translate'),
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: metaColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => _pickTranslationLanguage(context),
-                          borderRadius: BorderRadius.circular(AuraRadius.pill),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AuraSpace.s10,
-                              vertical: AuraSpace.s6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(
-                                AuraRadius.pill,
-                              ),
-                              border: Border.all(color: AuraSurface.divider),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.translate,
-                                  size: 14,
-                                  color: metaColor,
-                                ),
-                                const SizedBox(width: AuraSpace.s6),
-                                Text(
-                                  _languageLabel(
-                                    _translationTargetLanguage ??
-                                        _defaultTranslationLanguage(context),
-                                  ),
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AuraSurface.ink,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (_showTranslation)
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _showTranslation = false;
-                                _translationError = null;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
+                        MouseRegion(
+                          cursor: _translationBusy
+                              ? SystemMouseCursors.basic
+                              : SystemMouseCursors.click,
+                          child: InkWell(
+                            onTap: _translationBusy
+                                ? null
+                                : () => _translateMessage(context, body),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AuraSpace.s6,
                                 vertical: AuraSpace.s6,
                               ),
-                              child: Text(
-                                'Hide translation',
-                                style: AuraText.small.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: metaColor,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_translationBusy) ...[
+                                    const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          AuraSurface.muted,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AuraSpace.s8),
+                                  ],
+                                  Text(
+                                    _translationBusy
+                                        ? 'Translating...'
+                                        : (_showTranslation
+                                              ? 'Refresh translation'
+                                              : 'Translate'),
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: metaColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: InkWell(
+                            onTap: () => _pickTranslationLanguage(context),
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s10,
+                                vertical: AuraSpace.s6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(
+                                  AuraRadius.pill,
+                                ),
+                                border: Border.all(color: AuraSurface.divider),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.translate,
+                                    size: 14,
+                                    color: metaColor,
+                                  ),
+                                  const SizedBox(width: AuraSpace.s6),
+                                  Text(
+                                    _languageLabel(
+                                      _translationTargetLanguage ??
+                                          _defaultTranslationLanguage(context),
+                                    ),
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AuraSurface.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_showTranslation)
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _showTranslation = false;
+                                  _translationError = null;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AuraSpace.s6,
+                                  vertical: AuraSpace.s6,
+                                ),
+                                child: Text(
+                                  'Hide translation',
+                                  style: AuraText.small.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: metaColor,
+                                  ),
                                 ),
                               ),
                             ),

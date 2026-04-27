@@ -666,7 +666,7 @@ class _CommunicationsCenterScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Delivery posture', style: AuraText.subtitle),
+          const Text('Delivery posture', style: AuraText.subtitle),
           const SizedBox(height: AuraSpace.s8),
           const Text(
             'In-app is the primary channel. Email is reserved for important, digest, support, and security communication.',
@@ -979,9 +979,9 @@ class _CommunicationsCenterScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Newsletter preview and test send',
                   style: AuraText.subtitle,
@@ -1090,9 +1090,9 @@ class _CommunicationsCenterScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text('AI draft only', style: AuraText.subtitle),
               ),
               AuraStatusChip(

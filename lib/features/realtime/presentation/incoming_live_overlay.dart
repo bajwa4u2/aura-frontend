@@ -125,6 +125,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     if (sessionId.isNotEmpty) {
       _dismissedSessionIds.add(sessionId);
     }
+    setState(() {});
   }
 
   @override
@@ -188,24 +189,69 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          mode == 'video' ? 'Video live' : 'Audio live',
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: mode == 'video'
+                                    ? AuraSurface.accentSoft
+                                    : const Color(0x1A3D9B4F),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: mode == 'video'
+                                      ? AuraSurface.accent
+                                          .withValues(alpha: 0.3)
+                                      : const Color(0x3A3D9B4F),
+                                ),
+                              ),
+                              child: Icon(
+                                mode == 'video'
+                                    ? Icons.videocam_rounded
+                                    : Icons.call_rounded,
+                                size: 22,
+                                color: mode == 'video'
+                                    ? AuraSurface.accentText
+                                    : AuraSurface.goodInk,
+                              ),
+                            ),
+                            const SizedBox(width: AuraSpace.s12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    mode == 'video'
+                                        ? 'Incoming video call'
+                                        : 'Incoming audio call',
+                                    style: AuraText.small.copyWith(
+                                      color: AuraSurface.muted,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(actorName, style: AuraText.title),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(actorName, style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s8),
+                        const SizedBox(height: AuraSpace.s14),
                         Text(
                           title,
                           style: AuraText.body.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: AuraSpace.s8),
-                        Text(body, style: AuraText.body),
+                        const SizedBox(height: AuraSpace.s6),
+                        Text(
+                          body,
+                          style: AuraText.body.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                        ),
                         const SizedBox(height: AuraSpace.s20),
                         Row(
                           children: [
@@ -221,6 +267,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                             Expanded(
                               child: AuraPrimaryButton(
                                 label: _joining ? 'Joining...' : 'Join',
+                                icon: mode == 'video'
+                                    ? Icons.videocam_rounded
+                                    : Icons.call_rounded,
                                 onPressed: _joining
                                     ? null
                                     : () => _joinCurrent(item),
