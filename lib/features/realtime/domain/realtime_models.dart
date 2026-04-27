@@ -34,6 +34,14 @@ String? _readString(dynamic value) {
   return text.isEmpty ? null : text;
 }
 
+int? _readInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  final text = value.toString().trim();
+  return int.tryParse(text);
+}
+
 String _readFirstString(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     final value = (json[key] ?? '').toString().trim();
@@ -154,9 +162,15 @@ class RealtimeSession {
     required this.surfaceType,
     required this.surfaceId,
     required this.startedByUserId,
+    required this.status,
     required this.isActive,
     required this.isLocked,
     required this.waitingRoomEnabled,
+    required this.startedAt,
+    required this.answeredAt,
+    required this.firstJoinedAt,
+    required this.endedAt,
+    required this.durationSeconds,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -165,9 +179,15 @@ class RealtimeSession {
   final RealtimeSurfaceType surfaceType;
   final String? surfaceId;
   final String? startedByUserId;
+  final String status;
   final bool isActive;
   final bool isLocked;
   final bool waitingRoomEnabled;
+  final DateTime? startedAt;
+  final DateTime? answeredAt;
+  final DateTime? firstJoinedAt;
+  final DateTime? endedAt;
+  final int? durationSeconds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -177,11 +197,22 @@ class RealtimeSession {
       surfaceType: _readSurfaceType(json['surfaceType']),
       surfaceId: _readString(json['surfaceId']),
       startedByUserId: _readString(json['startedByUserId']),
-      isActive: _readBool(json['isActive'], fallback: true),
+      status: (json['status'] ?? '').toString().trim().toUpperCase(),
+      isActive: _readBool(
+        json['isActive'],
+        fallback: (json['status'] ?? '').toString().trim().toUpperCase() != 'ENDED' &&
+            (json['status'] ?? '').toString().trim().toUpperCase() != 'CANCELLED' &&
+            (json['status'] ?? '').toString().trim().toUpperCase() != 'FAILED',
+      ),
       isLocked: _readBool(json['isLocked']),
       waitingRoomEnabled: _readBool(
         json['waitingRoomEnabled'] ?? json['requiresApproval'],
       ),
+      startedAt: _readDate(json['startedAt']),
+      answeredAt: _readDate(json['answeredAt']),
+      firstJoinedAt: _readDate(json['firstJoinedAt']),
+      endedAt: _readDate(json['endedAt']),
+      durationSeconds: _readInt(json['durationSeconds']),
       createdAt: _readDate(json['createdAt']),
       updatedAt: _readDate(json['updatedAt']),
     );
@@ -194,10 +225,19 @@ class RealtimeParticipant {
     required this.userId,
     required this.runtimeDeviceId,
     required this.role,
+    required this.joinState,
     required this.isPresent,
     required this.audioOn,
     required this.videoOn,
     required this.screenOn,
+    required this.displayName,
+    required this.handle,
+    required this.avatarUrl,
+    required this.displayRole,
+    required this.institutionName,
+    required this.institutionHandle,
+    required this.institutionRole,
+    required this.institutionTitle,
     required this.joinedAt,
     required this.leftAt,
   });
@@ -206,25 +246,75 @@ class RealtimeParticipant {
   final String userId;
   final String? runtimeDeviceId;
   final RealtimeParticipantRole role;
+  final String joinState;
   final bool isPresent;
   final bool audioOn;
   final bool videoOn;
   final bool screenOn;
+  final String? displayName;
+  final String? handle;
+  final String? avatarUrl;
+  final String? displayRole;
+  final String? institutionName;
+  final String? institutionHandle;
+  final String? institutionRole;
+  final String? institutionTitle;
   final DateTime? joinedAt;
   final DateTime? leftAt;
 
   bool get isHost => role == RealtimeParticipantRole.host;
   bool get isModerator => role == RealtimeParticipantRole.moderator || isHost;
+  String get identityLabel {
+    final name = displayName?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    final handleLabel = handle?.trim() ?? '';
+    if (handleLabel.isNotEmpty) return '@$handleLabel';
+    return 'Participant';
+  }
+
+  String get roleLabel {
+    final explicit = (displayRole ?? '').trim();
+    if (explicit.isNotEmpty) {
+      return explicit
+          .replaceAll('_', ' ')
+          .split(' ')
+          .where((part) => part.isNotEmpty)
+          .map((part) => part[0].toUpperCase() + part.substring(1))
+          .join(' ');
+    }
+
+    switch (role) {
+      case RealtimeParticipantRole.host:
+        return 'Host';
+      case RealtimeParticipantRole.moderator:
+        return 'Moderator';
+      case RealtimeParticipantRole.participant:
+        return 'Participant';
+      case RealtimeParticipantRole.guest:
+        return 'Guest';
+      default:
+        return 'Participant';
+    }
+  }
 
   RealtimeParticipant copyWith({
     String? id,
     String? userId,
     String? runtimeDeviceId,
     RealtimeParticipantRole? role,
+    String? joinState,
     bool? isPresent,
     bool? audioOn,
     bool? videoOn,
     bool? screenOn,
+    String? displayName,
+    String? handle,
+    String? avatarUrl,
+    String? displayRole,
+    String? institutionName,
+    String? institutionHandle,
+    String? institutionRole,
+    String? institutionTitle,
     DateTime? joinedAt,
     DateTime? leftAt,
   }) {
@@ -233,10 +323,19 @@ class RealtimeParticipant {
       userId: userId ?? this.userId,
       runtimeDeviceId: runtimeDeviceId ?? this.runtimeDeviceId,
       role: role ?? this.role,
+      joinState: joinState ?? this.joinState,
       isPresent: isPresent ?? this.isPresent,
       audioOn: audioOn ?? this.audioOn,
       videoOn: videoOn ?? this.videoOn,
       screenOn: screenOn ?? this.screenOn,
+      displayName: displayName ?? this.displayName,
+      handle: handle ?? this.handle,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      displayRole: displayRole ?? this.displayRole,
+      institutionName: institutionName ?? this.institutionName,
+      institutionHandle: institutionHandle ?? this.institutionHandle,
+      institutionRole: institutionRole ?? this.institutionRole,
+      institutionTitle: institutionTitle ?? this.institutionTitle,
       joinedAt: joinedAt ?? this.joinedAt,
       leftAt: leftAt ?? this.leftAt,
     );
@@ -244,19 +343,51 @@ class RealtimeParticipant {
 
   factory RealtimeParticipant.fromJson(Map<String, dynamic> json) {
     final normalized = _normalizeParticipantJson(json);
+    final user = _asMap(normalized['user']);
+    final institutionAdmin = _asMap(user['adminInstitution']);
+    final topLevelInstitutionAdmin = _asMap(normalized['institutionAdmin']);
+    final institutionMemberships = _asList(user['institutionMemberships']);
+    final firstMembership = institutionMemberships.isEmpty
+        ? <String, dynamic>{}
+        : _asMap(institutionMemberships.first);
     final audio = (normalized['audioState'] ?? '').toString().toUpperCase() == 'ON';
     final video = (normalized['videoState'] ?? '').toString().toUpperCase() == 'ON';
     final screen = (normalized['screenState'] ?? '').toString().toUpperCase() == 'ON';
+    final displayName = _readString(normalized['displayName']) ?? _readString(user['displayName']);
+    final handle = _readString(normalized['handle']) ?? _readString(user['handle']);
+    final avatarUrl = _readString(normalized['avatarUrl']) ?? _readString(user['avatarUrl']);
+    final institutionName = _readString(normalized['institutionName']) ??
+        _readString(institutionAdmin['name']) ??
+        _readString(topLevelInstitutionAdmin['name']) ??
+        _readString(_asMap(firstMembership['institution'])['name']);
+    final institutionHandle = _readString(normalized['institutionHandle']) ??
+        _readString(institutionAdmin['handle']) ??
+        _readString(topLevelInstitutionAdmin['handle']) ??
+        _readString(_asMap(firstMembership['institution'])['handle']);
+    final institutionRole = _readString(normalized['institutionRole']) ??
+        _readString(firstMembership['role']);
+    final institutionTitle = _readString(normalized['institutionTitle']) ??
+        _readString(firstMembership['title']);
+    final displayRole = _readString(normalized['displayRole']);
 
     return RealtimeParticipant(
       id: (normalized['id'] ?? '').toString(),
       userId: (normalized['userId'] ?? '').toString(),
       runtimeDeviceId: _readString(normalized['runtimeDeviceId']),
       role: _readRole(normalized['role']),
+      joinState: (normalized['joinState'] ?? '').toString().trim(),
       isPresent: _readBool(normalized['isPresent'], fallback: true),
       audioOn: audio,
       videoOn: video,
       screenOn: screen,
+      displayName: displayName,
+      handle: handle,
+      avatarUrl: avatarUrl,
+      displayRole: displayRole,
+      institutionName: institutionName,
+      institutionHandle: institutionHandle,
+      institutionRole: institutionRole,
+      institutionTitle: institutionTitle,
       joinedAt: _readDate(normalized['joinedAt']),
       leftAt: _readDate(normalized['leftAt']),
     );

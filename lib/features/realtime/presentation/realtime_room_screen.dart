@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,6 +66,8 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _didBoot = false;
   String? _lastConsentSyncKey;
+  Timer? _durationTimer;
+  DateTime _now = DateTime.now();
   final TextEditingController _inviteSearchController = TextEditingController();
   final TextEditingController _inviteNoteController = TextEditingController();
   Timer? _searchDebounce;
@@ -90,10 +93,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         await controller.hydrateSession(widget.sessionId);
       }
     });
+
+    _durationTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
   }
 
   @override
   void dispose() {
+    _durationTimer?.cancel();
     _searchDebounce?.cancel();
     _inviteSearchController.dispose();
     _inviteNoteController.dispose();
@@ -258,6 +269,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               participant.screenOn,
         )
         .length;
+    final callDurationLabel = _callDurationLabel(state.session, _now);
 
     _syncConsentsIfNeeded(
       controller: controller,
@@ -281,9 +293,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 policy,
                 state.joinState,
               ),
+              callDurationLabel: callDurationLabel,
             ),
             const SizedBox(height: AuraSpace.s12),
-            RealtimeStatusStrip(state: state),
+            RealtimeStatusStrip(state: state, now: _now),
             const SizedBox(height: AuraSpace.s12),
             if (showConnectionRecovery) ...[
               _ConnectionRecoveryCard(
@@ -372,6 +385,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             ],
             RealtimeParticipantList(
               participants: state.participants,
+              session: state.session,
               canModerate: canModerate,
               currentUserId: myUserId,
               hostUserId: state.session?.startedByUserId,
@@ -531,6 +545,43 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (session?.isLocked == true || policy?.isLocked == true) return 'Closed';
     return 'Open';
   }
+
+  String? _callDurationLabel(RealtimeSession? session, DateTime now) {
+    if (session == null) return null;
+
+    final startedAt =
+        session.answeredAt ?? session.firstJoinedAt ?? session.startedAt ?? session.createdAt;
+    if (startedAt == null) return null;
+
+    final finishedAt = session.endedAt;
+    final elapsed = finishedAt != null
+        ? finishedAt.difference(startedAt)
+        : now.difference(startedAt);
+    final safe = elapsed.inSeconds < 0 ? Duration.zero : elapsed;
+    final durationText = _formatDuration(safe);
+
+    if (finishedAt != null || session.status == 'ENDED') {
+      return 'Ended after $durationText';
+    }
+    if (session.isActive) {
+      return 'Live $durationText';
+    }
+    return 'Duration $durationText';
+  }
+
+  String _formatDuration(Duration duration) {
+    final totalSeconds = math.max(0, duration.inSeconds);
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    String two(int value) => value.toString().padLeft(2, '0');
+
+    if (hours > 0) {
+      return '${two(hours)}:${two(minutes)}:${two(seconds)}';
+    }
+    return '${two(minutes)}:${two(seconds)}';
+  }
 }
 
 class _ConnectionRecoveryCard extends StatelessWidget {
@@ -587,6 +638,7 @@ class _RoomHeaderCard extends StatelessWidget {
     required this.sessionId,
     required this.memberCountLabel,
     required this.roomStateLabel,
+    required this.callDurationLabel,
   });
 
   final String title;
@@ -594,6 +646,7 @@ class _RoomHeaderCard extends StatelessWidget {
   final String sessionId;
   final String memberCountLabel;
   final String roomStateLabel;
+  final String? callDurationLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -611,6 +664,8 @@ class _RoomHeaderCard extends StatelessWidget {
             children: [
               _MetaPill(label: roomStateLabel),
               _MetaPill(label: memberCountLabel),
+              if ((callDurationLabel ?? '').trim().isNotEmpty)
+                _MetaPill(label: callDurationLabel!),
               _MetaPill(label: 'Ref ${_shortSessionId(sessionId)}'),
             ],
           ),
