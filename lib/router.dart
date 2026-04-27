@@ -30,6 +30,7 @@ import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
 import 'features/announcements/presentation/announcement_editor_screen.dart';
+import 'features/communications/presentation/communications_center_screen.dart';
 import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
@@ -85,6 +86,8 @@ const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kEnterInstitutionRoute = '/enter-institution';
 const String kAdminWorkspaceRoute = '/admin';
+const String kAdminCommunicationsRoute = '/admin/communications';
+const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kRouterBootRoute = '/_boot';
 
 const String kCorrespondenceHubRoute = '/me/correspondence';
@@ -196,7 +199,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   bool isGuestOnly(String path) => isPlainAuthPage(path);
 
-  bool requiresAppAdmin(String path) => path == kAdminWorkspaceRoute;
+  bool requiresAppAdmin(String path) =>
+      path == kAdminWorkspaceRoute ||
+      path.startsWith('$kAdminWorkspaceRoute/');
 
   bool requiresInstitutionAccess(String path) {
     return path == kInstitutionDashboardRoute ||
@@ -538,6 +543,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const SecurityScreen(),
           ),
           GoRoute(
+            path: '/settings/communications',
+            redirect: (_, __) => kMeCommunicationsRoute,
+          ),
+          GoRoute(
+            path: kMeCommunicationsRoute,
+            builder: (_, __) => const CommunicationsCenterScreen(),
+          ),
+          GoRoute(
             path: '/me/follow-requests',
             builder: (_, __) => const FollowRequestsScreen(),
           ),
@@ -571,6 +584,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kAdminWorkspaceRoute,
             builder: (_, __) => const AdminWorkspaceScreen(),
+          ),
+          GoRoute(
+            path: kAdminCommunicationsRoute,
+            builder: (_, __) => const CommunicationsCenterScreen(),
           ),
 
           // Correspondence routes flattened for stable direct navigation

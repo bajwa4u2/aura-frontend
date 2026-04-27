@@ -107,6 +107,14 @@ class AdminWorkspaceScreen extends ConsumerWidget {
                             available: true,
                             onTap: () => context.go('/announcements/create'),
                           ),
+                          _AdminModule(
+                            icon: Icons.mail_outline,
+                            title: 'Communications center',
+                            description:
+                                'Preview newsletters, digests, AI drafts, and campaign approvals',
+                            available: true,
+                            onTap: () => context.go('/admin/communications'),
+                          ),
                         ],
                       ),
                       const SizedBox(height: AuraSpace.s16),

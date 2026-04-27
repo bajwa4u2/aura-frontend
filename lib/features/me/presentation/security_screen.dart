@@ -256,6 +256,12 @@ class SecurityScreen extends ConsumerWidget {
           title: 'Account',
           children: [
             _row(
+              title: 'Communication preferences',
+              subtitle: 'Channels, digests, drafts, and publication controls',
+              leading: Icons.tune_outlined,
+              onTap: () => context.push('/me/settings/communications'),
+            ),
+            _row(
               title: 'Account deletion',
               subtitle: 'Permanently remove your account',
               leading: Icons.delete_outline,

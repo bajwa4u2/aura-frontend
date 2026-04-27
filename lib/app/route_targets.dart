@@ -24,6 +24,8 @@ String normalizeMemberFacingRoute(
     normalizedPath = '/me/edit';
   } else if (normalizedPath == '/settings') {
     normalizedPath = '/security';
+  } else if (normalizedPath == '/settings/communications') {
+    normalizedPath = '/me/settings/communications';
   } else if (normalizedPath == '/correspondence') {
     normalizedPath = '/me/correspondence';
   } else if (normalizedPath.startsWith('/correspondence/')) {

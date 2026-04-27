@@ -1314,6 +1314,14 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     final emailEnabled = _prefBool('emailEnabled', fallback: true);
 
     return [
+      _item(
+        label: 'Open communication center',
+        icon: Icons.tune_outlined,
+        subtitle:
+            'Channel, digest, newsletter, AI draft, and campaign controls',
+        onTap: () => context.push('/me/settings/communications'),
+      ),
+      const SizedBox(height: AuraSpace.s8),
       _toggleItem(
         keyName: 'emailEnabled',
         label: 'Email notifications',
