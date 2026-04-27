@@ -241,7 +241,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             child: RefreshIndicator(
               onRefresh: _refreshAll,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 children: [
                   threadAsync.when(
                     loading: () => const AuraCard(
@@ -342,9 +342,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           const SizedBox(height: AuraSpace.s16),
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final wide = constraints.maxWidth >= 1180;
+                              final wide = constraints.maxWidth >= 760;
+                              final showRail = constraints.maxWidth >= 560;
                               final conversationPanel = _ThreadConversationPanel(
-                                threadId: threadId,
                                 messagesAsync: messagesAsync,
                                 currentUserId: currentUserId,
                                 threadContext: contextData,
@@ -402,20 +402,24 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 return Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(flex: 7, child: conversationPanel),
+                                    Expanded(child: conversationPanel),
                                     const SizedBox(width: AuraSpace.s16),
-                                    SizedBox(width: 352, child: sideRail),
+                                    SizedBox(width: 300, child: sideRail),
                                   ],
                                 );
                               }
 
-                              return Column(
-                                children: [
-                                  conversationPanel,
-                                  const SizedBox(height: AuraSpace.s16),
-                                  sideRail,
-                                ],
-                              );
+                              if (showRail) {
+                                return Column(
+                                  children: [
+                                    conversationPanel,
+                                    const SizedBox(height: AuraSpace.s16),
+                                    sideRail,
+                                  ],
+                                );
+                              }
+
+                              return conversationPanel;
                             },
                           ),
                         ],
@@ -425,6 +429,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 ],
               ),
             ),
+          ),
+          ThreadComposerBar(
+            threadId: widget.threadId,
+            onSent: _refreshThreadData,
           ),
         ],
       ),
@@ -776,7 +784,6 @@ class _HeaderIconAction extends StatelessWidget {
 
 class _ThreadConversationPanel extends StatelessWidget {
   const _ThreadConversationPanel({
-    required this.threadId,
     required this.messagesAsync,
     required this.currentUserId,
     required this.threadContext,
@@ -785,7 +792,6 @@ class _ThreadConversationPanel extends StatelessWidget {
     required this.onDeleteMessage,
   });
 
-  final String threadId;
   final AsyncValue<List<Map<String, dynamic>>> messagesAsync;
   final String currentUserId;
   final CorrespondenceThreadContext threadContext;
@@ -853,8 +859,6 @@ class _ThreadConversationPanel extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: AuraSpace.s16),
-          ThreadComposerBar(threadId: threadId, onSent: onRefresh),
         ],
       ),
     );
