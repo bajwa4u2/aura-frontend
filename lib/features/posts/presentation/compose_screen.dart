@@ -44,6 +44,31 @@ enum _AttachmentType { image, video }
 
 enum _AttachmentSource { camera, gallery }
 
+const Map<String, String> _composeLanguageLabels = {
+  'en': 'English',
+  'ur': 'Urdu',
+  'ar': 'Arabic',
+  'es': 'Spanish',
+  'fr': 'French',
+  'de': 'German',
+  'it': 'Italian',
+  'pt': 'Portuguese',
+  'tr': 'Turkish',
+  'fa': 'Persian',
+  'hi': 'Hindi',
+  'bn': 'Bengali',
+  'zh': 'Chinese',
+  'ja': 'Japanese',
+  'ko': 'Korean',
+  'ru': 'Russian',
+};
+
+String _languageLabel(String code) {
+  final key = code.trim().toLowerCase();
+  if (key.isEmpty) return '';
+  return _composeLanguageLabels[key] ?? key.toUpperCase();
+}
+
 class _ComposeAttachment {
   _ComposeAttachment({
     required this.localId,
@@ -1014,14 +1039,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   String _savedLine() {
     if (_isReply) {
-      return 'Replies publish directly and do not use the main draft yet.';
+      return 'Replies publish directly.';
     }
     if (_uploadingMedia) return 'Uploading attachments…';
     if (_publishingToTikTok) return 'Queuing TikTok publish…';
-    if (_saving) return 'Holding…';
+    if (_saving) return 'Autosaving…';
     final dt = _lastSavedAt;
-    if (dt == null) return 'Nothing held yet.';
-    return 'Held ${_time(dt)}.';
+    if (dt == null) return 'Draft not saved yet.';
+    return 'Saved ${_time(dt)}.';
   }
 
   Map<String, dynamic> _buildComposePayload() {
@@ -1588,32 +1613,231 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
-  Widget _buildMainCard() {
+  Widget _buildMainCard(BuildContext context, {required bool wide}) {
+    final editorColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildEditorSection(),
+        const SizedBox(height: AuraSpace.s16),
+        _buildMediaSection(),
+        const SizedBox(height: AuraSpace.s16),
+        _buildAssistSection(),
+      ],
+    );
+
+    final summaryColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPublishSummarySection(),
+        const SizedBox(height: AuraSpace.s12),
+        _buildAudienceSection(),
+        if (!_isReply) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _buildDistributionSection(),
+        ],
+        const SizedBox(height: AuraSpace.s12),
+        _buildIntentCard(),
+      ],
+    );
+
+    if (wide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(flex: 7, child: editorColumn),
+          const SizedBox(width: AuraSpace.s16),
+          SizedBox(width: 352, child: summaryColumn),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        editorColumn,
+        const SizedBox(height: AuraSpace.s16),
+        summaryColumn,
+      ],
+    );
+  }
+
+  Widget _buildEditorSection() {
     return AuraCard(
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const AuraSectionHeader(
+            title: 'Write first',
+            subtitle:
+                'The editor stays centered so the message leads the workflow.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
           _buildStatusRow(),
           const SizedBox(height: AuraSpace.s14),
-          _buildIntentCard(),
-          const SizedBox(height: AuraSpace.s16),
           _buildComposerBox(),
           const SizedBox(height: AuraSpace.s8),
           _buildCharacterLine(),
-          if (!_isReply) ...[
-            const SizedBox(height: AuraSpace.s16),
-            _buildAudienceBlock(),
+          if (_showTextError) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              'Text is required',
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaSection() {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraSectionHeader(
+            title: 'Media and attachments',
+            subtitle:
+                'Images and videos stay close to the draft without taking over the page.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _buildAttachmentsBlock(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssistSection() {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraSectionHeader(
+            title: 'Review and translate',
+            subtitle:
+                'AI stays secondary: available when you want a second pass.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _buildActionRow(),
           const SizedBox(height: AuraSpace.s16),
           _buildSuggestionsCard(),
           const SizedBox(height: AuraSpace.s12),
           _buildTranslationCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPublishSummarySection() {
+    final translated = _translationPreview?.translatedText.trim().isNotEmpty ?? false;
+    final translatedLanguage = _translationPreview?.targetLanguage ?? '';
+    final attachmentCount = _attachments.length;
+    final textWarning = _textTooLong
+        ? 'Trim the text to stay within the limit.'
+        : _hasUploadingAttachments
+            ? 'Wait for attachments to finish uploading.'
+            : _posting
+                ? 'Publishing in progress.'
+                : 'Ready when you are.';
+
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraSectionHeader(
+            title: 'Publish summary',
+            subtitle:
+                'Audience, attachments, and cross-posting stay visible at a glance.',
+          ),
           const SizedBox(height: AuraSpace.s12),
-          _buildAttachmentsBlock(),
-          if (!_isReply) ...[
-            const SizedBox(height: AuraSpace.s12),
-            _buildExternalPublishingBlock(),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              AuraStatusChip(
+                label: _isReply ? 'Response' : 'Post',
+                backgroundColor: AuraSurface.subtle,
+                textColor: AuraSurface.muted,
+              ),
+              AuraStatusChip(
+                label: _visibilityLabel(_visibility),
+                backgroundColor: AuraSurface.accentSoft,
+                textColor: AuraSurface.accentText,
+              ),
+              AuraStatusChip(
+                label: attachmentCount == 0
+                    ? 'No attachments'
+                    : '$attachmentCount attachment${attachmentCount == 1 ? '' : 's'}',
+                backgroundColor: AuraSurface.subtle,
+                textColor: AuraSurface.muted,
+              ),
+              AuraStatusChip(
+                label: translated
+                    ? 'Translated ${_languageLabel(translatedLanguage)}'
+                    : 'No translation preview',
+                backgroundColor:
+                    translated ? AuraSurface.goodBg : AuraSurface.subtle,
+                textColor:
+                    translated ? AuraSurface.goodInk : AuraSurface.muted,
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            textWarning,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          if (_showTextError) ...[
+            const SizedBox(height: AuraSpace.s8),
+            Text(
+              'Draft not saved: text is required.',
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+            ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudienceSection() {
+    if (_isReply) {
+      return const SizedBox.shrink();
+    }
+
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraSectionHeader(
+            title: 'Audience',
+            subtitle: 'Choose who should be able to see the post.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _buildAudienceBlock(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistributionSection() {
+    if (_isReply) return const SizedBox.shrink();
+
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraSectionHeader(
+            title: 'Advanced distribution',
+            subtitle:
+                'Cross-posting remains optional and separate from writing.',
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          _buildExternalPublishingBlock(),
         ],
       ),
     );
@@ -2503,29 +2727,53 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Widget _buildPageTopBar() {
-    return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        AuraSecondaryButton(
-          label: 'Back',
-          icon: Icons.arrow_back,
-          onPressed: _posting
-              ? null
-              : () {
-                  context.pop();
-                },
+    return AuraGradientHeader(
+      title: _isReply ? 'Write a response' : 'Create post',
+      subtitle: _isReply
+          ? 'Reply first. The response stays attached to the conversation.'
+          : 'Write first, configure second, review third.',
+      leading: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: AuraSurface.accentSoft,
+          borderRadius: BorderRadius.circular(AuraRadius.card),
+          border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
         ),
-        Text(
-          _isReply ? 'Respond to record' : 'Add to record',
-          style: AuraText.title,
+        child: Icon(
+          _isReply ? Icons.reply_rounded : Icons.edit_note_rounded,
+          color: AuraSurface.accentText,
         ),
-        Text(
-          _savedLine(),
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-      ],
+      ),
+      trailing: Wrap(
+        spacing: AuraSpace.s8,
+        runSpacing: AuraSpace.s8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.end,
+        children: [
+          AuraStatusChip(
+            label: _savedLine(),
+            backgroundColor: AuraSurface.subtle,
+            textColor: AuraSurface.muted,
+          ),
+          AuraSecondaryButton(
+            label: 'Review',
+            icon: Icons.fact_check_outlined,
+            onPressed: (_posting || _compositionBusy)
+                ? null
+                : () => _runCompositionReview(),
+          ),
+          AuraGhostButton(
+            label: 'Back',
+            icon: Icons.arrow_back,
+            onPressed: _posting
+                ? null
+                : () {
+                    context.pop();
+                  },
+          ),
+        ],
+      ),
     );
   }
 
@@ -2533,14 +2781,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return Wrap(
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
+      alignment: WrapAlignment.start,
       children: [
-        AuraSecondaryButton(
-          label: _compositionBusy ? 'Reviewing…' : 'Review',
-          icon: Icons.fact_check_outlined,
-          onPressed: (_posting || _compositionBusy)
-              ? null
-              : () => _runCompositionReview(),
-        ),
         AuraSecondaryButton(
           label: _translationBusy ? 'Translating…' : 'Translate',
           icon: Icons.translate_outlined,
@@ -2588,11 +2830,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Widget _buildIntentCard() {
     final title = _isReply
-        ? 'Your response will stay with the same record.'
+        ? 'Your response will stay with the same conversation.'
         : 'What you place here can remain visible, reviewable, and accountable over time.';
     final subtitle = _isReply
         ? 'Respond with care. Your words become part of the public thread around this work.'
-        : 'Write for the record first. Publishing elsewhere, translation, and review stay available as supporting tools.';
+        : 'Write for the record first. Audience, attachments, translation, and distribution stay available as supporting tools.';
 
     return Container(
       width: double.infinity,
@@ -2606,7 +2848,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isReply ? 'Response context' : 'Record context',
+            _isReply ? 'Response context' : 'Publishing context',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -2974,25 +3216,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       child: Row(
         children: [
           Expanded(
-            child: AuraGhostButton(
-              label: _isReply
-                  ? 'Holding disabled for replies'
-                  : 'Hold for later',
-              onPressed:
-                  (_isReply ||
-                      _posting ||
-                      _saving ||
-                      !_hasText ||
-                      _uploadingMedia)
-                  ? null
-                  : () {
-                      if (!_hasText) {
-                        setState(() => _showTextError = true);
-                        return;
-                      }
-                      _saveDraft(silent: false);
-                    },
+            child: Text(
+              _savedLine(),
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          AuraGhostButton(
+            label: _isReply ? 'Save unavailable' : 'Save draft',
+            onPressed:
+                (_isReply ||
+                    _posting ||
+                    _saving ||
+                    !_hasText ||
+                    _uploadingMedia)
+                ? null
+                : () {
+                    if (!_hasText) {
+                      setState(() => _showTextError = true);
+                      return;
+                    }
+                    _saveDraft(silent: false);
+                  },
           ),
           const SizedBox(width: AuraSpace.s12),
           AuraPrimaryButton(
@@ -3002,7 +3247,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       : (_publishingToTikTok
                             ? 'Queuing TikTok…'
                             : 'Publishing…'))
-                : (_isReply ? 'Publish response' : 'Publish to record'),
+                : (_isReply ? 'Publish response' : 'Publish post'),
             onPressed: (_posting || !_canPublish)
                 ? null
                 : () {
@@ -3021,6 +3266,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final wide = MediaQuery.of(context).size.width >= 1080;
 
     return AuraScaffold(
       showHeader: false,
@@ -3040,7 +3286,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 920),
+                    constraints: const BoxConstraints(maxWidth: 1240),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -3048,7 +3294,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         const SizedBox(height: AuraSpace.s12),
                         _buildActionRow(),
                         const SizedBox(height: AuraSpace.s16),
-                        _buildMainCard(),
+                        _buildMainCard(context, wide: wide),
                       ],
                     ),
                   ),

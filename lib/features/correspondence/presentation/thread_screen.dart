@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -312,7 +313,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
                       return Column(
                         children: [
-                          _ThreadHeaderCard(
+                          _ThreadModeHeaderCard(
                             thread: thread,
                             contextData: contextData,
                             liveState: liveState,
@@ -397,6 +398,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 threadId: threadId,
                                 messagesAsync: messagesAsync,
                                 currentUserId: currentUserId,
+                                threadContext: contextData,
                                 onRefresh: _refreshThreadData,
                                 onEditMessage: (message) =>
                                     _showEditMessageDialog(
@@ -420,7 +422,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               final sideRail = _ThreadSideRail(
                                 threadAsync: threadAsync,
                                 liveState: liveState,
-                                currentUserId: currentUserId,
+                                threadContext: contextData,
                                 onOpenSpace: () {
                                   final spaceId = _pickString(
                                     thread,
@@ -497,8 +499,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 }
 
-class _ThreadHeaderCard extends StatelessWidget {
-  const _ThreadHeaderCard({
+class _ThreadModeHeaderCard extends StatelessWidget {
+  const _ThreadModeHeaderCard({
     required this.thread,
     required this.contextData,
     required this.liveState,
@@ -528,9 +530,13 @@ class _ThreadHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-    final chips = contextData.participantChips;
-    final kindLabel = contextData.kindLabel;
+    final isDirect = contextData.isDirect;
+    final isGroup = contextData.isGroup;
+    final isSpace = contextData.isSpace;
+    final title = _modeTitle();
+    final subtitle = _modeSubtitle();
+    final participantCount = _extractParticipants(thread).length;
+    final conversationId = _pickString(thread, const ['id', 'threadId']);
 
     return AuraCard(
       padding: const EdgeInsets.all(18),
@@ -541,7 +547,7 @@ class _ThreadHeaderCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AuraAvatar(
-                name: contextData.title,
+                name: title,
                 imageUrl: contextData.avatarUrl,
                 size: 44,
               ),
@@ -555,31 +561,43 @@ class _ThreadHeaderCard extends StatelessWidget {
                       runSpacing: AuraSpace.s8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(contextData.title, style: AuraText.title),
-                        AuraStatusChip(label: kindLabel),
-                          if (spaceId.isNotEmpty)
-                            const AuraStatusChip(
-                              label: 'Space',
-                              backgroundColor: AuraSurface.goodBg,
-                              textColor: AuraSurface.goodInk,
-                            ),
+                        Text(title, style: AuraText.title),
+                        AuraStatusChip(label: contextData.kindLabel),
+                        if (isDirect)
+                          const AuraStatusChip(
+                            label: 'Private',
+                            backgroundColor: AuraSurface.subtle,
+                            textColor: AuraSurface.muted,
+                          )
+                        else if (isGroup)
+                          const AuraStatusChip(
+                            label: 'Group',
+                            backgroundColor: AuraSurface.subtle,
+                            textColor: AuraSurface.muted,
+                          )
+                        else if (isSpace)
+                          const AuraStatusChip(
+                            label: 'Shared space',
+                            backgroundColor: AuraSurface.goodBg,
+                            textColor: AuraSurface.goodInk,
+                          ),
                       ],
                     ),
-                    if (contextData.subtitle.isNotEmpty) ...[
+                    if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s4),
                       AuraTextBlock(
-                        contextData.subtitle,
+                        subtitle,
                         style: AuraText.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    if (chips.isNotEmpty) ...[
+                    if (contextData.participantChips.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s10),
                       Wrap(
                         spacing: AuraSpace.s8,
                         runSpacing: AuraSpace.s8,
-                        children: chips
+                        children: contextData.participantChips
                             .map(
                               (label) => AuraStatusChip(
                                 label: label,
@@ -590,10 +608,23 @@ class _ThreadHeaderCard extends StatelessWidget {
                             .toList(),
                       ),
                     ],
+                    if (participantCount > 0) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        isDirect
+                            ? (participantCount == 1
+                                  ? '1 participant in view'
+                                  : '$participantCount participants in view')
+                            : '$participantCount participant${participantCount == 1 ? '' : 's'}',
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                      ),
+                    ],
                     if (contextData.roleSummary.isNotEmpty ||
                         contextData.activityWeight.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s4),
-                      AuraTextBlock(
+                      Text(
                         [
                           if (contextData.roleSummary.isNotEmpty)
                             contextData.roleSummary,
@@ -611,41 +642,13 @@ class _ThreadHeaderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
-              Flexible(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AuraSpace.s6,
-                    runSpacing: AuraSpace.s6,
-                    children: [
-                      _HeaderIconAction(
-                        icon: Icons.call_rounded,
-                        onPressed: () => onStartAudio(),
-                      ),
-                      _HeaderIconAction(
-                        icon: Icons.videocam_rounded,
-                        onPressed: () => onStartVideo(),
-                      ),
-                      if (spaceId.isNotEmpty)
-                        _HeaderIconAction(
-                          icon: Icons.person_add_alt_1_rounded,
-                          onPressed: onAddMembers,
-                        ),
-                      if (spaceId.isNotEmpty)
-                        _HeaderIconAction(
-                          icon: Icons.group_add_rounded,
-                          onPressed: onInvite,
-                        ),
-                      if (spaceId.isNotEmpty)
-                        _HeaderIconAction(
-                          icon: Icons.open_in_new_rounded,
-                          onPressed: onOpenSpace,
-                        ),
-                    ],
-                  ),
-                ),
+              _ThreadActionCluster(
+                conversationId: conversationId,
+                onStartAudio: onStartAudio,
+                onStartVideo: onStartVideo,
+                onSpaceOpen: isSpace ? onOpenSpace : null,
+                onInvite: isSpace ? onInvite : null,
+                onAddMembers: isSpace ? onAddMembers : null,
               ),
             ],
           ),
@@ -660,6 +663,136 @@ class _ThreadHeaderCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  String _modeTitle() {
+    if (contextData.isDirect || contextData.isGroup) {
+      return contextData.title;
+    }
+    if (contextData.spaceTitle.isNotEmpty) {
+      return contextData.spaceTitle;
+    }
+    return contextData.title;
+  }
+
+  String _modeSubtitle() {
+    if (contextData.isDirect) {
+      return contextData.activityWeight.isNotEmpty
+          ? contextData.activityWeight
+          : contextData.subtitle;
+    }
+    if (contextData.isGroup) {
+      return contextData.participantSummary.isNotEmpty
+          ? contextData.participantSummary
+          : contextData.subtitle;
+    }
+    if (contextData.isSpace) {
+      final base = contextData.spaceTitle.isNotEmpty
+          ? 'Shared space'
+          : contextData.subtitle;
+      if (contextData.explicitTitle.isNotEmpty &&
+          contextData.explicitTitle != contextData.spaceTitle) {
+        return '$base · ${contextData.explicitTitle}';
+      }
+      return base;
+    }
+    return contextData.subtitle;
+  }
+}
+
+class _ThreadActionCluster extends StatelessWidget {
+  const _ThreadActionCluster({
+    required this.conversationId,
+    required this.onStartAudio,
+    required this.onStartVideo,
+    this.onSpaceOpen,
+    this.onInvite,
+    this.onAddMembers,
+  });
+
+  final String conversationId;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+  final VoidCallback? onSpaceOpen;
+  final VoidCallback? onInvite;
+  final VoidCallback? onAddMembers;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AuraSpace.s6,
+      runSpacing: AuraSpace.s6,
+      children: [
+        _HeaderIconAction(
+          icon: Icons.call_rounded,
+          onPressed: () => onStartAudio(),
+        ),
+        _HeaderIconAction(
+          icon: Icons.videocam_rounded,
+          onPressed: () => onStartVideo(),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'More actions',
+          icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+          color: AuraSurface.card,
+          itemBuilder: (_) {
+            final items = <PopupMenuEntry<String>>[
+              const PopupMenuItem(
+                value: 'copy-id',
+                child: Text('Copy conversation ID'),
+              ),
+            ];
+            if (onSpaceOpen != null) {
+              items.addAll([
+                const PopupMenuItem(
+                  value: 'open-space',
+                  child: Text('Open space'),
+                ),
+                if (onAddMembers != null)
+                  const PopupMenuItem(
+                    value: 'add-members',
+                    child: Text('Add members'),
+                  ),
+                const PopupMenuItem(
+                  value: 'manage-invites',
+                  child: Text('Manage invites'),
+                ),
+              ]);
+            }
+            return items;
+          },
+          onSelected: (value) async {
+            if (value == 'copy-id') {
+              final text = conversationId.trim().isNotEmpty
+                  ? conversationId.trim()
+                  : GoRouterState.of(context).uri.path;
+              await Clipboard.setData(
+                ClipboardData(text: text),
+              );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Conversation ID copied.')),
+              );
+              return;
+            }
+            if (value == 'open-space' && onSpaceOpen != null) {
+              onSpaceOpen!();
+              return;
+            }
+            if (value == 'add-members' && onAddMembers != null) {
+              onAddMembers!();
+              return;
+            }
+            if (value == 'manage-invites' && onInvite != null) {
+              onInvite!();
+              return;
+            }
+          },
+        ),
+      ],
     );
   }
 }
@@ -697,6 +830,7 @@ class _ThreadConversationPanel extends StatelessWidget {
     required this.threadId,
     required this.messagesAsync,
     required this.currentUserId,
+    required this.threadContext,
     required this.onRefresh,
     required this.onEditMessage,
     required this.onDeleteMessage,
@@ -705,6 +839,7 @@ class _ThreadConversationPanel extends StatelessWidget {
   final String threadId;
   final AsyncValue<List<Map<String, dynamic>>> messagesAsync;
   final String currentUserId;
+  final CorrespondenceThreadContext threadContext;
   final VoidCallback onRefresh;
   final void Function(Map<String, dynamic> message) onEditMessage;
   final Future<void> Function(Map<String, dynamic> message) onDeleteMessage;
@@ -716,13 +851,13 @@ class _ThreadConversationPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Expanded(
-                child: Text('Messages', style: AuraText.title),
+                child: Text(_sectionTitle(), style: AuraText.title),
               ),
               AuraStatusChip(
-                label: 'Thread',
+                label: threadContext.kindLabel,
                 backgroundColor: AuraSurface.subtle,
                 textColor: AuraSurface.muted,
               ),
@@ -731,20 +866,20 @@ class _ThreadConversationPanel extends StatelessWidget {
           const SizedBox(height: AuraSpace.s12),
           messagesAsync.when(
             loading: () => const AuraCard(
-              child: _LoadingBlock(label: 'Loading messages...'),
+              child: _LoadingBlock(label: 'Loading conversation...'),
             ),
             error: (error, _) => AuraCard(
               child: _ErrorBlock(
-                title: 'Could not load messages',
+                title: 'Could not load conversation',
                 body: '$error',
                 onRetry: onRefresh,
               ),
             ),
             data: (messages) {
               if (messages.isEmpty) {
-                return const AuraEmptyState(
-                  title: 'No messages yet',
-                  body: 'This conversation has not started yet. Your first note will appear here.',
+                return AuraEmptyState(
+                  title: _emptyTitle(),
+                  body: _emptyBody(),
                   icon: Icons.forum_outlined,
                 );
               }
@@ -775,13 +910,40 @@ class _ThreadConversationPanel extends StatelessWidget {
       ),
     );
   }
+
+  String _sectionTitle() {
+    if (threadContext.isDirect) return 'Conversation';
+    if (threadContext.isGroup) return 'Group messages';
+    if (threadContext.isSpace) return 'Thread';
+    return 'Messages';
+  }
+
+  String _emptyTitle() {
+    if (threadContext.isDirect) return 'No messages yet';
+    if (threadContext.isGroup) return 'No group messages yet';
+    if (threadContext.isSpace) return 'No thread messages yet';
+    return 'No messages yet';
+  }
+
+  String _emptyBody() {
+    if (threadContext.isDirect) {
+      return 'This private conversation has not started yet. Your first message will appear here.';
+    }
+    if (threadContext.isGroup) {
+      return 'This group conversation is still quiet. Start the thread and it will appear here.';
+    }
+    if (threadContext.isSpace) {
+      return 'This space thread has not started yet. Your first note will appear here.';
+    }
+    return 'This conversation has not started yet. Your first note will appear here.';
+  }
 }
 
 class _ThreadSideRail extends StatelessWidget {
   const _ThreadSideRail({
     required this.threadAsync,
     required this.liveState,
-    required this.currentUserId,
+    required this.threadContext,
     this.onOpenSpace,
     this.onOpenInvites,
     this.onStartAudio,
@@ -790,7 +952,7 @@ class _ThreadSideRail extends StatelessWidget {
 
   final AsyncValue<Map<String, dynamic>> threadAsync;
   final RealtimeState liveState;
-  final String currentUserId;
+  final CorrespondenceThreadContext threadContext;
   final VoidCallback? onOpenSpace;
   final Future<void> Function()? onOpenInvites;
   final Future<void> Function()? onStartAudio;
@@ -807,140 +969,353 @@ class _ThreadSideRail extends StatelessWidget {
         body: '$error',
       ),
       data: (thread) {
-        final threadContext = CorrespondenceIdentity.resolveThreadContext(
-          thread,
-          currentUserId: currentUserId,
-        );
         final participants = CorrespondenceIdentity.extractParticipants(thread);
-        final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
-        final showSpaceActions = spaceId.isNotEmpty;
         final joinedCount = liveState.participants.where((p) => p.isPresent).length;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AuraCard(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Conversation brief', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s12),
-                  AuraAvatar(
-                    name: threadContext.title,
-                    imageUrl: threadContext.avatarUrl,
-                    size: 52,
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  Text(threadContext.title, style: AuraText.subtitle),
-                  if (threadContext.subtitle.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text(
-                      threadContext.subtitle,
-                      style: AuraText.muted,
-                    ),
-                  ],
-                  if (threadContext.participantChips.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      children: threadContext.participantChips
-                          .map(
-                            (label) => AuraStatusChip(
-                              label: label,
-                              backgroundColor: AuraSurface.subtle,
-                              textColor: AuraSurface.ink,
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
-                  if (threadContext.roleSummary.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Text(threadContext.roleSummary, style: AuraText.small),
-                  ],
-                  if (threadContext.activityWeight.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s6),
-                    Text(threadContext.activityWeight, style: AuraText.small),
-                  ],
-                  if (participants.isNotEmpty) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Text(
-                      '${participants.length} participant${participants.length == 1 ? '' : 's'}',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            AuraCard(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Live status', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    joinedCount > 0
-                        ? 'Live participants present now.'
-                        : 'No one is currently joined.',
-                    style: AuraText.body,
-                  ),
-                  if (onStartAudio != null || onStartVideo != null) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Wrap(
-                      spacing: AuraSpace.s10,
-                      runSpacing: AuraSpace.s10,
-                      children: [
-                        if (onStartAudio != null)
-                          AuraSecondaryButton(
-                            label: 'Audio call',
-                            icon: Icons.call_rounded,
-                            onPressed: () => onStartAudio!(),
-                          ),
-                        if (onStartVideo != null)
-                          AuraSecondaryButton(
-                            label: 'Video call',
-                            icon: Icons.videocam_rounded,
-                            onPressed: () => onStartVideo!(),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (showSpaceActions) ...[
-              const SizedBox(height: AuraSpace.s12),
-              AuraCard(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Space actions', style: AuraText.title),
-                    const SizedBox(height: AuraSpace.s10),
-                    if (onOpenSpace != null)
-                      AuraSecondaryButton(
-                        label: 'Open space',
-                        icon: Icons.open_in_new_rounded,
-                        onPressed: onOpenSpace,
-                      ),
-                    const SizedBox(height: AuraSpace.s10),
-                    if (onOpenInvites != null)
-                      AuraSecondaryButton(
-                        label: 'Manage invites',
-                        icon: Icons.mail_outline_rounded,
-                        onPressed: () => onOpenInvites!(),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ],
+        if (threadContext.isDirect) {
+          return _DirectConversationRail(
+            thread: thread,
+            threadContext: threadContext,
+            joinedCount: joinedCount,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
+          );
+        }
+
+        if (threadContext.isGroup) {
+          return _GroupConversationRail(
+            thread: thread,
+            threadContext: threadContext,
+            participants: participants,
+            joinedCount: joinedCount,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
+          );
+        }
+
+        return _SpaceThreadRail(
+          thread: thread,
+          threadContext: threadContext,
+          participants: participants,
+          joinedCount: joinedCount,
+          onOpenSpace: onOpenSpace,
+          onOpenInvites: onOpenInvites,
+          onStartAudio: onStartAudio,
+          onStartVideo: onStartVideo,
         );
       },
+    );
+  }
+}
+
+class _DirectConversationRail extends StatelessWidget {
+  const _DirectConversationRail({
+    required this.thread,
+    required this.threadContext,
+    required this.joinedCount,
+    this.onStartAudio,
+    this.onStartVideo,
+  });
+
+  final Map<String, dynamic> thread;
+  final CorrespondenceThreadContext threadContext;
+  final int joinedCount;
+  final Future<void> Function()? onStartAudio;
+  final Future<void> Function()? onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuraCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Profile brief', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s12),
+              AuraAvatar(
+                name: threadContext.title,
+                imageUrl: threadContext.avatarUrl,
+                size: 52,
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              Text(threadContext.title, style: AuraText.subtitle),
+              if (threadContext.subtitle.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.subtitle, style: AuraText.muted),
+              ],
+              if (threadContext.activityWeight.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.activityWeight, style: AuraText.small),
+              ],
+              const SizedBox(height: AuraSpace.s12),
+              Text(
+                joinedCount > 0
+                    ? 'Live presence detected now.'
+                    : 'No active live presence yet.',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _ThreadLiveCard(
+          label: 'Live status',
+          joinedCount: joinedCount,
+          onStartAudio: onStartAudio,
+          onStartVideo: onStartVideo,
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupConversationRail extends StatelessWidget {
+  const _GroupConversationRail({
+    required this.thread,
+    required this.threadContext,
+    required this.participants,
+    required this.joinedCount,
+    this.onStartAudio,
+    this.onStartVideo,
+  });
+
+  final Map<String, dynamic> thread;
+  final CorrespondenceThreadContext threadContext;
+  final List<Map<String, dynamic>> participants;
+  final int joinedCount;
+  final Future<void> Function()? onStartAudio;
+  final Future<void> Function()? onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuraCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Participants', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s12),
+              Text(
+                threadContext.participantSummary.isNotEmpty
+                    ? threadContext.participantSummary
+                    : '${participants.length} participants',
+                style: AuraText.body,
+              ),
+              if (threadContext.roleSummary.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.roleSummary, style: AuraText.small),
+              ],
+              if (threadContext.activityWeight.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.activityWeight, style: AuraText.small),
+              ],
+              const SizedBox(height: AuraSpace.s12),
+              Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                children: participants
+                    .take(4)
+                    .map(
+                      (participant) => AuraStatusChip(
+                        label: CorrespondenceIdentity.identityLine(
+                          participant,
+                          preferHandle: false,
+                        ),
+                        backgroundColor: AuraSurface.subtle,
+                        textColor: AuraSurface.ink,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _ThreadLiveCard(
+          label: 'Live status',
+          joinedCount: joinedCount,
+          onStartAudio: onStartAudio,
+          onStartVideo: onStartVideo,
+        ),
+      ],
+    );
+  }
+}
+
+class _SpaceThreadRail extends StatelessWidget {
+  const _SpaceThreadRail({
+    required this.thread,
+    required this.threadContext,
+    required this.participants,
+    required this.joinedCount,
+    this.onOpenSpace,
+    this.onOpenInvites,
+    this.onStartAudio,
+    this.onStartVideo,
+  });
+
+  final Map<String, dynamic> thread;
+  final CorrespondenceThreadContext threadContext;
+  final List<Map<String, dynamic>> participants;
+  final int joinedCount;
+  final VoidCallback? onOpenSpace;
+  final Future<void> Function()? onOpenInvites;
+  final Future<void> Function()? onStartAudio;
+  final Future<void> Function()? onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    final spaceId = _pickString(thread, const ['spaceId', 'space_id']);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuraCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Conversation brief', style: AuraText.title),
+              const SizedBox(height: AuraSpace.s12),
+              AuraAvatar(
+                name: threadContext.title,
+                imageUrl: threadContext.avatarUrl,
+                size: 52,
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              Text(threadContext.title, style: AuraText.subtitle),
+              if (threadContext.subtitle.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.subtitle, style: AuraText.muted),
+              ],
+              if (threadContext.participantChips.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  children: threadContext.participantChips
+                      .map(
+                        (label) => AuraStatusChip(
+                          label: label,
+                          backgroundColor: AuraSurface.subtle,
+                          textColor: AuraSurface.ink,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              if (threadContext.roleSummary.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Text(threadContext.roleSummary, style: AuraText.small),
+              ],
+              if (threadContext.activityWeight.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s6),
+                Text(threadContext.activityWeight, style: AuraText.small),
+              ],
+              if (participants.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Text(
+                  '${participants.length} participant${participants.length == 1 ? '' : 's'}',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _ThreadLiveCard(
+          label: 'Live status',
+          joinedCount: joinedCount,
+          onStartAudio: onStartAudio,
+          onStartVideo: onStartVideo,
+        ),
+        if (spaceId.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s12),
+          AuraCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Space actions', style: AuraText.title),
+                const SizedBox(height: AuraSpace.s10),
+                if (onOpenSpace != null)
+                  AuraSecondaryButton(
+                    label: 'Open space',
+                    icon: Icons.open_in_new_rounded,
+                    onPressed: onOpenSpace,
+                  ),
+                const SizedBox(height: AuraSpace.s10),
+                if (onOpenInvites != null)
+                  AuraSecondaryButton(
+                    label: 'Manage invites',
+                    icon: Icons.mail_outline_rounded,
+                    onPressed: () => onOpenInvites!(),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ThreadLiveCard extends StatelessWidget {
+  const _ThreadLiveCard({
+    required this.label,
+    required this.joinedCount,
+    this.onStartAudio,
+    this.onStartVideo,
+  });
+
+  final String label;
+  final int joinedCount;
+  final Future<void> Function()? onStartAudio;
+  final Future<void> Function()? onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AuraText.title),
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            joinedCount > 0
+                ? 'Live participants present now.'
+                : 'No one is currently joined.',
+            style: AuraText.body,
+          ),
+          if (onStartAudio != null || onStartVideo != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                if (onStartAudio != null)
+                  AuraSecondaryButton(
+                    label: 'Audio call',
+                    icon: Icons.call_rounded,
+                    onPressed: () => onStartAudio!(),
+                  ),
+                if (onStartVideo != null)
+                  AuraSecondaryButton(
+                    label: 'Video call',
+                    icon: Icons.videocam_rounded,
+                    onPressed: () => onStartVideo!(),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
