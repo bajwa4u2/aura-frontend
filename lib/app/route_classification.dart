@@ -1,3 +1,7 @@
+bool isAdminShellPath(String path) {
+  return path == '/admin' || path == '/admin/communications';
+}
+
 bool isInstitutionShellPath(String path) {
   return path == '/enter-institution' ||
       path == '/institution/sign-in' ||
@@ -29,8 +33,6 @@ bool isMemberShellPath(String path) {
       path == '/me/invitations' ||
       path == '/invite' ||
       path == '/invite/create' ||
-      path == '/admin' ||
-      path == '/admin/communications' ||
       path == '/realtime' ||
       path.startsWith('/realtime/') ||
       path == '/me/correspondence' ||
