@@ -14,7 +14,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/aura_text_block.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
@@ -485,163 +484,312 @@ class _ThreadModeHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDirect = contextData.isDirect;
     final isGroup = contextData.isGroup;
-    final isSpace = contextData.isSpace;
-    final title = _modeTitle();
-    final subtitle = _modeSubtitle();
     final participantCount = _extractParticipants(thread).length;
     final conversationId = pickString(thread, const ['id', 'threadId']);
 
+    if (isDirect) {
+      return _DirectThreadHeader(
+        contextData: contextData,
+        conversationId: conversationId,
+        participantCount: participantCount,
+        onStartAudio: onStartAudio,
+        onStartVideo: onStartVideo,
+      );
+    }
+
+    if (isGroup) {
+      return _GroupThreadHeader(
+        contextData: contextData,
+        conversationId: conversationId,
+        participantCount: participantCount,
+        onStartAudio: onStartAudio,
+        onStartVideo: onStartVideo,
+      );
+    }
+
+    return _SpaceThreadHeader(
+      contextData: contextData,
+      conversationId: conversationId,
+      participantCount: participantCount,
+      onOpenSpace: onOpenSpace,
+      onInvite: onInvite,
+      onAddMembers: onAddMembers,
+      onStartAudio: onStartAudio,
+      onStartVideo: onStartVideo,
+    );
+  }
+}
+
+class _DirectThreadHeader extends StatelessWidget {
+  const _DirectThreadHeader({
+    required this.contextData,
+    required this.conversationId,
+    required this.participantCount,
+    required this.onStartAudio,
+    required this.onStartVideo,
+  });
+
+  final CorrespondenceThreadContext contextData;
+  final String conversationId;
+  final int participantCount;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = contextData.title;
+    final subtitle = [
+      if (contextData.participantSummary.isNotEmpty) contextData.participantSummary,
+      if (contextData.activityWeight.isNotEmpty) contextData.activityWeight,
+    ].join(' · ');
+
     return AuraCard(
       padding: const EdgeInsets.all(18),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AuraAvatar(
-                name: title,
-                imageUrl: contextData.avatarUrl,
-                size: 44,
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          AuraAvatar(name: title, imageUrl: contextData.avatarUrl, size: 48),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Wrap(
-                      spacing: AuraSpace.s8,
-                      runSpacing: AuraSpace.s8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(title, style: AuraText.title),
-                        AuraStatusChip(label: contextData.kindLabel),
-                        if (isDirect)
-                          const AuraStatusChip(
-                            label: 'Private',
-                            backgroundColor: AuraSurface.subtle,
-                            textColor: AuraSurface.muted,
-                          )
-                        else if (isGroup)
-                          const AuraStatusChip(
-                            label: 'Group',
-                            backgroundColor: AuraSurface.subtle,
-                            textColor: AuraSurface.muted,
-                          )
-                        else if (isSpace)
-                          const AuraStatusChip(
-                            label: 'Shared space',
-                            backgroundColor: AuraSurface.goodBg,
-                            textColor: AuraSurface.goodInk,
-                          ),
-                      ],
+                    Text(title, style: AuraText.title),
+                    const AuraStatusChip(
+                      label: 'Private conversation',
+                      backgroundColor: AuraSurface.subtle,
+                      textColor: AuraSurface.muted,
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      AuraTextBlock(
-                        subtitle,
-                        style: AuraText.body,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    if (participantCount > 0)
+                      AuraStatusChip(
+                        label: participantCount == 1
+                            ? '1 participant'
+                            : '$participantCount participants',
+                        backgroundColor: AuraSurface.subtle,
+                        textColor: AuraSurface.muted,
                       ),
-                    ],
-                    if (contextData.participantChips.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Wrap(
-                        spacing: AuraSpace.s8,
-                        runSpacing: AuraSpace.s8,
-                        children: contextData.participantChips
-                            .map(
-                              (label) => AuraStatusChip(
-                                label: label,
-                                backgroundColor: AuraSurface.subtle,
-                                textColor: AuraSurface.ink,
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                    if (participantCount > 0) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      Text(
-                        isDirect
-                            ? (participantCount == 1
-                                  ? '1 participant in view'
-                                  : '$participantCount participants in view')
-                            : '$participantCount participant${participantCount == 1 ? '' : 's'}',
-                        style: AuraText.small.copyWith(
-                          color: AuraSurface.muted,
-                        ),
-                      ),
-                    ],
-                    if (contextData.roleSummary.isNotEmpty ||
-                        contextData.activityWeight.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      Text(
-                        [
-                          if (contextData.roleSummary.isNotEmpty)
-                            contextData.roleSummary,
-                          if (contextData.activityWeight.isNotEmpty)
-                            contextData.activityWeight,
-                        ].join(' · '),
-                        style: AuraText.small.copyWith(
-                          color: AuraSurface.muted,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
                 ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              _ThreadActionCluster(
-                conversationId: conversationId,
-                onStartAudio: onStartAudio,
-                onStartVideo: onStartVideo,
-                onSpaceOpen: isSpace ? onOpenSpace : null,
-                onInvite: isSpace ? onInvite : null,
-                onAddMembers: isSpace ? onAddMembers : null,
-              ),
-            ],
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    subtitle,
+                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (contextData.roleSummary.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    contextData.roleSummary,
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          _ThreadActionCluster(
+            conversationId: conversationId,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
           ),
         ],
       ),
     );
   }
+}
 
-  String _modeTitle() {
-    if (contextData.isDirect || contextData.isGroup) {
-      return contextData.title;
-    }
-    if (contextData.spaceTitle.isNotEmpty) {
-      return contextData.spaceTitle;
-    }
-    return contextData.title;
+class _GroupThreadHeader extends StatelessWidget {
+  const _GroupThreadHeader({
+    required this.contextData,
+    required this.conversationId,
+    required this.participantCount,
+    required this.onStartAudio,
+    required this.onStartVideo,
+  });
+
+  final CorrespondenceThreadContext contextData;
+  final String conversationId;
+  final int participantCount;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AuraAvatar(name: contextData.title, imageUrl: contextData.avatarUrl, size: 48),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(contextData.title, style: AuraText.title),
+                    const AuraStatusChip(
+                      label: 'Group conversation',
+                      backgroundColor: AuraSurface.subtle,
+                      textColor: AuraSurface.muted,
+                    ),
+                    if (participantCount > 0)
+                      AuraStatusChip(
+                        label: participantCount == 1
+                            ? '1 participant'
+                            : '$participantCount participants',
+                        backgroundColor: AuraSurface.subtle,
+                        textColor: AuraSurface.muted,
+                      ),
+                  ],
+                ),
+                if (contextData.participantSummary.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    contextData.participantSummary,
+                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (contextData.activityWeight.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s6),
+                  Text(
+                    contextData.activityWeight,
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          _ThreadActionCluster(
+            conversationId: conversationId,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  String _modeSubtitle() {
-    if (contextData.isDirect) {
-      return contextData.activityWeight.isNotEmpty
-          ? contextData.activityWeight
-          : contextData.subtitle;
-    }
-    if (contextData.isGroup) {
-      return contextData.participantSummary.isNotEmpty
-          ? contextData.participantSummary
-          : contextData.subtitle;
-    }
-    if (contextData.isSpace) {
-      final base = contextData.spaceTitle.isNotEmpty
-          ? 'Shared space'
-          : contextData.subtitle;
-      if (contextData.explicitTitle.isNotEmpty &&
-          contextData.explicitTitle != contextData.spaceTitle) {
-        return '$base · ${contextData.explicitTitle}';
-      }
-      return base;
-    }
-    return contextData.subtitle;
+class _SpaceThreadHeader extends StatelessWidget {
+  const _SpaceThreadHeader({
+    required this.contextData,
+    required this.conversationId,
+    required this.participantCount,
+    required this.onOpenSpace,
+    required this.onInvite,
+    required this.onAddMembers,
+    required this.onStartAudio,
+    required this.onStartVideo,
+  });
+
+  final CorrespondenceThreadContext contextData;
+  final String conversationId;
+  final int participantCount;
+  final VoidCallback onOpenSpace;
+  final VoidCallback onInvite;
+  final VoidCallback onAddMembers;
+  final Future<void> Function() onStartAudio;
+  final Future<void> Function() onStartVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AuraAvatar(name: contextData.spaceTitle.isNotEmpty ? contextData.spaceTitle : contextData.title, imageUrl: contextData.avatarUrl, size: 48),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      contextData.spaceTitle.isNotEmpty
+                          ? contextData.spaceTitle
+                          : contextData.title,
+                      style: AuraText.title,
+                    ),
+                    const AuraStatusChip(
+                      label: 'Shared space',
+                      backgroundColor: AuraSurface.goodBg,
+                      textColor: AuraSurface.goodInk,
+                    ),
+                    if (participantCount > 0)
+                      AuraStatusChip(
+                        label: participantCount == 1
+                            ? '1 participant'
+                            : '$participantCount participants',
+                        backgroundColor: AuraSurface.subtle,
+                        textColor: AuraSurface.muted,
+                      ),
+                  ],
+                ),
+                if (contextData.explicitTitle.isNotEmpty &&
+                    contextData.explicitTitle.toLowerCase() !=
+                        contextData.spaceTitle.toLowerCase()) ...[
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    contextData.explicitTitle,
+                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (contextData.participantChips.isNotEmpty) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    runSpacing: AuraSpace.s8,
+                    children: contextData.participantChips
+                        .map(
+                          (label) => AuraStatusChip(
+                            label: label,
+                            backgroundColor: AuraSurface.subtle,
+                            textColor: AuraSurface.ink,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          _ThreadActionCluster(
+            conversationId: conversationId,
+            onStartAudio: onStartAudio,
+            onStartVideo: onStartVideo,
+            onSpaceOpen: onOpenSpace,
+            onInvite: onInvite,
+            onAddMembers: onAddMembers,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1784,7 +1932,7 @@ class _ThreadVideoStage extends StatelessWidget {
                         ? RTCVideoView(
                             firstRemoteEntry.value,
                             objectFit: RTCVideoViewObjectFit
-                                .RTCVideoViewObjectFitCover,
+                                .RTCVideoViewObjectFitContain,
                           )
                         : const _CallStatePlaceholder(),
                   ),
@@ -1890,10 +2038,10 @@ class _LocalPip extends StatelessWidget {
       child: SizedBox(
         width: 96,
         height: 72,
-        child: RTCVideoView(
+          child: RTCVideoView(
           renderer,
           mirror: true,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
         ),
       ),
     );
@@ -1919,10 +2067,10 @@ class _ExtraParticipantsPip extends StatelessWidget {
                 child: SizedBox(
                   width: 72,
                   height: 54,
-                  child: RTCVideoView(
+                    child: RTCVideoView(
                     r,
                     objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
                   ),
                 ),
               ),
@@ -2158,4 +2306,3 @@ Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
 
   return <String, dynamic>{};
 }
-

@@ -129,7 +129,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     }
   }
 
-  void _dismissCurrent(Map<String, dynamic> item) {
+  Future<void> _declineCurrent(Map<String, dynamic> item) async {
     final id = _stringOf(item['id']);
     if (id.isNotEmpty) {
       _dismissedIds.add(id);
@@ -140,6 +140,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     ]);
     if (sessionId.isNotEmpty) {
       _dismissedSessionIds.add(sessionId);
+    }
+    if (id.isNotEmpty) {
+      await ref.read(notificationsControllerProvider.notifier).markRead(id);
     }
     setState(() {});
   }
@@ -181,6 +184,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
         : '$actorName started an audio call';
 
     final isVideo = mode == 'video';
+    final ringLabel = isVideo ? 'Incoming video call' : 'Incoming audio call';
 
     return Stack(
       children: [
@@ -239,7 +243,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                       ),
                       const SizedBox(width: AuraSpace.s6),
                       Text(
-                        isVideo ? 'Incoming video call' : 'Incoming audio call',
+                        ringLabel,
                         style: AuraText.small.copyWith(
                           fontWeight: FontWeight.w700,
                           color: isVideo
@@ -274,6 +278,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                   child: AuraAvatar(name: actorName, size: 96),
                 ),
                 const SizedBox(height: AuraSpace.s20),
+                Text(
+                  'Ringing now',
+                  style: AuraText.small.copyWith(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s6),
                 // Caller name
                 Text(
                   actorName,
@@ -304,11 +316,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                             color: AuraSurface.dangerInk,
                             background: AuraSurface.dangerBg,
                             size: 68,
-                            onTap: _joining ? null : () => _dismissCurrent(item),
+                            onTap: _joining ? null : () => _declineCurrent(item),
                           ),
                           const SizedBox(height: AuraSpace.s10),
                           Text(
-                            'Dismiss',
+                            'Decline',
                             style: AuraText.small.copyWith(
                               color: Colors.white.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w600,

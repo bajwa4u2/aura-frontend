@@ -621,20 +621,54 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                 maxScale: 4,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 320,
-                      width: 520,
-                      decoration: BoxDecoration(
-                        color: AuraSurface.overlay,
-                        borderRadius: BorderRadius.circular(AuraRadius.card),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Could not load image.',
-                        style: AuraText.body.copyWith(color: AuraSurface.muted),
+                  child: ColoredBox(
+                    color: Colors.black,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return SizedBox(
+                          height: 320,
+                          width: 520,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Loading image…',
+                                  style: AuraText.small.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 320,
+                        width: 520,
+                        decoration: BoxDecoration(
+                          color: AuraSurface.overlay,
+                          borderRadius: BorderRadius.circular(AuraRadius.card),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Could not load image.',
+                          style: AuraText.body.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -817,6 +851,13 @@ class _ImageAttachmentSurface extends StatelessWidget {
                   Image.network(
                     imageUrl,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const _MediaLoadingPlaceholder(
+                        icon: Icons.image_outlined,
+                        label: 'Loading image…',
+                      );
+                    },
                     errorBuilder: (_, __, ___) => _BrokenMediaFallback(
                       icon: Icons.image_outlined,
                       text: 'Image preview unavailable',
@@ -930,6 +971,13 @@ class _VideoAttachmentSurface extends StatelessWidget {
                   Image.network(
                     previewUrl,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const _MediaLoadingPlaceholder(
+                        icon: Icons.videocam_outlined,
+                        label: 'Loading video preview…',
+                      );
+                    },
                     errorBuilder: (_, __, ___) => const _BrokenMediaFallback(
                       icon: Icons.videocam_outlined,
                       text: 'Video preview unavailable',
@@ -1029,16 +1077,16 @@ class _AudioAttachmentSurface extends StatelessWidget {
         children: [
           Container(
             height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: hovering
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.transparent,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: hovering
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.transparent,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
-          ),
+                child: Icon(Icons.graphic_eq_outlined, color: secondaryTextColor),
+              ),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Column(
@@ -1154,6 +1202,32 @@ class _CenterPlayIcon extends StatelessWidget {
         Icons.play_arrow_rounded,
         color: AuraSurface.ink,
         size: 32,
+      ),
+    );
+  }
+}
+
+class _MediaLoadingPlaceholder extends StatelessWidget {
+  const _MediaLoadingPlaceholder({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AuraSurface.overlay,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 28, color: Colors.white70),
+          const SizedBox(height: 10),
+          Text(label, style: AuraText.small.copyWith(color: Colors.white70)),
+        ],
       ),
     );
   }

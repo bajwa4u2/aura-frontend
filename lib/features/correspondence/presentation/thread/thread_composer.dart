@@ -588,6 +588,29 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     });
   }
 
+  Future<void> _retryAttachment(_DraftAttachment attachment) async {
+    if (_sending || attachment.uploading) return;
+    setState(() {
+      attachment.uploading = true;
+      attachment.error = null;
+    });
+
+    try {
+      await _uploadAttachment(attachment);
+      if (!mounted) return;
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        attachment.error = '$e';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not upload attachment: $e')),
+      );
+    }
+  }
+
   Future<void> _showAttachmentSheet() async {
     if (_sending) return;
 
@@ -604,19 +627,64 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       final body = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: actions,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r12),
+                  border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+                ),
+                child: const Icon(
+                  Icons.attach_file_rounded,
+                  size: 18,
+                  color: AuraSurface.accentText,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add attachment',
+                      style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Choose how you want to add media or files.',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                icon: const Icon(Icons.close_rounded),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          ...actions,
+        ],
       );
 
       if (desktopSheet) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AuraCard(
-                padding: const EdgeInsets.all(16),
-                child: body,
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: AuraCard(
+                  padding: const EdgeInsets.all(16),
+                  child: body,
+                ),
               ),
             ),
           ),
@@ -829,11 +897,77 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
               padding: const EdgeInsets.all(14),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Message composer',
+                          style: AuraText.body.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (_attachments.isNotEmpty)
+                        Text(
+                          '${_attachments.length} attachment${_attachments.length == 1 ? '' : 's'}',
+                          style: AuraText.small.copyWith(
+                            color: AuraSurface.muted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                  TextField(
+                    controller: _controller,
+                    minLines: 1,
+                    maxLines: 6,
+                    textInputAction: TextInputAction.newline,
+                    decoration: InputDecoration(
+                      hintText: _recordingAudio
+                          ? 'Recording audio...'
+                          : 'Write a message',
+                      filled: true,
+                      fillColor: AuraSurface.subtle,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.r16),
+                        borderSide: const BorderSide(color: AuraSurface.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.r16),
+                        borderSide: const BorderSide(color: AuraSurface.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AuraRadius.r16),
+                        borderSide: const BorderSide(
+                          color: AuraSurface.accent,
+                        ),
+                      ),
+                    ),
+                    onChanged: (_) {
+                      setState(() {
+                        if ((_assistSnapshot ?? '') != _controller.text.trim()) {
+                          _suggestions = const [];
+                          _assistError = null;
+                          _assistSessionId = null;
+                          _dismissedSuggestionIds.clear();
+                        }
+                        if ((_translationSnapshot ?? '') !=
+                            _controller.text.trim()) {
+                          _translationPreview = null;
+                          _translationError = null;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
                   if (_attachments.isNotEmpty) ...[
                     _AttachmentPreviewRow(
                       attachments: _attachments,
                       onRemove: _removeAttachment,
+                      onRetry: _retryAttachment,
                     ),
                     const SizedBox(height: AuraSpace.s10),
                   ],
@@ -916,172 +1050,18 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                     ),
                     const SizedBox(height: AuraSpace.s10),
                   ],
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: AuraSurface.subtle,
-                          borderRadius: BorderRadius.circular(
-                            AuraRadius.r14,
-                          ),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: _sending ? null : _showAttachmentSheet,
-                          icon: const Icon(Icons.add_circle_outline),
-                          tooltip: 'Add attachment',
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              controller: _controller,
-                              minLines: 1,
-                              maxLines: 6,
-                              decoration: InputDecoration(
-                                hintText: _recordingAudio
-                                    ? 'Recording audio...'
-                                    : 'Write a message',
-                                filled: true,
-                                fillColor: AuraSurface.subtle,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AuraRadius.r16,
-                                  ),
-                                  borderSide:
-                                      const BorderSide(color: AuraSurface.divider),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AuraRadius.r16,
-                                  ),
-                                  borderSide:
-                                      const BorderSide(color: AuraSurface.divider),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AuraRadius.r16,
-                                  ),
-                                  borderSide: const BorderSide(
-                                    color: AuraSurface.accent,
-                                  ),
-                                ),
-                              ),
-                              onChanged: (_) {
-                                setState(() {
-                                  if ((_assistSnapshot ?? '') !=
-                                      _controller.text.trim()) {
-                                    _suggestions = const [];
-                                    _assistError = null;
-                                    _assistSessionId = null;
-                                    _dismissedSuggestionIds.clear();
-                                  }
-                                  if ((_translationSnapshot ?? '') !=
-                                      _controller.text.trim()) {
-                                    _translationPreview = null;
-                                    _translationError = null;
-                                  }
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AuraSpace.s8),
-                            Wrap(
-                              spacing: AuraSpace.s8,
-                              runSpacing: AuraSpace.s8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                AuraSecondaryButton(
-                                  label: _assistBusy ? 'Polishing…' : 'Polish',
-                                  icon: Icons.auto_fix_high_outlined,
-                                  onPressed: !_hasText || _assistBusy
-                                      ? null
-                                      : _runAssist,
-                                ),
-                                MouseRegion(
-                                  cursor: _translationBusy
-                                      ? SystemMouseCursors.basic
-                                      : SystemMouseCursors.click,
-                                  child: InkWell(
-                                    onTap: _translationBusy
-                                        ? null
-                                        : _pickComposerLanguage,
-                                    borderRadius: BorderRadius.circular(
-                                      AuraRadius.pill,
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AuraSpace.s12,
-                                        vertical: AuraSpace.s8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AuraSurface.subtle,
-                                        border: Border.all(
-                                          color: AuraSurface.divider,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          AuraRadius.pill,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.translate,
-                                            size: 14,
-                                            color: AuraSurface.muted,
-                                          ),
-                                          const SizedBox(width: AuraSpace.s6),
-                                          Text(
-                                            languageLabel(
-                                              _translationTargetLanguage,
-                                            ),
-                                            style: AuraText.small.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const SizedBox(width: AuraSpace.s4),
-                                          const Icon(
-                                            Icons.arrow_drop_down_rounded,
-                                            size: 16,
-                                            color: AuraSurface.muted,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                AuraSecondaryButton(
-                                  label: _translationBusy
-                                      ? 'Translating…'
-                                      : 'Translate',
-                                  icon: Icons.translate_outlined,
-                                  onPressed: !_hasText || _translationBusy
-                                      ? null
-                                      : _translateDraft,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s10),
-                      AuraPrimaryButton(
-                        label: _sending
-                            ? 'Sending…'
-                            : uploadingCount > 0
-                                ? 'Uploading…'
-                                : 'Send',
-                        onPressed: _canSend ? _submit : null,
-                        icon: Icons.send_rounded,
-                      ),
-                    ],
+                  _ComposerFooter(
+                    sending: _sending,
+                    uploadingCount: uploadingCount,
+                    hasText: _hasText,
+                    assistBusy: _assistBusy,
+                    translationBusy: _translationBusy,
+                    onAddAttachment: _showAttachmentSheet,
+                    onPolish: _runAssist,
+                    onPickLanguage: _pickComposerLanguage,
+                    onTranslate: _translateDraft,
+                    onSend: _submit,
+                    translationLabel: languageLabel(_translationTargetLanguage),
                   ),
                 ],
               ),
@@ -1331,10 +1311,12 @@ class _AttachmentPreviewRow extends StatelessWidget {
   const _AttachmentPreviewRow({
     required this.attachments,
     required this.onRemove,
+    required this.onRetry,
   });
 
   final List<_DraftAttachment> attachments;
   final void Function(_DraftAttachment attachment) onRemove;
+  final void Function(_DraftAttachment attachment) onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -1349,6 +1331,7 @@ class _AttachmentPreviewRow extends StatelessWidget {
           return _AttachmentPreviewCard(
             attachment: attachment,
             onRemove: () => onRemove(attachment),
+            onRetry: () => onRetry(attachment),
           );
         },
       ),
@@ -1360,10 +1343,12 @@ class _AttachmentPreviewCard extends StatelessWidget {
   const _AttachmentPreviewCard({
     required this.attachment,
     required this.onRemove,
+    required this.onRetry,
   });
 
   final _DraftAttachment attachment;
   final VoidCallback onRemove;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -1376,41 +1361,73 @@ class _AttachmentPreviewCard extends StatelessWidget {
 
     return Container(
       width: 240,
-      padding: const EdgeInsets.all(AuraSpace.s10),
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(
+          color: attachment.error != null
+              ? AuraSurface.dangerInk.withValues(alpha: 0.25)
+              : AuraSurface.divider,
+        ),
         borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _AttachmentIcon(kind: attachment.kind),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+          SizedBox(
+            height: 70,
+            child: _AttachmentPreviewMedia(attachment: attachment),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AuraSpace.s10),
+            child: Row(
               children: [
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.small.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.small.copyWith(
+                          color: attachment.error != null
+                              ? AuraSurface.dangerInk
+                              : AuraSurface.muted,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AuraSpace.s4),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small,
-                ),
+                if (attachment.uploading)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else if (attachment.error != null)
+                  IconButton(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Retry upload',
+                  )
+                else
+                  IconButton(
+                    onPressed: onRemove,
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Remove',
+                  ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: attachment.uploading ? null : onRemove,
-            icon: const Icon(Icons.close),
-            tooltip: 'Remove',
           ),
         ],
       ),
@@ -1418,34 +1435,191 @@ class _AttachmentPreviewCard extends StatelessWidget {
   }
 }
 
-class _AttachmentIcon extends StatelessWidget {
-  const _AttachmentIcon({required this.kind});
+class _AttachmentPreviewMedia extends StatelessWidget {
+  const _AttachmentPreviewMedia({required this.attachment});
 
-  final ThreadAttachmentKind kind;
+  final _DraftAttachment attachment;
 
   @override
   Widget build(BuildContext context) {
-    IconData icon;
-    switch (kind) {
+    switch (attachment.kind) {
       case ThreadAttachmentKind.image:
-        icon = Icons.image_outlined;
-        break;
+        if (attachment.bytes.isNotEmpty) {
+          return Image.memory(
+            attachment.bytes,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => const _AttachmentFallbackTile(
+              icon: Icons.image_outlined,
+              label: 'Image',
+            ),
+          );
+        }
+        return const _AttachmentFallbackTile(
+          icon: Icons.image_outlined,
+          label: 'Image',
+        );
       case ThreadAttachmentKind.video:
-        icon = Icons.videocam_outlined;
-        break;
+        return const _AttachmentFallbackTile(
+          icon: Icons.videocam_outlined,
+          label: 'Video',
+        );
       case ThreadAttachmentKind.audio:
-        icon = Icons.graphic_eq_outlined;
-        break;
+        return const _AttachmentFallbackTile(
+          icon: Icons.graphic_eq_outlined,
+          label: 'Audio',
+        );
     }
+  }
+}
 
+class _AttachmentFallbackTile extends StatelessWidget {
+  const _AttachmentFallbackTile({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      height: 40,
-      width: 40,
-      decoration: BoxDecoration(
-        border: Border.all(color: AuraSurface.divider),
-        borderRadius: BorderRadius.circular(AuraRadius.md),
+      color: AuraSurface.overlay,
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: AuraSurface.muted),
+          const SizedBox(width: 6),
+          Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+        ],
       ),
-      child: Icon(icon),
+    );
+  }
+}
+
+class _ComposerFooter extends StatelessWidget {
+  const _ComposerFooter({
+    required this.sending,
+    required this.uploadingCount,
+    required this.hasText,
+    required this.assistBusy,
+    required this.translationBusy,
+    required this.onAddAttachment,
+    required this.onPolish,
+    required this.onPickLanguage,
+    required this.onTranslate,
+    required this.onSend,
+    required this.translationLabel,
+  });
+
+  final bool sending;
+  final int uploadingCount;
+  final bool hasText;
+  final bool assistBusy;
+  final bool translationBusy;
+  final VoidCallback onAddAttachment;
+  final VoidCallback onPolish;
+  final VoidCallback onPickLanguage;
+  final VoidCallback onTranslate;
+  final VoidCallback onSend;
+  final String translationLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AuraSurface.subtle,
+                borderRadius: BorderRadius.circular(AuraRadius.r14),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                onPressed: sending ? null : onAddAttachment,
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Add attachment',
+              ),
+            ),
+            AuraSecondaryButton(
+              label: assistBusy ? 'Polishing…' : 'Polish',
+              icon: Icons.auto_fix_high_outlined,
+              onPressed: !hasText || assistBusy ? null : onPolish,
+            ),
+            MouseRegion(
+              cursor: translationBusy
+                  ? SystemMouseCursors.basic
+                  : SystemMouseCursors.click,
+              child: InkWell(
+                onTap: translationBusy ? null : onPickLanguage,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.subtle,
+                    border: Border.all(color: AuraSurface.divider),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.translate,
+                        size: 14,
+                        color: AuraSurface.muted,
+                      ),
+                      const SizedBox(width: AuraSpace.s6),
+                      Text(
+                        translationLabel,
+                        style: AuraText.small.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: AuraSpace.s4),
+                      const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 16,
+                        color: AuraSurface.muted,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            AuraSecondaryButton(
+              label: translationBusy ? 'Translating…' : 'Translate',
+              icon: Icons.translate_outlined,
+              onPressed: !hasText || translationBusy ? null : onTranslate,
+            ),
+          ],
+        ),
+        AuraPrimaryButton(
+          label: sending
+              ? 'Sending…'
+              : uploadingCount > 0
+              ? 'Uploading…'
+              : 'Send',
+          onPressed: sending ? null : onSend,
+          icon: Icons.send_rounded,
+        ),
+      ],
     );
   }
 }
@@ -1681,4 +1855,3 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
   final image = frame.image;
   return {'width': image.width, 'height': image.height};
 }
-

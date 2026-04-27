@@ -93,7 +93,7 @@ class RealtimeParticipantList extends StatelessWidget {
                         child: RTCVideoView(
                           renderer,
                           objectFit:
-                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
                         ),
                       ),
                     Expanded(
