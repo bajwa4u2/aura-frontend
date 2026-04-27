@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -1588,10 +1589,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _buildEditorSection(),
         belowEditorItems,
         if (!_isReply) ...[
-          if (showTranslation) ...[
-            _buildTranslationCard(),
-            const SizedBox(height: AuraSpace.s12),
-          ],
           _buildDistributionSection(),
           const SizedBox(height: AuraSpace.s12),
           _buildIntentCard(),
@@ -1680,7 +1677,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           decoration: BoxDecoration(
             color: AuraSurface.elevated,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AuraSurface.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2631,53 +2627,111 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Widget _buildPageTopBar() {
-    return AuraGradientHeader(
-      title: _isReply ? 'Write a response' : 'Create post',
-      subtitle: _isReply
-          ? 'Reply first. The response stays attached to the conversation.'
-          : 'Write first, configure second, review third.',
-      leading: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AuraSurface.accentSoft,
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
-        ),
-        child: Icon(
-          _isReply ? Icons.reply_rounded : Icons.edit_note_rounded,
-          color: AuraSurface.accentText,
-        ),
+    final leadingIcon = Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
       ),
-      trailing: Wrap(
-        spacing: AuraSpace.s8,
-        runSpacing: AuraSpace.s8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.end,
-        children: [
-          AuraStatusChip(
-            label: _savedLine(),
-            backgroundColor: AuraSurface.subtle,
-            textColor: AuraSurface.muted,
-          ),
-          AuraSecondaryButton(
-            label: 'Review',
-            icon: Icons.fact_check_outlined,
-            onPressed: (_posting || _compositionBusy)
-                ? null
-                : () => _runCompositionReview(),
-          ),
-          AuraGhostButton(
-            label: 'Back',
-            icon: Icons.arrow_back,
-            onPressed: _posting
-                ? null
-                : () {
-                    context.pop();
-                  },
-          ),
-        ],
+      child: Icon(
+        _isReply ? Icons.reply_rounded : Icons.edit_note_rounded,
+        color: AuraSurface.accentText,
       ),
+    );
+
+    final title = _isReply ? 'Write a response' : 'Create post';
+    final subtitle = _isReply
+        ? 'Reply first. The response stays attached to the conversation.'
+        : 'Write first, configure second, review third.';
+
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        if (constraints.maxWidth < 560) {
+          return Container(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            decoration: BoxDecoration(
+              gradient: AuraGradients.header,
+              borderRadius: BorderRadius.circular(AuraRadius.card),
+              border: Border.all(color: AuraSurface.divider),
+              boxShadow: AuraShadows.panel,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    leadingIcon,
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Text(title, style: AuraText.headline),
+                    ),
+                    AuraGhostButton(
+                      label: 'Back',
+                      icon: Icons.arrow_back,
+                      onPressed: _posting ? null : () => context.pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  subtitle,
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.muted,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    AuraSecondaryButton(
+                      label: 'Review',
+                      icon: Icons.fact_check_outlined,
+                      onPressed: (_posting || _compositionBusy)
+                          ? null
+                          : () => _runCompositionReview(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        return AuraGradientHeader(
+          title: title,
+          subtitle: subtitle,
+          leading: leadingIcon,
+          trailing: Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.end,
+            children: [
+              AuraStatusChip(
+                label: _savedLine(),
+                backgroundColor: AuraSurface.subtle,
+                textColor: AuraSurface.muted,
+              ),
+              AuraSecondaryButton(
+                label: 'Review',
+                icon: Icons.fact_check_outlined,
+                onPressed: (_posting || _compositionBusy)
+                    ? null
+                    : () => _runCompositionReview(),
+              ),
+              AuraGhostButton(
+                label: 'Back',
+                icon: Icons.arrow_back,
+                onPressed: _posting ? null : () => context.pop(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -2774,7 +2828,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         decoration: InputDecoration(
           hintText: _isReply
               ? 'Add your response with care.'
-              : 'What should this record carry?',
+              : 'Write for the record — your words, your voice.',
           hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
           border: InputBorder.none,
           errorText: _showTextError ? 'Text is required' : null,
@@ -3053,6 +3107,41 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Widget _buildBottomBar(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
+    final discardBtn = AuraGhostButton(
+      label: 'Discard',
+      onPressed: _posting ? null : _discardAndClose,
+    );
+
+    final saveDraftBtn = AuraGhostButton(
+      label: _isReply ? 'Save unavailable' : 'Save draft',
+      onPressed: (_isReply || _posting || _saving || !_hasText || _uploadingMedia)
+          ? null
+          : () {
+              if (!_hasText) {
+                setState(() => _showTextError = true);
+                return;
+              }
+              _saveDraft(silent: false);
+            },
+    );
+
+    final publishBtn = AuraPrimaryButton(
+      label: _posting
+          ? (_isReply
+                ? 'Publishing reply…'
+                : (_publishingToTikTok ? 'Queuing TikTok…' : 'Publishing…'))
+          : (_isReply ? 'Publish response' : 'Publish post'),
+      onPressed: (_posting || !_canPublish)
+          ? null
+          : () {
+              if (!_hasText) {
+                setState(() => _showTextError = true);
+                return;
+              }
+              _publish();
+            },
+    );
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AuraSpace.s16,
@@ -3064,57 +3153,44 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         color: AuraSurface.page,
         border: Border(top: BorderSide(color: AuraSurface.divider)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              _savedLine(),
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          AuraGhostButton(
-            label: 'Discard',
-            onPressed: _posting ? null : _discardAndClose,
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          AuraGhostButton(
-            label: _isReply ? 'Save unavailable' : 'Save draft',
-            onPressed:
-                (_isReply ||
-                    _posting ||
-                    _saving ||
-                    !_hasText ||
-                    _uploadingMedia)
-                ? null
-                : () {
-                    if (!_hasText) {
-                      setState(() => _showTextError = true);
-                      return;
-                    }
-                    _saveDraft(silent: false);
-                  },
-          ),
-          const SizedBox(width: AuraSpace.s12),
-          AuraPrimaryButton(
-            label: _posting
-                ? (_isReply
-                      ? 'Publishing reply…'
-                      : (_publishingToTikTok
-                            ? 'Queuing TikTok…'
-                            : 'Publishing…'))
-                : (_isReply ? 'Publish response' : 'Publish post'),
-            onPressed: (_posting || !_canPublish)
-                ? null
-                : () {
-                    if (!_hasText) {
-                      setState(() => _showTextError = true);
-                      return;
-                    }
-                    _publish();
-                  },
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (_, constraints) {
+          if (constraints.maxWidth < 520) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    discardBtn,
+                    const SizedBox(width: AuraSpace.s8),
+                    saveDraftBtn,
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                publishBtn,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _savedLine(),
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              discardBtn,
+              const SizedBox(width: AuraSpace.s8),
+              saveDraftBtn,
+              const SizedBox(width: AuraSpace.s12),
+              publishBtn,
+            ],
+          );
+        },
       ),
     );
   }
