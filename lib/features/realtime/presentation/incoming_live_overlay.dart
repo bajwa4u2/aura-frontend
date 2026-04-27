@@ -13,6 +13,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
+import '../domain/realtime_state.dart';
 
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   const AuraIncomingLiveLayer({super.key, required this.child});
@@ -30,7 +31,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   final Set<String> _dismissedSessionIds = <String>{};
   bool _joining = false;
 
-  bool _isInterruptCandidate(Map<String, dynamic> item, String currentPath) {
+  bool _isInterruptCandidate(
+    Map<String, dynamic> item,
+    String currentPath,
+    RealtimeState liveState,
+  ) {
     final id = _stringOf(item['id']);
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
 
@@ -44,11 +49,20 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     }
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
-    if (currentPath.contains('/thread/') ||
-        currentPath.contains('/realtime') ||
-        currentPath.contains('/live') ||
+    // Already in a dedicated realtime room or live sub-route — suppress.
+    if (currentPath.contains('/realtime') ||
+        currentPath.contains('/live/') ||
         currentPath.contains('/activity')) {
       return false;
+    }
+
+    // On any thread route: only suppress if we are already joined into this
+    // exact session. A call from a different thread must still show the overlay.
+    if (currentPath.contains('/thread/')) {
+      final alreadyInThisSession = sessionId.isNotEmpty &&
+          liveState.isJoined &&
+          liveState.sessionId == sessionId;
+      if (alreadyInThisSession) return false;
     }
 
     final attention = _stringOf(data['attention']).toUpperCase();
@@ -64,9 +78,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   Map<String, dynamic>? _currentIncoming(
     String currentPath,
     List<Map<String, dynamic>> items,
+    RealtimeState liveState,
   ) {
     for (final item in items) {
-      if (_isInterruptCandidate(item, currentPath)) {
+      if (_isInterruptCandidate(item, currentPath, liveState)) {
         return item;
       }
     }
@@ -132,8 +147,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
   @override
   Widget build(BuildContext context) {
     final notifications = ref.watch(notificationsControllerProvider);
+    final liveState = ref.watch(realtimeControllerProvider);
     final currentPath = GoRouterState.of(context).uri.path;
-    final item = _currentIncoming(currentPath, notifications.items);
+    final item = _currentIncoming(currentPath, notifications.items, liveState);
     if (item == null) return widget.child;
 
     final data = _mapOf(item['data']);
