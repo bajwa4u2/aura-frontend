@@ -175,10 +175,19 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     final verifiedAsync = ref.watch(emailVerifiedProvider);
     final isAuthed = ref.watch(isAuthedProvider);
 
-    if (isAuthed && verifiedAsync.value == true && redirect != null) {
+    if (isAuthed && verifiedAsync.value == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context.go(redirect);
+        final qp = <String, String>{'verified': '1'};
+        final email = _email.text.trim();
+        if (email.isNotEmpty) qp['email'] = email;
+        if (redirect != null) qp['redirect'] = redirect;
+
+        final uri = Uri(
+          path: '/verify-email',
+          queryParameters: qp,
+        );
+        context.go(uri.toString());
       });
     }
 

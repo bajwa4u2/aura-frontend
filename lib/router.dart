@@ -111,6 +111,11 @@ String _normalizeRedirectDest(
   return normalizeMemberFacingRoute(trimmed, fallback: fallback);
 }
 
+bool _queryBool(String? value) {
+  final v = (value ?? '').trim().toLowerCase();
+  return v == '1' || v == 'true' || v == 'yes' || v == 'on';
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
@@ -512,6 +517,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               token: state.uri.queryParameters['token'],
               email: state.uri.queryParameters['email'],
               redirectTo: state.uri.queryParameters['redirect'],
+              verified: _queryBool(state.uri.queryParameters['verified']),
             ),
           ),
           GoRoute(

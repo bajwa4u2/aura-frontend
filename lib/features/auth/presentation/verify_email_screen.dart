@@ -16,11 +16,18 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
-  const VerifyEmailScreen({super.key, this.token, this.email, this.redirectTo});
+  const VerifyEmailScreen({
+    super.key,
+    this.token,
+    this.email,
+    this.redirectTo,
+    this.verified = false,
+  });
 
   final String? token;
   final String? email;
   final String? redirectTo;
+  final bool verified;
 
   @override
   ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -94,6 +101,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+    final token = (widget.token ?? '').trim();
+    if (widget.verified && token.isEmpty) {
+      _busy = false;
+      _ok = true;
+      _msg = 'Your email has been verified successfully.';
+      _msgIsError = false;
+      unawaited(_refreshAuthState());
+      return;
+    }
     unawaited(_verify());
   }
 
@@ -160,6 +176,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Widget build(BuildContext context) {
     final redirect = _safeRedirectOrNull(widget.redirectTo);
     final email = (widget.email ?? '').trim();
+    final title = _ok ? 'Email verified' : 'Email verification';
 
     return AuraScaffold(
       showHeader: false,
@@ -203,7 +220,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    const Text('Email verification', style: AuraText.title),
+                    Text(title, style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
                       _busy ? 'Verifying your email…' : (_msg ?? ''),
