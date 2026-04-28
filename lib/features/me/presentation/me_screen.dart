@@ -16,9 +16,9 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/aura_text_block.dart';
 import '../../../core/ui/profile_header.dart';
 import 'me/me_widgets.dart';
+import 'widgets/me_connected_accounts_panel.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -43,12 +43,10 @@ class _MeScreenState extends ConsumerState<MeScreen> {
   Map<String, dynamic>? _tiktokAccount;
   bool _tiktokLoading = false;
   bool _tiktokActionBusy = false;
-  bool _tiktokExpanded = false;
 
   Map<String, dynamic>? _linkedinAccount;
   bool _linkedinLoading = false;
   bool _linkedinActionBusy = false;
-  bool _linkedinExpanded = false;
   bool _handledLinkedInRedirect = false;
 
   @override
@@ -524,66 +522,70 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           : RefreshIndicator(
               color: AuraSurface.accent,
               onRefresh: _load,
-              child: _buildContent(context),
+              child: LayoutBuilder(
+                builder: (context, constraints) => constraints.maxWidth >= 900
+                    ? _buildWideContent(context)
+                    : _buildNarrowContent(context),
+              ),
             ),
     );
   }
 
-  Widget _buildContent(BuildContext context) {
-    final user = _user ?? <String, dynamic>{};
+  // ─── SHARED DATA DERIVATION ────────────────────────────────────────────────
 
+  Map<String, dynamic> get _resolvedUser => _user ?? <String, dynamic>{};
+
+  String get _displayName => _firstNonEmpty([
+        _value(_resolvedUser['displayName']),
+        _value(_resolvedUser['name']),
+      ]);
+
+  String get _handle => _value(_resolvedUser['handle']);
+
+  String get _bio => _firstNonEmpty([
+        _value(_resolvedUser['bio']),
+        _value(_resolvedUser['headline']),
+        _value(_resolvedUser['summary']),
+      ]);
+
+  String get _avatarUrl => _resolveMediaUrl(
+        _firstNonEmpty([
+          _value(_resolvedUser['avatarUrl']),
+          _value(_resolvedUser['avatar']),
+          _value(_resolvedUser['photoUrl']),
+        ]),
+      );
+
+  String get _coverUrl => _resolveMediaUrl(
+        _firstNonEmpty([
+          _value(_resolvedUser['coverUrl']),
+          _value(_resolvedUser['bannerUrl']),
+          _value(_resolvedUser['coverImageUrl']),
+          _value(_resolvedUser['headerImageUrl']),
+        ]),
+      );
+
+  bool get _isAppAdmin {
     final appAdminAsync = ref.watch(appAdminAccessProvider);
-    final institutionAsync = ref.watch(institutionAccessProvider);
-
-    final isAppAdmin = appAdminAsync.maybeWhen(
-      data: (value) => value.isAdmin,
+    return appAdminAsync.maybeWhen(
+      data: (v) => v.isAdmin,
       orElse: () => false,
     );
+  }
 
-    final institutionAccess = institutionAsync.maybeWhen(
-      data: (value) => value,
+  InstitutionAccess get _institutionAccess {
+    final institutionAsync = ref.watch(institutionAccessProvider);
+    return institutionAsync.maybeWhen(
+      data: (v) => v,
       orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
     );
+  }
 
-    final hasInstitutionWorkspace = institutionAccess.hasAccess;
-    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
+  // ─── IDENTITY HERO META — identity signals only, no authority roles ────────
 
-    final displayName = _firstNonEmpty([
-      _value(user['displayName']),
-      _value(user['name']),
-    ]);
-    final handle = _value(user['handle']);
-    final bio = _firstNonEmpty([
-      _value(user['bio']),
-      _value(user['headline']),
-      _value(user['summary']),
-    ]);
-
-    final avatarUrl = _resolveMediaUrl(
-      _firstNonEmpty([
-        _value(user['avatarUrl']),
-        _value(user['avatar']),
-        _value(user['photoUrl']),
-      ]),
-    );
-
-    final coverUrl = _resolveMediaUrl(
-      _firstNonEmpty([
-        _value(user['coverUrl']),
-        _value(user['bannerUrl']),
-        _value(user['coverImageUrl']),
-        _value(user['headerImageUrl']),
-      ]),
-    );
-
-    final locationText = _locationText(user);
-    final websiteUrl = _websiteText(user);
+  List<Widget> _buildHeroMeta(String locationText, String websiteUrl) {
     final websiteLabel = _websiteLabel(websiteUrl);
-
-    final displayTitle = displayName.isNotEmpty ? displayName : 'Presence';
-
-    // Meta chips: identity signals only (counts live in Connections section)
-    final meta = <Widget>[
+    return [
       if (locationText.isNotEmpty) MeMetaChip(label: locationText),
       if (websiteLabel.isNotEmpty)
         MeMetaLinkChip(
@@ -594,25 +596,403 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             await launchUrl(uri, mode: LaunchMode.platformDefault);
           },
         ),
-      if (handle.isNotEmpty)
+      if (_handle.isNotEmpty)
         MeMetaLinkChip(
           label: '$_followersCount Followers',
-          onTap: () => context.push('/u/$handle/followers'),
+          onTap: () => context.push('/u/$_handle/followers'),
         ),
-      if (handle.isNotEmpty)
+      if (_handle.isNotEmpty)
         MeMetaLinkChip(
           label: '$_followingCount Following',
-          onTap: () => context.push('/u/$handle/following'),
+          onTap: () => context.push('/u/$_handle/following'),
         ),
-      if (isAppAdmin) const MeMetaChip(label: 'Platform admin'),
-      if (institutionLabel.isNotEmpty) MeMetaChip(label: institutionLabel),
+      // Authority roles intentionally excluded from identity hero.
+      // They appear only in the Authority & Workspaces panel below.
+    ];
+  }
+
+  // ─── ACCOUNT HEALTH PANEL ─────────────────────────────────────────────────
+
+  Widget _buildAccountHealthPanel() {
+    final user = _resolvedUser;
+    final checks = <(String, bool)>[
+      ('Display name', _displayName.isNotEmpty),
+      ('Handle', _handle.isNotEmpty),
+      ('Bio', _bio.isNotEmpty),
+      ('Avatar', _avatarUrl.isNotEmpty),
+      ('Location', _locationText(user).isNotEmpty),
+      ('Website', _websiteText(user).isNotEmpty),
     ];
 
-    final publications = _publicationsFromUser(user);
-    final links = _linksFromUser(user);
+    final completed = checks.where((c) => c.$2).length;
+    final total = checks.length;
+    final fraction = completed / total;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_outlined,
+                size: 16,
+                color: AuraSurface.accent,
+              ),
+              SizedBox(width: AuraSpace.s8),
+              Text('Profile health', style: AuraText.title),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: fraction,
+                    minHeight: 6,
+                    backgroundColor: AuraSurface.elevated,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      fraction >= 1.0
+                          ? AuraSurface.goodInk
+                          : AuraSurface.accent,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Text(
+                '$completed / $total',
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s6,
+            children: checks.map((c) {
+              final done = c.$2;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: done ? AuraSurface.goodBg : AuraSurface.elevated,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(
+                    color: done
+                        ? AuraSurface.goodInk.withValues(alpha: 0.25)
+                        : AuraSurface.divider,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      done
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 12,
+                      color: done ? AuraSurface.goodInk : AuraSurface.faint,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      c.$1,
+                      style: AuraText.micro.copyWith(
+                        color: done ? AuraSurface.goodInk : AuraSurface.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── SHARED SECTION WIDGETS ───────────────────────────────────────────────
+
+  Widget _buildPersonalRecordSection() {
+    return MeSection(
+      title: 'Personal Record',
+      children: [
+        MeSettingsItem(
+          label: 'Saved posts',
+          icon: Icons.bookmark_outline,
+          subtitle: 'Things you chose to keep close',
+          onTap: () => context.push('/saved?kind=saved'),
+        ),
+        MeSettingsItem(
+          label: 'Held for later',
+          icon: Icons.schedule_outlined,
+          subtitle: 'Work not released yet',
+          onTap: () => context.push('/saved?kind=held'),
+        ),
+        MeSettingsItem(
+          label: 'Private posts',
+          icon: Icons.lock_outline,
+          subtitle: 'Visible only to you',
+          onTap: () => context.push('/saved?kind=private'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectionsSection() {
     final hasConnections = _incomingRequestsCount > 0 ||
         _outgoingRequestsCount > 0 ||
         _incomingInvitesCount > 0;
+
+    return MeSection(
+      title: 'Connections',
+      children: [
+        MeSettingsItem(
+          label: 'Invitation center',
+          icon: Icons.outbound_outlined,
+          subtitle: _invitationCenterSubtitle,
+          onTap: () => context.push('/me/invitations'),
+        ),
+        MeSettingsItem(
+          label: 'New invite',
+          icon: Icons.add_link_outlined,
+          subtitle: 'Create an invitation into Aura, a space, or thread',
+          onTap: () => context.push('/invite'),
+        ),
+        if (hasConnections)
+          MeSettingsItem(
+            label: 'Follow requests',
+            icon: Icons.person_add_alt_outlined,
+            subtitle: _followRequestsSubtitle,
+            onTap: () => context.push('/me/follow-requests'),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildConnectedAccountsPanel() {
+    return MeConnectedAccountsPanel(
+      linkedinAccount: _linkedinAccount,
+      linkedinLoading: _linkedinLoading,
+      linkedinActionBusy: _linkedinActionBusy,
+      isLinkedInConnected: _isLinkedInConnected,
+      tiktokAccount: _tiktokAccount,
+      tiktokLoading: _tiktokLoading,
+      tiktokActionBusy: _tiktokActionBusy,
+      isTikTokConnected: _isTikTokConnected,
+      onConnectLinkedIn: _connectLinkedIn,
+      onDisconnectLinkedIn: _disconnectLinkedIn,
+      onCheckLinkedIn: _reloadLinkedInOnly,
+      onConnectTikTok: _connectTikTok,
+      onRefreshTikTok: _refreshTikTokToken,
+      onDisconnectTikTok: _disconnectTikTok,
+      onCheckTikTok: _reloadTikTokOnly,
+    );
+  }
+
+  Widget _buildAccountSection() {
+    return MeSection(
+      title: 'Account',
+      children: [
+        MeSettingsItem(
+          label: 'Security',
+          icon: Icons.lock_outline,
+          subtitle: 'Password, email verification, and sessions',
+          onTap: () => context.push('/security'),
+        ),
+        MeSettingsItem(
+          label: 'Communication preferences',
+          icon: Icons.tune_outlined,
+          subtitle:
+              'Manage email, digest, message, and announcement preferences',
+          onTap: () => context.push('/me/settings/communications'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWorkspacesSection(
+    bool hasInstitutionWorkspace,
+    bool isAppAdmin,
+    String institutionLabel,
+  ) {
+    return MeSection(
+      title: 'Authority & Workspaces',
+      children: [
+        if (hasInstitutionWorkspace)
+          MeSettingsItem(
+            label: institutionLabel.isNotEmpty
+                ? institutionLabel
+                : 'Institution workspace',
+            icon: Icons.apartment_outlined,
+            subtitle: 'Switch to institution workspace',
+            onTap: () => context.push('/institution/dashboard'),
+          ),
+        if (isAppAdmin)
+          MeSettingsItem(
+            label: 'Admin workspace',
+            icon: Icons.admin_panel_settings_outlined,
+            subtitle: 'Platform control and moderation',
+            onTap: () => context.push('/admin'),
+          ),
+      ],
+    );
+  }
+
+  // ─── WIDE LAYOUT (≥900) ────────────────────────────────────────────────────
+
+  Widget _buildWideContent(BuildContext context) {
+    final user = _resolvedUser;
+    final locationText = _locationText(user);
+    final websiteUrl = _websiteText(user);
+    final meta = _buildHeroMeta(locationText, websiteUrl);
+
+    final publications = _publicationsFromUser(user);
+    final links = _linksFromUser(user);
+
+    final institutionAccess = _institutionAccess;
+    final hasInstitutionWorkspace = institutionAccess.hasAccess;
+    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
+    final isAppAdmin = _isAppAdmin;
+
+    final displayTitle = _displayName.isNotEmpty ? _displayName : 'Presence';
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s24,
+        AuraSpace.s24,
+        AuraSpace.s24,
+        AuraSpace.s32,
+      ),
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PresenceHeader(
+                  displayName: displayTitle,
+                  handle: _handle,
+                  bio: _bio,
+                  avatarUrl: _avatarUrl,
+                  coverUrl: _coverUrl,
+                  trailingMeta: meta,
+                  actions: [
+                    PresenceHeaderAction(
+                      label: 'Edit profile',
+                      icon: Icons.edit_outlined,
+                      primary: true,
+                      onTap: () async {
+                        await context.push('/me/edit');
+                        if (!mounted) return;
+                        await _load();
+                      },
+                    ),
+                    if (_handle.isNotEmpty)
+                      PresenceHeaderAction(
+                        label: 'View profile',
+                        icon: Icons.visibility_outlined,
+                        onTap: () => context.push('/u/$_handle'),
+                      ),
+                  ],
+                  workspaceActions: const [],
+                ),
+                const SizedBox(height: AuraSpace.s24),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left column: content/records
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildPersonalRecordSection(),
+                          if (publications.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.lg),
+                            MeSection(
+                              title: 'Public record',
+                              children: _buildPublicationItems(publications),
+                            ),
+                          ],
+                          if (links.isNotEmpty) ...[
+                            const SizedBox(height: AuraSpace.lg),
+                            MeSection(
+                              title: 'Elsewhere',
+                              children: _buildLinkItems(links),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s20),
+                    // Right column: activity/settings
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildAccountHealthPanel(),
+                          const SizedBox(height: AuraSpace.lg),
+                          _buildConnectionsSection(),
+                          const SizedBox(height: AuraSpace.lg),
+                          _buildConnectedAccountsPanel(),
+                          const SizedBox(height: AuraSpace.lg),
+                          _buildAccountSection(),
+                          if (hasInstitutionWorkspace || isAppAdmin) ...[
+                            const SizedBox(height: AuraSpace.lg),
+                            _buildWorkspacesSection(
+                              hasInstitutionWorkspace,
+                              isAppAdmin,
+                              institutionLabel,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── NARROW LAYOUT (<900) ─────────────────────────────────────────────────
+
+  Widget _buildNarrowContent(BuildContext context) {
+    final user = _resolvedUser;
+    final locationText = _locationText(user);
+    final websiteUrl = _websiteText(user);
+    final meta = _buildHeroMeta(locationText, websiteUrl);
+
+    final publications = _publicationsFromUser(user);
+    final links = _linksFromUser(user);
+
+    final institutionAccess = _institutionAccess;
+    final hasInstitutionWorkspace = institutionAccess.hasAccess;
+    final institutionLabel = _institutionWorkspaceLabel(institutionAccess);
+    final isAppAdmin = _isAppAdmin;
+
+    final displayTitle = _displayName.isNotEmpty ? _displayName : 'Presence';
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -629,13 +1009,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Profile Hero ──────────────────────────────────────────────
                 PresenceHeader(
                   displayName: displayTitle,
-                  handle: handle,
-                  bio: bio,
-                  avatarUrl: avatarUrl,
-                  coverUrl: coverUrl,
+                  handle: _handle,
+                  bio: _bio,
+                  avatarUrl: _avatarUrl,
+                  coverUrl: _coverUrl,
                   trailingMeta: meta,
                   actions: [
                     PresenceHeaderAction(
@@ -648,43 +1027,17 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                         await _load();
                       },
                     ),
-                    if (handle.isNotEmpty)
+                    if (_handle.isNotEmpty)
                       PresenceHeaderAction(
                         label: 'View profile',
                         icon: Icons.visibility_outlined,
-                        onTap: () => context.push('/u/$handle'),
+                        onTap: () => context.push('/u/$_handle'),
                       ),
                   ],
                   workspaceActions: const [],
                 ),
                 const SizedBox(height: AuraSpace.lg),
-
-                // ── A: Personal Record ────────────────────────────────────────
-                MeSection(
-                  title: 'Personal Record',
-                  children: [
-                    MeSettingsItem(
-                      label: 'Saved posts',
-                      icon: Icons.bookmark_outline,
-                      subtitle: 'Things you chose to keep close',
-                      onTap: () => context.push('/saved?kind=saved'),
-                    ),
-                    MeSettingsItem(
-                      label: 'Held for later',
-                      icon: Icons.schedule_outlined,
-                      subtitle: 'Work not released yet',
-                      onTap: () => context.push('/saved?kind=held'),
-                    ),
-                    MeSettingsItem(
-                      label: 'Private posts',
-                      icon: Icons.lock_outline,
-                      subtitle: 'Visible only to you',
-                      onTap: () => context.push('/saved?kind=private'),
-                    ),
-                  ],
-                ),
-
-                // ── B: Public Record (conditional) ────────────────────────────
+                _buildPersonalRecordSection(),
                 if (publications.isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
                   MeSection(
@@ -692,8 +1045,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     children: _buildPublicationItems(publications),
                   ),
                 ],
-
-                // ── C: Elsewhere (conditional) ────────────────────────────────
                 if (links.isNotEmpty) ...[
                   const SizedBox(height: AuraSpace.lg),
                   MeSection(
@@ -701,347 +1052,24 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                     children: _buildLinkItems(links),
                   ),
                 ],
-
-                // ── D: Connections ────────────────────────────────────────────
                 const SizedBox(height: AuraSpace.lg),
-                MeSection(
-                  title: 'Connections',
-                  children: [
-                    MeSettingsItem(
-                      label: 'Invitation center',
-                      icon: Icons.outbound_outlined,
-                      subtitle: _invitationCenterSubtitle,
-                      onTap: () => context.push('/me/invitations'),
-                    ),
-                    MeSettingsItem(
-                      label: 'New invite',
-                      icon: Icons.add_link_outlined,
-                      subtitle:
-                          'Create an invitation into Aura, a space, or thread',
-                      onTap: () => context.push('/invite'),
-                    ),
-                    if (hasConnections)
-                      MeSettingsItem(
-                        label: 'Follow requests',
-                        icon: Icons.person_add_alt_outlined,
-                        subtitle: _followRequestsSubtitle,
-                        onTap: () => context.push('/me/follow-requests'),
-                      ),
-                  ],
-                ),
-
-                // ── E: Connected Accounts ─────────────────────────────────────
+                _buildConnectionsSection(),
                 const SizedBox(height: AuraSpace.lg),
-                MeSection(
-                  title: 'Connected accounts',
-                  children: [_linkedinBlock(), _tiktokBlock()],
-                ),
-
-                // ── F: Account & Security ─────────────────────────────────────
+                _buildConnectedAccountsPanel(),
                 const SizedBox(height: AuraSpace.lg),
-                MeSection(
-                  title: 'Account',
-                  children: [
-                    MeSettingsItem(
-                      label: 'Security',
-                      icon: Icons.lock_outline,
-                      subtitle: 'Password, email verification, and sessions',
-                      onTap: () => context.push('/security'),
-                    ),
-                    MeSettingsItem(
-                      label: 'Communication preferences',
-                      icon: Icons.tune_outlined,
-                      subtitle:
-                          'Manage email, digest, message, and announcement preferences',
-                      onTap: () =>
-                          context.push('/me/settings/communications'),
-                    ),
-                  ],
-                ),
-
-                // ── G: Workspaces (conditional) ───────────────────────────────
+                _buildAccountSection(),
                 if (hasInstitutionWorkspace || isAppAdmin) ...[
                   const SizedBox(height: AuraSpace.lg),
-                  MeSection(
-                    title: 'Workspaces',
-                    children: [
-                      if (hasInstitutionWorkspace)
-                        MeSettingsItem(
-                          label: institutionLabel.isNotEmpty
-                              ? institutionLabel
-                              : 'Institution workspace',
-                          icon: Icons.apartment_outlined,
-                          subtitle: 'Switch to institution workspace',
-                          onTap: () =>
-                              context.push('/institution/dashboard'),
-                        ),
-                      if (isAppAdmin)
-                        MeSettingsItem(
-                          label: 'Admin workspace',
-                          icon: Icons.admin_panel_settings_outlined,
-                          subtitle: 'Platform control and moderation',
-                          onTap: () => context.push('/admin'),
-                        ),
-                    ],
+                  _buildWorkspacesSection(
+                    hasInstitutionWorkspace,
+                    isAppAdmin,
+                    institutionLabel,
                   ),
                 ],
               ],
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONNECTED ACCOUNT BLOCKS — compact with expandable actions
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _linkedinBlock() {
-    final connected = _isLinkedInConnected;
-    final accountLabel = _firstNonEmpty([
-      _value((_linkedinAccount ?? const <String, dynamic>{})['name']),
-      _value((_linkedinAccount ?? const <String, dynamic>{})['email']),
-      _value(
-        (_linkedinAccount ?? const <String, dynamic>{})['linkedinMemberId'],
-      ),
-      connected ? 'Connected' : '',
-    ]);
-
-    final isBusy = _linkedinActionBusy || _linkedinLoading;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: InkWell(
-            onTap: () =>
-                setState(() => _linkedinExpanded = !_linkedinExpanded),
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AuraSpace.s12,
-                horizontal: AuraSpace.s4,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.business_center_outlined,
-                    size: 18,
-                    color: AuraSurface.ink,
-                  ),
-                  const SizedBox(width: AuraSpace.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AuraTextBlock(
-                          'LinkedIn',
-                          style: AuraText.body
-                              .copyWith(fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        AuraTextBlock(
-                          _linkedinLoading
-                              ? 'Checking connection…'
-                              : connected
-                              ? accountLabel
-                              : 'Not connected',
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  if (isBusy)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    _ConnectionStatusChip(connected: connected),
-                  const SizedBox(width: AuraSpace.s8),
-                  Icon(
-                    _linkedinExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 18,
-                    color: AuraSurface.muted,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (_linkedinExpanded)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s4,
-              AuraSpace.s4,
-              AuraSpace.s4,
-              AuraSpace.s12,
-            ),
-            child: Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                if (!connected)
-                  AuraSecondaryButton(
-                    label: 'Connect',
-                    onPressed: _linkedinActionBusy ? null : _connectLinkedIn,
-                    icon: Icons.link_rounded,
-                  ),
-                AuraSecondaryButton(
-                  label: 'Check',
-                  onPressed: isBusy ? null : _reloadLinkedInOnly,
-                  icon: Icons.sync_rounded,
-                ),
-                if (connected)
-                  AuraGhostButton(
-                    label: 'Disconnect',
-                    onPressed: _linkedinActionBusy ? null : _disconnectLinkedIn,
-                    icon: Icons.link_off_rounded,
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _tiktokBlock() {
-    final connected = _isTikTokConnected;
-    final platformUserId = _value(
-      (_tiktokAccount ?? const <String, dynamic>{})['platformUserId'],
-    );
-    final username = _value(
-      (_tiktokAccount ?? const <String, dynamic>{})['username'],
-    );
-    final accountLabel = _firstNonEmpty([
-      username,
-      platformUserId,
-      connected ? 'Connected' : '',
-    ]);
-
-    final isBusy = _tiktokActionBusy || _tiktokLoading;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: InkWell(
-            onTap: () =>
-                setState(() => _tiktokExpanded = !_tiktokExpanded),
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AuraSpace.s12,
-                horizontal: AuraSpace.s4,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.music_note_outlined,
-                    size: 18,
-                    color: AuraSurface.ink,
-                  ),
-                  const SizedBox(width: AuraSpace.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AuraTextBlock(
-                          'TikTok',
-                          style: AuraText.body
-                              .copyWith(fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        AuraTextBlock(
-                          _tiktokLoading
-                              ? 'Checking connection…'
-                              : connected
-                              ? accountLabel
-                              : 'Not connected',
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                  if (isBusy)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    _ConnectionStatusChip(connected: connected),
-                  const SizedBox(width: AuraSpace.s8),
-                  Icon(
-                    _tiktokExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 18,
-                    color: AuraSurface.muted,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (_tiktokExpanded)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s4,
-              AuraSpace.s4,
-              AuraSpace.s4,
-              AuraSpace.s12,
-            ),
-            child: Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                if (!connected)
-                  AuraSecondaryButton(
-                    label: 'Connect',
-                    onPressed: _tiktokActionBusy ? null : _connectTikTok,
-                    icon: Icons.link_rounded,
-                  ),
-                if (connected)
-                  AuraSecondaryButton(
-                    label: 'Refresh',
-                    onPressed: _tiktokActionBusy ? null : _refreshTikTokToken,
-                    icon: Icons.refresh_rounded,
-                  ),
-                AuraSecondaryButton(
-                  label: 'Check',
-                  onPressed: isBusy ? null : _reloadTikTokOnly,
-                  icon: Icons.sync_rounded,
-                ),
-                if (connected)
-                  AuraGhostButton(
-                    label: 'Disconnect',
-                    onPressed: _tiktokActionBusy ? null : _disconnectTikTok,
-                    icon: Icons.link_off_rounded,
-                  ),
-              ],
-            ),
-          ),
       ],
     );
   }
@@ -1496,43 +1524,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     if (value.startsWith('/')) return '$baseOrigin$value';
 
     return '$baseOrigin/$value';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CONNECTION STATUS CHIP
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ConnectionStatusChip extends StatelessWidget {
-  const _ConnectionStatusChip({required this.connected});
-
-  final bool connected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 3,
-      ),
-      decoration: BoxDecoration(
-        color: connected ? AuraSurface.goodBg : AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: connected
-              ? AuraSurface.goodInk.withValues(alpha: 0.3)
-              : AuraSurface.divider,
-        ),
-      ),
-      child: Text(
-        connected ? 'Connected' : 'Not connected',
-        style: AuraText.micro.copyWith(
-          color: connected ? AuraSurface.goodInk : AuraSurface.muted,
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-        ),
-      ),
-    );
   }
 }
 

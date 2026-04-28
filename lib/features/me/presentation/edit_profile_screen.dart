@@ -520,7 +520,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return AuraScaffold(
-        title: 'Edit presence',
+        title: 'Edit profile',
         body: const Center(child: AuraLoadingState(message: 'Loading profile…')),
       );
     }
@@ -531,7 +531,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         if (!didPop) _showDiscardDialog();
       },
       child: AuraScaffold(
-        title: 'Edit presence',
+        title: 'Edit profile',
         body: LayoutBuilder(
           builder: (context, constraints) => constraints.maxWidth >= 900
               ? _buildWideLayout()
