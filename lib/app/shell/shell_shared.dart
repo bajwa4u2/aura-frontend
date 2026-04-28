@@ -57,7 +57,7 @@ class ShellFooter extends StatelessWidget {
     _Link('Investors', '/investors'),
     _Link('Patrons', '/patrons'),
     _Link('Supporters', '/supporters'),
-    _Link('Contact', '/contact'),
+    _Link('Support', '/support/agent'),
     _Link('Privacy', '/privacy'),
     _Link('Terms', '/terms'),
     _Link('White Paper', '/white-paper'),

@@ -82,6 +82,8 @@ import 'screens/institution_sign_in_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/account_deletion_screen.dart';
 import 'screens/terms_screen.dart';
+import 'features/support/presentation/support_agent_screen.dart';
+import 'features/support/presentation/admin_support_console_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -402,6 +404,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
           GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
           GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
+          GoRoute(path: '/support/agent', builder: (_, __) => const SupportAgentScreen()),
           GoRoute(
             path: '/account-deletion',
             builder: (_, __) => const AccountDeletionScreen(),
@@ -630,6 +633,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/institution-domains',
             builder: (_, __) => const AdminInstitutionDomainsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/support',
+            builder: (_, __) => const AdminSupportConsoleScreen(),
           ),
 
           // Correspondence routes flattened for stable direct navigation

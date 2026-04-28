@@ -15,17 +15,17 @@ class SupportContactPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Support and contact', style: AuraText.subtitle),
+          const Text('Support', style: AuraText.subtitle),
           const SizedBox(height: AuraSpace.s8),
           const Text(
-            'Support acknowledgements remain transactional. The public contact form preserves its success state and confirmation behavior.',
+            'Our AI support agent can help with account issues, safety concerns, privacy requests, and general questions. For sensitive matters it escalates directly to the Aura team.',
             style: AuraText.body,
           ),
           const SizedBox(height: AuraSpace.s12),
-          AuraSecondaryButton(
-            label: 'Open contact',
-            onPressed: () => context.go('/contact'),
-            icon: Icons.mail_outline,
+          AuraPrimaryButton(
+            label: 'Open support agent',
+            onPressed: () => context.go('/support/agent'),
+            icon: Icons.support_agent_outlined,
           ),
         ],
       ),
