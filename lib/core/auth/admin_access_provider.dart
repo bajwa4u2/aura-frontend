@@ -5,9 +5,6 @@ import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
 import '../net/dio_provider.dart';
 
-const String _adminUserIds =
-    String.fromEnvironment('AURA_ADMIN_USER_IDS', defaultValue: '');
-
 enum AppAdminState {
   none,
   admin,
@@ -25,21 +22,13 @@ class AppAdminAccess {
   bool get isAdmin => state == AppAdminState.admin;
 }
 
-List<String> _adminUserIdList() {
-  return _adminUserIds
-      .split(',')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-}
-
 Map<String, dynamic> _asMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);
   return <String, dynamic>{};
 }
 
-Map<String, dynamic> _unwrapMe(dynamic raw) {
+Map<String, dynamic> _unwrapAdminMe(dynamic raw) {
   final root = _asMap(raw);
 
   final user = root['user'];
@@ -56,6 +45,9 @@ Map<String, dynamic> _unwrapMe(dynamic raw) {
   return root;
 }
 
+/// Backend-hydrated admin access.
+/// Authority is derived exclusively from GET /v1/admin/me.
+/// 403 / 404 means the user has no admin grant — treated as none, not a crash.
 final appAdminAccessProvider = FutureProvider<AppAdminAccess>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
 
@@ -67,32 +59,12 @@ final appAdminAccessProvider = FutureProvider<AppAdminAccess>((ref) async {
   final dio = ref.watch(dioProvider);
 
   try {
-    final res = await dio.get('/users/me');
-    final me = _unwrapMe(res.data);
-
-    final role = (me['role'] ?? '').toString().trim().toLowerCase();
-    if (role == 'admin') {
-      return AppAdminAccess(
-        state: AppAdminState.admin,
-        me: me,
-      );
-    }
-
-    final id = (me['id'] ?? '').toString().trim();
-    if (id.isNotEmpty && _adminUserIdList().contains(id)) {
-      return AppAdminAccess(
-        state: AppAdminState.admin,
-        me: me,
-      );
-    }
-
-    return AppAdminAccess(
-      state: AppAdminState.none,
-      me: me,
-    );
+    final res = await dio.get('/v1/admin/me');
+    final me = _unwrapAdminMe(res.data);
+    return AppAdminAccess(state: AppAdminState.admin, me: me);
   } on DioException catch (e) {
     final code = e.response?.statusCode;
-    if (code == 401 || code == 403) {
+    if (code == 401 || code == 403 || code == 404) {
       return const AppAdminAccess(state: AppAdminState.none);
     }
     rethrow;

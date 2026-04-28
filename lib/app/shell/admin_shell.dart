@@ -50,7 +50,43 @@ class AdminShell extends StatelessWidget {
       path: '/admin',
     ),
     _NavItem(
-      label: 'Communications',
+      label: 'Users',
+      icon: Icons.group_outlined,
+      selectedIcon: Icons.group_rounded,
+      path: '/admin/users',
+    ),
+    _NavItem(
+      label: 'Grants',
+      icon: Icons.verified_user_outlined,
+      selectedIcon: Icons.verified_user_rounded,
+      path: '/admin/grants',
+    ),
+    _NavItem(
+      label: 'Audit',
+      icon: Icons.history_rounded,
+      selectedIcon: Icons.history_rounded,
+      path: '/admin/audit-logs',
+    ),
+    _NavItem(
+      label: 'Domains',
+      icon: Icons.apartment_outlined,
+      selectedIcon: Icons.apartment_rounded,
+      path: '/admin/institution-domains',
+    ),
+    _NavItem(
+      label: 'Settings',
+      icon: Icons.tune_outlined,
+      selectedIcon: Icons.tune_rounded,
+      path: '/admin/settings',
+    ),
+    _NavItem(
+      label: 'Flags',
+      icon: Icons.flag_outlined,
+      selectedIcon: Icons.flag_rounded,
+      path: '/admin/feature-flags',
+    ),
+    _NavItem(
+      label: 'Comms',
       icon: Icons.mark_email_unread_outlined,
       selectedIcon: Icons.mark_email_unread_rounded,
       path: '/admin/communications',
@@ -62,7 +98,13 @@ class AdminShell extends StatelessWidget {
 
   int _indexForPath(String path) {
     if (path == '/admin') return 0;
-    if (path == '/admin/communications') return 1;
+    if (path == '/admin/users') return 1;
+    if (path == '/admin/grants') return 2;
+    if (path == '/admin/audit-logs') return 3;
+    if (path == '/admin/institution-domains') return 4;
+    if (path == '/admin/settings') return 5;
+    if (path == '/admin/feature-flags') return 6;
+    if (path == '/admin/communications') return 7;
     return 0;
   }
 

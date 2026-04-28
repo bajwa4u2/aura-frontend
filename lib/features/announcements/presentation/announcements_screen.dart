@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
-import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -13,87 +13,38 @@ import '../../../core/ui/aura_text.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 
-const String _adminUserIds = String.fromEnvironment(
-  'AURA_ADMIN_USER_IDS',
-  defaultValue: '',
-);
-
-List<String> _adminUserIdList() {
-  return _adminUserIds
-      .split(',')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-}
-
-Map<String, dynamic> _asMap(dynamic v) {
-  if (v is Map<String, dynamic>) return v;
-  if (v is Map) return Map<String, dynamic>.from(v);
-  return <String, dynamic>{};
-}
-
-Map<String, dynamic> _unwrapMap(dynamic raw) {
-  final root = _asMap(raw);
-  final data = root['data'];
-
-  if (data is Map<String, dynamic>) return data;
-  if (data is Map) return Map<String, dynamic>.from(data);
-
-  return root;
-}
-
-final _announcementsMeProvider = FutureProvider<Map<String, dynamic>>((
-  ref,
-) async {
-  final dio = ref.watch(dioProvider);
-  final res = await dio.get('/users/me');
-  return _unwrapMap(res.data);
-});
-
 class AnnouncementsScreen extends ConsumerWidget {
   const AnnouncementsScreen({super.key});
 
-  bool _isAdmin(Map<String, dynamic> me) {
-    final role = (me['role'] ?? '').toString().toLowerCase();
-    if (role == 'admin') return true;
-
-    final id = (me['id'] ?? '').toString().trim();
-    if (id.isEmpty) return false;
-
-    return _adminUserIdList().contains(id);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final meAsync = ref.watch(_announcementsMeProvider);
+    final adminAsync = ref.watch(appAdminAccessProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
     final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
     final listAsync = ref.watch(announcementsProvider);
 
-    return meAsync.when(
-      loading: () => AuraScaffold(
+    if (adminAsync.isLoading) {
+      return AuraScaffold(
         showHeader: false,
         body: const Center(
           child: AuraLoadingState(message: 'Loading announcements…'),
         ),
-      ),
-      error: (_, __) {
-        return _PublicAnnouncementsScreen(
-          pinnedAsync: pinnedAsync,
-          listAsync: listAsync,
-        );
-      },
-      data: (me) {
-        final isAdmin = _isAdmin(me);
+      );
+    }
 
-        if (isAdmin) {
-          return _AdminAnnouncementsScreen(
-            pinnedAsync: pinnedAsync,
-            listAsync: listAsync,
-          );
-        }
+    final isAdmin = adminAsync.maybeWhen(
+      data: (v) => v.isAdmin,
+      orElse: () => false,
+    );
 
-        return institutionAsync.when(
+    if (isAdmin) {
+      return _AdminAnnouncementsScreen(
+        pinnedAsync: pinnedAsync,
+        listAsync: listAsync,
+      );
+    }
+
+    return institutionAsync.when(
           loading: () => AuraScaffold(
             showHeader: false,
             body: const Center(
@@ -128,8 +79,6 @@ class AnnouncementsScreen extends ConsumerWidget {
             );
           },
         );
-      },
-    );
   }
 }
 

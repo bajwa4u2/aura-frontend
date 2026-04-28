@@ -44,6 +44,12 @@ import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/presentation/admin_workspace_screen.dart';
+import 'features/admin/presentation/admin_users_screen.dart';
+import 'features/admin/presentation/admin_grants_screen.dart';
+import 'features/admin/presentation/admin_audit_logs_screen.dart';
+import 'features/admin/presentation/admin_settings_screen.dart';
+import 'features/admin/presentation/admin_feature_flags_screen.dart';
+import 'features/admin/presentation/admin_institution_domains_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
@@ -588,6 +594,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kAdminCommunicationsRoute,
             builder: (_, __) => const CommunicationsCenterScreen(),
+          ),
+          GoRoute(
+            path: '/admin/users',
+            builder: (_, __) => const AdminUsersScreen(),
+          ),
+          GoRoute(
+            path: '/admin/grants',
+            builder: (_, __) => const AdminGrantsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/audit-logs',
+            builder: (_, __) => const AdminAuditLogsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/settings',
+            builder: (_, __) => const AdminSettingsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/feature-flags',
+            builder: (_, __) => const AdminFeatureFlagsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/institution-domains',
+            builder: (_, __) => const AdminInstitutionDomainsScreen(),
           ),
 
           // Correspondence routes flattened for stable direct navigation
