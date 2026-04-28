@@ -41,8 +41,9 @@ class AppConfig {
   /// Supply via:
   /// flutter build web --dart-define=AURA_WEB_PUSH_VAPID_PUBLIC_KEY=<base64url-key>
   ///
-  /// When empty, web push subscription acquisition is skipped and device
-  /// registration falls back to metadata-only (empty token).
+  /// When empty, web push is disabled: the Enable button in the Security screen
+  /// is effectively inert and no subscription is created. No device registration
+  /// POST is sent for web without a subscription.
   static String get vapidPublicKey => const String.fromEnvironment(
     'AURA_WEB_PUSH_VAPID_PUBLIC_KEY',
     defaultValue: '',

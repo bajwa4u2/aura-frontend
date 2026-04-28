@@ -44,8 +44,13 @@ class WebPushService {
   static Future<ServiceWorkerRegistration?> _getOrRegisterSW() async {
     try {
       final container = window.navigator.serviceWorker;
-      await container.register(_swPath.toJS).toDart;
-      final reg = await container.getRegistration(_swScope).toDart;
+      // Check for an existing registration at the push scope first.
+      final existing = await container.getRegistration(_swScope).toDart;
+      if (existing != null) return existing;
+      // Not yet registered — register and return the ServiceWorkerRegistration
+      // directly from the promise rather than calling getRegistration() again,
+      // which avoids a race between installation and the lookup.
+      final reg = await container.register(_swPath.toJS).toDart;
       return reg;
     } catch (_) {
       return null;

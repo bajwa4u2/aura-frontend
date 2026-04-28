@@ -15,9 +15,15 @@ class DeviceService {
   String? _cachedDeviceId;
   DateTime? _lastPresenceRefresh;
 
+  /// Registers the current device only when a valid payload can be built.
+  ///
+  /// On web, this is a no-op when no active push subscription exists —
+  /// the backend requires a non-empty endpoint/token and will reject
+  /// metadata-only web payloads with a 400.
   Future<void> registerCurrentDevice() async {
     try {
       final payload = await _buildPayload();
+      if (payload == null) return;
       final device = await _repository.register(payload);
       if (device.id.isNotEmpty) {
         _cachedDeviceId = device.id;
@@ -48,10 +54,18 @@ class DeviceService {
   }
 
   /// Called from user-initiated permission UX.
-  /// Requests browser notification permission, subscribes, then updates
-  /// the backend device record (PATCH if device ID known, else register).
+  ///
+  /// Order:
+  ///  1. Guard: not web or no VAPID key → early-return false.
+  ///  2. Request browser notification permission.
+  ///  3. If not granted → return false (no POST).
+  ///  4. Wait for service worker and subscribe with VAPID key.
+  ///  5. Verify subscription.endpoint is non-empty.
+  ///  6. PATCH known device-id or POST a fresh registration.
   Future<bool> requestAndRegisterWebPush(String vapidKey) async {
     if (!kIsWeb) return false;
+    if (vapidKey.isEmpty) return false;
+
     try {
       final perm = await WebPushService.requestPermission();
       if (perm != 'granted') return false;
@@ -79,13 +93,20 @@ class DeviceService {
 
   // ── Payload builders ──────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> _buildPayload() async {
+  /// Returns null when no valid push payload can be formed.
+  ///
+  /// On web, null is returned unless there is an active push subscription
+  /// with a non-empty endpoint — the backend requires it.
+  /// On native platforms, a metadata-only payload is returned (FCM/APNS
+  /// tokens are registered separately via the native push SDK).
+  Future<Map<String, dynamic>?> _buildPayload() async {
     if (kIsWeb) {
       final sub = await WebPushService.getExistingSubscription();
       if (sub != null && sub.endpoint.isNotEmpty) {
         return _webPushPayload(sub);
       }
-      return _metadataPayload(platform: 'WEB', provider: 'WEB_PUSH');
+      // No active subscription — do not send an empty-token request.
+      return null;
     }
 
     switch (defaultTargetPlatform) {
@@ -102,7 +123,6 @@ class DeviceService {
     return {
       'platform': 'WEB',
       'provider': 'WEB_PUSH',
-      // endpoint doubles as the stable token for upsert keying
       'token': sub.endpoint,
       'endpoint': sub.endpoint,
       'webPushP256dh': sub.p256dh ?? '',
