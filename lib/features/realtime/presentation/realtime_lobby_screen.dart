@@ -196,7 +196,7 @@ class _LobbyHeader extends StatelessWidget {
               const Text('Standalone live', style: AuraText.headline),
               const SizedBox(height: AuraSpace.s4),
               Text(
-                'Start or join a live session outside of correspondence.',
+                'Start or join a live session outside of messages.',
                 style: AuraText.body.copyWith(
                   color: AuraSurface.muted,
                   height: 1.4,

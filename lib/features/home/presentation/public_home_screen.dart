@@ -287,7 +287,7 @@ class _HeroPlatformCard extends StatelessWidget {
           const SizedBox(height: AuraSpace.s12),
           const _FeatureRow(
             icon: Icons.mail_outline_rounded,
-            title: 'Direct correspondence',
+            title: 'Direct messages',
             body: 'Private, structured messaging for serious communication.',
           ),
           const SizedBox(height: AuraSpace.s20),

@@ -104,7 +104,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
             children: const [
               _HubHeader(),
               SizedBox(height: AuraSpace.s24),
-              AuraLoadingState(message: 'Loading correspondence…'),
+              AuraLoadingState(message: 'Loading messages…'),
             ],
           ),
           error: (error, _) => ListView(
@@ -118,7 +118,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
               const _HubHeader(),
               const SizedBox(height: AuraSpace.s24),
               AuraErrorState(
-                title: 'Could not load correspondence',
+                title: 'Could not load messages',
                 body: '$error',
               ),
             ],
@@ -151,7 +151,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
                   AuraEmptyState(
                     title: 'Start your first conversation',
                     body:
-                        'Create a private conversation or shared space and your correspondence home will begin to fill with live activity.',
+                        'Create a private conversation or shared space and your messages home will begin to fill with live activity.',
                     icon: Icons.forum_outlined,
                     action: Wrap(
                       spacing: AuraSpace.s10,
@@ -274,9 +274,9 @@ class _HubHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraGradientHeader(
-      title: 'Correspondence',
+      title: 'Messages',
       subtitle:
-          'Private exchange, shared rooms, and invitations in one messaging home.',
+          'Private exchange, shared rooms, and invitations in one place.',
       trailing: Wrap(
         spacing: AuraSpace.s8,
         runSpacing: AuraSpace.s8,

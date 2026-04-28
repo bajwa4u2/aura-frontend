@@ -10,6 +10,17 @@ import 'core/utils/configure_url_strategy.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Prevent Flutter framework errors from surfacing as uncaught browser errors.
+  // In production web builds the default handler re-throws, which creates noise
+  // in the console. We log and continue instead.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    } else {
+      debugPrint('Flutter error: ${details.exceptionAsString()}');
+    }
+  };
+
   configureUrlStrategy();
 
   if (!kIsWeb) {

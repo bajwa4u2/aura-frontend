@@ -111,7 +111,7 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
                         onPressed: () => context.push('/invite'),
                       ),
                       AuraSecondaryButton(
-                        label: 'Open correspondence',
+                        label: 'Open messages',
                         onPressed: () => context.push('/me/correspondence'),
                       ),
                     ],

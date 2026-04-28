@@ -48,7 +48,7 @@ class CreateHubScreen extends StatelessWidget {
               ),
               const SizedBox(height: AuraSpace.s20),
               const _CreateSection(
-                title: 'Correspondence',
+                title: 'Messages',
                 items: [
                   _CreateActionData(
                     title: 'Conversation',
@@ -117,7 +117,7 @@ class _CreateHero extends StatelessWidget {
                 const Text('Create', style: AuraText.headline),
                 const SizedBox(height: AuraSpace.s8),
                 Text(
-                  'Start something — writing, correspondence, or a platform notice.',
+                  'Start something — writing, a message, or a platform notice.',
                   style: AuraText.body.copyWith(
                     color: AuraSurface.muted,
                     height: 1.5,

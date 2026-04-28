@@ -147,7 +147,7 @@ class CorrespondenceLiveService {
   }
 
   void dispose() {
-    unawaited(disconnect());
+    unawaited(disconnect().catchError((_) {}));
     _events.close();
   }
 }

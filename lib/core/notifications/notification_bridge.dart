@@ -63,17 +63,23 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   Future<void> _syncBrowserRegistration(bool authed) async {
     if (!mounted) return;
 
-    if (!authed) {
-      _browserRegistrationReady = false;
-      _registrationSyncQueued = false;
-      await _clearBrowserRegistration();
-      return;
-    }
-
     try {
+      if (!authed) {
+        _browserRegistrationReady = false;
+        await _clearBrowserRegistration();
+        return;
+      }
       await _ensureBrowserRegistration();
-    } finally {
+      // Only mark ready on success. On exception we stay false so the next
+      // build cycle can retry (e.g. if SharedPreferences was temporarily
+      // unavailable in private browsing mode).
       _browserRegistrationReady = true;
+    } catch (_) {
+      // SharedPreferences.getInstance() can throw on web when localStorage is
+      // blocked (private browsing, cross-origin iframe). Best-effort: leave
+      // _browserRegistrationReady = false so a retry is possible.
+    } finally {
+      // Always release the queue lock regardless of outcome or auth state.
       _registrationSyncQueued = false;
     }
   }

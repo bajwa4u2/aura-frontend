@@ -221,8 +221,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     }
 
     final message = followState == 'outgoing_pending'
-        ? 'Correspondence opens when the follow relationship is established.'
-        : 'Follow first to open direct correspondence or invite this person into a shared space.';
+        ? 'Messaging opens when the follow relationship is established.'
+        : 'Follow first to open a direct message or invite this person into a shared space.';
 
     return AuraCard(
       child: Text(
@@ -324,7 +324,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     required Profile profile,
   }) {
     return _surfaceSection(
-      title: 'Correspondence',
+      title: 'Messages',
       children: [
         _sectionRow(
           title: 'Message',

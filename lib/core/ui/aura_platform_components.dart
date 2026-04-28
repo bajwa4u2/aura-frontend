@@ -904,12 +904,28 @@ class AuraConversationTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(title, style: AuraText.subtitle)),
-                    if (badge != null) badge!,
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AuraText.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: AuraSpace.s8),
+                      badge!,
+                    ],
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s4),
-                Text(subtitle, style: AuraText.muted),
+                Text(
+                  subtitle,
+                  style: AuraText.muted,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),

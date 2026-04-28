@@ -1102,8 +1102,8 @@ String _buildSubtitle(Map<String, dynamic> item) {
       _stringOf(item['title']),
     ]);
     return roomTitle.isNotEmpty
-        ? 'Open $roomTitle in correspondence'
-        : 'Return to correspondence';
+        ? 'Open $roomTitle in messages'
+        : 'Return to messages';
   }
 
   switch (type) {
@@ -1127,7 +1127,7 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'INVITE_ACCEPTED':
     case 'INVITE_DECLINED':
     case 'INVITE_REVOKED':
-      return 'Open correspondence';
+      return 'Open messages';
     case 'ANNOUNCEMENT_PUBLISHED':
       return 'Read announcement';
     case 'POST_PUBLISH_FAILED':

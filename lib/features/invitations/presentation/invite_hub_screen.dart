@@ -94,7 +94,7 @@ class InviteHubScreen extends StatelessWidget {
         _InviteOptionData(
           title: 'Start a private conversation instead',
           subtitle:
-              'Direct conversations belong under Correspondence, not inside the invitation flow.',
+              'Direct conversations belong under Messages, not inside the invitation flow.',
           icon: Icons.chat_bubble_outline,
           onTap: () => context.push('/me/correspondence/create/conversation'),
         ),
@@ -136,9 +136,9 @@ class InviteHubScreen extends StatelessWidget {
       return 'You are already inside an active exchange. Invite only where that person should arrive: this thread, or the wider space around it.';
     }
     if (_hasSpaceContext) {
-      return 'You are already inside a shared room. Invite into the space itself, or return to Correspondence if what you need is a new private conversation.';
+      return 'You are already inside a shared room. Invite into the space itself, or return to Messages if what you need is a new private conversation.';
     }
-    return 'Invitations are for bringing people into Aura or into something that already exists. Starting a new private conversation happens under Correspondence.';
+    return 'Invitations are for bringing people into Aura or into something that already exists. Starting a new private conversation happens under Messages.';
   }
 }
 

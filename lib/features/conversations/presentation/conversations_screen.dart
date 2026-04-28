@@ -214,7 +214,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             ),
             children: [
               const _ConversationsHeader(
-                subtitle: 'Could not load your ongoing correspondence.',
+                subtitle: 'Could not load your messages.',
               ),
               const SizedBox(height: AuraSpace.s24),
               AuraErrorState(
@@ -264,7 +264,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                   _StateCard(
                     title: _emptyTitleForFilter(_filter),
                     body: _emptyBodyForFilter(_filter),
-                    primaryLabel: 'Open correspondence',
+                    primaryLabel: 'Open messages',
                     onPrimary: () => context.go('/me/correspondence'),
                   )
                 else

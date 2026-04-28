@@ -936,7 +936,7 @@ String _bodyForDestination(
     case 'JOIN_AURA':
       return 'Create an outward path into Aura itself. This is for people who are not yet inside the system.';
     case 'START_1_TO_1':
-      return 'Create an invitation into direct correspondence. The thread will only exist after acceptance.';
+      return 'Create an invitation into a direct message thread. The thread will only exist after acceptance.';
     case 'JOIN_SPACE':
       return (spaceId ?? '').trim().isNotEmpty
           ? 'Create an invitation into this space.'
@@ -968,7 +968,7 @@ String _inviteModeDescription(String destinationType, String inviteMode) {
     case 'JOIN_AURA':
       return 'Create a shareable invitation link that can travel outside Aura.';
     case 'START_1_TO_1':
-      return 'Create a shareable path into a direct correspondence invitation. Follow or approval can still be enforced at entry.';
+      return 'Create a shareable path into a direct message invitation. Follow or approval can still be enforced at entry.';
     case 'JOIN_SPACE':
       return 'Create a shareable path into this space. Access is decided when the invite is opened, not when it is created.';
     case 'JOIN_THREAD':
