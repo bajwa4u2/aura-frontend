@@ -8,6 +8,8 @@ class AuraMediaUploadResult {
     required this.storageKey,
     required this.url,
     required this.thumbUrl,
+    required this.kind,
+    required this.source,
     required this.raw,
   });
 
@@ -15,6 +17,8 @@ class AuraMediaUploadResult {
   final String storageKey;
   final String url;
   final String thumbUrl;
+  final String kind;
+  final String source;
   final Map<String, dynamic> raw;
 }
 
@@ -29,6 +33,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   int? height,
   int? duration,
   Map<String, dynamic> metadataPatch = const <String, dynamic>{},
+  void Function(int sent, int total)? onProgress,
 }) async {
   final presign = await dio.post(
     '/media/presign',
@@ -90,6 +95,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
       followRedirects: true,
       validateStatus: (code) => code != null && code >= 200 && code < 300,
     ),
+    onSendProgress: onProgress,
   );
 
   await dio.post('/media/$mediaId/confirm');
@@ -149,6 +155,8 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
     storageKey: storageKey,
     url: url,
     thumbUrl: thumbUrl,
+    kind: kind,
+    source: source,
     raw: patched.isNotEmpty ? patched : presigned,
   );
 }

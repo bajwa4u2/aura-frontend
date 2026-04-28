@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/utils/configure_url_strategy.dart';
+
+// Top-level handler required by firebase_messaging for background/killed-app
+// message processing. Must be annotated so the Dart tree shaker keeps it.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Background/killed-app FCM messages are captured here.
+  // No UI work is possible; the actual call/notification handling runs when
+  // the app is foregrounded via onMessageOpenedApp or getInitialMessage.
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +36,16 @@ Future<void> main() async {
   if (!kIsWeb) {
     try {
       await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      // Request foreground presentation on iOS (badge + sound + alert).
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
     } catch (e) {
-      debugPrint('Firebase.initializeApp failed: $e');
+      debugPrint('Firebase setup failed: $e');
     }
   }
 

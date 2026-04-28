@@ -786,6 +786,19 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
           hovering: _hovering,
         );
         break;
+      case ThreadAttachmentKind.document:
+        mediaSurface = _DocumentAttachmentSurface(
+          url: url,
+          borderColor: borderColor,
+          surfaceColor: surfaceColor,
+          primaryTextColor: primaryTextColor,
+          secondaryTextColor: secondaryTextColor,
+          fileName: fileName,
+          sizeBytes: sizeBytes,
+          mimeType: mimeType,
+          hovering: _hovering,
+        );
+        break;
     }
 
     if (url.isEmpty) return mediaSurface;
@@ -1128,6 +1141,134 @@ class _AudioAttachmentSurface extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       url.isNotEmpty ? 'Open audio' : 'Audio unavailable',
+                      style: AuraText.small.copyWith(color: secondaryTextColor),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentAttachmentSurface extends StatelessWidget {
+  const _DocumentAttachmentSurface({
+    required this.url,
+    required this.borderColor,
+    required this.surfaceColor,
+    required this.primaryTextColor,
+    required this.secondaryTextColor,
+    required this.fileName,
+    required this.sizeBytes,
+    required this.mimeType,
+    required this.hovering,
+  });
+
+  final String url;
+  final Color borderColor;
+  final Color surfaceColor;
+  final Color primaryTextColor;
+  final Color secondaryTextColor;
+  final String fileName;
+  final int? sizeBytes;
+  final String mimeType;
+  final bool hovering;
+
+  String get _docTypeLabel {
+    final lower = mimeType.toLowerCase();
+    if (lower == 'application/pdf') return 'PDF';
+    if (lower.contains('spreadsheet') || lower.contains('excel')) return 'Spreadsheet';
+    if (lower.contains('presentation') || lower.contains('powerpoint')) return 'Presentation';
+    if (lower.contains('wordprocessingml') || lower.contains('msword')) return 'Document';
+    if (lower.startsWith('text/')) return 'Text';
+    return 'File';
+  }
+
+  IconData get _docIcon {
+    final lower = mimeType.toLowerCase();
+    if (lower == 'application/pdf') return Icons.picture_as_pdf_outlined;
+    if (lower.contains('spreadsheet') || lower.contains('excel')) {
+      return Icons.table_chart_outlined;
+    }
+    if (lower.contains('presentation') || lower.contains('powerpoint')) {
+      return Icons.slideshow_outlined;
+    }
+    if (lower.startsWith('text/')) return Icons.article_outlined;
+    return Icons.description_outlined;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      transform: Matrix4.identity()
+        ..scaleByDouble(
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          hovering ? 1.01 : 1.0,
+          1,
+        ),
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            height: 48,
+            width: 48,
+            decoration: BoxDecoration(
+              color: hovering
+                  ? AuraSurface.accentSoft
+                  : AuraSurface.subtle,
+              border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(_docIcon, color: AuraSurface.accent, size: 22),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName.isEmpty ? _docTypeLabel : fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: primaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s4),
+                Text(
+                  [
+                    _docTypeLabel,
+                    if (sizeBytes != null) formatBytes(sizeBytes!),
+                  ].join(' • '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(color: secondaryTextColor),
+                ),
+                const SizedBox(height: AuraSpace.s6),
+                Row(
+                  children: [
+                    Icon(
+                      url.isNotEmpty
+                          ? Icons.open_in_new
+                          : Icons.cloud_off_outlined,
+                      size: 14,
+                      color: secondaryTextColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      url.isNotEmpty ? 'Open / Download' : 'Unavailable',
                       style: AuraText.small.copyWith(color: secondaryTextColor),
                     ),
                   ],

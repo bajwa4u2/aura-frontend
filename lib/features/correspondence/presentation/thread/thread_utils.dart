@@ -270,12 +270,23 @@ String formatBytes(int bytes) {
 
 // ─── Attachment kind ─────────────────────────────────────────────────────────
 
-enum ThreadAttachmentKind { image, video, audio }
+enum ThreadAttachmentKind { image, video, audio, document }
 
 ThreadAttachmentKind kindFromMime(String mime) {
   final lower = mime.toLowerCase();
-  if (lower.startsWith('image/')) return ThreadAttachmentKind.image;
-  if (lower.startsWith('video/')) return ThreadAttachmentKind.video;
+  if (lower.startsWith('image/')) { return ThreadAttachmentKind.image; }
+  if (lower.startsWith('video/')) { return ThreadAttachmentKind.video; }
+  if (lower.startsWith('audio/')) { return ThreadAttachmentKind.audio; }
+  if (lower == 'application/pdf') { return ThreadAttachmentKind.document; }
+  if (lower.startsWith('application/vnd.')) { return ThreadAttachmentKind.document; }
+  if (lower.startsWith('application/msword')) { return ThreadAttachmentKind.document; }
+  if (lower == 'application/rtf') { return ThreadAttachmentKind.document; }
+  if (lower.startsWith('text/')) { return ThreadAttachmentKind.document; }
+  if (lower == 'application/zip' ||
+      lower == 'application/x-zip-compressed') {
+    return ThreadAttachmentKind.document;
+  }
+  if (lower.startsWith('application/')) { return ThreadAttachmentKind.document; }
   return ThreadAttachmentKind.audio;
 }
 

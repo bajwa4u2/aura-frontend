@@ -798,20 +798,31 @@ class _MediaStageCard extends StatelessWidget {
               ),
             )
           else
-            Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: renderers.map((entry) {
-                final isLocal = entry.key == 'local';
-                return SizedBox(
-                  width: 260,
-                  child: _VideoTile(
-                    label: isLocal ? 'You' : 'Connected participant',
-                    renderer: entry.value,
-                    mirror: isLocal,
-                  ),
+            LayoutBuilder(
+              builder: (context, tileConstraints) {
+                // On wide screens use up to 2 tiles per row at 260px each;
+                // on narrow screens let a single tile fill the full width.
+                final availableWidth = tileConstraints.maxWidth;
+                final tileWidth = availableWidth >= 560
+                    ? math.min(260.0, (availableWidth - AuraSpace.s10) / 2)
+                    : availableWidth;
+
+                return Wrap(
+                  spacing: AuraSpace.s10,
+                  runSpacing: AuraSpace.s10,
+                  children: renderers.map((entry) {
+                    final isLocal = entry.key == 'local';
+                    return SizedBox(
+                      width: tileWidth,
+                      child: _VideoTile(
+                        label: isLocal ? 'You' : 'Connected participant',
+                        renderer: entry.value,
+                        mirror: isLocal,
+                      ),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
           const SizedBox(height: AuraSpace.s12),
           Wrap(

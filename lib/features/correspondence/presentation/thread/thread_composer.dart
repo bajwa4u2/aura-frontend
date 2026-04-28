@@ -24,10 +24,25 @@ import 'thread_utils.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ThreadComposerBar extends ConsumerStatefulWidget {
-  const ThreadComposerBar({super.key, required this.threadId, required this.onSent});
+  const ThreadComposerBar({
+    super.key,
+    required this.threadId,
+    required this.onSent,
+    this.currentUserId = '',
+    this.onOptimisticSend,
+  });
 
   final String threadId;
   final VoidCallback onSent;
+  final String currentUserId;
+  final void Function({
+    required String body,
+    required String senderId,
+    required String senderName,
+    required String senderHandle,
+    required String senderAvatarUrl,
+    required List<Map<String, dynamic>> attachments,
+  })? onOptimisticSend;
 
   @override
   ConsumerState<ThreadComposerBar> createState() => _ThreadComposerBarState();
@@ -184,6 +199,45 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     );
   }
 
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: true,
+      type: FileType.any,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final picked = result.files.single;
+    if (picked.bytes == null || picked.bytes!.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read selected file.')),
+      );
+      return;
+    }
+
+    final mime = _inferMime(picked.name);
+    final file = XFile.fromData(
+      picked.bytes!,
+      name: picked.name,
+      mimeType: mime,
+    );
+
+    await _addAttachment(
+      file,
+      kind: _kindFromMime(mime),
+      source: _AttachmentSource.upload,
+    );
+  }
+
+  ThreadAttachmentKind _kindFromMime(String mime) {
+    final lower = mime.toLowerCase();
+    if (lower.startsWith('image/')) return ThreadAttachmentKind.image;
+    if (lower.startsWith('video/')) return ThreadAttachmentKind.video;
+    if (lower.startsWith('audio/')) return ThreadAttachmentKind.audio;
+    return ThreadAttachmentKind.document;
+  }
+
   Future<void> _toggleAudioRecording() async {
     if (_sending) return;
 
@@ -329,7 +383,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       source: _mediaSourceValue(attachment.source),
       width: attachment.width,
       height: attachment.height,
-      duration: attachment.kind == ThreadAttachmentKind.audio
+      duration: attachment.kind == ThreadAttachmentKind.audio ||
+              attachment.kind == ThreadAttachmentKind.video
           ? attachment.durationSec
           : null,
       metadataPatch: <String, dynamic>{
@@ -337,12 +392,19 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         if (attachment.height != null) 'height': attachment.height,
         'editDisclosure': false,
       },
+      onProgress: (sent, total) {
+        if (!mounted || total <= 0) return;
+        setState(() {
+          attachment.uploadProgress = sent / total;
+        });
+      },
     );
 
+    attachment.mediaId = result.mediaId;
     attachment.storageKey = result.storageKey;
     attachment.url = result.url.isNotEmpty ? result.url : null;
     attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
-
+    attachment.uploadProgress = 1.0;
     attachment.uploading = false;
     attachment.error = null;
   }
@@ -536,14 +598,49 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     if (!_canSend) return;
 
     final body = _controller.text.trim();
-    final attachmentsPayload = _attachments
+    final readyAttachments = _attachments
         .where(
           (a) => !a.uploading && a.error == null && a.storageKey.isNotEmpty,
         )
-        .map((a) => a.toMessagePayload())
         .toList();
+    final attachmentsPayload =
+        readyAttachments.map((a) => a.toMessagePayload()).toList();
 
-    setState(() => _sending = true);
+    // Fire optimistic message immediately before network call.
+    widget.onOptimisticSend?.call(
+      body: body,
+      senderId: widget.currentUserId,
+      senderName: '',
+      senderHandle: '',
+      senderAvatarUrl: '',
+      attachments: readyAttachments
+          .map((a) => {
+                'storageKey': a.storageKey,
+                'fileName': a.file.name,
+                'mimeType': a.mimeType,
+                'sizeBytes': a.sizeBytes,
+                'url': a.url ?? '',
+                'thumbUrl': a.thumbUrl ?? '',
+                if (a.width != null) 'width': a.width,
+                if (a.height != null) 'height': a.height,
+                if (a.durationSec != null) 'durationSec': a.durationSec,
+              })
+          .toList(),
+    );
+
+    _controller.clear();
+    setState(() {
+      _attachments.clear();
+      _sending = true;
+      _suggestions = const [];
+      _assistSnapshot = null;
+      _assistError = null;
+      _assistSessionId = null;
+      _dismissedSuggestionIds.clear();
+      _translationPreview = null;
+      _translationSnapshot = null;
+      _translationError = null;
+    });
 
     try {
       await ref
@@ -554,21 +651,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
             attachments: attachmentsPayload,
           );
 
-      _controller.clear();
-      _attachments.clear();
-
       if (!mounted) return;
       widget.onSent();
-      setState(() {
-        _suggestions = const [];
-        _assistSnapshot = null;
-        _assistError = null;
-        _assistSessionId = null;
-        _dismissedSuggestionIds.clear();
-        _translationPreview = null;
-        _translationSnapshot = null;
-        _translationError = null;
-      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -803,6 +887,15 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         title: 'Upload audio',
         subtitle: 'Attach an audio file',
         onTap: () => onTap(_pickAudioFile),
+      ),
+    );
+
+    children.add(
+      _AttachmentActionTile(
+        icon: Icons.attach_file_rounded,
+        title: 'Upload document',
+        subtitle: 'Attach a PDF, Office file, or any document',
+        onTap: () => onTap(_pickDocument),
       ),
     );
 
@@ -1354,10 +1447,15 @@ class _AttachmentPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = attachment.file.name;
+    final progress = attachment.uploadProgress;
+    final progressPct = progress != null ? (progress * 100).round() : null;
+
     final subtitle = attachment.uploading
-        ? 'Uploading...'
+        ? (progressPct != null && progressPct < 100
+            ? 'Uploading $progressPct%'
+            : 'Uploading…')
         : attachment.error != null
-        ? 'Failed'
+        ? 'Upload failed'
         : _attachmentKindLabel(attachment.kind);
 
     return Container(
@@ -1377,7 +1475,26 @@ class _AttachmentPreviewCard extends StatelessWidget {
         children: [
           SizedBox(
             height: 70,
-            child: _AttachmentPreviewMedia(attachment: attachment),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _AttachmentPreviewMedia(attachment: attachment),
+                if (attachment.uploading && progress != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.black26,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AuraSurface.accent,
+                      ),
+                      minHeight: 3,
+                    ),
+                  ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(AuraSpace.s10),
@@ -1416,16 +1533,41 @@ class _AttachmentPreviewCard extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else if (attachment.error != null)
-                  IconButton(
-                    onPressed: onRetry,
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Retry upload',
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: onRemove,
+                        icon: const Icon(Icons.close, size: 18),
+                        tooltip: 'Remove',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        tooltip: 'Retry upload',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                      ),
+                    ],
                   )
                 else
                   IconButton(
                     onPressed: onRemove,
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, size: 18),
                     tooltip: 'Remove',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                   ),
               ],
             ),
@@ -1470,6 +1612,11 @@ class _AttachmentPreviewMedia extends StatelessWidget {
         return const _AttachmentFallbackTile(
           icon: Icons.graphic_eq_outlined,
           label: 'Audio',
+        );
+      case ThreadAttachmentKind.document:
+        return const _AttachmentFallbackTile(
+          icon: Icons.description_outlined,
+          label: 'Document',
         );
     }
   }
@@ -1761,12 +1908,18 @@ class _DraftAttachment {
   int? width;
   int? height;
   int? durationSec;
+
+  // Populated after upload completes.
+  String mediaId = '';
   String? url;
   String? thumbUrl;
   String storageKey = '';
   bool uploading = false;
+  double? uploadProgress; // 0.0–1.0
   String? error;
 
+  // Backend DTO: storageKey, fileName, mimeType, sizeBytes, width?, height?, durationSec?
+  // Additional fields (mediaId, url, thumbUrl) are stored locally for preview.
   Map<String, dynamic> toMessagePayload() {
     return {
       'storageKey': storageKey,
@@ -1801,6 +1954,8 @@ String _attachmentKindLabel(ThreadAttachmentKind kind) {
       return 'Video';
     case ThreadAttachmentKind.audio:
       return 'Audio';
+    case ThreadAttachmentKind.document:
+      return 'Document';
   }
 }
 
@@ -1812,6 +1967,8 @@ String _mediaKindValue(ThreadAttachmentKind kind) {
       return 'VIDEO';
     case ThreadAttachmentKind.audio:
       return 'AUDIO';
+    case ThreadAttachmentKind.document:
+      return 'DOCUMENT';
   }
 }
 

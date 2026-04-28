@@ -52,6 +52,49 @@ final messagesProvider =
       return repo.listMessages(threadId: threadId);
     });
 
+// ── Pending message ───────────────────────────────────────────────────────────
+
+class _PendingMessage {
+  _PendingMessage({
+    required this.localId,
+    required this.body,
+    required this.senderId,
+    required this.senderName,
+    required this.senderHandle,
+    required this.senderAvatarUrl,
+    required this.attachments,
+    required this.sentAt,
+  });
+
+  final String localId;
+  final String body;
+  final String senderId;
+  final String senderName;
+  final String senderHandle;
+  final String senderAvatarUrl;
+  final List<Map<String, dynamic>> attachments;
+  final DateTime sentAt;
+  bool failed = false;
+
+  Map<String, dynamic> toMessage() => {
+        '_localId': localId,
+        '_pending': true,
+        '_failed': failed,
+        'body': body,
+        'text': body,
+        'authorId': senderId,
+        'author': {
+          'id': senderId,
+          'displayName': senderName,
+          'handle': senderHandle,
+          'avatarUrl': senderAvatarUrl,
+        },
+        'attachments': attachments,
+        'createdAt': sentAt.toIso8601String(),
+        'sentAt': sentAt.toIso8601String(),
+      };
+}
+
 final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final res = await dio.get('/users/me');
@@ -142,16 +185,20 @@ class ThreadScreen extends ConsumerStatefulWidget {
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Timer? _pollTimer;
+  final ScrollController _scrollController = ScrollController();
+  final List<_PendingMessage> _pendingMessages = [];
 
   @override
   void initState() {
     super.initState();
+    // Poll for new messages every 20 s.  When the user is joined to a live
+    // session we still refresh — someone may send a message with an attachment
+    // during the call.  We only skip when the controller is mid-join/leave
+    // (isBusy) to avoid racing with session hydration.
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       final liveState = ref.read(realtimeControllerProvider);
-      if (liveState.isJoined || liveState.isBusy || liveState.isMediaBusy) {
-        return;
-      }
+      if (liveState.isBusy) return;
       _refreshThreadData();
     });
   }
@@ -159,12 +206,52 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  void _addPendingMessage({
+    required String body,
+    required String senderId,
+    required String senderName,
+    required String senderHandle,
+    required String senderAvatarUrl,
+    required List<Map<String, dynamic>> attachments,
+  }) {
+    final pending = _PendingMessage(
+      localId: '${DateTime.now().microsecondsSinceEpoch}',
+      body: body,
+      senderId: senderId,
+      senderName: senderName,
+      senderHandle: senderHandle,
+      senderAvatarUrl: senderAvatarUrl,
+      attachments: attachments,
+      sentAt: DateTime.now(),
+    );
+    setState(() => _pendingMessages.add(pending));
+    _scrollToBottom();
+  }
+
+  void _clearPendingOnRefresh() {
+    // Remove non-failed pending messages once server data refreshes.
+    setState(() => _pendingMessages.removeWhere((p) => !p.failed));
   }
 
   void _refreshThreadData() {
     ref.invalidate(threadDetailProvider(widget.threadId));
     ref.invalidate(messagesProvider(widget.threadId));
+    _clearPendingOnRefresh();
   }
 
   Future<void> _refreshAll() async {
@@ -204,6 +291,19 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final threadId = widget.threadId;
 
     ref.watch(threadOpenProvider(threadId));
+
+    // Refresh messages when a new socket event arrives during a live session
+    // so attachments sent by other participants appear immediately.
+    ref.listen<String?>(
+      realtimeControllerProvider.select((s) => s.lastSocketEvent),
+      (prev, next) {
+        if (next == null || next == prev) return;
+        if (!mounted) return;
+        final liveState = ref.read(realtimeControllerProvider);
+        if (!liveState.isJoined) return;
+        _refreshThreadData();
+      },
+    );
 
     final threadAsync = ref.watch(threadDetailProvider(threadId));
     final messagesAsync = ref.watch(messagesProvider(threadId));
@@ -352,6 +452,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               final showRail = constraints.maxWidth >= 560;
                               final conversationPanel = _ThreadConversationPanel(
                                 messagesAsync: messagesAsync,
+                                pendingMessages: _pendingMessages
+                                    .map((p) => p.toMessage())
+                                    .toList(),
                                 currentUserId: currentUserId,
                                 threadContext: contextData,
                                 onRefresh: _refreshThreadData,
@@ -440,6 +543,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           ),
           ThreadComposerBar(
             threadId: widget.threadId,
+            currentUserId: currentUserId,
+            onOptimisticSend: _addPendingMessage,
             onSent: _refreshThreadData,
           ),
         ],
@@ -925,6 +1030,7 @@ class _HeaderIconAction extends StatelessWidget {
 class _ThreadConversationPanel extends StatelessWidget {
   const _ThreadConversationPanel({
     required this.messagesAsync,
+    required this.pendingMessages,
     required this.currentUserId,
     required this.threadContext,
     required this.onRefresh,
@@ -933,6 +1039,7 @@ class _ThreadConversationPanel extends StatelessWidget {
   });
 
   final AsyncValue<List<Map<String, dynamic>>> messagesAsync;
+  final List<Map<String, dynamic>> pendingMessages;
   final String currentUserId;
   final CorrespondenceThreadContext threadContext;
   final VoidCallback onRefresh;
@@ -970,7 +1077,19 @@ class _ThreadConversationPanel extends StatelessWidget {
                 onRetry: onRefresh,
               ),
             ),
-            data: (messages) {
+            data: (serverMessages) {
+              final messages = [
+                ...serverMessages,
+                // Append pending messages that aren't yet in server list.
+                ...pendingMessages.where((p) {
+                  final localId = p['_localId']?.toString() ?? '';
+                  if (localId.isEmpty) return true;
+                  return !serverMessages.any(
+                    (s) => s['_localId']?.toString() == localId,
+                  );
+                }),
+              ];
+
               if (messages.isEmpty) {
                 return AuraEmptyState(
                   title: _emptyTitle(),
@@ -990,16 +1109,68 @@ class _ThreadConversationPanel extends StatelessWidget {
                   tiles.add(_DateSeparator(message: messages[i]));
                   tiles.add(const SizedBox(height: AuraSpace.s10));
                 }
+                final isPending = messages[i]['_pending'] == true;
+                final isFailed = messages[i]['_failed'] == true;
                 tiles.add(
-                  ThreadMessageTile(
-                    message: messages[i],
-                    currentUserId: currentUserId,
-                    showAuthorHeader: !isSameSender(
-                      messages[i],
-                      i > 0 ? messages[i - 1] : null,
+                  Opacity(
+                    opacity: isPending ? 0.65 : 1.0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ThreadMessageTile(
+                          message: messages[i],
+                          currentUserId: currentUserId,
+                          showAuthorHeader: !isSameSender(
+                            messages[i],
+                            i > 0 ? messages[i - 1] : null,
+                          ),
+                          onEdit: () => onEditMessage(messages[i]),
+                          onDelete: () => onDeleteMessage(messages[i]),
+                        ),
+                        if (isPending && !isFailed)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: 4,
+                              right: 4,
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Sending…',
+                                    style: AuraText.micro.copyWith(
+                                      color: AuraSurface.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (isFailed)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, right: 4),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'Failed to send',
+                                style: AuraText.micro.copyWith(
+                                  color: AuraSurface.dangerInk,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    onEdit: () => onEditMessage(messages[i]),
-                    onDelete: () => onDeleteMessage(messages[i]),
                   ),
                 );
                 if (i != messages.length - 1) {

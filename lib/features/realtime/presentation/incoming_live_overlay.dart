@@ -25,11 +25,78 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
       _AuraIncomingLiveLayerState();
 }
 
-class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
+class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
+    with SingleTickerProviderStateMixin {
   static const _resolver = CommunicationResolver();
+  // Auto-dismiss after this long — long enough to be heard but avoids
+  // the overlay persisting indefinitely if the backend never sends ENDED.
+  static const _ringTimeout = Duration(seconds: 50);
+
   final Set<String> _dismissedIds = <String>{};
   final Set<String> _dismissedSessionIds = <String>{};
   bool _joining = false;
+  String? _joinError;
+  Timer? _ringTimer;
+  String? _ringTimerNotificationId;
+
+  // Pulse animation for the ringing avatar ring.
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ringTimer?.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  // ── Payload helpers ───────────────────────────────────────────────────────
+
+  String _resolveKind(Map<String, dynamic> item) {
+    final data = _mapOf(item['data']);
+    return _firstNonEmpty([
+      _stringOf(item['notificationKind']),
+      _stringOf(item['type']),
+      _stringOf(data['notificationKind']),
+      _stringOf(data['communicationType']),
+      _stringOf(data['type']),
+    ]).toUpperCase();
+  }
+
+  String _resolveSessionId(Map<String, dynamic> item) {
+    final data = _mapOf(item['data']);
+    return _firstNonEmpty([
+      _stringOf(data['realtimeSessionId']),
+      _stringOf(data['sessionId']),
+      _stringOf(item['realtimeSessionId']),
+      _stringOf(item['sessionId']),
+    ]);
+  }
+
+  String _resolveCallState(Map<String, dynamic> item) {
+    final data = _mapOf(item['data']);
+    return _firstNonEmpty([
+      _stringOf(data['callState']),
+      _stringOf(item['callState']),
+    ]).toUpperCase();
+  }
+
+  bool _isCallKind(String kind) =>
+      kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
+
+  // ── Interrupt candidate logic ─────────────────────────────────────────────
 
   bool _isInterruptCandidate(
     Map<String, dynamic> item,
@@ -39,15 +106,21 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     final id = _stringOf(item['id']);
     if (id.isEmpty || _dismissedIds.contains(id)) return false;
 
-    final data = _mapOf(item['data']);
-    final sessionId = _firstNonEmpty([
-      _stringOf(data['sessionId']),
-      _stringOf(item['sessionId']),
-    ]);
+    final sessionId = _resolveSessionId(item);
     if (sessionId.isNotEmpty && _dismissedSessionIds.contains(sessionId)) {
       return false;
     }
     if (_stringOf(item['readAt']).isNotEmpty) return false;
+
+    // Terminal call states — do not show incoming overlay for these.
+    final callState = _resolveCallState(item);
+    if (callState == 'MISSED' ||
+        callState == 'ENDED' ||
+        callState == 'DECLINED' ||
+        callState == 'EXPIRED' ||
+        callState == 'CANCELLED') {
+      return false;
+    }
 
     // Already in a dedicated realtime room or live sub-route — suppress.
     if (currentPath.contains('/realtime') ||
@@ -65,14 +138,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
       if (alreadyInThisSession) return false;
     }
 
+    final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
     if (attention != 'INTERRUPT') return false;
 
-    final type = _stringOf(item['type']).toUpperCase();
-    final communicationType = _stringOf(
-      data['communicationType'],
-    ).toUpperCase();
-    return type == 'LIVE' || communicationType == 'LIVE';
+    final kind = _resolveKind(item);
+    return _isCallKind(kind);
   }
 
   Map<String, dynamic>? _currentIncoming(
@@ -88,23 +159,48 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     return null;
   }
 
+  void _ensureRingTimer(Map<String, dynamic> item) {
+    final id = _stringOf(item['id']);
+    if (id == _ringTimerNotificationId) return;
+    _ringTimer?.cancel();
+    _ringTimerNotificationId = id;
+    _ringTimer = Timer(_ringTimeout, () {
+      if (!mounted) return;
+      // Auto-dismiss: treat as declined locally so the overlay disappears.
+      final sessionId = _resolveSessionId(item);
+      if (id.isNotEmpty) _dismissedIds.add(id);
+      if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
+      setState(() => _joinError = null);
+    });
+  }
+
+  void _cancelRingTimer() {
+    _ringTimer?.cancel();
+    _ringTimer = null;
+    _ringTimerNotificationId = null;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
   Future<void> _joinCurrent(Map<String, dynamic> item) async {
     if (_joining) return;
 
     final data = _mapOf(item['data']);
     final target = _resolver.resolveFromPayload({...item, ...data});
     final sessionId = _firstNonEmpty([
-      _stringOf(data['sessionId']),
+      _resolveSessionId(item),
       target.sessionId ?? '',
     ]);
 
     if (sessionId.isEmpty) return;
 
+    _cancelRingTimer();
     final router = GoRouter.of(context);
     final route = _resolver.resolveRoute(target);
 
     setState(() {
       _joining = true;
+      _joinError = null;
     });
 
     final id = _stringOf(item['id']);
@@ -117,35 +213,51 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
 
       if (!mounted) return;
       router.go(route);
-    } catch (_) {
+    } catch (e) {
+      // Join failed — let user retry or dismiss.
       _dismissedSessionIds.remove(sessionId);
-      // let user try again
-    } finally {
       if (mounted) {
         setState(() {
-          _joining = false;
+          _joinError = 'Could not join the call. Check your connection.';
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _joining = false);
       }
     }
   }
 
+  Future<void> _retryJoin(Map<String, dynamic> item) async {
+    setState(() => _joinError = null);
+    await _joinCurrent(item);
+  }
+
   Future<void> _declineCurrent(Map<String, dynamic> item) async {
+    _cancelRingTimer();
     final id = _stringOf(item['id']);
-    if (id.isNotEmpty) {
-      _dismissedIds.add(id);
-    }
-    final sessionId = _firstNonEmpty([
-      _stringOf(_mapOf(item['data'])['sessionId']),
-      _stringOf(item['sessionId']),
-    ]);
-    if (sessionId.isNotEmpty) {
-      _dismissedSessionIds.add(sessionId);
-    }
+    if (id.isNotEmpty) _dismissedIds.add(id);
+
+    final sessionId = _resolveSessionId(item);
+    if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
+
     if (id.isNotEmpty) {
       await ref.read(notificationsControllerProvider.notifier).markRead(id);
     }
-    setState(() {});
+
+    if (mounted) setState(() => _joinError = null);
   }
+
+  void _dismissError(Map<String, dynamic> item) {
+    _cancelRingTimer();
+    final id = _stringOf(item['id']);
+    if (id.isNotEmpty) _dismissedIds.add(id);
+    final sessionId = _resolveSessionId(item);
+    if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
+    setState(() => _joinError = null);
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +265,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     final liveState = ref.watch(realtimeControllerProvider);
     final currentPath = GoRouterState.of(context).uri.path;
     final item = _currentIncoming(currentPath, notifications.items, liveState);
-    if (item == null) return widget.child;
+    if (item == null) {
+      _cancelRingTimer();
+      return widget.child;
+    }
+
+    _ensureRingTimer(item);
 
     final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
@@ -255,36 +372,74 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s28),
-                // Caller avatar
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isVideo
-                          ? AuraSurface.accent.withValues(alpha: 0.45)
-                          : AuraSurface.goodInk.withValues(alpha: 0.35),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isVideo ? AuraSurface.accent : AuraSurface.goodInk)
-                            .withValues(alpha: 0.25),
-                        blurRadius: 32,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: AuraAvatar(name: actorName, size: 96),
+                // Caller avatar with pulsing ring
+                AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (context, child) {
+                    final ringColor = isVideo
+                        ? AuraSurface.accent
+                        : AuraSurface.goodInk;
+                    final pulseOpacity = _joining ? 0.0 : _pulseAnim.value;
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Outer pulse ring
+                        Container(
+                          width: 120 + 32 * _pulseAnim.value,
+                          height: 120 + 32 * _pulseAnim.value,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: ringColor.withValues(alpha: pulseOpacity * 0.25),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        // Inner avatar ring
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: ringColor.withValues(
+                                alpha: 0.35 + pulseOpacity * 0.25,
+                              ),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ringColor.withValues(
+                                  alpha: pulseOpacity * 0.3,
+                                ),
+                                blurRadius: 24 + 16 * _pulseAnim.value,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: AuraAvatar(name: actorName, size: 96),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: AuraSpace.s20),
-                Text(
-                  'Ringing now',
-                  style: AuraText.small.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w700,
+                // Status line
+                if (_joining)
+                  Text(
+                    'Joining call…',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                else
+                  Text(
+                    'Ringing now',
+                    style: AuraText.small.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
                 const SizedBox(height: AuraSpace.s6),
                 // Caller name
                 Text(
@@ -301,61 +456,108 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const Spacer(flex: 2),
-                // Action buttons
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s32),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Dismiss
-                      Column(
-                        children: [
-                          _CallCircleButton(
-                            icon: Icons.call_end_rounded,
+                // Join error
+                if (_joinError != null) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: AuraSpace.s32),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s14,
+                      vertical: AuraSpace.s10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AuraSurface.dangerBg,
+                      borderRadius: BorderRadius.circular(AuraRadius.md),
+                      border: Border.all(
+                        color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          _joinError!,
+                          style: AuraText.small.copyWith(
                             color: AuraSurface.dangerInk,
-                            background: AuraSurface.dangerBg,
-                            size: 68,
-                            onTap: _joining ? null : () => _declineCurrent(item),
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text(
-                            'Decline',
-                            style: AuraText.small.copyWith(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontWeight: FontWeight.w600,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AuraSpace.s8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _GhostCallButton(
+                              label: 'Dismiss',
+                              onTap: () => _dismissError(item),
                             ),
-                          ),
-                        ],
-                      ),
-                      // Accept
-                      Column(
-                        children: [
-                          _CallCircleButton(
-                            icon: isVideo
-                                ? Icons.videocam_rounded
-                                : Icons.call_rounded,
-                            color: Colors.white,
-                            background: isVideo
-                                ? AuraSurface.accent
-                                : AuraSurface.goodInk,
-                            size: 68,
-                            onTap: _joining ? null : () => _joinCurrent(item),
-                            busy: _joining,
-                          ),
-                          const SizedBox(height: AuraSpace.s10),
-                          Text(
-                            _joining ? 'Joining...' : 'Accept',
-                            style: AuraText.small.copyWith(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontWeight: FontWeight.w600,
+                            const SizedBox(width: AuraSpace.s12),
+                            _GhostCallButton(
+                              label: 'Retry',
+                              onTap: () => _retryJoin(item),
+                              accent: true,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
+                const Spacer(flex: 2),
+                // Action buttons — hidden while showing error or joining
+                if (_joinError == null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s32),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Decline
+                        Column(
+                          children: [
+                            _CallCircleButton(
+                              icon: Icons.call_end_rounded,
+                              color: AuraSurface.dangerInk,
+                              background: AuraSurface.dangerBg,
+                              size: 68,
+                              onTap: _joining ? null : () => _declineCurrent(item),
+                            ),
+                            const SizedBox(height: AuraSpace.s10),
+                            Text(
+                              'Decline',
+                              style: AuraText.small.copyWith(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Accept
+                        Column(
+                          children: [
+                            _CallCircleButton(
+                              icon: isVideo
+                                  ? Icons.videocam_rounded
+                                  : Icons.call_rounded,
+                              color: Colors.white,
+                              background: isVideo
+                                  ? AuraSurface.accent
+                                  : AuraSurface.goodInk,
+                              size: 68,
+                              onTap: _joining ? null : () => _joinCurrent(item),
+                              busy: _joining,
+                            ),
+                            const SizedBox(height: AuraSpace.s10),
+                            Text(
+                              _joining ? 'Joining…' : 'Accept',
+                              style: AuraText.small.copyWith(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: AuraSpace.s32),
               ],
             ),
@@ -365,6 +567,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer> {
     );
   }
 }
+
+// ── Call buttons ──────────────────────────────────────────────────────────────
 
 class _CallCircleButton extends StatelessWidget {
   const _CallCircleButton({
@@ -421,6 +625,51 @@ class _CallCircleButton extends StatelessWidget {
     );
   }
 }
+
+class _GhostCallButton extends StatelessWidget {
+  const _GhostCallButton({
+    required this.label,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: accent
+                ? AuraSurface.accent.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: accent
+                  ? AuraSurface.accent.withValues(alpha: 0.35)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w700,
+              color: accent ? AuraSurface.accentText : Colors.white70,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Primitive helpers (module-private) ────────────────────────────────────────
 
 Map<String, dynamic> _mapOf(dynamic value) {
   if (value is Map<String, dynamic>) return value;
