@@ -74,6 +74,66 @@ class AuthController {
     return null;
   }
 
+  String _extractServerMessage(DioException e) {
+    final data = e.response?.data;
+
+    if (data is Map) {
+      final candidates = [
+        data['message'],
+        data['error'],
+        data['detail'],
+        data['title'],
+      ];
+
+      for (final c in candidates) {
+        final s = c?.toString().trim() ?? '';
+        if (s.isNotEmpty) return s;
+      }
+    }
+
+    if (data is String && data.trim().isNotEmpty) {
+      return data.trim();
+    }
+
+    return '';
+  }
+
+  String _mapLoginError(DioException e) {
+    final code = e.response?.statusCode;
+    final server = _extractServerMessage(e).toLowerCase();
+
+    if (code == 401 ||
+        server.contains('invalid credentials') ||
+        server.contains('invalid login') ||
+        server.contains('wrong password') ||
+        server.contains('incorrect password') ||
+        server.contains('incorrect email') ||
+        server.contains('incorrect email or password') ||
+        server.contains('wrong email or password') ||
+        server.contains('email or password is incorrect') ||
+        server.contains('invalid email or password') ||
+        server.contains('unauthorized')) {
+      return 'The email or password does not look right.';
+    }
+
+    if (server.contains('email not verified') ||
+        server.contains('verify your email') ||
+        server.contains('email verification required') ||
+        server.contains('unverified')) {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
+    if (code == 403 ||
+        server.contains('account disabled') ||
+        server.contains('account locked') ||
+        server.contains('account suspended') ||
+        server.contains('forbidden')) {
+      return 'This account is not available right now.';
+    }
+
+    return 'We could not sign you in right now. Please try again.';
+  }
+
   void _invalidateAuth() {
     try {
       ref.invalidate(tokenStoreLoadedProvider);
@@ -112,10 +172,15 @@ class AuthController {
     if (e.isEmpty) throw Exception('Email is required');
     if (p.isEmpty) throw Exception('Password is required');
 
-    final res = await _dio().post(
-      '/auth/login',
-      data: {'email': e, 'password': p},
-    );
+    late final Response res;
+    try {
+      res = await _dio().post(
+        '/auth/login',
+        data: {'email': e, 'password': p},
+      );
+    } on DioException catch (e) {
+      throw Exception(_mapLoginError(e));
+    }
 
     final outer = _asMap(res.data);
     final access = _readAccessToken(outer);

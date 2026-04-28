@@ -15,10 +15,16 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 class VerifyPendingScreen extends ConsumerStatefulWidget {
-  const VerifyPendingScreen({super.key, this.email, this.redirectTo});
+  const VerifyPendingScreen({
+    super.key,
+    this.email,
+    this.redirectTo,
+    this.emailSent = true,
+  });
 
   final String? email;
   final String? redirectTo;
+  final bool emailSent;
 
   @override
   ConsumerState<VerifyPendingScreen> createState() =>
@@ -112,13 +118,25 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
 
       for (final path in candidates) {
         try {
-          await dio.post(path, data: {'email': email});
+          final res = await dio.post(path, data: {'email': email});
+          final body = res.data;
+          bool emailSent = true;
+
+          if (body is Map) {
+            final raw = body['emailSent'];
+            if (raw is bool) emailSent = raw;
+            final data = body['data'];
+            if (raw == null && data is Map && data['emailSent'] is bool) {
+              emailSent = data['emailSent'] as bool;
+            }
+          }
 
           if (!mounted) return;
           setState(() {
-            _msg =
-                'Verification email sent. Please check your inbox and spam folder.';
-            _msgIsError = false;
+            _msg = emailSent
+                ? 'Verification email sent. Please check your inbox and spam folder.'
+                : 'We could not send the verification email just now. Please try again.';
+            _msgIsError = !emailSent;
           });
           return;
         } on DioException catch (e) {
@@ -174,6 +192,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     final redirect = _safeRedirectOrNull(widget.redirectTo);
     final verifiedAsync = ref.watch(emailVerifiedProvider);
     final isAuthed = ref.watch(isAuthedProvider);
+    final emailSent = widget.emailSent;
 
     if (isAuthed && verifiedAsync.value == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -230,6 +249,14 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                         height: 1.5,
                       ),
                     ),
+                    if (!emailSent) ...[
+                      const SizedBox(height: AuraSpace.s14),
+                      const _MessageBanner(
+                        message:
+                            'Your account was created, but we could not send the verification email just now. You can resend it below.',
+                        isError: true,
+                      ),
+                    ],
                     const SizedBox(height: AuraSpace.s20),
                     TextField(
                       controller: _email,

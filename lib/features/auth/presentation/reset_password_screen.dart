@@ -305,9 +305,20 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       const SizedBox(height: AuraSpace.s20),
                       AuraPrimaryButton(
                         label: _done
-                            ? 'Done'
+                            ? 'Continue to sign in'
                             : (_busy ? 'Updating…' : 'Update password'),
-                        onPressed: enabled ? _submit : null,
+                        onPressed: _done
+                            ? () {
+                                final qp = <String, String>{
+                                  'reset': '1',
+                                };
+                                final email = (widget.email ?? '').trim();
+                                if (email.isNotEmpty) {
+                                  qp['email'] = email;
+                                }
+                                context.go(Uri(path: '/login', queryParameters: qp).toString());
+                              }
+                            : (enabled ? _submit : null),
                         icon: _done
                             ? Icons.check_rounded
                             : Icons.lock_outline_rounded,

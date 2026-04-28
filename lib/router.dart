@@ -491,6 +491,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/login',
             builder: (context, state) => AuthScreen(
               redirectTo: state.uri.queryParameters['redirect'],
+              email: state.uri.queryParameters['email'],
+              notice: state.uri.queryParameters['verified'] == '1'
+                  ? 'verified'
+                  : (state.uri.queryParameters['reset'] == '1' ? 'reset' : null),
             ),
           ),
           GoRoute(
@@ -525,6 +529,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => VerifyPendingScreen(
               email: state.uri.queryParameters['email'],
               redirectTo: state.uri.queryParameters['redirect'],
+              emailSent: _queryBool(state.uri.queryParameters['emailSent']) ||
+                  state.uri.queryParameters['emailSent'] == null,
             ),
           ),
 

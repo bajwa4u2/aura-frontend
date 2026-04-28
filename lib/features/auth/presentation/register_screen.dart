@@ -198,7 +198,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ? _defaultDisplayName(firstName, lastName, handle)
           : _displayName.text.trim();
 
-      await repo.register(
+      final result = await repo.register(
         email: email,
         password: _password.text,
         firstName: firstName,
@@ -207,6 +207,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         displayName: displayName,
       );
 
+      final emailSent = result['emailSent'] != false;
+
       ref.invalidate(emailVerifiedProvider);
       ref.invalidate(authStatusProvider);
       ref.invalidate(isAuthedProvider);
@@ -214,8 +216,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) return;
 
       final redirect = _safeRedirect(widget.redirectTo);
+      final qp = <String, String>{
+        'email': email,
+        'redirect': redirect,
+      };
+      if (!emailSent) qp['emailSent'] = '0';
+
       context.go(
-        '/verify-pending?email=${Uri.encodeComponent(email)}&redirect=${Uri.encodeComponent(redirect)}',
+        Uri(path: '/verify-pending', queryParameters: qp).toString(),
       );
     } catch (e) {
       if (!mounted) return;

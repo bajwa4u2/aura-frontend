@@ -259,13 +259,14 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                           label: 'Continue to sign in',
                           icon: Icons.login_rounded,
                           onPressed: () {
+                            final qp = <String, String>{'verified': '1'};
+                            if (email.isNotEmpty) qp['email'] = email;
                             if (redirect != null) {
-                              context.go(
-                                '/login?redirect=${Uri.encodeComponent(redirect)}',
-                              );
-                            } else {
-                              context.go('/login');
+                              qp['redirect'] = redirect;
                             }
+                            context.go(
+                              Uri(path: '/login', queryParameters: qp).toString(),
+                            );
                           },
                         ),
                         const SizedBox(height: AuraSpace.s10),

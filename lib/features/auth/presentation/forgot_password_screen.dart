@@ -66,13 +66,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final dio = ref.read(dioProvider);
 
     try {
-      await dio.post('/auth/forgot-password', data: {'email': email});
+      final res = await dio.post('/auth/forgot-password', data: {'email': email});
+      final body = res.data;
+      bool emailSent = true;
+
+      if (body is Map) {
+        final raw = body['emailSent'];
+        if (raw is bool) emailSent = raw;
+        final data = body['data'];
+        if (raw == null && data is Map && data['emailSent'] is bool) {
+          emailSent = data['emailSent'] as bool;
+        }
+      }
 
       if (!mounted) return;
       setState(() {
-        _message =
-            'If that email is connected to an account, we sent a reset link. Please check your inbox and spam folder.';
-        _messageIsError = false;
+        _message = emailSent
+            ? 'If that email is connected to an account, we sent a reset link. Please check your inbox and spam folder.'
+            : 'We could not send the reset email right now. Please try again in a moment.';
+        _messageIsError = !emailSent;
       });
     } on DioException catch (e) {
       debugPrint(
@@ -81,16 +93,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
       if (!mounted) return;
       setState(() {
-        _message =
-            'If that email is connected to an account, we sent a reset link. Please check your inbox and spam folder.';
-        _messageIsError = false;
+        _message = 'We could not send the reset email right now. Please try again in a moment.';
+        _messageIsError = true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _message =
-            'If that email is connected to an account, we sent a reset link. Please check your inbox and spam folder.';
-        _messageIsError = false;
+        _message = 'We could not send the reset email right now. Please try again in a moment.';
+        _messageIsError = true;
       });
     } finally {
       if (mounted) {

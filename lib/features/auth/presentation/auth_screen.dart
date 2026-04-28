@@ -12,9 +12,11 @@ import '../../../core/ui/aura_text.dart';
 import '../auth_controller.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key, this.redirectTo});
+  const AuthScreen({super.key, this.redirectTo, this.email, this.notice});
 
   final String? redirectTo;
+  final String? email;
+  final String? notice;
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
@@ -22,12 +24,19 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
+  late final TextEditingController _emailCtrl;
   final _passwordCtrl = TextEditingController();
 
   bool _busy = false;
   bool _obscurePassword = true;
   String? _error;
+  bool _needsVerification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
+  }
 
   String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
@@ -64,6 +73,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     if (msg.isEmpty) {
       return 'We could not sign you in right now. Please try again.';
+    }
+
+    if (msg.contains('the email or password does not look right')) {
+      return 'The email or password does not look right.';
+    }
+
+    if (msg.contains('please verify your email first')) {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
+    if (msg.contains('this account is not available right now')) {
+      return 'This account is not available right now. Please contact support if needed.';
     }
 
     if (msg.contains('invalid credentials') ||
@@ -140,8 +161,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       // Router remains the single authority after auth state changes.
     } catch (e) {
       if (!mounted) return;
+      final msg = _humanizeLoginError(e);
       setState(() {
-        _error = _humanizeLoginError(e);
+        _error = msg;
+        _needsVerification = msg.toLowerCase().contains('verify your email first');
       });
     } finally {
       if (mounted) {
@@ -161,6 +184,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final redirect = _safeRedirectOrNull(widget.redirectTo);
+    final successNotice = (widget.notice ?? '').trim().toLowerCase();
+    final hasNotice = successNotice == 'verified' || successNotice == 'reset';
+
     return AuraScaffold(
       title: 'Login',
       body: AuraPageShell(
@@ -193,8 +220,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               SizedBox(
                                 width: 460,
                                 child: _LoginFormCard(
+                                  successNotice: hasNotice ? successNotice : null,
                                   busy: _busy,
                                   error: _error,
+                                  needsVerification: _needsVerification,
                                   formKey: _formKey,
                                   emailCtrl: _emailCtrl,
                                   passwordCtrl: _passwordCtrl,
@@ -210,6 +239,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ),
                                   onCreateAccount: () =>
                                       context.push(_withRedirect('/register')),
+                                  onResendVerification: _needsVerification
+                                      ? () => context.push(
+                                          '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}${redirect != null ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}',
+                                        )
+                                      : null,
                                 ),
                               ),
                             ],
@@ -225,8 +259,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                               const SizedBox(height: AuraSpace.s16),
                               _LoginFormCard(
+                                successNotice: hasNotice ? successNotice : null,
                                 busy: _busy,
                                 error: _error,
+                                needsVerification: _needsVerification,
                                 formKey: _formKey,
                                 emailCtrl: _emailCtrl,
                                 passwordCtrl: _passwordCtrl,
@@ -242,6 +278,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ),
                                 onCreateAccount: () =>
                                     context.push(_withRedirect('/register')),
+                                onResendVerification: _needsVerification
+                                    ? () => context.push(
+                                        '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}${redirect != null ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}',
+                                      )
+                                    : null,
                               ),
                             ],
                           ),
@@ -356,8 +397,10 @@ class _AuthFeatureRow extends StatelessWidget {
 
 class _LoginFormCard extends StatelessWidget {
   const _LoginFormCard({
+    required this.successNotice,
     required this.busy,
     required this.error,
+    required this.needsVerification,
     required this.formKey,
     required this.emailCtrl,
     required this.passwordCtrl,
@@ -368,10 +411,13 @@ class _LoginFormCard extends StatelessWidget {
     required this.onLogin,
     required this.onForgotPassword,
     required this.onCreateAccount,
+    required this.onResendVerification,
   });
 
+  final String? successNotice;
   final bool busy;
   final String? error;
+  final bool needsVerification;
   final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
@@ -382,6 +428,7 @@ class _LoginFormCard extends StatelessWidget {
   final VoidCallback onLogin;
   final VoidCallback onForgotPassword;
   final VoidCallback onCreateAccount;
+  final VoidCallback? onResendVerification;
 
   @override
   Widget build(BuildContext context) {
@@ -393,6 +440,17 @@ class _LoginFormCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (successNotice != null) ...[
+                _NoticeBanner(
+                  title: successNotice == 'reset'
+                      ? 'Password updated'
+                      : 'Email verified',
+                  body: successNotice == 'reset'
+                      ? 'Your password has been updated. Sign in with your new password.'
+                      : 'Your email has been verified. You can sign in now.',
+                ),
+                const SizedBox(height: AuraSpace.s12),
+              ],
               Text('Sign in', style: AuraText.title.copyWith(fontSize: 26)),
               const SizedBox(height: AuraSpace.s8),
               const Text(
@@ -403,6 +461,14 @@ class _LoginFormCard extends StatelessWidget {
               if (error != null) ...[
                 AuraErrorState(title: 'Sign-in failed', body: error!),
                 const SizedBox(height: AuraSpace.s10),
+                if (needsVerification && onResendVerification != null) ...[
+                  AuraSecondaryButton(
+                    label: 'Resend verification',
+                    onPressed: busy ? null : onResendVerification,
+                    icon: Icons.mark_email_unread_outlined,
+                  ),
+                  const SizedBox(height: AuraSpace.s8),
+                ],
               ],
               AuraInput(
                 controller: emailCtrl,
@@ -456,6 +522,46 @@ class _LoginFormCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NoticeBanner extends StatelessWidget {
+  const _NoticeBanner({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.goodBg,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.goodInk,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            body,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.goodInk,
+              height: 1.45,
+            ),
+          ),
+        ],
       ),
     );
   }
