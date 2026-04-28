@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,19 +18,29 @@ class DeviceService {
 
   /// Registers the current device only when a valid payload can be built.
   ///
-  /// On web, this is a no-op when no active push subscription exists —
-  /// the backend requires a non-empty endpoint/token and will reject
-  /// metadata-only web payloads with a 400.
+  /// On web, this is a no-op when no active push subscription exists.
+  /// On Android, this uses FCM and requires a non-empty FCM token.
+  /// On iOS, APNS/FCM wiring will be finalized separately.
   Future<void> registerCurrentDevice() async {
     try {
       final payload = await _buildPayload();
       if (payload == null) return;
+
+      final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
+      if (id != null && id.isNotEmpty) {
+        await _repository.updateDevice(id, payload);
+        _cachedDeviceId = id;
+        return;
+      }
+
       final device = await _repository.register(payload);
       if (device.id.isNotEmpty) {
         _cachedDeviceId = device.id;
         await _persistDeviceId(device.id);
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('DeviceService.registerCurrentDevice failed: $e');
+    }
   }
 
   Future<void> revokeCurrentDevice() async {
@@ -39,7 +50,9 @@ class DeviceService {
       await _repository.revokeDevice(id);
       _cachedDeviceId = null;
       await _clearPersistedDeviceId();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('DeviceService.revokeCurrentDevice failed: $e');
+    }
   }
 
   /// Re-registers on app resume, throttled to once per 30 minutes.
@@ -53,15 +66,7 @@ class DeviceService {
     await registerCurrentDevice();
   }
 
-  /// Called from user-initiated permission UX.
-  ///
-  /// Order:
-  ///  1. Guard: not web or no VAPID key → early-return false.
-  ///  2. Request browser notification permission.
-  ///  3. If not granted → return false (no POST).
-  ///  4. Wait for service worker and subscribe with VAPID key.
-  ///  5. Verify subscription.endpoint is non-empty.
-  ///  6. PATCH known device-id or POST a fresh registration.
+  /// Called from user-initiated browser permission UX.
   Future<bool> requestAndRegisterWebPush(String vapidKey) async {
     if (!kIsWeb) return false;
     if (vapidKey.isEmpty) return false;
@@ -74,37 +79,75 @@ class DeviceService {
       if (sub == null || sub.endpoint.isEmpty) return false;
 
       final payload = _webPushPayload(sub);
-
-      final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
-      if (id != null && id.isNotEmpty) {
-        await _repository.updateDevice(id, payload);
-      } else {
-        final device = await _repository.register(payload);
-        if (device.id.isNotEmpty) {
-          _cachedDeviceId = device.id;
-          await _persistDeviceId(device.id);
-        }
-      }
+      await _upsertCurrentDevice(payload);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('DeviceService.requestAndRegisterWebPush failed: $e');
       return false;
+    }
+  }
+
+  /// Called from user-initiated native notification permission UX.
+  ///
+  /// Android:
+  /// - Android 13+ may show a runtime notification permission prompt.
+  /// - FCM token registration can succeed only when Firebase is configured.
+  ///
+  /// iOS:
+  /// - Kept safe for later APNS work, but the final iOS/APNS pass should
+  ///   validate capabilities, APNS key/cert, entitlements, and foreground
+  ///   presentation behavior.
+  Future<bool> requestAndRegisterNativePush() async {
+    if (kIsWeb) return false;
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        break;
+      default:
+        return false;
+    }
+
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      final payload = await _nativePushPayload();
+      if (payload == null) return false;
+
+      await _upsertCurrentDevice(payload);
+      return true;
+    } catch (e) {
+      debugPrint('DeviceService.requestAndRegisterNativePush failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _upsertCurrentDevice(Map<String, dynamic> payload) async {
+    final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
+    if (id != null && id.isNotEmpty) {
+      await _repository.updateDevice(id, payload);
+      _cachedDeviceId = id;
+      return;
+    }
+
+    final device = await _repository.register(payload);
+    if (device.id.isNotEmpty) {
+      _cachedDeviceId = device.id;
+      await _persistDeviceId(device.id);
     }
   }
 
   // ── Payload builders ──────────────────────────────────────────────────────
 
-  /// Returns null when no valid push payload can be formed.
-  ///
-  /// On web, null is returned unless there is an active push subscription
-  /// with a non-empty endpoint — the backend requires it.
-  /// Fast-paths exit before touching the service worker when push is
-  /// unsupported or permission is not 'granted', avoiding SW registration
-  /// noise on every app startup and resume.
-  /// On native platforms, a metadata-only payload is returned (FCM/APNS
-  /// tokens are registered separately via the native push SDK).
   Future<Map<String, dynamic>?> _buildPayload() async {
     if (kIsWeb) {
-      // No subscription can exist if push is unsupported or not permitted.
       if (!WebPushService.isSupported) return null;
       if (WebPushService.permission != 'granted') return null;
 
@@ -112,18 +155,45 @@ class DeviceService {
       if (sub != null && sub.endpoint.isNotEmpty) {
         return _webPushPayload(sub);
       }
-      // Permission granted but no active subscription (e.g. cleared browser
-      // data, InPrivate session from a prior tab). Skip silently.
       return null;
     }
 
+    return _nativePushPayload();
+  }
+
+  Future<Map<String, dynamic>?> _nativePushPayload() async {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return _metadataPayload(platform: 'ANDROID', provider: 'FCM');
+        return _fcmPayload(platform: 'ANDROID');
       case TargetPlatform.iOS:
-        return _metadataPayload(platform: 'IOS', provider: 'APNS');
+        return _fcmPayload(platform: 'IOS');
       default:
-        return _metadataPayload(platform: 'DESKTOP', provider: 'FCM');
+        return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fcmPayload({
+    required String platform,
+  }) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) return null;
+
+      return {
+        'platform': platform,
+        'provider': 'FCM',
+        'token': token,
+        'deviceName': _resolveDeviceName(),
+        'appVersion': const String.fromEnvironment(
+          'APP_VERSION',
+          defaultValue: '1.0.0',
+        ),
+        'locale': _resolveLocale(),
+        'timezone': _resolveTimezone(),
+      };
+    } catch (e) {
+      debugPrint('DeviceService._fcmPayload failed: $e');
+      return null;
     }
   }
 
@@ -135,24 +205,6 @@ class DeviceService {
       'endpoint': sub.endpoint,
       'webPushP256dh': sub.p256dh ?? '',
       'webPushAuth': sub.auth ?? '',
-      'deviceName': _resolveDeviceName(),
-      'appVersion': const String.fromEnvironment(
-        'APP_VERSION',
-        defaultValue: '1.0.0',
-      ),
-      'locale': _resolveLocale(),
-      'timezone': _resolveTimezone(),
-    };
-  }
-
-  Map<String, dynamic> _metadataPayload({
-    required String platform,
-    required String provider,
-  }) {
-    return {
-      'platform': platform,
-      'provider': provider,
-      'token': '',
       'deviceName': _resolveDeviceName(),
       'appVersion': const String.fromEnvironment(
         'APP_VERSION',

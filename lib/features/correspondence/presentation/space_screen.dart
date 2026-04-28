@@ -194,9 +194,12 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
               ref.read(_invitesProvider(spaceId).future),
             ]);
           },
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
               spaceAsync.when(
                 loading: () => const AuraCard(
                   child: _LoadingBlock(label: 'Loading space...'),
@@ -233,9 +236,11 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
               ),
               const SizedBox(height: AuraSpace.s14),
               ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 520),
+                constraints: const BoxConstraints(minHeight: 400),
                 child: SizedBox(
-                  height: 620,
+                  height: MediaQuery.sizeOf(context).height * 0.55 > 400
+                      ? MediaQuery.sizeOf(context).height * 0.55
+                      : 400,
                   child: TabBarView(
                     children: [
                       _ThreadsTab(
@@ -260,7 +265,9 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                   ),
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

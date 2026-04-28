@@ -56,12 +56,16 @@ class _AdminWorkspaceHeader extends StatelessWidget {
           color: AuraSurface.accent,
         ),
         const SizedBox(width: AuraSpace.s8),
-        Text(
-          'Admin communication workspace',
-          style: AuraText.label.copyWith(
-            color: AuraSurface.accent,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
+        Flexible(
+          child: Text(
+            'Admin communication workspace',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.label.copyWith(
+              color: AuraSurface.accent,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+            ),
           ),
         ),
         const SizedBox(width: AuraSpace.s10),

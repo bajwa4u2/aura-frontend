@@ -1444,13 +1444,14 @@ class _AnnouncementEditorScreenState
               ),
             ],
             const SizedBox(height: 22),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 AuraGhostButton(
                   label: 'Cancel',
                   onPressed: _submitting ? null : _cancelEditor,
                 ),
-                const SizedBox(width: 12),
                 AuraPrimaryButton(
                   label: _submitting ? 'Publishing' : 'Publish announcement',
                   onPressed: _canSubmit ? _submitAnnouncement : null,

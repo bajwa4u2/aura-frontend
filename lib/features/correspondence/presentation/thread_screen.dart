@@ -240,7 +240,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refreshAll,
-              child: ListView(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 children: [
                   threadAsync.when(
@@ -431,6 +434,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   ),
                 ],
               ),
+                ),
+                ),
             ),
           ),
           ThreadComposerBar(

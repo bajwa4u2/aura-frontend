@@ -613,7 +613,11 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(20),
-        child: Stack(
+        child: LayoutBuilder(
+          builder: (ctx, constraints) {
+            final maxW = constraints.maxWidth;
+            final maxH = constraints.maxHeight;
+        return Stack(
           children: [
             Center(
               child: InteractiveViewer(
@@ -629,8 +633,8 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
                         return SizedBox(
-                          height: 320,
-                          width: 520,
+                          height: maxH.clamp(200, 320),
+                          width: maxW.clamp(200, 520),
                           child: Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -656,8 +660,8 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                         );
                       },
                       errorBuilder: (_, __, ___) => Container(
-                        height: 320,
-                        width: 520,
+                        height: maxH.clamp(200, 320),
+                        width: maxW.clamp(200, 520),
                         decoration: BoxDecoration(
                           color: AuraSurface.overlay,
                           borderRadius: BorderRadius.circular(AuraRadius.card),
@@ -704,6 +708,8 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                 ),
               ),
           ],
+        );
+          },
         ),
       ),
     );

@@ -886,10 +886,11 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         ? Duration.zero
         : DateTime.now().difference(_recordingStartedAt!);
 
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        padding: EdgeInsets.fromLTRB(12, 8, 12, 12 + keyboardInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
