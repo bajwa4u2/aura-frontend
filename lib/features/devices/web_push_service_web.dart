@@ -60,9 +60,15 @@ class WebPushService {
   // ── Subscription ──────────────────────────────────────────────────────────
 
   /// Returns an existing subscription silently without requesting permission.
+  ///
+  /// Only looks for an existing service-worker registration — does NOT register
+  /// a new one. A subscription cannot exist without a prior registration, so if
+  /// none is found this returns null immediately. This avoids making a SW
+  /// registration network request on every app startup / app-resume check.
   static Future<WebPushResult?> getExistingSubscription() async {
     try {
-      final reg = await _getOrRegisterSW();
+      final container = window.navigator.serviceWorker;
+      final reg = await container.getRegistration(_swScope).toDart;
       if (reg == null) return null;
       final sub = await reg.pushManager.getSubscription().toDart;
       if (sub == null) return null;

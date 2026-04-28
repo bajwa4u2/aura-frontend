@@ -97,15 +97,23 @@ class DeviceService {
   ///
   /// On web, null is returned unless there is an active push subscription
   /// with a non-empty endpoint — the backend requires it.
+  /// Fast-paths exit before touching the service worker when push is
+  /// unsupported or permission is not 'granted', avoiding SW registration
+  /// noise on every app startup and resume.
   /// On native platforms, a metadata-only payload is returned (FCM/APNS
   /// tokens are registered separately via the native push SDK).
   Future<Map<String, dynamic>?> _buildPayload() async {
     if (kIsWeb) {
+      // No subscription can exist if push is unsupported or not permitted.
+      if (!WebPushService.isSupported) return null;
+      if (WebPushService.permission != 'granted') return null;
+
       final sub = await WebPushService.getExistingSubscription();
       if (sub != null && sub.endpoint.isNotEmpty) {
         return _webPushPayload(sub);
       }
-      // No active subscription — do not send an empty-token request.
+      // Permission granted but no active subscription (e.g. cleared browser
+      // data, InPrivate session from a prior tab). Skip silently.
       return null;
     }
 
