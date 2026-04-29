@@ -67,6 +67,12 @@ class MemberShell extends StatelessWidget {
       isPrimary: true,
     ),
     _NavItem(
+      label: 'Institutions',
+      icon: Icons.apartment_outlined,
+      selectedIcon: Icons.apartment_rounded,
+      path: '/institutions',
+    ),
+    _NavItem(
       label: 'Support',
       icon: Icons.support_agent_outlined,
       selectedIcon: Icons.support_agent_rounded,
@@ -92,7 +98,8 @@ class MemberShell extends StatelessWidget {
         path == '/announcements/create') {
       return 2;
     }
-    if (path.startsWith('/support')) return 3;
+    if (path == '/institutions' || path.startsWith('/institutions/')) return 3;
+    if (path.startsWith('/support')) return 4;
     return 0;
   }
 
@@ -129,15 +136,7 @@ class MemberShell extends StatelessWidget {
                             selectedIndex: selectedIndex,
                             currentPath: path,
                           ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Expanded(child: child),
-                              if (_showMemberFooter(path))
-                                const ShellFooter(),
-                            ],
-                          ),
-                        ),
+                        Expanded(child: child),
                       ],
                     ),
                   ),
@@ -156,17 +155,6 @@ class MemberShell extends StatelessWidget {
       },
     );
   }
-}
-
-bool _showMemberFooter(String path) {
-  if (path.startsWith('/realtime')) return false;
-  if (path == '/messages') return false;
-  if (path == '/conversations' || path.startsWith('/conversations/')) {
-    return false;
-  }
-  if (path.startsWith('/me/correspondence/')) return false;
-  if (path.startsWith('/spaces/') || path.startsWith('/space/')) return false;
-  return true;
 }
 
 bool _showMemberBottomNav(String path) {
