@@ -93,6 +93,7 @@ class _InstitutionSignInScreenState
       }
 
       await ref.read(tokenStoreProvider).setSession(accessToken: accessToken);
+      ref.invalidate(authMeDataProvider);
       ref.invalidate(authStatusProvider);
       ref.invalidate(emailVerifiedProvider);
 

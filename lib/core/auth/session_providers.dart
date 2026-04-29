@@ -54,23 +54,17 @@ dynamic _unwrapData(dynamic v) {
   return m;
 }
 
-/// Email verification status (authed-only).
+/// Fetches and caches the /auth/me response payload.
 ///
-/// Reads /auth/me and extracts:
-/// - data.emailVerified (bool), OR
-/// - data.user.emailVerifiedAt (presence)
+/// Watches tokenStoreProvider directly (not just isAuthedProvider) so it
+/// re-fires on ANY token swap — including institution re-login while a
+/// personal session is already active.
 ///
-/// IMPORTANT:
-/// Some endpoints are double-wrapped: { ok:true, data:{ ok:true, data:{...} } }.
-/// We unwrap up to 2 levels.
-///
-/// Critical behavior:
-/// - NEVER throw from this provider. If it throws, router can get stuck in error states
-///   and the app starts "playing" with screens.
-/// - If /auth/me returns 401/403, treat as not authed and settle to false.
-final emailVerifiedProvider = FutureProvider<bool>((ref) async {
-  final authed = ref.watch(isAuthedProvider);
-  if (!authed) return false;
+/// Never throws; returns {} on any error. Consumed by emailVerifiedProvider
+/// and institutionAccessProvider so /auth/me is called only once per session.
+final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final store = ref.watch(tokenStoreProvider);
+  if (!store.isAuthed) return {};
 
   final dio = ref.watch(dioProvider);
 
@@ -81,8 +75,41 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
     // unwrap once or twice (handles {data:{data:{...}}})
     final level1 = _unwrapData(raw);
     final level2 = _unwrapData(level1);
+    return _toMap(level2);
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) {
+      if (!kIsWeb) {
+        try {
+          await ref.read(tokenStoreProvider).clearTokens();
+        } catch (_) {}
+      }
+    }
+    return {};
+  } catch (_) {
+    return {};
+  }
+});
 
-    final inner = _toMap(level2);
+/// Email verification / auth validity check.
+///
+/// Institution accounts (accountType: INSTITUTION) are considered verified —
+/// they authenticate via a separate institution login flow and are not subject
+/// to the member email verification requirement.
+///
+/// Critical behavior:
+/// - NEVER throw from this provider. If it throws, router can get stuck in
+///   error states and the app starts cycling between screens.
+final emailVerifiedProvider = FutureProvider<bool>((ref) async {
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) return false;
+
+  try {
+    final inner = await ref.watch(authMeDataProvider.future);
+
+    // Institution accounts bypass email verification entirely.
+    final accountType = (inner['accountType'] ?? '').toString().toUpperCase();
+    if (accountType == 'INSTITUTION') return true;
 
     final direct = inner['emailVerified'];
     if (direct is bool) return direct;
@@ -94,27 +121,7 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
     }
 
     return false;
-  } on DioException catch (e) {
-    final code = e.response?.statusCode;
-
-    // If /auth/me says 401/403, it means current access token is not valid.
-    // Do NOT throw. Return false so router doesn't oscillate between states.
-    if (code == 401 || code == 403) {
-      // On non-web, clearing tokens helps converge the app to UNAUTHED cleanly.
-      // On web, refresh might still be cookie-driven; clearing aggressively can cause thrash.
-      if (!kIsWeb) {
-        try {
-          await ref.read(tokenStoreProvider).clearTokens();
-        } catch (_) {}
-      }
-      return false;
-    }
-
-    // For any other error (network hiccup, 5xx), be conservative and return false.
-    // This avoids "hasError" loops causing UI overlays and redirect thrash.
-    return false;
   } catch (_) {
-    // Same rule: never throw.
     return false;
   }
 });

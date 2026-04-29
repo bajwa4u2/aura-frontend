@@ -145,6 +145,9 @@ class AuthController {
       ref.invalidate(authStatusProvider);
     } catch (_) {}
     try {
+      ref.invalidate(authMeDataProvider);
+    } catch (_) {}
+    try {
       ref.invalidate(emailVerifiedProvider);
     } catch (_) {}
     try {
