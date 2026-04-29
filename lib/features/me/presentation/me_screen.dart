@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -720,6 +721,34 @@ class _MeScreenState extends ConsumerState<MeScreen> {
               );
             }).toList(),
           ),
+          if (completed < total) ...[
+            const SizedBox(height: AuraSpace.s16),
+            GestureDetector(
+              onTap: () async {
+                await context.push('/me/edit');
+                if (!mounted) return;
+                await _load();
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Complete your profile',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s4),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AuraSurface.accent,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -804,22 +833,43 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     );
   }
 
-  Widget _buildAccountSection() {
+  Widget _buildSettingsHub() {
+    final emailVerifiedAsync = ref.watch(emailVerifiedProvider);
+    final isVerified = emailVerifiedAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => true,
+    );
+    final verifying = emailVerifiedAsync is AsyncLoading;
+
+    Widget? securityTrailing;
+    if (!verifying) {
+      securityTrailing = MeStatusBadge(
+        label: isVerified ? 'Verified' : 'Verify email',
+        style: isVerified ? MeStatusStyle.good : MeStatusStyle.warn,
+      );
+    }
+
     return MeSection(
-      title: 'Account',
+      title: 'Settings',
       children: [
         MeSettingsItem(
           label: 'Security',
-          icon: Icons.lock_outline,
+          icon: Icons.shield_outlined,
           subtitle: 'Password, email verification, and sessions',
+          trailing: securityTrailing,
           onTap: () => context.push('/security'),
         ),
         MeSettingsItem(
           label: 'Communication preferences',
           icon: Icons.tune_outlined,
-          subtitle:
-              'Manage email, digest, message, and announcement preferences',
+          subtitle: 'Email, digest, message, and announcement settings',
           onTap: () => context.push('/me/settings/communications'),
+        ),
+        MeSettingsItem(
+          label: 'Support',
+          icon: Icons.help_outline_rounded,
+          subtitle: 'Get help from the Aura support team',
+          onTap: () => context.push('/support/agent'),
         ),
       ],
     );
@@ -954,7 +1004,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                           const SizedBox(height: AuraSpace.lg),
                           _buildConnectedAccountsPanel(),
                           const SizedBox(height: AuraSpace.lg),
-                          _buildAccountSection(),
+                          _buildSettingsHub(),
                           if (hasInstitutionWorkspace || isAppAdmin) ...[
                             const SizedBox(height: AuraSpace.lg),
                             _buildWorkspacesSection(
@@ -1057,7 +1107,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                 const SizedBox(height: AuraSpace.lg),
                 _buildConnectedAccountsPanel(),
                 const SizedBox(height: AuraSpace.lg),
-                _buildAccountSection(),
+                _buildSettingsHub(),
                 if (hasInstitutionWorkspace || isAppAdmin) ...[
                   const SizedBox(height: AuraSpace.lg),
                   _buildWorkspacesSection(

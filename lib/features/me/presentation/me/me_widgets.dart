@@ -176,12 +176,16 @@ class MeSettingsItem extends StatelessWidget {
     required this.label,
     required this.icon,
     this.subtitle,
+    this.trailing,
     this.onTap,
   });
 
   final String label;
   final IconData icon;
   final String? subtitle;
+
+  /// Optional widget shown between the text block and the chevron.
+  final Widget? trailing;
   final VoidCallback? onTap;
 
   @override
@@ -230,15 +234,75 @@ class MeSettingsItem extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (trailing != null) ...[
+                  const SizedBox(width: AuraSpace.s8),
+                  trailing!,
+                ],
                 if (enabled)
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: AuraSurface.muted,
+                  const Padding(
+                    padding: EdgeInsets.only(left: AuraSpace.s4),
+                    child: Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: AuraSurface.muted,
+                    ),
                   ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS BADGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MeStatusStyle { good, warn, neutral }
+
+class MeStatusBadge extends StatelessWidget {
+  const MeStatusBadge({
+    super.key,
+    required this.label,
+    this.style = MeStatusStyle.neutral,
+  });
+
+  final String label;
+  final MeStatusStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    switch (style) {
+      case MeStatusStyle.good:
+        bg = AuraSurface.goodBg;
+        fg = AuraSurface.goodInk;
+      case MeStatusStyle.warn:
+        bg = AuraSurface.warnBg;
+        fg = AuraSurface.warnInk;
+      case MeStatusStyle.neutral:
+        bg = AuraSurface.elevated;
+        fg = AuraSurface.muted;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: fg.withValues(alpha: 0.25)),
+      ),
+      child: Text(
+        label,
+        style: AuraText.micro.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
