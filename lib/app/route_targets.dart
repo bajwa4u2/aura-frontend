@@ -63,7 +63,5 @@ bool shouldUseMemberShellForAuthed(String path) {
       path.startsWith('/posts/') ||
       path.startsWith('/u/') ||
       path.startsWith('/announcements/') ||
-      path.startsWith('/support/') ||
-      path == '/institutions' ||
-      path.startsWith('/institutions/');
+      path.startsWith('/support/');
 }

@@ -33,7 +33,6 @@ class PublicHomeScreen extends ConsumerWidget {
           _HeroSection(
             onJoin: () => context.go('/register'),
             onExplore: () => context.go('/search'),
-            onInstitutions: () => context.go('/institutions'),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -66,12 +65,10 @@ class _HeroSection extends StatelessWidget {
   const _HeroSection({
     required this.onJoin,
     required this.onExplore,
-    required this.onInstitutions,
   });
 
   final VoidCallback onJoin;
   final VoidCallback onExplore;
-  final VoidCallback onInstitutions;
 
   @override
   Widget build(BuildContext context) {
@@ -124,11 +121,9 @@ class _HeroSection extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s32),
-                              Expanded(
+                              const Expanded(
                                 flex: 3,
-                                child: _HeroPlatformCard(
-                                  onInstitutions: onInstitutions,
-                                ),
+                                child: _HeroPlatformCard(),
                               ),
                             ],
                           )
@@ -137,7 +132,7 @@ class _HeroSection extends StatelessWidget {
                             children: [
                               _HeroLeft(onJoin: onJoin, onExplore: onExplore),
                               const SizedBox(height: AuraSpace.s24),
-                              _HeroPlatformCard(onInstitutions: onInstitutions),
+                              const _HeroPlatformCard(),
                             ],
                           );
                   },
@@ -244,9 +239,7 @@ class _HeroLeft extends StatelessWidget {
 }
 
 class _HeroPlatformCard extends StatelessWidget {
-  const _HeroPlatformCard({required this.onInstitutions});
-
-  final VoidCallback onInstitutions;
+  const _HeroPlatformCard();
 
   @override
   Widget build(BuildContext context) {
@@ -289,31 +282,6 @@ class _HeroPlatformCard extends StatelessWidget {
             icon: Icons.mail_outline_rounded,
             title: 'Direct messages',
             body: 'Private, structured messaging for serious communication.',
-          ),
-          const SizedBox(height: AuraSpace.s20),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: onInstitutions,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Browse institutions',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.accentText,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s6),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: AuraSurface.accentText,
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),

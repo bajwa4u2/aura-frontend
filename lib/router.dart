@@ -183,10 +183,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/contact' ||
         path == '/account-deletion' ||
         path == '/investors' ||
-        path == '/institutions' ||
-        path.startsWith('/institutions/') ||
-        path == '/institution/sign-in' ||
-        path == kInstitutionCreateRoute ||
+        // Individual institution detail pages remain publicly browsable.
+        // The hub (/institutions) and onboarding (/institutions/get-started)
+        // are auth-gated via isMemberShellPath.
+        (path.startsWith('/institutions/') && path != '/institutions/get-started') ||
         path == '/patrons' ||
         path == '/supporters' ||
         path == '/search' ||
@@ -442,7 +442,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/sign-in',
-            builder: (_, __) => const InstitutionSignInScreen(),
+            redirect: (_, __) => '/login',
           ),
           GoRoute(
             path: kInstitutionCreateRoute,

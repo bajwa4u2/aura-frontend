@@ -39,6 +39,10 @@ bool isMemberShellPath(String path) {
       path == '/me/correspondence/create/conversation' ||
       path == '/me/correspondence/create/space' ||
       path.startsWith('/me/correspondence/') ||
+      // Institution entry points — personal auth required before institution auth.
+      path == '/institutions' ||
+      path == '/institutions/get-started' ||
+      path == '/enter-institution' ||
       isInstitutionShellPath(path);
 }
 

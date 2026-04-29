@@ -111,11 +111,6 @@ class _PublicHeader extends ConsumerWidget {
                       label: 'Explore',
                       onTap: () => context.go('/search'),
                     ),
-                    const SizedBox(width: AuraSpace.s4),
-                    _NavTextLink(
-                      label: 'Institutions',
-                      onTap: () => context.go('/institutions'),
-                    ),
                     const SizedBox(width: AuraSpace.s12),
                   ],
                   _SignInButton(onTap: () {

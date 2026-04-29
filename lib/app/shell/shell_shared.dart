@@ -53,7 +53,6 @@ class ShellFooter extends StatelessWidget {
 
   static const _links = [
     _Link('Mission', '/mission'),
-    _Link('Institutions', '/institutions'),
     _Link('Investors', '/investors'),
     _Link('Patrons', '/patrons'),
     _Link('Supporters', '/supporters'),
