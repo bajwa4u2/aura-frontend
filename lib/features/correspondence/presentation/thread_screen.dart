@@ -191,6 +191,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   bool _isNearBottom = true;
   bool _showNewMessages = false;
   bool _hasScrolledInitialBottom = false;
+  bool _callBusy = false;
 
   @override
   void initState() {
@@ -289,20 +290,31 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     required Map<String, dynamic> thread,
     required String kind,
   }) async {
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    final sessionId = await controller.ensureCorrespondenceLive(
-      surfaceType: _threadLiveSurfaceType(thread),
-      surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
-      kind: kind,
-      metadata:
-          <String, dynamic>{
-            'threadId': widget.threadId,
-            'spaceId': pickString(thread, const ['spaceId', 'space_id']),
-          }..removeWhere(
-            (key, value) => value == null || value.toString().trim().isEmpty,
-          ),
-    );
-    if (!mounted || sessionId.trim().isEmpty) return;
+    if (_callBusy) return;
+    setState(() => _callBusy = true);
+    try {
+      final controller = ref.read(realtimeControllerProvider.notifier);
+      await controller.ensureCorrespondenceLive(
+        surfaceType: _threadLiveSurfaceType(thread),
+        surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+        kind: kind,
+        metadata: <String, dynamic>{
+          'threadId': widget.threadId,
+          'spaceId': pickString(thread, const ['spaceId', 'space_id']),
+        }..removeWhere(
+          (key, value) => value == null || value.toString().trim().isEmpty,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Calls are temporarily unavailable. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _callBusy = false);
+    }
   }
 
   @override
@@ -352,6 +364,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final messagesAsync = ref.watch(messagesProvider(threadId));
     final meAsync = ref.watch(currentUserProvider);
     final liveState = ref.watch(realtimeControllerProvider);
+    final callBusy = _callBusy || liveState.isBusy;
     final currentUserId = meAsync.maybeWhen(
       data: (me) => pickString(me, const ['id', '_id', 'userId']),
       orElse: () => '',
@@ -415,6 +428,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             thread: thread,
                             contextData: contextData,
                             liveState: liveState,
+                            callBusy: callBusy,
                             onOpenSpace: () {
                               final spaceId = pickString(thread, const [
                                 'spaceId',
@@ -527,6 +541,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 threadAsync: threadAsync,
                                 liveState: liveState,
                                 threadContext: contextData,
+                                callBusy: callBusy,
                                 onOpenSpace: () {
                                   final spaceId = pickString(
                                     thread,
@@ -636,6 +651,7 @@ class _ThreadModeHeaderCard extends StatelessWidget {
     required this.thread,
     required this.contextData,
     required this.liveState,
+    required this.callBusy,
     required this.onOpenSpace,
     required this.onInvite,
     required this.onAddMembers,
@@ -646,6 +662,7 @@ class _ThreadModeHeaderCard extends StatelessWidget {
   final Map<String, dynamic> thread;
   final CorrespondenceThreadContext contextData;
   final RealtimeState liveState;
+  final bool callBusy;
   final VoidCallback onOpenSpace;
   final VoidCallback onInvite;
   final VoidCallback onAddMembers;
@@ -664,6 +681,7 @@ class _ThreadModeHeaderCard extends StatelessWidget {
         contextData: contextData,
         conversationId: conversationId,
         participantCount: participantCount,
+        callBusy: callBusy,
         onStartAudio: onStartAudio,
         onStartVideo: onStartVideo,
       );
@@ -674,6 +692,7 @@ class _ThreadModeHeaderCard extends StatelessWidget {
         contextData: contextData,
         conversationId: conversationId,
         participantCount: participantCount,
+        callBusy: callBusy,
         onStartAudio: onStartAudio,
         onStartVideo: onStartVideo,
       );
@@ -683,6 +702,7 @@ class _ThreadModeHeaderCard extends StatelessWidget {
       contextData: contextData,
       conversationId: conversationId,
       participantCount: participantCount,
+      callBusy: callBusy,
       onOpenSpace: onOpenSpace,
       onInvite: onInvite,
       onAddMembers: onAddMembers,
@@ -697,6 +717,7 @@ class _DirectThreadHeader extends StatelessWidget {
     required this.contextData,
     required this.conversationId,
     required this.participantCount,
+    required this.callBusy,
     required this.onStartAudio,
     required this.onStartVideo,
   });
@@ -704,6 +725,7 @@ class _DirectThreadHeader extends StatelessWidget {
   final CorrespondenceThreadContext contextData;
   final String conversationId;
   final int participantCount;
+  final bool callBusy;
   final Future<void> Function() onStartAudio;
   final Future<void> Function() onStartVideo;
 
@@ -771,6 +793,7 @@ class _DirectThreadHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s12),
           _ThreadActionCluster(
             conversationId: conversationId,
+            callBusy: callBusy,
             onStartAudio: onStartAudio,
             onStartVideo: onStartVideo,
           ),
@@ -785,6 +808,7 @@ class _GroupThreadHeader extends StatelessWidget {
     required this.contextData,
     required this.conversationId,
     required this.participantCount,
+    required this.callBusy,
     required this.onStartAudio,
     required this.onStartVideo,
   });
@@ -792,6 +816,7 @@ class _GroupThreadHeader extends StatelessWidget {
   final CorrespondenceThreadContext contextData;
   final String conversationId;
   final int participantCount;
+  final bool callBusy;
   final Future<void> Function() onStartAudio;
   final Future<void> Function() onStartVideo;
 
@@ -851,6 +876,7 @@ class _GroupThreadHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s12),
           _ThreadActionCluster(
             conversationId: conversationId,
+            callBusy: callBusy,
             onStartAudio: onStartAudio,
             onStartVideo: onStartVideo,
           ),
@@ -865,6 +891,7 @@ class _SpaceThreadHeader extends StatelessWidget {
     required this.contextData,
     required this.conversationId,
     required this.participantCount,
+    required this.callBusy,
     required this.onOpenSpace,
     required this.onInvite,
     required this.onAddMembers,
@@ -875,6 +902,7 @@ class _SpaceThreadHeader extends StatelessWidget {
   final CorrespondenceThreadContext contextData;
   final String conversationId;
   final int participantCount;
+  final bool callBusy;
   final VoidCallback onOpenSpace;
   final VoidCallback onInvite;
   final VoidCallback onAddMembers;
@@ -953,6 +981,7 @@ class _SpaceThreadHeader extends StatelessWidget {
           const SizedBox(width: AuraSpace.s12),
           _ThreadActionCluster(
             conversationId: conversationId,
+            callBusy: callBusy,
             onStartAudio: onStartAudio,
             onStartVideo: onStartVideo,
             onSpaceOpen: onOpenSpace,
@@ -970,6 +999,7 @@ class _ThreadActionCluster extends StatelessWidget {
     required this.conversationId,
     required this.onStartAudio,
     required this.onStartVideo,
+    this.callBusy = false,
     this.onSpaceOpen,
     this.onInvite,
     this.onAddMembers,
@@ -978,6 +1008,7 @@ class _ThreadActionCluster extends StatelessWidget {
   final String conversationId;
   final Future<void> Function() onStartAudio;
   final Future<void> Function() onStartVideo;
+  final bool callBusy;
   final VoidCallback? onSpaceOpen;
   final VoidCallback? onInvite;
   final VoidCallback? onAddMembers;
@@ -992,10 +1023,12 @@ class _ThreadActionCluster extends StatelessWidget {
       children: [
         _HeaderIconAction(
           icon: Icons.call_rounded,
+          busy: callBusy,
           onPressed: () => onStartAudio(),
         ),
         _HeaderIconAction(
           icon: Icons.videocam_rounded,
+          busy: callBusy,
           onPressed: () => onStartVideo(),
         ),
         PopupMenuButton<String>(
@@ -1062,27 +1095,35 @@ class _ThreadActionCluster extends StatelessWidget {
 }
 
 class _HeaderIconAction extends StatelessWidget {
-  const _HeaderIconAction({required this.icon, required this.onPressed});
+  const _HeaderIconAction({
+    required this.icon,
+    required this.onPressed,
+    this.busy = false,
+  });
 
   final IconData icon;
   final VoidCallback onPressed;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onPressed,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+    return Opacity(
+      opacity: busy ? 0.45 : 1.0,
+      child: MouseRegion(
+        cursor: busy ? SystemMouseCursors.basic : SystemMouseCursors.click,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: busy ? null : onPressed,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            ),
+            child: Icon(icon, size: 18, color: Colors.white),
           ),
-          child: Icon(icon, size: 18, color: Colors.white),
         ),
       ),
     );
@@ -1280,6 +1321,7 @@ class _ThreadSideRail extends StatelessWidget {
     required this.threadAsync,
     required this.liveState,
     required this.threadContext,
+    required this.callBusy,
     this.onOpenSpace,
     this.onOpenInvites,
     this.onStartAudio,
@@ -1289,6 +1331,7 @@ class _ThreadSideRail extends StatelessWidget {
   final AsyncValue<Map<String, dynamic>> threadAsync;
   final RealtimeState liveState;
   final CorrespondenceThreadContext threadContext;
+  final bool callBusy;
   final VoidCallback? onOpenSpace;
   final Future<void> Function()? onOpenInvites;
   final Future<void> Function()? onStartAudio;
@@ -1313,6 +1356,7 @@ class _ThreadSideRail extends StatelessWidget {
             thread: thread,
             threadContext: threadContext,
             joinedCount: joinedCount,
+            callBusy: callBusy,
             onStartAudio: onStartAudio,
             onStartVideo: onStartVideo,
           );
@@ -1324,6 +1368,7 @@ class _ThreadSideRail extends StatelessWidget {
             threadContext: threadContext,
             participants: participants,
             joinedCount: joinedCount,
+            callBusy: callBusy,
             onStartAudio: onStartAudio,
             onStartVideo: onStartVideo,
           );
@@ -1334,6 +1379,7 @@ class _ThreadSideRail extends StatelessWidget {
           threadContext: threadContext,
           participants: participants,
           joinedCount: joinedCount,
+          callBusy: callBusy,
           onOpenSpace: onOpenSpace,
           onOpenInvites: onOpenInvites,
           onStartAudio: onStartAudio,
@@ -1349,6 +1395,7 @@ class _DirectConversationRail extends StatelessWidget {
     required this.thread,
     required this.threadContext,
     required this.joinedCount,
+    required this.callBusy,
     this.onStartAudio,
     this.onStartVideo,
   });
@@ -1356,6 +1403,7 @@ class _DirectConversationRail extends StatelessWidget {
   final Map<String, dynamic> thread;
   final CorrespondenceThreadContext threadContext;
   final int joinedCount;
+  final bool callBusy;
   final Future<void> Function()? onStartAudio;
   final Future<void> Function()? onStartVideo;
 
@@ -1400,6 +1448,7 @@ class _DirectConversationRail extends StatelessWidget {
         _ThreadLiveCard(
           label: 'Live status',
           joinedCount: joinedCount,
+          callBusy: callBusy,
           onStartAudio: onStartAudio,
           onStartVideo: onStartVideo,
         ),
@@ -1414,6 +1463,7 @@ class _GroupConversationRail extends StatelessWidget {
     required this.threadContext,
     required this.participants,
     required this.joinedCount,
+    required this.callBusy,
     this.onStartAudio,
     this.onStartVideo,
   });
@@ -1422,6 +1472,7 @@ class _GroupConversationRail extends StatelessWidget {
   final CorrespondenceThreadContext threadContext;
   final List<Map<String, dynamic>> participants;
   final int joinedCount;
+  final bool callBusy;
   final Future<void> Function()? onStartAudio;
   final Future<void> Function()? onStartVideo;
 
@@ -1476,6 +1527,7 @@ class _GroupConversationRail extends StatelessWidget {
         _ThreadLiveCard(
           label: 'Live status',
           joinedCount: joinedCount,
+          callBusy: callBusy,
           onStartAudio: onStartAudio,
           onStartVideo: onStartVideo,
         ),
@@ -1490,6 +1542,7 @@ class _SpaceThreadRail extends StatelessWidget {
     required this.threadContext,
     required this.participants,
     required this.joinedCount,
+    required this.callBusy,
     this.onOpenSpace,
     this.onOpenInvites,
     this.onStartAudio,
@@ -1500,6 +1553,7 @@ class _SpaceThreadRail extends StatelessWidget {
   final CorrespondenceThreadContext threadContext;
   final List<Map<String, dynamic>> participants;
   final int joinedCount;
+  final bool callBusy;
   final VoidCallback? onOpenSpace;
   final Future<void> Function()? onOpenInvites;
   final Future<void> Function()? onStartAudio;
@@ -1567,6 +1621,7 @@ class _SpaceThreadRail extends StatelessWidget {
         _ThreadLiveCard(
           label: 'Live status',
           joinedCount: joinedCount,
+          callBusy: callBusy,
           onStartAudio: onStartAudio,
           onStartVideo: onStartVideo,
         ),
@@ -1605,12 +1660,14 @@ class _ThreadLiveCard extends StatelessWidget {
   const _ThreadLiveCard({
     required this.label,
     required this.joinedCount,
+    required this.callBusy,
     this.onStartAudio,
     this.onStartVideo,
   });
 
   final String label;
   final int joinedCount;
+  final bool callBusy;
   final Future<void> Function()? onStartAudio;
   final Future<void> Function()? onStartVideo;
 
@@ -1639,13 +1696,13 @@ class _ThreadLiveCard extends StatelessWidget {
                   AuraSecondaryButton(
                     label: 'Audio call',
                     icon: Icons.call_rounded,
-                    onPressed: () => onStartAudio!(),
+                    onPressed: callBusy ? null : () => onStartAudio!(),
                   ),
                 if (onStartVideo != null)
                   AuraSecondaryButton(
                     label: 'Video call',
                     icon: Icons.videocam_rounded,
-                    onPressed: () => onStartVideo!(),
+                    onPressed: callBusy ? null : () => onStartVideo!(),
                   ),
               ],
             ),

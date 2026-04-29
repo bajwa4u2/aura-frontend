@@ -758,18 +758,15 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       );
 
       if (desktopSheet) {
-        return SafeArea(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: AuraCard(
-                  padding: const EdgeInsets.all(16),
-                  child: body,
-                ),
-              ),
+        return Dialog(
+          alignment: Alignment.bottomCenter,
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: SizedBox(
+            width: 460,
+            child: AuraCard(
+              padding: const EdgeInsets.all(16),
+              child: body,
             ),
           ),
         );
