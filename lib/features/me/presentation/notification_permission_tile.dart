@@ -24,14 +24,18 @@ enum _SubState {
   defaultPerm,
 
   /// Permission was granted but subscription acquisition failed
-  /// (InPrivate, VAPID error, SW error, etc.).
+  /// (InPrivate, VAPID mismatch, service worker error, etc.).
   failed,
 
-  /// Browser has blocked notifications.
+  /// Browser has blocked notifications at the permission level.
   blocked,
 
   /// Browser / platform doesn't support Web Push.
   unsupported,
+
+  /// VAPID public key is not configured in this build — push cannot work
+  /// regardless of browser support or permission state.
+  noVapid,
 }
 
 // ── Widget ────────────────────────────────────────────────────────────────────
@@ -60,11 +64,17 @@ class _BrowserNotificationsSectionState
   }
 
   /// Determines the real initial state:
+  ///  - VAPID key absent → noVapid (push cannot work in this build)
   ///  - not supported → unsupported
   ///  - permission denied → blocked
   ///  - permission default → defaultPerm
   ///  - permission granted → check if an active subscription actually exists
   Future<void> _resolveInitialState() async {
+    if (AppConfig.vapidPublicKey.isEmpty) {
+      if (mounted) setState(() => _state = _SubState.noVapid);
+      return;
+    }
+
     if (!WebPushService.isSupported) {
       if (mounted) setState(() => _state = _SubState.unsupported);
       return;
@@ -102,8 +112,7 @@ class _BrowserNotificationsSectionState
 
     final vapidKey = AppConfig.vapidPublicKey;
     if (vapidKey.isEmpty) {
-      // VAPID key not configured — nothing to do.
-      if (mounted) setState(() => _state = _SubState.failed);
+      if (mounted) setState(() => _state = _SubState.noVapid);
       return;
     }
 
@@ -231,6 +240,7 @@ class _BrowserNotificationsSectionState
       case _SubState.blocked:
         return Icons.notifications_off_outlined;
       case _SubState.unsupported:
+      case _SubState.noVapid:
         return Icons.notifications_none_outlined;
       default:
         return Icons.notifications_outlined;
@@ -243,7 +253,10 @@ class _BrowserNotificationsSectionState
         return AuraSurface.goodInk;
       case _SubState.blocked:
       case _SubState.failed:
-        return AuraSurface.dangerInk;
+        return AuraSurface.warnInk;
+      case _SubState.noVapid:
+      case _SubState.unsupported:
+        return AuraSurface.faint;
       default:
         return AuraSurface.ink;
     }
@@ -252,13 +265,15 @@ class _BrowserNotificationsSectionState
   String get _statusSubtitle {
     switch (_state) {
       case _SubState.unsupported:
-        return 'Not supported in this browser';
+        return 'Not supported in this browser or platform';
+      case _SubState.noVapid:
+        return 'Push notifications are not configured in this build';
       case _SubState.blocked:
-        return 'Blocked — change your browser settings to enable';
+        return 'Blocked — open browser site settings and allow notifications, then reload';
       case _SubState.active:
         return 'Receive notifications when the app is in the background';
       case _SubState.failed:
-        return 'Registration failed — check browser privacy settings';
+        return 'Subscription unavailable — this can occur in private/incognito mode or after a VAPID key rotation. Try a standard browser window.';
       case _SubState.loading:
         return 'Checking subscription…';
       case _SubState.defaultPerm:
@@ -269,6 +284,7 @@ class _BrowserNotificationsSectionState
   Widget get _trailingWidget {
     switch (_state) {
       case _SubState.unsupported:
+      case _SubState.noVapid:
         return Text(
           'Unavailable',
           style: AuraText.small.copyWith(

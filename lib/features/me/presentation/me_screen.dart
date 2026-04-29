@@ -859,12 +859,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           trailing: securityTrailing,
           onTap: () => context.push('/security'),
         ),
-        MeSettingsItem(
-          label: 'Communication preferences',
-          icon: Icons.tune_outlined,
-          subtitle: 'Email, digest, message, and announcement settings',
-          onTap: () => context.push('/me/settings/communications'),
-        ),
       ],
     );
   }
@@ -958,16 +952,22 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   workspaceActions: const [],
                 ),
                 const SizedBox(height: AuraSpace.s24),
+                // Full-width profile health — sits above both columns so neither
+                // side accumulates unequal vertical mass.
+                _buildAccountHealthPanel(),
+                const SizedBox(height: AuraSpace.s20),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left column: content/records
+                    // Left column: personal records + connections
                     Expanded(
                       flex: 5,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildPersonalRecordSection(),
+                          const SizedBox(height: AuraSpace.lg),
+                          _buildConnectionsSection(),
                           if (publications.isNotEmpty) ...[
                             const SizedBox(height: AuraSpace.lg),
                             MeSection(
@@ -986,16 +986,12 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s20),
-                    // Right column: activity/settings
+                    // Right column: connected accounts + settings + workspaces
                     Expanded(
                       flex: 4,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildAccountHealthPanel(),
-                          const SizedBox(height: AuraSpace.lg),
-                          _buildConnectionsSection(),
-                          const SizedBox(height: AuraSpace.lg),
                           _buildConnectedAccountsPanel(),
                           const SizedBox(height: AuraSpace.lg),
                           _buildSettingsHub(),
@@ -1080,6 +1076,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   ],
                   workspaceActions: const [],
                 ),
+                const SizedBox(height: AuraSpace.lg),
+                _buildAccountHealthPanel(),
                 const SizedBox(height: AuraSpace.lg),
                 _buildPersonalRecordSection(),
                 if (publications.isNotEmpty) ...[
