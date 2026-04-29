@@ -13,16 +13,24 @@ class SpacesRepository {
 
   final Dio _dio;
 
-  static const Duration _cacheTtl = Duration(seconds: 8);
+  static const Duration _spacesTtl = Duration(seconds: 60);
+  static const Duration _invitesTtl = Duration(seconds: 30);
 
   List<Map<String, dynamic>>? _cache;
   DateTime? _cacheAt;
   Future<List<Map<String, dynamic>>>? _inFlight;
 
+  List<Map<String, dynamic>>? _invitesCache;
+  DateTime? _invitesCacheAt;
+  Future<List<Map<String, dynamic>>>? _invitesInFlight;
+
   void clearCache() {
     _cache = null;
     _cacheAt = null;
     _inFlight = null;
+    _invitesCache = null;
+    _invitesCacheAt = null;
+    _invitesInFlight = null;
   }
 
   Future<List<Map<String, dynamic>>> listMySpaces({
@@ -37,7 +45,7 @@ class SpacesRepository {
         !forceRefresh &&
         _cache != null &&
         _cacheAt != null &&
-        now.difference(_cacheAt!) < _cacheTtl) {
+        now.difference(_cacheAt!) < _spacesTtl) {
       return _cloneList(_cache!);
     }
 
@@ -145,16 +153,43 @@ class SpacesRepository {
     return _unwrapData(res.data);
   }
 
-  Future<List<Map<String, dynamic>>> listInvites() async {
+  Future<List<Map<String, dynamic>>> listInvites({
+    bool forceRefresh = false,
+  }) async {
+    final now = DateTime.now();
+
+    if (!forceRefresh &&
+        _invitesCache != null &&
+        _invitesCacheAt != null &&
+        now.difference(_invitesCacheAt!) < _invitesTtl) {
+      return _cloneList(_invitesCache!);
+    }
+
+    if (!forceRefresh && _invitesInFlight != null) {
+      return _invitesInFlight!;
+    }
+
+    final future = _fetchInvites();
+    _invitesInFlight = future;
+    try {
+      final invites = await future;
+      _invitesCache = _cloneList(invites);
+      _invitesCacheAt = DateTime.now();
+      return _cloneList(invites);
+    } finally {
+      if (identical(_invitesInFlight, future)) {
+        _invitesInFlight = null;
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchInvites() async {
     final res = await _dio.get('/invites');
-
     final payload = _unwrapData(res.data);
-
     final items = _readListFromCommonKeys(
       payload,
       keys: const ['items', 'invites', 'results', 'data'],
     );
-
     return items.map(_asMap).toList();
   }
 

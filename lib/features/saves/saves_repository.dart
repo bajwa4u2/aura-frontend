@@ -11,6 +11,11 @@ class SavesRepository {
   final Ref _ref;
   final Dio _dio;
 
+  static const Duration _savedTtl = Duration(minutes: 5);
+
+  final _savedCache = <String, bool>{};
+  final _savedCacheAt = <String, DateTime>{};
+
   bool _isAuthed() {
     final status = _ref.read(authStatusProvider);
     return status == AuthStatus.authed;
@@ -123,15 +128,28 @@ class SavesRepository {
         .toList();
   }
 
-  Future<bool> isSaved(String postId) async {
+  Future<bool> isSaved(String postId, {bool forceRefresh = false}) async {
     if (!_isAuthed()) return false;
 
     final pid = postId.trim();
     if (pid.isEmpty) return false;
 
+    if (!forceRefresh) {
+      final cached = _savedCache[pid];
+      final cachedAt = _savedCacheAt[pid];
+      if (cached != null &&
+          cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _savedTtl) {
+        return cached;
+      }
+    }
+
     try {
       final res = await _dio.get('/saves/for/$pid');
-      return _extractSaved(res.data);
+      final result = _extractSaved(res.data);
+      _savedCache[pid] = result;
+      _savedCacheAt[pid] = DateTime.now();
+      return result;
     } on DioException catch (e) {
       if (_isAuthFailure(e)) {
         return false;
@@ -148,7 +166,10 @@ class SavesRepository {
 
     try {
       final res = await _dio.post('/saves/$pid');
-      return _extractSaved(res.data);
+      final result = _extractSaved(res.data);
+      _savedCache[pid] = result;
+      _savedCacheAt[pid] = DateTime.now();
+      return result;
     } on DioException catch (e) {
       if (_isAuthFailure(e)) {
         return false;
@@ -165,7 +186,10 @@ class SavesRepository {
 
     try {
       final res = await _dio.delete('/saves/$pid');
-      return _extractSaved(res.data);
+      final result = _extractSaved(res.data);
+      _savedCache[pid] = result;
+      _savedCacheAt[pid] = DateTime.now();
+      return result;
     } on DioException catch (e) {
       if (_isAuthFailure(e)) {
         return false;

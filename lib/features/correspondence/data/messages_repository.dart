@@ -13,9 +13,68 @@ class MessagesRepository {
 
   final Dio _dio;
 
+  static const Duration _messagesTtl = Duration(seconds: 20);
+
+  final _messagesCache = <String, List<Map<String, dynamic>>>{};
+  final _messagesCacheAt = <String, DateTime>{};
+  final _messagesInFlight = <String, Future<List<Map<String, dynamic>>>>{};
+
+  void clearMessagesCache([String? threadId]) {
+    if (threadId != null) {
+      _messagesCache.remove(threadId);
+      _messagesCacheAt.remove(threadId);
+      _messagesInFlight.remove(threadId);
+    } else {
+      _messagesCache.clear();
+      _messagesCacheAt.clear();
+      _messagesInFlight.clear();
+    }
+  }
+
   Future<List<Map<String, dynamic>>> listMessages({
     required String threadId,
     int limit = 50,
+    String? cursor,
+    bool forceRefresh = false,
+  }) async {
+    // Only cache the first page (no cursor).
+    final useCache = !_hasText(cursor);
+    final now = DateTime.now();
+
+    if (useCache && !forceRefresh) {
+      final cached = _messagesCache[threadId];
+      final cachedAt = _messagesCacheAt[threadId];
+      if (cached != null &&
+          cachedAt != null &&
+          now.difference(cachedAt) < _messagesTtl) {
+        return cached.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+
+      final existing = _messagesInFlight[threadId];
+      if (existing != null) return existing;
+    }
+
+    final future = _fetchMessages(threadId: threadId, limit: limit, cursor: cursor);
+    if (useCache) _messagesInFlight[threadId] = future;
+
+    try {
+      final result = await future;
+      if (useCache) {
+        _messagesCache[threadId] =
+            result.map((e) => Map<String, dynamic>.from(e)).toList();
+        _messagesCacheAt[threadId] = DateTime.now();
+      }
+      return result.map((e) => Map<String, dynamic>.from(e)).toList();
+    } finally {
+      if (useCache && identical(_messagesInFlight[threadId], future)) {
+        _messagesInFlight.remove(threadId);
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchMessages({
+    required String threadId,
+    required int limit,
     String? cursor,
   }) async {
     final res = await _dio.get(
@@ -25,7 +84,6 @@ class MessagesRepository {
         if (_hasText(cursor)) 'cursor': cursor,
       },
     );
-
     final items = _extractList(res.data);
     return items.map(_asMap).toList();
   }
@@ -50,6 +108,9 @@ class MessagesRepository {
       '/threads/$threadId/messages',
       data: payload,
     );
+
+    // Bust the cache so the next listMessages call fetches fresh data.
+    clearMessagesCache(threadId);
 
     return _unwrapMap(res.data);
   }

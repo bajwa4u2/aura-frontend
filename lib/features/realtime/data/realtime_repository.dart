@@ -56,6 +56,24 @@ class RealtimeRepository {
     }
   }
 
+  static const Duration _bundleTtl = Duration(seconds: 30);
+
+  final _bundleCache = <String, RealtimeSessionSnapshot>{};
+  final _bundleCacheAt = <String, DateTime>{};
+  final _bundleInFlight = <String, Future<RealtimeSessionSnapshot>>{};
+
+  void clearBundleCache([String? sessionId]) {
+    if (sessionId != null) {
+      _bundleCache.remove(sessionId);
+      _bundleCacheAt.remove(sessionId);
+      _bundleInFlight.remove(sessionId);
+    } else {
+      _bundleCache.clear();
+      _bundleCacheAt.clear();
+      _bundleInFlight.clear();
+    }
+  }
+
   Future<void> _safePost(String path, {Map<String, dynamic>? data}) async {
     try {
       await _dio.post(path, data: data);
@@ -115,7 +133,39 @@ class RealtimeRepository {
     return await loadSessionBundle(sessionMap['id']?.toString() ?? '');
   }
 
-  Future<RealtimeSessionSnapshot> loadSessionBundle(String sessionId) async {
+  Future<RealtimeSessionSnapshot> loadSessionBundle(
+    String sessionId, {
+    bool forceRefresh = false,
+  }) async {
+    final now = DateTime.now();
+    final cached = _bundleCache[sessionId];
+    final cachedAt = _bundleCacheAt[sessionId];
+
+    if (!forceRefresh &&
+        cached != null &&
+        cachedAt != null &&
+        now.difference(cachedAt) < _bundleTtl) {
+      return cached;
+    }
+
+    final existing = _bundleInFlight[sessionId];
+    if (!forceRefresh && existing != null) return existing;
+
+    final future = _fetchSessionBundle(sessionId);
+    _bundleInFlight[sessionId] = future;
+    try {
+      final result = await future;
+      _bundleCache[sessionId] = result;
+      _bundleCacheAt[sessionId] = DateTime.now();
+      return result;
+    } finally {
+      if (identical(_bundleInFlight[sessionId], future)) {
+        _bundleInFlight.remove(sessionId);
+      }
+    }
+  }
+
+  Future<RealtimeSessionSnapshot> _fetchSessionBundle(String sessionId) async {
     final sessionRes = await _dio.get('/realtime/sessions/$sessionId');
 
     final policyRes = await _safeGet('/realtime/sessions/$sessionId/policy');
@@ -373,6 +423,7 @@ class RealtimeRepository {
       }
     }
     await _safePost('/realtime/sessions/$id/leave');
+    clearBundleCache(id);
   }
 
   Future<void> endSession(RealtimeSession? session) async {
@@ -404,6 +455,7 @@ class RealtimeRepository {
       }
     }
     await _safePost('/realtime/sessions/$id/end');
+    clearBundleCache(id);
   }
 
   String _joinDecisionValue(String decision) {

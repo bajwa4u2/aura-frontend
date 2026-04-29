@@ -197,7 +197,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       if (!mounted) return;
       final liveState = ref.read(realtimeControllerProvider);
       if (liveState.isBusy) return;
@@ -324,18 +324,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final threadId = widget.threadId;
 
     ref.watch(threadOpenProvider(threadId));
-
-    // Refresh messages on live socket events.
-    ref.listen<String?>(
-      realtimeControllerProvider.select((s) => s.lastSocketEvent),
-      (prev, next) {
-        if (next == null || next == prev) return;
-        if (!mounted) return;
-        final liveState = ref.read(realtimeControllerProvider);
-        if (!liveState.isJoined) return;
-        _refreshThreadData();
-      },
-    );
 
     // Track new incoming messages for bottom-anchor affordance.
     ref.listen<AsyncValue<List<Map<String, dynamic>>>>(

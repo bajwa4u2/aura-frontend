@@ -77,6 +77,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   Timer? _pollTimer;
   StreamSubscription<CorrespondenceLiveEvent>? _liveSubscription;
   bool _handledLiveRoute = false;
+  DateTime? _lastSocketEventAt;
 
   @override
   void initState() {
@@ -84,8 +85,14 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _joinFromRouteIfNeeded(),
     );
-    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       if (!mounted) return;
+      // Skip the poll if a socket event was received recently — the socket
+      // subscription already invalidated the providers on that event.
+      final last = _lastSocketEventAt;
+      if (last != null && DateTime.now().difference(last) < const Duration(seconds: 45)) {
+        return;
+      }
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
       ref.invalidate(_threadsProvider(widget.spaceId));
       ref.invalidate(_invitesProvider(widget.spaceId));
@@ -99,6 +106,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
         if (event.matchesSpace(widget.spaceId) ||
             event.name.startsWith('invite:') ||
             event.name.startsWith('thread:')) {
+          _lastSocketEventAt = DateTime.now();
           ref.invalidate(_spaceDetailProvider(widget.spaceId));
           ref.invalidate(_threadsProvider(widget.spaceId));
           ref.invalidate(_invitesProvider(widget.spaceId));

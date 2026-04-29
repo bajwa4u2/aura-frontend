@@ -156,6 +156,18 @@ final dioProvider = Provider<Dio>((ref) {
 
   Future<void>? refreshInFlight;
 
+  // Per-host rate-limit gate: populated on 429, cleared when expiry passes.
+  final rateLimitedUntil = <String, DateTime>{};
+
+  String? hostOf(RequestOptions req) {
+    try {
+      final base = Uri.tryParse(req.baseUrl);
+      return (base != null && base.host.isNotEmpty) ? base.host : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool isAuthEndpoint(RequestOptions o) {
     final path = normalizePath(o.path);
     if (path.startsWith('/auth')) return true;
@@ -325,6 +337,26 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Reject immediately if the host is still in a 429 back-off window.
+        final host = hostOf(options);
+        if (host != null) {
+          final blockedUntil = rateLimitedUntil[host];
+          if (blockedUntil != null) {
+            if (DateTime.now().isBefore(blockedUntil)) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.badResponse,
+                  message: 'Rate limited — retry after $blockedUntil',
+                ),
+              );
+              return;
+            } else {
+              rateLimitedUntil.remove(host);
+            }
+          }
+        }
+
         final store = ref.read(tokenStoreProvider);
 
         try {
@@ -348,6 +380,21 @@ final dioProvider = Provider<Dio>((ref) {
         final req = err.requestOptions;
 
         if (isRateLimitedStatus(status)) {
+          // Parse Retry-After header; default to 60s if absent.
+          final retryAfterHeader =
+              err.response?.headers.value('retry-after');
+          int delaySecs = 60;
+          if (retryAfterHeader != null) {
+            final parsed = int.tryParse(retryAfterHeader.trim());
+            if (parsed != null && parsed > 0) {
+              delaySecs = parsed.clamp(10, 300);
+            }
+          }
+          final host = hostOf(err.requestOptions);
+          if (host != null) {
+            rateLimitedUntil[host] =
+                DateTime.now().add(Duration(seconds: delaySecs));
+          }
           handler.reject(mapDioException(err));
           return;
         }

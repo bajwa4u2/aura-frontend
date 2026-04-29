@@ -13,6 +13,24 @@ class ThreadsRepository {
 
   final Dio _dio;
 
+  static const Duration _threadTtl = Duration(seconds: 30);
+
+  final _threadCache = <String, Map<String, dynamic>>{};
+  final _threadCacheAt = <String, DateTime>{};
+  final _threadInFlight = <String, Future<Map<String, dynamic>>>{};
+
+  void clearThreadCache([String? threadId]) {
+    if (threadId != null) {
+      _threadCache.remove(threadId);
+      _threadCacheAt.remove(threadId);
+      _threadInFlight.remove(threadId);
+    } else {
+      _threadCache.clear();
+      _threadCacheAt.clear();
+      _threadInFlight.clear();
+    }
+  }
+
   Future<List<Map<String, dynamic>>> listThreads({
     required String spaceId,
   }) async {
@@ -24,7 +42,39 @@ class ThreadsRepository {
     return items.map(_asMap).toList();
   }
 
-  Future<Map<String, dynamic>> getThread(String threadId) async {
+  Future<Map<String, dynamic>> getThread(
+    String threadId, {
+    bool forceRefresh = false,
+  }) async {
+    final now = DateTime.now();
+    final cached = _threadCache[threadId];
+    final cachedAt = _threadCacheAt[threadId];
+
+    if (!forceRefresh &&
+        cached != null &&
+        cachedAt != null &&
+        now.difference(cachedAt) < _threadTtl) {
+      return Map<String, dynamic>.from(cached);
+    }
+
+    final existing = _threadInFlight[threadId];
+    if (!forceRefresh && existing != null) return existing;
+
+    final future = _fetchThread(threadId);
+    _threadInFlight[threadId] = future;
+    try {
+      final result = await future;
+      _threadCache[threadId] = Map<String, dynamic>.from(result);
+      _threadCacheAt[threadId] = DateTime.now();
+      return Map<String, dynamic>.from(result);
+    } finally {
+      if (identical(_threadInFlight[threadId], future)) {
+        _threadInFlight.remove(threadId);
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchThread(String threadId) async {
     final res = await _dio.get('/threads/$threadId');
     return _unwrapData(res.data);
   }
