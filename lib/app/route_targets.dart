@@ -27,9 +27,11 @@ String normalizeMemberFacingRoute(
   } else if (normalizedPath == '/settings/communications') {
     normalizedPath = '/me/settings/communications';
   } else if (normalizedPath == '/correspondence') {
-    normalizedPath = '/me/correspondence';
+    normalizedPath = '/messages';
   } else if (normalizedPath.startsWith('/correspondence/')) {
     normalizedPath = '/me$normalizedPath';
+  } else if (normalizedPath == '/conversations') {
+    normalizedPath = '/messages';
   } else if (normalizedPath.startsWith('/spaces/')) {
     normalizedPath = '/me/correspondence/${normalizedPath.substring('/spaces/'.length)}';
   } else if (normalizedPath.startsWith('/threads/')) {
@@ -60,5 +62,6 @@ bool shouldUseMemberShellForAuthed(String path) {
   return path == '/search' ||
       path.startsWith('/posts/') ||
       path.startsWith('/u/') ||
-      path.startsWith('/announcements/');
+      path.startsWith('/announcements/') ||
+      path.startsWith('/support/');
 }

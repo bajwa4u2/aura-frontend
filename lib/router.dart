@@ -25,7 +25,7 @@ import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
-import 'features/conversations/presentation/conversations_screen.dart';
+import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
@@ -98,6 +98,7 @@ const String kAdminCommunicationsRoute = '/admin/communications';
 const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kRouterBootRoute = '/_boot';
 
+const String kMessagesRoute = '/messages';
 const String kCorrespondenceHubRoute = '/me/correspondence';
 const String kCreateConversationRoute = '/me/correspondence/create/conversation';
 const String kCreateSpaceRoute = '/me/correspondence/create/space';
@@ -539,12 +540,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // Member + institution routes
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
+          GoRoute(path: kMessagesRoute, builder: (_, __) => const MessagesHubScreen()),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
           GoRoute(
             path: '/conversations',
-            builder: (_, __) => const ConversationsScreen(),
+            redirect: (_, __) => kMessagesRoute,
           ),
           GoRoute(
             path: '/activity',

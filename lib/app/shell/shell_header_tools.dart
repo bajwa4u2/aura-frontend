@@ -14,6 +14,25 @@ import '../../core/ui/aura_text.dart';
 import '../../features/updates/providers.dart';
 import '../route_targets.dart';
 
+// Cached current-user profile for header avatar.
+final _shellMeProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final auth = ref.watch(authStatusProvider);
+  if (auth != AuthStatus.authed) return {};
+  try {
+    final dio = ref.read(dioProvider);
+    final res = await dio.get('/users/me');
+    final raw = res.data;
+    if (raw is Map<String, dynamic>) {
+      for (final key in const ['data', 'user', 'item', 'result']) {
+        final nested = raw[key];
+        if (nested is Map<String, dynamic>) return nested;
+      }
+      return raw;
+    }
+  } catch (_) {}
+  return {};
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HEADER TOOLS (ICON STRIP)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,10 +67,10 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       case 'profile':
         context.go('/me');
         return;
-      case 'edit_profile':
-        context.go('/me/edit');
+      case 'preferences':
+        context.go('/me/settings/communications');
         return;
-      case 'security':
+      case 'settings':
         context.go('/security');
         return;
       case 'logout':
@@ -90,6 +109,9 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(notificationsUnreadCountProvider);
+    final me = ref
+        .watch(_shellMeProvider)
+        .maybeWhen(data: (d) => d, orElse: () => <String, dynamic>{});
     const gap = SizedBox(width: AuraSpace.s6);
 
     final tools = <Widget>[
@@ -120,6 +142,7 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       gap,
       _HeaderAccountBtn(
         busy: _busyLogout,
+        me: me,
         onSelected: (v) => unawaited(_handleAccountAction(v)),
       ),
     ];
@@ -239,9 +262,14 @@ class _UnreadDot extends StatelessWidget {
 }
 
 class _HeaderAccountBtn extends StatelessWidget {
-  const _HeaderAccountBtn({required this.busy, required this.onSelected});
+  const _HeaderAccountBtn({
+    required this.busy,
+    required this.me,
+    required this.onSelected,
+  });
 
   final bool busy;
+  final Map<String, dynamic> me;
   final ValueChanged<String> onSelected;
 
   @override
@@ -258,8 +286,8 @@ class _HeaderAccountBtn extends StatelessWidget {
         color: AuraSurface.overlay,
         itemBuilder: (context) => [
           _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
-          _menuItem('edit_profile', Icons.edit_outlined, 'Edit profile'),
-          _menuItem('security', Icons.shield_outlined, 'Security'),
+          _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
+          _menuItem('settings', Icons.shield_outlined, 'Settings'),
           const PopupMenuDivider(),
           _menuItem(
             'logout',
@@ -276,21 +304,70 @@ class _HeaderAccountBtn extends StatelessWidget {
             borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(color: AuraSurface.divider),
           ),
-          child: busy
-              ? const Center(
-                  child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AuraSurface.muted,
-                    ),
-                  ),
-                )
-              : const Icon(Icons.person_outline_rounded,
-                  size: 18, color: AuraSurface.muted),
+          child: ClipOval(child: _avatarContent()),
         ),
       ),
+    );
+  }
+
+  Widget _avatarContent() {
+    if (busy) {
+      return const Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AuraSurface.muted,
+          ),
+        ),
+      );
+    }
+
+    final avatarUrl = _pickMeString(
+      me,
+      const ['avatarUrl', 'photoUrl', 'imageUrl'],
+    );
+    if (avatarUrl.isNotEmpty) {
+      return Image.network(
+        avatarUrl,
+        width: 38,
+        height: 38,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initialsOrIcon(),
+      );
+    }
+
+    return _initialsOrIcon();
+  }
+
+  Widget _initialsOrIcon() {
+    final name = _pickMeString(
+      me,
+      const ['displayName', 'name', 'handle'],
+    );
+    if (name.isNotEmpty) {
+      final initial = name.trim().isNotEmpty
+          ? name.trim().substring(0, 1).toUpperCase()
+          : '';
+      if (initial.isNotEmpty) {
+        return Container(
+          color: AuraSurface.accentSoft,
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.accentText,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      }
+    }
+    return const Icon(
+      Icons.person_outline_rounded,
+      size: 18,
+      color: AuraSurface.muted,
     );
   }
 
@@ -310,10 +387,20 @@ class _HeaderAccountBtn extends StatelessWidget {
           Text(
             label,
             style: AuraText.small.copyWith(
-                color: color, fontWeight: FontWeight.w600),
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+String _pickMeString(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = (map[key] ?? '').toString().trim();
+    if (value.isNotEmpty) return value;
+  }
+  return '';
 }

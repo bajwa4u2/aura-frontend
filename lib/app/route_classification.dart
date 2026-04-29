@@ -18,6 +18,8 @@ bool isInstitutionShellPath(String path) {
 
 bool isMemberShellPath(String path) {
   return path == '/home' ||
+      path == '/messages' ||
+      path.startsWith('/messages/') ||
       path == '/saved' ||
       path == '/updates' ||
       path == '/conversations' ||

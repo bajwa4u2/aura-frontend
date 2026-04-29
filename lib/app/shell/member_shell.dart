@@ -57,26 +57,20 @@ class MemberShell extends StatelessWidget {
       label: 'Messages',
       icon: Icons.mail_outline_rounded,
       selectedIcon: Icons.mail_rounded,
-      path: '/me/correspondence',
+      path: '/messages',
     ),
     _NavItem(
       label: 'Create',
       icon: Icons.add_rounded,
       selectedIcon: Icons.add_rounded,
-      path: '/compose',
+      path: '/create',
       isPrimary: true,
     ),
     _NavItem(
-      label: 'Spaces',
-      icon: Icons.forum_outlined,
-      selectedIcon: Icons.forum_rounded,
-      path: '/conversations',
-    ),
-    _NavItem(
-      label: 'Me',
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      path: '/me',
+      label: 'Support',
+      icon: Icons.support_agent_outlined,
+      selectedIcon: Icons.support_agent_rounded,
+      path: '/support/agent',
     ),
   ];
 
@@ -87,12 +81,18 @@ class MemberShell extends StatelessWidget {
 
   int _indexForPath(String path) {
     if (path == '/home') return 0;
-    if (path == '/me/correspondence' || path.startsWith('/me/correspondence/')) {
+    if (path == '/messages' ||
+        path == '/me/correspondence' ||
+        path.startsWith('/me/correspondence/') ||
+        path == '/conversations') {
       return 1;
     }
-    if (path == '/compose' || path == '/create') return 2;
-    if (path == '/conversations') return 3;
-    if (path == '/me' || path.startsWith('/me/')) return 4;
+    if (path == '/create' ||
+        path == '/compose' ||
+        path == '/announcements/create') {
+      return 2;
+    }
+    if (path.startsWith('/support')) return 3;
     return 0;
   }
 
@@ -160,6 +160,7 @@ class MemberShell extends StatelessWidget {
 
 bool _showMemberFooter(String path) {
   if (path.startsWith('/realtime')) return false;
+  if (path == '/messages') return false;
   if (path == '/conversations' || path.startsWith('/conversations/')) {
     return false;
   }

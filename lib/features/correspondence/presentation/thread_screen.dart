@@ -188,13 +188,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<_PendingMessage> _pendingMessages = [];
 
+  bool _isNearBottom = true;
+  bool _showNewMessages = false;
+  bool _hasScrolledInitialBottom = false;
+
   @override
   void initState() {
     super.initState();
-    // Poll for new messages every 20 s.  When the user is joined to a live
-    // session we still refresh — someone may send a message with an attachment
-    // during the call.  We only skip when the controller is mid-join/leave
-    // (isBusy) to avoid racing with session hydration.
+    _scrollController.addListener(_onScroll);
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
       final liveState = ref.read(realtimeControllerProvider);
@@ -206,13 +207,29 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (!_scrollController.position.hasContentDimensions) return;
+    final atBottom =
+        _scrollController.position.maxScrollExtent -
+            _scrollController.position.pixels <=
+        120;
+    if (atBottom == _isNearBottom) return;
+    setState(() {
+      _isNearBottom = atBottom;
+      if (atBottom) _showNewMessages = false;
+    });
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
+      if (!mounted || !_scrollController.hasClients) return;
+      if (!_scrollController.position.hasContentDimensions) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
@@ -244,7 +261,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   void _clearPendingOnRefresh() {
-    // Remove non-failed pending messages once server data refreshes.
     setState(() => _pendingMessages.removeWhere((p) => !p.failed));
   }
 
@@ -252,6 +268,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     ref.invalidate(threadDetailProvider(widget.threadId));
     ref.invalidate(messagesProvider(widget.threadId));
     _clearPendingOnRefresh();
+    if (_isNearBottom) {
+      _scrollToBottom();
+    }
   }
 
   Future<void> _refreshAll() async {
@@ -292,8 +311,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
     ref.watch(threadOpenProvider(threadId));
 
-    // Refresh messages when a new socket event arrives during a live session
-    // so attachments sent by other participants appear immediately.
+    // Refresh messages on live socket events.
     ref.listen<String?>(
       realtimeControllerProvider.select((s) => s.lastSocketEvent),
       (prev, next) {
@@ -302,6 +320,31 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         final liveState = ref.read(realtimeControllerProvider);
         if (!liveState.isJoined) return;
         _refreshThreadData();
+      },
+    );
+
+    // Track new incoming messages for bottom-anchor affordance.
+    ref.listen<AsyncValue<List<Map<String, dynamic>>>>(
+      messagesProvider(widget.threadId),
+      (prev, next) {
+        if (!mounted) return;
+        final prevList = prev?.maybeWhen(data: (d) => d, orElse: () => null);
+        final nextList = next.maybeWhen(data: (d) => d, orElse: () => null);
+        // Initial data load — jump straight to bottom once.
+        if (prevList == null && nextList != null && !_hasScrolledInitialBottom) {
+          _hasScrolledInitialBottom = true;
+          _scrollToBottom();
+          return;
+        }
+        if (prevList != null &&
+            nextList != null &&
+            nextList.length > prevList.length) {
+          if (_isNearBottom) {
+            _scrollToBottom();
+          } else {
+            setState(() => _showNewMessages = true);
+          }
+        }
       },
     );
 
@@ -338,12 +381,15 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       body: Column(
         children: [
           Expanded(
-            child: RefreshIndicator(
+            child: Stack(
+              children: [
+            RefreshIndicator(
               onRefresh: _refreshAll,
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
                   child: ListView(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 children: [
                   threadAsync.when(
@@ -539,6 +585,22 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               ),
                 ),
                 ),
+            ),
+            if (_showNewMessages)
+              Positioned(
+                bottom: AuraSpace.s16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _NewMessagesBanner(
+                    onTap: () {
+                      setState(() => _showNewMessages = false);
+                      _scrollToBottom();
+                    },
+                  ),
+                ),
+              ),
+              ],
             ),
           ),
           ThreadComposerBar(
@@ -2481,4 +2543,52 @@ Map<String, dynamic> _unwrapResponseMap(dynamic raw) {
   }
 
   return <String, dynamic>{};
+}
+
+class _NewMessagesBanner extends StatelessWidget {
+  const _NewMessagesBanner({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.accent,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.arrow_downward_rounded,
+              size: 14,
+              color: Colors.white,
+            ),
+            const SizedBox(width: AuraSpace.s6),
+            Text(
+              'New messages',
+              style: AuraText.small.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
