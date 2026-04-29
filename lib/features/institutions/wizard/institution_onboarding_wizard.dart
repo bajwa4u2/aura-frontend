@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../search/providers.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -495,7 +496,18 @@ class _InstitutionOnboardingWizardState
         if (_path == _WizardPath.claim) ...[
           _InstitutionSearchField(
             selected: _selectedInstitution,
-            onSelected: (inst) => setState(() => _selectedInstitution = inst),
+            onSelected: (inst) => setState(() {
+              _selectedInstitution = inst;
+              final name = (inst['name'] ?? inst['organizationName'] ?? '').toString().trim();
+              if (name.isNotEmpty) _orgName.text = name;
+              final website = (inst['website'] ?? inst['websiteUrl'] ?? inst['url'] ?? '').toString().trim();
+              if (website.isNotEmpty) _website.text = website;
+              final jurisdiction = (inst['jurisdiction'] ?? inst['country'] ?? inst['region'] ?? '').toString().trim();
+              if (jurisdiction.isNotEmpty) _jurisdiction.text = jurisdiction;
+              final description = (inst['description'] ?? inst['bio'] ?? inst['summary'] ?? '').toString().trim();
+              if (description.isNotEmpty) _description.text = description;
+            }),
+            onCleared: () => setState(() => _selectedInstitution = null),
           ),
           const SizedBox(height: AuraSpace.s20),
         ],
@@ -1017,25 +1029,30 @@ class _TypeDropdown extends StatelessWidget {
   }
 }
 
+enum _SearchErrorKind { network, server, unknown }
+
 class _InstitutionSearchField extends ConsumerStatefulWidget {
   const _InstitutionSearchField({
     required this.selected,
     required this.onSelected,
+    required this.onCleared,
   });
 
   final Map<String, dynamic>? selected;
   final ValueChanged<Map<String, dynamic>> onSelected;
+  final VoidCallback onCleared;
 
   @override
   ConsumerState<_InstitutionSearchField> createState() =>
       _InstitutionSearchFieldState();
 }
 
-class _InstitutionSearchFieldState extends ConsumerState<_InstitutionSearchField> {
+class _InstitutionSearchFieldState
+    extends ConsumerState<_InstitutionSearchField> {
   final _query = TextEditingController();
   List<Map<String, dynamic>> _results = const [];
   bool _searching = false;
-  String? _searchError;
+  _SearchErrorKind? _errorKind;
 
   @override
   void dispose() {
@@ -1052,33 +1069,46 @@ class _InstitutionSearchFieldState extends ConsumerState<_InstitutionSearchField
 
     setState(() {
       _searching = true;
-      _searchError = null;
+      _errorKind = null;
     });
 
     try {
-      final dio = ref.read(dioProvider);
-      final res = await dio.get('/institutions', queryParameters: {'q': q, 'take': 10});
-      final data = res.data;
-      List<dynamic> rawList = const [];
-      if (data is Map) {
-        final inner = data['data'] ?? data;
-        if (inner is Map) rawList = (inner['items'] as List<dynamic>?) ?? (inner['institutions'] as List<dynamic>?) ?? [];
-        if (inner is List) rawList = inner;
-      }
+      final result = await ref.read(searchRepositoryProvider).search(q);
+      if (!mounted) return;
       setState(() {
-        _results = rawList
-            .whereType<Map>()
-            .map((m) => Map<String, dynamic>.from(m))
-            .toList();
+        _results = result.institutions;
         _searching = false;
       });
-    } catch (_) {
+    } on DioException catch (e) {
+      if (!mounted) return;
       setState(() {
         _searching = false;
-        _searchError = 'Could not search. Try again.';
+        _errorKind = switch (e.type) {
+          DioExceptionType.connectionError ||
+          DioExceptionType.connectionTimeout ||
+          DioExceptionType.sendTimeout ||
+          DioExceptionType.receiveTimeout =>
+            _SearchErrorKind.network,
+          DioExceptionType.badResponse => _SearchErrorKind.server,
+          _ => _SearchErrorKind.unknown,
+        };
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _searching = false;
+        _errorKind = _SearchErrorKind.unknown;
       });
     }
   }
+
+  String get _errorMessage => switch (_errorKind) {
+        _SearchErrorKind.network =>
+          'No connection — check your network and retry.',
+        _SearchErrorKind.server =>
+          'Search is temporarily unavailable. Try again.',
+        _ => 'Search failed. Try again.',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -1091,23 +1121,35 @@ class _InstitutionSearchFieldState extends ConsumerState<_InstitutionSearchField
             decoration: BoxDecoration(
               color: AuraSurface.goodBg,
               borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AuraSurface.goodInk.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_outline_rounded, size: 16, color: AuraSurface.goodInk),
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 16,
+                  color: AuraSurface.goodInk,
+                ),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
-                    widget.selected!['name']?.toString() ?? 'Selected institution',
-                    style: AuraText.small.copyWith(color: AuraSurface.goodInk, fontWeight: FontWeight.w700),
+                    widget.selected!['name']?.toString() ??
+                        'Selected institution',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.goodInk,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    setState(() => _results = const []);
-                  },
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.goodInk),
+                  onTap: widget.onCleared,
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: AuraSurface.goodInk,
+                  ),
                 ),
               ],
             ),
@@ -1134,9 +1176,29 @@ class _InstitutionSearchFieldState extends ConsumerState<_InstitutionSearchField
             ),
           ],
         ),
-        if (_searchError != null) ...[
+        if (_errorKind != null) ...[
           const SizedBox(height: AuraSpace.s8),
-          Text(_searchError!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _errorMessage,
+                  style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              GestureDetector(
+                onTap: _search,
+                child: Text(
+                  'Retry',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
         if (_results.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s8),
@@ -1147,21 +1209,150 @@ class _InstitutionSearchFieldState extends ConsumerState<_InstitutionSearchField
               border: Border.all(color: AuraSurface.divider),
             ),
             child: Column(
-              children: _results
-                  .map((inst) => ListTile(
-                        dense: true,
-                        title: Text(inst['name']?.toString() ?? '', style: AuraText.small.copyWith(fontWeight: FontWeight.w600)),
-                        subtitle: inst['domain'] != null ? Text(inst['domain'].toString(), style: AuraText.micro.copyWith(color: AuraSurface.muted)) : null,
-                        onTap: () {
-                          widget.onSelected(inst);
-                          setState(() => _results = const []);
-                        },
-                      ))
-                  .toList(),
+              children: [
+                for (int i = 0; i < _results.length; i++) ...[
+                  _InstitutionResultTile(
+                    data: _results[i],
+                    onTap: () {
+                      widget.onSelected(_results[i]);
+                      setState(() => _results = const []);
+                    },
+                  ),
+                  if (i != _results.length - 1)
+                    const Divider(
+                      height: 1,
+                      indent: AuraSpace.s14,
+                      endIndent: AuraSpace.s14,
+                    ),
+                ],
+              ],
             ),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _InstitutionResultTile extends StatelessWidget {
+  const _InstitutionResultTile({required this.data, required this.onTap});
+
+  final Map<String, dynamic> data;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (data['name'] ?? '').toString().trim();
+    final slug = (data['slug'] ?? data['handle'] ?? '').toString().trim();
+    final domain = (data['domain'] ?? '').toString().trim();
+    final jurisdiction =
+        (data['jurisdiction'] ?? data['country'] ?? '').toString().trim();
+    final description =
+        (data['description'] ?? data['bio'] ?? '').toString().trim();
+    final rawVerified = data['isVerified'] ?? data['verified'];
+    final isVerified = rawVerified is bool
+        ? rawVerified
+        : rawVerified is num
+            ? rawVerified != 0
+            : false;
+
+    final subline = <String>[
+      if (domain.isNotEmpty) domain,
+      if (jurisdiction.isNotEmpty) jurisdiction,
+    ].join(' · ');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AuraSurface.subtle,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: const Icon(
+                  Icons.apartment_outlined,
+                  size: 18,
+                  color: AuraSurface.muted,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name.isNotEmpty ? name : 'Institution',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.small
+                                .copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (isVerified) ...[
+                          const SizedBox(width: AuraSpace.s6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            size: 14,
+                            color: AuraSurface.accentText,
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (slug.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        slug,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            AuraText.micro.copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                    if (subline.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            AuraText.micro.copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s4),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            AuraText.micro.copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: AuraSurface.faint,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
