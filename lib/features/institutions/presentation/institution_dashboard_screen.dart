@@ -215,9 +215,9 @@ class _InstitutionDashboardScreenState
       if (_domainVerified) return null;
       return () => _go('/institution/domains');
     }
-    if (_isRejected) return () => _go('/institution/create');
+    if (_isRejected) return () => _go('/institutions/get-started');
     if (_isSuspended) return null;
-    return () => _go('/institution/create');
+    return () => _go('/institutions/get-started');
   }
 
   String _displayInstitutionName() {
@@ -463,6 +463,19 @@ class _InstitutionDashboardScreenState
         icon: Icons.language_rounded,
         enabled: _canManageDomains,
         onTap: _canManageDomains ? () => _go('/institution/domains') : null,
+      ),
+      _ToolData(
+        title: 'Invite members',
+        body:
+            'Send invite codes to colleagues to join your institution workspace.',
+        icon: Icons.group_add_outlined,
+        enabled: _canUseInstitutionTools,
+        onTap: _canUseInstitutionTools
+            ? () {
+                final id = _institution?['id']?.toString() ?? '';
+                if (id.isNotEmpty) _go('/institution/$id/invites');
+              }
+            : null,
       ),
       _ToolData(
         title: 'Institution record',

@@ -22,7 +22,7 @@ class InstitutionsHubScreen extends StatelessWidget {
           // Hero
           _InstitutionsHero(
             onSignIn: () => context.go('/institution/sign-in'),
-            onCreate: () => context.go('/institution/create'),
+            onCreate: () => context.go('/institutions/get-started'),
           ),
           // Content
           Padding(
@@ -44,7 +44,7 @@ class InstitutionsHubScreen extends StatelessWidget {
                     const SizedBox(height: AuraSpace.s32),
                     _EntryCard(
                       onSignIn: () => context.go('/institution/sign-in'),
-                      onCreate: () => context.go('/institution/create'),
+                      onCreate: () => context.go('/institutions/get-started'),
                     ),
                   ],
                 ),
@@ -199,14 +199,14 @@ class _HeroContent extends StatelessWidget {
           runSpacing: AuraSpace.s10,
           children: [
             AuraPrimaryButton(
+              label: 'Get started',
+              onPressed: onCreate,
+              icon: Icons.arrow_forward_rounded,
+            ),
+            AuraGhostButton(
               label: 'Institution sign in',
               onPressed: onSignIn,
               icon: Icons.login_rounded,
-            ),
-            AuraGhostButton(
-              label: 'Create account',
-              onPressed: onCreate,
-              icon: Icons.add_rounded,
             ),
           ],
         ),
@@ -707,14 +707,14 @@ class _EntryCard extends StatelessWidget {
             runSpacing: AuraSpace.s10,
             children: [
               AuraPrimaryButton(
+                label: 'Get started',
+                onPressed: onCreate,
+                icon: Icons.arrow_forward_rounded,
+              ),
+              AuraGhostButton(
                 label: 'Institution sign in',
                 onPressed: onSignIn,
                 icon: Icons.login_rounded,
-              ),
-              AuraGhostButton(
-                label: 'Create institutional account',
-                onPressed: onCreate,
-                icon: Icons.add_rounded,
               ),
             ],
           ),

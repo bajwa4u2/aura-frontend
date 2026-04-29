@@ -44,6 +44,7 @@ import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/presentation/admin_workspace_screen.dart';
+import 'features/institutions/wizard/institution_onboarding_wizard.dart';
 import 'features/admin/presentation/admin_users_screen.dart';
 import 'features/admin/presentation/admin_grants_screen.dart';
 import 'features/admin/presentation/admin_audit_logs_screen.dart';
@@ -87,6 +88,7 @@ import 'features/support/presentation/admin_support_console_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
+const String kInstitutionGetStartedRoute = '/institutions/get-started';
 const String kInstitutionDomainsRoute = '/institution/domains';
 const String kInstitutionProfileRoute = '/institution/profile';
 const String kInstitutionVerificationRoute = '/institution/request-verification';
@@ -427,7 +429,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kInstitutionCreateRoute,
-            builder: (_, __) => const InstitutionRequestVerificationScreen(),
+            redirect: (_, __) => '$kInstitutionGetStartedRoute?mode=create',
+          ),
+          GoRoute(
+            path: kInstitutionGetStartedRoute,
+            builder: (context, state) => InstitutionOnboardingWizard(
+              mode: state.uri.queryParameters['mode'],
+              inviteCode: state.uri.queryParameters['code'],
+            ),
           ),
           GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
           GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
