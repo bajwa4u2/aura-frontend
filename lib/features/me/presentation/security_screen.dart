@@ -120,20 +120,6 @@ class SecurityScreen extends ConsumerWidget {
         // ── Browser notifications (web only) ─────────────────────────────────
         if (kIsWeb) const BrowserNotificationsSection(),
 
-        // ── Account ──────────────────────────────────────────────────────────
-        _SecuritySection(
-          icon: Icons.tune_outlined,
-          title: 'Account',
-          items: [
-            _SecurityRow(
-              title: 'Communication preferences',
-              subtitle: 'Channels, digests, drafts, and publication controls',
-              leading: Icons.tune_outlined,
-              onTap: () => context.push('/me/settings/communications'),
-            ),
-          ],
-        ),
-
         // ── Danger zone ───────────────────────────────────────────────────────
         _DangerZonePanel(
           onDeleteAccount: () => context.go('/account-deletion'),

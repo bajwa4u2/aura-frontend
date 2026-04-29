@@ -865,12 +865,6 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           subtitle: 'Email, digest, message, and announcement settings',
           onTap: () => context.push('/me/settings/communications'),
         ),
-        MeSettingsItem(
-          label: 'Support',
-          icon: Icons.help_outline_rounded,
-          subtitle: 'Get help from the Aura support team',
-          onTap: () => context.push('/support/agent'),
-        ),
       ],
     );
   }

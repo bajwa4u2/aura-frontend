@@ -26,7 +26,7 @@ class CommunicationRoleHero extends StatelessWidget {
           title: 'Communication center',
           subtitle: isAdmin
               ? 'Member preferences and protected admin communication operations in one workspace.'
-              : 'Control how Aura reaches you. Manage preferences, digest schedule, and support access.',
+              : 'Control how Aura reaches you — set channels, digest schedule, and notification delivery.',
         ),
         const SizedBox(height: AuraSpace.s16),
         _DeliveryPostureCard(preferences: preferences, isAdmin: isAdmin),
@@ -84,24 +84,14 @@ class _DeliveryPostureCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: AuraSpace.s16),
-          Wrap(
-            spacing: AuraSpace.s10,
-            runSpacing: AuraSpace.s10,
-            children: [
-              AuraPrimaryButton(
-                label: 'Open member preferences',
-                onPressed: () => context.go('/me/settings/communications'),
-                icon: Icons.tune_rounded,
-              ),
-              if (isAdmin)
-                AuraSecondaryButton(
-                  label: 'Open admin workspace',
-                  onPressed: () => context.go('/admin'),
-                  icon: Icons.admin_panel_settings_outlined,
-                ),
-            ],
-          ),
+          if (isAdmin) ...[
+            const SizedBox(height: AuraSpace.s16),
+            AuraSecondaryButton(
+              label: 'Open admin workspace',
+              onPressed: () => context.go('/admin'),
+              icon: Icons.admin_panel_settings_outlined,
+            ),
+          ],
         ],
       ),
     );

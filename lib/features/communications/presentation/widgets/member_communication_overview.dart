@@ -6,7 +6,6 @@ import '../../../../core/ui/aura_text.dart';
 import '../../domain/communications_models.dart';
 import 'digest_preferences_panel.dart';
 import 'member_preferences_panel.dart';
-import 'support_contact_panel.dart';
 
 class MemberCommunicationOverview extends StatelessWidget {
   const MemberCommunicationOverview({
@@ -58,15 +57,8 @@ class MemberCommunicationOverview extends StatelessWidget {
                   const SizedBox(width: AuraSpace.s20),
                   Expanded(
                     flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DigestPreferencesPanel(
-                          initialFrequency: initialFrequency,
-                        ),
-                        const SizedBox(height: AuraSpace.s16),
-                        const SupportContactPanel(),
-                      ],
+                    child: DigestPreferencesPanel(
+                      initialFrequency: initialFrequency,
                     ),
                   ),
                 ],
@@ -84,8 +76,6 @@ class MemberCommunicationOverview extends StatelessWidget {
                 ),
                 const SizedBox(height: AuraSpace.s16),
                 DigestPreferencesPanel(initialFrequency: initialFrequency),
-                const SizedBox(height: AuraSpace.s16),
-                const SupportContactPanel(),
               ],
             );
           },
