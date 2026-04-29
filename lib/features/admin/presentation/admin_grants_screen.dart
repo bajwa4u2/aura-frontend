@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
+import 'admin_error.dart';
 
 class AdminGrantsScreen extends ConsumerWidget {
   const AdminGrantsScreen({super.key});
@@ -28,7 +29,7 @@ class AdminGrantsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AuraSpace.s16),
             child: AuraErrorState(
               title: 'Failed to load grants',
-              body: e.toString(),
+              body: adminErrorMessage(e),
               action: AuraSecondaryButton(
                 label: 'Retry',
                 icon: Icons.refresh_rounded,

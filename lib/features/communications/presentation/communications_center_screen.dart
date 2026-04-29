@@ -50,7 +50,7 @@ class _CommunicationsCenterScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = 'Could not load your communication settings. Please try again.';
         _loading = false;
       });
     }
@@ -74,8 +74,8 @@ class _CommunicationsCenterScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not update communication settings: $e'),
+        const SnackBar(
+          content: Text('Could not update communication settings. Please try again.'),
         ),
       );
     } finally {

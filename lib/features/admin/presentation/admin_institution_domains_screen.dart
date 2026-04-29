@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
+import 'admin_error.dart';
 
 class AdminInstitutionDomainsScreen extends ConsumerWidget {
   const AdminInstitutionDomainsScreen({super.key});
@@ -28,7 +29,7 @@ class AdminInstitutionDomainsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AuraSpace.s16),
             child: AuraErrorState(
               title: 'Failed to load domain requests',
-              body: e.toString(),
+              body: adminErrorMessage(e),
               action: AuraSecondaryButton(
                 label: 'Retry',
                 icon: Icons.refresh_rounded,
@@ -101,7 +102,7 @@ class _DomainCardState extends ConsumerState<_DomainCard> {
         ref.invalidate(adminInstitutionDomainsProvider);
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _busy = false; });
+      if (mounted) setState(() { _error = adminErrorMessage(e); _busy = false; });
     }
   }
 
@@ -114,7 +115,7 @@ class _DomainCardState extends ConsumerState<_DomainCard> {
         ref.invalidate(adminInstitutionDomainsProvider);
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _busy = false; });
+      if (mounted) setState(() { _error = adminErrorMessage(e); _busy = false; });
     }
   }
 

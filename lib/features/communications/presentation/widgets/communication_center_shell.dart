@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/admin_access_provider.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../domain/communications_models.dart';
-import 'admin_communication_workspace.dart';
 import 'communication_empty_error_states.dart';
 import 'communication_role_hero.dart';
 import 'communication_status_cards.dart';
@@ -39,8 +38,6 @@ class CommunicationCenterShell extends StatelessWidget {
         orElse: () => false,
       );
 
-  bool get _adminLoading => adminAsync.isLoading;
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -66,23 +63,13 @@ class CommunicationCenterShell extends StatelessWidget {
             body: error!,
             onRetry: onLoad,
           )
-        else if (preferences != null) ...[
+        else if (preferences != null)
           MemberCommunicationOverview(
             preferences: preferences!,
             savingKeys: savingKeys,
             onChannelChanged: onChannelChanged,
             onFrequencyChanged: onFrequencyChanged,
           ),
-          if (_isAdmin) ...[
-            const SizedBox(height: AuraSpace.s32),
-            const AdminCommunicationWorkspace(),
-          ] else if (_adminLoading) ...[
-            const SizedBox(height: AuraSpace.s16),
-            const CommLoadingState(
-              message: 'Loading protected communication tools…',
-            ),
-          ],
-        ],
       ],
     );
   }

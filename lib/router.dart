@@ -50,6 +50,7 @@ import 'features/admin/presentation/admin_grants_screen.dart';
 import 'features/admin/presentation/admin_audit_logs_screen.dart';
 import 'features/admin/presentation/admin_settings_screen.dart';
 import 'features/admin/presentation/admin_feature_flags_screen.dart';
+import 'features/admin/presentation/admin_communications_screen.dart';
 import 'features/admin/presentation/admin_institution_domains_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
@@ -628,7 +629,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kAdminCommunicationsRoute,
-            builder: (_, __) => const CommunicationsCenterScreen(),
+            builder: (_, __) => const AdminCommunicationsScreen(),
           ),
           GoRoute(
             path: '/admin/users',

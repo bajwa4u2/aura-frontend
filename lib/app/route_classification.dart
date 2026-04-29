@@ -1,7 +1,5 @@
 bool isAdminShellPath(String path) {
-  return path == '/admin' ||
-      path == '/admin/communications' ||
-      path == '/admin/support';
+  return path == '/admin' || path.startsWith('/admin/');
 }
 
 bool isInstitutionShellPath(String path) {

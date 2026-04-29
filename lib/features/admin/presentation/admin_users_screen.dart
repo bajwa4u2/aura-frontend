@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
+import 'admin_error.dart';
 
 class AdminUsersScreen extends ConsumerWidget {
   const AdminUsersScreen({super.key});
@@ -28,7 +29,7 @@ class AdminUsersScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AuraSpace.s16),
             child: AuraErrorState(
               title: 'Failed to load users',
-              body: e.toString(),
+              body: adminErrorMessage(e),
               action: AuraSecondaryButton(
                 label: 'Retry',
                 icon: Icons.refresh_rounded,
