@@ -17,7 +17,7 @@ class SupportRepository {
       if (institutionId != null) 'institutionId': institutionId,
       if (initialMessage != null) 'initialMessage': initialMessage,
     });
-    return SupportConversation.fromJson(_asMap(res.data));
+    return SupportConversation.fromJson(_unwrap(res.data));
   }
 
   Future<List<SupportMessage>> sendMessage({
@@ -32,8 +32,11 @@ class SupportRepository {
         if (sessionToken != null) 'sessionToken': sessionToken,
       },
     );
-    final raw = (_asMap(res.data)['messages'] as List<dynamic>?) ?? [];
-    return raw.map((m) => SupportMessage.fromJson(m as Map<String, dynamic>)).toList();
+    final payload = _unwrap(res.data);
+    final raw = (payload['messages'] as List<dynamic>?) ?? [];
+    return raw
+        .map((m) => SupportMessage.fromJson(_asMap(m)))
+        .toList();
   }
 
   Future<SupportEscalateResult> escalate({
@@ -50,7 +53,20 @@ class SupportRepository {
         if (requesterName != null) 'requesterName': requesterName,
       },
     );
-    return SupportEscalateResult.fromJson(_asMap(res.data));
+    return SupportEscalateResult.fromJson(_unwrap(res.data));
+  }
+
+  Future<SupportConversation> getConversation({
+    required String conversationId,
+    String? sessionToken,
+  }) async {
+    final res = await _dio.get(
+      '/support/conversations/$conversationId',
+      queryParameters: {
+        if (sessionToken != null) 'sessionToken': sessionToken,
+      },
+    );
+    return SupportConversation.fromJson(_unwrap(res.data));
   }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
@@ -71,36 +87,60 @@ class SupportRepository {
       'skip': skip,
       'take': take,
     });
-    return SupportAdminListResult.fromJson(_asMap(res.data));
+    return SupportAdminListResult.fromJson(_unwrap(res.data));
   }
 
   Future<Map<String, dynamic>> adminGetCase(String caseId) async {
     final res = await _dio.get('/admin/support/cases/$caseId');
-    return _asMap(res.data);
+    return _unwrap(res.data);
   }
 
-  Future<void> adminChangeStatus(String caseId, String status, {String? note}) async {
+  Future<void> adminChangeStatus(String caseId, String status,
+      {String? note}) async {
     await _dio.patch('/admin/support/cases/$caseId/status', data: {
       'status': status,
       if (note != null) 'note': note,
     });
   }
 
-  Future<void> adminAssign(String caseId, {String? assignedAdminId}) async {
+  Future<void> adminAssign(String caseId,
+      {String? assignedAdminId}) async {
     await _dio.patch('/admin/support/cases/$caseId/assign', data: {
       'assignedAdminId': assignedAdminId,
     });
   }
 
   Future<void> adminReply(String caseId, String content) async {
-    await _dio.post('/admin/support/cases/$caseId/reply', data: {'content': content});
+    await _dio.post('/admin/support/cases/$caseId/reply',
+        data: {'content': content});
   }
 
   Future<Map<String, dynamic>> adminAiDraft(String caseId) async {
     final res = await _dio.get('/admin/support/cases/$caseId/ai-draft');
-    return _asMap(res.data);
+    return _unwrap(res.data);
   }
+}
 
-  static Map<String, dynamic> _asMap(dynamic d) =>
-      (d is Map<String, dynamic>) ? d : {};
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Peels the global `{ ok: true, data: <payload> }` envelope that
+/// ResponseWrapInterceptor adds to every backend response.
+/// Falls back to the raw map if the envelope is absent.
+Map<String, dynamic> _unwrap(dynamic raw) {
+  if (raw is Map) {
+    final outer = Map<String, dynamic>.from(raw);
+    final inner = outer['data'];
+    if (inner is Map<String, dynamic>) return inner;
+    if (inner is Map) return Map<String, dynamic>.from(inner);
+    return outer;
+  }
+  return <String, dynamic>{};
+}
+
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return <String, dynamic>{};
 }

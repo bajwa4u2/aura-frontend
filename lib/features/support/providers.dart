@@ -74,7 +74,7 @@ class SupportConversationNotifier extends StateNotifier<SupportConversationState
 
   Future<void> send(String content) async {
     final conversationId = state.conversationId;
-    if (conversationId == null || state.sending) return;
+    if (conversationId == null || conversationId.isEmpty || state.sending) return;
 
     state = state.copyWith(sending: true, clearError: true);
     try {
@@ -94,7 +94,7 @@ class SupportConversationNotifier extends StateNotifier<SupportConversationState
     String? requesterName,
   }) async {
     final conversationId = state.conversationId;
-    if (conversationId == null) return null;
+    if (conversationId == null || conversationId.isEmpty) return null;
     try {
       final result = await _repo.escalate(
         conversationId: conversationId,
