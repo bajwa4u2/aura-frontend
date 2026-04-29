@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config.dart';
@@ -76,16 +74,6 @@ final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     final level1 = _unwrapData(raw);
     final level2 = _unwrapData(level1);
     return _toMap(level2);
-  } on DioException catch (e) {
-    final code = e.response?.statusCode;
-    if (code == 401 || code == 403) {
-      if (!kIsWeb) {
-        try {
-          await ref.read(tokenStoreProvider).clearTokens();
-        } catch (_) {}
-      }
-    }
-    return {};
   } catch (_) {
     return {};
   }

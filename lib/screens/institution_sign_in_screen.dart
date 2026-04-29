@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
+import '../core/institutions/institution_access_provider.dart';
 import '../core/net/dio_provider.dart';
 import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_radius.dart';
@@ -96,8 +97,17 @@ class _InstitutionSignInScreenState
       ref.invalidate(authMeDataProvider);
       ref.invalidate(authStatusProvider);
       ref.invalidate(emailVerifiedProvider);
+      ref.invalidate(institutionAccessProvider);
+
+      // Wait for institution access to confirm before navigating.
+      // This prevents the router from reading stale AsyncData(state: none)
+      // and immediately bouncing back to /enter-institution.
+      final access = await ref.read(institutionAccessProvider.future);
 
       if (!mounted) return;
+      if (!access.hasAccess) {
+        throw Exception('Institution access could not be confirmed. Please try again.');
+      }
       context.go(_institutionDashboardRoute);
     } on DioException catch (e) {
       String message = 'Institution sign in failed.';
