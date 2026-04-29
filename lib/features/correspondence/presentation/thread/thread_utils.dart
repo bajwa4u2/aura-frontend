@@ -287,7 +287,7 @@ ThreadAttachmentKind kindFromMime(String mime) {
     return ThreadAttachmentKind.document;
   }
   if (lower.startsWith('application/')) { return ThreadAttachmentKind.document; }
-  return ThreadAttachmentKind.audio;
+  return ThreadAttachmentKind.document;
 }
 
 // ─── Response unwrapping ─────────────────────────────────────────────────────

@@ -294,7 +294,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     setState(() => _callBusy = true);
     try {
       final controller = ref.read(realtimeControllerProvider.notifier);
-      await controller.ensureCorrespondenceLive(
+      final sessionId = await controller.ensureCorrespondenceLive(
         surfaceType: _threadLiveSurfaceType(thread),
         surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
         kind: kind,
@@ -305,6 +305,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           (key, value) => value == null || value.toString().trim().isEmpty,
         ),
       );
+      if (!mounted) return;
+      context.push('/realtime/$sessionId');
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
