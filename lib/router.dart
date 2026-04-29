@@ -730,6 +730,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               replyToPostId: state.uri.queryParameters['replyTo'],
               heldPostId: state.uri.queryParameters['held'],
               surface: state.uri.queryParameters['surface'],
+              mode: state.uri.queryParameters['mode'],
             ),
           ),
           GoRoute(

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/admin_access_provider.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -8,11 +11,72 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
-class CreateHubScreen extends StatelessWidget {
+/// Role/capability visibility matrix:
+///   canAnnounceAsPlatform:    appAdmin.isAdmin
+///   canAnnounceAsInstitution: institutionAccess.state == authorizedSpeaker
+///   canAnnounce:              either of the above
+///   canClaimAudit:            appAdmin.isAdmin
+///
+/// Base member cards (always shown): New Work, With Media, Conversation, Space
+/// Authority cards (conditional):    Announcement, Claim Audit
+class CreateHubScreen extends ConsumerWidget {
   const CreateHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adminAsync = ref.watch(appAdminAccessProvider);
+    final institutionAsync = ref.watch(institutionAccessProvider);
+
+    final admin = adminAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => const AppAdminAccess(state: AppAdminState.none),
+    );
+    final institution = institutionAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
+    );
+
+    final canAnnounceAsPlatform = admin.isAdmin;
+    final canAnnounceAsInstitution =
+        institution.state == InstitutionAccessState.authorizedSpeaker;
+    final canAnnounce = canAnnounceAsPlatform || canAnnounceAsInstitution;
+    final canClaimAudit = admin.isAdmin;
+    final hasAuthoritySection = canAnnounce || canClaimAudit;
+
+    void onAnnouncementTap(BuildContext ctx) {
+      if (canAnnounceAsPlatform && canAnnounceAsInstitution) {
+        showDialog<void>(
+          context: ctx,
+          builder: (dialogCtx) => AlertDialog(
+            title: const Text('Announcement scope'),
+            content: const Text(
+              'Choose where this announcement will be published.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogCtx).pop();
+                  ctx.go('/announcements/create');
+                },
+                child: const Text('Platform'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogCtx).pop();
+                  ctx.go('/announcements/create?scope=institution');
+                },
+                child: const Text('Institution'),
+              ),
+            ],
+          ),
+        );
+      } else if (canAnnounceAsPlatform) {
+        ctx.go('/announcements/create');
+      } else {
+        ctx.go('/announcements/create?scope=institution');
+      }
+    }
+
     return AuraScaffold(
       showHeader: false,
       body: Center(
@@ -28,26 +92,27 @@ class CreateHubScreen extends StatelessWidget {
             children: [
               _CreateHero(),
               const SizedBox(height: AuraSpace.s28),
-              const _CreateSection(
+              _CreateSection(
                 title: 'Writing',
                 items: [
                   _CreateActionData(
                     title: 'New work',
-                    subtitle: 'Begin a piece of writing or long-form content.',
+                    subtitle:
+                        'Begin a piece of writing or long-form content.',
                     icon: Icons.edit_note_rounded,
-                    route: '/compose',
+                    route: '/compose?mode=text',
                   ),
                   _CreateActionData(
                     title: 'With media',
                     subtitle:
-                        'Open composition with image or video attachment.',
+                        'Open composer with attachment tray ready.',
                     icon: Icons.perm_media_outlined,
-                    route: '/compose',
+                    route: '/compose?mode=media',
                   ),
                 ],
               ),
               const SizedBox(height: AuraSpace.s20),
-              const _CreateSection(
+              _CreateSection(
                 title: 'Messages',
                 items: [
                   _CreateActionData(
@@ -65,25 +130,30 @@ class CreateHubScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AuraSpace.s20),
-              const _CreateSection(
-                title: 'System',
-                items: [
-                  _CreateActionData(
-                    title: 'Claim audit',
-                    subtitle: 'Open the AI-powered claim audit surface.',
-                    icon: Icons.fact_check_outlined,
-                    route: '/ai/claim-audit',
-                  ),
-                  _CreateActionData(
-                    title: 'Announcement',
-                    subtitle:
-                        'Publish an official institution or platform notice.',
-                    icon: Icons.campaign_outlined,
-                    route: '/announcements/create',
-                  ),
-                ],
-              ),
+              if (hasAuthoritySection) ...[
+                const SizedBox(height: AuraSpace.s20),
+                _CreateSection(
+                  title: 'Authority',
+                  items: [
+                    if (canAnnounce)
+                      _CreateActionData(
+                        title: 'Announcement',
+                        subtitle:
+                            'Publish an official institution or platform notice.',
+                        icon: Icons.campaign_outlined,
+                        onTap: onAnnouncementTap,
+                      ),
+                    if (canClaimAudit)
+                      _CreateActionData(
+                        title: 'Claim audit',
+                        subtitle:
+                            'Open the AI-powered claim audit surface.',
+                        icon: Icons.fact_check_outlined,
+                        route: '/ai/claim-audit',
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -207,7 +277,13 @@ class _CreateActionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.go(data.route),
+        onTap: () {
+          if (data.onTap != null) {
+            data.onTap!(context);
+          } else if (data.route != null) {
+            context.go(data.route!);
+          }
+        },
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
           padding: const EdgeInsets.all(AuraSpace.s16),
@@ -277,15 +353,17 @@ class _CreateActionCard extends StatelessWidget {
 }
 
 class _CreateActionData {
-  const _CreateActionData({
+  _CreateActionData({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.route,
+    this.route,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
-  final String route;
+  final String? route;
+  final void Function(BuildContext context)? onTap;
 }

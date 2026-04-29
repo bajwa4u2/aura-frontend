@@ -29,12 +29,14 @@ class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
   final String? heldPostId;
   final String? surface;
+  final String? mode;
 
   const ComposeScreen({
     super.key,
     this.replyToPostId,
     this.heldPostId,
     this.surface,
+    this.mode,
   });
 
   @override
@@ -301,6 +303,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return {'width': img.width, 'height': img.height};
   }
 
+  bool get _isMediaFirst =>
+      !_isReply && (widget.mode ?? '').trim().toLowerCase() == 'media';
+
   @override
   void initState() {
     super.initState();
@@ -308,6 +313,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_isReply) {
       _loadDraft();
       _loadExternalConnections();
+    }
+
+    if (_isMediaFirst) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showAddAttachmentSheet();
+      });
     }
 
     _textController.addListener(() {
@@ -355,6 +366,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final surface = (widget.surface ?? '').trim();
     if (surface.isNotEmpty) {
       params['surface'] = surface;
+    }
+
+    final mode = (widget.mode ?? '').trim();
+    if (mode.isNotEmpty) {
+      params['mode'] = mode;
     }
 
     final uri = Uri(
@@ -2636,15 +2652,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.28)),
       ),
       child: Icon(
-        _isReply ? Icons.reply_rounded : Icons.edit_note_rounded,
+        _isReply
+            ? Icons.reply_rounded
+            : (_isMediaFirst
+                ? Icons.perm_media_outlined
+                : Icons.edit_note_rounded),
         color: AuraSurface.accentText,
       ),
     );
 
-    final title = _isReply ? 'Write a response' : 'Create post';
+    final title = _isReply
+        ? 'Write a response'
+        : (_isMediaFirst ? 'Create with media' : 'Create post');
     final subtitle = _isReply
         ? 'Reply first. The response stays attached to the conversation.'
-        : 'Write first, configure second, review third.';
+        : (_isMediaFirst
+            ? 'Attach your media first, then add context.'
+            : 'Write first, configure second, review third.');
 
     return LayoutBuilder(
       builder: (ctx, constraints) {
