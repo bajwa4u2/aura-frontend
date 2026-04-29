@@ -361,8 +361,11 @@ class RealtimeParticipant {
         _readString(topLevelInstitutionAdmin['name']) ??
         _readString(_asMap(firstMembership['institution'])['name']);
     final institutionHandle = _readString(normalized['institutionHandle']) ??
+        _readString(institutionAdmin['slug']) ??
         _readString(institutionAdmin['handle']) ??
+        _readString(topLevelInstitutionAdmin['slug']) ??
         _readString(topLevelInstitutionAdmin['handle']) ??
+        _readString(_asMap(firstMembership['institution'])['slug']) ??
         _readString(_asMap(firstMembership['institution'])['handle']);
     final institutionRole = _readString(normalized['institutionRole']) ??
         _readString(firstMembership['role']);
