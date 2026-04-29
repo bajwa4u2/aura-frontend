@@ -417,8 +417,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institutions',
             builder: (_, __) => const InstitutionsHubScreen(),
           ),
+          // Static routes under /institutions/ must come before the dynamic
+          // :slug route so GoRouter's first-match-wins order picks them up.
+          GoRoute(
+            path: kInstitutionGetStartedRoute,
+            builder: (context, state) => InstitutionOnboardingWizard(
+              mode: state.uri.queryParameters['mode'],
+              inviteCode: state.uri.queryParameters['code'],
+            ),
+          ),
           GoRoute(
             path: '/institutions/:slug',
+            redirect: (context, state) {
+              // Guard against reserved keywords escaping past static routes.
+              const reserved = {'get-started'};
+              final slug = state.pathParameters['slug'] ?? '';
+              if (reserved.contains(slug)) return kInstitutionGetStartedRoute;
+              return null;
+            },
             builder: (context, state) => InstitutionDetailScreen(
               slug: state.pathParameters['slug'] ?? '',
             ),
@@ -430,13 +446,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionCreateRoute,
             redirect: (_, __) => '$kInstitutionGetStartedRoute?mode=create',
-          ),
-          GoRoute(
-            path: kInstitutionGetStartedRoute,
-            builder: (context, state) => InstitutionOnboardingWizard(
-              mode: state.uri.queryParameters['mode'],
-              inviteCode: state.uri.queryParameters['code'],
-            ),
           ),
           GoRoute(path: '/patrons', builder: (_, __) => const PatronsHubScreen()),
           GoRoute(path: '/supporters', builder: (_, __) => const SupportersHubScreen()),
