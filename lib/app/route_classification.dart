@@ -5,8 +5,7 @@ bool isAdminShellPath(String path) {
 }
 
 bool isInstitutionShellPath(String path) {
-  return path == '/enter-institution' ||
-      path == '/institution/create' ||
+  return path == '/institution/create' ||
       path == '/institution/dashboard' ||
       path == '/institution/domains' ||
       path == '/institution/profile' ||
