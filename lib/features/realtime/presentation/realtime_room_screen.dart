@@ -416,16 +416,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               children: [
                 if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
                   AuraSecondaryButton(
-                    label: 'Return to space',
+                    label: 'Return to conversation',
                     onPressed: () =>
                         context.go(_spaceRouteFromSession(state.session)!),
                   ),
                 AuraSecondaryButton(
-                  label: 'Refresh live',
+                  label: 'Refresh',
                   onPressed: () => controller.hydrateSession(widget.sessionId),
                 ),
                 AuraSecondaryButton(
-                  label: 'Leave live',
+                  label: 'Leave call',
                   onPressed: controller.leave,
                 ),
                 if (state.joinState != RealtimeJoinState.joined)
@@ -487,18 +487,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String _roomTitle(RealtimeSession? session) {
-    if (session == null) return 'Live';
+    if (session == null) return 'Call';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
       case RealtimeSurfaceType.thread:
-        return 'Conversation live';
+        return 'Call';
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
-        return 'Space live';
+        return 'Space call';
       case RealtimeSurfaceType.institution:
-        return 'Institution live';
+        return 'Institution call';
       case RealtimeSurfaceType.unknown:
-        return 'Live';
+        return 'Call';
     }
   }
 
@@ -512,18 +512,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'live';
+    if (session == null) return 'call';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
       case RealtimeSurfaceType.thread:
-        return 'conversation live';
+        return 'call';
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
-        return 'space live';
+        return 'space call';
       case RealtimeSurfaceType.institution:
-        return 'institution live';
+        return 'institution call';
       case RealtimeSurfaceType.unknown:
-        return 'live';
+        return 'call';
     }
   }
 
@@ -536,9 +536,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       return 'Your request to join was declined.';
     }
     if (joinState == RealtimeJoinState.removed) {
-      return 'You were removed from this live session.';
+      return 'You were removed from this call.';
     }
-    if (session?.isActive == false) return 'This live session has ended.';
+    if (session?.isActive == false) return 'This call has ended.';
     if (session?.isLocked == true) return 'Closed to new joins.';
     return 'Active now.';
   }
@@ -617,7 +617,7 @@ class _ConnectionRecoveryCard extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s8),
           const Text(
-            'You can reconnect to the live room or reload the room state.',
+            'You can reconnect to the call or reload the call state.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -676,7 +676,6 @@ class _RoomHeaderCard extends StatelessWidget {
               _MetaPill(label: memberCountLabel),
               if ((callDurationLabel ?? '').trim().isNotEmpty)
                 _MetaPill(label: callDurationLabel!),
-              _MetaPill(label: 'Ref ${_shortSessionId(sessionId)}'),
             ],
           ),
         ],
@@ -684,11 +683,6 @@ class _RoomHeaderCard extends StatelessWidget {
     );
   }
 
-  static String _shortSessionId(String id) {
-    final value = id.trim();
-    if (value.length <= 8) return value;
-    return value.substring(0, 8);
-  }
 }
 
 class _MetaPill extends StatelessWidget {
@@ -767,7 +761,7 @@ class _MediaStageCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Live media', style: AuraText.title),
+          const Text('Media', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Wrap(
             spacing: AuraSpace.s8,
@@ -920,7 +914,7 @@ class _RoomOverviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isLive ? 'Room is live' : 'Room has ended',
+            isLive ? 'Call in progress' : 'Call ended',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -984,7 +978,7 @@ class _RoomInviteCard extends StatelessWidget {
           const Text('Invite members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           const Text(
-            'Find existing Aura members and invite them into this live session.',
+            'Find existing Aura members and invite them into this call.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -1105,19 +1099,19 @@ class _ArtifactBlock extends StatelessWidget {
         ? (recordingCount == 1
               ? '1 recording created'
               : '$recordingCount recordings created')
-        : 'Recording unavailable in this live session';
+        : 'Recording unavailable in this call';
     final transcriptLabel = policy?.canTranscribe == true
         ? (transcriptCount == 1
-              ? '1 live note created'
-              : '$transcriptCount live notes created')
-        : 'Live notes unavailable in this live session';
+              ? '1 note created'
+              : '$transcriptCount notes created')
+        : 'Notes unavailable in this call';
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Room output',
+            'Call output',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),

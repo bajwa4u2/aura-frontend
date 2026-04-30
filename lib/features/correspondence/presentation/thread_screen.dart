@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
-
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -18,8 +16,6 @@ import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
 import '../../realtime/application/realtime_providers.dart';
-import '../../realtime/domain/realtime_enums.dart';
-import '../../realtime/domain/realtime_models.dart';
 import '../../realtime/domain/realtime_state.dart';
 import 'thread/thread_composer.dart';
 import 'thread/thread_message_tile.dart';
@@ -137,41 +133,6 @@ String _threadResolvedSessionId(
     }
   }
   return '';
-}
-
-String _threadLiveKind(Map<String, dynamic> thread, RealtimeState liveState) {
-  final direct = pickString(thread, const [
-    'liveKind',
-    'callKind',
-    'callMode',
-    'sessionKind',
-    'liveMode',
-  ]).toLowerCase();
-  if (direct == 'audio' || direct == 'video') return direct;
-  if (liveState.isVideoMode) return 'video';
-  if (liveState.isAudioMode) return 'audio';
-  return 'audio';
-}
-
-String _threadStartedByUserId(
-  Map<String, dynamic> thread,
-  RealtimeState liveState,
-) {
-  final direct = pickString(thread, const [
-    'startedByUserId',
-    'liveStartedByUserId',
-    'callerUserId',
-    'ownerUserId',
-  ]);
-  if (direct.isNotEmpty) return direct;
-  final nested = pickNested(thread, const [
-    ['live', 'startedByUserId'],
-    ['activeLive', 'startedByUserId'],
-    ['realtime', 'startedByUserId'],
-    ['session', 'startedByUserId'],
-  ]);
-  if (nested.isNotEmpty) return nested;
-  return (liveState.session?.startedByUserId ?? '').trim();
 }
 
 class ThreadScreen extends ConsumerStatefulWidget {
@@ -465,34 +426,22 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             onStartVideo: () =>
                                 _startLive(thread: thread, kind: 'VIDEO'),
                           ),
-                          _ThreadLiveDock(
-                            thread: thread,
+                          _ConversationCallCard(
+                            sessionId: _threadResolvedSessionId(thread, liveState, widget.threadId),
                             liveState: liveState,
-                            onJoinLive: () async {
-                              final sessionId = _threadResolvedSessionId(
-                                thread,
-                                liveState,
-                                widget.threadId,
-                              );
-                              if (sessionId.isEmpty) return;
-                              await ref
-                                  .read(realtimeControllerProvider.notifier)
-                                  .join(sessionId);
+                            callBusy: callBusy,
+                            onJoin: () async {
+                              final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
+                              if (sid.isEmpty) return;
+                              await ref.read(realtimeControllerProvider.notifier).join(sid);
+                              if (!context.mounted) return;
+                              context.push('/realtime/$sid');
                             },
-                            onLeaveLive: () async {
-                              await ref
-                                  .read(realtimeControllerProvider.notifier)
-                                  .leave();
-                            },
-                            onToggleMicrophone: () async {
-                              await ref
-                                  .read(realtimeControllerProvider.notifier)
-                                  .toggleMicrophone();
-                            },
-                            onToggleCamera: () async {
-                              await ref
-                                  .read(realtimeControllerProvider.notifier)
-                                  .toggleCamera();
+                            onLeave: () async => ref.read(realtimeControllerProvider.notifier).leave(),
+                            onReturn: () {
+                              final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
+                              if (sid.isEmpty) return;
+                              context.push('/realtime/$sid');
                             },
                           ),
                           const SizedBox(height: AuraSpace.s16),
@@ -529,9 +478,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
                               final sideRail = _ThreadSideRail(
                                 threadAsync: threadAsync,
-                                liveState: liveState,
                                 threadContext: contextData,
-                                callBusy: callBusy,
                                 onOpenSpace: () {
                                   final spaceId = pickString(
                                     thread,
@@ -552,10 +499,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                   if (!context.mounted) return;
                                   _refreshThreadData();
                                 },
-                                onStartAudio: () =>
-                                    _startLive(thread: thread, kind: 'AUDIO'),
-                                onStartVideo: () =>
-                                    _startLive(thread: thread, kind: 'VIDEO'),
                               );
 
                               if (wide) {
@@ -1309,23 +1252,15 @@ class _ThreadConversationPanel extends StatelessWidget {
 class _ThreadSideRail extends StatelessWidget {
   const _ThreadSideRail({
     required this.threadAsync,
-    required this.liveState,
     required this.threadContext,
-    required this.callBusy,
     this.onOpenSpace,
     this.onOpenInvites,
-    this.onStartAudio,
-    this.onStartVideo,
   });
 
   final AsyncValue<Map<String, dynamic>> threadAsync;
-  final RealtimeState liveState;
   final CorrespondenceThreadContext threadContext;
-  final bool callBusy;
   final VoidCallback? onOpenSpace;
   final Future<void> Function()? onOpenInvites;
-  final Future<void> Function()? onStartAudio;
-  final Future<void> Function()? onStartVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -1339,16 +1274,11 @@ class _ThreadSideRail extends StatelessWidget {
       ),
       data: (thread) {
         final participants = CorrespondenceIdentity.extractParticipants(thread);
-        final joinedCount = liveState.participants.where((p) => p.isPresent).length;
 
         if (threadContext.isDirect) {
           return _DirectConversationRail(
             thread: thread,
             threadContext: threadContext,
-            joinedCount: joinedCount,
-            callBusy: callBusy,
-            onStartAudio: onStartAudio,
-            onStartVideo: onStartVideo,
           );
         }
 
@@ -1357,10 +1287,6 @@ class _ThreadSideRail extends StatelessWidget {
             thread: thread,
             threadContext: threadContext,
             participants: participants,
-            joinedCount: joinedCount,
-            callBusy: callBusy,
-            onStartAudio: onStartAudio,
-            onStartVideo: onStartVideo,
           );
         }
 
@@ -1368,12 +1294,8 @@ class _ThreadSideRail extends StatelessWidget {
           thread: thread,
           threadContext: threadContext,
           participants: participants,
-          joinedCount: joinedCount,
-          callBusy: callBusy,
           onOpenSpace: onOpenSpace,
           onOpenInvites: onOpenInvites,
-          onStartAudio: onStartAudio,
-          onStartVideo: onStartVideo,
         );
       },
     );
@@ -1384,65 +1306,37 @@ class _DirectConversationRail extends StatelessWidget {
   const _DirectConversationRail({
     required this.thread,
     required this.threadContext,
-    required this.joinedCount,
-    required this.callBusy,
-    this.onStartAudio,
-    this.onStartVideo,
   });
 
   final Map<String, dynamic> thread;
   final CorrespondenceThreadContext threadContext;
-  final int joinedCount;
-  final bool callBusy;
-  final Future<void> Function()? onStartAudio;
-  final Future<void> Function()? onStartVideo;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AuraCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Profile brief', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s12),
-              AuraAvatar(
-                name: threadContext.title,
-                imageUrl: threadContext.avatarUrl,
-                size: 52,
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              Text(threadContext.title, style: AuraText.subtitle),
-              if (threadContext.subtitle.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s6),
-                Text(threadContext.subtitle, style: AuraText.muted),
-              ],
-              if (threadContext.activityWeight.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s6),
-                Text(threadContext.activityWeight, style: AuraText.small),
-              ],
-              const SizedBox(height: AuraSpace.s12),
-              Text(
-                joinedCount > 0
-                    ? 'Live presence detected now.'
-                    : 'No active live presence yet.',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            ],
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Profile brief', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s12),
+          AuraAvatar(
+            name: threadContext.title,
+            imageUrl: threadContext.avatarUrl,
+            size: 52,
           ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        _ThreadLiveCard(
-          label: 'Live status',
-          joinedCount: joinedCount,
-          callBusy: callBusy,
-          onStartAudio: onStartAudio,
-          onStartVideo: onStartVideo,
-        ),
-      ],
+          const SizedBox(height: AuraSpace.s12),
+          Text(threadContext.title, style: AuraText.subtitle),
+          if (threadContext.subtitle.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(threadContext.subtitle, style: AuraText.muted),
+          ],
+          if (threadContext.activityWeight.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(threadContext.activityWeight, style: AuraText.small),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1452,76 +1346,55 @@ class _GroupConversationRail extends StatelessWidget {
     required this.thread,
     required this.threadContext,
     required this.participants,
-    required this.joinedCount,
-    required this.callBusy,
-    this.onStartAudio,
-    this.onStartVideo,
   });
 
   final Map<String, dynamic> thread;
   final CorrespondenceThreadContext threadContext;
   final List<Map<String, dynamic>> participants;
-  final int joinedCount;
-  final bool callBusy;
-  final Future<void> Function()? onStartAudio;
-  final Future<void> Function()? onStartVideo;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AuraCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Participants', style: AuraText.title),
-              const SizedBox(height: AuraSpace.s12),
-              Text(
-                threadContext.participantSummary.isNotEmpty
-                    ? threadContext.participantSummary
-                    : '${participants.length} participants',
-                style: AuraText.body,
-              ),
-              if (threadContext.roleSummary.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s6),
-                Text(threadContext.roleSummary, style: AuraText.small),
-              ],
-              if (threadContext.activityWeight.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s6),
-                Text(threadContext.activityWeight, style: AuraText.small),
-              ],
-              const SizedBox(height: AuraSpace.s12),
-              Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: participants
-                    .take(4)
-                    .map(
-                      (participant) => AuraStatusChip(
-                        label: CorrespondenceIdentity.identityLine(
-                          participant,
-                          preferHandle: false,
-                        ),
-                        backgroundColor: AuraSurface.subtle,
-                        textColor: AuraSurface.ink,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+    return AuraCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Participants', style: AuraText.title),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            threadContext.participantSummary.isNotEmpty
+                ? threadContext.participantSummary
+                : '${participants.length} participants',
+            style: AuraText.body,
           ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        _ThreadLiveCard(
-          label: 'Live status',
-          joinedCount: joinedCount,
-          callBusy: callBusy,
-          onStartAudio: onStartAudio,
-          onStartVideo: onStartVideo,
-        ),
-      ],
+          if (threadContext.roleSummary.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(threadContext.roleSummary, style: AuraText.small),
+          ],
+          if (threadContext.activityWeight.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(threadContext.activityWeight, style: AuraText.small),
+          ],
+          const SizedBox(height: AuraSpace.s12),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: participants
+                .take(4)
+                .map(
+                  (participant) => AuraStatusChip(
+                    label: CorrespondenceIdentity.identityLine(
+                      participant,
+                      preferHandle: false,
+                    ),
+                    backgroundColor: AuraSurface.subtle,
+                    textColor: AuraSurface.ink,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1531,23 +1404,15 @@ class _SpaceThreadRail extends StatelessWidget {
     required this.thread,
     required this.threadContext,
     required this.participants,
-    required this.joinedCount,
-    required this.callBusy,
     this.onOpenSpace,
     this.onOpenInvites,
-    this.onStartAudio,
-    this.onStartVideo,
   });
 
   final Map<String, dynamic> thread;
   final CorrespondenceThreadContext threadContext;
   final List<Map<String, dynamic>> participants;
-  final int joinedCount;
-  final bool callBusy;
   final VoidCallback? onOpenSpace;
   final Future<void> Function()? onOpenInvites;
-  final Future<void> Function()? onStartAudio;
-  final Future<void> Function()? onStartVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -1607,14 +1472,6 @@ class _SpaceThreadRail extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: AuraSpace.s12),
-        _ThreadLiveCard(
-          label: 'Live status',
-          joinedCount: joinedCount,
-          callBusy: callBusy,
-          onStartAudio: onStartAudio,
-          onStartVideo: onStartVideo,
-        ),
         if (spaceId.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s12),
           AuraCard(
@@ -1646,63 +1503,6 @@ class _SpaceThreadRail extends StatelessWidget {
   }
 }
 
-class _ThreadLiveCard extends StatelessWidget {
-  const _ThreadLiveCard({
-    required this.label,
-    required this.joinedCount,
-    required this.callBusy,
-    this.onStartAudio,
-    this.onStartVideo,
-  });
-
-  final String label;
-  final int joinedCount;
-  final bool callBusy;
-  final Future<void> Function()? onStartAudio;
-  final Future<void> Function()? onStartVideo;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AuraText.title),
-          const SizedBox(height: AuraSpace.s10),
-          Text(
-            joinedCount > 0
-                ? 'Live participants present now.'
-                : 'No one is currently joined.',
-            style: AuraText.body,
-          ),
-          if (onStartAudio != null || onStartVideo != null) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Wrap(
-              spacing: AuraSpace.s10,
-              runSpacing: AuraSpace.s10,
-              children: [
-                if (onStartAudio != null)
-                  AuraSecondaryButton(
-                    label: 'Audio call',
-                    icon: Icons.call_rounded,
-                    onPressed: callBusy ? null : () => onStartAudio!(),
-                  ),
-                if (onStartVideo != null)
-                  AuraSecondaryButton(
-                    label: 'Video call',
-                    icon: Icons.videocam_rounded,
-                    onPressed: callBusy ? null : () => onStartVideo!(),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 String _threadScreenTitle(
   Map<String, dynamic> thread, {
   String? currentUserId,
@@ -1717,10 +1517,6 @@ List<Map<String, dynamic>> _extractParticipants(Map<String, dynamic> thread) {
   return CorrespondenceIdentity.extractParticipants(thread);
 }
 
-String _identityLabel(Map<String, dynamic> entity) {
-  return CorrespondenceIdentity.identityLabel(entity);
-}
-
 String _threadLiveSurfaceType(Map<String, dynamic> thread) {
   return 'THREAD';
 }
@@ -1729,226 +1525,72 @@ String _threadLiveSurfaceId(Map<String, dynamic> thread, String threadId) {
   return threadId;
 }
 
-bool _threadMatchesLiveState(
-  RealtimeState liveState,
-  Map<String, dynamic> thread,
-) {
-  final session = liveState.session;
-  if (session == null) return false;
-  final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
-  final expectedId = _threadLiveSurfaceId(
-    thread,
-    pickString(thread, const ['id', 'threadId']),
-  ).trim();
-  return session.surfaceType.name.trim().toLowerCase() == expectedType &&
-      (session.surfaceId ?? '').trim() == expectedId;
-}
-
-class _ThreadLiveDock extends StatelessWidget {
-  const _ThreadLiveDock({
-    required this.thread,
-    required this.liveState,
-    required this.onJoinLive,
-    required this.onLeaveLive,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
+class _StripIconButton extends StatelessWidget {
+  const _StripIconButton({
+    required this.icon,
+    required this.onTap,
+    this.tone,
   });
 
-  final Map<String, dynamic> thread;
-  final RealtimeState liveState;
-  final Future<void> Function() onJoinLive;
-  final Future<void> Function() onLeaveLive;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onToggleCamera;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
-    final belongsHere = _threadMatchesLiveState(liveState, thread);
-    final sessionId = _threadResolvedSessionId(
-      thread,
-      liveState,
-      pickString(thread, const ['id', 'threadId']),
-    );
-    final hasLive =
-        sessionId.isNotEmpty &&
-        (belongsHere ||
-            pickString(thread, const [
-              'liveSessionId',
-              'activeSessionId',
-            ]).isNotEmpty ||
-            pickNested(thread, const [
-              ['live', 'sessionId'],
-              ['activeLive', 'sessionId'],
-              ['realtime', 'sessionId'],
-            ]).isNotEmpty);
-    if (!hasLive) return const SizedBox.shrink();
-
-    final joinedCount = liveState.participants.where((p) => p.isPresent).length;
-    final startedByUserId = _threadStartedByUserId(thread, liveState);
-    final startedByEntity = _extractParticipants(thread)
-        .cast<Map<String, dynamic>?>()
-        .firstWhere((participant) {
-          if (participant == null) return false;
-          final id = pickString(participant, const [
-            'id',
-            '_id',
-            'userId',
-            'memberId',
-          ]);
-          return id.isNotEmpty && id == startedByUserId;
-        }, orElse: () => null);
-    final startedByName = startedByEntity == null
-        ? ''
-        : _identityLabel(startedByEntity);
-    final liveKind = _threadLiveKind(thread, liveState);
-    final hasVideoStage =
-        liveState.isJoined &&
-        (liveState.isVideoMode ||
-            (!liveState.isAudioMode &&
-                (liveState.localRenderer != null ||
-                    liveState.remoteRenderers.isNotEmpty ||
-                    liveState.participants.any(
-                      (p) => p.videoOn || p.screenOn,
-                    ))));
-    final hasAudioState = liveState.isJoined && !hasVideoStage;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ThreadStatusStrip(
-          joinedCount: joinedCount,
-          isJoined: liveState.isJoined,
-          isBusy: liveState.isBusy,
-          microphoneEnabled: liveState.microphoneEnabled,
-          cameraEnabled: liveState.cameraEnabled,
-          liveLabel: startedByName.isNotEmpty
-              ? (liveState.isJoined
-                    ? '$startedByName · ${liveKind == 'video' ? 'video' : 'audio'}'
-                    : '$startedByName is calling')
-              : (liveKind == 'video' ? 'Video call' : 'Audio call'),
-          liveDetail: joinedCount > 0
-              ? (joinedCount == 1 ? '1 joined' : '$joinedCount joined')
-              : 'Waiting for response',
-          connectionStatus: liveState.connectionStatus,
-          joinState: liveState.joinState,
-          onJoin: onJoinLive,
-          onLeave: onLeaveLive,
-          onToggleMicrophone: onToggleMicrophone,
-          onToggleCamera: hasVideoStage ? onToggleCamera : null,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: tone ?? Colors.white),
         ),
-        if (hasAudioState) ...[
-          const SizedBox(height: AuraSpace.s12),
-          _ThreadAudioStage(
-            participants: liveState.participants,
-            microphoneEnabled: liveState.microphoneEnabled,
-            onToggleMicrophone: onToggleMicrophone,
-            onLeave: onLeaveLive,
-          ),
-        ],
-        if (hasVideoStage) ...[
-          const SizedBox(height: AuraSpace.s12),
-          _ThreadVideoStage(
-            localRenderer: liveState.localRenderer,
-            remoteRenderers: liveState.remoteRenderers,
-            participants: liveState.participants,
-            microphoneEnabled: liveState.microphoneEnabled,
-            cameraEnabled: liveState.cameraEnabled,
-            onToggleMicrophone: onToggleMicrophone,
-            onToggleCamera: onToggleCamera,
-            onLeave: onLeaveLive,
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
 
-class _ThreadStatusStrip extends StatelessWidget {
-  const _ThreadStatusStrip({
-    required this.joinedCount,
-    required this.isJoined,
-    required this.isBusy,
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    required this.liveLabel,
-    required this.liveDetail,
-    required this.connectionStatus,
-    required this.joinState,
+class _ConversationCallCard extends StatelessWidget {
+  const _ConversationCallCard({
+    required this.sessionId,
+    required this.liveState,
+    required this.callBusy,
     required this.onJoin,
     required this.onLeave,
-    required this.onToggleMicrophone,
-    this.onToggleCamera,
+    required this.onReturn,
   });
 
-  final int joinedCount;
-  final bool isJoined;
-  final bool isBusy;
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final String liveLabel;
-  final String liveDetail;
-  final RealtimeConnectionStatus connectionStatus;
-  final RealtimeJoinState joinState;
+  final String sessionId;
+  final RealtimeState liveState;
+  final bool callBusy;
   final Future<void> Function() onJoin;
   final Future<void> Function() onLeave;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function()? onToggleCamera;
-
-  String get _stateLabel {
-    switch (joinState) {
-      case RealtimeJoinState.joining:
-        return 'Connecting...';
-      case RealtimeJoinState.requested:
-        return 'Waiting for approval...';
-      case RealtimeJoinState.rejected:
-        return 'Call declined';
-      case RealtimeJoinState.removed:
-        return 'You were removed';
-      case RealtimeJoinState.banned:
-        return 'Banned from session';
-      case RealtimeJoinState.locked:
-        return 'Room is locked';
-      case RealtimeJoinState.failed:
-        return 'Call failed';
-      default:
-        break;
-    }
-    if (connectionStatus == RealtimeConnectionStatus.reconnecting) {
-      return 'Reconnecting...';
-    }
-    if (connectionStatus == RealtimeConnectionStatus.error) {
-      return 'Connection error';
-    }
-    return '';
-  }
-
-  Color get _dotColor {
-    if (isJoined) return AuraSurface.goodInk;
-    if (joinState == RealtimeJoinState.joining ||
-        connectionStatus == RealtimeConnectionStatus.connecting ||
-        connectionStatus == RealtimeConnectionStatus.reconnecting) {
-      return AuraSurface.accent;
-    }
-    if (joinState == RealtimeJoinState.rejected ||
-        joinState == RealtimeJoinState.removed ||
-        joinState == RealtimeJoinState.failed ||
-        connectionStatus == RealtimeConnectionStatus.error) {
-      return AuraSurface.dangerInk;
-    }
-    return AuraSurface.muted;
-  }
+  final VoidCallback onReturn;
 
   @override
   Widget build(BuildContext context) {
-    final stateLabel = _stateLabel;
-    final showStateLabel = stateLabel.isNotEmpty;
-    final showJoinBtn = !isJoined &&
-        joinState != RealtimeJoinState.joining &&
-        joinState != RealtimeJoinState.requested &&
-        joinState != RealtimeJoinState.rejected &&
-        joinState != RealtimeJoinState.removed &&
-        joinState != RealtimeJoinState.failed &&
-        joinState != RealtimeJoinState.banned;
+    if (sessionId.isEmpty) return const SizedBox.shrink();
+
+    final isJoined = liveState.isJoined;
+    final isBusy = liveState.isBusy || callBusy;
+    final isVideo = liveState.isVideoMode;
+
+    final dotColor = isJoined
+        ? AuraSurface.goodInk
+        : (isBusy ? AuraSurface.accent : AuraSurface.muted);
+
+    final statusText = isBusy
+        ? 'Connecting…'
+        : isJoined
+            ? (isVideo ? 'Video call in progress' : 'Audio call in progress')
+            : (isVideo ? 'Video call started' : 'Audio call started');
 
     return Container(
       width: double.infinity,
@@ -1963,495 +1605,38 @@ class _ThreadStatusStrip extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: _dotColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: AuraSpace.s10),
+          const SizedBox(width: AuraSpace.s8),
+          Icon(
+            isVideo ? Icons.videocam_rounded : Icons.mic_rounded,
+            size: 16,
+            color: AuraSurface.accentText,
+          ),
+          const SizedBox(width: AuraSpace.s8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  showStateLabel ? stateLabel : liveLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (!showStateLabel && liveDetail.trim().isNotEmpty)
-                  Text(
-                    liveDetail,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
-                  ),
-              ],
+            child: Text(
+              statusText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.small.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          const SizedBox(width: AuraSpace.s10),
-          if (showJoinBtn)
-            _StripIconButton(
-              icon: Icons.login_rounded,
-              enabled: !isBusy,
-              onTap: () => onJoin(),
-            ),
+          const SizedBox(width: AuraSpace.s8),
           if (isJoined) ...[
-            _StripIconButton(
-              icon: microphoneEnabled
-                  ? Icons.mic_off_rounded
-                  : Icons.mic_rounded,
-              onTap: () => onToggleMicrophone(),
-            ),
-            if (onToggleCamera != null) ...[
-              const SizedBox(width: AuraSpace.s8),
-              _StripIconButton(
-                icon: cameraEnabled
-                    ? Icons.videocam_off_rounded
-                    : Icons.videocam_rounded,
-                onTap: () => onToggleCamera!(),
-              ),
-            ],
+            _StripIconButton(icon: Icons.open_in_new_rounded, onTap: onReturn),
             const SizedBox(width: AuraSpace.s8),
             _StripIconButton(
               icon: Icons.call_end_rounded,
               tone: AuraSurface.dangerInk,
               onTap: () => onLeave(),
             ),
-          ],
+          ] else if (!isBusy)
+            _StripIconButton(icon: Icons.call_rounded, onTap: () => onJoin()),
         ],
-      ),
-    );
-  }
-}
-
-class _StripIconButton extends StatelessWidget {
-  const _StripIconButton({
-    required this.icon,
-    required this.onTap,
-    this.enabled = true,
-    this.tone,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool enabled;
-  final Color? tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = enabled ? (tone ?? Colors.white) : Colors.white38;
-    return MouseRegion(
-      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: enabled ? onTap : null,
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: color),
-        ),
-      ),
-    );
-  }
-}
-
-class _ThreadAudioStage extends StatelessWidget {
-  const _ThreadAudioStage({
-    required this.participants,
-    required this.microphoneEnabled,
-    required this.onToggleMicrophone,
-    required this.onLeave,
-  });
-
-  final List<RealtimeParticipant> participants;
-  final bool microphoneEnabled;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onLeave;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: participants.isEmpty
-                ? const <Widget>[]
-                : participants
-                      .map((p) => _ThreadParticipantChip(participant: p))
-                      .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreadParticipantChip extends StatelessWidget {
-  const _ThreadParticipantChip({required this.participant});
-
-  final RealtimeParticipant participant;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = participant.isHost ? 'Host' : 'Member';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: participant.isPresent
-                  ? AuraSurface.goodInk
-                  : AuraSurface.faint,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-          ),
-          if (participant.audioOn ||
-              participant.videoOn ||
-              participant.screenOn) ...[
-            const SizedBox(width: 8),
-            Icon(
-              participant.screenOn
-                  ? Icons.screen_share_rounded
-                  : participant.videoOn
-                  ? Icons.videocam_rounded
-                  : Icons.mic_rounded,
-              size: 14,
-              color: AuraSurface.muted,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ThreadVideoStage extends StatelessWidget {
-  const _ThreadVideoStage({
-    required this.localRenderer,
-    required this.remoteRenderers,
-    required this.participants,
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-    required this.onLeave,
-  });
-
-  final RTCVideoRenderer? localRenderer;
-  final Map<String, RTCVideoRenderer> remoteRenderers;
-  final List<RealtimeParticipant> participants;
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onToggleCamera;
-  final Future<void> Function() onLeave;
-
-  @override
-  Widget build(BuildContext context) {
-    final firstRemoteEntry =
-        remoteRenderers.isEmpty ? null : remoteRenderers.entries.first;
-    final firstRemoteParticipant = firstRemoteEntry == null
-        ? null
-        : participants.cast<RealtimeParticipant?>().firstWhere(
-            (p) =>
-                p?.runtimeDeviceId == firstRemoteEntry.key ||
-                p?.userId == firstRemoteEntry.key,
-            orElse: () => null,
-          );
-    final remoteLabel =
-        firstRemoteParticipant?.isHost == true ? 'Host' : 'Member';
-    final extraRemotes = remoteRenderers.length > 1
-        ? Map.fromEntries(remoteRenderers.entries.skip(1))
-        : <String, RTCVideoRenderer>{};
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final stageH = constraints.maxWidth < 600
-            ? 260.0
-            : constraints.maxWidth < 960
-            ? 320.0
-            : 380.0;
-        return SizedBox(
-          height: stageH,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            child: Stack(
-              children: [
-                // Primary remote — full stage
-                Positioned.fill(
-                  child: Container(
-                    color: const Color(0xFF0D1117),
-                    child: firstRemoteEntry != null
-                        ? RTCVideoView(
-                            firstRemoteEntry.value,
-                            objectFit: RTCVideoViewObjectFit
-                                .RTCVideoViewObjectFitContain,
-                          )
-                        : const _CallStatePlaceholder(),
-                  ),
-                ),
-                // Remote label
-                if (firstRemoteEntry != null)
-                  Positioned(
-                    left: 10,
-                    top: 10,
-                    child: _VideoLabel(label: remoteLabel),
-                  ),
-                // Extra remote thumbnails
-                if (extraRemotes.isNotEmpty)
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: _ExtraParticipantsPip(renderers: extraRemotes),
-                  ),
-                // Local PiP — bottom right, above controls
-                if (localRenderer != null)
-                  Positioned(
-                    right: 10,
-                    bottom: 58,
-                    child: _LocalPip(renderer: localRenderer!),
-                  ),
-                // Floating controls — bottom centre
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 10,
-                  child: Center(
-                    child: _FloatingCallControls(
-                      microphoneEnabled: microphoneEnabled,
-                      cameraEnabled: cameraEnabled,
-                      onToggleMicrophone: onToggleMicrophone,
-                      onToggleCamera: onToggleCamera,
-                      onLeave: onLeave,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _CallStatePlaceholder extends StatelessWidget {
-  const _CallStatePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.person_outline_rounded, size: 48, color: Color(0x99FFFFFF)),
-        SizedBox(height: 8),
-        Text(
-          'Waiting for video...',
-          style: TextStyle(color: Color(0x99FFFFFF), fontSize: 12),
-        ),
-      ],
-    );
-  }
-}
-
-class _VideoLabel extends StatelessWidget {
-  const _VideoLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _LocalPip extends StatelessWidget {
-  const _LocalPip({required this.renderer});
-
-  final RTCVideoRenderer renderer;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: SizedBox(
-        width: 96,
-        height: 72,
-          child: RTCVideoView(
-          renderer,
-          mirror: true,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
-        ),
-      ),
-    );
-  }
-}
-
-class _ExtraParticipantsPip extends StatelessWidget {
-  const _ExtraParticipantsPip({required this.renderers});
-
-  final Map<String, RTCVideoRenderer> renderers;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: renderers.values
-          .take(3)
-          .map(
-            (r) => Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 72,
-                  height: 54,
-                    child: RTCVideoView(
-                    r,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-}
-
-class _FloatingCallControls extends StatelessWidget {
-  const _FloatingCallControls({
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-    required this.onLeave,
-  });
-
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final Future<void> Function() onToggleMicrophone;
-  final Future<void> Function() onToggleCamera;
-  final Future<void> Function() onLeave;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ControlButton(
-            icon: microphoneEnabled
-                ? Icons.mic_off_rounded
-                : Icons.mic_rounded,
-            active: microphoneEnabled,
-            onTap: onToggleMicrophone,
-          ),
-          const SizedBox(width: 8),
-          _ControlButton(
-            icon: cameraEnabled
-                ? Icons.videocam_off_rounded
-                : Icons.videocam_rounded,
-            active: cameraEnabled,
-            onTap: onToggleCamera,
-          ),
-          const SizedBox(width: 8),
-          _ControlButton(
-            icon: Icons.call_end_rounded,
-            danger: true,
-            onTap: onLeave,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    required this.icon,
-    required this.onTap,
-    this.active = true,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final Future<void> Function() onTap;
-  final bool active;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = danger
-        ? AuraSurface.dangerInk
-        : active
-        ? Colors.white.withValues(alpha: 0.15)
-        : Colors.white.withValues(alpha: 0.08);
-    final iconColor = danger
-        ? Colors.white
-        : (active ? Colors.white : Colors.white70);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => onTap(),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Icon(icon, size: 20, color: iconColor),
-        ),
       ),
     );
   }

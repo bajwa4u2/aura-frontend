@@ -992,14 +992,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Message composer',
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
+                      const Spacer(),
                       if (_attachments.isNotEmpty)
                         Text(
                           '${_attachments.length} attachment${_attachments.length == 1 ? '' : 's'}',

@@ -49,7 +49,7 @@ class _MessagesData {
 // TAB ENUM
 // ─────────────────────────────────────────────────────────────────────────────
 
-enum _MessageTab { all, direct, spaces, invites, live }
+enum _MessageTab { all, direct, spaces, invites }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCREEN
@@ -217,13 +217,11 @@ class _MessagesHubScreenState extends ConsumerState<MessagesHubScreen> {
         _MessagesHeader(
           unreadCount: unreadCount,
           inviteCount: activeInvites.length,
-          liveCount: liveSessions.length,
         ),
         const SizedBox(height: AuraSpace.s16),
         _TabRow(
           tab: _tab,
           inviteCount: activeInvites.length,
-          liveCount: liveSessions.length,
           onTabChanged: (t) => setState(() => _tab = t),
         ),
         const SizedBox(height: AuraSpace.s16),
@@ -275,8 +273,6 @@ class _MessagesHubScreenState extends ConsumerState<MessagesHubScreen> {
         );
       case _MessageTab.invites:
         return _InvitesTab(invites: activeInvites);
-      case _MessageTab.live:
-        return _LiveTab(sessions: liveSessions);
     }
   }
 
@@ -336,12 +332,10 @@ class _MessagesHeader extends StatelessWidget {
   const _MessagesHeader({
     this.unreadCount = 0,
     this.inviteCount = 0,
-    this.liveCount = 0,
   });
 
   final int unreadCount;
   final int inviteCount;
-  final int liveCount;
 
   @override
   Widget build(BuildContext context) {
@@ -365,12 +359,6 @@ class _MessagesHeader extends StatelessWidget {
               backgroundColor: AuraSurface.goodBg,
               textColor: AuraSurface.goodInk,
             ),
-          if (liveCount > 0)
-            const AuraStatusChip(
-              label: 'Live now',
-              backgroundColor: AuraSurface.warnBg,
-              textColor: AuraSurface.warnInk,
-            ),
         ],
       ),
     );
@@ -385,13 +373,11 @@ class _TabRow extends StatelessWidget {
   const _TabRow({
     required this.tab,
     required this.inviteCount,
-    required this.liveCount,
     required this.onTabChanged,
   });
 
   final _MessageTab tab;
   final int inviteCount;
-  final int liveCount;
   final ValueChanged<_MessageTab> onTabChanged;
 
   @override
@@ -423,13 +409,6 @@ class _TabRow extends StatelessWidget {
             selected: tab == _MessageTab.invites,
             badge: inviteCount > 0,
             onTap: () => onTabChanged(_MessageTab.invites),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _TabPill(
-            label: liveCount > 0 ? 'Live ($liveCount)' : 'Live',
-            selected: tab == _MessageTab.live,
-            badge: liveCount > 0,
-            onTap: () => onTabChanged(_MessageTab.live),
           ),
         ],
       ),
@@ -627,34 +606,6 @@ class _InvitesTab extends StatelessWidget {
     }
 
     return _InviteCardList(invites: invites);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LIVE TAB
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LiveTab extends StatelessWidget {
-  const _LiveTab({required this.sessions});
-
-  final List<_LiveSessionItem> sessions;
-
-  @override
-  Widget build(BuildContext context) {
-    if (sessions.isEmpty) {
-      return AuraEmptyState(
-        title: 'No live sessions',
-        body: 'Active calls and live rooms will appear here.',
-        icon: Icons.videocam_outlined,
-        action: AuraSecondaryButton(
-          label: 'Live rooms',
-          icon: Icons.videocam_rounded,
-          onPressed: () => context.push('/realtime'),
-        ),
-      );
-    }
-
-    return _LiveSessionList(sessions: sessions);
   }
 }
 
