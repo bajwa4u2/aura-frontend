@@ -15,6 +15,7 @@ import '../../../core/ui/aura_text.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
+import '../../../core/services/call_window_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_state.dart';
 import 'thread/thread_composer.dart';
@@ -265,9 +266,15 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         }..removeWhere(
           (key, value) => value == null || value.toString().trim().isEmpty,
         ),
+        joinAfterCreate: false,
       );
       if (!mounted) return;
-      context.push('/realtime/$sessionId');
+      final windowSvc = ref.read(callWindowServiceProvider);
+      windowSvc.openCall(sessionId);
+      if (!windowSvc.isWindowOpen) {
+        // Popup blocked — join in this tab; PiP will show on messages.
+        await controller.join(sessionId);
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -433,15 +440,24 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             onJoin: () async {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              await ref.read(realtimeControllerProvider.notifier).join(sid);
                               if (!context.mounted) return;
-                              context.push('/realtime/$sid');
+                              final windowSvc = ref.read(callWindowServiceProvider);
+                              windowSvc.openCall(sid);
+                              if (!windowSvc.isWindowOpen) {
+                                // Popup blocked — join in this tab; PiP shows.
+                                await ref.read(realtimeControllerProvider.notifier).join(sid);
+                              }
                             },
                             onLeave: () async => ref.read(realtimeControllerProvider.notifier).leave(),
                             onReturn: () {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              context.push('/realtime/$sid');
+                              final windowSvc = ref.read(callWindowServiceProvider);
+                              if (windowSvc.isWindowOpen) {
+                                windowSvc.focusCall();
+                              } else {
+                                context.push('/realtime/$sid');
+                              }
                             },
                           ),
                           const SizedBox(height: AuraSpace.s16),

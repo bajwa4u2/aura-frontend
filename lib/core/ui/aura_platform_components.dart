@@ -735,11 +735,15 @@ class AuraBadge extends StatelessWidget {
             Icon(icon, size: AuraIconSize.xs, color: textColor),
             const SizedBox(width: AuraSpace.s6),
           ],
-          Text(
-            label,
-            style: AuraText.label.copyWith(
-              color: textColor,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.label.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

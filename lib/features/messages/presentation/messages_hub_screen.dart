@@ -15,6 +15,7 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../correspondence/data/correspondence_identity.dart';
 import '../../correspondence/data/spaces_repository.dart';
 import '../../correspondence/data/threads_repository.dart';
+import '../../../core/services/call_window_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../updates/providers.dart';
 
@@ -990,13 +991,13 @@ class _LiveSessionList extends StatelessWidget {
   }
 }
 
-class _LiveSessionRow extends StatelessWidget {
+class _LiveSessionRow extends ConsumerWidget {
   const _LiveSessionRow({required this.session});
 
   final _LiveSessionItem session;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: InkWell(
@@ -1007,7 +1008,11 @@ class _LiveSessionRow extends StatelessWidget {
               '/me/correspondence/${session.spaceId}/thread/${session.threadId}/live/${session.sessionId}',
             );
           } else if (session.sessionId.isNotEmpty) {
-            context.push('/realtime/${session.sessionId}');
+            final windowSvc = ref.read(callWindowServiceProvider);
+            windowSvc.openCall(session.sessionId);
+            if (!windowSvc.isWindowOpen) {
+              context.push('/realtime/${session.sessionId}');
+            }
           }
         },
         child: Padding(

@@ -15,6 +15,7 @@ import '../../updates/incoming_call_bridge.dart';
 import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_state.dart';
+import 'widgets/floating_call_widget.dart';
 
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   const AuraIncomingLiveLayer({super.key, required this.child});
@@ -297,7 +298,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final item = _currentIncoming(currentPath, allItems, liveState);
     if (item == null) {
       _cancelRingTimer();
-      return widget.child;
+      // Still wrap in a Stack so the floating call PiP persists across routes.
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          widget.child,
+          const FloatingCallWidget(),
+        ],
+      );
     }
 
     _ensureRingTimer(item);
@@ -334,8 +342,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final ringLabel = isVideo ? 'Incoming video call' : 'Incoming audio call';
 
     return Stack(
+      fit: StackFit.expand,
       children: [
         widget.child,
+        // Floating call PiP (hidden below the incoming call overlay).
+        const FloatingCallWidget(),
         // Blurred full-screen backdrop
         Positioned.fill(
           child: BackdropFilter(

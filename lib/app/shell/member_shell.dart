@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ui/aura_design_system.dart';
@@ -7,7 +6,6 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
-import '../../features/realtime/application/realtime_providers.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import 'public_shell.dart';
 import 'shell_header_tools.dart';
@@ -43,7 +41,7 @@ const LinearGradient _institutionNavGradient = LinearGradient(
 // MEMBER SHELL
 // ─────────────────────────────────────────────────────────────────────────────
 
-class MemberShell extends ConsumerWidget {
+class MemberShell extends StatelessWidget {
   const MemberShell({super.key, required this.child});
 
   final Widget child;
@@ -106,11 +104,10 @@ class MemberShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
     final selectedIndex = _indexForPath(path);
-    final realtimeState = ref.watch(realtimeControllerProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -130,14 +127,6 @@ class MemberShell extends ConsumerWidget {
                     isDesktop: isDesktop,
                     isTablet: isTablet,
                   ),
-                  if (realtimeState.isJoined &&
-                      realtimeState.sessionId != null &&
-                      realtimeState.sessionId!.isNotEmpty &&
-                      !path.startsWith('/realtime'))
-                    _ActiveCallBar(
-                      sessionId: realtimeState.sessionId!,
-                      isVideo: realtimeState.isVideoMode,
-                    ),
                   Expanded(
                     child: Row(
                       children: [
@@ -164,108 +153,6 @@ class MemberShell extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ACTIVE CALL RETURN BANNER
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ActiveCallBar extends ConsumerWidget {
-  const _ActiveCallBar({required this.sessionId, required this.isVideo});
-
-  final String sessionId;
-  final bool isVideo;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E2235),
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s8,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF4ADE80),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          Icon(
-            isVideo ? Icons.videocam_rounded : Icons.mic_rounded,
-            size: 16,
-            color: AuraSurface.accentText,
-          ),
-          const SizedBox(width: AuraSpace.s6),
-          Expanded(
-            child: Text(
-              isVideo ? 'Video call in progress' : 'Audio call in progress',
-              style: AuraText.small.copyWith(
-                color: AuraSurface.ink,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          InkWell(
-            onTap: () => context.push('/realtime/$sessionId'),
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s12,
-                vertical: AuraSpace.s4,
-              ),
-              decoration: BoxDecoration(
-                gradient: AuraGradients.accent,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                boxShadow: AuraShadows.glow,
-              ),
-              child: Text(
-                'Return',
-                style: AuraText.small.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          InkWell(
-            onTap: () => ref.read(realtimeControllerProvider.notifier).leave(),
-            borderRadius: BorderRadius.circular(AuraRadius.r10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s10,
-                vertical: AuraSpace.s4,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0x22FF5555),
-                borderRadius: BorderRadius.circular(AuraRadius.r10),
-                border: Border.all(color: const Color(0x44FF5555)),
-              ),
-              child: Text(
-                'End',
-                style: AuraText.small.copyWith(
-                  color: const Color(0xFFFF7070),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
