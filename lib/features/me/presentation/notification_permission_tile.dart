@@ -55,6 +55,11 @@ class _BrowserNotificationsSectionState
   _SubState _state = _SubState.loading;
   bool _busy = false;
 
+  // TODO: remove after verification — push diagnostics
+  bool? _diagVapidConfigured;
+  bool? _diagPushSupported;
+  String? _diagPermission;
+
   @override
   void initState() {
     super.initState();
@@ -70,24 +75,44 @@ class _BrowserNotificationsSectionState
   ///  - permission default → defaultPerm
   ///  - permission granted → check if an active subscription actually exists
   Future<void> _resolveInitialState() async {
-    if (AppConfig.vapidPublicKey.isEmpty) {
+    // TODO: remove after verification — push diagnostics
+    final vapidConfigured = AppConfig.vapidPublicKey.isNotEmpty;
+    final pushSupported = WebPushService.isSupported;
+    final permVal = WebPushService.permission;
+    debugPrint(
+      'push diagnostics: vapidConfigured=$vapidConfigured '
+      'supported=$pushSupported '
+      'permission=$permVal '
+      'hasSubscription=pending',
+    );
+    if (mounted) {
+      setState(() {
+        _diagVapidConfigured = vapidConfigured;
+        _diagPushSupported = pushSupported;
+        _diagPermission = permVal;
+      });
+    }
+
+    if (!vapidConfigured) {
+      debugPrint('push diagnostics: → noVapid (build did not receive --dart-define=AURA_WEB_PUSH_VAPID_PUBLIC_KEY)');
       if (mounted) setState(() => _state = _SubState.noVapid);
       return;
     }
 
-    if (!WebPushService.isSupported) {
+    if (!pushSupported) {
+      debugPrint('push diagnostics: → unsupported');
       if (mounted) setState(() => _state = _SubState.unsupported);
       return;
     }
 
-    final perm = WebPushService.permission;
-
-    if (perm == 'denied') {
+    if (permVal == 'denied') {
+      debugPrint('push diagnostics: → blocked');
       if (mounted) setState(() => _state = _SubState.blocked);
       return;
     }
 
-    if (perm == 'default' || perm == 'unavailable') {
+    if (permVal == 'default' || permVal == 'unavailable') {
+      debugPrint('push diagnostics: → defaultPerm (should show Enable button)');
       if (mounted) setState(() => _state = _SubState.defaultPerm);
       return;
     }
@@ -95,11 +120,11 @@ class _BrowserNotificationsSectionState
     // Permission is 'granted' — verify that a subscription actually exists.
     // This fails silently in InPrivate / hardened browsers.
     final sub = await WebPushService.getExistingSubscription();
+    final hasSub = sub != null && sub.endpoint.isNotEmpty;
+    debugPrint('push diagnostics: permission=granted hasSubscription=$hasSub → ${hasSub ? 'active' : 'failed'}');
     if (!mounted) return;
     setState(() {
-      _state = (sub != null && sub.endpoint.isNotEmpty)
-          ? _SubState.active
-          : _SubState.failed;
+      _state = hasSub ? _SubState.active : _SubState.failed;
     });
   }
 
@@ -207,6 +232,40 @@ class _BrowserNotificationsSectionState
             ],
           ),
         ),
+        // TODO: remove after verification — visible push diagnostics
+        if (_diagVapidConfigured != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AuraSpace.s8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s12,
+                vertical: AuraSpace.s10,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.elevated,
+                borderRadius: BorderRadius.circular(AuraRadius.r10),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VAPID configured: $_diagVapidConfigured',
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
+                  Text(
+                    'Push supported: $_diagPushSupported',
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
+                  Text(
+                    'Permission: ${_diagPermission ?? 'unknown'}',
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
+                ],
+              ),
+            ),
+          ),
         if (_state == _SubState.blocked)
           Padding(
             padding: const EdgeInsets.only(top: AuraSpace.s8),
