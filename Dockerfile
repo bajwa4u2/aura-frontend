@@ -5,6 +5,7 @@ WORKDIR /app
 
 ARG API_BASE_URL
 ARG AURA_ADMIN_USER_IDS
+ARG AURA_WEB_PUSH_VAPID_PUBLIC_KEY
 
 ENV API_BASE_URL=${API_BASE_URL}
 ENV AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS}
@@ -14,7 +15,8 @@ COPY . .
 RUN flutter pub get
 RUN flutter build web --release \
   --dart-define=API_BASE_URL=${API_BASE_URL} \
-  --dart-define=AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS}
+  --dart-define=AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS} \
+  --dart-define=AURA_WEB_PUSH_VAPID_PUBLIC_KEY=${AURA_WEB_PUSH_VAPID_PUBLIC_KEY}
 
 # ---- runtime stage ----
 FROM nginx:alpine
