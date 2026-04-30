@@ -13,6 +13,7 @@ self.addEventListener('activate', function (event) {
 });
 
 self.addEventListener('push', function (event) {
+  console.log('[SW DIAG] push event received hasData=' + !!(event.data));
   event.waitUntil(handlePush(event));
 });
 
@@ -69,6 +70,11 @@ async function handlePush(event) {
 
   var deeplink = resolveDeeplink(data);
   var isCall = isCallNotification(data);
+  console.log('[SW DIAG] handlePush: title=' + title + ' isCall=' + isCall +
+    ' kind=' + (data.notificationKind || data.type || '') +
+    ' attention=' + (data.attention || (data.data && data.data.attention) || '') +
+    ' deeplink=' + deeplink +
+    ' tag=' + tag);
 
   // Store the full data blob so handleNotificationClick can route correctly.
   var notificationData = {
@@ -80,6 +86,7 @@ async function handlePush(event) {
     type: data.type || '',
   };
 
+  console.log('[SW DIAG] showNotification requireInteraction=' + isCall);
   return self.registration.showNotification(title, {
     body: body,
     icon: icon,
@@ -95,6 +102,7 @@ async function handlePush(event) {
 
 async function handleNotificationClick(event) {
   var nd = event.notification.data || {};
+  console.log('[SW DIAG] notificationclick kind=' + nd.notificationKind + ' deeplink=' + nd.deeplink);
   // Prefer the stored deeplink; fall back to origin root.
   var deeplink = nd.deeplink || '/';
 

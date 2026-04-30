@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
@@ -219,12 +220,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
+      debugPrint('DIAG createSession(ctrl): surfaceType=$surfaceType surfaceId=$surfaceId kind=$kind');
       final bundle = await _repository.createSession(
         surfaceType: surfaceType,
         surfaceId: surfaceId,
         kind: kind,
         metadata: metadata,
       );
+      debugPrint('DIAG createSession(ctrl): bundle.session.id=${bundle.session.id}');
       _applyBundle(bundle);
       await _forceNegotiationIfNeeded();
       final normalizedKind = kind.trim().toLowerCase();
@@ -237,6 +240,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
       return bundle.session.id;
     } catch (error) {
+      debugPrint('DIAG createSession(ctrl) ERROR: ${error.runtimeType}: $error');
       state = state.copyWith(
         isBusy: false,
         errorMessage: error.toString(),
@@ -359,6 +363,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     _joiningSessionId = trimmed;
+    debugPrint('DIAG join: connecting socket sessionId=$trimmed');
     await connect();
     _clearRtcConfiguration();
 
@@ -370,26 +375,33 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
+      debugPrint('DIAG join: hydrateSession start');
       await hydrateSession(trimmed);
+      debugPrint('DIAG join: hydrateSession done');
 
       final session = state.session;
       if (session == null) {
         throw StateError('Live session could not be loaded.');
       }
 
+      debugPrint('DIAG join: joinSession start surfaceType=${session.surfaceType} surfaceId=${session.surfaceId}');
       final joinedBundle = await _repository.joinSession(session);
+      debugPrint('DIAG join: joinSession done');
       _applyBundle(joinedBundle);
 
       await connect();
+      debugPrint('DIAG join: emitAck session:join');
       await _socketService.emitAck('session:join', <String, dynamic>{
         'sessionId': trimmed,
       });
+      debugPrint('DIAG join: emitAck done, calling _ensureMediaReady');
 
       // joinSession() returns and applies a fresh bundle — no need to hydrate
       // again here. The bundle cache is also busted by the POST so a subsequent
       // hydrateSession call would re-fetch; removing this avoids the extra round
       // trip and the isBusy flicker it caused.
       await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
+      debugPrint('DIAG join: _ensureMediaReady done mediaError=${state.mediaError}');
 
       state = state.copyWith(
         joinState: RealtimeJoinState.joined,
@@ -398,7 +410,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       );
       await _flushPendingOffers(refreshTurnCredentials: true);
       await _forceNegotiationIfNeeded();
+      debugPrint('DIAG join: completed successfully joinState=joined');
     } catch (error) {
+      debugPrint('DIAG join ERROR: ${error.runtimeType}: $error');
       state = state.copyWith(
         joinState: _mapJoinError(error),
         errorMessage: error.toString(),
@@ -810,19 +824,23 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
+      debugPrint('DIAG _ensureMediaReady: resolveRtcConfiguration refreshTurn=$refreshTurnCredentials');
       final configuration = await _resolveRtcConfiguration(
         sessionId,
         refreshTurnCredentials: refreshTurnCredentials,
       );
+      debugPrint('DIAG _ensureMediaReady: rtcConfig resolved keys=${configuration.keys.toList()}');
 
       final wantsAudio = state.policy?.audioAllowed ?? true;
       final wantsVideo = state.isVideoMode && (state.policy?.videoAllowed ?? true);
 
       if (!state.isMediaReady) {
+        debugPrint('DIAG _ensureMediaReady: ensureLocalMedia audio=$wantsAudio video=$wantsVideo');
         await _mediaService.ensureLocalMedia(
           audio: wantsAudio,
           video: wantsVideo,
         );
+        debugPrint('DIAG _ensureMediaReady: ensureLocalMedia done');
       }
 
       await _socketService.emitAck('session:audio.set', <String, dynamic>{
@@ -843,7 +861,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       _rtcConfiguration = configuration;
       _rtcConfigurationSessionId = sessionId;
+      debugPrint('DIAG _ensureMediaReady: complete isMediaReady=true');
     } catch (error) {
+      debugPrint('DIAG _ensureMediaReady SWALLOWED ERROR: ${error.runtimeType}: $error');
       state = state.copyWith(
         isMediaBusy: false,
         mediaError: error.toString(),

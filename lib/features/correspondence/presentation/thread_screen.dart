@@ -256,9 +256,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     setState(() => _callBusy = true);
     try {
       final controller = ref.read(realtimeControllerProvider.notifier);
+      final surfaceType = _threadLiveSurfaceType(thread);
+      final surfaceId = _threadLiveSurfaceId(thread, widget.threadId);
+      // DIAG: trace call start params
+      debugPrint('DIAG _startLive: kind=$kind surfaceType=$surfaceType surfaceId=$surfaceId threadId=${widget.threadId}');
       final sessionId = await controller.ensureCorrespondenceLive(
-        surfaceType: _threadLiveSurfaceType(thread),
-        surfaceId: _threadLiveSurfaceId(thread, widget.threadId),
+        surfaceType: surfaceType,
+        surfaceId: surfaceId,
         kind: kind,
         metadata: <String, dynamic>{
           'threadId': widget.threadId,
@@ -268,14 +272,24 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ),
         joinAfterCreate: false,
       );
+      // DIAG: ensureCorrespondenceLive returned
+      debugPrint('DIAG _startLive: ensureCorrespondenceLive returned sessionId=$sessionId');
       if (!mounted) return;
       final windowSvc = ref.read(callWindowServiceProvider);
       windowSvc.openCall(sessionId);
-      if (!windowSvc.isWindowOpen) {
+      final isOpen = windowSvc.isWindowOpen;
+      // DIAG: popup state after openCall
+      debugPrint('DIAG _startLive: openCall done isWindowOpen=$isOpen');
+      if (!isOpen) {
         // Popup blocked — join in this tab; PiP will show on messages.
+        debugPrint('DIAG _startLive: popup blocked, calling join() in main tab');
         await controller.join(sessionId);
+        debugPrint('DIAG _startLive: join() completed in main tab');
       }
-    } catch (_) {
+    } catch (e, st) {
+      // DIAG: log actual error that triggers the snackbar
+      debugPrint('DIAG _startLive ERROR: ${e.runtimeType}: $e');
+      debugPrint('DIAG _startLive STACK: ${st.toString().split('\n').take(6).join('\n')}');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
