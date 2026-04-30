@@ -111,6 +111,7 @@ class CorrespondenceLiveService {
     }
 
     for (final name in const <String>[
+      'call:incoming',
       'invite:created',
       'invite:updated',
       'space:member.joined',

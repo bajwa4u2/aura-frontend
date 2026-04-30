@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +95,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     if (_sending) return false;
     if (_recordingAudio) return false;
     if (_attachments.any((a) => a.uploading)) return false;
+    if (_attachments.any((a) => a.error != null)) return false;
     return _controller.text.trim().isNotEmpty || _attachments.isNotEmpty;
   }
 
@@ -365,11 +367,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       if (!mounted) return;
       setState(() {
         attachment.uploading = false;
-        attachment.error = '$e';
+        attachment.error = _toAttachmentError(e);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not upload attachment: $e')),
-      );
     }
   }
 
@@ -687,11 +686,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       if (!mounted) return;
       setState(() {
         attachment.uploading = false;
-        attachment.error = '$e';
+        attachment.error = _toAttachmentError(e);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not upload attachment: $e')),
-      );
     }
   }
 
@@ -1445,7 +1441,7 @@ class _AttachmentPreviewCard extends StatelessWidget {
             ? 'Uploading $progressPct%'
             : 'Uploading…')
         : attachment.error != null
-        ? 'Upload failed'
+        ? (attachment.error!)
         : _attachmentKindLabel(attachment.kind);
 
     return Container(
@@ -1958,7 +1954,7 @@ String _mediaKindValue(ThreadAttachmentKind kind) {
     case ThreadAttachmentKind.audio:
       return 'AUDIO';
     case ThreadAttachmentKind.document:
-      return 'DOCUMENT';
+      return 'IMAGE';
   }
 }
 
@@ -2014,4 +2010,17 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
   final frame = await codec.getNextFrame();
   final image = frame.image;
   return {'width': image.width, 'height': image.height};
+}
+
+String _toAttachmentError(Object error) {
+  if (error is DioException) {
+    final status = error.response?.statusCode;
+    if (status == 415) return 'File type not supported';
+    final data = error.response?.data;
+    if (data is Map) {
+      final msg = (data['message'] ?? data['error'])?.toString().trim() ?? '';
+      if (msg.isNotEmpty) return msg;
+    }
+  }
+  return 'Upload failed';
 }

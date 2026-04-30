@@ -9,7 +9,7 @@ import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import 'notifications_repository.dart';
 
-const Duration kNotificationsPollInterval = Duration(seconds: 45);
+const Duration kNotificationsPollInterval = Duration(seconds: 120);
 const Duration kNotificationsStaleAfter = Duration(seconds: 30);
 const int kNotificationsPageLimit = 30;
 

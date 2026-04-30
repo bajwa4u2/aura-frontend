@@ -264,6 +264,10 @@ class RealtimeRepository {
     await _dio.post('/realtime/sessions/$sessionId/join-request');
   }
 
+  Future<void> declineInvite(String sessionId) async {
+    await _safePost('/realtime/sessions/$sessionId/decline');
+  }
+
   Future<RealtimeSessionSnapshot> joinSession(RealtimeSession session) async {
     final id = session.id.trim();
     if (id.isEmpty) {
@@ -292,7 +296,8 @@ class RealtimeRepository {
       return loadSessionBundle(id, forceRefresh: true);
     }
 
-    throw StateError('Unable to determine join route for this live session.');
+    await _dio.post('/realtime/sessions/$id/join');
+    return loadSessionBundle(id, forceRefresh: true);
   }
 
   Future<void> respondToJoinRequest(

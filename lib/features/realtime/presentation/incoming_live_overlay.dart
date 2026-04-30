@@ -11,6 +11,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../updates/incoming_call_bridge.dart';
 import '../../updates/providers.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_state.dart';
@@ -166,10 +167,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _ringTimerNotificationId = id;
     _ringTimer = Timer(_ringTimeout, () {
       if (!mounted) return;
-      // Auto-dismiss: treat as declined locally so the overlay disappears.
       final sessionId = _resolveSessionId(item);
       if (id.isNotEmpty) _dismissedIds.add(id);
       if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
+      ref.read(incomingCallBridgeProvider.notifier).remove(id);
       setState(() => _joinError = null);
     });
   }
@@ -207,6 +208,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _dismissedSessionIds.add(sessionId);
     try {
       await ref.read(realtimeControllerProvider.notifier).join(sessionId);
+      ref.read(incomingCallBridgeProvider.notifier).remove(id);
       if (id.isNotEmpty) {
         await ref.read(notificationsControllerProvider.notifier).markRead(id);
       }
@@ -241,11 +243,24 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final sessionId = _resolveSessionId(item);
     if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
 
-    if (id.isNotEmpty) {
-      await ref.read(notificationsControllerProvider.notifier).markRead(id);
+    // Remove from socket bridge and dismiss overlay immediately.
+    ref.read(incomingCallBridgeProvider.notifier).remove(id);
+    if (mounted) setState(() => _joinError = null);
+
+    // Authoritative decline: awaited so the backend reflects the decision.
+    if (sessionId.isNotEmpty) {
+      try {
+        await ref.read(realtimeRepositoryProvider).declineInvite(sessionId);
+      } catch (_) {
+        // Local dismiss already applied; backend will clean up on session timeout.
+      }
     }
 
-    if (mounted) setState(() => _joinError = null);
+    if (id.isNotEmpty) {
+      try {
+        await ref.read(notificationsControllerProvider.notifier).markRead(id);
+      } catch (_) {}
+    }
   }
 
   void _dismissError(Map<String, dynamic> item) {
@@ -254,6 +269,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (id.isNotEmpty) _dismissedIds.add(id);
     final sessionId = _resolveSessionId(item);
     if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
+    ref.read(incomingCallBridgeProvider.notifier).remove(id);
     setState(() => _joinError = null);
   }
 
@@ -262,9 +278,23 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   @override
   Widget build(BuildContext context) {
     final notifications = ref.watch(notificationsControllerProvider);
+    final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);
     final currentPath = GoRouterState.of(context).uri.path;
-    final item = _currentIncoming(currentPath, notifications.items, liveState);
+    // Socket-first: bridge items precede poll items.
+    // Deduplicate by sessionId so a poll item never shadows its bridge twin.
+    final bridgeSessionIds = <String>{
+      for (final b in bridgeItems)
+        if (_resolveSessionId(b).isNotEmpty) _resolveSessionId(b),
+    };
+    final dedupedPollItems = notifications.items
+        .where((n) {
+          final sid = _resolveSessionId(n);
+          return sid.isEmpty || !bridgeSessionIds.contains(sid);
+        })
+        .toList();
+    final allItems = [...bridgeItems, ...dedupedPollItems];
+    final item = _currentIncoming(currentPath, allItems, liveState);
     if (item == null) {
       _cancelRingTimer();
       return widget.child;

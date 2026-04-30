@@ -133,8 +133,7 @@ class MemberShell extends ConsumerWidget {
                   if (realtimeState.isJoined &&
                       realtimeState.sessionId != null &&
                       realtimeState.sessionId!.isNotEmpty &&
-                      !path.startsWith('/realtime') &&
-                      !path.contains('/thread/'))
+                      !path.startsWith('/realtime'))
                     _ActiveCallBar(
                       sessionId: realtimeState.sessionId!,
                       isVideo: realtimeState.isVideoMode,
