@@ -385,7 +385,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         'sessionId': trimmed,
       });
 
-      await hydrateSession(trimmed);
+      // joinSession() returns and applies a fresh bundle — no need to hydrate
+      // again here. The bundle cache is also busted by the POST so a subsequent
+      // hydrateSession call would re-fetch; removing this avoids the extra round
+      // trip and the isBusy flicker it caused.
       await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
 
       state = state.copyWith(

@@ -233,6 +233,20 @@ class NotificationsController extends StateNotifier<NotificationsState>
         return;
       }
 
+      // 429 — rate-limited. Keep existing state and existing data visible.
+      // The Dio interceptor already records the backoff window; the next
+      // poll cycle will skip the request if still within that window.
+      if (statusCode == 429) {
+        if (!mounted) return;
+        state = state.copyWith(
+          isLoading: false,
+          isRefreshing: false,
+          isLoadingMore: false,
+          clearError: true,
+        );
+        return;
+      }
+
       if (!mounted) return;
       state = state.copyWith(
         isLoading: false,

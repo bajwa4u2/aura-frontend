@@ -9,6 +9,7 @@ class NotificationsRepository {
   final Dio _dio;
 
   static const Duration _cacheTtl = Duration(seconds: 8);
+  static const Duration _unreadTtl = Duration(seconds: 45);
 
   List<Map<String, dynamic>>? _cache;
   DateTime? _cacheAt;
@@ -16,11 +17,16 @@ class NotificationsRepository {
   Future<NotificationsPage>? _inFlight;
   final Set<String> _readInFlight = <String>{};
 
+  int? _unreadCache;
+  DateTime? _unreadCacheAt;
+
   void clearCache() {
     _cache = null;
     _cacheAt = null;
     _cacheNextCursor = null;
     _inFlight = null;
+    _unreadCache = null;
+    _unreadCacheAt = null;
   }
 
   Future<NotificationsPage> page({
@@ -93,13 +99,22 @@ class NotificationsRepository {
   }
 
   Future<int> unreadCount({bool forceRefresh = false}) async {
-    if (forceRefresh) {}
+    final now = DateTime.now();
+    if (!forceRefresh &&
+        _unreadCache != null &&
+        _unreadCacheAt != null &&
+        now.difference(_unreadCacheAt!) < _unreadTtl) {
+      return _unreadCache!;
+    }
+
     final res = await _dio.get('/notifications/unread-count');
     final root = _mapOf(res.data);
     final data = _mapOf(root['data']);
     final raw = root['unreadCount'] ?? data['unreadCount'] ?? data['count'];
-    final parsed = int.tryParse(raw?.toString() ?? '');
-    return parsed ?? 0;
+    final parsed = int.tryParse(raw?.toString() ?? '') ?? 0;
+    _unreadCache = parsed;
+    _unreadCacheAt = now;
+    return parsed;
   }
 
   Future<void> markRead(String id) async {
@@ -111,6 +126,9 @@ class NotificationsRepository {
     try {
       await _dio.post('/notifications/$trimmed/read');
       _markCachedRead(trimmed);
+      // Bust unread count cache so next poll reflects the change.
+      _unreadCache = null;
+      _unreadCacheAt = null;
     } finally {
       _readInFlight.remove(trimmed);
     }
@@ -129,6 +147,9 @@ class NotificationsRepository {
           )
           .toList(growable: false);
     }
+    // Reset unread count immediately to 0 and bust cache.
+    _unreadCache = 0;
+    _unreadCacheAt = DateTime.now();
   }
 
   bool _isCachedAsRead(String id) {

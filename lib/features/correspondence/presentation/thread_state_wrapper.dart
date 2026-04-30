@@ -84,7 +84,16 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         return;
       }
 
-      _refreshThreadSurface();
+      // Only invalidate thread + message providers on actual message events.
+      // Session participant events (join/leave/resume), read-receipt updates,
+      // and invite events do not change message content — refreshing on them
+      // causes unnecessary reload storms during active calls.
+      if (event.name == 'thread:message.created' ||
+          event.name == 'thread:message.updated' ||
+          event.name == 'thread:message.deleted') {
+        _refreshThreadSurface();
+      }
+
       unawaited(_hydrateFromEvent(event));
     });
   }

@@ -90,7 +90,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       } else if (action == 'resume') {
         await controller.resume(widget.sessionId);
       } else {
-        await controller.hydrateSession(widget.sessionId);
+        // Skip hydration if the controller is already managing this session
+        // in a joined state — the caller (ensureCorrespondenceLive or
+        // incoming overlay) already ran join() which hydrated on the way in.
+        final currentState = ref.read(realtimeControllerProvider);
+        final managedId =
+            (currentState.sessionId ?? currentState.session?.id ?? '').trim();
+        final alreadyJoined =
+            currentState.isJoined && managedId == widget.sessionId.trim();
+        if (!alreadyJoined) {
+          await controller.hydrateSession(widget.sessionId);
+        }
       }
     });
 

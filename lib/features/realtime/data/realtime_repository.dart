@@ -276,12 +276,12 @@ class RealtimeRepository {
     if ((surfaceType == 'thread' || surfaceType == 'dm') &&
         surfaceId.isNotEmpty) {
       await _dio.post('/threads/$surfaceId/live/$id/join');
-      return loadSessionBundle(id);
+      return loadSessionBundle(id, forceRefresh: true);
     }
 
     if (surfaceType == 'space' && surfaceId.isNotEmpty) {
       await _dio.post('/spaces/$surfaceId/live/$id/join');
-      return loadSessionBundle(id);
+      return loadSessionBundle(id, forceRefresh: true);
     }
 
     if ((surfaceType == 'room' ||
@@ -289,7 +289,7 @@ class RealtimeRepository {
             surfaceType == 'institutionroom') &&
         surfaceId.isNotEmpty) {
       await _dio.post('/rooms/$surfaceId/live/$id/join');
-      return loadSessionBundle(id);
+      return loadSessionBundle(id, forceRefresh: true);
     }
 
     throw StateError('Unable to determine join route for this live session.');
