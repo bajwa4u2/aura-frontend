@@ -579,6 +579,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
               surfaceId: session.surfaceId,
               startedByUserId: session.startedByUserId,
               status: session.status,
+              kind: session.kind,
               isActive: session.isActive,
               isLocked: locked,
               waitingRoomEnabled: session.waitingRoomEnabled,
@@ -732,8 +733,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
   void _applyBundle(RealtimeSessionSnapshot bundle) {
     final session = bundle.session;
+    final sessionKind = session.kind.trim().toUpperCase();
     final hasVideo = bundle.participants.any((p) => p.videoOn || p.screenOn);
-    final callMode = hasVideo ? 'video' : (state.callMode ?? 'audio');
+    final callMode = (sessionKind == 'VIDEO' || hasVideo) ? 'video' : (state.callMode ?? 'audio');
 
     state = state.copyWith(
       session: session,

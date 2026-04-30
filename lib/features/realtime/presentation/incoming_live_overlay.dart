@@ -124,6 +124,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       return false;
     }
 
+    // Suppress if the invite has already expired server-side.
+    final data = _mapOf(item['data']);
+    final expiresAtStr = _stringOf(data['expiresAt']);
+    if (expiresAtStr.isNotEmpty) {
+      final expiresAt = DateTime.tryParse(expiresAtStr);
+      if (expiresAt != null && expiresAt.isBefore(DateTime.now().toUtc())) {
+        return false;
+      }
+    }
+
     // Already in a dedicated realtime room or live sub-route — suppress.
     if (currentPath.contains('/realtime') ||
         currentPath.contains('/live/') ||
@@ -140,7 +150,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (alreadyInThisSession) return false;
     }
 
-    final data = _mapOf(item['data']);
     final attention = _stringOf(data['attention']).toUpperCase();
     if (attention != 'INTERRUPT') return false;
 
@@ -217,12 +226,33 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (!mounted) return;
       router.go(route);
     } catch (e) {
-      // Join failed — let user retry or dismiss.
-      _dismissedSessionIds.remove(sessionId);
-      if (mounted) {
-        setState(() {
-          _joinError = 'Could not join the call. Check your connection.';
+      final msg = e.toString().toLowerCase();
+      final isExpired = msg.contains('invite_expired') ||
+          msg.contains('session_closed') ||
+          msg.contains('invite has expired');
+      if (isExpired) {
+        // Invite is no longer valid — dismiss the overlay silently.
+        ref.read(incomingCallBridgeProvider.notifier).remove(id);
+        if (mounted) {
+          setState(() {
+            _joinError = 'This call is no longer available.';
+          });
+        }
+        // Auto-dismiss the expired error after a short delay.
+        Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            _dismissedIds.add(id);
+            setState(() => _joinError = null);
+          }
         });
+      } else {
+        // Transient join failure — let user retry or dismiss.
+        _dismissedSessionIds.remove(sessionId);
+        if (mounted) {
+          setState(() {
+            _joinError = 'Could not join the call. Check your connection.';
+          });
+        }
       }
     } finally {
       if (mounted) {
@@ -321,6 +351,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     final target = _resolver.resolveFromPayload({...item, ...data});
     final mode = _firstNonEmpty([
+      _stringOf(data['callKind']),
       _stringOf(data['mediaMode']),
       _stringOf(data['mode']),
       target.mode ?? '',

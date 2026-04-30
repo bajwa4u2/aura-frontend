@@ -163,6 +163,7 @@ class RealtimeSession {
     required this.surfaceId,
     required this.startedByUserId,
     required this.status,
+    required this.kind,
     required this.isActive,
     required this.isLocked,
     required this.waitingRoomEnabled,
@@ -180,6 +181,7 @@ class RealtimeSession {
   final String? surfaceId;
   final String? startedByUserId;
   final String status;
+  final String kind;
   final bool isActive;
   final bool isLocked;
   final bool waitingRoomEnabled;
@@ -198,6 +200,7 @@ class RealtimeSession {
       surfaceId: _readString(json['surfaceId']),
       startedByUserId: _readString(json['startedByUserId']),
       status: (json['status'] ?? '').toString().trim().toUpperCase(),
+      kind: (json['kind'] ?? 'AUDIO').toString().trim().toUpperCase(),
       isActive: _readBool(
         json['isActive'],
         fallback: (json['status'] ?? '').toString().trim().toUpperCase() != 'ENDED' &&

@@ -127,6 +127,7 @@ class CorrespondenceLiveService {
       'session:participant.left',
       'session:removed',
       'realtime:removed',
+      'call:terminal',
     ]) {
       onNamed(name);
     }
