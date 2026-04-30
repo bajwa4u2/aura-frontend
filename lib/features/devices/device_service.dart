@@ -129,6 +129,25 @@ class DeviceService {
     }
   }
 
+  /// Returns true if the backend has at least one active WEB_PUSH device record
+  /// for the current user. Used by the security screen to confirm the backend
+  /// saved the subscription before showing the Active state.
+  Future<bool> checkBackendWebPushActive() async {
+    if (!kIsWeb) return false;
+    try {
+      final devices = await _repository.getMyDevices();
+      return devices.any((d) =>
+        d.provider == 'WEB_PUSH' &&
+        d.isActive &&
+        d.revokedAt == null &&
+        (d.endpoint?.isNotEmpty ?? false),
+      );
+    } catch (e) {
+      debugPrint('DeviceService.checkBackendWebPushActive failed: $e');
+      return false;
+    }
+  }
+
   Future<void> _upsertCurrentDevice(Map<String, dynamic> payload) async {
     final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
     if (id != null && id.isNotEmpty) {

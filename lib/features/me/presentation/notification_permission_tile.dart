@@ -97,8 +97,20 @@ class _BrowserNotificationsSectionState
     final sub = await WebPushService.getExistingSubscription();
     final hasSub = sub != null && sub.endpoint.isNotEmpty;
     if (!mounted) return;
+
+    if (!hasSub) {
+      setState(() => _state = _SubState.failed);
+      return;
+    }
+
+    // Also confirm the backend saved the registration. A local subscription
+    // with no backend record means the PATCH/POST previously failed — show
+    // Retry so the user can re-trigger registration.
+    final backendActive =
+        await ref.read(deviceServiceProvider).checkBackendWebPushActive();
+    if (!mounted) return;
     setState(() {
-      _state = hasSub ? _SubState.active : _SubState.failed;
+      _state = backendActive ? _SubState.active : _SubState.failed;
     });
   }
 
