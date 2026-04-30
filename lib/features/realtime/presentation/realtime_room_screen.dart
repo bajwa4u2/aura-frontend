@@ -8,9 +8,9 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
+import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -19,20 +19,21 @@ import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
+import '../domain/realtime_state.dart';
 import 'widgets/realtime_consent_sheet.dart';
 import 'widgets/realtime_host_controls.dart';
 import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
-import 'widgets/realtime_status_strip.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVIDER
+// ─────────────────────────────────────────────────────────────────────────────
 
 Map<String, dynamic> _unwrapResponseMap(dynamic value) {
   if (value is Map<String, dynamic>) {
-    if (value['data'] is Map<String, dynamic>) {
-      return Map<String, dynamic>.from(value['data'] as Map<String, dynamic>);
-    }
-    if (value['data'] is Map) {
-      return Map<String, dynamic>.from(value['data'] as Map);
-    }
+    final inner = value['data'];
+    if (inner is Map<String, dynamic>) return inner;
+    if (inner is Map) return Map<String, dynamic>.from(inner);
     return value;
   }
   if (value is Map) {
@@ -45,13 +46,18 @@ Map<String, dynamic> _unwrapResponseMap(dynamic value) {
   return <String, dynamic>{};
 }
 
-final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((
-  ref,
-) async {
+final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
   final response = await dio.get('/users/me');
   return _unwrapResponseMap(response.data);
 });
+
+const _kPanelParticipants = 'participants';
+const _kPanelMore = 'more';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
 
 class RealtimeRoomScreen extends ConsumerStatefulWidget {
   const RealtimeRoomScreen({super.key, required this.sessionId, this.action});
@@ -68,12 +74,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   String? _lastConsentSyncKey;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
-  final TextEditingController _inviteSearchController = TextEditingController();
-  final TextEditingController _inviteNoteController = TextEditingController();
-  Timer? _searchDebounce;
-  List<Map<String, dynamic>> _inviteResults = const [];
-  bool _inviteSearchBusy = false;
-  String? _invitingUserId;
+  // Panel state: null = closed; only one panel open at a time
+  String? _activePanel;
 
   @override
   void didChangeDependencies() {
@@ -90,9 +92,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       } else if (action == 'resume') {
         await controller.resume(widget.sessionId);
       } else {
-        // Skip hydration if the controller is already managing this session
-        // in a joined state — the caller (ensureCorrespondenceLive or
-        // incoming overlay) already ran join() which hydrated on the way in.
         final currentState = ref.read(realtimeControllerProvider);
         final managedId =
             (currentState.sessionId ?? currentState.session?.id ?? '').trim();
@@ -106,114 +105,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     _durationTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() {
-        _now = DateTime.now();
-      });
+      setState(() => _now = DateTime.now());
     });
   }
 
   @override
   void dispose() {
     _durationTimer?.cancel();
-    _searchDebounce?.cancel();
-    _inviteSearchController.dispose();
-    _inviteNoteController.dispose();
     super.dispose();
-  }
-
-  void _onInviteSearchChanged({
-    required String query,
-    required String myUserId,
-    required List<RealtimeParticipant> participants,
-  }) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-      _searchMembers(
-        query: query,
-        myUserId: myUserId,
-        participants: participants,
-      );
-    });
-  }
-
-  Future<void> _searchMembers({
-    required String query,
-    required String myUserId,
-    required List<RealtimeParticipant> participants,
-  }) async {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _inviteResults = const [];
-        _inviteSearchBusy = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _inviteSearchBusy = true;
-    });
-
-    try {
-      final repo = SearchRepository(ref.read(dioProvider));
-      final result = await repo.search(trimmed, limit: 8);
-      final existingIds = participants.map((p) => p.userId).toSet();
-
-      final filtered = result.users.where((user) {
-        final id = (user['id'] ?? '').toString().trim();
-        if (id.isEmpty) return false;
-        if (id == myUserId) return false;
-        if (existingIds.contains(id)) return false;
-        return true;
-      }).toList();
-
-      if (!mounted) return;
-      setState(() {
-        _inviteResults = filtered;
-        _inviteSearchBusy = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _inviteResults = const [];
-        _inviteSearchBusy = false;
-      });
-    }
-  }
-
-  Future<void> _inviteMember(Map<String, dynamic> user) async {
-    final invitedUserId = (user['id'] ?? '').toString().trim();
-    if (invitedUserId.isEmpty || _invitingUserId != null) return;
-
-    setState(() {
-      _invitingUserId = invitedUserId;
-    });
-
-    try {
-      await ref
-          .read(realtimeControllerProvider.notifier)
-          .inviteMember(
-            invitedUserId: invitedUserId,
-            note: _inviteNoteController.text.trim().isEmpty
-                ? null
-                : _inviteNoteController.text.trim(),
-          );
-      if (!mounted) return;
-      setState(() {
-        _inviteResults = _inviteResults
-            .where((u) => (u['id'] ?? '').toString() != invitedUserId)
-            .toList();
-        _invitingUserId = null;
-      });
-      _inviteSearchController.clear();
-      _inviteNoteController.clear();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _invitingUserId = null;
-      });
-    }
   }
 
   void _syncConsentsIfNeeded({
@@ -222,15 +121,63 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required bool? canManageConsents,
   }) {
     if (sessionId.trim().isEmpty || canManageConsents != true) return;
-
     final syncKey = '$sessionId:moderator';
     if (_lastConsentSyncKey == syncKey) return;
     _lastConsentSyncKey = syncKey;
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       controller.syncConsentsVisibility(canManageConsents: canManageConsents);
     });
+  }
+
+  void _togglePanel(String panelId, bool wide) {
+    if (wide) {
+      setState(() {
+        _activePanel = _activePanel == panelId ? null : panelId;
+      });
+    } else {
+      _openBottomPanel(panelId);
+    }
+  }
+
+  void _openBottomPanel(String panelId) {
+    final state = ref.read(realtimeControllerProvider);
+    final myUserId = ref
+        .read(_realtimeCurrentUserProvider)
+        .maybeWhen(data: (me) => (me['id'] ?? '').toString(), orElse: () => '');
+    final isHost =
+        myUserId.isNotEmpty && state.session?.startedByUserId == myUserId;
+    final canModerate =
+        state.participants
+            .where((p) => p.userId == myUserId)
+            .map((p) => p.isModerator)
+            .firstOrNull ??
+        isHost;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: _CallPanelContent(
+            panelId: panelId,
+            sessionId: widget.sessionId,
+            myUserId: myUserId,
+            canModerate: canModerate,
+            scrollController: scrollController,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -245,9 +192,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
 
     RealtimeParticipant? myParticipant;
-    for (final participant in state.participants) {
-      if (participant.userId == myUserId) {
-        myParticipant = participant;
+    for (final p in state.participants) {
+      if (p.userId == myUserId) {
+        myParticipant = p;
         break;
       }
     }
@@ -255,230 +202,89 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final isHost =
         myUserId.isNotEmpty && state.session?.startedByUserId == myUserId;
     final canModerate = myParticipant?.isModerator ?? isHost;
-    final canManageConsents = canModerate;
     final policy = state.policy;
     final roomIsClosed =
         state.session?.isLocked == true || policy?.isLocked == true;
-    final roomTitle = _roomTitle(state.session);
-    final roomSubtitle = _roomSubtitle(state.session, state.joinState);
-    final showConnectionRecovery =
-        state.connectionStatus == RealtimeConnectionStatus.disconnected ||
-        state.connectionStatus == RealtimeConnectionStatus.error;
-    final participantCount = state.participants.length;
-    final memberCountLabel = participantCount == 1
-        ? '1 member listed here'
-        : '$participantCount members listed here';
-    final presentCount = state.participants
-        .where((participant) => participant.isPresent)
-        .length;
-    final mediaActiveCount = state.participants
-        .where(
-          (participant) =>
-              participant.audioOn ||
-              participant.videoOn ||
-              participant.screenOn,
-        )
-        .length;
-    final callDurationLabel = _callDurationLabel(state.session, _now);
 
     _syncConsentsIfNeeded(
       controller: controller,
       sessionId: state.sessionId ?? widget.sessionId,
-      canManageConsents: canManageConsents,
+      canManageConsents: canModerate,
     );
 
-    return AuraScaffold(
+    final callDuration = _callDuration(state.session, _now);
+    final showConnectionIssue =
+        state.connectionStatus == RealtimeConnectionStatus.disconnected ||
+        state.connectionStatus == RealtimeConnectionStatus.error;
+    final isConnecting =
+        state.connectionStatus == RealtimeConnectionStatus.connecting ||
+        state.connectionStatus == RealtimeConnectionStatus.reconnecting;
+    final joinRequestCount = (policy?.joinRequests ?? const []).length;
+
+    return Scaffold(
+      backgroundColor: AuraSurface.page,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 1080;
+          final wide = constraints.maxWidth >= 860;
 
-          final stageColumn = <Widget>[
-            _RoomHeaderCard(
-              title: roomTitle,
-              subtitle: roomSubtitle,
-              sessionId: state.sessionId ?? widget.sessionId,
-              memberCountLabel: memberCountLabel,
-              roomStateLabel: _roomStateLabel(
-                state.session,
-                policy,
-                state.joinState,
-              ),
-              callDurationLabel: callDurationLabel,
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            RealtimeStatusStrip(state: state, now: _now),
-            const SizedBox(height: AuraSpace.s12),
-            if (showConnectionRecovery) ...[
-              _ConnectionRecoveryCard(
-                isBusy:
-                    state.isBusy ||
-                    state.connectionStatus ==
-                        RealtimeConnectionStatus.connecting ||
-                    state.connectionStatus ==
-                        RealtimeConnectionStatus.reconnecting,
-                onReconnect: () => controller.resume(widget.sessionId),
-                onReload: () => controller.hydrateSession(widget.sessionId),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            if ((state.errorMessage ?? '').isNotEmpty) ...[
-              AuraCard(child: Text(state.errorMessage!, style: AuraText.body)),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            if ((state.mediaError ?? '').isNotEmpty) ...[
-              AuraCard(child: Text(state.mediaError!, style: AuraText.body)),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            if ((state.infoMessage ?? '').isNotEmpty) ...[
-              AuraCard(child: Text(state.infoMessage!, style: AuraText.small)),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            _MediaStageCard(
-              localRenderer: state.localRenderer,
-              remoteRenderers: state.remoteRenderers,
-              microphoneEnabled: state.microphoneEnabled,
-              cameraEnabled: state.cameraEnabled,
-              isMediaReady: state.isMediaReady,
-              isMediaBusy: state.isMediaBusy,
-              mediaError: state.mediaError,
-              onToggleMicrophone: controller.toggleMicrophone,
-              onToggleCamera: controller.toggleCamera,
-            ),
-          ];
-
-          final supportColumn = <Widget>[
-            _RoomOverviewCard(
-              session: state.session,
-              policy: policy,
-              participantCount: participantCount,
-              presentCount: presentCount,
-              mediaActiveCount: mediaActiveCount,
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            RealtimeConsentSheet(
-              currentUserId: myUserId.isEmpty ? null : myUserId,
-              consents: state.consents,
-            ),
-            if (state.consents.isNotEmpty) const SizedBox(height: AuraSpace.s12),
-            if (canModerate) ...[
-              RealtimeHostControls(
-                session: state.session,
-                policy: policy,
-                onToggleWaitingRoom: (value) => controller.setWaitingRoom(value),
-                onToggleLock: (value) => controller.setLocked(value),
-                onRequestConsent: () => controller.requestConsent(),
-                onRequestRecording: () => controller.requestRecording(),
-                onRequestTranscript: () => controller.requestTranscript(),
-                onRefresh: () => controller.hydrateSession(widget.sessionId),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              _RoomInviteCard(
-                searchController: _inviteSearchController,
-                noteController: _inviteNoteController,
-                isSearching: _inviteSearchBusy,
-                results: _inviteResults,
-                invitingUserId: _invitingUserId,
-                onSearchChanged: (value) => _onInviteSearchChanged(
-                  query: value,
-                  myUserId: myUserId,
-                  participants: state.participants,
-                ),
-                onInvite: (user) => _inviteMember(user),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-              RealtimeJoinRequestsPanel(
-                requests: policy?.joinRequests ?? const [],
-                onApprove: (value) => controller.approveJoinRequest(value),
-                onReject: (value) => controller.rejectJoinRequest(value),
-              ),
-              const SizedBox(height: AuraSpace.s12),
-            ],
-            RealtimeParticipantList(
-              participants: state.participants,
-              session: state.session,
-              canModerate: canModerate,
-              currentUserId: myUserId,
-              hostUserId: state.session?.startedByUserId,
-              remoteRenderers: state.remoteRenderers,
-              onRemove: (value) => controller.removeParticipant(value),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            _ArtifactBlock(
-              policy: policy,
-              recordingCount: state.recordings.length,
-              transcriptCount: state.transcripts.length,
-              artifactCount: state.artifacts.length,
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                if ((_spaceRouteFromSession(state.session) ?? '').isNotEmpty)
-                  AuraSecondaryButton(
-                    label: 'Return to conversation',
-                    onPressed: () =>
-                        context.go(_spaceRouteFromSession(state.session)!),
-                  ),
-                AuraSecondaryButton(
-                  label: 'Refresh',
-                  onPressed: () => controller.hydrateSession(widget.sessionId),
-                ),
-                AuraSecondaryButton(
-                  label: 'Leave call',
-                  onPressed: controller.leave,
-                ),
-                if (state.joinState != RealtimeJoinState.joined)
-                  AuraPrimaryButton(
-                    label: 'Join ${_contextLabel(state.session)}',
-                    onPressed: () => controller.join(widget.sessionId),
-                  ),
-                if (state.joinState == RealtimeJoinState.locked ||
-                    state.joinState == RealtimeJoinState.rejected ||
-                    state.joinState == RealtimeJoinState.failed ||
-                    roomIsClosed)
-                  AuraSecondaryButton(
-                    label: policy?.waitingRoomEnabled == true || roomIsClosed
-                        ? 'Request access'
-                        : 'Try again',
-                    onPressed: () => controller.requestJoin(widget.sessionId),
-                  ),
-              ],
-            ),
-          ];
-
-          if (wide) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 8,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: stageColumn,
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s16),
-                  SizedBox(
-                    width: 380,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: supportColumn,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          return Column(
             children: [
-              ...stageColumn,
-              const SizedBox(height: AuraSpace.s12),
-              ...supportColumn,
+              // ── Header bar ────────────────────────────────────────────────
+              _CallTopBar(
+                title: _callTitle(state.session, state.isVideoMode),
+                duration: callDuration,
+                participantCount: state.participants.length,
+                isConnecting: isConnecting,
+                hasIssue: showConnectionIssue,
+              ),
+
+              // ── Consent banner ────────────────────────────────────────────
+              RealtimeConsentSheet(
+                currentUserId: myUserId.isNotEmpty ? myUserId : null,
+                consents: state.consents,
+              ),
+
+              // ── Connection issue banner ───────────────────────────────────
+              if (showConnectionIssue)
+                _ConnectionBanner(
+                  isBusy: state.isBusy || isConnecting,
+                  onReconnect: () => controller.resume(widget.sessionId),
+                ),
+
+              // ── Main body ─────────────────────────────────────────────────
+              Expanded(
+                child: state.isJoined
+                    ? _buildActiveCall(
+                        state: state,
+                        controller: controller,
+                        myUserId: myUserId,
+                        canModerate: canModerate,
+                        wide: wide,
+                      )
+                    : _buildPreJoin(
+                        context: context,
+                        state: state,
+                        controller: controller,
+                        policy: policy,
+                        roomIsClosed: roomIsClosed,
+                      ),
+              ),
+
+              // ── Call controls ─────────────────────────────────────────────
+              if (state.isJoined)
+                _CallControlDock(
+                  micOn: state.microphoneEnabled,
+                  cameraOn: state.cameraEnabled,
+                  isVideoMode: state.isVideoMode,
+                  activePanel: _activePanel,
+                  pendingRequests: canModerate ? joinRequestCount : 0,
+                  onToggleMic: controller.toggleMicrophone,
+                  onToggleCamera: controller.toggleCamera,
+                  onParticipants: () =>
+                      _togglePanel(_kPanelParticipants, wide),
+                  onMore: () => _togglePanel(_kPanelMore, wide),
+                  onLeave: controller.leave,
+                ),
             ],
           );
         },
@@ -486,362 +292,436 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
   }
 
-  String _roomTitle(RealtimeSession? session) {
-    if (session == null) return 'Call';
+  // ── Active call layout ────────────────────────────────────────────────────
+
+  Widget _buildActiveCall({
+    required RealtimeState state,
+    required RealtimeController controller,
+    required String myUserId,
+    required bool canModerate,
+    required bool wide,
+  }) {
+    final stage = _CallStage(
+      state: state,
+      myUserId: myUserId,
+    );
+
+    if (!wide || _activePanel == null) return stage;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: stage),
+        SizedBox(
+          width: 360,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AuraSurface.subtle,
+              border: Border(left: BorderSide(color: AuraSurface.divider)),
+            ),
+            child: _CallPanelContent(
+              panelId: _activePanel!,
+              sessionId: widget.sessionId,
+              myUserId: myUserId,
+              canModerate: canModerate,
+              onClose: () => setState(() => _activePanel = null),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Pre-join / lobby view ─────────────────────────────────────────────────
+
+  Widget _buildPreJoin({
+    required BuildContext context,
+    required RealtimeState state,
+    required RealtimeController controller,
+    required RealtimePolicy? policy,
+    required bool roomIsClosed,
+  }) {
+    final (icon, title, subtitle, showJoin, showRequest) =
+        _preJoinContent(state: state, policy: policy, roomIsClosed: roomIsClosed);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  gradient: AuraGradients.accent,
+                  borderRadius: BorderRadius.circular(AuraRadius.xl),
+                ),
+                child: Icon(icon, size: 30, color: Colors.white),
+              ),
+              const SizedBox(height: AuraSpace.s20),
+              Text(title, style: AuraText.headline, textAlign: TextAlign.center),
+              const SizedBox(height: AuraSpace.s8),
+              Text(subtitle, style: AuraText.muted, textAlign: TextAlign.center),
+              if ((state.errorMessage ?? '').isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Container(
+                  padding: const EdgeInsets.all(AuraSpace.s12),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.dangerBg,
+                    borderRadius: BorderRadius.circular(AuraRadius.md),
+                    border: Border.all(
+                      color: AuraSurface.dangerInk.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    state.errorMessage!,
+                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AuraSpace.s24),
+              Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (showJoin)
+                    AuraPrimaryButton(
+                      label: state.isBusy ? 'Joining…' : 'Join call',
+                      onPressed: state.isBusy
+                          ? null
+                          : () => controller.join(widget.sessionId),
+                    ),
+                  if (showRequest)
+                    AuraPrimaryButton(
+                      label: 'Request access',
+                      onPressed: state.isBusy
+                          ? null
+                          : () => controller.requestJoin(widget.sessionId),
+                    ),
+                  if ((_spaceRoute(state.session) ?? '').isNotEmpty)
+                    AuraSecondaryButton(
+                      label: 'Back to conversation',
+                      onPressed: () => context.go(_spaceRoute(state.session)!),
+                    ),
+                  AuraSecondaryButton(
+                    label: 'Leave',
+                    onPressed: controller.leave,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  (IconData, String, String, bool, bool) _preJoinContent({
+    required RealtimeState state,
+    required RealtimePolicy? policy,
+    required bool roomIsClosed,
+  }) {
+    if (state.isBusy || state.joinState == RealtimeJoinState.joining) {
+      return (
+        Icons.call_rounded,
+        'Connecting…',
+        'Setting up your session. This only takes a moment.',
+        false,
+        false,
+      );
+    }
+    switch (state.joinState) {
+      case RealtimeJoinState.requested:
+        return (
+          Icons.hourglass_top_rounded,
+          'Waiting for approval',
+          'Your request has been sent. The host will let you in shortly.',
+          false,
+          false,
+        );
+      case RealtimeJoinState.rejected:
+        return (
+          Icons.block_rounded,
+          'Entry declined',
+          'Your request to join was declined.',
+          false,
+          true,
+        );
+      case RealtimeJoinState.removed:
+        return (
+          Icons.person_remove_rounded,
+          'Removed from call',
+          'You were removed from this call by the host.',
+          false,
+          false,
+        );
+      case RealtimeJoinState.locked:
+        return (
+          Icons.lock_rounded,
+          'Room closed',
+          'This room is not accepting new participants right now.',
+          false,
+          policy?.waitingRoomEnabled == true,
+        );
+      case RealtimeJoinState.failed:
+        return (
+          Icons.error_outline_rounded,
+          'Could not join',
+          'Something went wrong. Please try again.',
+          true,
+          false,
+        );
+      default:
+        if (state.session?.isActive == false) {
+          return (
+            Icons.call_end_rounded,
+            'Call has ended',
+            'This call is no longer active.',
+            false,
+            false,
+          );
+        }
+        if (roomIsClosed) {
+          return (
+            Icons.lock_rounded,
+            'Room closed',
+            'This room is closed to new entries.',
+            false,
+            true,
+          );
+        }
+        return (
+          Icons.call_rounded,
+          'Ready to join',
+          'Tap Join call to enter.',
+          true,
+          false,
+        );
+    }
+  }
+
+  String _callTitle(RealtimeSession? session, bool isVideo) {
+    if (session == null) return isVideo ? 'Video call' : 'Audio call';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
       case RealtimeSurfaceType.thread:
-        return 'Call';
+        return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
         return 'Space call';
       case RealtimeSurfaceType.institution:
         return 'Institution call';
       case RealtimeSurfaceType.unknown:
-        return 'Call';
+        return isVideo ? 'Video call' : 'Audio call';
     }
   }
 
-  String? _spaceRouteFromSession(RealtimeSession? session) {
+  String? _spaceRoute(RealtimeSession? session) {
     if (session == null) return null;
     if (session.surfaceType == RealtimeSurfaceType.space) {
-      final spaceId = (session.surfaceId ?? '').trim();
-      if (spaceId.isNotEmpty) return '/me/correspondence/$spaceId';
+      final id = (session.surfaceId ?? '').trim();
+      if (id.isNotEmpty) return '/me/correspondence/$id';
     }
     return null;
   }
 
-  String _contextLabel(RealtimeSession? session) {
-    if (session == null) return 'call';
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        return 'call';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return 'space call';
-      case RealtimeSurfaceType.institution:
-        return 'institution call';
-      case RealtimeSurfaceType.unknown:
-        return 'call';
-    }
-  }
-
-  String _roomSubtitle(RealtimeSession? session, RealtimeJoinState joinState) {
-    if (joinState == RealtimeJoinState.joined) return 'You are here now.';
-    if (joinState == RealtimeJoinState.requested) {
-      return 'Your request to join is pending.';
-    }
-    if (joinState == RealtimeJoinState.rejected) {
-      return 'Your request to join was declined.';
-    }
-    if (joinState == RealtimeJoinState.removed) {
-      return 'You were removed from this call.';
-    }
-    if (session?.isActive == false) return 'This call has ended.';
-    if (session?.isLocked == true) return 'Closed to new joins.';
-    return 'Active now.';
-  }
-
-  String _roomStateLabel(
-    RealtimeSession? session,
-    RealtimePolicy? policy,
-    RealtimeJoinState joinState,
-  ) {
-    if (joinState == RealtimeJoinState.requested) return 'Waiting for approval';
-    if (joinState == RealtimeJoinState.rejected) return 'Entry declined';
-    if (joinState == RealtimeJoinState.removed) return 'Removed';
-    if (session?.isActive == false) return 'Ended';
-    if (session?.isLocked == true || policy?.isLocked == true) return 'Closed';
-    return 'Open';
-  }
-
-  String? _callDurationLabel(RealtimeSession? session, DateTime now) {
+  Duration? _callDuration(RealtimeSession? session, DateTime now) {
     if (session == null) return null;
-
-    final startedAt =
-        session.answeredAt ?? session.firstJoinedAt ?? session.startedAt ?? session.createdAt;
-    if (startedAt == null) return null;
-
-    final finishedAt = session.endedAt;
-    final elapsed = finishedAt != null
-        ? finishedAt.difference(startedAt)
-        : now.difference(startedAt);
-    final safe = elapsed.inSeconds < 0 ? Duration.zero : elapsed;
-    final durationText = _formatDuration(safe);
-
-    if (finishedAt != null || session.status == 'ENDED') {
-      return 'Ended after $durationText';
-    }
-    if (session.isActive) {
-      return 'Live $durationText';
-    }
-    return 'Duration $durationText';
-  }
-
-  String _formatDuration(Duration duration) {
-    final totalSeconds = math.max(0, duration.inSeconds);
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
-
-    String two(int value) => value.toString().padLeft(2, '0');
-
-    if (hours > 0) {
-      return '${two(hours)}:${two(minutes)}:${two(seconds)}';
-    }
-    return '${two(minutes)}:${two(seconds)}';
+    final start =
+        session.answeredAt ??
+        session.firstJoinedAt ??
+        session.startedAt ??
+        session.createdAt;
+    if (start == null) return null;
+    if (session.endedAt != null) return session.endedAt!.difference(start);
+    final d = now.difference(start);
+    return d.inSeconds < 0 ? Duration.zero : d;
   }
 }
 
-class _ConnectionRecoveryCard extends StatelessWidget {
-  const _ConnectionRecoveryCard({
-    required this.isBusy,
-    required this.onReconnect,
-    required this.onReload,
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// CALL TOP BAR
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final bool isBusy;
-  final Future<void> Function() onReconnect;
-  final Future<void> Function() onReload;
-
-  @override
-  Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Live connection needs attention',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          const Text(
-            'You can reconnect to the call or reload the call state.',
-            style: AuraText.muted,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              AuraPrimaryButton(
-                label: 'Reconnect',
-                onPressed: isBusy ? null : onReconnect,
-              ),
-              AuraSecondaryButton(
-                label: 'Reload state',
-                onPressed: isBusy ? null : onReload,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoomHeaderCard extends StatelessWidget {
-  const _RoomHeaderCard({
+class _CallTopBar extends StatelessWidget {
+  const _CallTopBar({
     required this.title,
-    required this.subtitle,
-    required this.sessionId,
-    required this.memberCountLabel,
-    required this.roomStateLabel,
-    required this.callDurationLabel,
+    required this.duration,
+    required this.participantCount,
+    required this.isConnecting,
+    required this.hasIssue,
   });
 
   final String title;
-  final String subtitle;
-  final String sessionId;
-  final String memberCountLabel;
-  final String roomStateLabel;
-  final String? callDurationLabel;
+  final Duration? duration;
+  final int participantCount;
+  final bool isConnecting;
+  final bool hasIssue;
+
+  String _fmt(Duration d) {
+    final s = d.inSeconds;
+    final h = s ~/ 3600;
+    final m = (s % 3600) ~/ 60;
+    final sec = s % 60;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return h > 0 ? '${two(h)}:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final durationLabel =
+        duration != null ? _fmt(duration!) : null;
+
+    Color statusColor;
+    String statusLabel;
+    if (hasIssue) {
+      statusColor = AuraSurface.dangerInk;
+      statusLabel = 'Connection issue';
+    } else if (isConnecting) {
+      statusColor = AuraSurface.warnInk;
+      statusLabel = 'Connecting…';
+    } else {
+      statusColor = const Color(0xFF4ADE80);
+      statusLabel = 'Live';
+    }
+
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
         children: [
-          Text(title, style: AuraText.title),
-          const SizedBox(height: AuraSpace.s4),
-          Text(subtitle, style: AuraText.small),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              _MetaPill(label: roomStateLabel),
-              _MetaPill(label: memberCountLabel),
-              if ((callDurationLabel ?? '').trim().isNotEmpty)
-                _MetaPill(label: callDurationLabel!),
-            ],
+          // Live indicator dot
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s8),
+
+          // Title
+          Text(
+            title,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          // Duration
+          if (durationLabel != null) ...[
+            const SizedBox(width: AuraSpace.s8),
+            Text(
+              durationLabel,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+
+          const Spacer(),
+
+          // Status label (only when not normal)
+          if (hasIssue || isConnecting) ...[
+            Text(
+              statusLabel,
+              style: AuraText.label.copyWith(color: statusColor),
+            ),
+            const SizedBox(width: AuraSpace.s12),
+          ],
+
+          // Participant count
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s8,
+              vertical: AuraSpace.s4,
+            ),
+            decoration: BoxDecoration(
+              color: AuraSurface.accentSoft,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.people_rounded,
+                  size: AuraIconSize.xs,
+                  color: AuraSurface.accentText,
+                ),
+                const SizedBox(width: AuraSpace.s4),
+                Text(
+                  '$participantCount',
+                  style: AuraText.label.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
 }
 
-class _MetaPill extends StatelessWidget {
-  const _MetaPill({required this.label});
-  final String label;
+// ─────────────────────────────────────────────────────────────────────────────
+// CONNECTION ISSUE BANNER
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ConnectionBanner extends StatelessWidget {
+  const _ConnectionBanner({
+    required this.isBusy,
+    required this.onReconnect,
+  });
+
+  final bool isBusy;
+  final VoidCallback onReconnect;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s8,
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s10,
       ),
-      decoration: BoxDecoration(
-        border: Border.all(color: AuraSurface.divider),
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
+      decoration: const BoxDecoration(
+        color: AuraSurface.warnBg,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
-      child: Text(
-        label,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class _MediaStageCard extends StatelessWidget {
-  const _MediaStageCard({
-    required this.localRenderer,
-    required this.remoteRenderers,
-    required this.microphoneEnabled,
-    required this.cameraEnabled,
-    required this.isMediaReady,
-    required this.isMediaBusy,
-    required this.mediaError,
-    required this.onToggleMicrophone,
-    required this.onToggleCamera,
-  });
-
-  final RTCVideoRenderer? localRenderer;
-  final Map<String, RTCVideoRenderer> remoteRenderers;
-  final bool microphoneEnabled;
-  final bool cameraEnabled;
-  final bool isMediaReady;
-  final bool isMediaBusy;
-  final String? mediaError;
-  final VoidCallback onToggleMicrophone;
-  final VoidCallback onToggleCamera;
-
-  @override
-  Widget build(BuildContext context) {
-    final renderers = <MapEntry<String, RTCVideoRenderer>>[
-      if (localRenderer != null)
-        MapEntry<String, RTCVideoRenderer>('local', localRenderer!),
-      ...remoteRenderers.entries,
-    ];
-
-    final mediaStateLabel = isMediaBusy
-        ? 'Preparing media'
-        : isMediaReady
-        ? 'Media ready'
-        : (mediaError ?? '').trim().isNotEmpty
-        ? 'Media unavailable'
-        : 'Waiting for browser media';
-
-    final mediaHelpText = isMediaBusy
-        ? 'Aura is requesting access to your camera and microphone.'
-        : isMediaReady
-        ? 'Your preview and connected participants appear here.'
-        : (mediaError ?? '').trim().isNotEmpty
-        ? 'You joined live, but this browser did not start media.'
-        : 'Your browser has not started camera or microphone yet.';
-
-    final controlsEnabled = isMediaReady && !isMediaBusy;
-
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Text('Media', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              _MetaPill(label: mediaStateLabel),
-              if (localRenderer != null)
-                const _MetaPill(label: 'Local preview on'),
-              if (remoteRenderers.isNotEmpty)
-                _MetaPill(
-                  label:
-                      '${remoteRenderers.length} remote feed${remoteRenderers.length == 1 ? '' : 's'}',
-                ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(mediaHelpText, style: AuraText.muted),
-          const SizedBox(height: AuraSpace.s12),
-          if (renderers.isEmpty)
-            Container(
-              height: 220,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
-              child: Text(
-                isMediaBusy
-                    ? 'Waiting for browser permission'
-                    : isMediaReady
-                    ? 'Media is ready, but no preview is showing yet'
-                    : (mediaError ?? '').trim().isNotEmpty
-                    ? 'Media did not start in this browser'
-                    : 'Camera and microphone have not started yet',
-                textAlign: TextAlign.center,
-                style: AuraText.body.copyWith(color: Colors.white70),
-              ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, tileConstraints) {
-                // On wide screens use up to 2 tiles per row at 260px each;
-                // on narrow screens let a single tile fill the full width.
-                final availableWidth = tileConstraints.maxWidth;
-                final tileWidth = availableWidth >= 560
-                    ? math.min(260.0, (availableWidth - AuraSpace.s10) / 2)
-                    : availableWidth;
-
-                return Wrap(
-                  spacing: AuraSpace.s10,
-                  runSpacing: AuraSpace.s10,
-                  children: renderers.map((entry) {
-                    final isLocal = entry.key == 'local';
-                    return SizedBox(
-                      width: tileWidth,
-                      child: _VideoTile(
-                        label: isLocal ? 'You' : 'Connected participant',
-                        renderer: entry.value,
-                        mirror: isLocal,
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
+          const Icon(Icons.wifi_off_rounded, size: 16, color: AuraSurface.warnInk),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              'Connection lost — tap to reconnect.',
+              style: AuraText.small.copyWith(color: AuraSurface.warnInk),
             ),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              AuraSecondaryButton(
-                label: microphoneEnabled ? 'Mute microphone' : 'Turn mic on',
-                onPressed: controlsEnabled ? onToggleMicrophone : null,
+          ),
+          TextButton(
+            onPressed: isBusy ? null : onReconnect,
+            child: Text(
+              isBusy ? 'Reconnecting…' : 'Reconnect',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.warnInk,
+                fontWeight: FontWeight.w700,
               ),
-              AuraSecondaryButton(
-                label: cameraEnabled ? 'Turn camera off' : 'Turn camera on',
-                onPressed: controlsEnabled ? onToggleCamera : null,
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -849,106 +729,1006 @@ class _MediaStageCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CALL STAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CallStage extends StatelessWidget {
+  const _CallStage({required this.state, required this.myUserId});
+
+  final RealtimeState state;
+  final String myUserId;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaError = (state.mediaError ?? '').trim();
+    final hasRemoteRenderers = state.remoteRenderers.isNotEmpty;
+    final hasLocalRenderer = state.localRenderer != null;
+    final hasAnyRenderer = hasLocalRenderer || hasRemoteRenderers;
+
+    // Video call with renderers
+    if (state.isVideoMode && hasAnyRenderer) {
+      return _VideoGrid(
+        localRenderer: state.localRenderer,
+        remoteRenderers: state.remoteRenderers,
+        participants: state.participants,
+        myUserId: myUserId,
+        micOn: state.microphoneEnabled,
+      );
+    }
+
+    // Media actively loading (first launch)
+    if (state.isMediaBusy && !state.isMediaReady && !hasAnyRenderer) {
+      return _MediaLoadingView(isVideo: state.isVideoMode);
+    }
+
+    // Media error with no renderers
+    if (mediaError.isNotEmpty && !hasAnyRenderer) {
+      return _MediaWarningView(isVideo: state.isVideoMode);
+    }
+
+    // Audio call or awaiting video — avatar stage
+    return _AvatarStage(
+      participants: state.participants,
+      myUserId: myUserId,
+      micOn: state.microphoneEnabled,
+      isLoading: state.isMediaBusy && state.participants.isEmpty,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIDEO GRID
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VideoGrid extends StatelessWidget {
+  const _VideoGrid({
+    required this.localRenderer,
+    required this.remoteRenderers,
+    required this.participants,
+    required this.myUserId,
+    required this.micOn,
+  });
+
+  final RTCVideoRenderer? localRenderer;
+  final Map<String, RTCVideoRenderer> remoteRenderers;
+  final List<RealtimeParticipant> participants;
+  final String myUserId;
+  final bool micOn;
+
+  String _nameForUserId(String userId) {
+    if (userId == myUserId) return 'You';
+    for (final p in participants) {
+      if (p.userId != userId) continue;
+      final name = (p.displayName ?? '').trim();
+      if (name.isNotEmpty) return name;
+      final handle = (p.handle ?? '').trim();
+      if (handle.isNotEmpty) return '@$handle';
+      return 'Participant';
+    }
+    return 'Participant';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <(String, RTCVideoRenderer, bool)>[];
+    if (localRenderer != null) {
+      entries.add(('You', localRenderer!, true));
+    }
+    for (final entry in remoteRenderers.entries) {
+      entries.add((_nameForUserId(entry.key), entry.value, false));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+
+        if (entries.length == 1) {
+          return _VideoTile(
+            label: entries.first.$1,
+            renderer: entries.first.$2,
+            mirror: entries.first.$3,
+            micOn: entries.first.$1 == 'You' ? micOn : true,
+          );
+        }
+
+        if (entries.length == 2) {
+          final isLandscape = w > h;
+          if (isLandscape) {
+            return Row(
+              children: entries
+                  .map((e) => Expanded(
+                        child: _VideoTile(
+                          label: e.$1,
+                          renderer: e.$2,
+                          mirror: e.$3,
+                          micOn: e.$1 == 'You' ? micOn : true,
+                        ),
+                      ))
+                  .toList(),
+            );
+          }
+          return Column(
+            children: entries
+                .map((e) => Expanded(
+                      child: _VideoTile(
+                        label: e.$1,
+                        renderer: e.$2,
+                        mirror: e.$3,
+                        micOn: e.$1 == 'You' ? micOn : true,
+                      ),
+                    ))
+                .toList(),
+          );
+        }
+
+        // 3+ participants — responsive grid
+        final cols = w >= 900 ? 3 : w >= 600 ? 2 : 2;
+        final rows = (entries.length / cols).ceil();
+        final tileH = h / rows;
+        final tileW = w / cols;
+
+        return SizedBox(
+          width: w,
+          height: h,
+          child: Wrap(
+            children: entries.map((e) {
+              return SizedBox(
+                width: tileW,
+                height: tileH,
+                child: _VideoTile(
+                  label: e.$1,
+                  renderer: e.$2,
+                  mirror: e.$3,
+                  micOn: e.$1 == 'You' ? micOn : true,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIDEO TILE
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _VideoTile extends StatelessWidget {
   const _VideoTile({
     required this.label,
     required this.renderer,
+    required this.micOn,
     this.mirror = false,
   });
 
   final String label;
   final RTCVideoRenderer renderer;
+  final bool micOn;
   final bool mirror;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        Container(
-          height: 180,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: RTCVideoView(
-            renderer,
-            mirror: mirror,
-            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
-          ),
+        Container(color: const Color(0xFF080E18)),
+        RTCVideoView(
+          renderer,
+          mirror: mirror,
+          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
         ),
-        const SizedBox(height: AuraSpace.s8),
-        Text(
-          label,
-          style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+        // Name + mic overlay at bottom-left
+        Positioned(
+          left: AuraSpace.s10,
+          bottom: AuraSpace.s10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s8,
+              vertical: AuraSpace.s4,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!micOn) ...[
+                  const Icon(
+                    Icons.mic_off_rounded,
+                    size: 11,
+                    color: Colors.white70,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  label,
+                  style: AuraText.micro.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _RoomOverviewCard extends StatelessWidget {
-  const _RoomOverviewCard({
-    required this.session,
-    required this.policy,
-    required this.participantCount,
-    required this.presentCount,
-    required this.mediaActiveCount,
+// ─────────────────────────────────────────────────────────────────────────────
+// AVATAR STAGE (audio call / no video)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AvatarStage extends StatelessWidget {
+  const _AvatarStage({
+    required this.participants,
+    required this.myUserId,
+    required this.micOn,
+    required this.isLoading,
   });
 
-  final RealtimeSession? session;
-  final RealtimePolicy? policy;
-  final int participantCount;
-  final int presentCount;
-  final int mediaActiveCount;
+  final List<RealtimeParticipant> participants;
+  final String myUserId;
+  final bool micOn;
+  final bool isLoading;
+
+  String _displayName(RealtimeParticipant p, int index) {
+    if (p.userId == myUserId) return 'You';
+    final name = (p.displayName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final handle = (p.handle ?? '').trim();
+    if (handle.isNotEmpty) return '@$handle';
+    return 'Participant ${index + 1}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isLive = session?.isActive != false;
-    final isClosed = session?.isLocked == true || policy?.isLocked == true;
-    final requestsOn = policy?.waitingRoomEnabled == true;
+    if (isLoading && participants.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AuraSurface.accent,
+              ),
+            ),
+            SizedBox(height: AuraSpace.s16),
+            Text('Connecting your microphone…', style: AuraText.muted),
+          ],
+        ),
+      );
+    }
 
-    return AuraCard(
+    if (participants.isEmpty) {
+      return const Center(
+        child: Text('Waiting for participants…', style: AuraText.muted),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final cols = participants.length == 1
+            ? 1
+            : w >= 720
+                ? math.min(4, participants.length)
+                : w >= 480
+                    ? math.min(3, participants.length)
+                    : math.min(2, participants.length);
+        final tileSize = math.min(
+          (w - (cols - 1) * AuraSpace.s16) / cols,
+          140.0,
+        );
+
+        return Center(
+          child: Wrap(
+            spacing: AuraSpace.s16,
+            runSpacing: AuraSpace.s20,
+            alignment: WrapAlignment.center,
+            children: List.generate(participants.length, (i) {
+              final p = participants[i];
+              final name = _displayName(p, i);
+              final isMe = p.userId == myUserId;
+              final pMicOn = isMe ? micOn : p.audioOn;
+              return SizedBox(
+                width: tileSize,
+                child: _AvatarTile(
+                  name: name,
+                  avatarUrl: p.avatarUrl,
+                  micOn: pMicOn,
+                  isPresent: p.isPresent,
+                  size: math.min(tileSize * 0.55, 80.0),
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AvatarTile extends StatelessWidget {
+  const _AvatarTile({
+    required this.name,
+    required this.avatarUrl,
+    required this.micOn,
+    required this.isPresent,
+    required this.size,
+  });
+
+  final String name;
+  final String? avatarUrl;
+  final bool micOn;
+  final bool isPresent;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Avatar ring when present
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isPresent
+                      ? AuraSurface.accent.withValues(alpha: 0.7)
+                      : AuraSurface.divider,
+                  width: 2,
+                ),
+              ),
+              child: AuraAvatar(
+                name: name,
+                imageUrl: avatarUrl,
+                size: size,
+              ),
+            ),
+            // Mic state badge
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: micOn ? AuraSurface.card : AuraSurface.dangerBg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AuraSurface.divider, width: 1.5),
+                ),
+                child: Icon(
+                  micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                  size: 11,
+                  color: micOn ? AuraSurface.accentText : AuraSurface.dangerInk,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          name,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.ink,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEDIA STATE PLACEHOLDERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MediaLoadingView extends StatelessWidget {
+  const _MediaLoadingView({required this.isVideo});
+
+  final bool isVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            isLive ? 'Call in progress' : 'Call ended',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AuraSurface.accent,
+            ),
           ),
-          const SizedBox(height: AuraSpace.s8),
+          const SizedBox(height: AuraSpace.s16),
           Text(
-            isClosed ? 'Closed to new entries' : 'Open to members',
-            style: AuraText.body,
-          ),
-          Text(
-            requestsOn ? 'Entry requests enabled' : 'Direct entry available',
-            style: AuraText.body,
-          ),
-          Text(
-            participantCount == 1
-                ? '1 member is listed here'
-                : '$participantCount members are listed here',
-            style: AuraText.body,
-          ),
-          Text(
-            presentCount == 1
-                ? '1 participant currently appears present'
-                : '$presentCount participants currently appear present',
-            style: AuraText.body,
-          ),
-          Text(
-            mediaActiveCount == 1
-                ? '1 participant is publishing media'
-                : '$mediaActiveCount participants are publishing media',
-            style: AuraText.body,
+            isVideo
+                ? 'Connecting your camera and microphone…'
+                : 'Connecting your microphone…',
+            style: AuraText.muted,
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 }
+
+class _MediaWarningView extends StatelessWidget {
+  const _MediaWarningView({required this.isVideo});
+
+  final bool isVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.mic_off_rounded,
+              size: 36,
+              color: AuraSurface.warnInk,
+            ),
+            const SizedBox(height: AuraSpace.s16),
+            Text(
+              isVideo
+                  ? 'Camera and microphone are unavailable'
+                  : 'Microphone is unavailable',
+              style: AuraText.body.copyWith(color: AuraSurface.ink),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            const Text(
+              'Check your browser permissions and try rejoining.',
+              style: AuraText.muted,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALL CONTROL DOCK
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CallControlDock extends StatelessWidget {
+  const _CallControlDock({
+    required this.micOn,
+    required this.cameraOn,
+    required this.isVideoMode,
+    required this.activePanel,
+    required this.pendingRequests,
+    required this.onToggleMic,
+    required this.onToggleCamera,
+    required this.onParticipants,
+    required this.onMore,
+    required this.onLeave,
+  });
+
+  final bool micOn;
+  final bool cameraOn;
+  final bool isVideoMode;
+  final String? activePanel;
+  final int pendingRequests;
+  final VoidCallback onToggleMic;
+  final VoidCallback onToggleCamera;
+  final VoidCallback onParticipants;
+  final VoidCallback onMore;
+  final VoidCallback onLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s12,
+        AuraSpace.s16,
+        AuraSpace.s16,
+      ),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(top: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Mic
+          _DockButton(
+            icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+            label: micOn ? 'Mute' : 'Unmute',
+            active: micOn,
+            warning: !micOn,
+            onPressed: onToggleMic,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+
+          // Camera (video calls only)
+          if (isVideoMode) ...[
+            _DockButton(
+              icon: cameraOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+              label: cameraOn ? 'Camera' : 'Camera off',
+              active: cameraOn,
+              warning: !cameraOn,
+              onPressed: onToggleCamera,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+
+          // Participants
+          _DockButton(
+            icon: Icons.people_rounded,
+            label: 'Participants',
+            active: activePanel == _kPanelParticipants,
+            onPressed: onParticipants,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+
+          // More / Settings
+          _DockButton(
+            icon: Icons.tune_rounded,
+            label: 'More',
+            active: activePanel == _kPanelMore,
+            badge: pendingRequests > 0 ? pendingRequests : null,
+            onPressed: onMore,
+          ),
+
+          // Spacer before leave
+          const SizedBox(width: AuraSpace.s16),
+
+          // Leave button (distinct, red)
+          _LeaveButton(onPressed: onLeave),
+        ],
+      ),
+    );
+  }
+}
+
+class _DockButton extends StatelessWidget {
+  const _DockButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.active = false,
+    this.warning = false,
+    this.badge,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool active;
+  final bool warning;
+  final int? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = active
+        ? AuraSurface.accentSoft
+        : warning
+            ? AuraSurface.dangerBg
+            : AuraSurface.card;
+    final iconColor = active
+        ? AuraSurface.accentText
+        : warning
+            ? AuraSurface.dangerInk
+            : AuraSurface.muted;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                child: AnimatedContainer(
+                  duration: AuraMotion.fast,
+                  width: 48,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(AuraRadius.md),
+                    border: Border.all(
+                      color: active
+                          ? AuraSurface.accent.withValues(alpha: 0.4)
+                          : AuraSurface.divider,
+                    ),
+                  ),
+                  child: Icon(icon, size: AuraIconSize.md, color: iconColor),
+                ),
+              ),
+            ),
+            if ((badge ?? 0) > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: AuraSurface.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          label,
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.faint,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LeaveButton extends StatelessWidget {
+  const _LeaveButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            child: Container(
+              width: 56,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AuraSurface.dangerBg,
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                border: Border.all(
+                  color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                ),
+              ),
+              child: const Icon(
+                Icons.call_end_rounded,
+                size: AuraIconSize.md,
+                color: AuraSurface.dangerInk,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          'Leave',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.dangerInk,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PANEL CONTENT (shared by desktop side panel + mobile bottom sheet)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CallPanelContent extends ConsumerStatefulWidget {
+  const _CallPanelContent({
+    required this.panelId,
+    required this.sessionId,
+    required this.myUserId,
+    required this.canModerate,
+    this.onClose,
+    this.scrollController,
+  });
+
+  final String panelId;
+  final String sessionId;
+  final String myUserId;
+  final bool canModerate;
+  final VoidCallback? onClose;
+  final ScrollController? scrollController;
+
+  @override
+  ConsumerState<_CallPanelContent> createState() => _CallPanelContentState();
+}
+
+class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  final TextEditingController _noteCtrl = TextEditingController();
+  Timer? _debounce;
+  List<Map<String, dynamic>> _results = const [];
+  bool _searching = false;
+  String? _inviting;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _noteCtrl.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String q, List<RealtimeParticipant> participants) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      _search(q, participants);
+    });
+  }
+
+  Future<void> _search(String query, List<RealtimeParticipant> participants) async {
+    final q = query.trim();
+    if (q.isEmpty) {
+      if (mounted) setState(() { _results = const []; _searching = false; });
+      return;
+    }
+    if (mounted) setState(() => _searching = true);
+    try {
+      final repo = SearchRepository(ref.read(dioProvider));
+      final result = await repo.search(q, limit: 8);
+      final existingIds = participants.map((p) => p.userId).toSet();
+      final filtered = result.users.where((u) {
+        final id = (u['id'] ?? '').toString().trim();
+        return id.isNotEmpty &&
+            id != widget.myUserId &&
+            !existingIds.contains(id);
+      }).toList();
+      if (mounted) setState(() { _results = filtered; _searching = false; });
+    } catch (_) {
+      if (mounted) setState(() { _results = const []; _searching = false; });
+    }
+  }
+
+  Future<void> _invite(Map<String, dynamic> user) async {
+    final id = (user['id'] ?? '').toString().trim();
+    if (id.isEmpty || _inviting != null) return;
+    if (mounted) setState(() => _inviting = id);
+    try {
+      await ref.read(realtimeControllerProvider.notifier).inviteMember(
+        invitedUserId: id,
+        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _results = _results.where((u) => (u['id'] ?? '') != id).toList();
+        _inviting = null;
+      });
+      _searchCtrl.clear();
+      _noteCtrl.clear();
+    } catch (_) {
+      if (mounted) setState(() => _inviting = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(realtimeControllerProvider);
+    final controller = ref.read(realtimeControllerProvider.notifier);
+    final isParticipants = widget.panelId == _kPanelParticipants;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _PanelHeader(
+          title: isParticipants ? 'Participants' : 'Call options',
+          count: isParticipants ? state.participants.length : null,
+          onClose: widget.onClose,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            child: isParticipants
+                ? _buildParticipants(state, controller)
+                : _buildMore(state, controller),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildParticipants(RealtimeState state, RealtimeController ctrl) {
+    return RealtimeParticipantList(
+      participants: state.participants,
+      session: state.session,
+      canModerate: widget.canModerate,
+      currentUserId: widget.myUserId,
+      hostUserId: state.session?.startedByUserId,
+      remoteRenderers: state.remoteRenderers,
+      onRemove: ctrl.removeParticipant,
+    );
+  }
+
+  Widget _buildMore(RealtimeState state, RealtimeController ctrl) {
+    final policy = state.policy;
+    final joinRequests = policy?.joinRequests ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Consent banner (if pending)
+        RealtimeConsentSheet(
+          currentUserId:
+              widget.myUserId.isNotEmpty ? widget.myUserId : null,
+          consents: state.consents,
+        ),
+
+        // Host controls
+        if (widget.canModerate) ...[
+          const SizedBox(height: AuraSpace.s4),
+          RealtimeHostControls(
+            session: state.session,
+            policy: policy,
+            onToggleWaitingRoom: (v) => ctrl.setWaitingRoom(v),
+            onToggleLock: (v) => ctrl.setLocked(v),
+            onRequestConsent: ctrl.requestConsent,
+            onRequestRecording: ctrl.requestRecording,
+            onRequestTranscript: ctrl.requestTranscript,
+            onRefresh: () => ctrl.hydrateSession(widget.sessionId),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+
+          if (joinRequests.isNotEmpty) ...[
+            RealtimeJoinRequestsPanel(
+              requests: joinRequests,
+              onApprove: ctrl.approveJoinRequest,
+              onReject: ctrl.rejectJoinRequest,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+
+          _RoomInviteCard(
+            searchController: _searchCtrl,
+            noteController: _noteCtrl,
+            isSearching: _searching,
+            results: _results,
+            invitingUserId: _inviting,
+            onSearchChanged: (v) => _onSearchChanged(v, state.participants),
+            onInvite: _invite,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+        ],
+
+        _ArtifactBlock(
+          policy: policy,
+          recordingCount: state.recordings.length,
+          transcriptCount: state.transcripts.length,
+          artifactCount: state.artifacts.length,
+        ),
+        const SizedBox(height: AuraSpace.s12),
+
+        AuraSecondaryButton(
+          label: 'Refresh session',
+          onPressed: () => ctrl.hydrateSession(widget.sessionId),
+        ),
+        const SizedBox(height: AuraSpace.s4),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PANEL HEADER
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PanelHeader extends StatelessWidget {
+  const _PanelHeader({
+    required this.title,
+    this.count,
+    this.onClose,
+  });
+
+  final String title;
+  final int? count;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s14),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        children: [
+          // Drag handle for bottom sheets (centered when no close button)
+          if (onClose == null)
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AuraSurface.faint,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                ),
+              ),
+            )
+          else ...[
+            Text(
+              title,
+              style: AuraText.subtitle.copyWith(fontWeight: FontWeight.w700),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: AuraSpace.s8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                ),
+                child: Text(
+                  '$count',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: AuraIconSize.md),
+              onPressed: onClose,
+              color: AuraSurface.muted,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVITE CARD (moderator only, inside More panel)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _RoomInviteCard extends StatelessWidget {
   const _RoomInviteCard({
@@ -978,7 +1758,7 @@ class _RoomInviteCard extends StatelessWidget {
           const Text('Invite members', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           const Text(
-            'Find existing Aura members and invite them into this call.',
+            'Find Aura members and invite them into this call.',
             style: AuraText.muted,
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -1006,42 +1786,36 @@ class _RoomInviteCard extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s12),
           if (isSearching)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AuraSpace.s8),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AuraSurface.accent,
-                  ),
+            const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AuraSurface.accent,
                 ),
               ),
             )
           else if (searchController.text.trim().isEmpty)
-            const Text(
-              'Search to invite people already on Aura.',
-              style: AuraText.small,
-            )
+            const Text('Search to invite people.', style: AuraText.small)
           else if (results.isEmpty)
             const Text('No matching members found.', style: AuraText.small)
           else
             ...results.map((user) {
               final id = (user['id'] ?? '').toString();
-              final displayName = (user['displayName'] ?? '').toString().trim();
+              final displayName =
+                  (user['displayName'] ?? '').toString().trim();
               final handle = (user['handle'] ?? '').toString().trim();
               final bio = (user['bio'] ?? '').toString().trim();
               final title = displayName.isNotEmpty
                   ? displayName
                   : handle.isNotEmpty
-                  ? '@$handle'
-                  : 'Member';
+                      ? '@$handle'
+                      : 'Member';
               final subtitle = [
                 if (handle.isNotEmpty && displayName.isNotEmpty) '@$handle',
                 if (bio.isNotEmpty) bio,
               ].join(' • ');
-
               final isInviting = invitingUserId == id;
 
               return Padding(
@@ -1080,6 +1854,10 @@ class _RoomInviteCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ARTIFACT BLOCK (inside More panel)
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ArtifactBlock extends StatelessWidget {
   const _ArtifactBlock({
     required this.policy,
@@ -1095,16 +1873,13 @@ class _ArtifactBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recordingLabel = policy?.canRecord == true
-        ? (recordingCount == 1
-              ? '1 recording created'
-              : '$recordingCount recordings created')
-        : 'Recording unavailable in this call';
-    final transcriptLabel = policy?.canTranscribe == true
-        ? (transcriptCount == 1
-              ? '1 note created'
-              : '$transcriptCount notes created')
-        : 'Notes unavailable in this call';
+    final canRecord = policy?.canRecord == true;
+    final canTranscribe = policy?.canTranscribe == true;
+
+    // Show nothing if no capabilities and no data yet
+    if (!canRecord && !canTranscribe && recordingCount == 0 && transcriptCount == 0 && artifactCount == 0) {
+      return const SizedBox.shrink();
+    }
 
     return AuraCard(
       child: Column(
@@ -1115,14 +1890,29 @@ class _ArtifactBlock extends StatelessWidget {
             style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AuraSpace.s8),
-          Text(recordingLabel, style: AuraText.small),
-          Text(transcriptLabel, style: AuraText.small),
-          Text(
-            artifactCount == 1
-                ? '1 saved artifact'
-                : '$artifactCount saved artifacts',
-            style: AuraText.small,
-          ),
+          if (canRecord || recordingCount > 0)
+            Text(
+              recordingCount > 0
+                  ? (recordingCount == 1
+                      ? '1 recording'
+                      : '$recordingCount recordings')
+                  : 'Recording available',
+              style: AuraText.small,
+            ),
+          if (canTranscribe || transcriptCount > 0)
+            Text(
+              transcriptCount > 0
+                  ? (transcriptCount == 1 ? '1 live note' : '$transcriptCount live notes')
+                  : 'Live notes available',
+              style: AuraText.small,
+            ),
+          if (artifactCount > 0)
+            Text(
+              artifactCount == 1
+                  ? '1 saved artifact'
+                  : '$artifactCount saved artifacts',
+              style: AuraText.small,
+            ),
         ],
       ),
     );
