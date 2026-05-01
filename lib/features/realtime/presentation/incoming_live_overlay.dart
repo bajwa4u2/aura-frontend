@@ -327,7 +327,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final item = _currentIncoming(currentPath, allItems, liveState);
     if (item == null) {
       _cancelRingTimer();
-      // Still wrap in a Stack so the floating call PiP persists across routes.
+      if (!liveState.isJoined) return widget.child;
+      // Active local call — keep PiP overlay mounted so the card persists
+      // when the user navigates away from the /realtime screen.
       return Stack(
         fit: StackFit.expand,
         children: [

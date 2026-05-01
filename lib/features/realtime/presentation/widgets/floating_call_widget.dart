@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/services/call_presence_bridge.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -134,20 +133,6 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       );
     }
 
-    // Passive: call active in another browser tab.
-    final bridge = ref.read(callPresenceBridgeProvider);
-    if (bridge != null && bridge.sessionId.isNotEmpty) {
-      return _CallInfo(
-        sessionId: bridge.sessionId,
-        isVideo: bridge.isVideo,
-        micOn: bridge.micOn,
-        cameraOn: bridge.cameraOn,
-        startedAt: bridge.startedAt,
-        participants: const [],
-        isOwner: false,
-      );
-    }
-
     return null;
   }
 
@@ -179,9 +164,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch both sources so the widget rebuilds on any relevant state change.
     ref.watch(realtimeControllerProvider);
-    ref.watch(callPresenceBridgeProvider);
 
     final path = GoRouterState.of(context).uri.path;
 
