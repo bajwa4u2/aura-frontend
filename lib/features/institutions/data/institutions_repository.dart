@@ -271,6 +271,137 @@ class InstitutionsRepository {
     );
   }
 
+  // ── Institution Announcements ─────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> listInstitutionAnnouncements(String institutionId) async {
+    final res = await _dio.get('/institutions/$institutionId/announcements');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final items = root['items'];
+      if (items is List) return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<List<Map<String, dynamic>>> listInstitutionDrafts(String institutionId) async {
+    final res = await _dio.get('/institutions/$institutionId/announcements/drafts');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final items = root['items'];
+      if (items is List) return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<Map<String, dynamic>> createInstitutionAnnouncement(
+    String institutionId, {
+    required String title,
+    required String summary,
+    required String bodyMarkdown,
+    String kind = 'GENERAL',
+    String audience = 'PUBLIC',
+  }) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/announcements',
+      data: <String, dynamic>{
+        'title': title,
+        'summary': summary,
+        'excerpt': summary,
+        'bodyMarkdown': bodyMarkdown,
+        'kind': kind,
+        'audience': audience,
+      },
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final item = root['item'];
+      if (item is Map) return Map<String, dynamic>.from(item);
+    }
+    throw Exception('Unexpected response from create announcement.');
+  }
+
+  Future<Map<String, dynamic>> updateInstitutionAnnouncement(
+    String institutionId,
+    String announcementId, {
+    String? title,
+    String? summary,
+    String? bodyMarkdown,
+    String? kind,
+    String? audience,
+  }) async {
+    final res = await _dio.patch(
+      '/institutions/$institutionId/announcements/$announcementId',
+      data: <String, dynamic>{
+        if (title != null) 'title': title,
+        if (summary != null) 'summary': summary,
+        if (summary != null) 'excerpt': summary,
+        if (bodyMarkdown != null) 'bodyMarkdown': bodyMarkdown,
+        if (kind != null) 'kind': kind,
+        if (audience != null) 'audience': audience,
+      },
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final item = root['item'];
+      if (item is Map) return Map<String, dynamic>.from(item);
+    }
+    throw Exception('Unexpected response from update announcement.');
+  }
+
+  Future<void> publishInstitutionAnnouncement(String institutionId, String announcementId) async {
+    await _dio.post('/institutions/$institutionId/announcements/$announcementId/publish');
+  }
+
+  Future<void> unpublishInstitutionAnnouncement(String institutionId, String announcementId) async {
+    await _dio.post('/institutions/$institutionId/announcements/$announcementId/unpublish');
+  }
+
+  Future<void> deleteInstitutionAnnouncement(String institutionId, String announcementId) async {
+    await _dio.delete('/institutions/$institutionId/announcements/$announcementId');
+  }
+
+  // ── Institution Spaces ────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> listInstitutionSpaces(String institutionId) async {
+    final res = await _dio.get('/institutions/$institutionId/spaces');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final spaces = root['spaces'];
+      if (spaces is List) return spaces.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<Map<String, dynamic>> createInstitutionSpace(
+    String institutionId, {
+    required String title,
+    String? description,
+    String visibility = 'INVITE_ONLY',
+  }) async {
+    final res = await _dio.post(
+      '/institutions/$institutionId/spaces',
+      data: <String, dynamic>{
+        'title': title,
+        if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
+        'visibility': visibility,
+      },
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final space = root['space'];
+      if (space is Map) return Map<String, dynamic>.from(space);
+    }
+    throw Exception('Unexpected response from create space.');
+  }
+
+  Future<void> archiveInstitutionSpace(String institutionId, String spaceId) async {
+    await _dio.delete('/institutions/$institutionId/spaces/$spaceId');
+  }
+
+  Future<void> joinInstitutionSpace(String institutionId, String spaceId) async {
+    await _dio.post('/institutions/$institutionId/spaces/$spaceId/join');
+  }
+
   List<Map<String, dynamic>> _readItems(dynamic body) {
     if (body is Map) {
       final root = Map<String, dynamic>.from(body);

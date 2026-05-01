@@ -455,12 +455,22 @@ class _InstitutionDashboardScreenState
 
     final tools = [
       _ToolData(
-        title: 'Official posts',
-        body:
-            'Publish institutional statements, notices, and official public communication.',
+        title: 'Announcements',
+        body: 'Publish official institutional announcements to members and the public.',
         icon: Icons.campaign_outlined,
         enabled: _canUseInstitutionTools,
-        onTap: _canUseInstitutionTools ? () => _go('/announcements') : null,
+        onTap: _canUseInstitutionTools && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/announcements${_isAdmin ? '?admin=true' : ''}')
+            : null,
+      ),
+      _ToolData(
+        title: 'Spaces',
+        body: 'Create and manage institution spaces for members to collaborate.',
+        icon: Icons.forum_outlined,
+        enabled: _canUseInstitutionTools,
+        onTap: _canUseInstitutionTools && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/spaces${_isAdmin ? '?admin=true' : ''}')
+            : null,
       ),
       _ToolData(
         title: 'Representatives',

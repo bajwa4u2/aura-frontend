@@ -61,6 +61,8 @@ import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
 import 'features/institutions/announcements/institution_announcements_screen.dart';
+import 'features/institutions/announcements/institution_announcement_composer.dart';
+import 'features/institutions/presentation/institution_spaces_screen.dart';
 import 'features/institutions/correspondence/institution_correspondence_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
@@ -226,17 +228,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       path.startsWith('$kAdminWorkspaceRoute/');
 
   bool requiresInstitutionAccess(String path) {
-    return path == kInstitutionDashboardRoute ||
+    if (path == kInstitutionDashboardRoute ||
         path == kInstitutionProfileRoute ||
         path == kInstitutionCorrespondenceRoute ||
-        path == kInstitutionVerificationRoute ||
-        path == kInstitutionAnnouncementsRoute ||
-        (path.startsWith('/institution/') &&
-            (path.endsWith('/members') || path.endsWith('/invites')));
+        path == kInstitutionVerificationRoute) {
+      return true;
+    }
+    // All /institution/:id/... routes require institution access
+    final institutionSubPath = RegExp(r'^/institution/[^/]+/.+');
+    return institutionSubPath.hasMatch(path);
   }
 
   bool requiresInstitutionAdminOrSpeaker(String path) {
-    return path == kInstitutionAnnouncementsRoute;
+    // Announcements require authorized speaker or admin
+    return RegExp(r'^/institution/[^/]+/announcements').hasMatch(path);
   }
 
   bool requiresInstitutionAdmin(String path) {
@@ -757,12 +762,35 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
           GoRoute(
-            path: kInstitutionAnnouncementsRoute,
-            builder: (_, __) => const InstitutionAnnouncementsScreen(),
-          ),
-          GoRoute(
             path: kInstitutionCorrespondenceRoute,
             builder: (_, __) => const InstitutionCorrespondenceScreen(),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/announcements',
+            builder: (context, state) => InstitutionAnnouncementsScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              isAdmin: state.uri.queryParameters['admin'] == 'true',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/announcements/new',
+            builder: (context, state) => InstitutionAnnouncementComposer(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/announcements/:announcementId/edit',
+            builder: (context, state) => InstitutionAnnouncementComposer(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              announcementId: state.pathParameters['announcementId'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/spaces',
+            builder: (context, state) => InstitutionSpacesScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              isAdmin: state.uri.queryParameters['admin'] == 'true',
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/members',
