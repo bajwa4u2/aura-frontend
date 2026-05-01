@@ -73,6 +73,7 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _didBoot = false;
+  bool _isEnding = false;
   String? _lastConsentSyncKey;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
@@ -143,6 +144,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   Future<void> _endCallAndClose(RealtimeController controller) async {
+    if (_isEnding) return;
+    setState(() => _isEnding = true);
     final session = ref.read(realtimeControllerProvider).session;
     debugPrint('[END] End button tapped: sessionId=${session?.id}');
     try {
@@ -153,6 +156,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     } catch (e, st) {
       debugPrint('[END] _endCallAndClose ERROR: $e\n${st.toString().split('\n').take(4).join('\n')}');
       if (mounted) {
+        setState(() => _isEnding = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Could not end call: $e'),
@@ -273,7 +277,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     _syncConsentsIfNeeded(
       controller: controller,
-      sessionId: state.sessionId ?? widget.sessionId,
+      sessionId: state.isJoined ? (state.sessionId ?? widget.sessionId) : '',
       canManageConsents: canModerate,
     );
 
@@ -353,11 +357,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   isEndCall: isHost ||
                       state.session?.surfaceType == RealtimeSurfaceType.dm ||
                       state.session?.surfaceType == RealtimeSurfaceType.thread,
-                  onLeave: (isHost ||
-                          state.session?.surfaceType == RealtimeSurfaceType.dm ||
-                          state.session?.surfaceType == RealtimeSurfaceType.thread)
-                      ? () => unawaited(_endCallAndClose(controller))
-                      : () => unawaited(_leaveAndNavigate(controller)),
+                  isEnding: _isEnding,
+                  onLeave: _isEnding
+                      ? null
+                      : (isHost ||
+                              state.session?.surfaceType == RealtimeSurfaceType.dm ||
+                              state.session?.surfaceType == RealtimeSurfaceType.thread)
+                          ? () => unawaited(_endCallAndClose(controller))
+                          : () => unawaited(_leaveAndNavigate(controller)),
                 ),
             ],
           );
@@ -1315,6 +1322,7 @@ class _CallControlDock extends StatelessWidget {
     required this.onMore,
     required this.onLeave,
     this.isEndCall = false,
+    this.isEnding = false,
   });
 
   final bool micOn;
@@ -1326,8 +1334,9 @@ class _CallControlDock extends StatelessWidget {
   final VoidCallback onToggleCamera;
   final VoidCallback onParticipants;
   final VoidCallback onMore;
-  final VoidCallback onLeave;
+  final VoidCallback? onLeave;
   final bool isEndCall;
+  final bool isEnding;
 
   @override
   Widget build(BuildContext context) {
@@ -1389,7 +1398,11 @@ class _CallControlDock extends StatelessWidget {
           const SizedBox(width: AuraSpace.s16),
 
           // Leave / End button (distinct, red)
-          _LeaveButton(onPressed: onLeave, label: isEndCall ? 'End' : 'Leave'),
+          _LeaveButton(
+            onPressed: onLeave,
+            label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
+            busy: isEnding,
+          ),
         ],
       ),
     );
@@ -1494,13 +1507,19 @@ class _DockButton extends StatelessWidget {
 }
 
 class _LeaveButton extends StatelessWidget {
-  const _LeaveButton({required this.onPressed, this.label = 'Leave'});
+  const _LeaveButton({
+    required this.onPressed,
+    this.label = 'Leave',
+    this.busy = false,
+  });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String label;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onPressed == null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1509,21 +1528,39 @@ class _LeaveButton extends StatelessWidget {
           child: InkWell(
             onTap: onPressed,
             borderRadius: BorderRadius.circular(AuraRadius.md),
-            child: Container(
+            child: AnimatedContainer(
+              duration: AuraMotion.fast,
               width: 56,
               height: 44,
               decoration: BoxDecoration(
-                color: AuraSurface.dangerBg,
+                color: disabled
+                    ? AuraSurface.dangerBg.withValues(alpha: 0.45)
+                    : AuraSurface.dangerBg,
                 borderRadius: BorderRadius.circular(AuraRadius.md),
                 border: Border.all(
-                  color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+                  color: AuraSurface.dangerInk.withValues(
+                    alpha: disabled ? 0.15 : 0.35,
+                  ),
                 ),
               ),
-              child: const Icon(
-                Icons.call_end_rounded,
-                size: AuraIconSize.md,
-                color: AuraSurface.dangerInk,
-              ),
+              child: busy
+                  ? const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AuraSurface.dangerInk,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.call_end_rounded,
+                      size: AuraIconSize.md,
+                      color: AuraSurface.dangerInk.withValues(
+                        alpha: disabled ? 0.4 : 1.0,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -1531,7 +1568,9 @@ class _LeaveButton extends StatelessWidget {
         Text(
           label,
           style: AuraText.micro.copyWith(
-            color: AuraSurface.dangerInk,
+            color: AuraSurface.dangerInk.withValues(
+              alpha: disabled ? 0.4 : 1.0,
+            ),
             fontWeight: FontWeight.w600,
           ),
         ),

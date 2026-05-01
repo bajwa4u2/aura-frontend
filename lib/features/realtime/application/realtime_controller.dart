@@ -34,6 +34,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   String? _hydratingSessionId;
   String? _joiningSessionId;
   bool _terminating = false;
+  bool _endingCall = false;
 
   Map<String, dynamic>? _rtcConfiguration;
   String? _rtcConfigurationSessionId;
@@ -509,9 +510,9 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   /// host intends to terminate the session for everyone.
   /// Throws if the backend /end call fails — callers must handle the error.
   Future<void> endCall() async {
-    debugPrint('[END] endCall: called terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
-    if (_terminating) {
-      debugPrint('[END] endCall: bailed — already terminating');
+    debugPrint('[END] endCall: called _endingCall=$_endingCall _terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
+    if (_endingCall || _terminating) {
+      debugPrint('[END] endCall: bailed — already ending/terminating');
       return;
     }
     final sessionId = (state.sessionId ?? '').trim();
@@ -523,17 +524,22 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final session = state.session;
     debugPrint('[END] endCall: session.id=${session?.id} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
 
-    // Propagate errors — do NOT catch here so the caller knows the end failed
-    // and can prevent window close + show an error.
-    await _repository.endSession(session);
-    debugPrint('[END] endCall: repository.endSession completed — calling _terminateSession');
+    _endingCall = true;
+    try {
+      // Propagate errors — do NOT catch here so the caller knows the end failed
+      // and can prevent window close + show an error.
+      await _repository.endSession(session);
+      debugPrint('[END] endCall: repository.endSession completed — calling _terminateSession');
 
-    await _terminateSession(
-      keepSocketConnected: true,
-      infoMessage: 'Call ended.',
-      alsoCallRepository: false,
-    );
-    debugPrint('[END] endCall: done isJoined=${state.isJoined}');
+      await _terminateSession(
+        keepSocketConnected: true,
+        infoMessage: 'Call ended.',
+        alsoCallRepository: false,
+      );
+      debugPrint('[END] endCall: done isJoined=${state.isJoined}');
+    } finally {
+      _endingCall = false;
+    }
   }
 
   Future<void> toggleMicrophone() async {
@@ -1260,6 +1266,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       case 'recording:updated':
       case 'transcript:updated':
       case 'artifact:updated':
+        // Ignore stale server push events when the local session is idle —
+        // merging them would restore cleared state and keep polling alive
+        // after endCall() / leave() has already torn down the session.
+        if (state.joinState == RealtimeJoinState.idle) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
         final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
         state = merged.copyWith(lastSocketEvent: event.name);
         return;
