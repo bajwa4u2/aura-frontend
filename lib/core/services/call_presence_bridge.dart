@@ -67,7 +67,6 @@ final callPresenceBridgeProvider =
       fireImmediately: true,
     );
 
-    ref.onDispose(notifier.dispose);
     return notifier;
   },
 );
@@ -137,7 +136,7 @@ class CallPresenceBridgeNotifier extends StateNotifier<CallPresenceState?> {
     _post({
       'type': 'call-heartbeat',
       'sessionId': s.sessionId ?? '',
-      'kind': (s.session?.kind ?? '').trim().toUpperCase() == 'VIDEO' ? 'video' : 'audio',
+      'kind': s.callMode == 'video' ? 'video' : 'audio',
       'startedAt': s.session?.startedAt?.toIso8601String(),
       'participantCount': s.participants.length,
       'windowId': _windowId,

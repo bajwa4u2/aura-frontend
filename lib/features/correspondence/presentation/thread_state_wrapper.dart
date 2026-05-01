@@ -112,6 +112,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         event.name == 'call:terminal') {
       _lastHydratedSessionId = null;
       await notifier.leave();
+      _refreshThreadSurface();
       return;
     }
 

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../../../core/services/call_presence_bridge.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -182,6 +183,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the presence bridge alive in this window so it can broadcast
+    // heartbeats to the main tab's FloatingCallWidget PiP overlay.
+    ref.watch(callPresenceBridgeProvider);
+
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);

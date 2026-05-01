@@ -137,7 +137,7 @@ class DeviceService {
     try {
       final devices = await _repository.getMyDevices();
       return devices.any((d) =>
-        d.provider == 'WEB_PUSH' &&
+        d.provider.toUpperCase() == 'WEB_PUSH' &&
         d.isActive &&
         d.revokedAt == null &&
         (d.endpoint?.isNotEmpty ?? false),
@@ -224,6 +224,7 @@ class DeviceService {
       'endpoint': sub.endpoint,
       'webPushP256dh': sub.p256dh ?? '',
       'webPushAuth': sub.auth ?? '',
+      'isActive': true,
       'deviceName': _resolveDeviceName(),
       'appVersion': const String.fromEnvironment(
         'APP_VERSION',

@@ -200,7 +200,7 @@ class RealtimeSession {
       surfaceId: _readString(json['surfaceId']),
       startedByUserId: _readString(json['startedByUserId']),
       status: (json['status'] ?? '').toString().trim().toUpperCase(),
-      kind: (json['kind'] ?? 'AUDIO').toString().trim().toUpperCase(),
+      kind: (json['kind'] ?? '').toString().trim().toUpperCase(),
       isActive: _readBool(
         json['isActive'],
         fallback: (json['status'] ?? '').toString().trim().toUpperCase() != 'ENDED' &&
