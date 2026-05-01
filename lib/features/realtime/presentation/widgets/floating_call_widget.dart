@@ -199,25 +199,29 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       return const SizedBox.shrink();
     }
 
-    return Positioned(
-      left: _offset!.dx,
-      top: _offset!.dy,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onPanUpdate: _onPanUpdate,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.move,
-          child: _FloatingCard(
-            isVideo: info.isVideo,
-            micOn: info.micOn,
-            cameraOn: info.cameraOn,
-            participants: info.participants,
-            duration: _formatDuration(info.startedAt),
-            isOwner: info.isOwner,
-            onReturn: info.isOwner ? () => _returnToCall(info) : null,
+    return Stack(
+      children: [
+        Positioned(
+          left: _offset!.dx,
+          top: _offset!.dy,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanUpdate: _onPanUpdate,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.move,
+              child: _FloatingCard(
+                isVideo: info.isVideo,
+                micOn: info.micOn,
+                cameraOn: info.cameraOn,
+                participants: info.participants,
+                duration: _formatDuration(info.startedAt),
+                isOwner: info.isOwner,
+                onReturn: info.isOwner ? () => _returnToCall(info) : null,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

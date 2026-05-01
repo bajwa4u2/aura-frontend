@@ -332,7 +332,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         fit: StackFit.expand,
         children: [
           widget.child,
-          const FloatingCallWidget(),
+          const Positioned.fill(child: FloatingCallWidget()),
         ],
       );
     }
@@ -376,7 +376,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       children: [
         widget.child,
         // Floating call PiP (hidden below the incoming call overlay).
-        const FloatingCallWidget(),
+        const Positioned.fill(child: FloatingCallWidget()),
         // Blurred full-screen backdrop
         Positioned.fill(
           child: BackdropFilter(
