@@ -747,14 +747,19 @@ int _sortSpacesByActivity(
   Map<String, dynamic> a,
   Map<String, dynamic> b,
 ) {
-  return _spaceSortDate(b).compareTo(_spaceSortDate(a));
+  final cmp = _spaceSortDate(b).compareTo(_spaceSortDate(a));
+  if (cmp != 0) return cmp;
+  // Stable tie-breaker: newer id lexicographically last, so compare b→a.
+  final idA = (a['id'] ?? a['spaceId'] ?? '').toString();
+  final idB = (b['id'] ?? b['spaceId'] ?? '').toString();
+  return idB.compareTo(idA);
 }
 
 DateTime _spaceSortDate(Map<String, dynamic> space) {
   final raw = _pickString(space, const [
-    'updatedAt',
-    'lastActivityAt',
     'lastMessageAt',
+    'lastActivityAt',
+    'updatedAt',
     'createdAt',
   ]);
   if (raw.isEmpty) return DateTime.fromMillisecondsSinceEpoch(0);
