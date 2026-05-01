@@ -748,18 +748,21 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   void _applyBundle(RealtimeSessionSnapshot bundle) {
     final session = bundle.session;
     final sessionKind = session.kind.trim().toUpperCase();
-    final hasVideo = bundle.participants.any((p) => p.videoOn || p.screenOn);
-    // session.kind is the authoritative source; hasVideo can only escalate to
-    // video, never demote it. Unknown kind preserves current state instead of
-    // silently defaulting to audio.
+
+    // session.kind is the sole authority for call mode. Participant media
+    // state (hasVideo) reflects capability, not the call type the host chose.
     final String? callMode;
     if (sessionKind == 'VIDEO') {
       callMode = 'video';
     } else if (sessionKind == 'AUDIO') {
-      callMode = hasVideo ? 'video' : 'audio';
-    } else if (hasVideo) {
-      callMode = 'video';
+      callMode = 'audio';
     } else {
+      // Unrecognised kind: log and preserve the existing mode rather than
+      // silently overwriting with audio.
+      debugPrint(
+        'RealtimeController._applyBundle: unrecognised session kind '
+        '"$sessionKind" — preserving existing callMode',
+      );
       callMode = state.callMode;
     }
 
