@@ -143,9 +143,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   Future<void> _endCallAndClose(RealtimeController controller) async {
-    await controller.endCall();
-    if (mounted) {
-      ref.read(callWindowServiceProvider).closeCurrentWindow();
+    final sessionId = ref.read(realtimeControllerProvider).sessionId ?? '';
+    debugPrint('[END] End button tapped: sessionId=$sessionId');
+    try {
+      debugPrint('[END] _endCallAndClose: awaiting controller.endCall()');
+      await controller.endCall();
+      debugPrint('[END] _endCallAndClose: endCall() succeeded — closing window');
+      if (mounted) {
+        ref.read(callWindowServiceProvider).closeCurrentWindow();
+        debugPrint('[END] _endCallAndClose: closeCurrentWindow() called');
+      }
+    } catch (e, st) {
+      debugPrint('[END] _endCallAndClose ERROR: $e\n${st.toString().split('\n').take(4).join('\n')}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not end call: $e'),
+            backgroundColor: AuraSurface.dangerBg,
+          ),
+        );
+      }
+      // Do not close the window — session may still be active.
     }
   }
 

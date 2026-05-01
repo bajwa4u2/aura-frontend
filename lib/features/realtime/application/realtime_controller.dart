@@ -484,20 +484,33 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   /// so the session is marked ENDED and all participants are notified.
   /// Use [leave] when only one participant departs; use [endCall] when the
   /// host intends to terminate the session for everyone.
+  /// Throws if the backend /end call fails — callers must handle the error.
   Future<void> endCall() async {
-    if (_terminating) return;
+    debugPrint('[END] endCall: called terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
+    if (_terminating) {
+      debugPrint('[END] endCall: bailed — already terminating');
+      return;
+    }
     final sessionId = (state.sessionId ?? '').trim();
-    if (sessionId.isEmpty) return;
+    if (sessionId.isEmpty) {
+      debugPrint('[END] endCall: bailed — sessionId is empty');
+      return;
+    }
 
-    try {
-      await _repository.endSession(state.session);
-    } catch (_) {}
+    final session = state.session;
+    debugPrint('[END] endCall: session.id=${session?.id} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
+
+    // Propagate errors — do NOT catch here so the caller knows the end failed
+    // and can prevent window close + show an error.
+    await _repository.endSession(session);
+    debugPrint('[END] endCall: repository.endSession completed — calling _terminateSession');
 
     await _terminateSession(
       keepSocketConnected: true,
       infoMessage: 'Call ended.',
       alsoCallRepository: false,
     );
+    debugPrint('[END] endCall: done isJoined=${state.isJoined}');
   }
 
   Future<void> toggleMicrophone() async {

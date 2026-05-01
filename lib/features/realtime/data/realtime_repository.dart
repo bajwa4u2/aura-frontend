@@ -446,34 +446,47 @@ class RealtimeRepository {
   }
 
   Future<void> endSession(RealtimeSession? session) async {
-    if (session == null) return;
+    if (session == null) {
+      debugPrint('[END] endSession: session is null — no-op');
+      return;
+    }
     final id = session.id.trim();
-    if (id.isEmpty) return;
+    if (id.isEmpty) {
+      debugPrint('[END] endSession: session.id is empty — no-op');
+      return;
+    }
 
     final surfaceId = (session.surfaceId ?? '').trim();
     final surfaceType = session.surfaceType.name.trim().toLowerCase();
 
-    if (surfaceType == 'thread' || surfaceType == 'dm') {
-      if (surfaceId.isNotEmpty) {
-        await _safePost('/threads/$surfaceId/live/$id/end');
+    String path;
+    if ((surfaceType == 'thread' || surfaceType == 'dm') && surfaceId.isNotEmpty) {
+      path = '/threads/$surfaceId/live/$id/end';
+    } else if (surfaceType == 'space' && surfaceId.isNotEmpty) {
+      path = '/spaces/$surfaceId/live/$id/end';
+    } else if ((surfaceType == 'room' ||
+            surfaceType == 'eventroom' ||
+            surfaceType == 'institutionroom') &&
+        surfaceId.isNotEmpty) {
+      path = '/rooms/$surfaceId/live/$id/end';
+    } else {
+      path = '/realtime/sessions/$id/end';
+    }
+
+    debugPrint('[END] endSession: surfaceType=$surfaceType surfaceId=$surfaceId id=$id → POST $path');
+    try {
+      await _dio.post(path);
+      debugPrint('[END] endSession: POST $path succeeded');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      debugPrint('[END] endSession: POST $path FAILED status=$status body=${e.response?.data}');
+      // 404 = session already gone; treat as success so local state still clears.
+      if (status == 404) {
+        clearBundleCache(id);
         return;
       }
+      rethrow;
     }
-    if (surfaceType == 'space') {
-      if (surfaceId.isNotEmpty) {
-        await _safePost('/spaces/$surfaceId/live/$id/end');
-        return;
-      }
-    }
-    if (surfaceType == 'room' ||
-        surfaceType == 'eventroom' ||
-        surfaceType == 'institutionroom') {
-      if (surfaceId.isNotEmpty) {
-        await _safePost('/rooms/$surfaceId/live/$id/end');
-        return;
-      }
-    }
-    await _safePost('/realtime/sessions/$id/end');
     clearBundleCache(id);
   }
 
