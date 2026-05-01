@@ -137,13 +137,13 @@ class _RealtimeLobbyScreenState extends ConsumerState<RealtimeLobbyScreen> {
               if ((realtime.errorMessage ?? '').isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s16),
                 _StatusBanner(
-                  message: realtime.errorMessage!,
+                  message: realtime.errorMessage ?? '',
                   isError: true,
                 ),
               ],
               if ((realtime.infoMessage ?? '').isNotEmpty) ...[
                 const SizedBox(height: AuraSpace.s16),
-                _StatusBanner(message: realtime.infoMessage!),
+                _StatusBanner(message: realtime.infoMessage ?? ''),
               ],
             ],
           ),

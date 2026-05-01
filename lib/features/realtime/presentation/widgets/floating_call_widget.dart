@@ -121,11 +121,10 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
   _CallInfo? _resolve() {
     final local = ref.read(realtimeControllerProvider);
-    if (local.isJoined &&
-        local.sessionId != null &&
-        local.sessionId!.isNotEmpty) {
+    final sessionId = local.sessionId;
+    if (local.isJoined && sessionId != null && sessionId.isNotEmpty) {
       return _CallInfo(
-        sessionId: local.sessionId!,
+        sessionId: sessionId,
         isVideo: local.isVideoMode,
         micOn: local.microphoneEnabled,
         cameraOn: local.cameraEnabled,

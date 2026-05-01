@@ -458,7 +458,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     ),
                   ),
                   child: Text(
-                    state.errorMessage!,
+                    state.errorMessage ?? '',
                     style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
                     textAlign: TextAlign.center,
                   ),
@@ -487,7 +487,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   if ((_spaceRoute(state.session) ?? '').isNotEmpty)
                     AuraSecondaryButton(
                       label: 'Back to conversation',
-                      onPressed: () => context.go(_spaceRoute(state.session)!),
+                      onPressed: () {
+                        final route = _spaceRoute(state.session);
+                        if (route != null && mounted) context.go(route);
+                      },
                     ),
                   AuraSecondaryButton(
                     label: 'Leave',
