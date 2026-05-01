@@ -114,13 +114,13 @@ class _SettingsEmptyState extends StatelessWidget {
               const Icon(Icons.tune_outlined, size: 32, color: AuraSurface.faint),
               const SizedBox(height: AuraSpace.s12),
               Text(
-                'No settings configured',
+                'Default platform policies active',
                 style: AuraText.title.copyWith(color: AuraSurface.ink),
               ),
               const SizedBox(height: AuraSpace.s6),
               Text(
-                'Platform settings appear here once pushed from the backend. '
-                'These categories are managed by the admin configuration service:',
+                'No custom settings have been pushed from the backend. '
+                'Default policies are in effect. Use the Policies screen to configure:',
                 style: AuraText.body.copyWith(color: AuraSurface.muted),
               ),
               const SizedBox(height: AuraSpace.s20),
@@ -179,7 +179,7 @@ class _SettingsEmptyState extends StatelessWidget {
                                 border: Border.all(color: AuraSurface.divider),
                               ),
                               child: Text(
-                                'Not configured',
+                                'Default',
                                 style: AuraText.micro.copyWith(
                                   color: AuraSurface.faint,
                                 ),

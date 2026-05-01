@@ -52,6 +52,8 @@ import 'features/admin/presentation/admin_settings_screen.dart';
 import 'features/admin/presentation/admin_feature_flags_screen.dart';
 import 'features/admin/presentation/admin_communications_screen.dart';
 import 'features/admin/presentation/admin_institution_domains_screen.dart';
+import 'features/admin/presentation/admin_review_queue_screen.dart';
+import 'features/admin/presentation/admin_policies_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
@@ -654,6 +656,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/institution-domains',
             builder: (_, __) => const AdminInstitutionDomainsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/review-queue',
+            builder: (_, __) => const AdminReviewQueueScreen(),
+          ),
+          GoRoute(
+            path: '/admin/policies',
+            builder: (_, __) => const AdminPoliciesScreen(),
           ),
           GoRoute(
             path: '/admin/support',

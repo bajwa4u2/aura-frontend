@@ -402,3 +402,357 @@ class AdminInstitutionDomain {
 extension _LetExt<T> on T {
   R let<R>(R Function(T) block) => block(this);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVIEW QUEUE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ReviewQueueItem {
+  const ReviewQueueItem({
+    required this.id,
+    required this.type,
+    required this.entityId,
+    required this.title,
+    required this.subtitle,
+    required this.createdBy,
+    required this.createdAt,
+    required this.status,
+    required this.emailMatched,
+    required this.dnsVerified,
+    required this.meta,
+  });
+
+  /// institution_create | institution_claim | member_join
+  final String type;
+  final String id;
+  final String entityId;
+  final String title;
+  final String subtitle;
+  final String createdBy;
+  final DateTime createdAt;
+
+  /// pending | provisional_active | active | rejected
+  final String status;
+  final bool emailMatched;
+  final bool dnsVerified;
+  final Map<String, dynamic> meta;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory ReviewQueueItem.fromJson(Map<String, dynamic> json) {
+    final verification = json['verification'] is Map<String, dynamic>
+        ? json['verification'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final meta = json['meta'] is Map<String, dynamic>
+        ? json['meta'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    return ReviewQueueItem(
+      id: _str(json['id']),
+      type: _str(json['type']),
+      entityId: _str(json['entityId'] ?? json['entity_id']),
+      title: _str(json['title']),
+      subtitle: _str(json['subtitle']),
+      createdBy: _str(json['createdBy'] ?? json['created_by']),
+      createdAt: _parseDate(json['createdAt'] ?? json['created_at']) ?? DateTime.now(),
+      status: _str(json['status'] ?? 'pending'),
+      emailMatched: verification['emailMatched'] == true,
+      dnsVerified: verification['dnsVerified'] == true,
+      meta: meta,
+    );
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POLICIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AdminPolicy {
+  const AdminPolicy({
+    required this.institution,
+    required this.security,
+    required this.communications,
+    required this.feature,
+  });
+
+  final InstitutionPolicy institution;
+  final SecurityPolicy security;
+  final CommunicationsPolicy communications;
+  final FeaturePolicy feature;
+
+  static const AdminPolicy defaults = AdminPolicy(
+    institution: InstitutionPolicy.defaults,
+    security: SecurityPolicy.defaults,
+    communications: CommunicationsPolicy.defaults,
+    feature: FeaturePolicy.defaults,
+  );
+
+  factory AdminPolicy.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic> sub(String key) {
+      final raw = json[key] ?? json['data']?[key];
+      if (raw is Map<String, dynamic>) return raw;
+      if (raw is Map) return Map<String, dynamic>.from(raw);
+      return const {};
+    }
+
+    return AdminPolicy(
+      institution: InstitutionPolicy.fromJson(sub('institutionPolicy')),
+      security: SecurityPolicy.fromJson(sub('securityPolicy')),
+      communications: CommunicationsPolicy.fromJson(sub('communicationsPolicy')),
+      feature: FeaturePolicy.fromJson(sub('featurePolicy')),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'institutionPolicy': institution.toJson(),
+        'securityPolicy': security.toJson(),
+        'communicationsPolicy': communications.toJson(),
+        'featurePolicy': feature.toJson(),
+      };
+}
+
+class InstitutionPolicy {
+  const InstitutionPolicy({
+    required this.requireEmailVerification,
+    required this.requireDnsVerification,
+    required this.allowProvisionalActive,
+    required this.autoApproveVerified,
+    required this.allowedDomains,
+    required this.blockedDomains,
+  });
+
+  static const InstitutionPolicy defaults = InstitutionPolicy(
+    requireEmailVerification: true,
+    requireDnsVerification: false,
+    allowProvisionalActive: true,
+    autoApproveVerified: false,
+    allowedDomains: [],
+    blockedDomains: [],
+  );
+
+  final bool requireEmailVerification;
+  final bool requireDnsVerification;
+  final bool allowProvisionalActive;
+  final bool autoApproveVerified;
+  final List<String> allowedDomains;
+  final List<String> blockedDomains;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+  static List<String> _strList(dynamic v) {
+    if (v is List) return v.map((e) => _str(e)).where((e) => e.isNotEmpty).toList();
+    return const [];
+  }
+
+  factory InstitutionPolicy.fromJson(Map<String, dynamic> json) {
+    return InstitutionPolicy(
+      requireEmailVerification: json['requireEmailVerification'] != false,
+      requireDnsVerification: json['requireDnsVerification'] == true,
+      allowProvisionalActive: json['allowProvisionalActive'] != false,
+      autoApproveVerified: json['autoApproveVerified'] == true,
+      allowedDomains: _strList(json['allowedDomains']),
+      blockedDomains: _strList(json['blockedDomains']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'requireEmailVerification': requireEmailVerification,
+        'requireDnsVerification': requireDnsVerification,
+        'allowProvisionalActive': allowProvisionalActive,
+        'autoApproveVerified': autoApproveVerified,
+        'allowedDomains': allowedDomains,
+        'blockedDomains': blockedDomains,
+      };
+
+  InstitutionPolicy copyWith({
+    bool? requireEmailVerification,
+    bool? requireDnsVerification,
+    bool? allowProvisionalActive,
+    bool? autoApproveVerified,
+  }) =>
+      InstitutionPolicy(
+        requireEmailVerification:
+            requireEmailVerification ?? this.requireEmailVerification,
+        requireDnsVerification:
+            requireDnsVerification ?? this.requireDnsVerification,
+        allowProvisionalActive:
+            allowProvisionalActive ?? this.allowProvisionalActive,
+        autoApproveVerified: autoApproveVerified ?? this.autoApproveVerified,
+        allowedDomains: allowedDomains,
+        blockedDomains: blockedDomains,
+      );
+}
+
+class SecurityPolicy {
+  const SecurityPolicy({
+    required this.maxLoginAttempts,
+    required this.sessionTimeoutMinutes,
+    required this.requireMfa,
+  });
+
+  static const SecurityPolicy defaults = SecurityPolicy(
+    maxLoginAttempts: 5,
+    sessionTimeoutMinutes: 1440,
+    requireMfa: false,
+  );
+
+  final int maxLoginAttempts;
+  final int sessionTimeoutMinutes;
+  final bool requireMfa;
+
+  static int _int(dynamic v, int fallback) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse((v ?? '').toString()) ?? fallback;
+  }
+
+  factory SecurityPolicy.fromJson(Map<String, dynamic> json) {
+    return SecurityPolicy(
+      maxLoginAttempts: _int(json['maxLoginAttempts'], 5),
+      sessionTimeoutMinutes: _int(json['sessionTimeoutMinutes'], 1440),
+      requireMfa: json['requireMfa'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'maxLoginAttempts': maxLoginAttempts,
+        'sessionTimeoutMinutes': sessionTimeoutMinutes,
+        'requireMfa': requireMfa,
+      };
+
+  SecurityPolicy copyWith({
+    int? maxLoginAttempts,
+    int? sessionTimeoutMinutes,
+    bool? requireMfa,
+  }) =>
+      SecurityPolicy(
+        maxLoginAttempts: maxLoginAttempts ?? this.maxLoginAttempts,
+        sessionTimeoutMinutes:
+            sessionTimeoutMinutes ?? this.sessionTimeoutMinutes,
+        requireMfa: requireMfa ?? this.requireMfa,
+      );
+}
+
+class CommunicationsPolicy {
+  const CommunicationsPolicy({
+    required this.maxEmailsPerDay,
+    required this.digestEnabled,
+    required this.digestFrequency,
+    required this.unsubscribeEnabled,
+    required this.senderEmail,
+  });
+
+  static const CommunicationsPolicy defaults = CommunicationsPolicy(
+    maxEmailsPerDay: 10,
+    digestEnabled: true,
+    digestFrequency: 'daily',
+    unsubscribeEnabled: true,
+    senderEmail: '',
+  );
+
+  final int maxEmailsPerDay;
+  final bool digestEnabled;
+  final String digestFrequency;
+  final bool unsubscribeEnabled;
+  final String senderEmail;
+
+  static int _int(dynamic v, int fallback) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse((v ?? '').toString()) ?? fallback;
+  }
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory CommunicationsPolicy.fromJson(Map<String, dynamic> json) {
+    return CommunicationsPolicy(
+      maxEmailsPerDay: _int(json['maxEmailsPerDay'], 10),
+      digestEnabled: json['digestEnabled'] != false,
+      digestFrequency: _str(json['digestFrequency']).let(
+        (s) => s.isEmpty ? 'daily' : s,
+      ),
+      unsubscribeEnabled: json['unsubscribeEnabled'] != false,
+      senderEmail: _str(json['senderEmail']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'maxEmailsPerDay': maxEmailsPerDay,
+        'digestEnabled': digestEnabled,
+        'digestFrequency': digestFrequency,
+        'unsubscribeEnabled': unsubscribeEnabled,
+        'senderEmail': senderEmail,
+      };
+
+  CommunicationsPolicy copyWith({
+    int? maxEmailsPerDay,
+    bool? digestEnabled,
+    String? digestFrequency,
+    bool? unsubscribeEnabled,
+    String? senderEmail,
+  }) =>
+      CommunicationsPolicy(
+        maxEmailsPerDay: maxEmailsPerDay ?? this.maxEmailsPerDay,
+        digestEnabled: digestEnabled ?? this.digestEnabled,
+        digestFrequency: digestFrequency ?? this.digestFrequency,
+        unsubscribeEnabled: unsubscribeEnabled ?? this.unsubscribeEnabled,
+        senderEmail: senderEmail ?? this.senderEmail,
+      );
+}
+
+class FeaturePolicy {
+  const FeaturePolicy({
+    required this.betaOptInEnabled,
+    required this.maintenanceMode,
+    required this.publicRegistrationEnabled,
+    required this.inviteOnlyMode,
+  });
+
+  static const FeaturePolicy defaults = FeaturePolicy(
+    betaOptInEnabled: true,
+    maintenanceMode: false,
+    publicRegistrationEnabled: true,
+    inviteOnlyMode: false,
+  );
+
+  final bool betaOptInEnabled;
+  final bool maintenanceMode;
+  final bool publicRegistrationEnabled;
+  final bool inviteOnlyMode;
+
+  factory FeaturePolicy.fromJson(Map<String, dynamic> json) {
+    return FeaturePolicy(
+      betaOptInEnabled: json['betaOptInEnabled'] != false,
+      maintenanceMode: json['maintenanceMode'] == true,
+      publicRegistrationEnabled: json['publicRegistrationEnabled'] != false,
+      inviteOnlyMode: json['inviteOnlyMode'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'betaOptInEnabled': betaOptInEnabled,
+        'maintenanceMode': maintenanceMode,
+        'publicRegistrationEnabled': publicRegistrationEnabled,
+        'inviteOnlyMode': inviteOnlyMode,
+      };
+
+  FeaturePolicy copyWith({
+    bool? betaOptInEnabled,
+    bool? maintenanceMode,
+    bool? publicRegistrationEnabled,
+    bool? inviteOnlyMode,
+  }) =>
+      FeaturePolicy(
+        betaOptInEnabled: betaOptInEnabled ?? this.betaOptInEnabled,
+        maintenanceMode: maintenanceMode ?? this.maintenanceMode,
+        publicRegistrationEnabled:
+            publicRegistrationEnabled ?? this.publicRegistrationEnabled,
+        inviteOnlyMode: inviteOnlyMode ?? this.inviteOnlyMode,
+      );
+}

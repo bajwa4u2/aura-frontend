@@ -126,6 +126,49 @@ class AdminRepository {
   Future<void> rejectDomain(String id) async {
     await _dio.post('/v1/admin/institution-domains/$id/reject');
   }
+
+  // ── Review Queue ────────────────────────────────────────────────────────
+
+  Future<List<ReviewQueueItem>> fetchReviewQueue({String? type, String? status}) async {
+    final res = await _dio.get(
+      '/v1/admin/review-queue',
+      queryParameters: {
+        if (type != null && type.isNotEmpty) 'type': type,
+        if (status != null && status.isNotEmpty) 'status': status,
+      },
+    );
+    return _parseList(res.data, ReviewQueueItem.fromJson);
+  }
+
+  Future<void> approveReview(String id, {String? note}) async {
+    await _dio.post(
+      '/v1/admin/review/$id/approve',
+      data: {if (note != null && note.isNotEmpty) 'note': note},
+    );
+  }
+
+  Future<void> rejectReview(String id, {String? note}) async {
+    await _dio.post(
+      '/v1/admin/review/$id/reject',
+      data: {if (note != null && note.isNotEmpty) 'note': note},
+    );
+  }
+
+  // ── Policies ────────────────────────────────────────────────────────────
+
+  Future<AdminPolicy> fetchPolicies() async {
+    try {
+      final res = await _dio.get('/v1/admin/policies');
+      final raw = res.data;
+      if (raw is Map<String, dynamic>) return AdminPolicy.fromJson(raw);
+      if (raw is Map) return AdminPolicy.fromJson(Map<String, dynamic>.from(raw));
+    } catch (_) {}
+    return AdminPolicy.defaults;
+  }
+
+  Future<void> updatePolicies(AdminPolicy policy) async {
+    await _dio.put('/v1/admin/policies', data: policy.toJson());
+  }
 }
 
 // Standalone provider helper — used by admin_providers.dart.

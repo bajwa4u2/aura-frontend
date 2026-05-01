@@ -153,3 +153,33 @@ final adminInstitutionDomainsProvider = FutureProvider<List<AdminInstitutionDoma
     rethrow;
   }
 });
+
+// ── /v1/admin/review-queue ─────────────────────────────────────────────────
+
+final adminReviewQueueProvider = FutureProvider<List<ReviewQueueItem>>((ref) async {
+  final me = await ref.watch(adminMeProvider.future);
+  if (me == null) return const [];
+
+  try {
+    return await ref.watch(adminRepositoryProvider).fetchReviewQueue();
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) return const [];
+    rethrow;
+  }
+});
+
+// ── /v1/admin/policies ────────────────────────────────────────────────────
+
+final adminPoliciesProvider = FutureProvider<AdminPolicy>((ref) async {
+  final me = await ref.watch(adminMeProvider.future);
+  if (me == null) return AdminPolicy.defaults;
+
+  try {
+    return await ref.watch(adminRepositoryProvider).fetchPolicies();
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) return AdminPolicy.defaults;
+    rethrow;
+  }
+});
