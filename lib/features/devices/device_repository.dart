@@ -14,15 +14,26 @@ class DeviceRepository {
 
   Future<List<UserDevice>> getMyDevices() async {
     final res = await _dio.get('/devices/me');
-    final data = _unwrap(res.data);
-    final list = data['devices'];
-    if (list is List) {
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(UserDevice.fromJson)
-          .toList();
+    final raw = res.data;
+    // Backend returns { ok: true, data: [...] } via ResponseWrapInterceptor.
+    // Unwrap the outer envelope, then handle both array and { devices: [...] } shapes.
+    List<dynamic>? list;
+    if (raw is Map) {
+      final inner = raw['data'];
+      if (inner is List) {
+        list = inner;
+      } else if (inner is Map) {
+        final nested = inner['devices'];
+        if (nested is List) list = nested;
+      }
+    } else if (raw is List) {
+      list = raw;
     }
-    return const [];
+    if (list == null) return const [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(UserDevice.fromJson)
+        .toList();
   }
 
   Future<UserDevice> updateDevice(

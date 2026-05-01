@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../realtime/application/realtime_providers.dart';
+import '../../realtime/domain/realtime_state.dart';
 import '../data/correspondence_live_service.dart';
 import 'thread_screen.dart';
 
@@ -172,6 +173,19 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // When the realtime controller transitions from joined → not-joined (e.g.
+    // the last participant left and the controller called _terminateSession),
+    // the server sends session:participant.left on the realtime socket — never
+    // on the correspondence socket that _hydrateFromEvent listens to. Listening
+    // here catches every call-end path regardless of which socket triggers it.
+    ref.listen<RealtimeState>(
+      realtimeControllerProvider,
+      (previous, next) {
+        if ((previous?.isJoined ?? false) && !next.isJoined) {
+          _refreshThreadSurface();
+        }
+      },
+    );
     return ThreadScreen(threadId: widget.threadId);
   }
 }

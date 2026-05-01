@@ -86,7 +86,7 @@ async function handlePush(event) {
     type: data.type || '',
   };
 
-  console.log('[SW DIAG] showNotification requireInteraction=' + isCall);
+  console.log('[SW DIAG] showNotification requireInteraction=' + isCall + ' tag=' + tag);
   return self.registration.showNotification(title, {
     body: body,
     icon: icon,
@@ -97,6 +97,10 @@ async function handlePush(event) {
     requireInteraction: isCall,
     // Vibrate for calls: long-short-long pattern.
     vibrate: isCall ? [400, 200, 400, 200, 400] : [200],
+  }).then(function() {
+    console.log('[SW DIAG] showNotification OK tag=' + tag);
+  }, function(err) {
+    console.error('[SW DIAG] showNotification FAILED tag=' + tag, err);
   });
 }
 
