@@ -145,7 +145,7 @@ final adminInstitutionDomainsProvider = FutureProvider<List<AdminInstitutionDoma
 
   try {
     return await ref.watch(adminRepositoryProvider).fetchInstitutionDomains(
-      status: 'pending',
+      status: 'PENDING',
     );
   } on DioException catch (e) {
     final code = e.response?.statusCode;
