@@ -74,6 +74,8 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _didBoot = false;
   bool _isEnding = false;
+  bool _wasJoined = false;
+  bool _hasNavigatedAway = false;
   String? _lastConsentSyncKey;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
@@ -152,7 +154,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       debugPrint('[END] _endCallAndClose: awaiting controller.endCall()');
       await controller.endCall();
       debugPrint('[END] _endCallAndClose: endCall() succeeded — navigating away');
-      if (mounted) _navigateAfterCall(session);
+      if (mounted) {
+        _hasNavigatedAway = true;
+        _navigateAfterCall(session);
+      }
     } catch (e, st) {
       debugPrint('[END] _endCallAndClose ERROR: $e\n${st.toString().split('\n').take(4).join('\n')}');
       if (mounted) {
@@ -172,7 +177,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     try {
       await controller.leave();
     } catch (_) {}
-    if (mounted) _navigateAfterCall(session);
+    if (mounted) {
+      _hasNavigatedAway = true;
+      _navigateAfterCall(session);
+    }
   }
 
   void _navigateAfterCall(RealtimeSession? session) {
@@ -251,9 +259,34 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // heartbeats to the main tab's FloatingCallWidget PiP overlay.
     ref.watch(callPresenceBridgeProvider);
 
+    // Track when the session first becomes joined so the post-end guard
+    // can distinguish "never joined" from "joined and now torn down".
+    ref.listen<RealtimeState>(realtimeControllerProvider, (_, next) {
+      if (next.isJoined && !_wasJoined) _wasJoined = true;
+    });
+
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
+
+    // Safety guard: after we've been joined and the session is torn down,
+    // return a blank scaffold while navigation fires rather than rendering
+    // the lobby over null state (which causes "Null check operator" crashes
+    // in the rebuild window between _terminateSession and context.go).
+    if (_wasJoined &&
+        state.joinState == RealtimeJoinState.idle &&
+        state.session == null) {
+      if (!_hasNavigatedAway) {
+        _hasNavigatedAway = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _navigateAfterCall(null);
+        });
+      }
+      return Scaffold(
+        backgroundColor: AuraSurface.page,
+        body: const SizedBox.shrink(),
+      );
+    }
 
     final myUserId = meAsync.maybeWhen(
       data: (me) => (me['id'] ?? '').toString(),
