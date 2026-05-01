@@ -133,6 +133,59 @@ class InstitutionsRepository {
     await _dio.post('/institutions/admin/verification-requests/$id/reject');
   }
 
+  Future<Map<String, dynamic>> listMembers(String institutionId) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.get('/institutions/$id/members');
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
+  Future<void> removeMember(String institutionId, String targetUserId) async {
+    final id = institutionId.trim();
+    final uid = targetUserId.trim();
+    if (id.isEmpty || uid.isEmpty) throw Exception('Institution or user id is missing.');
+    await _dio.delete('/institutions/$id/members/$uid');
+  }
+
+  Future<Map<String, dynamic>> createInvite(
+    String institutionId, {
+    String? email,
+    String? role,
+    int? expiresInDays,
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.post(
+      '/institutions/$id/invites',
+      data: <String, dynamic>{
+        if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+        if (role != null && role.trim().isNotEmpty) 'role': role.trim(),
+        if (expiresInDays != null) 'expiresInDays': expiresInDays,
+      },
+    );
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final invite = root['invite'];
+      if (invite is Map) return Map<String, dynamic>.from(invite);
+    }
+    throw Exception('Unexpected response from create invite.');
+  }
+
+  Future<List<Map<String, dynamic>>> listInvites(String institutionId) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.get('/institutions/$id/invites');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final invites = root['invites'];
+      if (invites is List) {
+        return invites.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    }
+    return <Map<String, dynamic>>[];
+  }
+
   List<Map<String, dynamic>> _readItems(dynamic body) {
     if (body is Map) {
       final root = Map<String, dynamic>.from(body);

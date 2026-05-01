@@ -43,6 +43,8 @@ import 'features/profile/presentation/followers_screen.dart';
 import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
+import 'features/institutions/presentation/institution_members_screen.dart';
+import 'features/institutions/presentation/institution_invites_screen.dart';
 import 'features/institutions/presentation/admin_workspace_screen.dart';
 import 'features/institutions/wizard/institution_onboarding_wizard.dart';
 import 'features/admin/presentation/admin_users_screen.dart';
@@ -227,7 +229,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == kInstitutionProfileRoute ||
         path == kInstitutionCorrespondenceRoute ||
         path == kInstitutionVerificationRoute ||
-        path == kInstitutionAnnouncementsRoute;
+        path == kInstitutionAnnouncementsRoute ||
+        (path.startsWith('/institution/') &&
+            (path.endsWith('/members') || path.endsWith('/invites')));
   }
 
   bool requiresInstitutionAdminOrSpeaker(String path) {
@@ -758,6 +762,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
             builder: (_, __) => const InstitutionCorrespondenceScreen(),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/members',
+            builder: (context, state) => InstitutionMembersScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/invites',
+            builder: (context, state) => InstitutionInvitesScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
           ),
         ],
       ),

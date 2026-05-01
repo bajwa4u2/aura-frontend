@@ -43,6 +43,9 @@ class _InstitutionDashboardScreenState
   bool get _canManageDomains =>
       _state == 'VERIFIED_MEMBER' || _state == 'AUTHORIZED_SPEAKER';
 
+  bool get _isAdmin =>
+      _membership?['role']?.toString().trim().toUpperCase() == 'ADMIN';
+
   bool get _isPending => _state == 'PENDING_REQUEST';
 
   bool get _isRejected => _state == 'REJECTED';
@@ -233,12 +236,17 @@ class _InstitutionDashboardScreenState
     final displayName = _displayInstitutionName();
     final slug = _institution?['slug']?.toString().trim() ?? '';
     final domain = _institution?['domain']?.toString().trim() ?? '';
-    final website = _institution?['website']?.toString().trim() ?? '';
+    final website = (_institution?['websiteUrl'] ?? _institution?['website'])
+            ?.toString()
+            .trim() ??
+        '';
     final role = _membership?['role']?.toString().trim() ?? '';
+    final memberCount = _institution?['memberCount'];
 
     final details = <_DetailEntry>[
       _DetailEntry('Standing', _standingLabel()),
       if (role.isNotEmpty) _DetailEntry('Role', role),
+      if (memberCount != null) _DetailEntry('Members', memberCount.toString()),
       if (slug.isNotEmpty) _DetailEntry('Public path', '/institutions/$slug'),
       if (domain.isNotEmpty) _DetailEntry('Domain', domain),
       if (website.isNotEmpty) _DetailEntry('Website', website),
@@ -410,6 +418,7 @@ class _InstitutionDashboardScreenState
     final roleTitle = _requestData['roleTitle']?.toString().trim() ?? '';
     final jurisdiction = _requestData['jurisdiction']?.toString().trim() ?? '';
     final status = _requestData['status']?.toString().trim() ?? '';
+    final reviewNotes = _requestData['reviewNotes']?.toString().trim() ?? '';
     final reviewedAt = _requestData['reviewedAt']?.toString().trim() ?? '';
 
     return _DashCard(
@@ -423,6 +432,8 @@ class _InstitutionDashboardScreenState
           const SizedBox(height: AuraSpace.s14),
           if (org.isNotEmpty) _DetailRow(label: 'Institution', value: org),
           if (status.isNotEmpty) _DetailRow(label: 'Status', value: status),
+          if (reviewNotes.isNotEmpty)
+            _DetailRow(label: 'Review notes', value: reviewNotes),
           if (workEmail.isNotEmpty)
             _DetailRow(label: 'Work email', value: workEmail),
           if (website.isNotEmpty) _DetailRow(label: 'Website', value: website),
@@ -451,10 +462,15 @@ class _InstitutionDashboardScreenState
       _ToolData(
         title: 'Representatives',
         body:
-            'Define institutional people, roles, and speaking authority inside Aura.',
+            'View and manage institution members, roles, and speaking authority.',
         icon: Icons.people_outline_rounded,
         enabled: _canUseInstitutionTools,
-        onTap: null,
+        onTap: _canUseInstitutionTools
+            ? () {
+                final id = _institution?['id']?.toString() ?? '';
+                if (id.isNotEmpty) _go('/institution/$id/members');
+              }
+            : null,
       ),
       _ToolData(
         title: 'Domains',
@@ -469,8 +485,8 @@ class _InstitutionDashboardScreenState
         body:
             'Send invite codes to colleagues to join your institution workspace.',
         icon: Icons.group_add_outlined,
-        enabled: _canUseInstitutionTools,
-        onTap: _canUseInstitutionTools
+        enabled: _isAdmin,
+        onTap: _isAdmin
             ? () {
                 final id = _institution?['id']?.toString() ?? '';
                 if (id.isNotEmpty) _go('/institution/$id/invites');
