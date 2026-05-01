@@ -30,6 +30,8 @@ class _InstitutionMembersScreenState
   String _callerRole = '';
   String? _removing;
   String? _removeError;
+  String? _updating;
+  String? _updateError;
 
   InstitutionsRepository get _repo =>
       ref.read(institutionsRepositoryProvider);
@@ -81,6 +83,24 @@ class _InstitutionMembersScreenState
       setState(() {
         _removeError = _message(e, 'Could not remove member.');
         _removing = null;
+      });
+    }
+  }
+
+  Future<void> _changeRole(String userId, String newRole) async {
+    if (_updating != null) return;
+    setState(() {
+      _updating = userId;
+      _updateError = null;
+    });
+
+    try {
+      await _repo.updateMemberRole(widget.institutionId, userId, newRole);
+      await _load();
+    } catch (e) {
+      setState(() {
+        _updateError = _message(e, 'Could not update role.');
+        _updating = null;
       });
     }
   }
@@ -138,14 +158,8 @@ class _InstitutionMembersScreenState
     final handle = user['handle']?.toString().trim() ?? '';
     final role = member['role']?.toString().trim() ?? 'MEMBER';
     final isRemoving = _removing == memberId;
-
-    // Caller's own userId isn't in the membership response — we identify
-    // self via callerRole by checking if name/handle matches, but a simpler
-    // proxy: if this userId appears as the admin and there's only one admin
-    // we'd block removal anyway on the backend. The UI hides the button for
-    // the same user by checking the "removing" state, which is sufficient.
-
-    final showRemove = _isAdmin && !isRemoving;
+    final isUpdating = _updating == memberId;
+    final isBusy = isRemoving || isUpdating;
 
     final nameOrHandle = displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Unknown');
 
@@ -194,26 +208,76 @@ class _InstitutionMembersScreenState
               ),
             ),
           ),
-          if (showRemove) ...[
-            const SizedBox(width: AuraSpace.s8),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => _confirmRemove(memberId, nameOrHandle),
-                child: Icon(
-                  Icons.person_remove_outlined,
+          if (_isAdmin) ...[
+            const SizedBox(width: AuraSpace.s4),
+            if (isBusy)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert,
                   size: 18,
-                  color: AuraSurface.dangerInk.withValues(alpha: 0.7),
+                  color: AuraSurface.muted,
                 ),
+                tooltip: 'Member options',
+                color: AuraSurface.card,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AuraRadius.md),
+                  side: BorderSide(color: AuraSurface.divider),
+                ),
+                itemBuilder: (_) => [
+                  if (role.toUpperCase() != 'ADMIN')
+                    PopupMenuItem(
+                      value: 'PROMOTE',
+                      child: Text(
+                        'Promote to Admin',
+                        style: AuraText.small.copyWith(color: AuraSurface.accentText),
+                      ),
+                    ),
+                  if (role.toUpperCase() == 'ADMIN')
+                    PopupMenuItem(
+                      value: 'DEMOTE',
+                      child: Text(
+                        'Demote to Member',
+                        style: AuraText.small.copyWith(color: AuraSurface.warnInk),
+                      ),
+                    ),
+                  if (role.toUpperCase() == 'MEMBER')
+                    PopupMenuItem(
+                      value: 'MAKE_EDITOR',
+                      child: Text('Make Editor', style: AuraText.small),
+                    ),
+                  if (role.toUpperCase() == 'EDITOR')
+                    PopupMenuItem(
+                      value: 'MAKE_MEMBER',
+                      child: Text('Demote to Member', style: AuraText.small),
+                    ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'REMOVE',
+                    child: Text(
+                      'Remove',
+                      style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'REMOVE') {
+                    _confirmRemove(memberId, nameOrHandle);
+                  } else if (value == 'PROMOTE') {
+                    _changeRole(memberId, 'ADMIN');
+                  } else if (value == 'DEMOTE' || value == 'MAKE_MEMBER') {
+                    _changeRole(memberId, 'MEMBER');
+                  } else if (value == 'MAKE_EDITOR') {
+                    _changeRole(memberId, 'EDITOR');
+                  }
+                },
               ),
-            ),
           ],
-          if (isRemoving)
-            const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
         ],
       ),
     );
@@ -277,7 +341,7 @@ class _InstitutionMembersScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_removeError != null) ...[
+        for (final err in [_removeError, _updateError].whereType<String>()) ...[
           Container(
             padding: const EdgeInsets.all(AuraSpace.s12),
             margin: const EdgeInsets.only(bottom: AuraSpace.s12),
@@ -294,12 +358,15 @@ class _InstitutionMembersScreenState
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
                   child: Text(
-                    _removeError!,
+                    err,
                     style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => setState(() => _removeError = null),
+                  onTap: () => setState(() {
+                    _removeError = null;
+                    _updateError = null;
+                  }),
                   child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
                 ),
               ],
@@ -315,7 +382,7 @@ class _InstitutionMembersScreenState
             const Spacer(),
             if (_isAdmin)
               Text(
-                'Tap  to remove',
+                'Tap ⋮ for options',
                 style: AuraText.micro.copyWith(color: AuraSurface.faint),
               ),
           ],

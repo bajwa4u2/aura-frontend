@@ -450,6 +450,9 @@ class _InstitutionDashboardScreenState
   }
 
   Widget _buildToolsSection() {
+    final institutionId = _institution?['id']?.toString() ?? '';
+    final pendingJoinCount = _membership?['pendingJoinRequestCount'] as int? ?? 0;
+
     final tools = [
       _ToolData(
         title: 'Official posts',
@@ -465,11 +468,8 @@ class _InstitutionDashboardScreenState
             'View and manage institution members, roles, and speaking authority.',
         icon: Icons.people_outline_rounded,
         enabled: _canUseInstitutionTools,
-        onTap: _canUseInstitutionTools
-            ? () {
-                final id = _institution?['id']?.toString() ?? '';
-                if (id.isNotEmpty) _go('/institution/$id/members');
-              }
+        onTap: _canUseInstitutionTools && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/members')
             : null,
       ),
       _ToolData(
@@ -486,11 +486,18 @@ class _InstitutionDashboardScreenState
             'Send invite codes to colleagues to join your institution workspace.',
         icon: Icons.group_add_outlined,
         enabled: _isAdmin,
-        onTap: _isAdmin
-            ? () {
-                final id = _institution?['id']?.toString() ?? '';
-                if (id.isNotEmpty) _go('/institution/$id/invites');
-              }
+        onTap: _isAdmin && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/invites')
+            : null,
+      ),
+      _ToolData(
+        title: 'Join requests',
+        body: 'Review and approve requests from members who want to join.',
+        icon: Icons.person_add_outlined,
+        enabled: _isAdmin,
+        badge: pendingJoinCount > 0 ? pendingJoinCount : null,
+        onTap: _isAdmin && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/join-requests?admin=true')
             : null,
       ),
       _ToolData(
@@ -743,6 +750,7 @@ class _ToolData {
     required this.icon,
     required this.enabled,
     required this.onTap,
+    this.badge,
   });
 
   final String title;
@@ -750,6 +758,7 @@ class _ToolData {
   final IconData icon;
   final bool enabled;
   final VoidCallback? onTap;
+  final int? badge;
 }
 
 class _ToolCard extends StatelessWidget {
@@ -776,27 +785,55 @@ class _ToolCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: tool.enabled
-                        ? AuraSurface.accentSoft
-                        : AuraSurface.subtle,
-                    borderRadius: BorderRadius.circular(AuraRadius.r10),
-                    border: Border.all(
-                      color: tool.enabled
-                          ? AuraSurface.accent.withValues(alpha: 0.25)
-                          : AuraSurface.divider,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: tool.enabled
+                            ? AuraSurface.accentSoft
+                            : AuraSurface.subtle,
+                        borderRadius: BorderRadius.circular(AuraRadius.r10),
+                        border: Border.all(
+                          color: tool.enabled
+                              ? AuraSurface.accent.withValues(alpha: 0.25)
+                              : AuraSurface.divider,
+                        ),
+                      ),
+                      child: Icon(
+                        tool.icon,
+                        size: 18,
+                        color: tool.enabled
+                            ? AuraSurface.accentText
+                            : AuraSurface.muted,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    tool.icon,
-                    size: 18,
-                    color: tool.enabled
-                        ? AuraSurface.accentText
-                        : AuraSurface.muted,
-                  ),
+                    if (tool.badge != null && tool.badge! > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                          decoration: BoxDecoration(
+                            color: AuraSurface.dangerInk,
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${tool.badge}',
+                              style: AuraText.micro.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(

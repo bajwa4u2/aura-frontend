@@ -186,6 +186,91 @@ class InstitutionsRepository {
     return <Map<String, dynamic>>[];
   }
 
+  Future<Map<String, dynamic>> updateMemberRole(
+    String institutionId,
+    String targetUserId,
+    String role,
+  ) async {
+    final id = institutionId.trim();
+    final uid = targetUserId.trim();
+    if (id.isEmpty || uid.isEmpty) throw Exception('Institution or user id is missing.');
+    final res = await _dio.patch(
+      '/institutions/$id/members/$uid/role',
+      data: <String, dynamic>{'role': role},
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
+  Future<void> revokeInvite(String institutionId, String inviteId) async {
+    final id = institutionId.trim();
+    final iid = inviteId.trim();
+    if (id.isEmpty || iid.isEmpty) throw Exception('Institution or invite id is missing.');
+    await _dio.delete('/institutions/$id/invites/$iid');
+  }
+
+  Future<Map<String, dynamic>> createJoinRequest(
+    String institutionId, {
+    String? message,
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.post(
+      '/institutions/$id/join-requests',
+      data: <String, dynamic>{
+        if (message != null && message.trim().isNotEmpty) 'message': message.trim(),
+      },
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
+  Future<List<Map<String, dynamic>>> listJoinRequests(String institutionId) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.get('/institutions/$id/join-requests');
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      final requests = root['requests'];
+      if (requests is List) {
+        return requests.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<void> approveJoinRequest(
+    String institutionId,
+    String requestId, {
+    String? note,
+  }) async {
+    final id = institutionId.trim();
+    final rid = requestId.trim();
+    if (id.isEmpty || rid.isEmpty) throw Exception('Institution or request id is missing.');
+    await _dio.post(
+      '/institutions/$id/join-requests/$rid/approve',
+      data: <String, dynamic>{
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+    );
+  }
+
+  Future<void> rejectJoinRequest(
+    String institutionId,
+    String requestId, {
+    String? note,
+  }) async {
+    final id = institutionId.trim();
+    final rid = requestId.trim();
+    if (id.isEmpty || rid.isEmpty) throw Exception('Institution or request id is missing.');
+    await _dio.post(
+      '/institutions/$id/join-requests/$rid/reject',
+      data: <String, dynamic>{
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+    );
+  }
+
   List<Map<String, dynamic>> _readItems(dynamic body) {
     if (body is Map) {
       final root = Map<String, dynamic>.from(body);

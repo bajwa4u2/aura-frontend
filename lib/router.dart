@@ -45,6 +45,7 @@ import 'features/institutions/presentation/institution_detail_screen.dart';
 import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/presentation/institution_members_screen.dart';
 import 'features/institutions/presentation/institution_invites_screen.dart';
+import 'features/institutions/presentation/institution_join_requests_screen.dart';
 import 'features/institutions/presentation/admin_workspace_screen.dart';
 import 'features/institutions/wizard/institution_onboarding_wizard.dart';
 import 'features/admin/presentation/admin_users_screen.dart';
@@ -773,6 +774,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/invites',
             builder: (context, state) => InstitutionInvitesScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/join-requests',
+            builder: (context, state) => InstitutionJoinRequestsScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              isAdmin: state.uri.queryParameters['admin'] == 'true',
             ),
           ),
         ],

@@ -36,6 +36,8 @@ class _InstitutionInvitesScreenState
   bool _creating = false;
   String? _createError;
   String? _copiedCode;
+  String? _revoking;
+  String? _revokeError;
 
   static const _roles = ['MEMBER', 'EDITOR', 'ADMIN'];
 
@@ -98,6 +100,23 @@ class _InstitutionInvitesScreenState
       setState(() {
         _createError = _message(e, 'Could not create invite.');
         _creating = false;
+      });
+    }
+  }
+
+  Future<void> _revoke(String inviteId) async {
+    if (_revoking != null) return;
+    setState(() {
+      _revoking = inviteId;
+      _revokeError = null;
+    });
+    try {
+      await _repo.revokeInvite(widget.institutionId, inviteId);
+      await _load();
+    } catch (e) {
+      setState(() {
+        _revokeError = _message(e, 'Could not revoke invite.');
+        _revoking = null;
       });
     }
   }
@@ -284,6 +303,7 @@ class _InstitutionInvitesScreenState
   }
 
   Widget _buildInviteTile(Map<String, dynamic> invite) {
+    final inviteId = invite['id']?.toString() ?? '';
     final code = invite['code']?.toString() ?? '';
     final email = invite['email']?.toString().trim() ?? '';
     final role = invite['role']?.toString() ?? '';
@@ -293,6 +313,7 @@ class _InstitutionInvitesScreenState
         : null;
     final status = _inviteStatus(invite);
     final isCopied = _copiedCode == code;
+    final isRevoking = _revoking == inviteId;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AuraSpace.s8),
@@ -337,21 +358,43 @@ class _InstitutionInvitesScreenState
                 ),
               ),
               const SizedBox(width: AuraSpace.s8),
-              MouseRegion(
-                cursor: status == 'Active'
-                    ? SystemMouseCursors.click
-                    : SystemMouseCursors.basic,
-                child: GestureDetector(
-                  onTap: status == 'Active' ? () => _copyLink(code) : null,
-                  child: Icon(
-                    isCopied ? Icons.check_rounded : Icons.copy_rounded,
-                    size: 16,
-                    color: status == 'Active'
-                        ? (isCopied ? AuraSurface.goodInk : AuraSurface.accentText)
-                        : AuraSurface.faint,
+              if (status == 'Active') ...[
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => _copyLink(code),
+                    child: Icon(
+                      isCopied ? Icons.check_rounded : Icons.copy_rounded,
+                      size: 16,
+                      color: isCopied ? AuraSurface.goodInk : AuraSurface.accentText,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: AuraSpace.s8),
+                if (isRevoking)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => _revoke(inviteId),
+                      child: Icon(
+                        Icons.link_off_rounded,
+                        size: 16,
+                        color: AuraSurface.dangerInk.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+              ] else
+                Icon(
+                  Icons.copy_rounded,
+                  size: 16,
+                  color: AuraSurface.faint,
+                ),
             ],
           ),
           const SizedBox(height: AuraSpace.s8),
@@ -403,6 +446,33 @@ class _InstitutionInvitesScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildCreateSection(),
+        if (_revokeError != null) ...[
+          const SizedBox(height: AuraSpace.s12),
+          Container(
+            padding: const EdgeInsets.all(AuraSpace.s12),
+            decoration: BoxDecoration(
+              color: AuraSurface.dangerBg,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, size: 16, color: AuraSurface.dangerInk),
+                const SizedBox(width: AuraSpace.s8),
+                Expanded(
+                  child: Text(
+                    _revokeError!,
+                    style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _revokeError = null),
+                  child: const Icon(Icons.close, size: 16, color: AuraSurface.dangerInk),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: AuraSpace.s24),
         Padding(
           padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: AuraSpace.s12),
