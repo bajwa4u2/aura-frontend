@@ -15,6 +15,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../correspondence/presentation/thread_screen.dart';
 import '../../search/search_repository.dart';
 import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
@@ -171,6 +172,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   void _navigateAfterCall(RealtimeSession? session) {
+    // Invalidate cached thread data so the stale liveSessionId ribbon is gone
+    // when the thread screen remounts after the call ends.
+    final surfaceId = (session?.surfaceId ?? '').trim();
+    if (surfaceId.isNotEmpty) {
+      ref.invalidate(threadDetailProvider(surfaceId));
+      ref.invalidate(messagesProvider(surfaceId));
+    }
+
     if (session == null) {
       context.go('/home');
       return;
@@ -339,9 +348,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   onParticipants: () =>
                       _togglePanel(_kPanelParticipants, wide),
                   onMore: () => _togglePanel(_kPanelMore, wide),
-                  // Hosts and 1:1 callers end the session; others just leave.
-                  isEndCall: isHost || state.participants.length <= 2,
-                  onLeave: (isHost || state.participants.length <= 2)
+                  // DM/thread are always 1:1 — both sides end.
+                  // Space/room: host ends, others leave.
+                  isEndCall: isHost ||
+                      state.session?.surfaceType == RealtimeSurfaceType.dm ||
+                      state.session?.surfaceType == RealtimeSurfaceType.thread,
+                  onLeave: (isHost ||
+                          state.session?.surfaceType == RealtimeSurfaceType.dm ||
+                          state.session?.surfaceType == RealtimeSurfaceType.thread)
                       ? () => unawaited(_endCallAndClose(controller))
                       : () => unawaited(_leaveAndNavigate(controller)),
                 ),
@@ -403,6 +417,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }) {
     final (icon, title, subtitle, showJoin, showRequest) =
         _preJoinContent(state: state, policy: policy, roomIsClosed: roomIsClosed);
+
+    // Auto-navigate away from an ended session so the screen never stays blank.
+    if (state.session?.isActive == false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _navigateAfterCall(state.session);
+      });
+    }
 
     return Center(
       child: SingleChildScrollView(

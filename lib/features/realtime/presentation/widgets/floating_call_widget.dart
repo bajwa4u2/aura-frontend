@@ -155,20 +155,14 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   // ── Actions ─────────────────────────────────────────────────────────────────
 
   void _returnToCall(_CallInfo info) {
-    // Always navigate within the app — no popup window.
-    context.go('/realtime/${info.sessionId}');
-  }
-
-  void _endCall(_CallInfo info) {
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    final state = ref.read(realtimeControllerProvider);
-    // 1:1 or last participant: end the session for everyone.
-    // Group call participant: just leave.
-    if (state.participants.length <= 2) {
-      unawaited(controller.endCall().catchError((_) {}));
-    } else {
-      unawaited(controller.leave());
+    if (info.isOwner) {
+      final local = ref.read(realtimeControllerProvider);
+      if (!local.isJoined) {
+        ref.read(realtimeControllerProvider.notifier).clearLocalSession();
+        return;
+      }
     }
+    context.go('/realtime/${info.sessionId}');
   }
 
   // ── Duration ────────────────────────────────────────────────────────────────
@@ -221,7 +215,6 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             duration: _formatDuration(info.startedAt),
             isOwner: info.isOwner,
             onReturn: info.isOwner ? () => _returnToCall(info) : null,
-            onEnd: info.isOwner ? () => _endCall(info) : null,
           ),
         ),
       ),
@@ -242,7 +235,6 @@ class _FloatingCard extends StatelessWidget {
     required this.duration,
     required this.isOwner,
     required this.onReturn,
-    required this.onEnd,
   });
 
   final bool isVideo;
@@ -252,7 +244,6 @@ class _FloatingCard extends StatelessWidget {
   final String duration;
   final bool isOwner;
   final VoidCallback? onReturn;
-  final VoidCallback? onEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -350,21 +341,12 @@ class _FloatingCard extends StatelessWidget {
 
               const Spacer(),
 
-              if (onReturn != null) ...[
+              if (onReturn != null)
                 _Chip(
                   label: 'Return',
                   icon: Icons.open_in_full_rounded,
                   accent: true,
                   onTap: onReturn!,
-                ),
-                const SizedBox(width: AuraSpace.s6),
-              ],
-              if (onEnd != null)
-                _Chip(
-                  label: 'End',
-                  icon: Icons.call_end_rounded,
-                  danger: true,
-                  onTap: onEnd!,
                 ),
             ],
           ),
@@ -464,32 +446,20 @@ class _Chip extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.accent = false,
-    this.danger = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
   final bool accent;
-  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final bg = danger
-        ? AuraSurface.dangerBg
-        : accent
-            ? AuraSurface.accentSoft
-            : AuraSurface.card;
-    final fg = danger
-        ? AuraSurface.dangerInk
-        : accent
-            ? AuraSurface.accentText
-            : AuraSurface.muted;
-    final border = danger
-        ? AuraSurface.dangerInk.withValues(alpha: 0.35)
-        : accent
-            ? AuraSurface.accent.withValues(alpha: 0.35)
-            : AuraSurface.divider;
+    final bg = accent ? AuraSurface.accentSoft : AuraSurface.card;
+    final fg = accent ? AuraSurface.accentText : AuraSurface.muted;
+    final border = accent
+        ? AuraSurface.accent.withValues(alpha: 0.35)
+        : AuraSurface.divider;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,

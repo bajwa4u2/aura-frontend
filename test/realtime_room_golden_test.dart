@@ -179,9 +179,9 @@ void main() {
     expect(find.text('Camera'), findsNothing);
     expect(find.text('Camera off'), findsNothing);
 
-    // Verify: core controls present
+    // Verify: core controls present (surfaceType=thread → 'End', not 'Leave')
     expect(find.text('Mute'), findsOneWidget);
-    expect(find.text('Leave'), findsOneWidget);
+    expect(find.text('End'), findsOneWidget);
     expect(find.text('Participants'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
 
@@ -237,9 +237,9 @@ void main() {
     final screen = RealtimeRoomScreen(sessionId: 'sess-test-001');
     await _pump(tester, _wrap(screen, _audioCallState()));
 
-    // Dock still present on mobile
+    // Dock still present on mobile (surfaceType=thread → 'End', not 'Leave')
     expect(find.text('Mute'), findsOneWidget);
-    expect(find.text('Leave'), findsOneWidget);
+    expect(find.text('End'), findsOneWidget);
     // No camera button on audio mobile
     expect(find.text('Camera'), findsNothing);
 
@@ -313,8 +313,8 @@ void main() {
     final screen = RealtimeRoomScreen(sessionId: 'sess-test-001');
     await _pump(tester, _wrap(screen, _audioCallState()));
 
-    // Call controls visible while joined
-    expect(find.text('Leave'), findsOneWidget);
+    // Call controls visible while joined (surfaceType=thread → 'End')
+    expect(find.text('End'), findsOneWidget);
     expect(find.text('Mute'), findsOneWidget);
 
     // Simulate leave by switching provider to idle state
@@ -322,6 +322,6 @@ void main() {
     // Verified structurally: _CallControlDock only renders when state.isJoined
     //   and _CallStage only renders when state.isJoined, both reading
     //   realtimeControllerProvider which is the single source of truth.
-    expect(find.text('Leave'), findsOneWidget); // button present = UI active
+    expect(find.text('End'), findsOneWidget); // button present = UI active
   });
 }
