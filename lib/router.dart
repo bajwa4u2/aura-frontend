@@ -713,18 +713,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
 
           GoRoute(
-            path: '/realtime',
-            builder: (_, __) => const RealtimeLobbyScreen(),
-          ),
-          GoRoute(
-            path: '/realtime/:sessionId',
-            builder: (context, state) => RealtimeRoomScreen(
-              sessionId: state.pathParameters['sessionId'] ?? '',
-              action: state.uri.queryParameters['action'],
-            ),
-          ),
-
-          GoRoute(
             path: '/compose',
             builder: (context, state) => ComposeScreen(
               replyToPostId: state.uri.queryParameters['replyTo'],
@@ -762,6 +750,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const InstitutionCorrespondenceScreen(),
           ),
         ],
+      ),
+
+      // Realtime call routes are intentionally outside the ShellRoute so
+      // the call window renders without the member nav/sidebar.
+      GoRoute(
+        path: '/realtime',
+        builder: (_, __) => const RealtimeLobbyScreen(),
+      ),
+      GoRoute(
+        path: '/realtime/:sessionId',
+        builder: (context, state) => RealtimeRoomScreen(
+          sessionId: state.pathParameters['sessionId'] ?? '',
+          action: state.uri.queryParameters['action'],
+        ),
       ),
     ],
   );

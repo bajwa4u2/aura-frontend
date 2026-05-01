@@ -137,7 +137,7 @@ class CallPresenceBridgeNotifier extends StateNotifier<CallPresenceState?> {
     _post({
       'type': 'call-heartbeat',
       'sessionId': s.sessionId ?? '',
-      'kind': s.isVideoMode ? 'video' : 'audio',
+      'kind': (s.session?.kind ?? '').trim().toUpperCase() == 'VIDEO' ? 'video' : 'audio',
       'startedAt': s.session?.startedAt?.toIso8601String(),
       'participantCount': s.participants.length,
       'windowId': _windowId,

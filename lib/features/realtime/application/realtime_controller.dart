@@ -749,7 +749,19 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     final session = bundle.session;
     final sessionKind = session.kind.trim().toUpperCase();
     final hasVideo = bundle.participants.any((p) => p.videoOn || p.screenOn);
-    final callMode = (sessionKind == 'VIDEO' || hasVideo) ? 'video' : (state.callMode ?? 'audio');
+    // session.kind is the authoritative source; hasVideo can only escalate to
+    // video, never demote it. Unknown kind preserves current state instead of
+    // silently defaulting to audio.
+    final String? callMode;
+    if (sessionKind == 'VIDEO') {
+      callMode = 'video';
+    } else if (sessionKind == 'AUDIO') {
+      callMode = hasVideo ? 'video' : 'audio';
+    } else if (hasVideo) {
+      callMode = 'video';
+    } else {
+      callMode = state.callMode;
+    }
 
     state = state.copyWith(
       session: session,

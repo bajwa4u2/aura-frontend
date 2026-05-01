@@ -107,7 +107,9 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
     final notifier = ref.read(realtimeControllerProvider.notifier);
     final sessionId = _extractSessionId(event);
 
-    if (event.name == 'session:removed' || event.name == 'realtime:removed') {
+    if (event.name == 'session:removed' ||
+        event.name == 'realtime:removed' ||
+        event.name == 'call:terminal') {
       _lastHydratedSessionId = null;
       await notifier.leave();
       return;
