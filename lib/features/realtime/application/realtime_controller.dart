@@ -862,9 +862,15 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         } catch (_) {}
       }
 
-      await _mediaService.resetSessionMedia();
+      try {
+        await _mediaService.resetSessionMedia();
+      } catch (e) {
+        debugPrint('[END] _terminateSession: resetSessionMedia error (ignored): $e');
+      }
       if (!keepSocketConnected) {
-        await _socketService.disconnect();
+        try {
+          await _socketService.disconnect();
+        } catch (_) {}
       }
       _clearRtcConfiguration();
       _clearPendingOfferTargets();
