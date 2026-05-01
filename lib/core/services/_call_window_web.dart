@@ -39,3 +39,7 @@ void webWindowClose() {
   }
   _callWindow = null;
 }
+
+void webWindowSelfClose() {
+  html.window.close();
+}

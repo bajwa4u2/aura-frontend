@@ -5,3 +5,4 @@ bool webWindowIsOpen() => false;
 void webWindowOpen(String url) {}
 void webWindowFocus() {}
 void webWindowClose() {}
+void webWindowSelfClose() {}

@@ -8,6 +8,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
+import '../../../core/services/call_window_service.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -138,6 +139,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       });
     } else {
       _openBottomPanel(panelId);
+    }
+  }
+
+  Future<void> _endCallAndClose(RealtimeController controller) async {
+    await controller.endCall();
+    if (mounted) {
+      ref.read(callWindowServiceProvider).closeCurrentWindow();
     }
   }
 
@@ -288,7 +296,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   onParticipants: () =>
                       _togglePanel(_kPanelParticipants, wide),
                   onMore: () => _togglePanel(_kPanelMore, wide),
-                  onLeave: controller.leave,
+                  // Hosts and 1:1 callers end the session; others just leave.
+                  isEndCall: isHost || state.participants.length <= 2,
+                  onLeave: (isHost || state.participants.length <= 2)
+                      ? () => unawaited(_endCallAndClose(controller))
+                      : controller.leave,
                 ),
             ],
           );
@@ -1232,6 +1244,7 @@ class _CallControlDock extends StatelessWidget {
     required this.onParticipants,
     required this.onMore,
     required this.onLeave,
+    this.isEndCall = false,
   });
 
   final bool micOn;
@@ -1244,6 +1257,7 @@ class _CallControlDock extends StatelessWidget {
   final VoidCallback onParticipants;
   final VoidCallback onMore;
   final VoidCallback onLeave;
+  final bool isEndCall;
 
   @override
   Widget build(BuildContext context) {
@@ -1304,8 +1318,8 @@ class _CallControlDock extends StatelessWidget {
           // Spacer before leave
           const SizedBox(width: AuraSpace.s16),
 
-          // Leave button (distinct, red)
-          _LeaveButton(onPressed: onLeave),
+          // Leave / End button (distinct, red)
+          _LeaveButton(onPressed: onLeave, label: isEndCall ? 'End' : 'Leave'),
         ],
       ),
     );
@@ -1410,9 +1424,10 @@ class _DockButton extends StatelessWidget {
 }
 
 class _LeaveButton extends StatelessWidget {
-  const _LeaveButton({required this.onPressed});
+  const _LeaveButton({required this.onPressed, this.label = 'Leave'});
 
   final VoidCallback onPressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -1444,7 +1459,7 @@ class _LeaveButton extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s4),
         Text(
-          'Leave',
+          label,
           style: AuraText.micro.copyWith(
             color: AuraSurface.dangerInk,
             fontWeight: FontWeight.w600,

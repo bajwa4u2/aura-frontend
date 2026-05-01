@@ -43,4 +43,9 @@ class CallWindowService {
 
   /// Call this when the session ends so the window reference is cleared.
   void onCallEnded() => closeCall();
+
+  /// Closes the current window (the popup itself, not the opener).
+  /// Used from within the call popup after the host ends the session.
+  /// No-op on non-web and in the main tab.
+  void closeCurrentWindow() => webWindowSelfClose();
 }

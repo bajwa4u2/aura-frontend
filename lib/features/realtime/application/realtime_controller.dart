@@ -480,6 +480,26 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
   }
 
+  /// Ends the session entirely (host action). Calls the backend /end endpoint
+  /// so the session is marked ENDED and all participants are notified.
+  /// Use [leave] when only one participant departs; use [endCall] when the
+  /// host intends to terminate the session for everyone.
+  Future<void> endCall() async {
+    if (_terminating) return;
+    final sessionId = (state.sessionId ?? '').trim();
+    if (sessionId.isEmpty) return;
+
+    try {
+      await _repository.endSession(state.session);
+    } catch (_) {}
+
+    await _terminateSession(
+      keepSocketConnected: true,
+      infoMessage: 'Call ended.',
+      alsoCallRepository: false,
+    );
+  }
+
   Future<void> toggleMicrophone() async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
