@@ -480,6 +480,29 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
   }
 
+  /// Clears local session state without any backend or socket calls.
+  ///
+  /// Called from the messages tab when the [callPresenceBridgeProvider]
+  /// BroadcastChannel signals the call ended in the popup window.
+  /// The main tab was never joined (joinState stays idle), so none of the
+  /// regular terminate paths fire — this is the only way to evict the stale
+  /// session reference that [_threadResolvedSessionId] falls back to.
+  void clearLocalSession() {
+    final sessionId = (state.sessionId ?? '').trim();
+    if (sessionId.isEmpty && state.session == null) return;
+    _joiningSessionId = null;
+    _hydratingSessionId = null;
+    _terminating = false;
+    _clearRtcConfiguration();
+    _clearPendingOfferTargets();
+    state = _copyWithDetachedMediaState(
+      joinState: RealtimeJoinState.idle,
+      clearSessionContext: true,
+      clearPolicy: true,
+      clearErrorMessage: true,
+    );
+  }
+
   /// Ends the session entirely (host action). Calls the backend /end endpoint
   /// so the session is marked ENDED and all participants are notified.
   /// Use [leave] when only one participant departs; use [endCall] when the

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/call_presence_bridge.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_state.dart';
 import '../data/correspondence_live_service.dart';
@@ -173,11 +174,9 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // When the realtime controller transitions from joined → not-joined (e.g.
-    // the last participant left and the controller called _terminateSession),
-    // the server sends session:participant.left on the realtime socket — never
-    // on the correspondence socket that _hydrateFromEvent listens to. Listening
-    // here catches every call-end path regardless of which socket triggers it.
+    // Path 1: same-tab call end.
+    // The realtime controller transitions joined → not-joined (e.g. last
+    // participant left → _terminateSession called via session:participant.left).
     ref.listen<RealtimeState>(
       realtimeControllerProvider,
       (previous, next) {
@@ -186,6 +185,28 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         }
       },
     );
+
+    // Path 2: cross-tab call end (popup window).
+    // The backend never sends live.ended via socket (attentionPolicy: NEVER).
+    // call:terminal only goes to INVITED/LEFT participants, not joined ones.
+    // The only cross-tab signal is the BroadcastChannel `call-ended` message
+    // broadcast by callPresenceBridgeProvider when the popup ends the call.
+    // When the bridge state drops non-null → null, the call is confirmed gone:
+    //   • clearLocalSession() evicts the stale session reference in this tab's
+    //     controller that _threadResolvedSessionId falls back to.
+    //   • _refreshThreadSurface() refetches thread detail so liveSessionId is
+    //     gone from the thread payload too.
+    ref.listen<CallPresenceState?>(
+      callPresenceBridgeProvider,
+      (previous, next) {
+        if (previous != null && next == null) {
+          _lastHydratedSessionId = null;
+          ref.read(realtimeControllerProvider.notifier).clearLocalSession();
+          _refreshThreadSurface();
+        }
+      },
+    );
+
     return ThreadScreen(threadId: widget.threadId);
   }
 }
