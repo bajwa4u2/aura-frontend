@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/services/call_presence_bridge.dart';
-import '../../../../core/services/call_window_service.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -26,8 +25,6 @@ const double _kEstimatedHeight = 88.0;
 // RESOLVED CALL INFO
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Unified call info resolved from either the local controller (same-tab call)
-/// or the cross-tab presence bridge (external-window call).
 class _CallInfo {
   const _CallInfo({
     required this.sessionId,
@@ -36,7 +33,7 @@ class _CallInfo {
     required this.cameraOn,
     required this.startedAt,
     required this.participants,
-    required this.isExternal,
+    required this.isOwner,
   });
 
   final String sessionId;
@@ -46,19 +43,21 @@ class _CallInfo {
   final DateTime? startedAt;
   final List<RealtimeParticipant> participants;
 
-  /// True when the call is running in a different browser tab.
-  final bool isExternal;
+  /// True when this tab owns and is joined to the call.
+  /// False when the call is active in another tab (passive view only).
+  final bool isOwner;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FLOATING CALL WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Draggable picture-in-picture call window.
+/// Minimised call status strip.
 ///
-/// Appears whenever a call is active — whether running in the current Flutter
-/// instance (same-tab) or in an external browser tab whose heartbeat is
-/// tracked by [callPresenceBridgeProvider].
+/// Shown when the user navigates away from the full call screen (/realtime/:id).
+/// When this tab owns the call: shows Return and End/Leave controls.
+/// When the call is in another tab: shows a passive "Call active in another tab"
+/// indicator with no interactive controls — passive tabs must not end calls.
 ///
 /// Must be placed inside a [Stack] that fills the screen.
 class FloatingCallWidget extends ConsumerStatefulWidget {
@@ -132,10 +131,11 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         cameraOn: local.cameraEnabled,
         startedAt: local.session?.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
-        isExternal: false,
+        isOwner: true,
       );
     }
 
+    // Passive: call active in another browser tab.
     final bridge = ref.read(callPresenceBridgeProvider);
     if (bridge != null && bridge.sessionId.isNotEmpty) {
       return _CallInfo(
@@ -145,7 +145,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         cameraOn: bridge.cameraOn,
         startedAt: bridge.startedAt,
         participants: const [],
-        isExternal: true,
+        isOwner: false,
       );
     }
 
@@ -155,26 +155,19 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   // ── Actions ─────────────────────────────────────────────────────────────────
 
   void _returnToCall(_CallInfo info) {
-    final svc = ref.read(callWindowServiceProvider);
-    if (svc.isWindowOpen) {
-      svc.focusCall();
-    } else {
-      // No popup / popup closed / same-tab — navigate within the app.
-      context.go('/realtime/${info.sessionId}');
-    }
+    // Always navigate within the app — no popup window.
+    context.go('/realtime/${info.sessionId}');
   }
 
   void _endCall(_CallInfo info) {
-    if (!info.isExternal) {
-      // Same-tab: leave directly.
-      ref.read(realtimeControllerProvider.notifier).leave();
-      ref.read(callWindowServiceProvider).onCallEnded();
+    final controller = ref.read(realtimeControllerProvider.notifier);
+    final state = ref.read(realtimeControllerProvider);
+    // 1:1 or last participant: end the session for everyone.
+    // Group call participant: just leave.
+    if (state.participants.length <= 2) {
+      unawaited(controller.endCall().catchError((_) {}));
     } else {
-      // External window: request it to leave, and close the popup reference.
-      ref
-          .read(callPresenceBridgeProvider.notifier)
-          .broadcastRequestEnd(info.sessionId);
-      ref.read(callWindowServiceProvider).closeCall();
+      unawaited(controller.leave());
     }
   }
 
@@ -199,7 +192,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
     final path = GoRouterState.of(context).uri.path;
 
-    // Do not overlay the full call surface itself.
+    // Do not overlay the full call screen itself.
     if (path.startsWith('/realtime')) return const SizedBox.shrink();
 
     final info = _resolve();
@@ -226,9 +219,9 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             cameraOn: info.cameraOn,
             participants: info.participants,
             duration: _formatDuration(info.startedAt),
-            isExternal: info.isExternal,
-            onReturn: () => _returnToCall(info),
-            onEnd: () => _endCall(info),
+            isOwner: info.isOwner,
+            onReturn: info.isOwner ? () => _returnToCall(info) : null,
+            onEnd: info.isOwner ? () => _endCall(info) : null,
           ),
         ),
       ),
@@ -247,7 +240,7 @@ class _FloatingCard extends StatelessWidget {
     required this.cameraOn,
     required this.participants,
     required this.duration,
-    required this.isExternal,
+    required this.isOwner,
     required this.onReturn,
     required this.onEnd,
   });
@@ -257,9 +250,9 @@ class _FloatingCard extends StatelessWidget {
   final bool cameraOn;
   final List<RealtimeParticipant> participants;
   final String duration;
-  final bool isExternal;
-  final VoidCallback onReturn;
-  final VoidCallback onEnd;
+  final bool isOwner;
+  final VoidCallback? onReturn;
+  final VoidCallback? onEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -292,36 +285,17 @@ class _FloatingCard extends StatelessWidget {
           // ── Row 1: live indicator · title · duration · drag handle ────────
           Row(
             children: [
-              _LiveDot(),
+              _LiveDot(active: isOwner),
               const SizedBox(width: AuraSpace.s6),
               Text(
-                isVideo ? 'Video Call' : 'Audio Call',
+                isOwner
+                    ? (isVideo ? 'Video Call' : 'Audio Call')
+                    : 'Call in another tab',
                 style: AuraText.small.copyWith(
                   color: AuraSurface.ink,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              // External indicator pill
-              if (isExternal) ...[
-                const SizedBox(width: AuraSpace.s6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  ),
-                  child: Text(
-                    'other tab',
-                    style: AuraText.micro.copyWith(
-                      color: AuraSurface.accentText,
-                      fontSize: 9,
-                    ),
-                  ),
-                ),
-              ],
               const Spacer(),
               Text(
                 duration,
@@ -350,36 +324,48 @@ class _FloatingCard extends StatelessWidget {
                 const SizedBox(width: AuraSpace.s8),
               ],
 
-              _StatusDot(
-                icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-                on: micOn,
-              ),
-
-              if (isVideo) ...[
-                const SizedBox(width: AuraSpace.s4),
+              if (isOwner) ...[
                 _StatusDot(
-                  icon: cameraOn
-                      ? Icons.videocam_rounded
-                      : Icons.videocam_off_rounded,
-                  on: cameraOn,
+                  icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                  on: micOn,
+                ),
+                if (isVideo) ...[
+                  const SizedBox(width: AuraSpace.s4),
+                  _StatusDot(
+                    icon: cameraOn
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
+                    on: cameraOn,
+                  ),
+                ],
+              ] else ...[
+                // Passive tab — show a subtle indicator only
+                Text(
+                  'Active',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.muted,
+                  ),
                 ),
               ],
 
               const Spacer(),
 
-              _Chip(
-                label: 'Return',
-                icon: Icons.open_in_full_rounded,
-                accent: true,
-                onTap: onReturn,
-              ),
-              const SizedBox(width: AuraSpace.s6),
-              _Chip(
-                label: 'End',
-                icon: Icons.call_end_rounded,
-                danger: true,
-                onTap: onEnd,
-              ),
+              if (onReturn != null) ...[
+                _Chip(
+                  label: 'Return',
+                  icon: Icons.open_in_full_rounded,
+                  accent: true,
+                  onTap: onReturn!,
+                ),
+                const SizedBox(width: AuraSpace.s6),
+              ],
+              if (onEnd != null)
+                _Chip(
+                  label: 'End',
+                  icon: Icons.call_end_rounded,
+                  danger: true,
+                  onTap: onEnd!,
+                ),
             ],
           ),
         ],
@@ -393,13 +379,16 @@ class _FloatingCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LiveDot extends StatelessWidget {
+  const _LiveDot({required this.active});
+  final bool active;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 7,
       height: 7,
-      decoration: const BoxDecoration(
-        color: Color(0xFF4ADE80),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF4ADE80) : AuraSurface.muted,
         shape: BoxShape.circle,
       ),
     );

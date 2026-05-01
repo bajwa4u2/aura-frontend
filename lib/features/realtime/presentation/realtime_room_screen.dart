@@ -8,7 +8,6 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
-import '../../../core/services/call_window_service.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -143,16 +142,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   Future<void> _endCallAndClose(RealtimeController controller) async {
-    final sessionId = ref.read(realtimeControllerProvider).sessionId ?? '';
-    debugPrint('[END] End button tapped: sessionId=$sessionId');
+    final session = ref.read(realtimeControllerProvider).session;
+    debugPrint('[END] End button tapped: sessionId=${session?.id}');
     try {
       debugPrint('[END] _endCallAndClose: awaiting controller.endCall()');
       await controller.endCall();
-      debugPrint('[END] _endCallAndClose: endCall() succeeded — closing window');
-      if (mounted) {
-        ref.read(callWindowServiceProvider).closeCurrentWindow();
-        debugPrint('[END] _endCallAndClose: closeCurrentWindow() called');
-      }
+      debugPrint('[END] _endCallAndClose: endCall() succeeded — navigating away');
+      if (mounted) _navigateAfterCall(session);
     } catch (e, st) {
       debugPrint('[END] _endCallAndClose ERROR: $e\n${st.toString().split('\n').take(4).join('\n')}');
       if (mounted) {
@@ -163,8 +159,37 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           ),
         );
       }
-      // Do not close the window — session may still be active.
     }
+  }
+
+  Future<void> _leaveAndNavigate(RealtimeController controller) async {
+    final session = ref.read(realtimeControllerProvider).session;
+    try {
+      await controller.leave();
+    } catch (_) {}
+    if (mounted) _navigateAfterCall(session);
+  }
+
+  void _navigateAfterCall(RealtimeSession? session) {
+    if (session == null) {
+      context.go('/home');
+      return;
+    }
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.space:
+        final id = (session.surfaceId ?? '').trim();
+        if (id.isNotEmpty) {
+          context.go('/me/correspondence/$id');
+          return;
+        }
+      case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
+        context.go('/me/correspondence');
+        return;
+      default:
+        break;
+    }
+    context.go('/home');
   }
 
   void _openBottomPanel(String panelId) {
@@ -318,7 +343,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   isEndCall: isHost || state.participants.length <= 2,
                   onLeave: (isHost || state.participants.length <= 2)
                       ? () => unawaited(_endCallAndClose(controller))
-                      : controller.leave,
+                      : () => unawaited(_leaveAndNavigate(controller)),
                 ),
             ],
           );
@@ -445,7 +470,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     ),
                   AuraSecondaryButton(
                     label: 'Leave',
-                    onPressed: controller.leave,
+                    onPressed: () {
+                      unawaited(controller.leave());
+                      _navigateAfterCall(state.session);
+                    },
                   ),
                 ],
               ),

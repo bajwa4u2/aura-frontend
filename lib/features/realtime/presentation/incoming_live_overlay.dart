@@ -207,7 +207,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     _cancelRingTimer();
     final router = GoRouter.of(context);
-    final route = _resolver.resolveRoute(target);
 
     setState(() {
       _joining = true;
@@ -224,7 +223,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
 
       if (!mounted) return;
-      router.go(route);
+      router.go('/realtime/$sessionId');
     } catch (e) {
       final msg = e.toString().toLowerCase();
       final isExpired = msg.contains('invite_expired') ||

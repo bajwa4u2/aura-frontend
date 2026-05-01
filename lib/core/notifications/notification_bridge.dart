@@ -181,15 +181,9 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final threadId = _stringOf(payload['threadId']);
     final spaceId = _stringOf(payload['spaceId']);
 
-    // Call/live notification tap → realtime session or thread live.
+    // Call/live notification tap → always open the full call screen.
     if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
       if (sessionId.isNotEmpty) {
-        if (threadId.isNotEmpty && spaceId.isNotEmpty) {
-          return '/me/correspondence/$spaceId/thread/$threadId/live/$sessionId';
-        }
-        if (spaceId.isNotEmpty) {
-          return '/me/correspondence/$spaceId/live/$sessionId';
-        }
         return '/realtime/$sessionId?action=join';
       }
     }

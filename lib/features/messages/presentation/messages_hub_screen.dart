@@ -15,7 +15,6 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../correspondence/data/correspondence_identity.dart';
 import '../../correspondence/data/spaces_repository.dart';
 import '../../correspondence/data/threads_repository.dart';
-import '../../../core/services/call_window_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../updates/providers.dart';
 
@@ -1002,17 +1001,8 @@ class _LiveSessionRow extends ConsumerWidget {
       cursor: SystemMouseCursors.click,
       child: InkWell(
         onTap: () {
-          if (session.threadId.isNotEmpty &&
-              session.spaceId.isNotEmpty) {
-            context.push(
-              '/me/correspondence/${session.spaceId}/thread/${session.threadId}/live/${session.sessionId}',
-            );
-          } else if (session.sessionId.isNotEmpty) {
-            final windowSvc = ref.read(callWindowServiceProvider);
-            windowSvc.openCall(session.sessionId);
-            if (!windowSvc.isWindowOpen) {
-              context.push('/realtime/${session.sessionId}');
-            }
+          if (session.sessionId.isNotEmpty) {
+            context.push('/realtime/${session.sessionId}?action=join');
           }
         },
         child: Padding(

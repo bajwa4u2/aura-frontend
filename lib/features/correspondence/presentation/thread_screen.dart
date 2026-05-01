@@ -15,7 +15,6 @@ import '../../../core/ui/aura_text.dart';
 import '../data/messages_repository.dart';
 import '../data/threads_repository.dart';
 import '../data/correspondence_identity.dart';
-import '../../../core/services/call_window_service.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/domain/realtime_state.dart';
 import 'thread/thread_composer.dart';
@@ -258,8 +257,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       final controller = ref.read(realtimeControllerProvider.notifier);
       final surfaceType = _threadLiveSurfaceType(thread);
       final surfaceId = _threadLiveSurfaceId(thread, widget.threadId);
-      // DIAG: trace call start params
-      debugPrint('DIAG _startLive: kind=$kind surfaceType=$surfaceType surfaceId=$surfaceId threadId=${widget.threadId}');
       final sessionId = await controller.ensureCorrespondenceLive(
         surfaceType: surfaceType,
         surfaceId: surfaceId,
@@ -272,24 +269,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ),
         joinAfterCreate: false,
       );
-      // DIAG: ensureCorrespondenceLive returned
-      debugPrint('DIAG _startLive: ensureCorrespondenceLive returned sessionId=$sessionId');
       if (!mounted) return;
-      final windowSvc = ref.read(callWindowServiceProvider);
-      windowSvc.openCall(sessionId);
-      final isOpen = windowSvc.isWindowOpen;
-      // DIAG: popup state after openCall
-      debugPrint('DIAG _startLive: openCall done isWindowOpen=$isOpen');
-      if (!isOpen) {
-        // Popup blocked — join in this tab; PiP will show on messages.
-        debugPrint('DIAG _startLive: popup blocked, calling join() in main tab');
-        await controller.join(sessionId);
-        debugPrint('DIAG _startLive: join() completed in main tab');
-      }
-    } catch (e, st) {
-      // DIAG: log actual error that triggers the snackbar
-      debugPrint('DIAG _startLive ERROR: ${e.runtimeType}: $e');
-      debugPrint('DIAG _startLive STACK: ${st.toString().split('\n').take(6).join('\n')}');
+      context.go('/realtime/$sessionId?action=join');
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -454,24 +436,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             onJoin: () async {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              if (!context.mounted) return;
-                              final windowSvc = ref.read(callWindowServiceProvider);
-                              windowSvc.openCall(sid);
-                              if (!windowSvc.isWindowOpen) {
-                                // Popup blocked — join in this tab; PiP shows.
-                                await ref.read(realtimeControllerProvider.notifier).join(sid);
-                              }
+                              context.go('/realtime/$sid?action=join');
                             },
                             onLeave: () async => ref.read(realtimeControllerProvider.notifier).leave(),
                             onReturn: () {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              final windowSvc = ref.read(callWindowServiceProvider);
-                              if (windowSvc.isWindowOpen) {
-                                windowSvc.focusCall();
-                              } else {
-                                context.push('/realtime/$sid');
-                              }
+                              context.go('/realtime/$sid');
                             },
                           ),
                           const SizedBox(height: AuraSpace.s16),
