@@ -27,6 +27,25 @@ import 'widgets/realtime_host_controls.dart';
 import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
 
+
+class _CallRouteRedirectingFallback extends StatelessWidget {
+  const _CallRouteRedirectingFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AuraSurface.page,
+      body: Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 2.4),
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,11 +202,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String _safeReturnRoute(RealtimeSession? session) {
-    final explicitRaw = (widget.returnTo ?? '').trim();
-    final explicit = explicitRaw.startsWith('%2F') || explicitRaw.startsWith('%2f')
-        ? Uri.decodeComponent(explicitRaw)
-        : (Uri.tryParse(explicitRaw)?.toString().trim() ?? '');
-    if (explicit.startsWith('/') && !explicit.startsWith('/realtime')) {
+    final explicit = _decodeReturnRoute(widget.returnTo);
+    if (_isUsableReturnRoute(explicit)) {
       return explicit;
     }
 
@@ -198,14 +214,41 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           if (surfaceId.isNotEmpty) return '/me/correspondence/$surfaceId';
         case RealtimeSurfaceType.dm:
         case RealtimeSurfaceType.thread:
-          // The thread route needs a space id that is not present on
-          // RealtimeSession. Avoid the broken correspondence shell fallback.
+          // DM/thread call sessions only carry surfaceId; they do not always
+          // carry the space id required for a thread route. Do not fall back to
+          // the generic correspondence shell because it can render an empty
+          // grey workspace. Use /home unless a precise returnTo was captured.
           return '/home';
         default:
           break;
       }
     }
     return '/home';
+  }
+
+  String _decodeReturnRoute(String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return '';
+    try {
+      final decoded = value.startsWith('%2F') || value.startsWith('%2f')
+          ? Uri.decodeComponent(value)
+          : value;
+      final parsed = Uri.tryParse(decoded);
+      return parsed?.toString().trim() ?? decoded;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool _isUsableReturnRoute(String route) {
+    if (!route.startsWith('/') || route.startsWith('/realtime')) return false;
+
+    // The generic correspondence hub/shell is not a safe post-call landing
+    // route. It has produced the blank grey state in live testing. Exact space
+    // and thread routes remain valid.
+    if (route == '/me/correspondence') return false;
+
+    return true;
   }
 
   void _navigateAfterCall(RealtimeSession? session) {
@@ -293,7 +336,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           if (mounted) _navigateAfterCall(null);
         });
       }
-      return const SizedBox.shrink();
+      return const _CallRouteRedirectingFallback();
     }
 
     final myUserId = meAsync.maybeWhen(

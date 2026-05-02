@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'aura_platform_components.dart';
-import 'aura_surface.dart';
 
 class AuraScaffold extends StatelessWidget {
   AuraScaffold({
@@ -53,9 +52,13 @@ class AuraScaffold extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AuraSurface.page,
-      body: AuraPageShell(
+    // This app already renders screens inside AppShell/MemberShell/AdminShell.
+    // Returning another Scaffold here can leave a blank grey content slot after
+    // realtime route transitions because the nested scaffold owns its own body
+    // surface while the shell is also swapping children. Keep AuraScaffold as a
+    // pure page surface that always expands inside the shell content slot.
+    return SizedBox.expand(
+      child: AuraPageShell(
         maxWidth: maxWidth ?? _defaultMaxWidth,
         padding: EdgeInsets.zero,
         child: content,
