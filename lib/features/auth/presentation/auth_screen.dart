@@ -47,6 +47,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String _challengeId = '';
   String _maskedEmail = '';
 
+  // Trust device
+  bool _trustDevice = false;
+
   // Resend cooldown
   int _resendCooldown = 0;
   Timer? _resendTimer;
@@ -207,6 +210,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       await AuthController(ref).verifyLoginCode(
         challengeId: _challengeId,
         code: _codeCtrl.text.trim(),
+        trustDevice: _trustDevice,
       );
       // Session set — router redirects automatically
     } catch (e) {
@@ -263,6 +267,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       _codeCtrl.clear();
       _error = null;
       _resendCooldown = 0;
+      _trustDevice = false;
     });
   }
 
@@ -290,6 +295,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             codeCtrl: _codeCtrl,
             codeValidator: _codeValidator,
             resendCooldown: _resendCooldown,
+            trustDevice: _trustDevice,
+            onTrustDeviceChanged: (v) => setState(() => _trustDevice = v ?? false),
             onVerify: _verifyCode,
             onResend: _resendCode,
             onBack: _backToLogin,
@@ -386,6 +393,8 @@ class _EmailCodeCard extends StatelessWidget {
     required this.codeCtrl,
     required this.codeValidator,
     required this.resendCooldown,
+    required this.trustDevice,
+    required this.onTrustDeviceChanged,
     required this.onVerify,
     required this.onResend,
     required this.onBack,
@@ -398,6 +407,8 @@ class _EmailCodeCard extends StatelessWidget {
   final TextEditingController codeCtrl;
   final String? Function(String?) codeValidator;
   final int resendCooldown;
+  final bool trustDevice;
+  final ValueChanged<bool?> onTrustDeviceChanged;
   final VoidCallback onVerify;
   final VoidCallback onResend;
   final VoidCallback onBack;
@@ -451,6 +462,28 @@ class _EmailCodeCard extends StatelessWidget {
               textInputAction: TextInputAction.done,
               validator: codeValidator,
               prefixIcon: const Icon(Icons.pin_outlined),
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Checkbox(
+                    value: trustDevice,
+                    onChanged: busy ? null : onTrustDeviceChanged,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                GestureDetector(
+                  onTap: busy ? null : () => onTrustDeviceChanged(!trustDevice),
+                  child: Text(
+                    'Trust this device for 60 days',
+                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AuraSpace.s14),
             SizedBox(

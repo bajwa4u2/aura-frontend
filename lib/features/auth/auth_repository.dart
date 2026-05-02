@@ -51,16 +51,17 @@ class AuthRepository {
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
+    String? trustedDeviceToken,
   }) async {
     try {
-      final res = await _dio.post(
-        '/auth/login',
-        data: {
-          'email': email.trim(),
-          'password': password,
-        },
-      );
-
+      final data = <String, dynamic>{
+        'email': email.trim(),
+        'password': password,
+      };
+      if (trustedDeviceToken != null && trustedDeviceToken.trim().isNotEmpty) {
+        data['trustedDeviceToken'] = trustedDeviceToken.trim();
+      }
+      final res = await _dio.post('/auth/login', data: data);
       return _unwrap(res);
     } on DioException catch (e) {
       throw AuthException(_mapLoginError(e));
@@ -131,17 +132,146 @@ class AuthRepository {
   Future<Map<String, dynamic>> verifyLoginCode({
     required String challengeId,
     required String code,
+    bool trustDevice = false,
+    String? deviceName,
   }) async {
     try {
-      final res = await _dio.post(
-        '/auth/login/verify-code',
-        data: {'challengeId': challengeId.trim(), 'code': code.trim()},
-      );
+      final data = <String, dynamic>{
+        'challengeId': challengeId.trim(),
+        'code': code.trim(),
+        if (trustDevice) 'trustDevice': true,
+        if (deviceName != null && deviceName.trim().isNotEmpty)
+          'deviceName': deviceName.trim(),
+      };
+      final res = await _dio.post('/auth/login/verify-code', data: data);
       return _unwrap(res);
     } on DioException catch (e) {
       throw AuthException(_mapVerifyCodeError(e));
     } catch (_) {
       throw const AuthException('We could not verify the code right now. Please try again.');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> listSessions() async {
+    try {
+      final res = await _dio.get('/auth/sessions');
+      final body = res.data;
+      if (body is List) return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final m = _unwrap(res);
+      final sessions = m['sessions'] ?? m['data'] ?? [];
+      if (sessions is List) return sessions.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return [];
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load sessions.'));
+    } catch (_) {
+      throw const AuthException('Could not load sessions.');
+    }
+  }
+
+  Future<void> revokeSession(String sessionId) async {
+    try {
+      await _dio.delete('/auth/sessions/$sessionId');
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not revoke session.'));
+    } catch (_) {
+      throw const AuthException('Could not revoke session.');
+    }
+  }
+
+  Future<void> revokeOtherSessions() async {
+    try {
+      await _dio.delete('/auth/sessions/others');
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not revoke other sessions.'));
+    } catch (_) {
+      throw const AuthException('Could not revoke other sessions.');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> listTrustedDevices() async {
+    try {
+      final res = await _dio.get('/auth/trusted-devices');
+      final body = res.data;
+      if (body is List) return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final m = _unwrap(res);
+      final devices = m['devices'] ?? m['data'] ?? [];
+      if (devices is List) return devices.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return [];
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load trusted devices.'));
+    } catch (_) {
+      throw const AuthException('Could not load trusted devices.');
+    }
+  }
+
+  Future<void> revokeTrustedDevice(String deviceId) async {
+    try {
+      await _dio.delete('/auth/trusted-devices/$deviceId');
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not revoke device.'));
+    } catch (_) {
+      throw const AuthException('Could not revoke device.');
+    }
+  }
+
+  Future<void> renameTrustedDevice(String deviceId, String name) async {
+    try {
+      await _dio.patch('/auth/trusted-devices/$deviceId', data: {'name': name.trim()});
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not rename device.'));
+    } catch (_) {
+      throw const AuthException('Could not rename device.');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> listLoginActivity() async {
+    try {
+      final res = await _dio.get('/auth/login-activity');
+      final body = res.data;
+      if (body is List) {
+        return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      if (body is Map && body['data'] is List) {
+        return (body['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load login activity.'));
+    } catch (_) {
+      throw const AuthException('Could not load login activity.');
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.post('/auth/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+    } on DioException catch (e) {
+      final server = _extractServerMessage(e);
+      final code = e.response?.statusCode;
+      if (code == 403) {
+        if (server.toLowerCase().contains('current password')) {
+          throw const AuthException('Your current password is incorrect.');
+        }
+        if (server.toLowerCase().contains('different')) {
+          throw const AuthException('Your new password must be different from your current one.');
+        }
+        if (server.toLowerCase().contains('too short') || server.toLowerCase().contains('weak')) {
+          throw const AuthException('Your new password must be at least 8 characters.');
+        }
+      }
+      throw AuthException(
+        _mapCommonInfraError(e, fallback: 'Could not change your password. Please try again.'),
+      );
+    } catch (_) {
+      throw const AuthException('Could not change your password. Please try again.');
     }
   }
 

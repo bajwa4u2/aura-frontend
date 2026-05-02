@@ -35,6 +35,7 @@ import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/me/presentation/security_screen.dart';
+import 'features/me/presentation/change_password_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
@@ -612,6 +613,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/security',
             builder: (_, __) => const SecurityScreen(),
+          ),
+          GoRoute(
+            path: '/change-password',
+            builder: (_, __) => const ChangePasswordScreen(),
           ),
           GoRoute(
             path: '/settings/communications',

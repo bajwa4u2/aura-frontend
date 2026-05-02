@@ -11,15 +11,168 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../core/auth/trusted_device_store.dart';
+import '../../auth/auth_repository.dart';
 import 'notification_permission_tile.dart';
 
-class SecurityScreen extends ConsumerWidget {
+// ── Providers ─────────────────────────────────────────────────────────────────
+
+final _sessionsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.listSessions();
+});
+
+final _trustedDevicesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.listTrustedDevices();
+});
+
+final _loginActivityProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.listLoginActivity();
+});
+
+class SecurityScreen extends ConsumerStatefulWidget {
   const SecurityScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SecurityScreen> createState() => _SecurityScreenState();
+}
+
+class _SecurityScreenState extends ConsumerState<SecurityScreen> {
+  bool _revokingAll = false;
+
+  Future<void> _revokeSession(String sessionId) async {
+    try {
+      await ref.read(authRepositoryProvider).revokeSession(sessionId);
+      ref.invalidate(_sessionsProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _revokeOtherSessions() async {
+    setState(() => _revokingAll = true);
+    try {
+      await ref.read(authRepositoryProvider).revokeOtherSessions();
+      ref.invalidate(_sessionsProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _revokingAll = false);
+    }
+  }
+
+  Future<void> _revokeDevice(String deviceId) async {
+    try {
+      await ref.read(authRepositoryProvider).revokeTrustedDevice(deviceId);
+      await TrustedDeviceStore.remove();
+      ref.invalidate(_trustedDevicesProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _renameDevice(String deviceId, String currentName) async {
+    final ctrl = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename Device'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Device name'),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+
+    if (newName == null || newName == currentName) return;
+
+    try {
+      await ref.read(authRepositoryProvider).renameTrustedDevice(deviceId, newName);
+      ref.invalidate(_trustedDevicesProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _showDeviceOptions(String deviceId, String displayName) async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(displayName.isNotEmpty ? displayName : 'Trusted Device'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'rename'),
+            child: const Text('Rename'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'revoke'),
+            child: Text(
+              'Revoke',
+              style: TextStyle(color: AuraSurface.dangerInk),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (choice == 'rename') {
+      await _renameDevice(deviceId, displayName);
+    } else if (choice == 'revoke') {
+      await _revokeDevice(deviceId);
+    }
+  }
+
+  String _formatActivityTime(String? isoString) {
+    if (isoString == null || isoString.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authed = ref.watch(isAuthedProvider);
     final emailVerifiedAsync = ref.watch(emailVerifiedProvider);
+    final sessionsAsync = ref.watch(_sessionsProvider);
+    final devicesAsync = ref.watch(_trustedDevicesProvider);
+    final activityAsync = ref.watch(_loginActivityProvider);
 
     if (!authed) {
       return AuraScaffold(
@@ -68,24 +221,164 @@ class SecurityScreen extends ConsumerWidget {
       orElse: () => false,
     );
 
+    final sessionItems = sessionsAsync.when(
+      loading: () => <Widget>[
+        const _SecurityRow(
+          title: 'Loading sessions…',
+          leading: Icons.hourglass_empty_rounded,
+          statusStyle: _StatusStyle.neutral,
+        ),
+      ],
+      error: (_, __) => <Widget>[
+        const _SecurityRow(
+          title: 'Could not load sessions',
+          subtitle: 'Check your connection and try again',
+          leading: Icons.error_outline,
+          statusStyle: _StatusStyle.warn,
+        ),
+      ],
+      data: (sessions) {
+        if (sessions.isEmpty) {
+          return <Widget>[
+            const _SecurityRow(
+              title: 'No active sessions',
+              leading: Icons.devices_outlined,
+              statusStyle: _StatusStyle.neutral,
+            ),
+          ];
+        }
+        return sessions.map<Widget>((s) {
+          final isCurrent = s['current'] == true;
+          final ua = (s['userAgentHint'] ?? '').toString();
+          final ip = (s['ipHint'] ?? '').toString();
+          final subtitle = [if (ua.isNotEmpty) ua, if (ip.isNotEmpty) ip].join(' · ');
+          return _SecurityRow(
+            title: isCurrent ? 'This session' : (ua.isNotEmpty ? ua : 'Unknown device'),
+            subtitle: subtitle.isNotEmpty ? subtitle : null,
+            leading: isCurrent ? Icons.computer_outlined : Icons.devices_outlined,
+            statusLabel: isCurrent ? 'Current' : 'Revoke',
+            statusStyle: isCurrent ? _StatusStyle.good : _StatusStyle.neutral,
+            onTap: isCurrent ? null : () => _revokeSession(s['id'].toString()),
+          );
+        }).toList();
+      },
+    );
+
+    final hasOtherSessions = sessionsAsync.maybeWhen(
+      data: (s) => s.any((x) => x['current'] != true),
+      orElse: () => false,
+    );
+
+    final deviceItems = devicesAsync.when(
+      loading: () => <Widget>[
+        const _SecurityRow(
+          title: 'Loading trusted devices…',
+          leading: Icons.hourglass_empty_rounded,
+          statusStyle: _StatusStyle.neutral,
+        ),
+      ],
+      error: (_, __) => <Widget>[
+        const _SecurityRow(
+          title: 'Could not load trusted devices',
+          subtitle: 'Check your connection and try again',
+          leading: Icons.error_outline,
+          statusStyle: _StatusStyle.warn,
+        ),
+      ],
+      data: (devices) {
+        if (devices.isEmpty) {
+          return <Widget>[
+            const _SecurityRow(
+              title: 'No trusted devices',
+              subtitle: 'Trust this device on next sign-in to skip verification codes',
+              leading: Icons.phonelink_outlined,
+              statusStyle: _StatusStyle.neutral,
+            ),
+          ];
+        }
+        return devices.map<Widget>((d) {
+          final name = (d['deviceName'] ?? d['userAgentHint'] ?? 'Unknown device').toString();
+          final hint = (d['ipHint'] ?? '').toString();
+          return _SecurityRow(
+            title: name,
+            subtitle: hint.isNotEmpty ? hint : null,
+            leading: Icons.phonelink_lock_outlined,
+            statusLabel: 'Options',
+            statusStyle: _StatusStyle.neutral,
+            onTap: () => _showDeviceOptions(d['id'].toString(), name),
+          );
+        }).toList();
+      },
+    );
+
+    final activityItems = activityAsync.when(
+      loading: () => <Widget>[
+        const _SecurityRow(
+          title: 'Loading activity…',
+          leading: Icons.hourglass_empty_rounded,
+          statusStyle: _StatusStyle.neutral,
+        ),
+      ],
+      error: (_, __) => <Widget>[
+        const _SecurityRow(
+          title: 'Could not load activity',
+          subtitle: 'Check your connection and try again',
+          leading: Icons.error_outline,
+          statusStyle: _StatusStyle.warn,
+        ),
+      ],
+      data: (events) {
+        if (events.isEmpty) {
+          return <Widget>[
+            const _SecurityRow(
+              title: 'No recent login activity',
+              leading: Icons.history_outlined,
+              statusStyle: _StatusStyle.neutral,
+            ),
+          ];
+        }
+        return events.map<Widget>((e) {
+          final result = (e['result'] ?? '').toString();
+          final ua = (e['userAgentHint'] ?? '').toString();
+          final ip = (e['ipHint'] ?? '').toString();
+          final timeStr = _formatActivityTime(e['createdAt']?.toString());
+          final subtitle = [if (ua.isNotEmpty) ua, if (ip.isNotEmpty) ip].join(' · ');
+
+          final (title, icon, style) = switch (result) {
+            'SUCCESS' => ('Successful login', Icons.login_rounded, _StatusStyle.good),
+            'TRUSTED_DEVICE' => ('Login via trusted device', Icons.phonelink_lock_outlined, _StatusStyle.good),
+            'FAILED_PASSWORD' => ('Failed password attempt', Icons.lock_outline, _StatusStyle.warn),
+            'FAILED_CODE' => ('Failed code attempt', Icons.pin_outlined, _StatusStyle.warn),
+            _ => (result, Icons.history_outlined, _StatusStyle.neutral),
+          };
+
+          return _SecurityRow(
+            title: title,
+            subtitle: subtitle.isNotEmpty ? subtitle : null,
+            leading: icon,
+            statusLabel: timeStr,
+            statusStyle: style,
+          );
+        }).toList();
+      },
+    );
+
     return AuraScaffold(
       showHeader: false,
       body: _centeredContent([
-        // ── Header ──────────────────────────────────────────────────────────
         _SecurityHeaderPanel(),
 
-        // ── Security status ──────────────────────────────────────────────────
         _SecuritySection(
           icon: Icons.shield_outlined,
           title: 'Security',
           items: [
             _SecurityRow(
               title: 'Password',
-              subtitle: 'Send a reset link to your email',
+              subtitle: 'Change your current password',
               leading: Icons.lock_outline,
               statusLabel: 'Change',
               statusStyle: _StatusStyle.neutral,
-              onTap: () => context.go('/forgot-password'),
+              onTap: () => context.go('/change-password'),
             ),
             _SecurityRow(
               title: 'Email verification',
@@ -94,33 +387,43 @@ class SecurityScreen extends ConsumerWidget {
                   : 'Verify your email to secure your account',
               leading: Icons.verified_user_outlined,
               statusLabel: emailStatusText,
-              statusStyle: emailVerified
-                  ? _StatusStyle.good
-                  : _StatusStyle.warn,
+              statusStyle: emailVerified ? _StatusStyle.good : _StatusStyle.warn,
               onTap: () => context.go('/verify-pending'),
             ),
           ],
         ),
 
-        // ── Sessions ─────────────────────────────────────────────────────────
-        const _SecuritySection(
+        _SecuritySection(
           icon: Icons.devices_outlined,
-          title: 'Sessions',
+          title: 'Active Sessions',
           items: [
-            _SecurityRow(
-              title: 'This device',
-              subtitle: 'Currently authenticated session',
-              leading: Icons.computer_outlined,
-              statusLabel: 'Active',
-              statusStyle: _StatusStyle.good,
-            ),
+            ...sessionItems,
+            if (hasOtherSessions)
+              _SecurityRow(
+                title: _revokingAll ? 'Signing out…' : 'Sign out of all other sessions',
+                subtitle: 'Revokes all sessions except this one',
+                leading: Icons.logout_rounded,
+                statusLabel: 'Sign out all',
+                statusStyle: _StatusStyle.warn,
+                onTap: _revokingAll ? null : _revokeOtherSessions,
+              ),
           ],
         ),
 
-        // ── Browser notifications (web only) ─────────────────────────────────
+        _SecuritySection(
+          icon: Icons.phonelink_lock_outlined,
+          title: 'Trusted Devices',
+          items: deviceItems,
+        ),
+
+        _SecuritySection(
+          icon: Icons.history_outlined,
+          title: 'Login Activity',
+          items: activityItems,
+        ),
+
         if (kIsWeb) const BrowserNotificationsSection(),
 
-        // ── Danger zone ───────────────────────────────────────────────────────
         _DangerZonePanel(
           onDeleteAccount: () => context.go('/account-deletion'),
         ),
@@ -148,8 +451,7 @@ class SecurityScreen extends ConsumerWidget {
             child: ListView.separated(
               padding: EdgeInsets.fromLTRB(hPad, 18, hPad, 28),
               itemCount: sections.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AuraSpace.s24),
+              separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s24),
               itemBuilder: (_, i) => sections[i],
             ),
           ),

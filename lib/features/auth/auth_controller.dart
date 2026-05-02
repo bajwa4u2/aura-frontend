@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_providers.dart';
+import 'package:aura/core/auth/trusted_device_store.dart';
 import '../../core/net/dio_provider.dart';
 import '../devices/device_providers.dart';
 
@@ -179,11 +180,17 @@ class AuthController {
     if (e.isEmpty) throw Exception('Email is required');
     if (p.isEmpty) throw Exception('Password is required');
 
+    final deviceToken = await TrustedDeviceStore.load();
+
     late final Response res;
     try {
       res = await _dio().post(
         '/auth/login',
-        data: {'email': e, 'password': p},
+        data: {
+          'email': e,
+          'password': p,
+          if (deviceToken != null) 'trustedDeviceToken': deviceToken,
+        },
       );
     } on DioException catch (err) {
       throw Exception(_mapLoginError(err));
@@ -218,16 +225,25 @@ class AuthController {
   }
 
   /// Complete a login email-code challenge.
-  /// On success, stores the session and invalidates auth providers.
+  /// On success, stores the session (and optionally a trusted device token) and
+  /// invalidates auth providers.
   Future<Map<String, dynamic>> verifyLoginCode({
     required String challengeId,
     required String code,
+    bool trustDevice = false,
+    String? deviceName,
   }) async {
     late final Response res;
     try {
       res = await _dio().post(
         '/auth/login/verify-code',
-        data: {'challengeId': challengeId.trim(), 'code': code.trim()},
+        data: {
+          'challengeId': challengeId.trim(),
+          'code': code.trim(),
+          if (trustDevice) 'trustDevice': true,
+          if (deviceName != null && deviceName.trim().isNotEmpty)
+            'deviceName': deviceName.trim(),
+        },
       );
     } on DioException catch (err) {
       final server = (err.response?.data is Map
@@ -267,6 +283,12 @@ class AuthController {
       accessToken: access,
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
+
+    // Persist trusted device token if the server issued one
+    final deviceToken = (outer['deviceToken'] ?? '').toString().trim();
+    if (deviceToken.isNotEmpty) {
+      await TrustedDeviceStore.save(deviceToken);
+    }
 
     _invalidateAuth();
     return _unwrap(outer);
