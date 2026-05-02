@@ -230,27 +230,23 @@ class _TermsMap extends StatelessWidget {
 
         if (compact) {
           return Column(
-            children: cards
-                .map((card) => Padding(
-                      padding: const EdgeInsets.only(bottom: AuraSpace.sm),
-                      child: card,
-                    ))
-                .toList(),
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                cards[i],
+                if (i < cards.length - 1) const SizedBox(height: AuraSpace.sm),
+              ],
+            ],
           );
         }
 
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: cards
-              .map(
-                (card) => Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: AuraSpace.sm),
-                    child: card,
-                  ),
-                ),
-              )
-              .toList(),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              Expanded(child: cards[i]),
+              if (i < cards.length - 1) const SizedBox(width: AuraSpace.sm),
+            ],
+          ],
         );
       },
     );
@@ -267,7 +263,6 @@ class _MapCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
         color: AuraSurface.elevated,

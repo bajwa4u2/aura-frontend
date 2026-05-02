@@ -340,43 +340,96 @@ class _InstitutionDomainsScreenState
     final trustLevel = d['trustLevel']?.toString() ?? '';
     final verifiedAt = d['verifiedAt']?.toString() ?? '';
     final isPrimary = d['isPrimary'] == true;
+    final isVerified = status == 'VERIFIED';
+
+    Color statusColor;
+    if (isVerified) {
+      statusColor = const Color(0xFF5FD99A);
+    } else if (status == 'CHALLENGE_ISSUED') {
+      statusColor = const Color(0xFF6BAEED);
+    } else {
+      statusColor = const Color(0xFFEDC264);
+    }
 
     return AuraCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            domain,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text('Status: $status'),
-          if (isPrimary) const Text('Primary domain'),
-          if (trustLevel.isNotEmpty) Text('Trust: $trustLevel'),
-          if (verifiedAt.isNotEmpty) Text('Verified at: $verifiedAt'),
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
+          Row(
             children: [
-              AuraSecondaryButton(
-                label: 'DNS challenge',
-                onPressed: () => issueChallenge(id),
+              Expanded(
+                child: Text(
+                  domain,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
-              AuraSecondaryButton(
-                label: 'Verify',
-                onPressed: () => verifyDomain(id),
-              ),
-              AuraSecondaryButton(
-                label: 'Auto verify',
-                onPressed: () => startAutoVerify(id),
-              ),
-              AuraSecondaryButton(
-                label: 'Remove',
-                onPressed: () => removeDomain(id),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status.replaceAll('_', ' '),
+                  style: AuraText.small.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: AuraSpace.s6),
+          if (isPrimary)
+            Text(
+              'Primary domain',
+              style: AuraText.small.copyWith(color: AuraText.small.color),
+            ),
+          if (trustLevel.isNotEmpty && isVerified)
+            Text(
+              'Trust: $trustLevel',
+              style: AuraText.small,
+            ),
+          if (verifiedAt.isNotEmpty)
+            Text(
+              'Verified: $verifiedAt',
+              style: AuraText.small,
+            ),
+          const SizedBox(height: AuraSpace.s12),
+          if (isVerified)
+            Wrap(
+              spacing: AuraSpace.s8,
+              children: [
+                AuraSecondaryButton(
+                  label: 'Remove',
+                  onPressed: () => removeDomain(id),
+                ),
+              ],
+            )
+          else
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                AuraSecondaryButton(
+                  label: 'DNS challenge',
+                  onPressed: () => issueChallenge(id),
+                ),
+                AuraSecondaryButton(
+                  label: 'Verify',
+                  onPressed: () => verifyDomain(id),
+                ),
+                AuraSecondaryButton(
+                  label: 'Auto verify',
+                  onPressed: () => startAutoVerify(id),
+                ),
+                AuraSecondaryButton(
+                  label: 'Remove',
+                  onPressed: () => removeDomain(id),
+                ),
+              ],
+            ),
         ],
       ),
     );

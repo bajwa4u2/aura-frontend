@@ -62,6 +62,7 @@ import 'features/admin/presentation/admin_review_queue_screen.dart';
 import 'features/admin/presentation/admin_policies_screen.dart';
 import 'features/admin/presentation/admin_moderation_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
+import 'features/institutions/units/institution_units_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/profile/institution_edit_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
@@ -798,6 +799,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionDomainsRoute,
             builder: (_, __) => const InstitutionDomainsScreen(),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/units',
+            builder: (_, state) => InstitutionUnitsScreen(
+              institutionId: state.pathParameters['institutionId']!,
+            ),
           ),
           GoRoute(
             path: kInstitutionProfileRoute,

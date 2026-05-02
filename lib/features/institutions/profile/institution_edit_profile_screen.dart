@@ -1,8 +1,15 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -30,9 +37,12 @@ class _InstitutionEditProfileScreenState
   final _categoryCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
 
-  // ── Section 2: Branding ──────────────────────────────────────────────────────
-  final _logoUrlCtrl = TextEditingController();
-  final _coverUrlCtrl = TextEditingController();
+  // ── Section 2: Branding ─────────────────────────────���────────────────────────
+  final _picker = ImagePicker();
+  String? _logoUrl;
+  String? _coverUrl;
+  bool _uploadingLogo = false;
+  bool _uploadingCover = false;
 
   // ── Section 3: Public presence ───────────────────────────────────────────────
   final _websiteCtrl = TextEditingController();
@@ -71,7 +81,6 @@ class _InstitutionEditProfileScreenState
 
   List<TextEditingController> get _allControllers => [
         _nameCtrl, _taglineCtrl, _descCtrl, _categoryCtrl, _locationCtrl,
-        _logoUrlCtrl, _coverUrlCtrl,
         _websiteCtrl, _publicEmailCtrl, _phoneCtrl, _addressCtrl,
         _cityCtrl, _regionCtrl, _countryCtrl,
         _linkedinCtrl, _xCtrl, _facebookCtrl, _instagramCtrl, _youtubeCtrl,
@@ -95,8 +104,16 @@ class _InstitutionEditProfileScreenState
     _descCtrl.text = s(['description', 'bio', 'summary']);
     _categoryCtrl.text = s(['category', 'type', 'institutionType']);
     _locationCtrl.text = s(['location', 'city']);
-    _logoUrlCtrl.text = s(['logoUrl', 'avatarUrl', 'logo']);
-    _coverUrlCtrl.text = s(['coverUrl', 'bannerUrl', 'cover']);
+    _logoUrl = inst['logoUrl']?.toString().trim().isNotEmpty == true
+        ? inst['logoUrl'].toString().trim()
+        : (inst['avatarUrl']?.toString().trim().isNotEmpty == true
+            ? inst['avatarUrl'].toString().trim()
+            : null);
+    _coverUrl = inst['coverUrl']?.toString().trim().isNotEmpty == true
+        ? inst['coverUrl'].toString().trim()
+        : (inst['bannerUrl']?.toString().trim().isNotEmpty == true
+            ? inst['bannerUrl'].toString().trim()
+            : null);
     _websiteCtrl.text = s(['website', 'websiteUrl']);
     _publicEmailCtrl.text = s(['publicEmail', 'contactEmail']);
     _phoneCtrl.text = s(['phone', 'phoneNumber']);
@@ -134,8 +151,8 @@ class _InstitutionEditProfileScreenState
         'description': _descCtrl.text.trim(),
         'category': _categoryCtrl.text.trim(),
         'location': _locationCtrl.text.trim(),
-        'logoUrl': _logoUrlCtrl.text.trim(),
-        'coverUrl': _coverUrlCtrl.text.trim(),
+        if (_logoUrl != null) 'logoUrl': _logoUrl,
+        if (_coverUrl != null) 'coverUrl': _coverUrl,
         'website': _websiteCtrl.text.trim(),
         'publicEmail': _publicEmailCtrl.text.trim(),
         'phone': _phoneCtrl.text.trim(),
@@ -178,6 +195,104 @@ class _InstitutionEditProfileScreenState
         _error = msg;
       });
     }
+  }
+
+  bool get _busy => _saving || _uploadingLogo || _uploadingCover;
+
+  Future<void> _pickLogo() => _pickAndUploadImage(isLogo: true);
+  Future<void> _pickCover() => _pickAndUploadImage(isLogo: false);
+
+  Future<void> _pickAndUploadImage({required bool isLogo}) async {
+    if (_busy) return;
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+    if (file == null) return;
+
+    setState(() {
+      _error = null;
+      if (isLogo) {
+        _uploadingLogo = true;
+      } else {
+        _uploadingCover = true;
+      }
+    });
+
+    try {
+      final bytes = await file.readAsBytes();
+      final mimeType = file.mimeType ?? _inferMime(file.name);
+      final size = await _decodeImageSize(bytes);
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: bytes,
+        fileName: file.name,
+        mimeType: mimeType,
+        kind: 'IMAGE',
+        source: 'UPLOAD',
+        width: size?['width'],
+        height: size?['height'],
+        metadataPatch: <String, dynamic>{
+          if (size?['width'] != null) 'width': size!['width'],
+          if (size?['height'] != null) 'height': size!['height'],
+          'editDisclosure': false,
+        },
+      );
+      final url = result.url.trim();
+      if (url.isEmpty) throw Exception('Uploaded image URL missing.');
+      if (!mounted) return;
+      setState(() {
+        if (isLogo) {
+          _logoUrl = url;
+        } else {
+          _coverUrl = url;
+        }
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = _readDioError(e, 'Could not upload image.');
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Could not upload image.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (isLogo) {
+            _uploadingLogo = false;
+          } else {
+            _uploadingCover = false;
+          }
+        });
+      }
+    }
+  }
+
+  String _inferMime(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    if (ext == 'png') return 'image/png';
+    if (ext == 'webp') return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final w = frame.image.width;
+      final h = frame.image.height;
+      frame.image.dispose();
+      return {'width': w, 'height': h};
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _readDioError(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map && data['message'] != null) {
+      final m = data['message'].toString().trim();
+      if (m.isNotEmpty) return m;
+    }
+    return fallback;
   }
 
   @override
@@ -229,8 +344,14 @@ class _InstitutionEditProfileScreenState
             descCtrl: _descCtrl,
             categoryCtrl: _categoryCtrl,
             locationCtrl: _locationCtrl,
-            logoUrlCtrl: _logoUrlCtrl,
-            coverUrlCtrl: _coverUrlCtrl,
+            logoUrl: _logoUrl,
+            coverUrl: _coverUrl,
+            uploadingLogo: _uploadingLogo,
+            uploadingCover: _uploadingCover,
+            onPickLogo: _pickLogo,
+            onPickCover: _pickCover,
+            onRemoveLogo: () => setState(() => _logoUrl = null),
+            onRemoveCover: () => setState(() => _coverUrl = null),
             websiteCtrl: _websiteCtrl,
             publicEmailCtrl: _publicEmailCtrl,
             phoneCtrl: _phoneCtrl,
@@ -273,8 +394,14 @@ class _EditBody extends StatelessWidget {
     required this.descCtrl,
     required this.categoryCtrl,
     required this.locationCtrl,
-    required this.logoUrlCtrl,
-    required this.coverUrlCtrl,
+    required this.logoUrl,
+    required this.coverUrl,
+    required this.uploadingLogo,
+    required this.uploadingCover,
+    required this.onPickLogo,
+    required this.onPickCover,
+    required this.onRemoveLogo,
+    required this.onRemoveCover,
     required this.websiteCtrl,
     required this.publicEmailCtrl,
     required this.phoneCtrl,
@@ -304,8 +431,14 @@ class _EditBody extends StatelessWidget {
   final TextEditingController descCtrl;
   final TextEditingController categoryCtrl;
   final TextEditingController locationCtrl;
-  final TextEditingController logoUrlCtrl;
-  final TextEditingController coverUrlCtrl;
+  final String? logoUrl;
+  final String? coverUrl;
+  final bool uploadingLogo;
+  final bool uploadingCover;
+  final VoidCallback onPickLogo;
+  final VoidCallback onPickCover;
+  final VoidCallback onRemoveLogo;
+  final VoidCallback onRemoveCover;
   final TextEditingController websiteCtrl;
   final TextEditingController publicEmailCtrl;
   final TextEditingController phoneCtrl;
@@ -472,25 +605,25 @@ class _EditBody extends StatelessWidget {
                   // ── 2. Branding ───────────────────────────────────────────
                   const _SectionHeader(label: '2. BRANDING'),
                   _Field(
-                    label: 'Logo / avatar URL',
-                    child: TextFormField(
-                      controller: logoUrlCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('https://…'),
-                      keyboardType: TextInputType.url,
-                      validator: _urlValidator,
-                      maxLength: 2048,
+                    label: 'Logo',
+                    child: _MediaUploadControl(
+                      imageUrl: logoUrl,
+                      uploading: uploadingLogo,
+                      aspectRatio: 1,
+                      hint: 'Square image · at least 200×200 px · PNG, JPEG, or WebP',
+                      onPick: onPickLogo,
+                      onRemove: onRemoveLogo,
                     ),
                   ),
                   _Field(
-                    label: 'Cover / banner URL',
-                    child: TextFormField(
-                      controller: coverUrlCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('https://…'),
-                      keyboardType: TextInputType.url,
-                      validator: _urlValidator,
-                      maxLength: 2048,
+                    label: 'Cover / banner',
+                    child: _MediaUploadControl(
+                      imageUrl: coverUrl,
+                      uploading: uploadingCover,
+                      aspectRatio: 4,
+                      hint: 'Wide image · 1600×400 px or 4:1 ratio · PNG, JPEG, or WebP',
+                      onPick: onPickCover,
+                      onRemove: onRemoveCover,
                     ),
                   ),
 
@@ -739,6 +872,125 @@ class _EditBody extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Media upload control ──────────────────────────────────────────────────────
+
+class _MediaUploadControl extends StatelessWidget {
+  const _MediaUploadControl({
+    required this.imageUrl,
+    required this.uploading,
+    required this.aspectRatio,
+    required this.hint,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final String? imageUrl;
+  final bool uploading;
+  final double aspectRatio;
+  final String hint;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasImage) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AuraSurface.elevated,
+                  child: const Center(
+                    child: Icon(Icons.broken_image_outlined, color: AuraSurface.faint),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+        ],
+        if (!hasImage && !uploading)
+          Container(
+            height: aspectRatio == 1 ? 80 : 64,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Center(
+              child: Icon(
+                aspectRatio == 1 ? Icons.image_outlined : Icons.panorama_outlined,
+                color: AuraSurface.faint,
+                size: 28,
+              ),
+            ),
+          ),
+        if (uploading) ...[
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: AuraSpace.s8),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: uploading ? null : onPick,
+              icon: Icon(hasImage ? Icons.swap_horiz_rounded : Icons.upload_rounded, size: 16),
+              label: Text(uploading
+                  ? 'Uploading…'
+                  : hasImage
+                      ? 'Replace'
+                      : 'Upload'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (hasImage) ...[
+              const SizedBox(width: AuraSpace.s8),
+              TextButton(
+                onPressed: uploading ? null : onRemove,
+                child: Text(
+                  'Remove',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.dangerInk,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s6),
+        Text(
+          hint,
+          style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.4),
+        ),
+      ],
     );
   }
 }

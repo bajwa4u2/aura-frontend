@@ -201,15 +201,15 @@ class _ProfileBody extends StatelessWidget {
                         title: 'STANDING',
                         rows: [
                           _InfoRow(
-                            label: 'Verification',
+                            label: 'Institution',
                             value: isVerified ? 'Verified' : 'Unverified',
                             valueColor: isVerified
                                 ? AuraSurface.goodInk
                                 : AuraSurface.muted,
                           ),
                           _InfoRow(
-                            label: 'Domain',
-                            value: domainVerified ? 'Verified' : 'Unverified',
+                            label: 'Domain DNS',
+                            value: domainVerified ? 'Verified' : 'Not verified',
                             valueColor: domainVerified
                                 ? AuraSurface.goodInk
                                 : AuraSurface.muted,

@@ -9,6 +9,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
+import '../units/institution_unit_card.dart';
 
 final institutionDetailProvider = FutureProvider.family<Institution, String>((
   ref,
@@ -242,7 +243,63 @@ class _InstitutionDetailBody extends StatelessWidget {
           ),
         ],
       ),
+      if (institution.units.isNotEmpty) ...[
+        const SizedBox(height: AuraSpace.s14),
+        _UnitsSection(
+          institutionName: institution.name,
+          units: institution.units,
+        ),
+      ],
     ];
+  }
+}
+
+// ── Units section ──────────────────────────────────────────────────────────
+
+class _UnitsSection extends StatelessWidget {
+  const _UnitsSection({
+    required this.institutionName,
+    required this.units,
+  });
+
+  final String institutionName;
+  final List<InstitutionUnit> units;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'UNITS & BRANCHES',
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AuraSurface.faint,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          ...units.asMap().entries.map(
+            (e) => Padding(
+              padding: EdgeInsets.only(
+                bottom: e.key < units.length - 1 ? AuraSpace.s10 : 0,
+              ),
+              child: PublicUnitCard(
+                unit: e.value,
+                institutionName: institutionName,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

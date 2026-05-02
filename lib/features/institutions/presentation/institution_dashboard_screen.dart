@@ -165,10 +165,7 @@ class _InstitutionDashboardScreenState
 
   String _nextStepTitle() {
     if (_isPending) return 'Under review';
-    if (_canManageDomains) {
-      if (_domainVerified) return 'Institution active';
-      return 'Next step';
-    }
+    if (_canManageDomains) return 'Institution active';
     if (_isRejected) return 'Request outcome';
     if (_isSuspended) return 'Standing suspended';
     return 'Begin institutional standing';
@@ -185,9 +182,9 @@ class _InstitutionDashboardScreenState
 
     if (_canManageDomains) {
       if (_domainVerified) {
-        return 'Institutional standing is active. Official institutional surfaces are now available.';
+        return 'Institutional standing is active. Domain ownership is verified and institutional trust is fully established.';
       }
-      return 'Your institution and membership are in place. Verify domain ownership next to complete institutional trust.';
+      return 'Institutional standing is active. All institutional surfaces are available. Domain verification is an optional trust enhancement — add it from the Domains screen when ready.';
     }
 
     if (_isRejected) {
@@ -203,10 +200,7 @@ class _InstitutionDashboardScreenState
 
   String? _primaryActionLabel() {
     if (_isPending) return null;
-    if (_canManageDomains) {
-      if (_domainVerified) return null;
-      return 'Verify domain';
-    }
+    if (_canManageDomains) return null;
     if (_isRejected) return 'Create institutional account';
     if (_isSuspended) return null;
     return 'Create institutional account';
@@ -214,10 +208,7 @@ class _InstitutionDashboardScreenState
 
   VoidCallback? _primaryAction() {
     if (_isPending) return null;
-    if (_canManageDomains) {
-      if (_domainVerified) return null;
-      return () => _go('/institution/domains');
-    }
+    if (_canManageDomains) return null;
     if (_isRejected) return () => _go('/institutions/get-started');
     if (_isSuspended) return null;
     return () => _go('/institutions/get-started');
@@ -357,7 +348,7 @@ class _InstitutionDashboardScreenState
     final step3Done =
         _hasInstitution || _canUseInstitutionTools || _isSuspended;
     final step4Done = _domainVerified;
-    final step5Done = step4Done && _canUseInstitutionTools;
+    final step5Done = _canUseInstitutionTools;
 
     final steps = [
       _PipelineStep(
@@ -518,6 +509,16 @@ class _InstitutionDashboardScreenState
         enabled: _canUseInstitutionTools,
         onTap: _canUseInstitutionTools
             ? () => _go('/institution/profile')
+            : null,
+      ),
+      _ToolData(
+        title: 'Units & branches',
+        body:
+            'Manage departments, branches, offices, and products listed under this institution.',
+        icon: Icons.account_tree_outlined,
+        enabled: _isAdmin && _hasInstitution,
+        onTap: _isAdmin && institutionId.isNotEmpty
+            ? () => _go('/institution/$institutionId/units')
             : null,
       ),
     ];

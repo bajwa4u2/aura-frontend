@@ -1,3 +1,94 @@
+class InstitutionUnit {
+  const InstitutionUnit({
+    required this.id,
+    required this.institutionId,
+    required this.name,
+    required this.slug,
+    required this.type,
+    this.description,
+    this.logoUrl,
+    this.websiteUrl,
+    this.contactEmail,
+    this.contactPhone,
+    this.address,
+    this.city,
+    this.region,
+    this.country,
+    required this.sortOrder,
+    required this.isPublic,
+    this.archivedAt,
+  });
+
+  final String id;
+  final String institutionId;
+  final String name;
+  final String slug;
+  final String type;
+  final String? description;
+  final String? logoUrl;
+  final String? websiteUrl;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? address;
+  final String? city;
+  final String? region;
+  final String? country;
+  final int sortOrder;
+  final bool isPublic;
+  final String? archivedAt;
+
+  bool get isArchived => archivedAt != null && archivedAt!.isNotEmpty;
+
+  String get typeLabel {
+    switch (type.toUpperCase()) {
+      case 'PRODUCT':
+        return 'Product';
+      case 'BUSINESS':
+        return 'Business';
+      case 'BRANCH':
+        return 'Branch';
+      case 'OFFICE':
+        return 'Office';
+      case 'DEPARTMENT':
+        return 'Department';
+      case 'SERVICE':
+        return 'Service';
+      case 'PROGRAM':
+        return 'Program';
+      default:
+        return 'Unit';
+    }
+  }
+
+  factory InstitutionUnit.fromJson(Map<String, dynamic> json) {
+    String s(String key) => json[key]?.toString().trim() ?? '';
+    String? opt(String key) {
+      final v = json[key]?.toString().trim();
+      return (v != null && v.isNotEmpty) ? v : null;
+    }
+
+    return InstitutionUnit(
+      id: s('id'),
+      institutionId: s('institutionId'),
+      name: s('name'),
+      slug: s('slug'),
+      type: s('type').isEmpty ? 'OTHER' : s('type'),
+      description: opt('description'),
+      logoUrl: opt('logoUrl'),
+      websiteUrl: opt('websiteUrl'),
+      contactEmail: opt('contactEmail'),
+      contactPhone: opt('contactPhone'),
+      address: opt('address'),
+      city: opt('city'),
+      region: opt('region'),
+      country: opt('country'),
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      isPublic: json['isPublic'] == true || json['isPublic'] == 1,
+      archivedAt: opt('archivedAt'),
+    );
+  }
+}
+
 class Institution {
   const Institution({
     required this.id,
@@ -12,6 +103,7 @@ class Institution {
     this.coverUrl,
     this.category,
     this.location,
+    this.units = const [],
   });
 
   final String id;
@@ -26,6 +118,7 @@ class Institution {
   final String? coverUrl;
   final String? category;
   final String? location;
+  final List<InstitutionUnit> units;
 
   factory Institution.fromJson(Map<String, dynamic> json) {
     bool parseBool(dynamic value) {
@@ -57,6 +150,14 @@ class Institution {
       return null;
     }
 
+    final rawUnits = json['units'];
+    final unitList = rawUnits is List
+        ? rawUnits
+            .whereType<Map<String, dynamic>>()
+            .map(InstitutionUnit.fromJson)
+            .toList()
+        : <InstitutionUnit>[];
+
     return Institution(
       id: readString(['id']),
       name: readString(['name', 'displayName', 'title', 'organizationName']),
@@ -72,6 +173,7 @@ class Institution {
       coverUrl: readOptional(['coverUrl', 'bannerUrl', 'cover', 'banner', 'coverImage']),
       category: readOptional(['category', 'type', 'institutionType', 'kind']),
       location: readOptional(['location', 'city', 'address', 'place']),
+      units: unitList,
     );
   }
 
@@ -83,6 +185,7 @@ class Institution {
     String? location,
     String? logoUrl,
     String? coverUrl,
+    List<InstitutionUnit>? units,
   }) {
     return Institution(
       id: id,
@@ -97,6 +200,7 @@ class Institution {
       coverUrl: coverUrl ?? this.coverUrl,
       category: category ?? this.category,
       location: location ?? this.location,
+      units: units ?? this.units,
     );
   }
 }
