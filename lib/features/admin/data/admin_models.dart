@@ -404,6 +404,129 @@ extension _LetExt<T> on T {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AdminInstitutionSummary {
+  const AdminInstitutionSummary({
+    required this.id,
+    required this.name,
+    required this.slug,
+    required this.status,
+    required this.createdAt,
+    required this.memberCount,
+    this.domain,
+    this.websiteUrl,
+    this.verifiedAt,
+    this.suspendedAt,
+  });
+
+  final String id;
+  final String name;
+  final String slug;
+  final String status;
+  final DateTime createdAt;
+  final int memberCount;
+  final String? domain;
+  final String? websiteUrl;
+  final DateTime? verifiedAt;
+  final DateTime? suspendedAt;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+  static int _int(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse((v ?? '').toString()) ?? 0;
+  }
+
+  factory AdminInstitutionSummary.fromJson(Map<String, dynamic> json) {
+    final count = json['_count'] is Map<String, dynamic>
+        ? json['_count'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    return AdminInstitutionSummary(
+      id: _str(json['id']),
+      name: _str(json['name']),
+      slug: _str(json['slug']),
+      status: _str(json['status'] ?? 'PENDING'),
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      memberCount: _int(count['members']),
+      domain: _str(json['domain']).let((s) => s.isEmpty ? null : s),
+      websiteUrl: _str(json['websiteUrl']).let((s) => s.isEmpty ? null : s),
+      verifiedAt: _parseDate(json['verifiedAt']),
+      suspendedAt: _parseDate(json['suspendedAt']),
+    );
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+}
+
+class AdminVerificationRequest {
+  const AdminVerificationRequest({
+    required this.id,
+    required this.status,
+    required this.organizationName,
+    required this.createdAt,
+    this.domain,
+    this.websiteUrl,
+    this.workEmail,
+    this.requesterHandle,
+    this.requesterEmail,
+    this.institutionSlug,
+    this.reviewNotes,
+  });
+
+  final String id;
+  final String status;
+  final String organizationName;
+  final DateTime createdAt;
+  final String? domain;
+  final String? websiteUrl;
+  final String? workEmail;
+  final String? requesterHandle;
+  final String? requesterEmail;
+  final String? institutionSlug;
+  final String? reviewNotes;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory AdminVerificationRequest.fromJson(Map<String, dynamic> json) {
+    final req = json['requester'] is Map<String, dynamic>
+        ? json['requester'] as Map<String, dynamic>
+        : null;
+    final inst = json['institution'] is Map<String, dynamic>
+        ? json['institution'] as Map<String, dynamic>
+        : null;
+    return AdminVerificationRequest(
+      id: _str(json['id']),
+      status: _str(json['status'] ?? 'UNDER_REVIEW'),
+      organizationName: _str(json['organizationName']),
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      domain: _str(json['domain']).let((s) => s.isEmpty ? null : s),
+      websiteUrl: _str(json['websiteUrl']).let((s) => s.isEmpty ? null : s),
+      workEmail: _str(json['workEmail']).let((s) => s.isEmpty ? null : s),
+      requesterHandle: req != null ? _str(req['handle']).let((s) => s.isEmpty ? null : s) : null,
+      requesterEmail: req != null ? _str(req['email']).let((s) => s.isEmpty ? null : s) : null,
+      institutionSlug: inst != null ? _str(inst['slug']).let((s) => s.isEmpty ? null : s) : null,
+      reviewNotes: _str(json['reviewNotes']).let((s) => s.isEmpty ? null : s),
+    );
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REVIEW QUEUE
 // ─────────────────────────────────────────────────────────────────────────────
 

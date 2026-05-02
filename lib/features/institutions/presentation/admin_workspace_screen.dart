@@ -480,9 +480,21 @@ class _GovernancePanel extends StatelessWidget {
         ),
         _ModuleTile(
           icon: Icons.apartment_outlined,
+          title: 'Institutions',
+          description: 'List verified, pending, and suspended institutions',
+          onTap: () => context.go('/admin/institutions'),
+        ),
+        _ModuleTile(
+          icon: Icons.domain_outlined,
           title: 'Institution domains',
           description: 'Review and approve institution domain requests',
           onTap: () => context.go('/admin/institution-domains'),
+        ),
+        _ModuleTile(
+          icon: Icons.rate_review_outlined,
+          title: 'Review queue',
+          description: 'Approve or reject institution and membership requests',
+          onTap: () => context.go('/admin/review-queue'),
         ),
       ]),
     );
@@ -513,16 +525,16 @@ class _SystemPanel extends StatelessWidget {
           onTap: () => context.go('/admin/feature-flags'),
         ),
         _ModuleTile(
-          icon: Icons.search_rounded,
-          title: 'Member search',
-          description: 'Search across the platform member directory',
-          onTap: () => context.go('/search'),
+          icon: Icons.policy_outlined,
+          title: 'Policies',
+          description: 'Configure institution, security, and feature policies',
+          onTap: () => context.go('/admin/policies'),
         ),
         _ModuleTile(
-          icon: Icons.timeline_outlined,
-          title: 'Activity feed',
-          description: 'Review platform-wide activity and signals',
-          onTap: () => context.go('/activity'),
+          icon: Icons.support_agent_outlined,
+          title: 'Support console',
+          description: 'View and manage admin support tickets and escalations',
+          onTap: () => context.go('/admin/support'),
         ),
       ]),
     );

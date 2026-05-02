@@ -53,6 +53,7 @@ class AdminRepository {
     int page = 1,
     int limit = 50,
     String? query,
+    String? status,
   }) async {
     final res = await _dio.get(
       '/v1/admin/users',
@@ -60,6 +61,7 @@ class AdminRepository {
         'page': page,
         'limit': limit,
         if (query != null && query.isNotEmpty) 'q': query,
+        if (status != null && status.isNotEmpty && status != 'ALL') 'status': status,
       },
     );
     return _parseList(res.data, AdminUserSummary.fromJson);
@@ -81,10 +83,19 @@ class AdminRepository {
   Future<List<AdminAuditLogEntry>> fetchAuditLogs({
     int page = 1,
     int limit = 50,
+    String? actorId,
+    String? action,
+    String? result,
   }) async {
     final res = await _dio.get(
       '/v1/admin/audit-logs',
-      queryParameters: {'page': page, 'limit': limit},
+      queryParameters: {
+        'page': page,
+        'limit': limit,
+        if (actorId != null && actorId.isNotEmpty) 'actorId': actorId,
+        if (action != null && action.isNotEmpty) 'action': action,
+        if (result != null && result.isNotEmpty) 'result': result,
+      },
     );
     return _parseList(res.data, AdminAuditLogEntry.fromJson);
   }
@@ -125,6 +136,46 @@ class AdminRepository {
 
   Future<void> rejectDomain(String id) async {
     await _dio.post('/v1/admin/institution-domains/$id/reject');
+  }
+
+  // ── Institutions ────────────────────────────────────────────────────────
+
+  Future<List<AdminInstitutionSummary>> fetchInstitutions({String? status}) async {
+    final res = await _dio.get(
+      '/v1/institutions/admin',
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+      },
+    );
+    return _parseList(res.data, AdminInstitutionSummary.fromJson);
+  }
+
+  Future<List<AdminVerificationRequest>> fetchVerificationRequests({String? status}) async {
+    final res = await _dio.get(
+      '/v1/institutions/admin/verification-requests',
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+      },
+    );
+    return _parseList(res.data, AdminVerificationRequest.fromJson);
+  }
+
+  Future<void> approveVerificationRequest(String id) async {
+    await _dio.post('/v1/institutions/admin/verification-requests/$id/approve');
+  }
+
+  Future<void> rejectVerificationRequest(String id, {String? reason}) async {
+    await _dio.post(
+      '/v1/institutions/admin/verification-requests/$id/reject',
+      data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+    );
+  }
+
+  Future<void> needsInfoVerificationRequest(String id, {String? reason}) async {
+    await _dio.post(
+      '/v1/institutions/admin/verification-requests/$id/needs-info',
+      data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+    );
   }
 
   // ── Review Queue ────────────────────────────────────────────────────────
