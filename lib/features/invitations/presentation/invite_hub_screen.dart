@@ -84,8 +84,7 @@ class InviteHubScreen extends StatelessWidget {
       options.addAll([
         _InviteOptionData(
           title: 'Invite into Aura',
-          subtitle:
-              'Create a clean entry path for someone who is not yet inside the platform.',
+          subtitle: 'Send an invitation to someone not yet on the platform.',
           icon: Icons.public_outlined,
           onTap: () => context.push(
             _withReturnTo('/invite/create?destinationType=JOIN_AURA'),
@@ -93,17 +92,9 @@ class InviteHubScreen extends StatelessWidget {
         ),
         _InviteOptionData(
           title: 'Import contacts & invite',
-          subtitle:
-              'Add emails manually, paste a list, or upload a CSV — then send invitations in one batch.',
+          subtitle: 'Add emails, paste a list, or upload a CSV to invite in bulk.',
           icon: Icons.contact_mail_outlined,
           onTap: () => context.push('/invite/import'),
-        ),
-        _InviteOptionData(
-          title: 'Start a private conversation instead',
-          subtitle:
-              'Direct conversations belong under Messages, not inside the invitation flow.',
-          icon: Icons.chat_bubble_outline,
-          onTap: () => context.push('/me/correspondence/create/conversation'),
         ),
       ]);
     }
@@ -139,13 +130,9 @@ class InviteHubScreen extends StatelessWidget {
   }
 
   String get _introText {
-    if (_hasThreadContext) {
-      return 'You are already inside an active exchange. Invite only where that person should arrive: this thread, or the wider space around it.';
-    }
-    if (_hasSpaceContext) {
-      return 'You are already inside a shared room. Invite into the space itself, or return to Messages if what you need is a new private conversation.';
-    }
-    return 'Invitations are for bringing people into Aura or into something that already exists. Starting a new private conversation happens under Messages.';
+    if (_hasThreadContext) return 'Invite into this thread or the space around it.';
+    if (_hasSpaceContext) return 'Invite someone into this space.';
+    return 'Bring people into Aura or into a specific context.';
   }
 }
 

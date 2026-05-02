@@ -716,11 +716,6 @@ class _ActivityHeader extends StatelessWidget {
                     ),
                   ],
                 )
-              else
-                Text(
-                  'All caught up',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
-                ),
             ],
           ),
         ),
@@ -803,12 +798,12 @@ class _ActivityEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s14),
           Text(
-            'No activity yet',
+            'All caught up',
             style: AuraText.subtitle.copyWith(color: AuraSurface.ink),
           ),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'When people interact with your work, you\'ll see it here.',
+            'You\'re up to date.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
             textAlign: TextAlign.center,
           ),
@@ -830,6 +825,7 @@ class _ActivityTile extends StatelessWidget {
     final type = _stringOf(item['type']).toUpperCase();
     final title = _buildTitle(item);
     final subtitle = _buildSubtitle(item);
+    final cta = _ctaLabel(item);
     final timeLabel = _timeAgoLabel(item['createdAt']);
     final unread = _stringOf(item['readAt']).isEmpty;
 
@@ -889,6 +885,25 @@ class _ActivityTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
+                        const SizedBox(height: AuraSpace.s6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              cta,
+                              style: AuraText.small.copyWith(
+                                color: AuraSurface.accentText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 12,
+                              color: AuraSurface.accentText,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -1071,9 +1086,13 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'A work could not be published';
     case 'SYSTEM':
       final title = _stringOf(data['title']);
-      return title.isNotEmpty ? title : 'Update';
+      return title.isNotEmpty ? title : 'System notice';
     default:
-      return 'Update';
+      final fallbackTitle = _firstNonEmpty([
+        _stringOf(item['title']),
+        _stringOf(data['title']),
+      ]);
+      return fallbackTitle.isNotEmpty ? fallbackTitle : 'New notification';
   }
 }
 
@@ -1134,6 +1153,43 @@ String _buildSubtitle(Map<String, dynamic> item) {
       return 'Return to presence';
     default:
       return '';
+  }
+}
+
+String _ctaLabel(Map<String, dynamic> item) {
+  final type = _stringOf(item['type']).toUpperCase();
+  final data = _mapOf(item['data']);
+  final realtimeType = _firstNonEmpty([
+    _stringOf(data['realtimeType']).toUpperCase(),
+    _stringOf(data['notificationKind']).toUpperCase(),
+  ]);
+
+  if (realtimeType == 'REALTIME_INVITE') return 'Join';
+  switch (type) {
+    case 'MESSAGE_RECEIVED':
+    case 'THREAD_INVITE':
+      return 'Reply';
+    case 'SPACE_INVITE':
+    case 'INVITE_ACCEPTED':
+    case 'INVITE_DECLINED':
+    case 'INVITE_REVOKED':
+      return 'Open';
+    case 'FOLLOW_REQUEST':
+      return 'Review';
+    case 'FOLLOW':
+    case 'FOLLOW_ACCEPTED':
+      return 'View';
+    case 'LIKE':
+    case 'SAVE':
+    case 'REPLY':
+    case 'REPOST':
+    case 'MENTION':
+    case 'POST_PUBLISHED':
+      return 'View';
+    case 'ANNOUNCEMENT_PUBLISHED':
+      return 'Read';
+    default:
+      return 'Open';
   }
 }
 
