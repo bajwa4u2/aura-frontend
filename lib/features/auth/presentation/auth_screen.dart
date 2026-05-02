@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/remembered_identifier.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -10,6 +13,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../auth_controller.dart';
+
+enum _LoginStep { credentials, emailCode }
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key, this.redirectTo, this.email, this.notice});
@@ -24,18 +29,44 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _codeFormKey = GlobalKey<FormState>();
   late final TextEditingController _emailCtrl;
   final _passwordCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
 
+  _LoginStep _step = _LoginStep.credentials;
   bool _busy = false;
   bool _obscurePassword = true;
   String? _error;
   bool _needsVerification = false;
 
+  // Remember email
+  bool _rememberEmail = false;
+
+  // Challenge state
+  String _challengeId = '';
+  String _maskedEmail = '';
+
+  // Resend cooldown
+  int _resendCooldown = 0;
+  Timer? _resendTimer;
+
   @override
   void initState() {
     super.initState();
     _emailCtrl = TextEditingController(text: (widget.email ?? '').trim());
+    _loadRememberedIdentifier();
+  }
+
+  Future<void> _loadRememberedIdentifier() async {
+    if ((widget.email ?? '').trim().isNotEmpty) return;
+    final saved = await RememberedIdentifier.load();
+    if (saved != null && saved.isNotEmpty && mounted) {
+      setState(() {
+        _emailCtrl.text = saved;
+        _rememberEmail = true;
+      });
+    }
   }
 
   String? _safeRedirectOrNull(String? r) {
@@ -54,10 +85,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String? _emailValidator(String? v) {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Email is required';
-
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
     if (!ok) return 'Enter a valid email';
-
     return null;
   }
 
@@ -67,98 +96,89 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return null;
   }
 
+  String? _codeValidator(String? v) {
+    final s = (v ?? '').trim();
+    if (s.isEmpty) return 'Code is required';
+    if (s.length < 4) return 'Enter the full code';
+    return null;
+  }
+
   String _humanizeLoginError(Object error) {
     final raw = error.toString().trim();
     final msg = raw.toLowerCase();
-
-    if (msg.isEmpty) {
-      return 'We could not sign you in right now. Please try again.';
-    }
-
-    if (msg.contains('the email or password does not look right')) {
-      return 'The email or password does not look right.';
-    }
-
-    if (msg.contains('please verify your email first')) {
-      return 'Please verify your email first, then try signing in again.';
-    }
-
-    if (msg.contains('this account is not available right now')) {
-      return 'This account is not available right now. Please contact support if needed.';
-    }
-
+    if (msg.isEmpty) return 'We could not sign you in right now. Please try again.';
     if (msg.contains('invalid credentials') ||
-        msg.contains('invalid login') ||
-        msg.contains('wrong password') ||
-        msg.contains('incorrect password') ||
-        msg.contains('incorrect email') ||
-        msg.contains('incorrect email or password') ||
-        msg.contains('wrong email or password') ||
-        msg.contains('email or password is incorrect') ||
-        msg.contains('invalid email or password') ||
-        msg.contains('unauthorized') ||
-        msg.contains('401')) {
+        msg.contains('does not look right') ||
+        msg.contains('401') ||
+        msg.contains('unauthorized')) {
       return 'The email or password does not look right.';
     }
-
-    if (msg.contains('email not verified') ||
-        msg.contains('verify your email') ||
-        msg.contains('email verification required') ||
+    if (msg.contains('verify your email') ||
+        msg.contains('email not verified') ||
         msg.contains('unverified')) {
       return 'Please verify your email first, then try signing in again.';
     }
-
     if (msg.contains('account disabled') ||
         msg.contains('account locked') ||
-        msg.contains('account suspended')) {
-      return 'This account is not available right now. Please contact support if needed.';
+        msg.contains('account suspended') ||
+        msg.contains('forbidden')) {
+      return 'This account is not available right now. Please contact support.';
     }
-
-    if (msg.contains('network error') ||
-        msg.contains('socketexception') ||
-        msg.contains('connection error') ||
-        msg.contains('connection refused') ||
+    if (msg.contains('socketexception') ||
         msg.contains('failed host lookup') ||
-        msg.contains('timed out') ||
-        msg.contains('timeoutexception')) {
+        msg.contains('connection') ||
+        msg.contains('timed out')) {
       return 'We could not reach the server. Check your connection and try again.';
     }
-
-    if (msg.contains('500') ||
-        msg.contains('internal server error') ||
-        msg.contains('server error')) {
+    if (msg.contains('500') || msg.contains('server error')) {
       return 'Something went wrong on our side. Please try again in a moment.';
     }
-
-    if (msg.contains('429') || msg.contains('too many requests')) {
+    if (msg.contains('429') || msg.contains('too many')) {
       return 'Too many attempts in a short time. Please wait a little and try again.';
     }
-
-    if (msg.contains('403') || msg.contains('forbidden')) {
-      return 'This sign-in request could not be completed right now.';
-    }
-
     return 'We could not sign you in right now. Please try again.';
   }
 
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
-
     if (_busy) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() {
       _busy = true;
       _error = null;
+      _needsVerification = false;
     });
 
+    final email = _emailCtrl.text.trim();
+    final pass = _passwordCtrl.text;
+
     try {
-      final email = _emailCtrl.text.trim();
-      final pass = _passwordCtrl.text;
+      // Persist or clear remembered identifier
+      if (_rememberEmail) {
+        await RememberedIdentifier.save(email);
+      } else {
+        await RememberedIdentifier.remove();
+      }
 
-      await AuthController(ref).login(email: email, password: pass);
+      final result = await AuthController(ref).login(email: email, password: pass);
 
-      // Router remains the single authority after auth state changes.
+      if (!mounted) return;
+
+      if (result['status'] == 'challenge') {
+        // Email-code flow
+        setState(() {
+          _step = _LoginStep.emailCode;
+          _challengeId = result['challengeId']?.toString() ?? '';
+          _maskedEmail = result['maskedEmail']?.toString() ?? email;
+          _error = null;
+          _busy = false;
+        });
+        _startResendCooldown(60);
+        return;
+      }
+
+      // Logged in — router handles redirect
     } catch (e) {
       if (!mounted) return;
       final msg = _humanizeLoginError(e);
@@ -167,18 +187,91 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         _needsVerification = msg.toLowerCase().contains('verify your email first');
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-        });
+      if (mounted && _step == _LoginStep.credentials) {
+        setState(() => _busy = false);
       }
     }
+  }
+
+  Future<void> _verifyCode() async {
+    FocusScope.of(context).unfocus();
+    if (_busy) return;
+    if (!(_codeFormKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      await AuthController(ref).verifyLoginCode(
+        challengeId: _challengeId,
+        code: _codeCtrl.text.trim(),
+      );
+      // Session set — router redirects automatically
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resendCode() async {
+    if (_busy || _resendCooldown > 0) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      await AuthController(ref).resendLoginCode(_challengeId);
+      if (!mounted) return;
+      _startResendCooldown(60);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _startResendCooldown(int seconds) {
+    _resendTimer?.cancel();
+    setState(() => _resendCooldown = seconds);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        _resendCooldown--;
+        if (_resendCooldown <= 0) {
+          _resendCooldown = 0;
+          t.cancel();
+        }
+      });
+    });
+  }
+
+  void _backToLogin() {
+    _resendTimer?.cancel();
+    setState(() {
+      _step = _LoginStep.credentials;
+      _challengeId = '';
+      _maskedEmail = '';
+      _codeCtrl.clear();
+      _error = null;
+      _resendCooldown = 0;
+    });
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _codeCtrl.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
@@ -187,6 +280,44 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final redirect = _safeRedirectOrNull(widget.redirectTo);
     final successNotice = (widget.notice ?? '').trim().toLowerCase();
     final hasNotice = successNotice == 'verified' || successNotice == 'reset';
+
+    final formWidget = _step == _LoginStep.emailCode
+        ? _EmailCodeCard(
+            maskedEmail: _maskedEmail,
+            busy: _busy,
+            error: _error,
+            formKey: _codeFormKey,
+            codeCtrl: _codeCtrl,
+            codeValidator: _codeValidator,
+            resendCooldown: _resendCooldown,
+            onVerify: _verifyCode,
+            onResend: _resendCode,
+            onBack: _backToLogin,
+          )
+        : _LoginFormCard(
+            successNotice: hasNotice ? successNotice : null,
+            busy: _busy,
+            error: _error,
+            needsVerification: _needsVerification,
+            formKey: _formKey,
+            emailCtrl: _emailCtrl,
+            passwordCtrl: _passwordCtrl,
+            obscurePassword: _obscurePassword,
+            rememberEmail: _rememberEmail,
+            emailValidator: _emailValidator,
+            passwordValidator: _passwordValidator,
+            onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
+            onRememberEmailChanged: (v) => setState(() => _rememberEmail = v ?? false),
+            onLogin: _login,
+            onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+            onCreateAccount: () => context.push(_withRedirect('/register')),
+            onResendVerification: _needsVerification
+                ? () => context.push(
+                    '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}'
+                    '${redirect != null ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}',
+                  )
+                : null,
+          );
 
     return AuraScaffold(
       title: 'Login',
@@ -217,35 +348,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s16),
-                              SizedBox(
-                                width: 460,
-                                child: _LoginFormCard(
-                                  successNotice: hasNotice ? successNotice : null,
-                                  busy: _busy,
-                                  error: _error,
-                                  needsVerification: _needsVerification,
-                                  formKey: _formKey,
-                                  emailCtrl: _emailCtrl,
-                                  passwordCtrl: _passwordCtrl,
-                                  obscurePassword: _obscurePassword,
-                                  emailValidator: _emailValidator,
-                                  passwordValidator: _passwordValidator,
-                                  onTogglePassword: () => setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  }),
-                                  onLogin: _login,
-                                  onForgotPassword: () => context.push(
-                                    _withRedirect('/forgot-password'),
-                                  ),
-                                  onCreateAccount: () =>
-                                      context.push(_withRedirect('/register')),
-                                  onResendVerification: _needsVerification
-                                      ? () => context.push(
-                                          '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}${redirect != null ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}',
-                                        )
-                                      : null,
-                                ),
-                              ),
+                              SizedBox(width: 460, child: formWidget),
                             ],
                           )
                         : Column(
@@ -258,32 +361,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     'Aura keeps communication, identity, and publication in one place.',
                               ),
                               const SizedBox(height: AuraSpace.s16),
-                              _LoginFormCard(
-                                successNotice: hasNotice ? successNotice : null,
-                                busy: _busy,
-                                error: _error,
-                                needsVerification: _needsVerification,
-                                formKey: _formKey,
-                                emailCtrl: _emailCtrl,
-                                passwordCtrl: _passwordCtrl,
-                                obscurePassword: _obscurePassword,
-                                emailValidator: _emailValidator,
-                                passwordValidator: _passwordValidator,
-                                onTogglePassword: () => setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                }),
-                                onLogin: _login,
-                                onForgotPassword: () => context.push(
-                                  _withRedirect('/forgot-password'),
-                                ),
-                                onCreateAccount: () =>
-                                    context.push(_withRedirect('/register')),
-                                onResendVerification: _needsVerification
-                                    ? () => context.push(
-                                        '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}${redirect != null ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}',
-                                      )
-                                    : null,
-                              ),
+                              formWidget,
                             ],
                           ),
                   ),
@@ -297,103 +375,118 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 }
 
-class _AuthHero extends StatelessWidget {
-  const _AuthHero({
-    required this.title,
-    required this.body,
-    required this.accent,
+// ── Email-code card ───────────────────────────────────────────────────────────
+
+class _EmailCodeCard extends StatelessWidget {
+  const _EmailCodeCard({
+    required this.maskedEmail,
+    required this.busy,
+    required this.error,
+    required this.formKey,
+    required this.codeCtrl,
+    required this.codeValidator,
+    required this.resendCooldown,
+    required this.onVerify,
+    required this.onResend,
+    required this.onBack,
   });
 
-  final String title;
-  final String body;
-  final String accent;
+  final String maskedEmail;
+  final bool busy;
+  final String? error;
+  final GlobalKey<FormState> formKey;
+  final TextEditingController codeCtrl;
+  final String? Function(String?) codeValidator;
+  final int resendCooldown;
+  final VoidCallback onVerify;
+  final VoidCallback onResend;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AuraBadge(label: 'Trusted access', icon: Icons.shield_outlined),
-          const SizedBox(height: AuraSpace.s16),
-          Text(
-            title,
-            style: AuraText.title.copyWith(fontSize: 34, height: 1.05),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            body,
-            style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
-              height: 1.6,
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AuraSurface.accentSoft,
+                    borderRadius: BorderRadius.circular(AuraRadius.sm),
+                  ),
+                  child: const Icon(
+                    Icons.mark_email_unread_outlined,
+                    size: 16,
+                    color: AuraSurface.accentText,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s10),
+                Text(
+                  'Check your email',
+                  style: AuraText.title.copyWith(fontSize: 22),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: AuraSpace.s20),
-          const _AuthFeatureRow(
-            icon: Icons.edit_note_rounded,
-            label: 'Your publishing record and work history',
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          const _AuthFeatureRow(
-            icon: Icons.apartment_rounded,
-            label: 'Institutional affiliations and credentials',
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          const _AuthFeatureRow(
-            icon: Icons.mail_outline_rounded,
-            label: 'Direct correspondence and shared spaces',
-          ),
-          const SizedBox(height: AuraSpace.s20),
-          Text(
-            accent,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.faint,
-              height: 1.5,
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              'We sent a 6-digit code to $maskedEmail. Enter it below to continue.',
+              style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
             ),
-          ),
-        ],
+            const SizedBox(height: AuraSpace.s16),
+            if (error != null) ...[
+              AuraErrorState(title: 'Verification failed', body: error!),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+            AuraInput(
+              controller: codeCtrl,
+              label: 'Sign-in code',
+              hint: '000000',
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              validator: codeValidator,
+              prefixIcon: const Icon(Icons.pin_outlined),
+            ),
+            const SizedBox(height: AuraSpace.s14),
+            SizedBox(
+              width: double.infinity,
+              child: AuraPrimaryButton(
+                label: busy ? 'Verifying…' : 'Verify code',
+                onPressed: busy ? null : onVerify,
+                icon: Icons.check_rounded,
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s10),
+            Row(
+              children: [
+                AuraGhostButton(
+                  label: 'Back to login',
+                  onPressed: busy ? null : onBack,
+                  icon: Icons.arrow_back_rounded,
+                ),
+                const Spacer(),
+                AuraSecondaryButton(
+                  label: resendCooldown > 0
+                      ? 'Resend in ${resendCooldown}s'
+                      : 'Resend code',
+                  onPressed: (busy || resendCooldown > 0) ? null : onResend,
+                  icon: Icons.refresh_rounded,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _AuthFeatureRow extends StatelessWidget {
-  const _AuthFeatureRow({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: AuraSurface.accentSoft,
-            borderRadius: BorderRadius.circular(AuraRadius.sm),
-            border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Icon(icon, size: 14, color: AuraSurface.accentText),
-        ),
-        const SizedBox(width: AuraSpace.s10),
-        Expanded(
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+// ── Credentials card ──────────────────────────────────────────────────────────
 
 class _LoginFormCard extends StatelessWidget {
   const _LoginFormCard({
@@ -405,9 +498,11 @@ class _LoginFormCard extends StatelessWidget {
     required this.emailCtrl,
     required this.passwordCtrl,
     required this.obscurePassword,
+    required this.rememberEmail,
     required this.emailValidator,
     required this.passwordValidator,
     required this.onTogglePassword,
+    required this.onRememberEmailChanged,
     required this.onLogin,
     required this.onForgotPassword,
     required this.onCreateAccount,
@@ -422,9 +517,11 @@ class _LoginFormCard extends StatelessWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
+  final bool rememberEmail;
   final String? Function(String?) emailValidator;
   final String? Function(String?) passwordValidator;
   final VoidCallback onTogglePassword;
+  final ValueChanged<bool?> onRememberEmailChanged;
   final VoidCallback onLogin;
   final VoidCallback onForgotPassword;
   final VoidCallback onCreateAccount;
@@ -442,9 +539,7 @@ class _LoginFormCard extends StatelessWidget {
             children: [
               if (successNotice != null) ...[
                 _NoticeBanner(
-                  title: successNotice == 'reset'
-                      ? 'Password updated'
-                      : 'Email verified',
+                  title: successNotice == 'reset' ? 'Password updated' : 'Email verified',
                   body: successNotice == 'reset'
                       ? 'Your password has been updated. Sign in with your new password.'
                       : 'Your email has been verified. You can sign in now.',
@@ -494,6 +589,29 @@ class _LoginFormCard extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: AuraSpace.s8),
+              // Remember email checkbox
+              Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: rememberEmail,
+                      onChanged: busy ? null : onRememberEmailChanged,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  GestureDetector(
+                    onTap: busy ? null : () => onRememberEmailChanged(!rememberEmail),
+                    child: Text(
+                      'Remember email',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: AuraSpace.s14),
               SizedBox(
                 width: double.infinity,
@@ -527,6 +645,90 @@ class _LoginFormCard extends StatelessWidget {
   }
 }
 
+// ── Hero ──────────────────────────────────────────────────────────────────────
+
+class _AuthHero extends StatelessWidget {
+  const _AuthHero({required this.title, required this.body, required this.accent});
+
+  final String title;
+  final String body;
+  final String accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AuraBadge(label: 'Trusted access', icon: Icons.shield_outlined),
+          const SizedBox(height: AuraSpace.s16),
+          Text(title, style: AuraText.title.copyWith(fontSize: 34, height: 1.05)),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            body,
+            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
+          ),
+          const SizedBox(height: AuraSpace.s20),
+          const _AuthFeatureRow(
+            icon: Icons.edit_note_rounded,
+            label: 'Your publishing record and work history',
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          const _AuthFeatureRow(
+            icon: Icons.apartment_rounded,
+            label: 'Institutional affiliations and credentials',
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          const _AuthFeatureRow(
+            icon: Icons.mail_outline_rounded,
+            label: 'Direct correspondence and shared spaces',
+          ),
+          const SizedBox(height: AuraSpace.s20),
+          Text(
+            accent,
+            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthFeatureRow extends StatelessWidget {
+  const _AuthFeatureRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.sm),
+            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon, size: 14, color: AuraSurface.accentText),
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Notice banner ─────────────────────────────────────────────────────────────
+
 class _NoticeBanner extends StatelessWidget {
   const _NoticeBanner({required this.title, required this.body});
 
@@ -556,10 +758,7 @@ class _NoticeBanner extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             body,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.goodInk,
-              height: 1.45,
-            ),
+            style: AuraText.small.copyWith(color: AuraSurface.goodInk, height: 1.45),
           ),
         ],
       ),

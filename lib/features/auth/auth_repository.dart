@@ -128,6 +128,39 @@ class AuthRepository {
     }
   }
 
+  Future<Map<String, dynamic>> verifyLoginCode({
+    required String challengeId,
+    required String code,
+  }) async {
+    try {
+      final res = await _dio.post(
+        '/auth/login/verify-code',
+        data: {'challengeId': challengeId.trim(), 'code': code.trim()},
+      );
+      return _unwrap(res);
+    } on DioException catch (e) {
+      throw AuthException(_mapVerifyCodeError(e));
+    } catch (_) {
+      throw const AuthException('We could not verify the code right now. Please try again.');
+    }
+  }
+
+  Future<Map<String, dynamic>> resendLoginCode({
+    required String challengeId,
+  }) async {
+    try {
+      final res = await _dio.post(
+        '/auth/login/resend-code',
+        data: {'challengeId': challengeId.trim()},
+      );
+      return _unwrap(res);
+    } on DioException catch (e) {
+      throw AuthException(_mapResendCodeError(e));
+    } catch (_) {
+      throw const AuthException('We could not resend the code right now. Please try again.');
+    }
+  }
+
   Future<Map<String, dynamic>> resetPassword({
     required String token,
     required String newPassword,
@@ -407,6 +440,46 @@ class AuthRepository {
     }
 
     return 'We could not send the reset email right now. Please try again.';
+  }
+
+  String _mapVerifyCodeError(DioException e) {
+    final common = _mapCommonInfraError(
+      e,
+      fallback: 'We could not verify the code right now. Please try again.',
+    );
+    if (common != 'We could not verify the code right now. Please try again.') return common;
+
+    final code = e.response?.statusCode;
+    final server = _extractServerMessage(e).toLowerCase();
+
+    if (code == 401 || server.contains('incorrect code') || server.contains('invalid code')) {
+      return 'That code is incorrect. Please check and try again.';
+    }
+    if (server.contains('expired')) return 'That code has expired. Please request a new one.';
+    if (server.contains('already used') || server.contains('consumed')) {
+      return 'That code has already been used. Please request a new one.';
+    }
+    if (code == 429 || server.contains('too many')) {
+      return 'Too many attempts. Please request a new code.';
+    }
+    return 'We could not verify the code right now. Please try again.';
+  }
+
+  String _mapResendCodeError(DioException e) {
+    final common = _mapCommonInfraError(
+      e,
+      fallback: 'We could not resend the code right now. Please try again.',
+    );
+    if (common != 'We could not resend the code right now. Please try again.') return common;
+
+    final server = _extractServerMessage(e).toLowerCase();
+
+    if (server.contains('please wait') || e.response?.statusCode == 429) {
+      final msg = _extractServerMessage(e);
+      return msg.isNotEmpty ? msg : 'Please wait before requesting a new code.';
+    }
+    if (server.contains('expired')) return 'This sign-in session has expired. Please start again.';
+    return 'We could not resend the code right now. Please try again.';
   }
 
   String _mapResetPasswordError(DioException e) {

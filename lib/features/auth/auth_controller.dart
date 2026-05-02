@@ -158,6 +158,10 @@ class AuthController {
   /// Supports BOTH:
   ///  - login(email: ..., password: ...)
   ///  - login(dto: map) where map contains email/password
+  ///
+  /// Returns either:
+  ///  - { status: 'ok', ... }     — session issued, user is logged in
+  ///  - { status: 'challenge', challengeId, maskedEmail } — email code required
   Future<Map<String, dynamic>> login({
     String? email,
     String? password,
@@ -181,11 +185,22 @@ class AuthController {
         '/auth/login',
         data: {'email': e, 'password': p},
       );
-    } on DioException catch (e) {
-      throw Exception(_mapLoginError(e));
+    } on DioException catch (err) {
+      throw Exception(_mapLoginError(err));
     }
 
     final outer = _asMap(res.data);
+
+    // Email-code challenge path
+    final requiresEmailCode = outer['requiresEmailCode'];
+    if (requiresEmailCode == true) {
+      return {
+        'status': 'challenge',
+        'challengeId': (outer['challengeId'] ?? '').toString(),
+        'maskedEmail': (outer['maskedEmail'] ?? '').toString(),
+      };
+    }
+
     final access = _readAccessToken(outer);
     final refresh = _readRefreshToken(outer);
 
@@ -199,7 +214,85 @@ class AuthController {
     );
 
     _invalidateAuth();
+    return {'status': 'ok', ..._unwrap(outer)};
+  }
+
+  /// Complete a login email-code challenge.
+  /// On success, stores the session and invalidates auth providers.
+  Future<Map<String, dynamic>> verifyLoginCode({
+    required String challengeId,
+    required String code,
+  }) async {
+    late final Response res;
+    try {
+      res = await _dio().post(
+        '/auth/login/verify-code',
+        data: {'challengeId': challengeId.trim(), 'code': code.trim()},
+      );
+    } on DioException catch (err) {
+      final server = (err.response?.data is Map
+              ? (err.response!.data['message'] ?? err.response!.data['error'] ?? '')
+              : '')
+          .toString()
+          .trim();
+      final status = err.response?.statusCode ?? 0;
+
+      if (status == 401 ||
+          server.toLowerCase().contains('incorrect code') ||
+          server.toLowerCase().contains('invalid')) {
+        throw Exception('That code is incorrect. Please check and try again.');
+      }
+      if (server.toLowerCase().contains('expired')) {
+        throw Exception('That code has expired. Please request a new one.');
+      }
+      if (server.toLowerCase().contains('already used') ||
+          server.toLowerCase().contains('consumed')) {
+        throw Exception('That code has already been used. Please request a new one.');
+      }
+      if (status == 429 || server.toLowerCase().contains('too many')) {
+        throw Exception('Too many attempts. Please request a new code.');
+      }
+      throw Exception(server.isNotEmpty ? server : 'We could not verify the code. Please try again.');
+    }
+
+    final outer = _asMap(res.data);
+    final access = _readAccessToken(outer);
+    final refresh = _readRefreshToken(outer);
+
+    if (access.isEmpty) {
+      throw Exception('Verification response missing accessToken');
+    }
+
+    await _store().setSession(
+      accessToken: access,
+      refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
+    );
+
+    _invalidateAuth();
     return _unwrap(outer);
+  }
+
+  /// Request a new login code for an existing challenge.
+  Future<Map<String, dynamic>> resendLoginCode(String challengeId) async {
+    late final Response res;
+    try {
+      res = await _dio().post(
+        '/auth/login/resend-code',
+        data: {'challengeId': challengeId.trim()},
+      );
+    } on DioException catch (err) {
+      final server = (err.response?.data is Map
+              ? (err.response!.data['message'] ?? '')
+              : '')
+          .toString()
+          .trim();
+      if (err.response?.statusCode == 429 || server.toLowerCase().contains('please wait')) {
+        throw Exception(server.isNotEmpty ? server : 'Please wait before requesting a new code.');
+      }
+      throw Exception(server.isNotEmpty ? server : 'We could not resend the code. Please try again.');
+    }
+
+    return _asMap(res.data);
   }
 
   /// logout(context) OR logout()
