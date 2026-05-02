@@ -496,6 +496,12 @@ class _GovernancePanel extends StatelessWidget {
           description: 'Approve or reject institution and membership requests',
           onTap: () => context.go('/admin/review-queue'),
         ),
+        _ModuleTile(
+          icon: Icons.shield_outlined,
+          title: 'Moderation',
+          description: 'Review reports, take enforcement actions, track outcomes',
+          onTap: () => context.go('/admin/moderation'),
+        ),
       ]),
     );
   }

@@ -183,3 +183,19 @@ final adminPoliciesProvider = FutureProvider<AdminPolicy>((ref) async {
     rethrow;
   }
 });
+
+// ── /v1/moderation/queue ─────────────────────────────────────────────────
+
+final adminModerationQueueProvider =
+    FutureProvider.family<List<ModerationReport>, String?>((ref, status) async {
+  final me = await ref.watch(adminMeProvider.future);
+  if (me == null) return const [];
+
+  try {
+    return await ref.watch(adminRepositoryProvider).fetchModerationQueue(status: status);
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) return const [];
+    rethrow;
+  }
+});

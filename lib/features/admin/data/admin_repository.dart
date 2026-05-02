@@ -250,6 +250,71 @@ class AdminRepository {
   Future<void> updatePolicies(AdminPolicy policy) async {
     await _dio.put('/v1/admin/policies', data: policy.toJson());
   }
+
+  // ── Moderation queue ─────────────────────────────────────────────────────
+
+  Future<List<ModerationReport>> fetchModerationQueue({
+    String? status,
+    int take = 25,
+    int skip = 0,
+  }) async {
+    final res = await _dio.get(
+      '/v1/moderation/queue',
+      queryParameters: {
+        if (status != null) 'status': status,
+        'take': take,
+        'skip': skip,
+      },
+    );
+    return _parseList(_asMap(res.data)['items'] ?? res.data, ModerationReport.fromJson);
+  }
+
+  Future<ModerationReport> fetchModerationReport(String id) async {
+    final res = await _dio.get('/v1/moderation/reports/$id');
+    final data = _asMap(res.data);
+    return ModerationReport.fromJson(_asMap(data['report'] ?? data));
+  }
+
+  Future<void> setModerationReportStatus(
+    String id, {
+    required String status,
+    String? outcomeSummary,
+    String? privateNote,
+  }) async {
+    await _dio.post(
+      '/v1/moderation/reports/$id/status',
+      data: {
+        'status': status,
+        if (outcomeSummary != null) 'outcomeSummary': outcomeSummary,
+        if (privateNote != null) 'privateNote': privateNote,
+      },
+    );
+  }
+
+  Future<void> submitModerationAction({
+    required String actionType,
+    required String targetType,
+    required String targetId,
+    String? reportId,
+    String? reportStatus,
+    String? note,
+    String? outcomeSummary,
+    String? privateNote,
+  }) async {
+    await _dio.post(
+      '/v1/moderation/actions',
+      data: {
+        'actionType': actionType,
+        'targetType': targetType,
+        'targetId': targetId,
+        if (reportId != null) 'reportId': reportId,
+        if (reportStatus != null) 'reportStatus': reportStatus,
+        if (note != null) 'note': note,
+        if (outcomeSummary != null) 'outcomeSummary': outcomeSummary,
+        if (privateNote != null) 'privateNote': privateNote,
+      },
+    );
+  }
 }
 
 // Standalone provider helper — used by admin_providers.dart.

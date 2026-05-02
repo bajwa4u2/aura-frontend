@@ -931,3 +931,129 @@ class FeaturePolicy {
         inviteOnlyMode: inviteOnlyMode ?? this.inviteOnlyMode,
       );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODERATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ModerationActorSummary {
+  const ModerationActorSummary({
+    required this.id,
+    required this.handle,
+    required this.displayName,
+    this.avatarUrl,
+  });
+
+  final String id;
+  final String handle;
+  final String displayName;
+  final String? avatarUrl;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory ModerationActorSummary.fromJson(Map<String, dynamic> json) {
+    return ModerationActorSummary(
+      id: _str(json['id']),
+      handle: _str(json['handle']),
+      displayName: _str(json['displayName'] ?? json['handle']),
+      avatarUrl: json['avatarUrl'] as String?,
+    );
+  }
+}
+
+class ModerationReportAction {
+  const ModerationReportAction({
+    required this.id,
+    required this.actionType,
+    required this.targetType,
+    required this.targetId,
+    required this.moderator,
+    required this.createdAt,
+    this.note,
+  });
+
+  final String id;
+  final String actionType;
+  final String targetType;
+  final String targetId;
+  final ModerationActorSummary moderator;
+  final DateTime createdAt;
+  final String? note;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory ModerationReportAction.fromJson(Map<String, dynamic> json) {
+    return ModerationReportAction(
+      id: _str(json['id']),
+      actionType: _str(json['actionType']),
+      targetType: _str(json['targetType']),
+      targetId: _str(json['targetId']),
+      moderator: ModerationActorSummary.fromJson(
+        json['moderator'] is Map
+            ? Map<String, dynamic>.from(json['moderator'] as Map)
+            : const {},
+      ),
+      createdAt: DateTime.tryParse(_str(json['createdAt'])) ?? DateTime.now(),
+      note: json['note'] as String?,
+    );
+  }
+}
+
+class ModerationReport {
+  const ModerationReport({
+    required this.id,
+    required this.targetType,
+    required this.targetId,
+    required this.reporter,
+    required this.reason,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.actions,
+    this.details,
+    this.outcomeSummary,
+    this.privateNote,
+  });
+
+  final String id;
+  final String targetType;
+  final String targetId;
+  final ModerationActorSummary reporter;
+  final String reason;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final List<ModerationReportAction> actions;
+  final String? details;
+  final String? outcomeSummary;
+  final String? privateNote;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory ModerationReport.fromJson(Map<String, dynamic> json) {
+    final actions = json['actions'];
+    return ModerationReport(
+      id: _str(json['id']),
+      targetType: _str(json['targetType']),
+      targetId: _str(json['targetId']),
+      reporter: ModerationActorSummary.fromJson(
+        json['reporter'] is Map
+            ? Map<String, dynamic>.from(json['reporter'] as Map)
+            : const {},
+      ),
+      reason: _str(json['reason']),
+      status: _str(json['status'] ?? 'OPEN'),
+      createdAt: DateTime.tryParse(_str(json['createdAt'])) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(_str(json['updatedAt'])) ?? DateTime.now(),
+      actions: actions is List
+          ? actions
+              .whereType<Map>()
+              .map((e) => ModerationReportAction.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+      details: json['details'] as String?,
+      outcomeSummary: json['outcomeSummary'] as String?,
+      privateNote: json['privateNote'] as String?,
+    );
+  }
+}
