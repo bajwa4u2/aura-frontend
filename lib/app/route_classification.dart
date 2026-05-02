@@ -3,13 +3,18 @@ bool isAdminShellPath(String path) {
 }
 
 bool isInstitutionShellPath(String path) {
-  return path == '/institution/create' ||
+  if (path == '/institution/create' ||
       path == '/institution/dashboard' ||
       path == '/institution/domains' ||
       path == '/institution/profile' ||
+      path == '/institution/edit-profile' ||
       path == '/institution/request-verification' ||
       path == '/institution/announcements' ||
-      path == '/institution/correspondence';
+      path == '/institution/correspondence') {
+    return true;
+  }
+  // /institution/:id/... — dynamic id-based institution workspace routes
+  return RegExp(r'^/institution/[^/]+/').hasMatch(path);
 }
 
 bool isMemberShellPath(String path) {

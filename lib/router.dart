@@ -61,6 +61,7 @@ import 'features/admin/presentation/admin_review_queue_screen.dart';
 import 'features/admin/presentation/admin_policies_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
+import 'features/institutions/profile/institution_edit_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
 import 'features/institutions/announcements/institution_announcements_screen.dart';
 import 'features/institutions/announcements/institution_announcement_composer.dart';
@@ -104,6 +105,7 @@ const String kInstitutionProfileRoute = '/institution/profile';
 const String kInstitutionVerificationRoute = '/institution/request-verification';
 const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
+const String kInstitutionEditProfileRoute = '/institution/edit-profile';
 const String kEnterInstitutionRoute = '/enter-institution';
 const String kAdminWorkspaceRoute = '/admin';
 const String kAdminCommunicationsRoute = '/admin/communications';
@@ -232,6 +234,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   bool requiresInstitutionAccess(String path) {
     if (path == kInstitutionDashboardRoute ||
         path == kInstitutionProfileRoute ||
+        path == kInstitutionEditProfileRoute ||
         path == kInstitutionCorrespondenceRoute ||
         path == kInstitutionVerificationRoute) {
       return true;
@@ -247,7 +250,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   }
 
   bool requiresInstitutionAdmin(String path) {
-    return path == kInstitutionDomainsRoute;
+    return path == kInstitutionDomainsRoute ||
+        path == kInstitutionEditProfileRoute;
   }
 
   String bootRedirectFor(String target, {required String fallback}) {
@@ -777,6 +781,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionProfileRoute,
             builder: (_, __) => const InstitutionProfileScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionEditProfileRoute,
+            builder: (_, __) => const InstitutionEditProfileScreen(),
           ),
           GoRoute(
             path: kInstitutionVerificationRoute,

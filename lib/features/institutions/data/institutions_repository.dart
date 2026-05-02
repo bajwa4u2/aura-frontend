@@ -49,6 +49,43 @@ class InstitutionsRepository {
 
   final dynamic _dio;
 
+  Future<Institution> getById(String id) async {
+    final cleanId = id.trim();
+    if (cleanId.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.get('/institutions/id/$cleanId');
+    final body = res.data;
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final inst = root['institution'] ?? root['data'] ?? root;
+      if (inst is Map) return Institution.fromJson(Map<String, dynamic>.from(inst));
+    }
+    throw Exception('Unexpected institution response.');
+  }
+
+  Future<Map<String, dynamic>> updateInstitutionProfile(
+    String institutionId, {
+    String? name,
+    String? description,
+    String? website,
+    String? category,
+    String? location,
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.patch(
+      '/institutions/$id',
+      data: <String, dynamic>{
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+        if (description != null) 'description': description.trim(),
+        if (website != null) 'website': website.trim(),
+        if (category != null && category.trim().isNotEmpty) 'category': category.trim(),
+        if (location != null) 'location': location.trim(),
+      },
+    );
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
   Future<Institution> getBySlug(String slug) async {
     final cleanSlug = slug.trim();
     if (cleanSlug.isEmpty) {

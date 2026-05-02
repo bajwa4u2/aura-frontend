@@ -31,6 +31,77 @@ class InstitutionAccess {
       state == InstitutionAccessState.authorizedSpeaker;
 }
 
+/// Derived, synchronous view of the current institution's identity and the
+/// acting member's admin status. Null until the institution access resolves
+/// and the user has an institution with a known id.
+class InstitutionIdentity {
+  const InstitutionIdentity({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.logoUrl,
+    required this.isAdmin,
+    required this.isAuthorizedSpeaker,
+  });
+
+  final String id;
+  final String name;
+  final String slug;
+  final String? logoUrl;
+  final bool isAdmin;
+  final bool isAuthorizedSpeaker;
+}
+
+final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
+  final access = ref.watch(institutionAccessProvider).valueOrNull;
+  if (access == null || !access.hasAccess) return null;
+
+  // Institution data may be at access.institution or inside access.membership['institution'].
+  final inst = access.institution ??
+      (access.membership?['institution'] is Map
+          ? Map<String, dynamic>.from(
+              access.membership!['institution'] as Map,
+            )
+          : null);
+
+  if (inst == null) return null;
+
+  String readStr(Map<String, dynamic> m, List<String> keys) {
+    for (final k in keys) {
+      final v = m[k]?.toString().trim() ?? '';
+      if (v.isNotEmpty) return v;
+    }
+    return '';
+  }
+
+  final id = readStr(inst, ['id']);
+  if (id.isEmpty) return null;
+
+  final membership = access.membership;
+  final role = (membership?['role'] ?? '').toString().trim().toUpperCase();
+  final canSpeak = membership?['canSpeakOfficially'] == true;
+  final isAuthorizedSpeaker =
+      access.state == InstitutionAccessState.authorizedSpeaker;
+  final isAdmin = role == 'ADMIN' || canSpeak || isAuthorizedSpeaker;
+
+  String? readOpt(Map<String, dynamic> m, List<String> keys) {
+    for (final k in keys) {
+      final v = m[k]?.toString().trim() ?? '';
+      if (v.isNotEmpty) return v;
+    }
+    return null;
+  }
+
+  return InstitutionIdentity(
+    id: id,
+    name: readStr(inst, ['name', 'displayName', 'title', 'organizationName']),
+    slug: readStr(inst, ['slug', 'handle']),
+    logoUrl: readOpt(inst, ['logoUrl', 'avatarUrl', 'logo']),
+    isAdmin: isAdmin,
+    isAuthorizedSpeaker: isAuthorizedSpeaker,
+  );
+});
+
 final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
 

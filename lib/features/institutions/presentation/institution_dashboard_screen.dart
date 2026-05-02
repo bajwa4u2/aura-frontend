@@ -511,12 +511,14 @@ class _InstitutionDashboardScreenState
             : null,
       ),
       _ToolData(
-        title: 'Institution record',
+        title: 'Institution profile',
         body:
-            'Maintain public identity, description, standing, and institutional profile surfaces.',
+            'View and edit public identity, description, and institutional profile surfaces.',
         icon: Icons.badge_outlined,
         enabled: _canUseInstitutionTools,
-        onTap: null,
+        onTap: _canUseInstitutionTools
+            ? () => _go('/institution/profile')
+            : null,
       ),
     ];
 

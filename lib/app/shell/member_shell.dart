@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/institutions/institution_access_provider.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -170,57 +172,18 @@ bool _showMemberBottomNav(String path) {
 // INSTITUTION SHELL
 // ─────────────────────────────────────────────────────────────────────────────
 
-class InstitutionShell extends StatelessWidget {
+class InstitutionShell extends ConsumerWidget {
   const InstitutionShell({super.key, required this.child});
 
   final Widget child;
 
-  static const List<_NavItem> _items = [
-    _NavItem(
-      label: 'Overview',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-      path: '/institution/dashboard',
-    ),
-    _NavItem(
-      label: 'Announcements',
-      icon: Icons.campaign_outlined,
-      selectedIcon: Icons.campaign_rounded,
-      path: '/institution/announcements',
-    ),
-    _NavItem(
-      label: 'Messages',
-      icon: Icons.mail_outline_rounded,
-      selectedIcon: Icons.mail_rounded,
-      path: '/institution/correspondence',
-    ),
-    _NavItem(
-      label: 'Settings',
-      icon: Icons.tune_outlined,
-      selectedIcon: Icons.tune_rounded,
-      path: '/institution/profile',
-    ),
-  ];
-
   static const double _desktopBreakpoint = 1100;
   static const double _tabletBreakpoint = 760;
 
-  int _indexForPath(String path) {
-    if (path == '/institution/dashboard') return 0;
-    if (path == '/institution/announcements') return 1;
-    if (path == '/institution/correspondence') return 2;
-    if (path == '/institution/profile' ||
-        path == '/institution/domains' ||
-        path == '/institution/request-verification') {
-      return 3;
-    }
-    return 0;
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final identity = ref.watch(institutionIdentityProvider);
     final path = GoRouterState.of(context).uri.path;
-    final selectedIndex = _indexForPath(path);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -239,15 +202,15 @@ class InstitutionShell extends StatelessWidget {
                   _InstitutionHeader(
                     isDesktop: isDesktop,
                     isTablet: isTablet,
+                    identity: identity,
                   ),
                   Expanded(
                     child: Row(
                       children: [
                         if (isDesktop)
                           _InstitutionSideNav(
-                            items: _items,
-                            selectedIndex: selectedIndex,
                             currentPath: path,
+                            identity: identity,
                           ),
                         Expanded(child: child),
                       ],
@@ -255,10 +218,9 @@ class InstitutionShell extends StatelessWidget {
                   ),
                   if (!isDesktop)
                     _InstitutionBottomNav(
-                      items: _items,
-                      selectedIndex: selectedIndex,
                       currentPath: path,
                       compact: !isTablet,
+                      identity: identity,
                     ),
                 ],
               ),
@@ -326,10 +288,15 @@ class _MemberHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InstitutionHeader extends StatelessWidget {
-  const _InstitutionHeader({required this.isDesktop, required this.isTablet});
+  const _InstitutionHeader({
+    required this.isDesktop,
+    required this.isTablet,
+    required this.identity,
+  });
 
   final bool isDesktop;
   final bool isTablet;
+  final InstitutionIdentity? identity;
 
   @override
   Widget build(BuildContext context) {
@@ -338,6 +305,9 @@ class _InstitutionHeader extends StatelessWidget {
         : isTablet
             ? AuraSpace.s20
             : AuraSpace.s16;
+
+    final name = identity?.name ?? '';
+    final logoUrl = identity?.logoUrl;
 
     return Container(
       decoration: const BoxDecoration(
@@ -352,13 +322,27 @@ class _InstitutionHeader extends StatelessWidget {
               maxWidth: PublicShell.maxContentWidth + 160),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-                hPad, AuraSpace.s12, hPad, AuraSpace.s12),
+                hPad, AuraSpace.s10, hPad, AuraSpace.s10),
             child: Row(
               children: [
-                AuraShellWordmark(
-                  onTap: () => context.go('/institution/dashboard'),
-                ),
+                // Institution avatar
+                _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
                 const SizedBox(width: AuraSpace.s10),
+                // Institution name (hidden on very small screens)
+                if (isTablet && name.isNotEmpty) ...[
+                  Flexible(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                ],
                 _WorkspaceBadge(),
                 const Spacer(),
                 ShellHeaderTools(
@@ -373,6 +357,61 @@ class _InstitutionHeader extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InstitutionAvatarSmall extends StatelessWidget {
+  const _InstitutionAvatarSmall({required this.name, this.logoUrl});
+
+  final String name;
+  final String? logoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials =
+        name.isNotEmpty ? name.trim()[0].toUpperCase() : '';
+
+    return GestureDetector(
+      onTap: () => context.go('/institution/dashboard'),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: _institutionAccentSoft,
+          shape: BoxShape.circle,
+          border:
+              Border.all(color: _institutionAccent.withValues(alpha: 0.4)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: logoUrl != null && logoUrl!.isNotEmpty
+            ? Image.network(
+                logoUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _avatarFallback(initials),
+              )
+            : _avatarFallback(initials),
+      ),
+    );
+  }
+
+  Widget _avatarFallback(String initials) {
+    if (initials.isNotEmpty) {
+      return Center(
+        child: Text(
+          initials,
+          style: AuraText.micro.copyWith(
+            color: _institutionAccentText,
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
+        ),
+      );
+    }
+    return const Icon(
+      Icons.apartment_outlined,
+      size: 16,
+      color: _institutionAccentText,
     );
   }
 }
@@ -568,58 +607,211 @@ class _MemberSideNavTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INSTITUTION SIDE NAV — left-border indicator, professional workspace style
+// INSTITUTION SIDE NAV — left-border indicator, full workspace sections
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Describes a single entry in the institution side nav.
+class _InstEntry {
+  const _InstEntry({
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
+    this.sectionLabel,
+    this.pathBuilder,
+    this.pathMatcher,
+    this.adminOnly = false,
+    this.disabled = false,
+    this.disabledReason,
+  });
+
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+  final String? sectionLabel;
+
+  /// Builds the navigation path from the current identity. Return null to disable.
+  final String? Function(InstitutionIdentity?)? pathBuilder;
+
+  /// Custom path matcher: returns true if this item is "selected" for path.
+  final bool Function(String)? pathMatcher;
+
+  final bool adminOnly;
+  final bool disabled;
+  final String? disabledReason;
+
+  String? resolvedPath(InstitutionIdentity? identity) =>
+      pathBuilder?.call(identity);
+
+  bool isSelected(String currentPath, InstitutionIdentity? identity) {
+    if (pathMatcher != null) return pathMatcher!(currentPath);
+    final p = resolvedPath(identity);
+    if (p == null) return false;
+    final base = p.split('?')[0];
+    return currentPath == base || currentPath.startsWith('$base/');
+  }
+}
+
+List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
+  final id = identity?.id ?? '';
+  final slug = identity?.slug ?? '';
+  final isAdmin = identity?.isAdmin ?? false;
+
+  return [
+    // ── INSTITUTION section ──────────────────────────────────────────────
+    _InstEntry(
+      sectionLabel: 'INSTITUTION',
+      label: 'Overview',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+      pathBuilder: (_) => '/institution/dashboard',
+    ),
+    _InstEntry(
+      label: 'Profile',
+      icon: Icons.badge_outlined,
+      selectedIcon: Icons.badge_rounded,
+      pathBuilder: (_) => '/institution/profile',
+    ),
+    _InstEntry(
+      label: 'Edit Profile',
+      icon: Icons.edit_outlined,
+      selectedIcon: Icons.edit_rounded,
+      adminOnly: true,
+      pathBuilder: (_) => isAdmin ? '/institution/edit-profile' : null,
+    ),
+
+    // ── ACTIVITY section ─────────────────────────────────────────────────
+    _InstEntry(
+      sectionLabel: 'ACTIVITY',
+      label: 'Announcements',
+      icon: Icons.campaign_outlined,
+      selectedIcon: Icons.campaign_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/announcements' : null,
+      pathMatcher: (p) =>
+          p.contains('/announcements') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Spaces',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/spaces' : null,
+      pathMatcher: (p) =>
+          p.contains('/spaces') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Messages',
+      icon: Icons.mail_outline_rounded,
+      selectedIcon: Icons.mail_rounded,
+      pathBuilder: (_) => '/institution/correspondence',
+    ),
+    _InstEntry(
+      label: 'Live Rooms',
+      icon: Icons.radio_outlined,
+      selectedIcon: Icons.radio_rounded,
+      disabled: true,
+      disabledReason: 'Coming soon',
+      pathBuilder: (_) => null,
+    ),
+
+    // ── MANAGEMENT section ───────────────────────────────────────────────
+    _InstEntry(
+      sectionLabel: 'MANAGEMENT',
+      label: 'Members',
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
+      pathMatcher: (p) =>
+          p.contains('/members') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Invites',
+      icon: Icons.group_add_outlined,
+      selectedIcon: Icons.group_add_rounded,
+      adminOnly: true,
+      pathBuilder: (_) =>
+          id.isNotEmpty && isAdmin ? '/institution/$id/invites' : null,
+      pathMatcher: (p) =>
+          p.contains('/invites') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Join Requests',
+      icon: Icons.person_add_outlined,
+      selectedIcon: Icons.person_add_rounded,
+      adminOnly: true,
+      pathBuilder: (_) => id.isNotEmpty && isAdmin
+          ? '/institution/$id/join-requests?admin=true'
+          : null,
+      pathMatcher: (p) =>
+          p.contains('/join-requests') && p.startsWith('/institution/'),
+    ),
+
+    // ── ACCESS section ───────────────────────────────────────────────────
+    _InstEntry(
+      sectionLabel: 'ACCESS',
+      label: 'Public Preview',
+      icon: Icons.open_in_new_rounded,
+      selectedIcon: Icons.open_in_new_rounded,
+      pathBuilder: (_) =>
+          slug.isNotEmpty ? '/institutions/$slug' : null,
+      pathMatcher: (p) => p.startsWith('/institutions/'),
+    ),
+    _InstEntry(
+      label: 'Domains',
+      icon: Icons.language_rounded,
+      selectedIcon: Icons.language_rounded,
+      pathBuilder: (_) => '/institution/domains',
+    ),
+  ];
+}
 
 class _InstitutionSideNav extends StatelessWidget {
   const _InstitutionSideNav({
-    required this.items,
-    required this.selectedIndex,
     required this.currentPath,
+    required this.identity,
   });
 
-  final List<_NavItem> items;
-  final int selectedIndex;
   final String currentPath;
+  final InstitutionIdentity? identity;
 
   @override
   Widget build(BuildContext context) {
+    final entries = _buildInstEntries(identity);
+
     return Container(
-      width: 224,
+      width: 232,
       decoration: const BoxDecoration(
         gradient: _institutionNavGradient,
         border: Border(right: BorderSide(color: Color(0x14FFFFFF))),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(0, AuraSpace.s12, 0, AuraSpace.s20),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s20,
-              AuraSpace.s20,
-              AuraSpace.s16,
-              AuraSpace.s8,
-            ),
-            child: Text(
-              'INSTITUTION',
-              style: AuraText.micro.copyWith(
-                color: _institutionAccent.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.4,
-                fontSize: 10,
+          for (final entry in entries) ...[
+            if (entry.sectionLabel != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s20,
+                  AuraSpace.s14,
+                  AuraSpace.s12,
+                  AuraSpace.s4,
+                ),
+                child: Text(
+                  entry.sectionLabel!,
+                  style: AuraText.micro.copyWith(
+                    color: _institutionAccent.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    fontSize: 9.5,
+                  ),
+                ),
               ),
-            ),
-          ),
-          for (var i = 0; i < items.length; i++)
             _InstitutionSideNavTile(
-              item: items[i],
-              selected: i == selectedIndex,
-              onTap: () {
-                final target = items[i].path;
-                if (target != currentPath) context.go(target);
-              },
+              entry: entry,
+              selected: entry.isSelected(currentPath, identity),
+              identity: identity,
+              currentPath: currentPath,
             ),
-          const Spacer(),
+          ],
         ],
       ),
     );
@@ -628,29 +820,50 @@ class _InstitutionSideNav extends StatelessWidget {
 
 class _InstitutionSideNavTile extends StatelessWidget {
   const _InstitutionSideNavTile({
-    required this.item,
+    required this.entry,
     required this.selected,
-    required this.onTap,
+    required this.identity,
+    required this.currentPath,
   });
 
-  final _NavItem item;
+  final _InstEntry entry;
   final bool selected;
-  final VoidCallback onTap;
+  final InstitutionIdentity? identity;
+  final String currentPath;
 
   @override
   Widget build(BuildContext context) {
+    final target = entry.resolvedPath(identity);
+    final isDisabled = entry.disabled || target == null;
+    final iconColor = selected
+        ? _institutionAccentText
+        : isDisabled
+            ? AuraSurface.faint.withValues(alpha: 0.45)
+            : AuraSurface.faint;
+    final textColor = selected
+        ? _institutionAccentText
+        : isDisabled
+            ? AuraSurface.faint.withValues(alpha: 0.45)
+            : AuraSurface.faint;
+
+    void onTap() {
+      if (isDisabled) return;
+      if (target != currentPath.split('?')[0]) context.go(target);
+    }
+
     return Semantics(
-      button: true,
-      label: item.label,
+      button: !isDisabled,
+      label: entry.label,
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor:
+            isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: onTap,
+          onTap: isDisabled ? null : onTap,
           child: AnimatedContainer(
             duration: AuraMotion.fast,
             margin: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s8,
-              vertical: 2,
+              vertical: 1,
             ),
             decoration: BoxDecoration(
               color: selected ? _institutionAccentSoft : Colors.transparent,
@@ -666,7 +879,7 @@ class _InstitutionSideNavTile extends StatelessWidget {
                 AnimatedContainer(
                   duration: AuraMotion.fast,
                   width: 3,
-                  height: 42,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: selected
                         ? _institutionAccent
@@ -678,33 +891,61 @@ class _InstitutionSideNavTile extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AuraSpace.s12,
-                      vertical: AuraSpace.s10,
+                      vertical: AuraSpace.s8,
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          selected ? item.selectedIcon : item.icon,
+                          selected ? entry.selectedIcon : entry.icon,
                           size: AuraIconSize.md,
-                          color: selected
-                              ? _institutionAccentText
-                              : AuraSurface.faint,
+                          color: iconColor,
                         ),
                         const SizedBox(width: AuraSpace.s10),
                         Expanded(
                           child: Text(
-                            item.label,
+                            entry.label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AuraText.small.copyWith(
                               fontWeight: selected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: selected
-                                  ? _institutionAccentText
-                                  : AuraSurface.faint,
+                              color: textColor,
                             ),
                           ),
                         ),
+                        if (isDisabled && entry.disabledReason != null) ...[
+                          const SizedBox(width: AuraSpace.s6),
+                          Text(
+                            entry.disabledReason!,
+                            style: AuraText.micro.copyWith(
+                              color: AuraSurface.faint.withValues(alpha: 0.5),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        if (isDisabled && entry.adminOnly && !isDisabled) ...[
+                          const SizedBox(width: AuraSpace.s6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _institutionAccentSoft,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Admin',
+                              style: AuraText.micro.copyWith(
+                                color: _institutionAccentText,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -719,24 +960,69 @@ class _InstitutionSideNavTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INSTITUTION BOTTOM NAV — teal accented, professional
+// INSTITUTION BOTTOM NAV — teal accented, 5-item summary
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InstitutionBottomNav extends StatelessWidget {
   const _InstitutionBottomNav({
-    required this.items,
-    required this.selectedIndex,
     required this.currentPath,
     required this.compact,
+    required this.identity,
   });
 
-  final List<_NavItem> items;
-  final int selectedIndex;
   final String currentPath;
   final bool compact;
+  final InstitutionIdentity? identity;
 
   @override
   Widget build(BuildContext context) {
+    final id = identity?.id ?? '';
+    // 5 bottom-nav items: Overview, Announcements, Spaces, Members, Profile
+    final items = [
+      (
+        label: 'Overview',
+        icon: Icons.grid_view_outlined,
+        selectedIcon: Icons.grid_view_rounded,
+        path: '/institution/dashboard',
+        matcher: (String p) => p == '/institution/dashboard',
+      ),
+      (
+        label: 'Posts',
+        icon: Icons.campaign_outlined,
+        selectedIcon: Icons.campaign_rounded,
+        path: id.isNotEmpty ? '/institution/$id/announcements' : null,
+        matcher: (String p) =>
+            p.contains('/announcements') && p.startsWith('/institution/'),
+      ),
+      (
+        label: 'Spaces',
+        icon: Icons.forum_outlined,
+        selectedIcon: Icons.forum_rounded,
+        path: id.isNotEmpty ? '/institution/$id/spaces' : null,
+        matcher: (String p) =>
+            p.contains('/spaces') && p.startsWith('/institution/'),
+      ),
+      (
+        label: 'Members',
+        icon: Icons.people_outline_rounded,
+        selectedIcon: Icons.people_rounded,
+        path: id.isNotEmpty ? '/institution/$id/members' : null,
+        matcher: (String p) =>
+            p.contains('/members') && p.startsWith('/institution/'),
+      ),
+      (
+        label: 'Profile',
+        icon: Icons.badge_outlined,
+        selectedIcon: Icons.badge_rounded,
+        path: '/institution/profile',
+        matcher: (String p) =>
+            p == '/institution/profile' ||
+            p == '/institution/edit-profile' ||
+            p == '/institution/domains' ||
+            p == '/institution/correspondence',
+      ),
+    ];
+
     return Container(
       decoration: const BoxDecoration(
         gradient: _institutionNavGradient,
@@ -750,20 +1036,23 @@ class _InstitutionBottomNav extends StatelessWidget {
             vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
           ),
           child: Row(
-            children: [
-              for (var i = 0; i < items.length; i++)
-                Expanded(
-                  child: _InstitutionBottomNavBtn(
-                    item: items[i],
-                    selected: i == selectedIndex,
-                    compact: compact,
-                    onTap: () {
-                      final target = items[i].path;
-                      if (target != currentPath) context.go(target);
-                    },
-                  ),
+            children: items.map((item) {
+              final selected = item.matcher(currentPath);
+              final isDisabled = item.path == null;
+              return Expanded(
+                child: _InstitutionBottomNavBtn(
+                  label: item.label,
+                  icon: item.icon,
+                  selectedIcon: item.selectedIcon,
+                  selected: selected,
+                  compact: compact,
+                  disabled: isDisabled,
+                  onTap: isDisabled || selected
+                      ? null
+                      : () => context.go(item.path!),
                 ),
-            ],
+              );
+            }).toList(),
           ),
         ),
       ),
@@ -773,27 +1062,34 @@ class _InstitutionBottomNav extends StatelessWidget {
 
 class _InstitutionBottomNavBtn extends StatelessWidget {
   const _InstitutionBottomNavBtn({
-    required this.item,
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
     required this.selected,
-    required this.onTap,
     required this.compact,
+    required this.disabled,
+    required this.onTap,
   });
 
-  final _NavItem item;
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
   final bool selected;
-  final VoidCallback onTap;
   final bool compact;
+  final bool disabled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final iconColor =
-        selected ? _institutionAccentText : AuraSurface.faint;
-    final textColor =
-        selected ? _institutionAccentText : AuraSurface.faint;
+    final iconColor = selected
+        ? _institutionAccentText
+        : disabled
+            ? AuraSurface.faint.withValues(alpha: 0.35)
+            : AuraSurface.faint;
 
     return Semantics(
-      button: true,
-      label: item.label,
+      button: !disabled,
+      label: label,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.r10),
@@ -806,20 +1102,19 @@ class _InstitutionBottomNavBtn extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                selected ? item.selectedIcon : item.icon,
+                selected ? selectedIcon : icon,
                 size: compact ? 20 : 22,
                 color: iconColor,
               ),
               const SizedBox(height: AuraSpace.s4),
               Text(
-                item.label,
+                label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: AuraText.micro.copyWith(
-                  fontWeight:
-                      selected ? FontWeight.w700 : FontWeight.w500,
-                  color: textColor,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: iconColor,
                 ),
               ),
             ],
