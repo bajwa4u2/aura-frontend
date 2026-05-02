@@ -846,6 +846,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => RealtimeRoomScreen(
           sessionId: state.pathParameters['sessionId'] ?? '',
           action: state.uri.queryParameters['action'],
+          returnTo: state.uri.queryParameters['returnTo'],
         ),
       ),
     ],

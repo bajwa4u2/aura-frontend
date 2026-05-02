@@ -149,7 +149,61 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final kind = _resolveNotificationKind(payload).toUpperCase();
     final attention = _stringOf(payload['attention']).toUpperCase();
     return (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') &&
-        attention == 'INTERRUPT';
+        attention == 'INTERRUPT' &&
+        !_isTerminalCallPayload(payload);
+  }
+
+  bool _isTerminalCallPayload(Map<String, dynamic> payload) {
+    final data = _mapOf(payload['data']);
+    final terminalValues = <String>{
+      'MISSED',
+      'ENDED',
+      'DECLINED',
+      'EXPIRED',
+      'CANCELLED',
+      'CANCELED',
+      'FAILED',
+      'TIMEOUT',
+      'TIMED_OUT',
+      'NO_ANSWER',
+      'REJECTED',
+      'COMPLETED',
+      'CLOSED',
+    };
+    final stateCandidates = <String>[
+      _stringOf(payload['callState']).toUpperCase(),
+      _stringOf(payload['status']).toUpperCase(),
+      _stringOf(payload['state']).toUpperCase(),
+      _stringOf(payload['result']).toUpperCase(),
+      _stringOf(payload['callStatus']).toUpperCase(),
+      _stringOf(data['callState']).toUpperCase(),
+      _stringOf(data['status']).toUpperCase(),
+      _stringOf(data['state']).toUpperCase(),
+      _stringOf(data['result']).toUpperCase(),
+      _stringOf(data['callStatus']).toUpperCase(),
+    ];
+    if (stateCandidates.any(terminalValues.contains)) return true;
+
+    final searchable = <String>[
+      _stringOf(payload['title']),
+      _stringOf(payload['body']),
+      _stringOf(payload['message']),
+      _stringOf(payload['previewText']),
+      _stringOf(data['title']),
+      _stringOf(data['body']),
+      _stringOf(data['message']),
+      _stringOf(data['previewText']),
+    ].join(' ').toLowerCase();
+
+    return searchable.contains('missed a call') ||
+        searchable.contains('missed call') ||
+        searchable.contains('call ended') ||
+        searchable.contains('call declined') ||
+        searchable.contains('declined a call') ||
+        searchable.contains('call expired') ||
+        searchable.contains('call cancelled') ||
+        searchable.contains('call canceled') ||
+        searchable.contains('no answer');
   }
 
   String _resolveNotificationKind(Map<String, dynamic> payload) {
@@ -169,23 +223,40 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   }
 
   String _routeFromPayload(Map<String, dynamic> payload) {
-    // Prefer explicit deeplink/route from backend.
+    final kind = _resolveNotificationKind(payload).toUpperCase();
+    final isCall = kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
+    final isTerminalCall = isCall && _isTerminalCallPayload(payload);
+
+    // Prefer explicit deeplink/route from backend, except terminal call payloads
+    // must not resurrect /realtime after the call is missed or ended.
     final deeplink = _firstNonEmpty([
       _stringOf(payload['deeplink']),
       _stringOf(payload['route']),
     ]);
-    if (deeplink.isNotEmpty && deeplink.startsWith('/')) return deeplink;
+    if (deeplink.isNotEmpty && deeplink.startsWith('/')) {
+      if (!(isTerminalCall && deeplink.startsWith('/realtime'))) {
+        return deeplink;
+      }
+    }
 
-    final kind = _resolveNotificationKind(payload).toUpperCase();
     final sessionId = _resolveSessionId(payload);
     final threadId = _stringOf(payload['threadId']);
     final spaceId = _stringOf(payload['spaceId']);
 
-    // Call/live notification tap → always open the full call screen.
-    if (kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME') {
-      if (sessionId.isNotEmpty) {
+    // Call/live notification tap only opens realtime for active ringing/live
+    // invites. Missed/ended call notifications route back to the conversation
+    // context instead of resurrecting a dead full-screen call.
+    if (isCall) {
+      if (!_isTerminalCallPayload(payload) && sessionId.isNotEmpty) {
         return '/realtime/$sessionId?action=join';
       }
+      if (threadId.isNotEmpty && spaceId.isNotEmpty) {
+        return '/me/correspondence/$spaceId/thread/$threadId';
+      }
+      if (spaceId.isNotEmpty) {
+        return '/me/correspondence/$spaceId';
+      }
+      return '/home';
     }
 
     // Thread message tap.

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -91,8 +89,66 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final data = _mapOf(item['data']);
     return _firstNonEmpty([
       _stringOf(data['callState']),
+      _stringOf(data['status']),
+      _stringOf(data['state']),
+      _stringOf(data['result']),
       _stringOf(item['callState']),
+      _stringOf(item['status']),
+      _stringOf(item['state']),
+      _stringOf(item['result']),
     ]).toUpperCase();
+  }
+
+  bool _isTerminalCallItem(Map<String, dynamic> item) {
+    final data = _mapOf(item['data']);
+    final terminalValues = <String>{
+      'MISSED',
+      'ENDED',
+      'DECLINED',
+      'EXPIRED',
+      'CANCELLED',
+      'CANCELED',
+      'FAILED',
+      'TIMEOUT',
+      'TIMED_OUT',
+      'NO_ANSWER',
+      'REJECTED',
+      'COMPLETED',
+      'CLOSED',
+    };
+
+    final stateCandidates = <String>[
+      _resolveCallState(item),
+      _stringOf(item['callStatus']).toUpperCase(),
+      _stringOf(item['deliveryState']).toUpperCase(),
+      _stringOf(data['callStatus']).toUpperCase(),
+      _stringOf(data['deliveryState']).toUpperCase(),
+      _stringOf(data['inviteStatus']).toUpperCase(),
+    ];
+    if (stateCandidates.any(terminalValues.contains)) return true;
+
+    final searchable = <String>[
+      _stringOf(item['title']),
+      _stringOf(item['body']),
+      _stringOf(item['message']),
+      _stringOf(item['previewText']),
+      _stringOf(data['title']),
+      _stringOf(data['body']),
+      _stringOf(data['message']),
+      _stringOf(data['previewText']),
+      _stringOf(data['summary']),
+    ].join(' ').toLowerCase();
+
+    return searchable.contains('missed a call') ||
+        searchable.contains('missed call') ||
+        searchable.contains('call ended') ||
+        searchable.contains('ended a call') ||
+        searchable.contains('call declined') ||
+        searchable.contains('declined a call') ||
+        searchable.contains('call expired') ||
+        searchable.contains('call cancelled') ||
+        searchable.contains('call canceled') ||
+        searchable.contains('no answer');
   }
 
   bool _isCallKind(String kind) =>
@@ -114,15 +170,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     }
     if (_stringOf(item['readAt']).isNotEmpty) return false;
 
-    // Terminal call states — do not show incoming overlay for these.
-    final callState = _resolveCallState(item);
-    if (callState == 'MISSED' ||
-        callState == 'ENDED' ||
-        callState == 'DECLINED' ||
-        callState == 'EXPIRED' ||
-        callState == 'CANCELLED') {
-      return false;
-    }
+    // Terminal/missed call notifications are history/toast items, never
+    // interrupting call UI. Some backend payloads only expose this in text or
+    // status fields, so use robust detection instead of trusting callState only.
+    if (_isTerminalCallItem(item)) return false;
 
     // Suppress if the invite has already expired server-side.
     final data = _mapOf(item['data']);
@@ -181,6 +232,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (id.isNotEmpty) _dismissedIds.add(id);
       if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
       ref.read(incomingCallBridgeProvider.notifier).remove(id);
+      if (id.isNotEmpty) {
+        unawaited(
+          ref.read(notificationsControllerProvider.notifier).markRead(id),
+        );
+      }
       setState(() => _joinError = null);
     });
   }
@@ -223,7 +279,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
 
       if (!mounted) return;
-      router.go('/realtime/$sessionId');
+      final returnTo = Uri.encodeComponent(GoRouterState.of(context).uri.toString());
+      router.go('/realtime/$sessionId?returnTo=$returnTo');
     } catch (e) {
       final msg = e.toString().toLowerCase();
       final isExpired = msg.contains('invite_expired') ||
@@ -377,266 +434,200 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       fit: StackFit.expand,
       children: [
         widget.child,
-        // Floating call PiP (hidden below the incoming call overlay).
-        const Positioned.fill(child: FloatingCallWidget()),
-        // Blurred full-screen backdrop
-        Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.82),
-                    const Color(0xFF0D1520).withValues(alpha: 0.92),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Call UI
-        Positioned.fill(
+        if (liveState.isJoined) const Positioned.fill(child: FloatingCallWidget()),
+        Positioned(
+          right: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
+          left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,
+          bottom: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
           child: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(flex: 2),
-                // Call type label
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12,
-                    vertical: AuraSpace.s6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isVideo
-                        ? AuraSurface.accentSoft
-                        : const Color(0x1A3D9B4F),
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                    border: Border.all(
-                      color: isVideo
-                          ? AuraSurface.accent.withValues(alpha: 0.35)
-                          : const Color(0x3A3D9B4F),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isVideo ? Icons.videocam_rounded : Icons.call_rounded,
-                        size: 14,
-                        color: isVideo
-                            ? AuraSurface.accentText
-                            : AuraSurface.goodInk,
-                      ),
-                      const SizedBox(width: AuraSpace.s6),
-                      Text(
-                        ringLabel,
-                        style: AuraText.small.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isVideo
-                              ? AuraSurface.accentText
-                              : AuraSurface.goodInk,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s28),
-                // Caller avatar with pulsing ring
-                AnimatedBuilder(
-                  animation: _pulseAnim,
-                  builder: (context, child) {
-                    final ringColor = isVideo
-                        ? AuraSurface.accent
-                        : AuraSurface.goodInk;
-                    final pulseOpacity = _joining ? 0.0 : _pulseAnim.value;
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer pulse ring
-                        Container(
-                          width: 120 + 32 * _pulseAnim.value,
-                          height: 120 + 32 * _pulseAnim.value,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: ringColor.withValues(alpha: pulseOpacity * 0.25),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        // Inner avatar ring
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: ringColor.withValues(
-                                alpha: 0.35 + pulseOpacity * 0.25,
-                              ),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: ringColor.withValues(
-                                  alpha: pulseOpacity * 0.3,
-                                ),
-                                blurRadius: 24 + 16 * _pulseAnim.value,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: AuraAvatar(name: actorName, size: 96),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s20),
-                // Status line
-                if (_joining)
-                  Text(
-                    'Joining call…',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                else
-                  Text(
-                    'Ringing now',
-                    style: AuraText.small.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                const SizedBox(height: AuraSpace.s6),
-                // Caller name
-                Text(
-                  actorName,
-                  style: AuraText.headline.copyWith(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                // Context
-                Text(
-                  title,
-                  style: AuraText.body.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                // Join error
-                if (_joinError != null) ...[
-                  const SizedBox(height: AuraSpace.s12),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: AuraSpace.s32),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s14,
-                      vertical: AuraSpace.s10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.dangerBg,
-                      borderRadius: BorderRadius.circular(AuraRadius.md),
-                      border: Border.all(
-                        color: AuraSurface.dangerInk.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _joinError!,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.dangerInk,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AuraSpace.s8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _GhostCallButton(
-                              label: 'Dismiss',
-                              onTap: () => _dismissError(item),
-                            ),
-                            const SizedBox(width: AuraSpace.s12),
-                            _GhostCallButton(
-                              label: 'Retry',
-                              onTap: () => _retryJoin(item),
-                              accent: true,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const Spacer(flex: 2),
-                // Action buttons — hidden while showing error or joining
-                if (_joinError == null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s32),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Decline
-                        Column(
-                          children: [
-                            _CallCircleButton(
-                              icon: Icons.call_end_rounded,
-                              color: AuraSurface.dangerInk,
-                              background: AuraSurface.dangerBg,
-                              size: 68,
-                              onTap: _joining ? null : () => _declineCurrent(item),
-                            ),
-                            const SizedBox(height: AuraSpace.s10),
-                            Text(
-                              'Decline',
-                              style: AuraText.small.copyWith(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Accept
-                        Column(
-                          children: [
-                            _CallCircleButton(
-                              icon: isVideo
-                                  ? Icons.videocam_rounded
-                                  : Icons.call_rounded,
-                              color: Colors.white,
-                              background: isVideo
-                                  ? AuraSurface.accent
-                                  : AuraSurface.goodInk,
-                              size: 68,
-                              onTap: _joining ? null : () => _joinCurrent(item),
-                              busy: _joining,
-                            ),
-                            const SizedBox(height: AuraSpace.s10),
-                            Text(
-                              _joining ? 'Joining…' : 'Accept',
-                              style: AuraText.small.copyWith(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: AuraSpace.s32),
-              ],
+            child: _IncomingCallCard(
+              actorName: actorName,
+              title: title,
+              ringLabel: ringLabel,
+              isVideo: isVideo,
+              joining: _joining,
+              joinError: _joinError,
+              pulseAnim: _pulseAnim,
+              onAccept: _joining ? null : () => _joinCurrent(item),
+              onDecline: _joining ? null : () => _declineCurrent(item),
+              onDismissError: () => _dismissError(item),
+              onRetry: () => _retryJoin(item),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+
+class _IncomingCallCard extends StatelessWidget {
+  const _IncomingCallCard({
+    required this.actorName,
+    required this.title,
+    required this.ringLabel,
+    required this.isVideo,
+    required this.joining,
+    required this.joinError,
+    required this.pulseAnim,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onDismissError,
+    required this.onRetry,
+  });
+
+  final String actorName;
+  final String title;
+  final String ringLabel;
+  final bool isVideo;
+  final bool joining;
+  final String? joinError;
+  final Animation<double> pulseAnim;
+  final VoidCallback? onAccept;
+  final VoidCallback? onDecline;
+  final VoidCallback onDismissError;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ringColor = isVideo ? AuraSurface.accent : AuraSurface.goodInk;
+    return Container(
+      width: 360,
+      constraints: const BoxConstraints(maxWidth: 420),
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: const Color(0xF20D1520),
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(color: ringColor.withValues(alpha: 0.32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AnimatedBuilder(
+                animation: pulseAnim,
+                builder: (context, child) {
+                  final pulseOpacity = joining ? 0.0 : pulseAnim.value;
+                  return Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: ringColor.withValues(alpha: 0.35 + pulseOpacity * 0.25),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: ringColor.withValues(alpha: pulseOpacity * 0.26),
+                          blurRadius: 16,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: AuraAvatar(name: actorName, size: 52),
+                  );
+                },
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+                          size: 15,
+                          color: ringColor,
+                        ),
+                        const SizedBox(width: AuraSpace.s6),
+                        Expanded(
+                          child: Text(
+                            ringLabel,
+                            style: AuraText.small.copyWith(
+                              color: ringColor,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AuraSpace.s4),
+                    Text(
+                      actorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.title.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: AuraSpace.s2),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (joinError != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AuraSpace.s10),
+              decoration: BoxDecoration(
+                color: AuraSurface.dangerBg,
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                border: Border.all(color: AuraSurface.dangerInk.withValues(alpha: 0.35)),
+              ),
+              child: Text(
+                joinError!,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.dangerInk,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AuraSpace.s14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (joinError != null) ...[
+                _GhostCallButton(label: 'Dismiss', onTap: onDismissError),
+                const SizedBox(width: AuraSpace.s10),
+                _GhostCallButton(label: 'Retry', onTap: onRetry, accent: true),
+              ] else ...[
+                _CallCircleButton(
+                  icon: Icons.call_end_rounded,
+                  color: AuraSurface.dangerInk,
+                  background: AuraSurface.dangerBg,
+                  size: 48,
+                  onTap: onDecline,
+                ),
+                const SizedBox(width: AuraSpace.s14),
+                _CallCircleButton(
+                  icon: isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+                  color: Colors.white,
+                  background: isVideo ? AuraSurface.accent : AuraSurface.goodInk,
+                  size: 54,
+                  onTap: onAccept,
+                  busy: joining,
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

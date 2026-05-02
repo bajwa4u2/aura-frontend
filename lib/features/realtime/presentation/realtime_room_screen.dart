@@ -62,10 +62,16 @@ const _kPanelMore = 'more';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class RealtimeRoomScreen extends ConsumerStatefulWidget {
-  const RealtimeRoomScreen({super.key, required this.sessionId, this.action});
+  const RealtimeRoomScreen({
+    super.key,
+    required this.sessionId,
+    this.action,
+    this.returnTo,
+  });
 
   final String sessionId;
   final String? action;
+  final String? returnTo;
 
   @override
   ConsumerState<RealtimeRoomScreen> createState() => _RealtimeRoomScreenState();
@@ -153,21 +159,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     try {
       debugPrint('[END] _endCallAndClose: awaiting controller.endCall()');
       await controller.endCall();
-      debugPrint('[END] _endCallAndClose: endCall() succeeded — navigating away');
+    } catch (e, st) {
+      // endCall is designed to be local-first, but never let an unexpected
+      // exception keep the user trapped on the call route.
+      debugPrint('[END] _endCallAndClose unexpected error: $e\n${st.toString().split('\n').take(4).join('\n')}');
+    } finally {
       if (mounted) {
         _hasNavigatedAway = true;
         _navigateAfterCall(session);
-      }
-    } catch (e, st) {
-      debugPrint('[END] _endCallAndClose ERROR: $e\n${st.toString().split('\n').take(4).join('\n')}');
-      if (mounted) {
-        setState(() => _isEnding = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not end call: $e'),
-            backgroundColor: AuraSurface.dangerBg,
-          ),
-        );
       }
     }
   }
@@ -183,6 +182,32 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
   }
 
+  String _safeReturnRoute(RealtimeSession? session) {
+    final explicitRaw = (widget.returnTo ?? '').trim();
+    final explicit = explicitRaw.startsWith('%2F') || explicitRaw.startsWith('%2f')
+        ? Uri.decodeComponent(explicitRaw)
+        : (Uri.tryParse(explicitRaw)?.toString().trim() ?? '');
+    if (explicit.startsWith('/') && !explicit.startsWith('/realtime')) {
+      return explicit;
+    }
+
+    final surfaceId = (session?.surfaceId ?? '').trim();
+    if (session != null) {
+      switch (session.surfaceType) {
+        case RealtimeSurfaceType.space:
+          if (surfaceId.isNotEmpty) return '/me/correspondence/$surfaceId';
+        case RealtimeSurfaceType.dm:
+        case RealtimeSurfaceType.thread:
+          // The thread route needs a space id that is not present on
+          // RealtimeSession. Avoid the broken correspondence shell fallback.
+          return '/home';
+        default:
+          break;
+      }
+    }
+    return '/home';
+  }
+
   void _navigateAfterCall(RealtimeSession? session) {
     // Invalidate cached thread data so the stale liveSessionId ribbon is gone
     // when the thread screen remounts after the call ends.
@@ -192,40 +217,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       ref.invalidate(messagesProvider(surfaceId));
     }
 
-    if (session == null) {
-      context.go('/home');
-      return;
-    }
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.space:
-        final id = (session.surfaceId ?? '').trim();
-        if (id.isNotEmpty) {
-          context.go('/me/correspondence/$id');
-          return;
-        }
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        context.go('/me/correspondence');
-        return;
-      default:
-        break;
-    }
-    context.go('/home');
+    context.go(_safeReturnRoute(session));
   }
 
   void _minimizeCall(RealtimeSession? session) {
     // Navigate back without ending the call — PiP widget takes over.
-    if (session == null) { context.go('/home'); return; }
-    switch (session.surfaceType) {
-      case RealtimeSurfaceType.space:
-        final id = (session.surfaceId ?? '').trim();
-        if (id.isNotEmpty) { context.go('/me/correspondence/$id'); return; }
-      case RealtimeSurfaceType.dm:
-      case RealtimeSurfaceType.thread:
-        context.go('/me/correspondence'); return;
-      default: break;
-    }
-    context.go('/home');
+    context.go(_safeReturnRoute(session));
   }
 
   void _openBottomPanel(String panelId) {
@@ -284,10 +281,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
 
-    // Safety guard: after we've been joined and the session is torn down,
-    // return a blank scaffold while navigation fires rather than rendering
-    // the lobby over null state (which causes "Null check operator" crashes
-    // in the rebuild window between _terminateSession and context.go).
+    // After teardown, leave the realtime route immediately. Do not render a
+    // blank scaffold on /realtime/:id; that was the source of the grey/wrapped
+    // post-call screen.
     if (_wasJoined &&
         state.joinState == RealtimeJoinState.idle &&
         state.session == null) {
@@ -297,10 +293,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           if (mounted) _navigateAfterCall(null);
         });
       }
-      return Scaffold(
-        backgroundColor: AuraSurface.page,
-        body: const SizedBox.shrink(),
-      );
+      return const SizedBox.shrink();
     }
 
     final myUserId = meAsync.maybeWhen(

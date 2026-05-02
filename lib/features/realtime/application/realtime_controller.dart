@@ -508,35 +508,47 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   /// so the session is marked ENDED and all participants are notified.
   /// Use [leave] when only one participant departs; use [endCall] when the
   /// host intends to terminate the session for everyone.
-  /// Throws if the backend /end call fails — callers must handle the error.
+  /// End the session for everyone. This is deliberately local-first:
+  /// backend failure must never leave the user trapped in the call UI or force a
+  /// second tap. The captured session is sent to the backend, while local media,
+  /// socket membership, and call state are torn down regardless of that result.
   Future<void> endCall() async {
     debugPrint('[END] endCall: called _endingCall=$_endingCall _terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
     if (_endingCall || _terminating) {
       debugPrint('[END] endCall: bailed — already ending/terminating');
       return;
     }
-    final sessionId = (state.sessionId ?? '').trim();
-    if (sessionId.isEmpty) {
-      debugPrint('[END] endCall: bailed — sessionId is empty');
+
+    final sessionId = _managedSessionId;
+    final session = state.session;
+    if (sessionId.isEmpty && session == null) {
+      debugPrint('[END] endCall: no managed session — forcing local clear');
+      state = _copyWithDetachedMediaState(
+        joinState: RealtimeJoinState.idle,
+        clearSessionContext: true,
+        clearPolicy: true,
+        clearErrorMessage: true,
+        infoMessage: 'Call ended.',
+      );
       return;
     }
 
-    final session = state.session;
     debugPrint('[END] endCall: session.id=${session?.id} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
 
     _endingCall = true;
     try {
-      // Propagate errors — do NOT catch here so the caller knows the end failed
-      // and can prevent window close + show an error.
-      await _repository.endSession(session);
-      debugPrint('[END] endCall: repository.endSession completed — calling _terminateSession');
+      unawaited(
+        _repository.endSession(session).catchError((Object error) {
+          debugPrint('[END] endCall: backend end failed after local teardown: $error');
+        }),
+      );
 
       await _terminateSession(
         keepSocketConnected: true,
         infoMessage: 'Call ended.',
         alsoCallRepository: false,
       );
-      debugPrint('[END] endCall: done isJoined=${state.isJoined}');
+      debugPrint('[END] endCall: local teardown done isJoined=${state.isJoined}');
     } finally {
       _endingCall = false;
     }

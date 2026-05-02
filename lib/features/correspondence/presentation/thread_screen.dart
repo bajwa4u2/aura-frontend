@@ -270,7 +270,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         joinAfterCreate: false,
       );
       if (!mounted) return;
-      context.go('/realtime/$sessionId?action=join');
+      context.go('/realtime/$sessionId?action=join&returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -420,13 +420,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             onJoin: () async {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              context.go('/realtime/$sid?action=join');
+                              context.go('/realtime/$sid?action=join&returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
                             },
                             onLeave: () async => ref.read(realtimeControllerProvider.notifier).leave(),
                             onReturn: () {
                               final sid = _threadResolvedSessionId(thread, liveState, widget.threadId);
                               if (sid.isEmpty) return;
-                              context.go('/realtime/$sid');
+                              context.go('/realtime/$sid?returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}');
                             },
                           ),
                           const SizedBox(height: AuraSpace.s16),
