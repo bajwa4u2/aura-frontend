@@ -79,6 +79,7 @@ import 'features/invitations/presentation/invite_hub_screen.dart';
 import 'features/invitations/presentation/invitations_screen.dart';
 import 'features/invitations/presentation/invite_accept_screen.dart';
 import 'features/invitations/presentation/invite_create_screen.dart';
+import 'features/invitations/presentation/contact_import_screen.dart';
 import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
 
@@ -655,6 +656,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/invite/accept',
             builder: (context, state) => InviteAcceptScreen(
               token: state.uri.queryParameters['token'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/invite/import',
+            builder: (context, state) => ContactImportScreen(
+              spaceId: state.uri.queryParameters['spaceId'],
+              institutionId: state.uri.queryParameters['institutionId'],
             ),
           ),
           GoRoute(

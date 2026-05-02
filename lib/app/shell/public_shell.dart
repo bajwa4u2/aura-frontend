@@ -40,7 +40,6 @@ class PublicShell extends StatelessWidget {
               children: [
                 _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
                 Expanded(child: child),
-                const ShellFooter(),
               ],
             ),
           ),

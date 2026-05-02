@@ -92,6 +92,13 @@ class InviteHubScreen extends StatelessWidget {
           ),
         ),
         _InviteOptionData(
+          title: 'Import contacts & invite',
+          subtitle:
+              'Add emails manually, paste a list, or upload a CSV — then send invitations in one batch.',
+          icon: Icons.contact_mail_outlined,
+          onTap: () => context.push('/invite/import'),
+        ),
+        _InviteOptionData(
           title: 'Start a private conversation instead',
           subtitle:
               'Direct conversations belong under Messages, not inside the invitation flow.',

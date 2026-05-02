@@ -172,6 +172,35 @@ class InvitationsClient {
     return _extractMap(res.data);
   }
 
+  Future<Map<String, dynamic>> importContacts(
+    List<Map<String, String?>> contacts,
+  ) async {
+    final res = await _dio.post('/invites/import', data: {
+      'contacts': contacts,
+    });
+    return _extractMap(res.data);
+  }
+
+  Future<List<Map<String, dynamic>>> listContacts() async {
+    final res = await _dio.get('/invites/contacts');
+    return _extractList(res.data);
+  }
+
+  Future<Map<String, dynamic>> sendBatch({
+    required List<String> emails,
+    String? institutionId,
+    String? spaceId,
+    bool platform = false,
+  }) async {
+    final res = await _dio.post('/invites/batch', data: {
+      'emails': emails,
+      if (institutionId != null) 'institutionId': institutionId,
+      if (spaceId != null) 'spaceId': spaceId,
+      if (platform) 'platform': true,
+    });
+    return _extractMap(res.data);
+  }
+
   Future<Response<dynamic>> _getFirstSuccessful(
     List<String> paths, {
     Map<String, dynamic>? queryParameters,

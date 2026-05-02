@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/shell/shell_shared.dart';
 import 'aura_radius.dart';
 import 'aura_scaffold.dart';
 import 'aura_space.dart';
@@ -13,6 +14,7 @@ import 'aura_text.dart';
 /// - Always uses AuraScaffold
 /// - Always scrolls
 /// - Reading-first atmosphere
+/// - Public footer is part of normal scroll flow, never fixed over content
 class DocumentScaffold extends StatelessWidget {
   const DocumentScaffold({
     super.key,
@@ -37,20 +39,33 @@ class DocumentScaffold extends StatelessWidget {
       title: title,
       actions: actions,
       homePath: homePath,
-      maxWidth: maxWidth,
+      maxWidth: ShellFooter.maxWidth,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.md,
-          AuraSpace.lg,
-          AuraSpace.md,
-          AuraSpace.xl,
-        ),
+        padding: EdgeInsets.zero,
         children: [
-          _DocumentSurface(child: child),
-          if (footer != null) ...[
-            const SizedBox(height: AuraSpace.lg),
-            _DocumentSurface(child: footer!),
-          ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.md,
+              AuraSpace.lg,
+              AuraSpace.md,
+              AuraSpace.xl,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Column(
+                  children: [
+                    _DocumentSurface(child: child),
+                    if (footer != null) ...[
+                      const SizedBox(height: AuraSpace.lg),
+                      _DocumentSurface(child: footer!),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const ShellFooter(),
         ],
       ),
     );
