@@ -105,21 +105,64 @@ class _ProfileBody extends StatelessWidget {
     final name = _str(['name', 'displayName', 'organizationName']);
     final slug = _str(['slug', 'handle']);
     final domain = _str(['domain']);
-    final jurisdiction = _str(['jurisdiction', 'country', 'region']);
     final description = _str(['description', 'bio', 'summary']);
+    final tagline = _str(['tagline']);
     final website = _str(['website', 'websiteUrl']);
     final category = _str(['category', 'type', 'institutionType']);
     final location = _str(['location', 'city']);
+    final logoUrl = _str(['logoUrl', 'logo']);
+    final coverUrl = _str(['coverUrl', 'cover', 'bannerUrl']);
     final isVerified = _bool(['isVerified', 'verified']);
     final domainVerified = _str(['domainVerifiedAt']).isNotEmpty;
+    final jurisdiction = _str(['jurisdiction', 'country', 'region']);
+
+    // contact
+    final publicEmail = _str(['publicEmail', 'email']);
+    final phone = _str(['phone', 'phoneNumber']);
+    final address = _str(['address']);
+    final city = _str(['city']);
+    final region = _str(['region', 'state']);
+    final country = _str(['country']);
+
+    // social
+    final xUrl = _str(['xUrl', 'twitterUrl', 'twitter']);
+    final linkedinUrl = _str(['linkedinUrl', 'linkedin']);
+    final facebookUrl = _str(['facebookUrl', 'facebook']);
+    final instagramUrl = _str(['instagramUrl', 'instagram']);
+    final youtubeUrl = _str(['youtubeUrl', 'youtube']);
+    final hasSocial = xUrl.isNotEmpty ||
+        linkedinUrl.isNotEmpty ||
+        facebookUrl.isNotEmpty ||
+        instagramUrl.isNotEmpty ||
+        youtubeUrl.isNotEmpty;
+
+    // mission
+    final mission = _str(['mission']);
+    final services = _str(['services']);
+    final audience = _str(['audience']);
+    final foundedYearRaw = inst['foundedYear'];
+    final foundedYear = foundedYearRaw != null ? foundedYearRaw.toString() : '';
+
+    // contact section visibility
+    final hasContact = publicEmail.isNotEmpty ||
+        phone.isNotEmpty ||
+        address.isNotEmpty ||
+        city.isNotEmpty ||
+        region.isNotEmpty ||
+        country.isNotEmpty;
+
+    // build location line
+    final locationParts = <String>[
+      if (city.isNotEmpty) city,
+      if (region.isNotEmpty) region,
+      if (country.isNotEmpty) country,
+    ];
+    final locationLine = locationParts.isNotEmpty
+        ? locationParts.join(', ')
+        : location;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s20,
-        AuraSpace.s16,
-        AuraSpace.s32,
-      ),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, AuraSpace.s32),
       children: [
         Center(
           child: ConstrainedBox(
@@ -127,65 +170,179 @@ class _ProfileBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InstitutionHeroCard(
-                  name: name,
-                  slug: slug,
-                  description: description,
-                  isVerified: isVerified,
-                  identity: identity,
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                _InfoSection(
-                  title: 'STANDING',
-                  rows: [
-                    _InfoRow(
-                      label: 'Verification',
-                      value: isVerified ? 'Verified' : 'Unverified',
-                      valueColor: isVerified
-                          ? AuraSurface.goodInk
-                          : AuraSurface.muted,
-                    ),
-                    _InfoRow(
-                      label: 'Domain',
-                      value: domainVerified ? 'Verified' : 'Unverified',
-                      valueColor: domainVerified
-                          ? AuraSurface.goodInk
-                          : AuraSurface.muted,
-                    ),
-                    if (jurisdiction.isNotEmpty)
-                      _InfoRow(label: 'Jurisdiction', value: jurisdiction),
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                _InfoSection(
-                  title: 'IDENTITY',
-                  rows: [
-                    _InfoRow(label: 'Name', value: name.isEmpty ? '—' : name),
-                    _InfoRow(
-                      label: 'Slug',
-                      value: slug.isEmpty ? '—' : '@$slug',
-                    ),
-                    if (domain.isNotEmpty)
-                      _InfoRow(label: 'Domain', value: domain),
-                    if (website.isNotEmpty)
-                      _InfoRow(label: 'Website', value: website),
-                    if (category.isNotEmpty)
-                      _InfoRow(label: 'Category', value: category),
-                    if (location.isNotEmpty)
-                      _InfoRow(label: 'Location', value: location),
-                  ],
-                ),
-                if (description.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s14),
-                  _InfoSection(
-                    title: 'ABOUT',
-                    rows: [
-                      _DescriptionRow(text: description),
+                // Cover banner
+                if (coverUrl.isNotEmpty)
+                  _CoverBanner(coverUrl: coverUrl),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s16,
+                    AuraSpace.s16,
+                    AuraSpace.s16,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _InstitutionHeroCard(
+                        name: name,
+                        slug: slug,
+                        tagline: tagline,
+                        description: description,
+                        isVerified: isVerified,
+                        logoUrl: logoUrl.isNotEmpty
+                            ? logoUrl
+                            : identity?.logoUrl,
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+
+                      // STANDING section
+                      _InfoSection(
+                        title: 'STANDING',
+                        rows: [
+                          _InfoRow(
+                            label: 'Verification',
+                            value: isVerified ? 'Verified' : 'Unverified',
+                            valueColor: isVerified
+                                ? AuraSurface.goodInk
+                                : AuraSurface.muted,
+                          ),
+                          _InfoRow(
+                            label: 'Domain',
+                            value: domainVerified ? 'Verified' : 'Unverified',
+                            valueColor: domainVerified
+                                ? AuraSurface.goodInk
+                                : AuraSurface.muted,
+                          ),
+                          if (jurisdiction.isNotEmpty)
+                            _InfoRow(
+                              label: 'Jurisdiction',
+                              value: jurisdiction,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+
+                      // IDENTITY section
+                      _InfoSection(
+                        title: 'IDENTITY',
+                        rows: [
+                          _InfoRow(
+                            label: 'Name',
+                            value: name.isEmpty ? '—' : name,
+                          ),
+                          _InfoRow(
+                            label: 'Slug',
+                            value: slug.isEmpty ? '—' : '@$slug',
+                          ),
+                          if (category.isNotEmpty)
+                            _InfoRow(label: 'Category', value: category),
+                          if (locationLine.isNotEmpty)
+                            _InfoRow(label: 'Location', value: locationLine),
+                          if (domain.isNotEmpty)
+                            _InfoRow(label: 'Domain', value: domain),
+                          if (website.isNotEmpty)
+                            _InfoRow(label: 'Website', value: website, isLink: true),
+                          if (foundedYear.isNotEmpty)
+                            _InfoRow(label: 'Founded', value: foundedYear),
+                        ],
+                      ),
+
+                      // CONTACT section
+                      if (hasContact) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        _InfoSection(
+                          title: 'CONTACT',
+                          rows: [
+                            if (publicEmail.isNotEmpty)
+                              _InfoRow(label: 'Email', value: publicEmail),
+                            if (phone.isNotEmpty)
+                              _InfoRow(label: 'Phone', value: phone),
+                            if (address.isNotEmpty)
+                              _InfoRow(label: 'Address', value: address),
+                            if (locationLine.isNotEmpty && address.isNotEmpty)
+                              _InfoRow(label: 'City / Region', value: locationLine),
+                          ],
+                        ),
+                      ],
+
+                      // ABOUT section
+                      if (description.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        _InfoSection(
+                          title: 'ABOUT',
+                          rows: [
+                            _DescriptionRow(text: description),
+                          ],
+                        ),
+                      ],
+
+                      // MISSION section
+                      if (mission.isNotEmpty ||
+                          services.isNotEmpty ||
+                          audience.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        _InfoSection(
+                          title: 'MISSION & REPRESENTATION',
+                          rows: [
+                            if (mission.isNotEmpty)
+                              _LabeledBlock(label: 'Mission', text: mission),
+                            if (services.isNotEmpty)
+                              _LabeledBlock(label: 'Services', text: services),
+                            if (audience.isNotEmpty)
+                              _LabeledBlock(
+                                label: 'Audience',
+                                text: audience,
+                              ),
+                          ],
+                        ),
+                      ],
+
+                      // SOCIAL section
+                      if (hasSocial) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        _InfoSection(
+                          title: 'SOCIAL',
+                          rows: [
+                            if (linkedinUrl.isNotEmpty)
+                              _InfoRow(
+                                label: 'LinkedIn',
+                                value: linkedinUrl,
+                                isLink: true,
+                              ),
+                            if (xUrl.isNotEmpty)
+                              _InfoRow(
+                                label: 'X / Twitter',
+                                value: xUrl,
+                                isLink: true,
+                              ),
+                            if (facebookUrl.isNotEmpty)
+                              _InfoRow(
+                                label: 'Facebook',
+                                value: facebookUrl,
+                                isLink: true,
+                              ),
+                            if (instagramUrl.isNotEmpty)
+                              _InfoRow(
+                                label: 'Instagram',
+                                value: instagramUrl,
+                                isLink: true,
+                              ),
+                            if (youtubeUrl.isNotEmpty)
+                              _InfoRow(
+                                label: 'YouTube',
+                                value: youtubeUrl,
+                                isLink: true,
+                              ),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: AuraSpace.s24),
+                      _ActionRow(identity: identity),
                     ],
                   ),
-                ],
-                const SizedBox(height: AuraSpace.s24),
-                _ActionRow(identity: identity),
+                ),
               ],
             ),
           ),
@@ -195,20 +352,57 @@ class _ProfileBody extends StatelessWidget {
   }
 }
 
+// ── Cover banner ─────────────────────────────────────────────────────────────
+
+class _CoverBanner extends StatelessWidget {
+  const _CoverBanner({required this.coverUrl});
+
+  final String coverUrl;
+
+  static const Color _accent = Color(0xFF0D9488);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      color: _accent.withValues(alpha: 0.12),
+      child: Image.network(
+        coverUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: _accent.withValues(alpha: 0.12),
+          child: const Center(
+            child: Icon(
+              Icons.image_outlined,
+              color: Color(0xFF5EEAD4),
+              size: 48,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Hero card ─────────────────────────────────────────────────────────────────
+
 class _InstitutionHeroCard extends StatelessWidget {
   const _InstitutionHeroCard({
     required this.name,
     required this.slug,
+    required this.tagline,
     required this.description,
     required this.isVerified,
-    required this.identity,
+    this.logoUrl,
   });
 
   final String name;
   final String slug;
+  final String tagline;
   final String description;
   final bool isVerified;
-  final InstitutionIdentity? identity;
+  final String? logoUrl;
 
   static const Color _accent = Color(0xFF0D9488);
   static const Color _accentSoft = Color(0x1E0D9488);
@@ -232,7 +426,7 @@ class _InstitutionHeroCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _InstitutionAvatar(
-                logoUrl: identity?.logoUrl,
+                logoUrl: logoUrl,
                 size: 56,
                 name: displayName,
               ),
@@ -294,6 +488,16 @@ class _InstitutionHeroCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (tagline.isNotEmpty) ...[
+                      const SizedBox(height: AuraSpace.s6),
+                      Text(
+                        tagline,
+                        style: AuraText.body.copyWith(
+                          color: AuraSurface.muted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AuraSpace.s6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -329,7 +533,7 @@ class _InstitutionHeroCard extends StatelessWidget {
                 color: AuraSurface.muted,
                 height: 1.5,
               ),
-              maxLines: 4,
+              maxLines: 5,
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -338,6 +542,8 @@ class _InstitutionHeroCard extends StatelessWidget {
     );
   }
 }
+
+// ── Action row ────────────────────────────────────────────────────────────────
 
 class _ActionRow extends StatelessWidget {
   const _ActionRow({required this.identity});
@@ -403,7 +609,8 @@ class _InstitutionAvatar extends StatelessWidget {
           ? Image.network(
               logoUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _FallbackIcon(size: size, name: name),
+              errorBuilder: (_, __, ___) =>
+                  _FallbackIcon(size: size, name: name),
             )
           : _FallbackIcon(size: size, name: name),
     );
@@ -448,6 +655,7 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (rows.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
@@ -482,11 +690,19 @@ class _InfoSection extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, this.valueColor});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.isLink = false,
+  });
 
   final String label;
   final String value;
   final Color? valueColor;
+  final bool isLink;
+
+  static const Color _linkColor = Color(0xFF5EEAD4);
 
   @override
   Widget build(BuildContext context) {
@@ -507,8 +723,43 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             value.isEmpty ? '—' : value,
             style: AuraText.small.copyWith(
-              color: valueColor ?? AuraSurface.ink,
+              color: isLink
+                  ? _linkColor
+                  : (valueColor ?? AuraSurface.ink),
+              decoration:
+                  isLink ? TextDecoration.underline : TextDecoration.none,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LabeledBlock extends StatelessWidget {
+  const _LabeledBlock({required this.label, required this.text});
+
+  final String label;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AuraSurface.muted,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          text,
+          style: AuraText.body.copyWith(
+            color: AuraSurface.ink,
+            height: 1.55,
           ),
         ),
       ],

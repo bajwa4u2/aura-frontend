@@ -708,9 +708,8 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       label: 'Live Rooms',
       icon: Icons.radio_outlined,
       selectedIcon: Icons.radio_rounded,
-      disabled: true,
-      disabledReason: 'Coming soon',
-      pathBuilder: (_) => null,
+      pathBuilder: (_) => '/institution/live-rooms',
+      pathMatcher: (p) => p == '/institution/live-rooms',
     ),
 
     // ── MANAGEMENT section ───────────────────────────────────────────────

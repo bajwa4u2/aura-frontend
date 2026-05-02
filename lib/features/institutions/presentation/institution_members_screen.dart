@@ -218,7 +218,7 @@ class _InstitutionMembersScreenState
               )
             else
               PopupMenuButton<String>(
-                icon: Icon(
+                icon: const Icon(
                   Icons.more_vert,
                   size: 18,
                   color: AuraSurface.muted,
@@ -227,7 +227,7 @@ class _InstitutionMembersScreenState
                 color: AuraSurface.card,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  side: BorderSide(color: AuraSurface.divider),
+                  side: const BorderSide(color: AuraSurface.divider),
                 ),
                 itemBuilder: (_) => [
                   if (role.toUpperCase() != 'ADMIN')
@@ -247,12 +247,12 @@ class _InstitutionMembersScreenState
                       ),
                     ),
                   if (role.toUpperCase() == 'MEMBER')
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'MAKE_EDITOR',
                       child: Text('Make Editor', style: AuraText.small),
                     ),
                   if (role.toUpperCase() == 'EDITOR')
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'MAKE_MEMBER',
                       child: Text('Demote to Member', style: AuraText.small),
                     ),

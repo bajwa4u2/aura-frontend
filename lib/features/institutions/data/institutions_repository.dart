@@ -63,26 +63,31 @@ class InstitutionsRepository {
   }
 
   Future<Map<String, dynamic>> updateInstitutionProfile(
-    String institutionId, {
-    String? name,
-    String? description,
-    String? website,
-    String? category,
-    String? location,
-  }) async {
+    String institutionId,
+    Map<String, dynamic> fields,
+  ) async {
     final id = institutionId.trim();
     if (id.isEmpty) throw Exception('Institution id is missing.');
-    final res = await _dio.patch(
-      '/institutions/$id',
-      data: <String, dynamic>{
-        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
-        if (description != null) 'description': description.trim(),
-        if (website != null) 'website': website.trim(),
-        if (category != null && category.trim().isNotEmpty) 'category': category.trim(),
-        if (location != null) 'location': location.trim(),
-      },
-    );
-    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+
+    // Normalize: trim all string values, keep empty strings (backend treats them as null-clear)
+    final data = <String, dynamic>{};
+    for (final entry in fields.entries) {
+      final v = entry.value;
+      if (v is String) {
+        data[entry.key] = v.trim();
+      } else if (v != null) {
+        data[entry.key] = v;
+      }
+    }
+
+    final res = await _dio.patch('/institutions/$id', data: data);
+    if (res.data is Map) {
+      final root = Map<String, dynamic>.from(res.data as Map);
+      // Unwrap response envelope: { ok, institution: {...} } or { data: { institution: {...} } }
+      final inst = root['institution'] ?? root['data']?['institution'] ?? root['data'];
+      if (inst is Map) return Map<String, dynamic>.from(inst);
+      return root;
+    }
     return <String, dynamic>{};
   }
 
@@ -395,6 +400,66 @@ class InstitutionsRepository {
 
   Future<void> deleteInstitutionAnnouncement(String institutionId, String announcementId) async {
     await _dio.delete('/institutions/$institutionId/announcements/$announcementId');
+  }
+
+  // ── Institution Live Rooms ────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> listInstitutionLiveRooms(String institutionId) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.get('/institutions/$id/live');
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> startInstitutionLiveRoom(
+    String institutionId, {
+    String kind = 'AUDIO',
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final endpoint = kind == 'VIDEO'
+        ? '/institutions/$id/live/video/start'
+        : '/institutions/$id/live/audio/start';
+    final res = await _dio.post(endpoint);
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from start live room.');
+  }
+
+  Future<Map<String, dynamic>> joinInstitutionLiveRoom(
+    String institutionId,
+    String sessionId,
+  ) async {
+    final id = institutionId.trim();
+    final sid = sessionId.trim();
+    if (id.isEmpty || sid.isEmpty) throw Exception('Institution or session id is missing.');
+    final res = await _dio.post('/institutions/$id/live/$sid/join');
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    throw Exception('Unexpected response from join live room.');
+  }
+
+  Future<Map<String, dynamic>> leaveInstitutionLiveRoom(
+    String institutionId,
+    String sessionId,
+  ) async {
+    final id = institutionId.trim();
+    final sid = sessionId.trim();
+    if (id.isEmpty || sid.isEmpty) throw Exception('Institution or session id is missing.');
+    final res = await _dio.post('/institutions/$id/live/$sid/leave');
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> endInstitutionLiveRoom(
+    String institutionId,
+    String sessionId,
+  ) async {
+    final id = institutionId.trim();
+    final sid = sessionId.trim();
+    if (id.isEmpty || sid.isEmpty) throw Exception('Institution or session id is missing.');
+    final res = await _dio.post('/institutions/$id/live/$sid/end');
+    if (res.data is Map) return Map<String, dynamic>.from(res.data as Map);
+    return <String, dynamic>{};
   }
 
   // ── Institution Spaces ────────────────────────────────────────────────────

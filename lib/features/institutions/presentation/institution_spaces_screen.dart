@@ -278,11 +278,11 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           const SizedBox(height: AuraSpace.s10),
           Row(
             children: [
-              Icon(Icons.people_outline, size: 12, color: AuraSurface.faint),
+              const Icon(Icons.people_outline, size: 12, color: AuraSurface.faint),
               const SizedBox(width: AuraSpace.s4),
               Text('$memberCount', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
               const SizedBox(width: AuraSpace.s12),
-              Icon(Icons.chat_bubble_outline, size: 12, color: AuraSurface.faint),
+              const Icon(Icons.chat_bubble_outline, size: 12, color: AuraSurface.faint),
               const SizedBox(width: AuraSpace.s4),
               Text('$threadCount threads', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
               const Spacer(),

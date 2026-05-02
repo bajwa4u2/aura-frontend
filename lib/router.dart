@@ -67,6 +67,7 @@ import 'features/institutions/announcements/institution_announcements_screen.dar
 import 'features/institutions/announcements/institution_announcement_composer.dart';
 import 'features/institutions/presentation/institution_spaces_screen.dart';
 import 'features/institutions/correspondence/institution_correspondence_screen.dart';
+import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
@@ -106,6 +107,7 @@ const String kInstitutionVerificationRoute = '/institution/request-verification'
 const String kInstitutionAnnouncementsRoute = '/institution/announcements';
 const String kInstitutionCorrespondenceRoute = '/institution/correspondence';
 const String kInstitutionEditProfileRoute = '/institution/edit-profile';
+const String kInstitutionLiveRoomsRoute = '/institution/live-rooms';
 const String kEnterInstitutionRoute = '/enter-institution';
 const String kAdminWorkspaceRoute = '/admin';
 const String kAdminCommunicationsRoute = '/admin/communications';
@@ -236,6 +238,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == kInstitutionProfileRoute ||
         path == kInstitutionEditProfileRoute ||
         path == kInstitutionCorrespondenceRoute ||
+        path == kInstitutionLiveRoomsRoute ||
         path == kInstitutionVerificationRoute) {
       return true;
     }
@@ -793,6 +796,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
             builder: (_, __) => const InstitutionCorrespondenceScreen(),
+          ),
+          GoRoute(
+            path: kInstitutionLiveRoomsRoute,
+            builder: (context, state) {
+              final container = ProviderScope.containerOf(context);
+              final identity = container.read(institutionIdentityProvider);
+              return InstitutionLiveRoomsScreen(
+                institutionId: identity?.id ?? '',
+              );
+            },
           ),
           GoRoute(
             path: '/institution/:institutionId/announcements',

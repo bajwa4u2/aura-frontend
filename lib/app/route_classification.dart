@@ -10,7 +10,8 @@ bool isInstitutionShellPath(String path) {
       path == '/institution/edit-profile' ||
       path == '/institution/request-verification' ||
       path == '/institution/announcements' ||
-      path == '/institution/correspondence') {
+      path == '/institution/correspondence' ||
+      path == '/institution/live-rooms') {
     return true;
   }
   // /institution/:id/... — dynamic id-based institution workspace routes

@@ -390,7 +390,7 @@ class _InstitutionInvitesScreenState
                     ),
                   ),
               ] else
-                Icon(
+                const Icon(
                   Icons.copy_rounded,
                   size: 16,
                   color: AuraSurface.faint,
