@@ -1267,6 +1267,46 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           lastSocketEvent: event.name,
         );
         return;
+      case 'call:declined':
+        final declinedUserId =
+            (event.payload['userId'] ?? '').toString().trim();
+        final declinedSessionId =
+            (event.payload['sessionId'] ?? '').toString().trim();
+        // Ignore if this event belongs to a different session
+        if (declinedSessionId.isNotEmpty &&
+            state.session?.id != null &&
+            declinedSessionId != state.session!.id) {
+          return;
+        }
+        final participantsAfterDecline = state.participants
+            .where((p) => p.userId != declinedUserId)
+            .toList();
+        if (participantsAfterDecline.length <= 1 && state.isJoined) {
+          unawaited(_terminateSession(
+            keepSocketConnected: true,
+            infoMessage: 'Call declined.',
+            alsoCallRepository: true,
+          ));
+        } else {
+          state = state.copyWith(
+            participants: participantsAfterDecline,
+            infoMessage: 'Someone declined the call.',
+            lastSocketEvent: event.name,
+          );
+        }
+        return;
+      case 'session:stale':
+        // Server detected heartbeat timeout and is about to disconnect this
+        // socket — treat as a local disconnect so the UI tears down cleanly.
+        _clearPendingOfferTargets();
+        unawaited(_mediaService.resetSessionMedia());
+        state = _copyWithDetachedMediaState(
+          connectionStatus: RealtimeConnectionStatus.disconnected,
+          joinState: RealtimeJoinState.idle,
+          clearSessionContext: true,
+          lastSocketEvent: event.name,
+        );
+        return;
       case 'session:state':
       case 'participants:updated':
       case 'policy:updated':
