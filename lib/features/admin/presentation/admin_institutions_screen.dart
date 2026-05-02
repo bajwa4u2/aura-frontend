@@ -190,6 +190,16 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                   onRetry: _loadVerified,
                   onTap: (slug) => context.go('/institutions/$slug'),
                   emptyMessage: 'No verified institutions.',
+                  onViewMembers: (inst) {
+                    final name = Uri.encodeQueryComponent(inst.name);
+                    context.go('/admin/institutions/${inst.id}/members?name=$name');
+                  },
+                  onViewAnnouncements: (inst) => context.go(
+                    '/institution/${inst.id}/announcements?admin=true',
+                  ),
+                  onViewSpaces: (inst) => context.go(
+                    '/institution/${inst.id}/spaces?admin=true',
+                  ),
                 ),
                 _RequestList(
                   items: _requests,
@@ -209,6 +219,16 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                   onRetry: _loadSuspended,
                   onTap: (slug) => context.go('/institutions/$slug'),
                   emptyMessage: 'No suspended institutions.',
+                  onViewMembers: (inst) {
+                    final name = Uri.encodeQueryComponent(inst.name);
+                    context.go('/admin/institutions/${inst.id}/members?name=$name');
+                  },
+                  onViewAnnouncements: (inst) => context.go(
+                    '/institution/${inst.id}/announcements?admin=true',
+                  ),
+                  onViewSpaces: (inst) => context.go(
+                    '/institution/${inst.id}/spaces?admin=true',
+                  ),
                 ),
               ],
             ),
@@ -231,6 +251,9 @@ class _InstitutionList extends StatelessWidget {
     required this.onRetry,
     required this.onTap,
     required this.emptyMessage,
+    this.onViewMembers,
+    this.onViewAnnouncements,
+    this.onViewSpaces,
   });
 
   final List<AdminInstitutionSummary> items;
@@ -239,6 +262,9 @@ class _InstitutionList extends StatelessWidget {
   final VoidCallback onRetry;
   final ValueChanged<String> onTap;
   final String emptyMessage;
+  final ValueChanged<AdminInstitutionSummary>? onViewMembers;
+  final ValueChanged<AdminInstitutionSummary>? onViewAnnouncements;
+  final ValueChanged<AdminInstitutionSummary>? onViewSpaces;
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +320,9 @@ class _InstitutionList extends StatelessWidget {
                     _InstitutionRow(
                       institution: items[i],
                       onTap: () => onTap(items[i].slug),
+                      onViewMembers: onViewMembers != null ? () => onViewMembers!(items[i]) : null,
+                      onViewAnnouncements: onViewAnnouncements != null ? () => onViewAnnouncements!(items[i]) : null,
+                      onViewSpaces: onViewSpaces != null ? () => onViewSpaces!(items[i]) : null,
                     ),
                     if (i < items.length - 1)
                       Container(
@@ -313,10 +342,19 @@ class _InstitutionList extends StatelessWidget {
 }
 
 class _InstitutionRow extends StatelessWidget {
-  const _InstitutionRow({required this.institution, required this.onTap});
+  const _InstitutionRow({
+    required this.institution,
+    required this.onTap,
+    this.onViewMembers,
+    this.onViewAnnouncements,
+    this.onViewSpaces,
+  });
 
   final AdminInstitutionSummary institution;
   final VoidCallback onTap;
+  final VoidCallback? onViewMembers;
+  final VoidCallback? onViewAnnouncements;
+  final VoidCallback? onViewSpaces;
 
   String _formatDate(DateTime dt) {
     const months = [
@@ -378,7 +416,43 @@ class _InstitutionRow extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(width: AuraSpace.s8),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, size: 18, color: AuraSurface.muted),
+              tooltip: 'Admin actions',
+              onSelected: (value) {
+                switch (value) {
+                  case 'members': onViewMembers?.call();
+                  case 'announcements': onViewAnnouncements?.call();
+                  case 'spaces': onViewSpaces?.call();
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'members',
+                  child: Row(children: [
+                    Icon(Icons.group_outlined, size: 16),
+                    SizedBox(width: 8),
+                    Text('Members'),
+                  ]),
+                ),
+                const PopupMenuItem(
+                  value: 'announcements',
+                  child: Row(children: [
+                    Icon(Icons.campaign_outlined, size: 16),
+                    SizedBox(width: 8),
+                    Text('Announcements'),
+                  ]),
+                ),
+                const PopupMenuItem(
+                  value: 'spaces',
+                  child: Row(children: [
+                    Icon(Icons.workspaces_outlined, size: 16),
+                    SizedBox(width: 8),
+                    Text('Spaces'),
+                  ]),
+                ),
+              ],
+            ),
             const Icon(Icons.chevron_right, size: 16, color: AuraSurface.faint),
           ],
         ),

@@ -49,6 +49,7 @@ import 'features/institutions/presentation/institution_join_requests_screen.dart
 import 'features/institutions/presentation/admin_workspace_screen.dart';
 import 'features/institutions/wizard/institution_onboarding_wizard.dart';
 import 'features/admin/presentation/admin_institutions_screen.dart';
+import 'features/admin/presentation/admin_institution_members_screen.dart';
 import 'features/admin/presentation/admin_users_screen.dart';
 import 'features/admin/presentation/admin_grants_screen.dart';
 import 'features/admin/presentation/admin_audit_logs_screen.dart';
@@ -298,11 +299,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         orElse: () => const AppAdminAccess(state: AppAdminState.none),
       );
 
+      final requiresInstitution = requiresInstitutionAccess(path) ||
+          requiresInstitutionAdminOrSpeaker(path) ||
+          requiresInstitutionAdmin(path);
+
+      // Wait for both institution access and admin access to settle on institution paths,
+      // so platform admins aren't wrongly redirected before their admin state loads.
       final institutionAccessLoading = isLoggedIn &&
-          (requiresInstitutionAccess(path) ||
-              requiresInstitutionAdminOrSpeaker(path) ||
-              requiresInstitutionAdmin(path)) &&
-          institutionAsync.isLoading;
+          requiresInstitution &&
+          (institutionAsync.isLoading || appAdminAsync.isLoading);
 
       final appAdminLoading =
           isLoggedIn && requiresAppAdmin(path) && appAdminAsync.isLoading;
@@ -382,22 +387,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
-      if (requiresInstitutionAccess(path) && !institutionAccess.hasAccess) {
-        return kEnterInstitutionRoute;
-      }
+      // Platform admins bypass all institution membership gates — the backend
+      // enforces INSTITUTIONS_READ/WRITE via its own bypass logic.
+      if (!appAdmin.isAdmin) {
+        if (requiresInstitutionAccess(path) && !institutionAccess.hasAccess) {
+          return kEnterInstitutionRoute;
+        }
 
-      final isInstitutionAdmin =
-          institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
-      final isInstitutionSpeakerOrAdmin =
-          institutionAccess.state == InstitutionAccessState.authorizedSpeaker ||
-              institutionAccess.state == InstitutionAccessState.verifiedMember;
+        final isInstitutionAdmin =
+            institutionAccess.state == InstitutionAccessState.authorizedSpeaker;
+        final isInstitutionSpeakerOrAdmin =
+            institutionAccess.state == InstitutionAccessState.authorizedSpeaker ||
+                institutionAccess.state == InstitutionAccessState.verifiedMember;
 
-      if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
-        return kInstitutionDashboardRoute;
-      }
+        if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
+          return kInstitutionDashboardRoute;
+        }
 
-      if (requiresInstitutionAdminOrSpeaker(path) && !isInstitutionSpeakerOrAdmin) {
-        return kInstitutionDashboardRoute;
+        if (requiresInstitutionAdminOrSpeaker(path) && !isInstitutionSpeakerOrAdmin) {
+          return kInstitutionDashboardRoute;
+        }
       }
 
       return null;
@@ -647,6 +656,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/institutions',
             builder: (_, __) => const AdminInstitutionsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/institutions/:id/members',
+            builder: (_, state) => AdminInstitutionMembersScreen(
+              institutionId: state.pathParameters['id']!,
+              institutionName: state.uri.queryParameters['name'],
+            ),
           ),
           GoRoute(
             path: '/admin/users',

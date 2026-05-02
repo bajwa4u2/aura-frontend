@@ -527,6 +527,58 @@ class AdminVerificationRequest {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTION MEMBERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AdminInstitutionMember {
+  const AdminInstitutionMember({
+    required this.id,
+    required this.userId,
+    required this.role,
+    required this.joinedAt,
+    this.displayName,
+    this.handle,
+    this.title,
+    this.canSpeakOfficially = false,
+  });
+
+  final String id;
+  final String userId;
+  final String role;
+  final DateTime joinedAt;
+  final String? displayName;
+  final String? handle;
+  final String? title;
+  final bool canSpeakOfficially;
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  factory AdminInstitutionMember.fromJson(Map<String, dynamic> json) {
+    final user = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : null;
+    return AdminInstitutionMember(
+      id: _str(json['id']),
+      userId: _str(json['userId']),
+      role: _str(json['role'] ?? 'MEMBER'),
+      joinedAt: _parseDate(json['joinedAt']) ?? DateTime.now(),
+      displayName: user != null ? _str(user['displayName']).let((s) => s.isEmpty ? null : s) : null,
+      handle: user != null ? _str(user['handle']).let((s) => s.isEmpty ? null : s) : null,
+      title: _str(json['title']).let((s) => s.isEmpty ? null : s),
+      canSpeakOfficially: json['canSpeakOfficially'] == true,
+    );
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REVIEW QUEUE
 // ─────────────────────────────────────────────────────────────────────────────
 

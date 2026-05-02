@@ -178,6 +178,36 @@ class AdminRepository {
     );
   }
 
+  Future<List<AdminInstitutionMember>> fetchInstitutionMembers(String institutionId) async {
+    final res = await _dio.get('/v1/institutions/$institutionId/members');
+    final data = res.data;
+    if (data is Map) {
+      final items = data['members'];
+      if (items is List) {
+        return items
+            .whereType<Map>()
+            .map((e) => AdminInstitutionMember.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    }
+    return _parseList(data, AdminInstitutionMember.fromJson);
+  }
+
+  Future<void> updateInstitutionMemberRole(
+    String institutionId,
+    String targetUserId,
+    String role,
+  ) async {
+    await _dio.patch(
+      '/v1/institutions/$institutionId/members/$targetUserId/role',
+      data: {'role': role},
+    );
+  }
+
+  Future<void> removeInstitutionMember(String institutionId, String targetUserId) async {
+    await _dio.delete('/v1/institutions/$institutionId/members/$targetUserId');
+  }
+
   // ── Review Queue ────────────────────────────────────────────────────────
 
   Future<List<ReviewQueueItem>> fetchReviewQueue({String? type, String? status}) async {
