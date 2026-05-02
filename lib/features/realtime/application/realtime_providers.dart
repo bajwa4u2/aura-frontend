@@ -5,6 +5,7 @@ import '../../../core/net/dio_provider.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
 import '../data/realtime_socket_service.dart';
+import '../domain/realtime_models.dart';
 import '../domain/realtime_state.dart';
 import 'realtime_controller.dart';
 
@@ -40,4 +41,9 @@ final realtimeControllerProvider =
     mediaService,
     tokenStore,
   );
+});
+
+final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
+  final repo = ref.watch(realtimeRepositoryProvider);
+  return repo.listMySessions();
 });

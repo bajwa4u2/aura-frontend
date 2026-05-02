@@ -174,6 +174,8 @@ class RealtimeSession {
     required this.durationSeconds,
     required this.createdAt,
     required this.updatedAt,
+    this.title,
+    this.metadataJson,
   });
 
   final String id;
@@ -192,8 +194,21 @@ class RealtimeSession {
   final int? durationSeconds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? title;
+  final Map<String, dynamic>? metadataJson;
+
+  String? get contextName {
+    final meta = metadataJson ?? {};
+    for (final key in const ['contextName', 'spaceName', 'threadTitle', 'roomTitle', 'label']) {
+      final v = (meta[key] ?? '').toString().trim();
+      if (v.isNotEmpty) return v;
+    }
+    return null;
+  }
 
   factory RealtimeSession.fromJson(Map<String, dynamic> json) {
+    final rawMeta = json['metadataJson'] ?? json['metadata'];
+    final meta = rawMeta is Map ? Map<String, dynamic>.from(rawMeta) : null;
     return RealtimeSession(
       id: (json['id'] ?? '').toString(),
       surfaceType: _readSurfaceType(json['surfaceType']),
@@ -218,6 +233,8 @@ class RealtimeSession {
       durationSeconds: _readInt(json['durationSeconds']),
       createdAt: _readDate(json['createdAt']),
       updatedAt: _readDate(json['updatedAt']),
+      title: _readString(json['title']),
+      metadataJson: meta,
     );
   }
 }

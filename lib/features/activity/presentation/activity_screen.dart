@@ -1027,6 +1027,23 @@ class _ActivityLeadingIcon extends StatelessWidget {
   }
 }
 
+String _resolveCallType(Map<String, dynamic> data) {
+  final raw = _firstNonEmpty([
+    _stringOf(data['mediaMode']),
+    _stringOf(data['mode']),
+    _stringOf(data['kind']),
+    _stringOf(data['sessionType']),
+  ]).toUpperCase();
+  switch (raw) {
+    case 'VIDEO':
+      return 'video call';
+    case 'SCREEN':
+      return 'screen share';
+    default:
+      return 'audio call';
+  }
+}
+
 String _buildTitle(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
   final actor = _mapOf(item['actor']);
@@ -1036,13 +1053,21 @@ String _buildTitle(Map<String, dynamic> item) {
     _stringOf(actor['handle']),
     'Someone',
   ]);
-  final realtimeType = _firstNonEmpty([
-    _stringOf(data['realtimeType']).toUpperCase(),
+  final notifKind = _firstNonEmpty([
     _stringOf(data['notificationKind']).toUpperCase(),
+    _stringOf(data['realtimeType']).toUpperCase(),
   ]);
 
-  if (realtimeType == 'REALTIME_INVITE') {
-    return '$actorName invited you to join live here';
+  // LIVE type — distinguish call invite vs missed call
+  if (type == 'LIVE') {
+    final callType = _resolveCallType(data);
+    if (notifKind == 'CALL_RINGING' || notifKind == 'REALTIME_INVITE') {
+      return '$actorName invited you to an $callType';
+    }
+    if (notifKind == 'CALL_MISSED') {
+      return 'Missed $callType from $actorName';
+    }
+    return '$actorName started a $callType';
   }
 
   switch (type) {
@@ -1100,10 +1125,18 @@ String _buildSubtitle(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
   final post = _mapOf(item['post']);
   final data = _mapOf(item['data']);
-  final realtimeType = _firstNonEmpty([
-    _stringOf(data['realtimeType']).toUpperCase(),
-    _stringOf(data['notificationKind']).toUpperCase(),
-  ]);
+
+  // LIVE type — show context label ("in Design Space", "Direct call")
+  if (type == 'LIVE') {
+    final contextLabel = _firstNonEmpty([
+      _stringOf(data['contextLabel']),
+      _stringOf(data['contextName']),
+      _stringOf(data['roomTitle']),
+      _stringOf(data['spaceName']),
+      _stringOf(data['threadTitle']),
+    ]);
+    return contextLabel.isNotEmpty ? 'in $contextLabel' : '';
+  }
 
   final customMessage = _firstNonEmpty([
     _stringOf(data['secondaryText']),
@@ -1114,16 +1147,6 @@ String _buildSubtitle(Map<String, dynamic> item) {
 
   final postText = _stringOf(post['text']);
   if (postText.isNotEmpty) return _truncate(postText, 120);
-
-  if (realtimeType == 'REALTIME_INVITE') {
-    final roomTitle = _firstNonEmpty([
-      _stringOf(data['roomTitle']),
-      _stringOf(item['title']),
-    ]);
-    return roomTitle.isNotEmpty
-        ? 'Open $roomTitle in messages'
-        : 'Return to messages';
-  }
 
   switch (type) {
     case 'FOLLOW_REQUEST':
@@ -1139,7 +1162,8 @@ String _buildSubtitle(Map<String, dynamic> item) {
     case 'POST_PUBLISHED':
       return 'Open work';
     case 'SPACE_INVITE':
-      return 'Open space';
+      final spaceName = _stringOf(data['spaceName']);
+      return spaceName.isNotEmpty ? 'in $spaceName' : 'Open space';
     case 'THREAD_INVITE':
     case 'MESSAGE_RECEIVED':
       return 'Open conversation';
@@ -1159,12 +1183,16 @@ String _buildSubtitle(Map<String, dynamic> item) {
 String _ctaLabel(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
   final data = _mapOf(item['data']);
-  final realtimeType = _firstNonEmpty([
-    _stringOf(data['realtimeType']).toUpperCase(),
+  final notifKind = _firstNonEmpty([
     _stringOf(data['notificationKind']).toUpperCase(),
+    _stringOf(data['realtimeType']).toUpperCase(),
   ]);
 
-  if (realtimeType == 'REALTIME_INVITE') return 'Join';
+  // LIVE type CTAs
+  if (type == 'LIVE') {
+    if (notifKind == 'CALL_RINGING' || notifKind == 'REALTIME_INVITE') return 'Join';
+    return 'View';
+  }
   switch (type) {
     case 'MESSAGE_RECEIVED':
     case 'THREAD_INVITE':

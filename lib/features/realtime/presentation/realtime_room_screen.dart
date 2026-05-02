@@ -393,6 +393,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               // ── Header bar ────────────────────────────────────────────────
               _CallTopBar(
                 title: _callTitle(state.session, state.isVideoMode),
+                contextLabel: _contextLabel(state.session),
                 duration: callDuration,
                 participantCount: state.participants.length,
                 isConnecting: isConnecting,
@@ -702,11 +703,29 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.space:
       case RealtimeSurfaceType.room:
-        return 'Space call';
+        return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.institution:
-        return 'Institution call';
+        return isVideo ? 'Video call' : 'Audio call';
       case RealtimeSurfaceType.unknown:
         return isVideo ? 'Video call' : 'Audio call';
+    }
+  }
+
+  String? _contextLabel(RealtimeSession? session) {
+    if (session == null) return null;
+    final named = session.contextName ?? session.title;
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.dm:
+        return named != null ? 'Direct call · $named' : 'Direct call';
+      case RealtimeSurfaceType.thread:
+        return named != null ? 'in $named' : null;
+      case RealtimeSurfaceType.space:
+      case RealtimeSurfaceType.room:
+        return named != null ? 'in $named' : 'Space live';
+      case RealtimeSurfaceType.institution:
+        return named != null ? '$named · Institution live' : 'Institution live';
+      case RealtimeSurfaceType.unknown:
+        return named;
     }
   }
 
@@ -744,9 +763,11 @@ class _CallTopBar extends StatelessWidget {
     required this.participantCount,
     required this.isConnecting,
     required this.hasIssue,
+    this.contextLabel,
   });
 
   final String title;
+  final String? contextLabel;
   final Duration? duration;
   final int participantCount;
   final bool isConnecting;
@@ -780,8 +801,11 @@ class _CallTopBar extends StatelessWidget {
     }
 
     return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16),
+      constraints: BoxConstraints(minHeight: contextLabel != null ? 60 : 52),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s8,
+      ),
       decoration: const BoxDecoration(
         color: AuraSurface.subtle,
         border: Border(bottom: BorderSide(color: AuraSurface.divider)),
@@ -799,26 +823,40 @@ class _CallTopBar extends StatelessWidget {
           ),
           const SizedBox(width: AuraSpace.s8),
 
-          // Title
-          Text(
-            title,
-            style: AuraText.body.copyWith(
-              color: AuraSurface.ink,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          // Duration
-          if (durationLabel != null) ...[
-            const SizedBox(width: AuraSpace.s8),
-            Text(
-              durationLabel,
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-                fontFeatures: const [FontFeature.tabularFigures()],
+          // Title + context label
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: AuraText.body.copyWith(
+                      color: AuraSurface.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (durationLabel != null) ...[
+                    const SizedBox(width: AuraSpace.s8),
+                    Text(
+                      durationLabel,
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.muted,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-          ],
+              if (contextLabel != null)
+                Text(
+                  contextLabel!,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+            ],
+          ),
 
           const Spacer(),
 

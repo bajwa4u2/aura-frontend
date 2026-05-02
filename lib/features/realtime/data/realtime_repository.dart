@@ -221,6 +221,13 @@ class RealtimeRepository {
     });
   }
 
+  Future<List<RealtimeSession>> listMySessions() async {
+    final res = await _dio.get('/realtime/sessions', queryParameters: {'scope': 'me'});
+    final raw = _unwrapData(res.data);
+    final list = raw is List ? raw : (raw is Map && raw.containsKey('items') ? raw['items'] : []);
+    return _asList(list).map((m) => RealtimeSession.fromJson(m)).toList();
+  }
+
   Future<Map<String, dynamic>> issueTurnCredentials(String sessionId) async {
     final res = await _dio.post(
       '/realtime/turn-credentials',
