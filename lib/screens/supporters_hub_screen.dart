@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/ui/aura_space.dart';
 import '../core/ui/document_scaffold.dart';
 
 class SupportersHubScreen extends StatelessWidget {
@@ -14,21 +16,44 @@ class SupportersHubScreen extends StatelessWidget {
         children: [
           Doc.title('Supporters'),
           const SizedBox(height: 10),
-          Doc.meta('Readers, builders, reviewers, moderators.'),
+          Doc.meta('Contribution, not capital.'),
           Doc.lede(
-            'Aura depends on people who value clarity, restraint, and structural fairness over spectacle.',
+            'Supporters contribute time, effort, expertise, and feedback to help Aura work better — not capital.',
+          ),
+
+          Doc.h('What a Supporter is'),
+          Doc.p(
+            'A Supporter is distinct from a Patron and an Investor. Patrons provide ongoing financial support. Investors provide equity capital. Supporters contribute neither — they contribute participation: testing, moderation assistance, documentation, translation, and constructive feedback.',
           ),
           Doc.p(
-            'Support can be technical, editorial, or civic. The goal is not to agree. The goal is to keep the record honest and readable.',
+            'Supporting Aura does not purchase visibility, governance authority, algorithmic preference, or platform access beyond what any member has.',
           ),
-          Doc.h('Ways to support (planned)'),
+
+          Doc.h('What supporting involves'),
           Doc.bullets([
-            'Moderation assistance and review (with training + constraints)',
-            'Documentation and policy feedback',
-            'Testing new flows carefully',
+            'Moderation assistance under defined constraints and training',
+            'Documentation review and policy feedback',
+            'Testing new flows and reporting issues carefully and precisely',
             'Translation and accessibility improvements',
+            'Constructive, identity-bound participation in the public record',
           ]),
-          Doc.callout('This hub will expand after the first stable public release.'),
+
+          Doc.h('Current state'),
+          Doc.p(
+            'No formal supporter program is currently open. There are no public listings of supporters on this platform.',
+          ),
+          Doc.p(
+            'When a structured program opens, it will be governed by clear constraints consistent with the platform\'s principles: no visibility rewards, no governance leverage, and no path to changing what Aura refuses to become.',
+          ),
+
+          const SizedBox(height: AuraSpace.lg),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => context.go('/support/agent'),
+              child: const Text('Contact Support'),
+            ),
+          ),
         ],
       ),
     );

@@ -58,12 +58,13 @@
         s1.defer = true;
         s1.onload = function () {
           if (!window._flutter || !window._flutter.loader) return;
-          window._flutter.loader.loadEntrypoint({
-            serviceWorker: { serviceWorkerVersion: null }
-          }).then(function (engineInitializer) {
-            return engineInitializer.initializeEngine();
-          }).then(function (appRunner) {
-            return appRunner.runApp();
+          window._flutter.loader.load({
+            serviceWorkerSettings: { serviceWorkerVersion: null },
+            onEntrypointLoaded: function (engineInitializer) {
+              return engineInitializer.initializeEngine().then(function (appRunner) {
+                return appRunner.runApp();
+              });
+            }
           });
         };
         document.body.appendChild(s1);

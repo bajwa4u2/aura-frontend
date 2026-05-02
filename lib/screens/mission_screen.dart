@@ -1,36 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../core/ui/aura_platform_components.dart';
 import '../core/ui/aura_space.dart';
-import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
 class MissionScreen extends StatelessWidget {
   const MissionScreen({super.key});
-
-  static const String _rawBase = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.bajwadynesty.us',
-  );
-
-  static String get _base => _rawBase.endsWith('/v1') ? _rawBase : '$_rawBase/v1';
-
-  static String get _pdfUrl => '$_base/mission/white-paper.pdf';
-
-  Future<void> _openPdf(BuildContext context) async {
-    final uri = Uri.parse(_pdfUrl);
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open the PDF.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,29 +69,12 @@ class MissionScreen extends StatelessWidget {
             'Aura does not propose a platform of influence. It proposes a layer of accountability, identity, and structured communication.',
           ),
 
-          Doc.h('Read the system statement'),
+          Doc.h('Operating standard'),
           Doc.p(
-            'The mission is intentionally concise. The White Paper explains the deeper architecture, constraints, operating philosophy, and long-term direction behind Aura.',
+            'The design decisions in Aura are structural, not decorative. Every constraint is intentional. Every choice to withhold a feature or reject a growth mechanic reflects a commitment to communication that endures.',
           ),
-
-          const SizedBox(height: AuraSpace.s6),
-          SizedBox(
-            width: double.infinity,
-            child: AuraPrimaryButton(
-              label: 'Read the White Paper',
-              onPressed: () => context.go('/white-paper'),
-              icon: Icons.auto_stories_outlined,
-            ),
-          ),
-
-          const SizedBox(height: AuraSpace.s8),
-          SizedBox(
-            width: double.infinity,
-            child: AuraGhostButton(
-              label: 'Download PDF',
-              onPressed: () => _openPdf(context),
-              icon: Icons.download_outlined,
-            ),
+          Doc.p(
+            'Aura is not defined by what it adds. It is defined by what it refuses to become: an attention market, a manipulation engine, or an unaccountable system.',
           ),
         ],
       ),

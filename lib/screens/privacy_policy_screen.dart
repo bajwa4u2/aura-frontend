@@ -152,6 +152,17 @@ class _PrivacyBody extends StatelessWidget {
             'Material privacy changes should be communicated clearly and should not hide major retroactive changes in data use.',
           ],
         ),
+        _PrivacySection(
+          number: '11',
+          title: 'Questions and contact',
+          body:
+              'For questions about this Privacy Policy, to request data assistance, or to report a privacy concern, use the Support surface inside Aura.',
+          bullets: [
+            'Account and personal data requests should be submitted through Support.',
+            'Security issues and suspected misuse should be reported through Support so they can be reviewed and addressed.',
+            'Privacy policy changes will be communicated clearly and in advance of implementation where practical.',
+          ],
+        ),
         _ClosingCallout(),
       ],
     );

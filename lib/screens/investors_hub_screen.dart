@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/ui/aura_space.dart';
 import '../core/ui/document_scaffold.dart';
 import '../core/ui/pdf_viewer_screen.dart';
 
@@ -34,9 +36,15 @@ class InvestorsHubScreen extends StatelessWidget {
           Doc.lede(
             'Aura is designed as civic communication infrastructure. Its architecture intentionally resists short-term engagement mechanics.',
           ),
+
+          Doc.h('What an Investor is'),
+          Doc.p(
+            'An Investor is distinct from a Supporter and a Patron. Supporters contribute time and effort. Patrons provide ongoing financial support. Investors provide equity capital and take a formal stake in the platform.',
+          ),
           Doc.p(
             'The objective is structural trust: identity integrity, visible correction, chronological record, and constrained AI assistance.',
           ),
+
           Doc.h('What we optimize for'),
           Doc.bullets([
             'Integrity of identity (who is speaking)',
@@ -95,6 +103,14 @@ class InvestorsHubScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Doc.callout(
             'We seek alignment with partners who understand that durability matters more than acceleration.',
+          ),
+          const SizedBox(height: AuraSpace.lg),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => context.go('/support/agent'),
+              child: const Text('Contact Support'),
+            ),
           ),
         ],
       ),
