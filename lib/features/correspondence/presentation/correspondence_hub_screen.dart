@@ -733,8 +733,9 @@ int _sortInvitesByActivity(
 
 DateTime _inviteSortDate(Map<String, dynamic> invite) {
   final raw = _pickString(invite, const [
-    'updatedAt',
+    'lastMessageAt',
     'lastActivityAt',
+    'updatedAt',
     'createdAt',
     'sentAt',
   ]);

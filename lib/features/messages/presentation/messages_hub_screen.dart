@@ -672,9 +672,9 @@ class _ConversationRow extends StatelessWidget {
     final preview = _conversationPreview(space);
     final timestamp = _formatTimestamp(
       _pickString(space, const [
-        'updatedAt',
-        'lastActivityAt',
         'lastMessageAt',
+        'lastActivityAt',
+        'updatedAt',
         'createdAt',
       ]),
     );
@@ -1227,9 +1227,9 @@ int _sortByActivity(
 
 DateTime _sortDate(Map<String, dynamic> map) {
   final raw = _pickString(map, const [
-    'updatedAt',
-    'lastActivityAt',
     'lastMessageAt',
+    'lastActivityAt',
+    'updatedAt',
     'createdAt',
     'sentAt',
   ]);
