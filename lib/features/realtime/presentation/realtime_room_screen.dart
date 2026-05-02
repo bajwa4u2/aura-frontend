@@ -213,6 +213,21 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     context.go('/home');
   }
 
+  void _minimizeCall(RealtimeSession? session) {
+    // Navigate back without ending the call — PiP widget takes over.
+    if (session == null) { context.go('/home'); return; }
+    switch (session.surfaceType) {
+      case RealtimeSurfaceType.space:
+        final id = (session.surfaceId ?? '').trim();
+        if (id.isNotEmpty) { context.go('/me/correspondence/$id'); return; }
+      case RealtimeSurfaceType.dm:
+      case RealtimeSurfaceType.thread:
+        context.go('/me/correspondence'); return;
+      default: break;
+    }
+    context.go('/home');
+  }
+
   void _openBottomPanel(String panelId) {
     final state = ref.read(realtimeControllerProvider);
     final myUserId = ref
@@ -323,7 +338,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         state.connectionStatus == RealtimeConnectionStatus.reconnecting;
     final joinRequestCount = (policy?.joinRequests ?? const []).length;
 
-    return Scaffold(
+    return PopScope(
+      canPop: !state.isJoined,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && state.isJoined && !_hasNavigatedAway) {
+          _hasNavigatedAway = true;
+          _minimizeCall(state.session);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AuraSurface.page,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -402,6 +425,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }

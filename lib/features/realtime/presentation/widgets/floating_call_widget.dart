@@ -3,6 +3,7 @@ import 'dart:ui' as ui show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/ui/aura_platform_components.dart';
@@ -33,6 +34,7 @@ class _CallInfo {
     required this.startedAt,
     required this.participants,
     required this.isOwner,
+    this.localRenderer,
   });
 
   final String sessionId;
@@ -41,6 +43,7 @@ class _CallInfo {
   final bool cameraOn;
   final DateTime? startedAt;
   final List<RealtimeParticipant> participants;
+  final RTCVideoRenderer? localRenderer;
 
   /// True when this tab owns and is joined to the call.
   /// False when the call is active in another tab (passive view only).
@@ -130,6 +133,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         startedAt: local.session?.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
         isOwner: true,
+        localRenderer: local.localRenderer,
       );
     }
 
@@ -199,6 +203,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
                 duration: _formatDuration(info.startedAt),
                 isOwner: info.isOwner,
                 onReturn: info.isOwner ? () => _returnToCall(info) : null,
+                localRenderer: info.localRenderer,
               ),
             ),
           ),
@@ -221,6 +226,7 @@ class _FloatingCard extends StatelessWidget {
     required this.duration,
     required this.isOwner,
     required this.onReturn,
+    this.localRenderer,
   });
 
   final bool isVideo;
@@ -230,6 +236,7 @@ class _FloatingCard extends StatelessWidget {
   final String duration;
   final bool isOwner;
   final VoidCallback? onReturn;
+  final RTCVideoRenderer? localRenderer;
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +266,23 @@ class _FloatingCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Video preview (video calls with camera on) ────────────────────
+          if (isVideo && cameraOn && localRenderer != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              child: SizedBox(
+                width: double.infinity,
+                height: 68,
+                child: RTCVideoView(
+                  localRenderer!,
+                  mirror: true,
+                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                ),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+          ],
+
           // ── Row 1: live indicator · title · duration · drag handle ────────
           Row(
             children: [

@@ -433,7 +433,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final wide = constraints.maxWidth >= 760;
-                              final showRail = constraints.maxWidth >= 560;
                               final conversationPanel = _ThreadConversationPanel(
                                 messagesAsync: messagesAsync,
                                 pendingMessages: _pendingMessages
@@ -493,16 +492,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                     Expanded(child: conversationPanel),
                                     const SizedBox(width: AuraSpace.s16),
                                     SizedBox(width: 300, child: sideRail),
-                                  ],
-                                );
-                              }
-
-                              if (showRail) {
-                                return Column(
-                                  children: [
-                                    conversationPanel,
-                                    const SizedBox(height: AuraSpace.s16),
-                                    sideRail,
                                   ],
                                 );
                               }
