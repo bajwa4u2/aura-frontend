@@ -750,16 +750,18 @@ class _ThreadCompactBar extends StatelessWidget {
               }
               if (onRename != null || onArchive != null) {
                 items.add(const PopupMenuDivider());
-                if (onRename != null)
+                if (onRename != null) {
                   items.add(const PopupMenuItem(
                     value: 'rename',
                     child: Text('Rename conversation'),
                   ));
-                if (onArchive != null)
+                }
+                if (onArchive != null) {
                   items.add(const PopupMenuItem(
                     value: 'archive',
                     child: Text('Archive conversation'),
                   ));
+                }
               }
               return items;
             },

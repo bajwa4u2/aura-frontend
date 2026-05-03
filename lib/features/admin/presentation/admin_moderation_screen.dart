@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
@@ -8,7 +9,6 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../data/admin_models.dart';
 import '../data/admin_providers.dart';
 import 'admin_error.dart';
 
@@ -237,7 +237,7 @@ class _ReportCard extends StatelessWidget {
               ],
               Row(
                 children: [
-                  Icon(Icons.person_outline, size: 13, color: AuraSurface.faint),
+                  const Icon(Icons.person_outline, size: 13, color: AuraSurface.faint),
                   const SizedBox(width: 4),
                   Text(
                     report.reporter.handle.isNotEmpty
@@ -268,12 +268,12 @@ class _ReportCard extends StatelessWidget {
 
   _StatusStyleData _statusStyle(String status) {
     return switch (status) {
-      'OPEN' => _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
-      'UNDER_REVIEW' || 'REVIEWING' => _StatusStyleData(AuraSurface.infoBg, AuraSurface.infoInk),
-      'NEEDS_CONTEXT' => _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
-      'ACTION_TAKEN' || 'RESOLVED' => _StatusStyleData(AuraSurface.goodBg, AuraSurface.goodInk),
-      'DISMISSED' => _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
-      _ => _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
+      'OPEN' => const _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
+      'UNDER_REVIEW' || 'REVIEWING' => const _StatusStyleData(AuraSurface.infoBg, AuraSurface.infoInk),
+      'NEEDS_CONTEXT' => const _StatusStyleData(AuraSurface.warnBg, AuraSurface.warnInk),
+      'ACTION_TAKEN' || 'RESOLVED' => const _StatusStyleData(AuraSurface.goodBg, AuraSurface.goodInk),
+      'DISMISSED' => const _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
+      _ => const _StatusStyleData(AuraSurface.elevated, AuraSurface.muted),
     };
   }
 }
@@ -436,18 +436,18 @@ class _ActionPanelState extends State<_ActionPanel> {
             Text('Update report status', style: AuraText.label.copyWith(color: AuraSurface.muted)),
             const SizedBox(height: AuraSpace.s6),
             DropdownButtonFormField<String>(
-              value: _reportStatus,
+              initialValue: _reportStatus,
               dropdownColor: AuraSurface.elevated,
               style: AuraText.body,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
               ),
               items: _statusOptions
@@ -473,11 +473,11 @@ class _ActionPanelState extends State<_ActionPanel> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
               ),
             ),
@@ -496,11 +496,11 @@ class _ActionPanelState extends State<_ActionPanel> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
               ),
             ),
@@ -519,11 +519,11 @@ class _ActionPanelState extends State<_ActionPanel> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuraRadius.md),
-                  borderSide: BorderSide(color: AuraSurface.divider),
+                  borderSide: const BorderSide(color: AuraSurface.divider),
                 ),
               ),
             ),
@@ -650,7 +650,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shield_outlined, size: 48, color: AuraSurface.faint),
+            const Icon(Icons.shield_outlined, size: 48, color: AuraSurface.faint),
             const SizedBox(height: AuraSpace.s12),
             Text(
               filter == _StatusFilter.all

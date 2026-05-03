@@ -343,6 +343,7 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
     } catch (e) {
       if (!mounted) return;
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not rename space: $e')),
       );
@@ -378,9 +379,11 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
             archived: true,
           );
       if (!mounted) return;
+      // ignore: use_build_context_synchronously
       context.go('/me/correspondence');
     } catch (e) {
       if (!mounted) return;
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not archive space: $e')),
       );

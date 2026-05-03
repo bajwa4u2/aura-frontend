@@ -619,7 +619,9 @@ class _InstEntry {
     this.pathBuilder,
     this.pathMatcher,
     this.adminOnly = false,
+    // ignore: unused_element_parameter
     this.disabled = false,
+    // ignore: unused_element_parameter
     this.disabledReason,
   });
 

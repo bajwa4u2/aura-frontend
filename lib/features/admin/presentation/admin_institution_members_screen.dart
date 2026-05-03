@@ -8,7 +8,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
-import '../data/admin_repository.dart';
 import 'admin_error.dart';
 
 class AdminInstitutionMembersScreen extends ConsumerStatefulWidget {
@@ -87,7 +86,7 @@ class _AdminInstitutionMembersScreenState
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Remove', style: TextStyle(color: AuraSurface.dangerInk)),
+            child: const Text('Remove', style: TextStyle(color: AuraSurface.dangerInk)),
           ),
         ],
       ),
@@ -155,7 +154,7 @@ class _AdminInstitutionMembersScreenState
       );
     }
     if (!_loading && _members.isEmpty) {
-      return Center(
+      return const Center(
         child: AuraEmptyState(
           title: 'No members',
           body: 'This institution has no active members.',
@@ -285,7 +284,7 @@ class _MemberRow extends StatelessWidget {
               if (member.role != 'MEMBER')
                 const PopupMenuItem(value: 'MEMBER', child: Text('Demote to Member')),
               const PopupMenuDivider(),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'REMOVE',
                 child: Text(
                   'Remove from institution',

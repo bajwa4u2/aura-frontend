@@ -226,7 +226,7 @@ class _AuditFilterBar extends StatelessWidget {
         AuraSpace.s16,
         AuraSpace.s12,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AuraSurface.card,
         border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
@@ -327,15 +327,15 @@ class _FilterField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: BorderSide(color: AuraSurface.divider),
+          borderSide: const BorderSide(color: AuraSurface.divider),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: BorderSide(color: AuraSurface.divider),
+          borderSide: const BorderSide(color: AuraSurface.divider),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: BorderSide(color: AuraSurface.accent),
+          borderSide: const BorderSide(color: AuraSurface.accent),
         ),
       ),
       onSubmitted: (_) => onSubmitted(),

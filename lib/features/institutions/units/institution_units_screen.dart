@@ -88,6 +88,7 @@ class _InstitutionUnitsScreenState
     }
   }
 
+  // ignore: unused_element
   Future<void> _reorder(List<String> orderedIds) async {
     try {
       await _dio.post(
@@ -504,7 +505,7 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
             ),
             const SizedBox(height: AuraSpace.s12),
             DropdownButtonFormField<String>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Type'),
               items: _types
                   .map(

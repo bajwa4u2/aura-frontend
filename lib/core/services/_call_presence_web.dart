@@ -1,6 +1,6 @@
 // Web implementation using BroadcastChannel and beforeunload.
 // Messages are JSON-encoded strings so they survive structured-clone boundaries.
-// ignore: avoid_web_libraries_in_flutter
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
 import 'dart:convert';
 

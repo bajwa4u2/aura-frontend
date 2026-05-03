@@ -48,7 +48,7 @@ class AuraShellWordmark extends StatelessWidget {
 class ShellFooter extends StatelessWidget {
   const ShellFooter({super.key});
 
-  static const double _maxWidth = 1080;
+  static const double maxWidth = 1080;
 
   static const _links = [
     _FooterLink('Support', '/support/agent'),
@@ -68,7 +68,7 @@ class ShellFooter extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxWidth),
+          constraints: const BoxConstraints(maxWidth: maxWidth),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s20,

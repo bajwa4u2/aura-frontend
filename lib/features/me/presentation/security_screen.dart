@@ -134,7 +134,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, 'revoke'),
-            child: Text(
+            child: const Text(
               'Revoke',
               style: TextStyle(color: AuraSurface.dangerInk),
             ),
