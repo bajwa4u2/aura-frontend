@@ -410,7 +410,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       return Stack(        
         children: [
           widget.child,
-          const FloatingCallWidget(),
+          if (liveState.isJoined) const FloatingCallWidget(),
         ],
       );
     }
