@@ -293,11 +293,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic = isPublicPath(path);
       final isAuthAction = isAuthActionPath(path);
 
-      final isVerificationLoading = isLoggedIn && emailVerifiedAsync.isLoading;
+      final isVerificationLoading =
+          isLoggedIn && (emailVerifiedAsync.isLoading || emailVerifiedAsync.isRefreshing);
 
-      final isVerified = emailVerifiedAsync.maybeWhen(
+      // Treat a transient /auth/me error as verified — backend validates membership
+      // on every protected endpoint. Redirecting to /verify-pending on a network
+      // error produces a false "login again" flash for users who are actually authed.
+      final isVerified = emailVerifiedAsync.when(
         data: (value) => value,
-        orElse: () => false,
+        error: (_, __) => true,
+        loading: () => false,
       );
 
       final institutionAccess = institutionAsync.maybeWhen(

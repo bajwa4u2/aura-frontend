@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
 import 'data/feed_repository.dart';
 import 'domain/post.dart';
@@ -17,7 +18,10 @@ final feedProvider = FutureProvider<List<Post>>((ref) async {
   return page.items;
 });
 
+// Rebuild (and re-fetch) whenever the authenticated user identity changes so
+// a stale error state from a prior session never persists into a fresh login.
 final feedControllerProvider = StateNotifierProvider<FeedController, FeedState>((ref) {
+  ref.watch(isAuthedProvider);
   final repo = ref.watch(feedRepositoryProvider);
   return FeedController(repo);
 });
