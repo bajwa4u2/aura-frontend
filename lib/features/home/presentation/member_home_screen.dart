@@ -150,7 +150,6 @@ class MemberHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('[ROUTE BUILD] MemberHomeScreen');
     final isAuthed = ref.watch(isAuthedProvider);
     final heldAsync = isAuthed
         ? ref.watch(latestHeldProvider)

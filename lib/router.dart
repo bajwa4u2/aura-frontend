@@ -269,10 +269,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   }
 
   return GoRouter(
-    debugLogDiagnostics: true,
     refreshListenable: refresh,
     redirect: (context, state) {
-      debugPrint('[ROUTER REDIRECT] uri=${state.uri} matchedLocation=${state.matchedLocation} fullPath=${state.fullPath}');
       final path = state.uri.path;
       final currentLocation = state.uri.toString();
 
@@ -431,7 +429,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       ShellRoute(
         builder: (context, state, child) {
-          debugPrint('[SHELL_ROUTE_BUILDER] uri=${state.uri} child=${child.runtimeType} childKey=${child.key}');
           return AppShell(child: child);
         },
         routes: [

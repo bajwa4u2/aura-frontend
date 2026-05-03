@@ -84,7 +84,6 @@ class _MessagesHubScreenState extends ConsumerState<MessagesHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[ROUTE BUILD] MessagesHubScreen');
     final auth = ref.watch(authStatusProvider);
 
     if (auth != AuthStatus.authed) {

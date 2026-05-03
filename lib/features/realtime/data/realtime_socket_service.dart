@@ -41,7 +41,7 @@ class RealtimeSocketService {
     final socket = io.io(
       '$origin/realtime',
       <String, dynamic>{
-        'transports': <String>['websocket'],
+        'transports': <String>['websocket', 'polling'],
         'autoConnect': false,
         'forceNew': true,
         'auth': <String, dynamic>{

@@ -110,14 +110,11 @@ class MemberShell extends StatelessWidget {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
     final selectedIndex = _indexForPath(path);
-    debugPrint('[MEMBER_SHELL] build path=$path selectedIndex=$selectedIndex child=${child.runtimeType} childKey=${child.key}');
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final isDesktop = width >= _desktopBreakpoint;
         final isTablet = width >= _tabletBreakpoint;
-        debugPrint('[MEMBER_SHELL] constraints=${constraints.maxWidth}x${constraints.maxHeight} isDesktop=$isDesktop');
 
         return Scaffold(
           backgroundColor: AuraSurface.page,

@@ -127,15 +127,11 @@ class RealtimeRepository {
       };
     }
 
-    // DIAG: log which endpoint is called
-    debugPrint('DIAG createSession: POST $path body=${body != null}');
     final res = body == null
         ? await _dio.post(path)
         : await _dio.post(path, data: body);
     final sessionMap = _unwrapMap(res.data);
     final sessionId = sessionMap['id']?.toString() ?? '';
-    // DIAG: confirm session id was extracted
-    debugPrint('DIAG createSession: response id="$sessionId" keys=${sessionMap.keys.take(6).toList()}');
     return await loadSessionBundle(sessionId);
   }
 
@@ -293,15 +289,12 @@ class RealtimeRepository {
     if ((surfaceType == 'thread' || surfaceType == 'dm') &&
         surfaceId.isNotEmpty) {
       final joinPath = '/threads/$surfaceId/live/$id/join';
-      // DIAG: log join path
-      debugPrint('DIAG joinSession: POST $joinPath');
       await _dio.post(joinPath);
       return loadSessionBundle(id, forceRefresh: true);
     }
 
     if (surfaceType == 'space' && surfaceId.isNotEmpty) {
       final joinPath = '/spaces/$surfaceId/live/$id/join';
-      debugPrint('DIAG joinSession: POST $joinPath');
       await _dio.post(joinPath);
       return loadSessionBundle(id, forceRefresh: true);
     }
@@ -311,12 +304,10 @@ class RealtimeRepository {
             surfaceType == 'institutionroom') &&
         surfaceId.isNotEmpty) {
       final joinPath = '/rooms/$surfaceId/live/$id/join';
-      debugPrint('DIAG joinSession: POST $joinPath');
       await _dio.post(joinPath);
       return loadSessionBundle(id, forceRefresh: true);
     }
 
-    debugPrint('DIAG joinSession: POST /realtime/sessions/$id/join (fallback)');
     await _dio.post('/realtime/sessions/$id/join');
     return loadSessionBundle(id, forceRefresh: true);
   }
