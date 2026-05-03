@@ -394,8 +394,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (!liveState.isJoined) return widget.child;
       // Active local call — keep PiP overlay mounted so the card persists
       // when the user navigates away from the /realtime screen.
-      return Stack(
-        fit: StackFit.expand,
+      return Stack(        
         children: [
           widget.child,
           const FloatingCallWidget(),
