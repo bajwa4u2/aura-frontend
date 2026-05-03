@@ -398,7 +398,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         fit: StackFit.expand,
         children: [
           widget.child,
-          const Positioned.fill(child: FloatingCallWidget()),
+          const FloatingCallWidget(),
         ],
       );
     }
@@ -441,7 +441,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       fit: StackFit.expand,
       children: [
         widget.child,
-        if (liveState.isJoined) const Positioned.fill(child: FloatingCallWidget()),
+        if (liveState.isJoined) const FloatingCallWidget(),
         Positioned(
           right: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
           left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,

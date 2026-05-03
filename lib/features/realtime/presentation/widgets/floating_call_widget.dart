@@ -61,7 +61,9 @@ class _CallInfo {
 /// When the call is in another tab: shows a passive "Call active in another tab"
 /// indicator with no interactive controls — passive tabs must not end calls.
 ///
-/// Must be placed inside a [Stack] that fills the screen.
+/// Placed as a direct non-positioned child of the overlay [Stack] (sized via
+/// [StackFit.expand]). Uses [Align] internally so no full-screen compositing
+/// layer is created — the card is the only painted/hit-tested surface.
 class FloatingCallWidget extends ConsumerStatefulWidget {
   const FloatingCallWidget({super.key});
 
@@ -186,30 +188,33 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       return const SizedBox.shrink();
     }
 
-    return Stack(
-      children: [
-        Positioned(
-          left: _offset!.dx,
-          top: _offset!.dy,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onPanUpdate: _onPanUpdate,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.move,
-              child: _FloatingCard(
-                isVideo: info.isVideo,
-                micOn: info.micOn,
-                cameraOn: info.cameraOn,
-                participants: info.participants,
-                duration: _formatDuration(info.startedAt),
-                isOwner: info.isOwner,
-                onReturn: info.isOwner ? () => _returnToCall(info) : null,
-                localRenderer: info.localRenderer,
-              ),
-            ),
+    // Convert absolute pixel offset to Alignment so Align can position the card
+    // without creating a full-screen compositing layer (which a Stack would do).
+    final size = MediaQuery.sizeOf(context);
+    final maxDx = (size.width - _kWidth).clamp(0.0, double.infinity);
+    final maxDy = (size.height - _kEstimatedHeight).clamp(0.0, double.infinity);
+    final fx = maxDx > 0 ? (_offset!.dx / maxDx).clamp(0.0, 1.0) : 1.0;
+    final fy = maxDy > 0 ? (_offset!.dy / maxDy).clamp(0.0, 1.0) : 1.0;
+
+    return Align(
+      alignment: Alignment(fx * 2 - 1, fy * 2 - 1),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: _onPanUpdate,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.move,
+          child: _FloatingCard(
+            isVideo: info.isVideo,
+            micOn: info.micOn,
+            cameraOn: info.cameraOn,
+            participants: info.participants,
+            duration: _formatDuration(info.startedAt),
+            isOwner: info.isOwner,
+            onReturn: info.isOwner ? () => _returnToCall(info) : null,
+            localRenderer: info.localRenderer,
           ),
         ),
-      ],
+      ),
     );
   }
 }
