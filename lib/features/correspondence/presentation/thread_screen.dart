@@ -373,6 +373,22 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
     ref.watch(threadOpenProvider(threadId));
 
+    // Refresh thread data when a live session ends so the call card clears
+    // immediately rather than waiting for the next 60-second poll cycle.
+    ref.listen<RealtimeState>(
+      realtimeControllerProvider,
+      (prev, next) {
+        if (!mounted) return;
+        // Transition from active session → idle (call ended / left / ended remotely).
+        if (prev != null &&
+            prev.session != null &&
+            next.session == null &&
+            !next.isJoined) {
+          _refreshThreadData();
+        }
+      },
+    );
+
     // Track new incoming messages for bottom-anchor affordance.
     ref.listen<AsyncValue<List<Map<String, dynamic>>>>(
       messagesProvider(widget.threadId),

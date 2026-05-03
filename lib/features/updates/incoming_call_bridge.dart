@@ -44,9 +44,23 @@ class IncomingCallBridgeNotifier
       }
     }
 
+    final sessionId = data is Map ? _str(data['sessionId']) : '';
+
+    // Dedup by both notification ID and session ID so two pushes for the same
+    // session (e.g. delivery retry on a different notification ID) don't produce
+    // two ring cards stacked on top of each other.
     state = [
       payload,
-      ...state.where((item) => _str(item['id']) != id),
+      ...state.where((item) {
+        if (_str(item['id']) == id) return false;
+        if (sessionId.isNotEmpty) {
+          final itemData = item['data'];
+          if (itemData is Map && _str(itemData['sessionId']) == sessionId) {
+            return false;
+          }
+        }
+        return true;
+      }),
     ];
   }
 

@@ -361,9 +361,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
 
     _joiningSessionId = trimmed;
-    await connect();
     _clearRtcConfiguration();
 
+    // Show "Connecting..." immediately — the user should see progress even
+    // while the socket is being established (deeplink, cold page load, etc.).
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
       sessionId: trimmed,
@@ -372,35 +373,32 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     );
 
     try {
-      await hydrateSession(trimmed);
-
-      final session = state.session;
-      if (session == null) {
-        throw StateError('Live session could not be loaded.');
+      // P0: Ensure socket is connected BEFORE any join operations.
+      // join() must never execute HTTP/socket join on a disconnected transport.
+      if (!_socketService.isConnected) {
+        await connect();
       }
 
-      final joinedBundle = await _repository.joinSession(session);
-      _applyBundle(joinedBundle);
+      // Perform join with retry-once on transient socket/network errors.
+      // A 30-second timeout covers the entire join phase.
+      await _performJoinWithRetry(trimmed);
 
-      await connect();
-      await _socketService.emitAck('session:join', <String, dynamic>{
-        'sessionId': trimmed,
-      });
-
-      // joinSession() returns and applies a fresh bundle — no need to hydrate
-      // again here. The bundle cache is also busted by the POST so a subsequent
-      // hydrateSession call would re-fetch; removing this avoids the extra round
-      // trip and the isBusy flicker it caused.
-      await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
-
-      state = state.copyWith(
-        joinState: RealtimeJoinState.joined,
-        clearIncomingCall: true,
-        infoMessage: 'You joined live.',
-      );
-      await _flushPendingOffers(refreshTurnCredentials: true);
-      await _forceNegotiationIfNeeded();
     } catch (error) {
+      if (_terminating) return;
+
+      // Retryable connection errors (socket drop, timeout, network) must NOT
+      // put the user into a fatal "failed" state. Keep joinState=joining and
+      // show a soft "Connecting…" message so the UI remains actionable and the
+      // user can tap Join again when connectivity recovers.
+      if (_isRetryableConnectionError(error)) {
+        state = state.copyWith(
+          connectionStatus: RealtimeConnectionStatus.reconnecting,
+          infoMessage: 'Connecting…',
+          clearErrorMessage: true,
+        );
+        return; // Do not rethrow — allow caller to retry.
+      }
+
       state = state.copyWith(
         joinState: _mapJoinError(error),
         errorMessage: error.toString(),
@@ -411,6 +409,72 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         _joiningSessionId = null;
       }
     }
+  }
+
+  /// Attempts to join [sessionId], retrying once if a transient socket or
+  /// network error occurs mid-join. The total wall-clock budget is 30 seconds.
+  Future<void> _performJoinWithRetry(String sessionId) async {
+    try {
+      await _performJoin(sessionId)
+          .timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      rethrow; // Caller treats this as retryable.
+    } catch (error) {
+      // Retry once on a recoverable transport error (socket drop, WebSocket
+      // close) — re-establishing the connection before the second attempt.
+      if (_isRetryableConnectionError(error) &&
+          !_terminating &&
+          _joiningSessionId == sessionId) {
+        if (!_socketService.isConnected) {
+          await connect().timeout(const Duration(seconds: 10));
+        }
+        await _performJoin(sessionId)
+            .timeout(const Duration(seconds: 30));
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  bool _isRetryableConnectionError(Object error) {
+    if (error is TimeoutException) return true;
+    final text = error.toString().toLowerCase();
+    return text.contains('socket') ||
+        text.contains('connect') ||
+        text.contains('websocket') ||
+        text.contains('transport') ||
+        text.contains('network');
+  }
+
+  Future<void> _performJoin(String sessionId) async {
+    await hydrateSession(sessionId);
+
+    final session = state.session;
+    if (session == null) {
+      throw StateError('Live session could not be loaded.');
+    }
+
+    final joinedBundle = await _repository.joinSession(session);
+    _applyBundle(joinedBundle);
+
+    await connect();
+    await _socketService.emitAck('session:join', <String, dynamic>{
+      'sessionId': sessionId,
+    });
+
+    // joinSession() returns and applies a fresh bundle — no need to hydrate
+    // again here. The bundle cache is also busted by the POST so a subsequent
+    // hydrateSession call would re-fetch; removing this avoids the extra round
+    // trip and the isBusy flicker it caused.
+    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+
+    state = state.copyWith(
+      joinState: RealtimeJoinState.joined,
+      clearIncomingCall: true,
+      infoMessage: 'You joined live.',
+    );
+    await _flushPendingOffers(refreshTurnCredentials: true);
+    await _forceNegotiationIfNeeded();
   }
 
   Future<void> resume(String sessionId) async {
@@ -1278,8 +1342,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:ended':
-        // Host ended the session — tear down media and leave cleanly.
+        // Session ended — tear down media, clear stale bundle cache so any
+        // subsequent fetch sees the ENDED status rather than a cached snapshot.
+        final endedSessionId = _managedSessionId;
         _clearPendingOfferTargets();
+        if (endedSessionId.isNotEmpty) {
+          _repository.clearBundleCache(endedSessionId);
+        }
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(
           joinState: RealtimeJoinState.idle,

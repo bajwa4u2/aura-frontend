@@ -143,6 +143,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   @override
   void dispose() {
     _durationTimer?.cancel();
+    // Best-effort leave on dispose (browser refresh / forced navigation).
+    // The backend sweep handles any lingering presence if this call is lost,
+    // but sending it explicitly reduces the ghost-participant window.
+    final controller = ref.read(realtimeControllerProvider.notifier);
+    if (ref.read(realtimeControllerProvider).isJoined) {
+      unawaited(controller.leave().catchError((_) {}));
+    }
     super.dispose();
   }
 
