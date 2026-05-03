@@ -454,6 +454,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       throw StateError('Live session could not be loaded.');
     }
 
+    if (!session.isActive) {
+      throw StateError('This session has already ended.');
+    }
+
     final joinedBundle = await _repository.joinSession(session);
     _applyBundle(joinedBundle);
 

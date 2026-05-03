@@ -123,7 +123,7 @@ String _threadResolvedSessionId(
   if (nested.isNotEmpty) return nested;
 
   final session = liveState.session;
-  if (session != null) {
+  if (session != null && session.isActive) {
     final expectedType = _threadLiveSurfaceType(thread).trim().toLowerCase();
     final expectedId = _threadLiveSurfaceId(thread, fallbackThreadId).trim();
     final sessionType = session.surfaceType.name.trim().toLowerCase();
