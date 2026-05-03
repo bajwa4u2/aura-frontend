@@ -455,17 +455,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   onParticipants: () =>
                       _togglePanel(_kPanelParticipants, wide),
                   onMore: () => _togglePanel(_kPanelMore, wide),
-                  // DM/thread are always 1:1 — both sides end.
-                  // Space/room: host ends, others leave.
-                  isEndCall: isHost ||
-                      state.session?.surfaceType == RealtimeSurfaceType.dm ||
-                      state.session?.surfaceType == RealtimeSurfaceType.thread,
+                  // Only the session host can end for everyone.
+                  // Non-hosts always leave; the backend auto-ends when the
+                  // last active participant leaves.
+                  isEndCall: isHost,
                   isEnding: _isEnding,
                   onLeave: _isEnding
                       ? null
-                      : (isHost ||
-                              state.session?.surfaceType == RealtimeSurfaceType.dm ||
-                              state.session?.surfaceType == RealtimeSurfaceType.thread)
+                      : isHost
                           ? () => unawaited(_endCallAndClose(controller))
                           : () => unawaited(_leaveAndNavigate(controller)),
                 ),
