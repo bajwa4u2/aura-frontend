@@ -54,16 +54,16 @@ class _CallInfo {
 // FLOATING CALL WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Minimised call status strip.
+/// Minimized call status strip.
 ///
 /// Shown when the user navigates away from the full call screen (/realtime/:id).
-/// When this tab owns the call: shows Return and End/Leave controls.
+/// When this tab owns the call: shows Return control.
 /// When the call is in another tab: shows a passive "Call active in another tab"
 /// indicator with no interactive controls — passive tabs must not end calls.
 ///
-/// Placed as a direct non-positioned child of the overlay [Stack] (sized via
-/// [StackFit.expand]). Uses [Align] internally so no full-screen compositing
-/// layer is created — the card is the only painted/hit-tested surface.
+/// This widget is mounted inside the app shell overlay. The overlay parent can
+/// occupy the full shell bounds, so this widget must pass pointer events through
+/// everywhere except the actual PiP card.
 class FloatingCallWidget extends ConsumerStatefulWidget {
   const FloatingCallWidget({super.key});
 
@@ -115,8 +115,10 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       final raw = _offset! + d.delta;
       _offset = Offset(
         raw.dx.clamp(0.0, (size.width - _kWidth).clamp(0.0, double.infinity)),
-        raw.dy
-            .clamp(0.0, (size.height - _kEstimatedHeight).clamp(0.0, double.infinity)),
+        raw.dy.clamp(
+          0.0,
+          (size.height - _kEstimatedHeight).clamp(0.0, double.infinity),
+        ),
       );
     });
   }
@@ -127,10 +129,12 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     final local = ref.read(realtimeControllerProvider);
     final sessionId = local.sessionId;
     if (!local.isJoined || sessionId == null || sessionId.isEmpty) return null;
-    // Do not render PiP for sessions that have ended on the server — the
-    // session:ended handler will clear joinState, but guard here too so
-    // a brief race window never shows a stale PiP.
+
+    // Do not render PiP for sessions that have ended on the server. The
+    // session:ended handler will clear joinState, but guard here too so a brief
+    // race window never shows a stale PiP.
     if (local.session?.isActive == false) return null;
+
     return _CallInfo(
       sessionId: sessionId,
       isVideo: local.isVideoMode,
@@ -189,29 +193,38 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     }
 
     // Convert absolute pixel offset to Alignment so Align can position the card
-    // without creating a full-screen compositing layer (which a Stack would do).
+    // without a local full-screen Stack. Because this widget may still be laid
+    // out by a full-screen parent overlay, the outer IgnorePointer lets the app
+    // behind remain interactive while the inner IgnorePointer re-enables only
+    // the actual PiP card.
     final size = MediaQuery.sizeOf(context);
     final maxDx = (size.width - _kWidth).clamp(0.0, double.infinity);
     final maxDy = (size.height - _kEstimatedHeight).clamp(0.0, double.infinity);
     final fx = maxDx > 0 ? (_offset!.dx / maxDx).clamp(0.0, 1.0) : 1.0;
     final fy = maxDy > 0 ? (_offset!.dy / maxDy).clamp(0.0, 1.0) : 1.0;
 
-    return Align(
-      alignment: Alignment(fx * 2 - 1, fy * 2 - 1),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onPanUpdate: _onPanUpdate,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.move,
-          child: _FloatingCard(
-            isVideo: info.isVideo,
-            micOn: info.micOn,
-            cameraOn: info.cameraOn,
-            participants: info.participants,
-            duration: _formatDuration(info.startedAt),
-            isOwner: info.isOwner,
-            onReturn: info.isOwner ? () => _returnToCall(info) : null,
-            localRenderer: info.localRenderer,
+    return IgnorePointer(
+      ignoring: true,
+      child: Align(
+        alignment: Alignment(fx * 2 - 1, fy * 2 - 1),
+        child: IgnorePointer(
+          ignoring: false,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanUpdate: _onPanUpdate,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.move,
+              child: _FloatingCard(
+                isVideo: info.isVideo,
+                micOn: info.micOn,
+                cameraOn: info.cameraOn,
+                participants: info.participants,
+                duration: _formatDuration(info.startedAt),
+                isOwner: info.isOwner,
+                onReturn: info.isOwner ? () => _returnToCall(info) : null,
+                localRenderer: info.localRenderer,
+              ),
+            ),
           ),
         ),
       ),
@@ -249,7 +262,10 @@ class _FloatingCard extends StatelessWidget {
     return Container(
       width: _kWidth,
       padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s12, AuraSpace.s10, AuraSpace.s10, AuraSpace.s10,
+        AuraSpace.s12,
+        AuraSpace.s10,
+        AuraSpace.s10,
+        AuraSpace.s10,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1E33),
@@ -272,7 +288,6 @@ class _FloatingCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Video preview (video calls with camera on) ────────────────────
           if (isVideo && cameraOn && localRenderer != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(AuraRadius.md),
@@ -288,8 +303,6 @@ class _FloatingCard extends StatelessWidget {
             ),
             const SizedBox(height: AuraSpace.s8),
           ],
-
-          // ── Row 1: live indicator · title · duration · drag handle ────────
           Row(
             children: [
               _LiveDot(active: isOwner),
@@ -319,10 +332,7 @@ class _FloatingCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: AuraSpace.s8),
-
-          // ── Row 2: avatars · status · buttons ────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -330,7 +340,6 @@ class _FloatingCard extends StatelessWidget {
                 _MiniAvatarStack(participants: participants),
                 const SizedBox(width: AuraSpace.s8),
               ],
-
               if (isOwner) ...[
                 _StatusDot(
                   icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
@@ -346,7 +355,6 @@ class _FloatingCard extends StatelessWidget {
                   ),
                 ],
               ] else ...[
-                // Passive tab — show a subtle indicator only
                 Text(
                   'Active',
                   style: AuraText.micro.copyWith(
@@ -354,9 +362,7 @@ class _FloatingCard extends StatelessWidget {
                   ),
                 ),
               ],
-
               const Spacer(),
-
               if (onReturn != null)
                 _Chip(
                   label: 'Return',
@@ -451,7 +457,11 @@ class _StatusDot extends StatelessWidget {
         color: on ? AuraSurface.goodBg : AuraSurface.dangerBg,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: 12, color: on ? AuraSurface.goodInk : AuraSurface.dangerInk),
+      child: Icon(
+        icon,
+        size: 12,
+        color: on ? AuraSurface.goodInk : AuraSurface.dangerInk,
+      ),
     );
   }
 }
