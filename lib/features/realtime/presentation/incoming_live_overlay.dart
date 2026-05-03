@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/communication/communication_resolver.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../correspondence/data/correspondence_live_service.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -52,6 +53,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     )..repeat(reverse: true);
     _pulseAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    // Ensure the main-namespace socket is connected as soon as the shell mounts
+    // so call invites are delivered even when the user has not opened a thread
+    // or space. ensureConnected() is idempotent and safe to call eagerly.
+    Future.microtask(
+      () => ref.read(correspondenceLiveServiceProvider).ensureConnected(),
     );
   }
 

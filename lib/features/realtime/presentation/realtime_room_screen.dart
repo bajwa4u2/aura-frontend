@@ -17,6 +17,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../correspondence/presentation/thread_screen.dart';
 import '../../search/search_repository.dart';
+import '../application/caller_ringback_provider.dart';
 import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
@@ -323,6 +324,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final state = ref.watch(realtimeControllerProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
+    final ringingSessionIds = ref.watch(callerRingbackProvider);
 
     // After teardown, leave the realtime route immediately. Do not render a
     // blank scaffold on /realtime/:id; that was the source of the grey/wrapped
@@ -398,6 +400,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 participantCount: state.participants.length,
                 isConnecting: isConnecting,
                 hasIssue: showConnectionIssue,
+                isRinging: state.isJoined &&
+                    state.participants.length <= 1 &&
+                    ringingSessionIds.contains(widget.sessionId),
+                onMinimize: state.isJoined
+                    ? () => _minimizeCall(state.session)
+                    : null,
               ),
 
               // ── Consent banner ────────────────────────────────────────────
@@ -659,6 +667,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           policy?.waitingRoomEnabled == true,
         );
       case RealtimeJoinState.failed:
+        final errLower = (state.errorMessage ?? '').toLowerCase();
+        final isTerminal = errLower.contains('invite_expired') ||
+            errLower.contains('invite has expired') ||
+            errLower.contains('session_closed') ||
+            errLower.contains('session is closed');
+        if (isTerminal) {
+          return (
+            Icons.call_end_rounded,
+            'Call unavailable',
+            'This call has ended or your invite has expired.',
+            false,
+            false,
+          );
+        }
         return (
           Icons.error_outline_rounded,
           'Could not join',
@@ -764,6 +786,8 @@ class _CallTopBar extends StatelessWidget {
     required this.isConnecting,
     required this.hasIssue,
     this.contextLabel,
+    this.isRinging = false,
+    this.onMinimize,
   });
 
   final String title;
@@ -772,6 +796,8 @@ class _CallTopBar extends StatelessWidget {
   final int participantCount;
   final bool isConnecting;
   final bool hasIssue;
+  final bool isRinging;
+  final VoidCallback? onMinimize;
 
   String _fmt(Duration d) {
     final s = d.inSeconds;
@@ -795,6 +821,9 @@ class _CallTopBar extends StatelessWidget {
     } else if (isConnecting) {
       statusColor = AuraSurface.warnInk;
       statusLabel = 'Connecting…';
+    } else if (isRinging) {
+      statusColor = const Color(0xFFFBBF24);
+      statusLabel = 'Ringing…';
     } else {
       statusColor = const Color(0xFF4ADE80);
       statusLabel = 'Live';
@@ -860,8 +889,8 @@ class _CallTopBar extends StatelessWidget {
 
           const Spacer(),
 
-          // Status label (only when not normal)
-          if (hasIssue || isConnecting) ...[
+          // Status label (issue, connecting, or ringing states)
+          if (hasIssue || isConnecting || isRinging) ...[
             Text(
               statusLabel,
               style: AuraText.label.copyWith(color: statusColor),
@@ -898,6 +927,31 @@ class _CallTopBar extends StatelessWidget {
               ],
             ),
           ),
+
+          // Minimize button — navigates to previous route with PiP overlay
+          if (onMinimize != null) ...[
+            const SizedBox(width: AuraSpace.s8),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: onMinimize,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AuraSurface.card,
+                    borderRadius: BorderRadius.circular(AuraRadius.md),
+                    border: Border.all(color: AuraSurface.divider),
+                  ),
+                  child: const Icon(
+                    Icons.minimize_rounded,
+                    size: 16,
+                    color: AuraSurface.muted,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

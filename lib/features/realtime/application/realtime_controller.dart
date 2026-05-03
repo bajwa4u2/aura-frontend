@@ -1295,6 +1295,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           );
         }
         return;
+      case 'session:ended':
+        // Host ended the session — tear down media and leave cleanly.
+        _clearPendingOfferTargets();
+        unawaited(_mediaService.resetSessionMedia());
+        state = _copyWithDetachedMediaState(
+          joinState: RealtimeJoinState.idle,
+          clearSessionContext: true,
+          infoMessage: 'The call has ended.',
+          lastSocketEvent: event.name,
+        );
+        return;
       case 'session:stale':
         // Server detected heartbeat timeout and is about to disconnect this
         // socket — treat as a local disconnect so the UI tears down cleanly.
@@ -1341,6 +1352,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
     if (text.contains('locked')) return RealtimeJoinState.locked;
     if (text.contains('reject')) return RealtimeJoinState.rejected;
+    // Expired invites and closed sessions are terminal — map to failed so the
+    // pre-join view can detect them via errorMessage and suppress the retry button.
+    if (text.contains('invite_expired') ||
+        text.contains('invite has expired') ||
+        text.contains('session_closed') ||
+        text.contains('session is closed')) {
+      return RealtimeJoinState.failed;
+    }
     return RealtimeJoinState.failed;
   }
 

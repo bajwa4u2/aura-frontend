@@ -124,20 +124,21 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   _CallInfo? _resolve() {
     final local = ref.read(realtimeControllerProvider);
     final sessionId = local.sessionId;
-    if (local.isJoined && sessionId != null && sessionId.isNotEmpty) {
-      return _CallInfo(
-        sessionId: sessionId,
-        isVideo: local.isVideoMode,
-        micOn: local.microphoneEnabled,
-        cameraOn: local.cameraEnabled,
-        startedAt: local.session?.startedAt,
-        participants: local.participants.where((p) => p.isPresent).toList(),
-        isOwner: true,
-        localRenderer: local.localRenderer,
-      );
-    }
-
-    return null;
+    if (!local.isJoined || sessionId == null || sessionId.isEmpty) return null;
+    // Do not render PiP for sessions that have ended on the server — the
+    // session:ended handler will clear joinState, but guard here too so
+    // a brief race window never shows a stale PiP.
+    if (local.session?.isActive == false) return null;
+    return _CallInfo(
+      sessionId: sessionId,
+      isVideo: local.isVideoMode,
+      micOn: local.microphoneEnabled,
+      cameraOn: local.cameraEnabled,
+      startedAt: local.session?.startedAt,
+      participants: local.participants.where((p) => p.isPresent).toList(),
+      isOwner: true,
+      localRenderer: local.localRenderer,
+    );
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────────

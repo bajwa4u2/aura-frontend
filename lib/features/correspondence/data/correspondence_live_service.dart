@@ -112,6 +112,8 @@ class CorrespondenceLiveService {
 
     for (final name in const <String>[
       'call:incoming',
+      'call:ringing_started',
+      'call:terminal',
       'invite:created',
       'invite:updated',
       'space:member.joined',
@@ -127,7 +129,6 @@ class CorrespondenceLiveService {
       'session:participant.left',
       'session:removed',
       'realtime:removed',
-      'call:terminal',
     ]) {
       onNamed(name);
     }
