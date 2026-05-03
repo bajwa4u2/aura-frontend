@@ -199,6 +199,19 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       return false;
     }
 
+    // Already joined this exact session — never re-interrupt regardless of route.
+    if (liveState.isJoined &&
+        sessionId.isNotEmpty &&
+        liveState.sessionId == sessionId) {
+      return false;
+    }
+
+    // Joined any call on a non-thread route — suppress the card so the PiP
+    // widget is the only call UI visible.
+    if (liveState.isJoined && !currentPath.contains('/thread/')) {
+      return false;
+    }
+
     // On any thread route: only suppress if we are already joined into this
     // exact session. A call from a different thread must still show the overlay.
     if (currentPath.contains('/thread/')) {
@@ -437,7 +450,6 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final ringLabel = isVideo ? 'Incoming video call' : 'Incoming audio call';
 
     return Stack(
-      fit: StackFit.expand,
       children: [
         widget.child,
         if (liveState.isJoined) const FloatingCallWidget(),

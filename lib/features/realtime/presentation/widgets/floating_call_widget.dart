@@ -192,7 +192,6 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       top: _offset!.dy,
       width: _kWidth,
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
         onPanUpdate: _onPanUpdate,
         child: MouseRegion(
           cursor: SystemMouseCursors.move,
