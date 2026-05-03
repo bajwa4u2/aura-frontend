@@ -16,9 +16,6 @@ import '../../../core/ui/aura_text.dart';
 
 import '../../feed/providers.dart';
 import '../../posts/presentation/widgets/post_card.dart';
-import '../../realtime/application/realtime_providers.dart';
-import '../../realtime/domain/realtime_enums.dart';
-import '../../realtime/domain/realtime_models.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -148,7 +145,6 @@ class MemberHomeScreen extends ConsumerWidget {
   Future<void> _refresh(WidgetRef ref) async {
     ref.invalidate(latestHeldProvider);
     ref.invalidate(pinnedAnnouncementProvider);
-    ref.invalidate(liveSessionsProvider);
     await ref.read(feedControllerProvider.notifier).loadInitial();
   }
 
@@ -158,9 +154,6 @@ class MemberHomeScreen extends ConsumerWidget {
     final heldAsync = isAuthed
         ? ref.watch(latestHeldProvider)
         : const AsyncValue<Map<String, dynamic>?>.data(null);
-    final liveAsync = isAuthed
-        ? ref.watch(liveSessionsProvider)
-        : const AsyncValue<List<RealtimeSession>>.data([]);
 
     return AuraScaffold(
       showHeader: false,
@@ -179,15 +172,6 @@ class MemberHomeScreen extends ConsumerWidget {
               children: [
                 // ── Pinned announcement (silent if absent)
                 const _PinnedAnnouncementBanner(),
-
-                // ── Live now (hidden when no active sessions)
-                liveAsync.when(
-                  data: (sessions) => sessions.isEmpty
-                      ? const SizedBox.shrink()
-                      : _LiveNowSection(sessions: sessions),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
 
                 // ── Composer entry card
                 heldAsync.when(
@@ -664,173 +648,3 @@ class _SortPill extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LIVE NOW SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LiveNowSection extends StatelessWidget {
-  const _LiveNowSection({required this.sessions});
-
-  final List<RealtimeSession> sessions;
-
-  String _sessionLabel(RealtimeSession s) {
-    final name = s.contextName ?? s.title;
-    switch (s.surfaceType) {
-      case RealtimeSurfaceType.dm:
-        return name != null ? 'Direct call · $name' : 'Direct call';
-      case RealtimeSurfaceType.thread:
-        return name != null ? 'in $name' : 'Thread call';
-      case RealtimeSurfaceType.space:
-      case RealtimeSurfaceType.room:
-        return name != null ? 'in $name' : 'Space live';
-      case RealtimeSurfaceType.institution:
-        return name != null ? '$name · Institution' : 'Institution live';
-      case RealtimeSurfaceType.unknown:
-        return name ?? 'Live session';
-    }
-  }
-
-  String _kindLabel(RealtimeSession s) {
-    switch (s.kind.toUpperCase()) {
-      case 'VIDEO':
-        return 'Video';
-      case 'SCREEN':
-        return 'Screen share';
-      default:
-        return 'Audio';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-            child: Row(
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4ADE80),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s8),
-                Text(
-                  'Live now',
-                  style: AuraText.label.copyWith(
-                    color: AuraSurface.ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...sessions.map((s) => _LiveNowTile(
-                session: s,
-                label: _sessionLabel(s),
-                kindLabel: _kindLabel(s),
-              )),
-        ],
-      ),
-    );
-  }
-}
-
-class _LiveNowTile extends StatelessWidget {
-  const _LiveNowTile({
-    required this.session,
-    required this.label,
-    required this.kindLabel,
-  });
-
-  final RealtimeSession session;
-  final String label;
-  final String kindLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.go('/realtime/${session.id}'),
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s16,
-              vertical: AuraSpace.s12,
-            ),
-            decoration: BoxDecoration(
-              color: AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
-                    borderRadius: BorderRadius.circular(AuraRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.mic_rounded,
-                    size: AuraIconSize.sm,
-                    color: AuraSurface.accentText,
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: AuraText.body.copyWith(
-                          color: AuraSurface.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        kindLabel,
-                        style: AuraText.small.copyWith(color: AuraSurface.muted),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12,
-                    vertical: AuraSpace.s6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  ),
-                  child: Text(
-                    'Join',
-                    style: AuraText.label.copyWith(
-                      color: AuraSurface.accentText,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -272,7 +272,6 @@ class _MemberHeader extends StatelessWidget {
                   searchPath: '/search',
                   activityPath: '/activity',
                   invitePath: '/invite',
-                  liveRoomsPath: '/realtime',
                 ),
               ],
             ),

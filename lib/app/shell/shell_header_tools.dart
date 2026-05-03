@@ -11,6 +11,9 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/realtime/application/realtime_providers.dart';
+import '../../features/realtime/domain/realtime_enums.dart';
+import '../../features/realtime/domain/realtime_models.dart';
 import '../../features/updates/providers.dart';
 import '../route_targets.dart';
 
@@ -45,7 +48,6 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
     required this.searchPath,
     required this.activityPath,
     required this.invitePath,
-    this.liveRoomsPath,
   });
 
   final bool isTablet;
@@ -53,7 +55,6 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
   final String searchPath;
   final String activityPath;
   final String invitePath;
-  final String? liveRoomsPath;
 
   @override
   ConsumerState<ShellHeaderTools> createState() => _ShellHeaderToolsState();
@@ -125,14 +126,8 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         unreadCount: unreadCount,
         onTap: () => context.push(widget.activityPath),
       ),
-      if ((widget.liveRoomsPath ?? '').isNotEmpty) ...[
-        gap,
-        _HeaderIconBtn(
-          icon: Icons.videocam_outlined,
-          tooltip: 'Live rooms',
-          onTap: () => context.push(widget.liveRoomsPath!),
-        ),
-      ],
+      gap,
+      const _HeaderLiveBtn(),
       gap,
       _HeaderIconBtn(
         icon: Icons.outbound_outlined,
@@ -149,6 +144,177 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
 
     if (widget.isTablet) tools.add(const SizedBox(width: AuraSpace.s4));
     return Row(mainAxisSize: MainAxisSize.min, children: tools);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIVE BUTTON — replaces "Live rooms" icon; shows discoverable Space/Room/
+// Institution sessions in a capped (max 3) popup, deduplicated, no 1:1 DMs.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HeaderLiveBtn extends ConsumerWidget {
+  const _HeaderLiveBtn();
+
+  String _sessionLabel(RealtimeSession s) {
+    final name = s.contextName ?? s.title;
+    switch (s.surfaceType) {
+      case RealtimeSurfaceType.space:
+        return name != null ? 'in $name' : 'Space';
+      case RealtimeSurfaceType.room:
+        return name ?? 'Live room';
+      case RealtimeSurfaceType.institution:
+        return name != null ? '$name · Institution' : 'Institution';
+      default:
+        return name ?? 'Live session';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessions = ref
+        .watch(discoverableLiveSessionsProvider)
+        .maybeWhen(data: (s) => s, orElse: () => <RealtimeSession>[]);
+    final hasLive = sessions.isNotEmpty;
+
+    return PopupMenuButton<String>(
+      tooltip: 'Live',
+      offset: const Offset(0, 44),
+      color: AuraSurface.overlay,
+      constraints: const BoxConstraints(minWidth: 240, maxWidth: 300),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AuraRadius.r16),
+        side: const BorderSide(color: AuraSurface.divider),
+      ),
+      itemBuilder: (_) {
+        if (sessions.isEmpty) {
+          return [
+            PopupMenuItem<String>(
+              enabled: false,
+              child: Text(
+                'No live sessions right now',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ),
+          ];
+        }
+        return [
+          ...sessions.map(
+            (s) => PopupMenuItem<String>(
+              value: s.id,
+              child: _LiveSessionMenuTile(label: _sessionLabel(s), kind: s.kind),
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: '__open',
+            child: Row(
+              children: [
+                const Icon(Icons.open_in_full_rounded,
+                    size: 14, color: AuraSurface.muted),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'Open Live',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ),
+          ),
+        ];
+      },
+      onSelected: (value) {
+        if (value == '__open') {
+          context.push('/realtime');
+        } else {
+          context.go('/realtime/$value');
+        }
+      },
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: hasLive
+                ? AuraSurface.accent.withValues(alpha: 0.45)
+                : AuraSurface.divider,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: hasLive
+                    ? const Color(0xFF4ADE80)
+                    : AuraSurface.faint,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s6),
+            Text(
+              'Live',
+              style: AuraText.small.copyWith(
+                fontWeight: FontWeight.w700,
+                color: hasLive ? AuraSurface.ink : AuraSurface.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveSessionMenuTile extends StatelessWidget {
+  const _LiveSessionMenuTile({required this.label, required this.kind});
+
+  final String label;
+  final String kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final isVideo = kind.toUpperCase() == 'VIDEO';
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: const BoxDecoration(
+            color: Color(0xFF4ADE80),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        Icon(
+          isVideo ? Icons.videocam_outlined : Icons.mic_outlined,
+          size: 13,
+          color: AuraSurface.muted,
+        ),
+        const SizedBox(width: AuraSpace.s6),
+        Expanded(
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.ink,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        Text(
+          'Join',
+          style: AuraText.label.copyWith(
+            color: AuraSurface.accentText,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
   }
 }
 

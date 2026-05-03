@@ -127,11 +127,13 @@ class SpacesRepository {
     String? name,
     String? description,
     String? visibility,
+    bool? archived,
   }) async {
     final body = <String, dynamic>{
       if (_hasText(name)) 'title': name!.trim(),
       if (_hasText(description)) 'description': description!.trim(),
       if (_hasText(visibility)) 'visibility': visibility!.trim(),
+      if (archived != null) 'archived': archived,
     };
 
     final res = await _dio.patch('/spaces/$spaceId', data: body);

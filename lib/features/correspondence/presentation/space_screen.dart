@@ -224,6 +224,8 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
                   space: space,
                   onCreateThread: () => _showCreateThreadDialog(context, ref),
                   onInviteMember: () => _openInviteScreen(context),
+                  onRename: () => _renameSpace(context, ref, space),
+                  onArchive: () => _archiveSpace(context, ref),
                 ),
               ),
               const SizedBox(height: AuraSpace.s14),
@@ -294,6 +296,94 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
     if (created == true) {
       ref.invalidate(_threadsProvider(widget.spaceId));
       ref.invalidate(_spaceDetailProvider(widget.spaceId));
+    }
+  }
+
+  Future<void> _renameSpace(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> space,
+  ) async {
+    final currentName = _pickString(space, const ['name', 'title']);
+    final controller = TextEditingController(text: currentName);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename space'),
+        content: SizedBox(
+          width: 400,
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Space name'),
+          ),
+        ),
+        actions: [
+          AuraGhostButton(
+            label: 'Cancel',
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          AuraPrimaryButton(
+            label: 'Rename',
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: Icons.check_rounded,
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (confirmed != true || !mounted) return;
+    final newName = controller.text.trim();
+    if (newName.isEmpty || newName == currentName) return;
+    try {
+      await ref.read(spacesRepositoryProvider).updateSpace(
+            widget.spaceId,
+            name: newName,
+          );
+      ref.invalidate(_spaceDetailProvider(widget.spaceId));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not rename space: $e')),
+      );
+    }
+  }
+
+  Future<void> _archiveSpace(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Archive space'),
+        content: const Text(
+          'Archiving this space will hide it from active views. '
+          'Members will no longer see it in their space list.',
+        ),
+        actions: [
+          AuraGhostButton(
+            label: 'Cancel',
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          AuraPrimaryButton(
+            label: 'Archive',
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: Icons.archive_outlined,
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(spacesRepositoryProvider).updateSpace(
+            widget.spaceId,
+            archived: true,
+          );
+      if (!mounted) return;
+      context.go('/me/correspondence');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not archive space: $e')),
+      );
     }
   }
 
@@ -623,11 +713,15 @@ class _SpaceHeaderCard extends StatelessWidget {
     required this.space,
     required this.onCreateThread,
     required this.onInviteMember,
+    this.onRename,
+    this.onArchive,
   });
 
   final Map<String, dynamic> space;
   final VoidCallback onCreateThread;
   final VoidCallback onInviteMember;
+  final VoidCallback? onRename;
+  final VoidCallback? onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -641,19 +735,52 @@ class _SpaceHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AuraTextBlock(
-                name.isEmpty ? 'Untitled space' : name,
-                style: AuraText.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Wrap(
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    AuraTextBlock(
+                      name.isEmpty ? 'Untitled space' : name,
+                      style: AuraText.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (visibility.isNotEmpty)
+                      _Pill(label: visibility.replaceAll('_', ' ')),
+                  ],
+                ),
               ),
-              if (visibility.isNotEmpty)
-                _Pill(label: visibility.replaceAll('_', ' ')),
+              if (onRename != null || onArchive != null)
+                PopupMenuButton<String>(
+                  tooltip: 'Space options',
+                  icon: const Icon(
+                    Icons.more_horiz_rounded,
+                    size: 18,
+                    color: AuraSurface.muted,
+                  ),
+                  color: AuraSurface.card,
+                  itemBuilder: (_) => [
+                    if (onRename != null)
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Text('Rename space'),
+                      ),
+                    if (onArchive != null)
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Text('Archive space'),
+                      ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 'rename') onRename?.call();
+                    if (value == 'archive') onArchive?.call();
+                  },
+                ),
             ],
           ),
           if (description.isNotEmpty) ...[

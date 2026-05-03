@@ -174,6 +174,7 @@ class RealtimeSession {
     required this.durationSeconds,
     required this.createdAt,
     required this.updatedAt,
+    required this.activeParticipantCount,
     this.title,
     this.metadataJson,
   });
@@ -194,6 +195,8 @@ class RealtimeSession {
   final int? durationSeconds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  /// Number of participants with joinState ACTIVE or JOINING.
+  final int activeParticipantCount;
   final String? title;
   final Map<String, dynamic>? metadataJson;
 
@@ -209,6 +212,18 @@ class RealtimeSession {
   factory RealtimeSession.fromJson(Map<String, dynamic> json) {
     final rawMeta = json['metadataJson'] ?? json['metadata'];
     final meta = rawMeta is Map ? Map<String, dynamic>.from(rawMeta) : null;
+
+    final rawParts = json['participants'];
+    int activeParts = 0;
+    if (rawParts is List) {
+      for (final p in rawParts) {
+        if (p is Map) {
+          final js = (p['joinState'] ?? '').toString().toUpperCase();
+          if (js == 'ACTIVE' || js == 'JOINING') activeParts++;
+        }
+      }
+    }
+
     return RealtimeSession(
       id: (json['id'] ?? '').toString(),
       surfaceType: _readSurfaceType(json['surfaceType']),
@@ -233,6 +248,7 @@ class RealtimeSession {
       durationSeconds: _readInt(json['durationSeconds']),
       createdAt: _readDate(json['createdAt']),
       updatedAt: _readDate(json['updatedAt']),
+      activeParticipantCount: activeParts,
       title: _readString(json['title']),
       metadataJson: meta,
     );

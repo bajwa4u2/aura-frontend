@@ -283,6 +283,90 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     }
   }
 
+  Future<void> _renameThread(String currentTitle) async {
+    final ctrl = TextEditingController(text: currentTitle);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        title: const Text('Rename conversation'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 120,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Conversation name',
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (newTitle == null || newTitle.isEmpty || !mounted) return;
+    try {
+      await ref
+          .read(threadsRepositoryProvider)
+          .updateThread(widget.threadId, title: newTitle);
+      ref.invalidate(threadDetailProvider(widget.threadId));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not rename. Please try again.')),
+      );
+    }
+  }
+
+  Future<void> _archiveThread() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        title: const Text('Archive conversation'),
+        content: const Text(
+          'This conversation will be archived and hidden from your messages. '
+          'Members can still access it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AuraSurface.dangerInk,
+            ),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(threadsRepositoryProvider)
+          .updateThread(widget.threadId, archived: true);
+      if (!mounted) return;
+      context.pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not archive. Please try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final threadId = widget.threadId;
@@ -379,6 +463,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       );
                     }
                   : null,
+              // Rename/archive only for group or space threads — not 1:1.
+              onRename: !threadContext.isDirect
+                  ? () => _renameThread(threadContext.explicitTitle)
+                  : null,
+              onArchive: !threadContext.isDirect ? _archiveThread : null,
             )
           else
             const _ThreadBarPlaceholder(),
@@ -533,6 +622,8 @@ class _ThreadCompactBar extends StatelessWidget {
     this.onOpenSpace,
     this.onInvite,
     this.onAddMembers,
+    this.onRename,
+    this.onArchive,
   });
 
   final CorrespondenceThreadContext contextData;
@@ -543,6 +634,8 @@ class _ThreadCompactBar extends StatelessWidget {
   final VoidCallback? onOpenSpace;
   final VoidCallback? onInvite;
   final VoidCallback? onAddMembers;
+  final VoidCallback? onRename;
+  final VoidCallback? onArchive;
 
   String _contextLine() {
     if (contextData.isSpace) {
@@ -655,6 +748,19 @@ class _ThreadCompactBar extends StatelessWidget {
                   ),
                 ]);
               }
+              if (onRename != null || onArchive != null) {
+                items.add(const PopupMenuDivider());
+                if (onRename != null)
+                  items.add(const PopupMenuItem(
+                    value: 'rename',
+                    child: Text('Rename conversation'),
+                  ));
+                if (onArchive != null)
+                  items.add(const PopupMenuItem(
+                    value: 'archive',
+                    child: Text('Archive conversation'),
+                  ));
+              }
               return items;
             },
             onSelected: (value) async {
@@ -679,6 +785,14 @@ class _ThreadCompactBar extends StatelessWidget {
               }
               if (value == 'manage-invites' && onInvite != null) {
                 onInvite!();
+                return;
+              }
+              if (value == 'rename' && onRename != null) {
+                onRename!();
+                return;
+              }
+              if (value == 'archive' && onArchive != null) {
+                onArchive!();
                 return;
               }
             },

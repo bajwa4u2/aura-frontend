@@ -678,6 +678,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
               durationSeconds: session.durationSeconds,
               createdAt: session.createdAt,
               updatedAt: DateTime.now(),
+              activeParticipantCount: session.activeParticipantCount,
             ),
       policy: policy,
       infoMessage: locked ? 'Room closed to new entries.' : 'Room opened to new entries.',
