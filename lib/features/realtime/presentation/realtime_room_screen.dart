@@ -261,12 +261,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       ref.invalidate(messagesProvider(surfaceId));
     }
 
-    context.go(_safeReturnRoute(session));
+    final target = _safeReturnRoute(session);
+    debugPrint('[REALTIME_EXIT] _navigateAfterCall from=${GoRouterState.of(context).uri} target=$target returnTo=${widget.returnTo} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
+    context.go(target);
   }
 
   void _minimizeCall(RealtimeSession? session) {
     // Navigate back without ending the call — PiP widget takes over.
-    context.go(_safeReturnRoute(session));
+    final target = _safeReturnRoute(session);
+    debugPrint('[REALTIME_EXIT] _minimizeCall from=${GoRouterState.of(context).uri} target=$target returnTo=${widget.returnTo} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
+    context.go(target);
   }
 
   void _openBottomPanel(String panelId) {

@@ -499,6 +499,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[ROUTE BUILD] MeScreen');
     return AuraScaffold(
       title: 'Presence',
       body: _loading

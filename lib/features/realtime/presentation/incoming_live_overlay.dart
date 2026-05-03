@@ -16,6 +16,13 @@ import '../application/realtime_providers.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/floating_call_widget.dart';
 
+// ── TRACE BYPASS FLAGS — flip one at a time, hot-restart, reproduce scenario ──
+// Trace 5: bypass entire overlay → if blank clears, overlay is root cause
+const bool _kBypassOverlay = false;
+// Trace 6: bypass PiP only → if blank clears, FloatingCallWidget is root cause
+const bool _kBypassPiP = false;
+// ─────────────────────────────────────────────────────────────────────────────
+
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   const AuraIncomingLiveLayer({super.key, required this.child});
 
@@ -404,10 +411,15 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
   @override
   Widget build(BuildContext context) {
+    if (_kBypassOverlay) {
+      debugPrint('[OVERLAY] BYPASSED — returning widget.child directly');
+      return widget.child;
+    }
     final notifications = ref.watch(notificationsControllerProvider);
     final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);
     final currentPath = GoRouterState.of(context).uri.path;
+    debugPrint('[OVERLAY] build path=$currentPath isJoined=${liveState.isJoined} child=${widget.child.runtimeType}');
     // Socket-first: bridge items precede poll items.
     // Deduplicate by sessionId so a poll item never shadows its bridge twin.
     final bridgeSessionIds = <String>{
@@ -424,13 +436,17 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final item = _currentIncoming(currentPath, allItems, liveState);
     if (item == null) {
       _cancelRingTimer();
-      if (!liveState.isJoined) return widget.child;
+      if (!liveState.isJoined) {
+        debugPrint('[OVERLAY] returning widget.child (not joined)');
+        return widget.child;
+      }
       // Active local call — keep PiP overlay mounted so the card persists
       // when the user navigates away from the /realtime screen.
+      debugPrint('[OVERLAY] returning Stack+PiP (isJoined=true, _kBypassPiP=$_kBypassPiP)');
       return Stack(
         children: [
           widget.child,
-          if (liveState.isJoined) const FloatingCallWidget(),
+          if (liveState.isJoined && !_kBypassPiP) const FloatingCallWidget(),
         ],
       );
     }
@@ -472,7 +488,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     return Stack(
       children: [
         widget.child,
-        if (liveState.isJoined) const FloatingCallWidget(),
+        if (liveState.isJoined && !_kBypassPiP) const FloatingCallWidget(),
         Positioned(
           right: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
           left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,

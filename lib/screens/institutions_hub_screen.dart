@@ -47,6 +47,7 @@ class _InstitutionsHubScreenState
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[ROUTE BUILD] InstitutionsHubScreen');
     ref.listen<AsyncValue<InstitutionAccess>>(
       institutionAccessProvider,
       (_, next) {
