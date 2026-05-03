@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -23,11 +25,15 @@ Future<void> main() async {
   // Prevent Flutter framework errors from surfacing as uncaught browser errors.
   // In production web builds the default handler re-throws, which creates noise
   // in the console. We log and continue instead.
+  // TRACE: always print full stack so the exact crashing line is visible in
+  // browser DevTools console regardless of build mode.
   FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('[FLUTTER_ERROR] ${details.exceptionAsString()}');
+    debugPrint('[FLUTTER_ERROR] library: ${details.library}');
+    debugPrint('[FLUTTER_ERROR] context: ${details.context}');
+    debugPrint('[FLUTTER_ERROR] stack:\n${details.stack}');
     if (kDebugMode) {
       FlutterError.presentError(details);
-    } else {
-      debugPrint('Flutter error: ${details.exceptionAsString()}');
     }
   };
 
@@ -57,12 +63,23 @@ Future<void> main() async {
     debugPrint('TokenStore.load failed: $e');
   }
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        tokenStoreProvider.overrideWith((ref) => store),
-      ],
-      child: const AuraApp(),
-    ),
+  // Catch async errors thrown outside of Flutter's error handling (e.g., inside
+  // provider notifiers or event stream handlers). These do NOT reach
+  // FlutterError.onError and would otherwise be silently swallowed in web.
+  runZonedGuarded(
+    () {
+      runApp(
+        ProviderScope(
+          overrides: [
+            tokenStoreProvider.overrideWith((ref) => store),
+          ],
+          child: const AuraApp(),
+        ),
+      );
+    },
+    (error, stack) {
+      debugPrint('[ZONE_ERROR] $error');
+      debugPrint('[ZONE_ERROR] stack:\n$stack');
+    },
   );
 }

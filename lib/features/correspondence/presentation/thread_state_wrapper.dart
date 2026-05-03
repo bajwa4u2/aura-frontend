@@ -24,9 +24,20 @@ class ThreadStateWrapper extends ConsumerStatefulWidget {
 
 class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   StreamSubscription<CorrespondenceLiveEvent>? _subscription;
+  // Explicit Riverpod subscriptions — closed in dispose() before any queued
+  // notifications can fire callbacks on a dead ref.
+  ProviderSubscription<RealtimeState>? _liveStateSub;
+  ProviderSubscription<CallPresenceState?>? _presenceSub;
+  // Cached so dispose() never needs ref.read() — ref must not be accessed
+  // after the widget is disposed.
+  CorrespondenceLiveService? _liveService;
+
   String? _lastHydratedSessionId;
   String? _joinedSpaceId;
   bool _handledJoinQuery = false;
+  // Set to true at the very top of dispose() so every async continuation
+  // and every queued callback can bail out without touching ref.
+  bool _disposed = false;
 
   String _currentSpaceId() {
     try {
@@ -62,22 +73,61 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   @override
   void initState() {
     super.initState();
+
+    // Cache service reference so dispose() can call leaveThread/leaveSpace
+    // without using ref.read() on a potentially-dead ref.
+    _liveService = ref.read(correspondenceLiveServiceProvider);
+
+    // Path 1: same-tab call end.
+    // listenManual returns a ProviderSubscription that is explicitly close()d
+    // in dispose() — guaranteed to run before any pending Riverpod notification.
+    _liveStateSub = ref.listenManual<RealtimeState>(
+      realtimeControllerProvider,
+      (previous, next) {
+        if (_disposed || !mounted) return;
+        if ((previous?.isJoined ?? false) && !next.isJoined) {
+          _refreshThreadSurface();
+        }
+      },
+    );
+
+    // Path 2: cross-tab call end.
+    _presenceSub = ref.listenManual<CallPresenceState?>(
+      callPresenceBridgeProvider,
+      (previous, next) {
+        if (_disposed || !mounted) return;
+        if (previous != null && next == null) {
+          _lastHydratedSessionId = null;
+          _refreshThreadSurface();
+        }
+      },
+    );
+
     Future.microtask(_bindLive);
   }
 
   Future<void> _bindLive() async {
-    final live = ref.read(correspondenceLiveServiceProvider);
+    if (_disposed || !mounted) return;
+    final live = _liveService;
+    if (live == null) return;
+
     final spaceId = _currentSpaceId();
 
     await live.joinThread(widget.threadId);
+    if (_disposed || !mounted) return;
+
     if (spaceId.isNotEmpty) {
       await live.joinSpace(spaceId);
+      if (_disposed || !mounted) return;
       _joinedSpaceId = spaceId;
     }
 
     await _maybeJoinFromRoute();
+    if (_disposed || !mounted) return;
 
     _subscription = live.events.listen((event) {
+      if (_disposed || !mounted) return;
+
       if (!_targetsThreadOrSpace(
         event,
         threadId: widget.threadId,
@@ -86,10 +136,9 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         return;
       }
 
-      // Only invalidate thread + message providers on actual message events.
-      // Session participant events (join/leave/resume), read-receipt updates,
-      // and invite events do not change message content — refreshing on them
-      // causes unnecessary reload storms during active calls.
+      // Only invalidate on actual message content changes. Participant
+      // join/leave/resume and read-receipt events do not alter message
+      // content — refreshing on them triggers unnecessary reload storms.
       if (event.name == 'thread:message.created' ||
           event.name == 'thread:message.updated' ||
           event.name == 'thread:message.deleted') {
@@ -101,11 +150,13 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
   }
 
   void _refreshThreadSurface() {
+    if (_disposed || !mounted) return;
     ref.invalidate(threadDetailProvider(widget.threadId));
     ref.invalidate(messagesProvider(widget.threadId));
   }
 
   Future<void> _hydrateFromEvent(CorrespondenceLiveEvent event) async {
+    if (_disposed || !mounted) return;
     final notifier = ref.read(realtimeControllerProvider.notifier);
     final sessionId = _extractSessionId(event);
 
@@ -114,6 +165,7 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         event.name == 'call:terminal') {
       _lastHydratedSessionId = null;
       await notifier.leave();
+      if (_disposed || !mounted) return;
       _refreshThreadSurface();
       return;
     }
@@ -126,13 +178,14 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
         currentSessionId != sessionId) {
       _lastHydratedSessionId = sessionId;
       await notifier.hydrateSession(sessionId);
+      if (_disposed || !mounted) return;
     }
 
     await _maybeJoinFromRoute();
   }
 
   Future<void> _maybeJoinFromRoute() async {
-    if (!mounted || _handledJoinQuery || !_shouldJoinFromRoute()) return;
+    if (_disposed || !mounted || _handledJoinQuery || !_shouldJoinFromRoute()) return;
 
     final sessionId = _querySessionId();
     if (sessionId.isEmpty) return;
@@ -159,46 +212,37 @@ class _ThreadStateWrapperState extends ConsumerState<ThreadStateWrapper> {
 
   @override
   void dispose() {
+    // Flag first — every in-flight async continuation checks this before
+    // touching ref, so nothing can sneak past the subscription cancellations.
+    _disposed = true;
+
+    // Cancel Riverpod subscriptions before stream — this prevents any pending
+    // provider notification from invoking _refreshThreadSurface() after ref
+    // is dead.
+    _liveStateSub?.close();
+    _liveStateSub = null;
+    _presenceSub?.close();
+    _presenceSub = null;
     _subscription?.cancel();
-    unawaited(
-      ref.read(correspondenceLiveServiceProvider).leaveThread(widget.threadId),
-    );
-    final spaceId = _joinedSpaceId;
-    if (spaceId != null && spaceId.isNotEmpty) {
-      unawaited(
-        ref.read(correspondenceLiveServiceProvider).leaveSpace(spaceId),
-      );
+    _subscription = null;
+
+    // Use the cached service reference — ref.read() must never be called
+    // after this point.
+    final live = _liveService;
+    _liveService = null;
+    if (live != null) {
+      unawaited(live.leaveThread(widget.threadId));
+      final spaceId = _joinedSpaceId;
+      if (spaceId != null && spaceId.isNotEmpty) {
+        unawaited(live.leaveSpace(spaceId));
+      }
     }
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Path 1: same-tab call end.
-    // The realtime controller transitions joined → not-joined (e.g. last
-    // participant left → _terminateSession called via session:participant.left).
-    ref.listen<RealtimeState>(
-      realtimeControllerProvider,
-      (previous, next) {
-        if ((previous?.isJoined ?? false) && !next.isJoined) {
-          _refreshThreadSurface();
-        }
-      },
-    );
-
-    // Path 2: cross-tab call end.
-    // When bridge state drops non-null → null the call ended in another tab.
-    // Refetch thread detail so liveSessionId is gone from the thread payload.
-    ref.listen<CallPresenceState?>(
-      callPresenceBridgeProvider,
-      (previous, next) {
-        if (previous != null && next == null) {
-          _lastHydratedSessionId = null;
-          _refreshThreadSurface();
-        }
-      },
-    );
-
     return ThreadScreen(threadId: widget.threadId);
   }
 }
