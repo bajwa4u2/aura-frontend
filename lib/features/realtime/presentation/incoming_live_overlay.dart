@@ -39,6 +39,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   String? _joinError;
   Timer? _ringTimer;
   String? _ringTimerNotificationId;
+  Timer? _joinErrorTimer;
 
   // Pulse animation for the ringing avatar ring.
   late final AnimationController _pulseController;
@@ -64,7 +65,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
   @override
   void dispose() {
-    _ringTimer?.cancel();
+    _cancelRingTimer();
+    _joinErrorTimer?.cancel();
+    _joinErrorTimer = null;
     _pulseController.dispose();
     super.dispose();
   }
@@ -247,7 +250,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     _ringTimer?.cancel();
     _ringTimerNotificationId = id;
     _ringTimer = Timer(_ringTimeout, () {
-      if (!mounted) return;
+      // context.mounted checks _lifecycleState == active, unlike State.mounted
+      // which only checks _element != null and returns true during inactive.
+      if (!context.mounted) return;
       final sessionId = _resolveSessionId(item);
       if (id.isNotEmpty) _dismissedIds.add(id);
       if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
@@ -282,7 +287,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (sessionId.isEmpty) return;
 
     _cancelRingTimer();
+
+    // Capture all context-derived values BEFORE any await.
+    // GoRouterState.of(context) requires an ACTIVE element; using it after
+    // an await can fire when the element is inactive during route transitions.
     final router = GoRouter.of(context);
+    final returnTo = Uri.encodeComponent(
+      GoRouterState.of(context).uri.toString(),
+    );
 
     setState(() {
       _joining = true;
@@ -291,6 +303,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     final id = _stringOf(item['id']);
     _dismissedSessionIds.add(sessionId);
+    // Set when we successfully navigate so the finally block does not call
+    // setState on an element that may already be inactive/disposed.
+    var navigated = false;
     try {
       await ref.read(realtimeControllerProvider.notifier).join(sessionId);
       ref.read(incomingCallBridgeProvider.notifier).remove(id);
@@ -298,8 +313,8 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
         await ref.read(notificationsControllerProvider.notifier).markRead(id);
       }
 
-      if (!mounted) return;
-      final returnTo = Uri.encodeComponent(GoRouterState.of(context).uri.toString());
+      if (!context.mounted) return;
+      navigated = true;
       router.go('/realtime/$sessionId?returnTo=$returnTo');
     } catch (e) {
       final msg = e.toString().toLowerCase();
@@ -309,14 +324,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (isExpired) {
         // Invite is no longer valid — dismiss the overlay silently.
         ref.read(incomingCallBridgeProvider.notifier).remove(id);
-        if (mounted) {
+        if (context.mounted) {
           setState(() {
             _joinError = 'This call is no longer available.';
           });
         }
-        // Auto-dismiss the expired error after a short delay.
-        Timer(const Duration(seconds: 3), () {
-          if (mounted) {
+        // Store so it can be cancelled in dispose(); cancel any prior timer.
+        _joinErrorTimer?.cancel();
+        _joinErrorTimer = Timer(const Duration(seconds: 3), () {
+          _joinErrorTimer = null;
+          if (context.mounted) {
             _dismissedIds.add(id);
             setState(() => _joinError = null);
           }
@@ -324,14 +341,17 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       } else {
         // Transient join failure — let user retry or dismiss.
         _dismissedSessionIds.remove(sessionId);
-        if (mounted) {
+        if (context.mounted) {
           setState(() {
             _joinError = 'Could not join the call. Check your connection.';
           });
         }
       }
     } finally {
-      if (mounted) {
+      // Skip setState if we already navigated: router.go() deactivates this
+      // element during the same frame, making setState unsafe even when
+      // mounted returns true (element is inactive but _element is non-null).
+      if (!navigated && context.mounted) {
         setState(() => _joining = false);
       }
     }
@@ -407,7 +427,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       if (!liveState.isJoined) return widget.child;
       // Active local call — keep PiP overlay mounted so the card persists
       // when the user navigates away from the /realtime screen.
-      return Stack(        
+      return Stack(
         children: [
           widget.child,
           if (liveState.isJoined) const FloatingCallWidget(),
