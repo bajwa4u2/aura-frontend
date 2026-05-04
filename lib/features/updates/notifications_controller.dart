@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import 'notifications_repository.dart';
 
@@ -224,8 +223,14 @@ class NotificationsController extends StateNotifier<NotificationsState>
       );
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
+
+      // 401: the Dio interceptor already attempted a token refresh and either
+      // succeeded (the retry would have resolved) or cleared the session via
+      // clearSessionState(). Do NOT clear tokens here — that would double-clear
+      // and can race against a concurrent bootstrap or refresh in-flight.
+      // Simply stop polling and reset state; the auth providers will handle the
+      // session transition.
       if (statusCode == 401) {
-        await ref.read(tokenStoreProvider).clearTokens();
         _stopPolling();
         _repo.clearCache();
         if (!mounted) return;
@@ -303,7 +308,6 @@ class NotificationsController extends StateNotifier<NotificationsState>
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
       if (statusCode == 401) {
-        await ref.read(tokenStoreProvider).clearTokens();
         _stopPolling();
         _repo.clearCache();
         if (!mounted) return;

@@ -211,13 +211,13 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     }
 
     final emailStatusText = emailVerifiedAsync.when(
-      data: (verified) => verified ? 'Verified' : 'Not verified',
+      data: (verified) => (verified ?? false) ? 'Verified' : 'Not verified',
       loading: () => 'Checking…',
       error: (_, __) => 'Unavailable',
     );
 
-    final emailVerified = emailVerifiedAsync.maybeWhen(
-      data: (v) => v,
+    final bool emailVerified = emailVerifiedAsync.maybeWhen(
+      data: (v) => v ?? false,
       orElse: () => false,
     );
 

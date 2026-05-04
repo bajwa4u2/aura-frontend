@@ -81,19 +81,25 @@ final authMeDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 
 /// Email verification / auth validity check.
 ///
+/// Returns:
+/// - true  — confirmed verified (or institution account)
+/// - false — confirmed unverified (backend said emailVerified: false)
+/// - null  — unknown: /auth/me failed, empty response, or unexpected error;
+///           router must treat null as "stay/wait", NOT redirect to verify-pending.
+///
 /// Institution accounts (accountType: INSTITUTION) are considered verified —
 /// they authenticate via a separate institution login flow and are not subject
 /// to the member email verification requirement.
-///
-/// Critical behavior:
-/// - NEVER throw from this provider. If it throws, router can get stuck in
-///   error states and the app starts cycling between screens.
-final emailVerifiedProvider = FutureProvider<bool>((ref) async {
+final emailVerifiedProvider = FutureProvider<bool?>((ref) async {
   final authed = ref.watch(isAuthedProvider);
   if (!authed) return false;
 
   try {
     final inner = await ref.watch(authMeDataProvider.future);
+
+    // authMeDataProvider returns {} on any error (network failure, 401, etc.).
+    // Return null so the router waits rather than flashing /verify-pending.
+    if (inner.isEmpty) return null;
 
     // Institution accounts bypass email verification entirely.
     final accountType = (inner['accountType'] ?? '').toString().toUpperCase();
@@ -110,7 +116,7 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
 
     return false;
   } catch (_) {
-    return false;
+    return null;
   }
 });
 

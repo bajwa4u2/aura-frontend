@@ -147,7 +147,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     if (prev != next) refresh.value++;
   });
 
-  ref.listen<AsyncValue<bool>>(emailVerifiedProvider, (prev, next) {
+  ref.listen<AsyncValue<bool?>>(emailVerifiedProvider, (prev, next) {
     final prevValue = prev?.maybeWhen(
       data: (value) => value,
       orElse: () => null,
@@ -293,17 +293,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic = isPublicPath(path);
       final isAuthAction = isAuthActionPath(path);
 
-      final isVerificationLoading =
-          isLoggedIn && (emailVerifiedAsync.isLoading || emailVerifiedAsync.isRefreshing);
-
-      // Treat a transient /auth/me error as verified — backend validates membership
-      // on every protected endpoint. Redirecting to /verify-pending on a network
-      // error produces a false "login again" flash for users who are actually authed.
-      final isVerified = emailVerifiedAsync.when(
+      // null = unknown (empty /auth/me, error, or still loading) → stay/wait
+      final bool? isVerified = emailVerifiedAsync.when(
         data: (value) => value,
-        error: (_, __) => true,
-        loading: () => false,
+        error: (_, __) => null,
+        loading: () => null,
       );
+
+      // isVerified == null means we don't yet know the verification state.
+      // Treat it like loading so the router does not redirect prematurely.
+      final isVerificationLoading =
+          isLoggedIn && (emailVerifiedAsync.isLoading || emailVerifiedAsync.isRefreshing || isVerified == null);
 
       final institutionAccess = institutionAsync.maybeWhen(
         data: (value) => value,
@@ -353,7 +353,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/login?redirect=$encoded';
         }
 
-        if (!isVerified) {
+        if (isVerified == false) {
           final encoded = Uri.encodeComponent(
             _normalizeRedirectDest(redirectDest, fallback: '/home'),
           );
@@ -375,10 +375,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isVerifyEmail) {
+        // Signed-in and verified users have no reason to stay on the verify-email
+        // page. Redirect them to their intended destination (or /home).
+        // This handles: hard-reload on /verify-email while already signed in,
+        // and the post-verification case where the user IS authenticated.
+        if (isLoggedIn && isVerified == true) {
+          return redirectDest;
+        }
         return null;
       }
 
-      if (!isVerified) {
+      if (isVerified == false) {
         if (isVerifyPending) return null;
 
         if (requiresVerifiedEmail(path) || isGuestOnly(path)) {
@@ -393,7 +400,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      if (isVerified) {
+      if (isVerified == true) {
         if (isGuestOnly(path) || isVerifyPending) {
           return redirectDest;
         }

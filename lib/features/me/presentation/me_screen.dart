@@ -835,8 +835,8 @@ class _MeScreenState extends ConsumerState<MeScreen> {
 
   Widget _buildSettingsHub() {
     final emailVerifiedAsync = ref.watch(emailVerifiedProvider);
-    final isVerified = emailVerifiedAsync.maybeWhen(
-      data: (v) => v,
+    final bool isVerified = emailVerifiedAsync.maybeWhen(
+      data: (v) => v ?? true,
       orElse: () => true,
     );
     final verifying = emailVerifiedAsync is AsyncLoading;

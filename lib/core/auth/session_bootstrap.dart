@@ -161,6 +161,10 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 });
 
 bool _shouldSkipWebBootstrapForPath(String path) {
+  // Only skip bootstrap for truly static public pages where the user is never
+  // already signed in. Auth-action paths (/verify-email, /verify-pending) are
+  // intentionally excluded so a signed-in user who reloads on those pages has
+  // their session restored instead of losing it.
   const exactPublicPaths = <String>{
     '/',
     '/public',
@@ -173,12 +177,6 @@ bool _shouldSkipWebBootstrapForPath(String path) {
     '/supporters',
     '/white-paper',
     '/founder',
-    '/login',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-email',
-    '/verify-pending',
     '/search',
     '/announcements',
   };

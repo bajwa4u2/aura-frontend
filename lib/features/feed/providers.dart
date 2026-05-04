@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/session_bootstrap.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/net/dio_provider.dart';
 import 'data/feed_repository.dart';
@@ -13,6 +14,10 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
 /// Compatibility provider for screens that expect AsyncValue + .when(...)
 /// Returns the initial list only (simple, stable for web build).
 final feedProvider = FutureProvider<List<Post>>((ref) async {
+  await ref.watch(sessionBootstrapProvider.future);
+  final authStatus = ref.watch(authStatusProvider);
+  if (authStatus != AuthStatus.authed) return [];
+
   final repo = ref.watch(feedRepositoryProvider);
   final page = await repo.fetchFeed(limit: 20);
   return page.items;
@@ -23,7 +28,8 @@ final feedProvider = FutureProvider<List<Post>>((ref) async {
 final feedControllerProvider = StateNotifierProvider<FeedController, FeedState>((ref) {
   ref.watch(isAuthedProvider);
   final repo = ref.watch(feedRepositoryProvider);
-  return FeedController(repo);
+  final authStatus = ref.watch(authStatusProvider);
+  return FeedController(repo, isAuthed: authStatus == AuthStatus.authed);
 });
 
 class FeedState {
@@ -67,8 +73,9 @@ class FeedState {
 }
 
 class FeedController extends StateNotifier<FeedState> {
-  FeedController(this._repo) : super(FeedState.initial()) {
-    loadInitial();
+  FeedController(this._repo, {bool isAuthed = false})
+      : super(FeedState.initial()) {
+    if (isAuthed) loadInitial();
   }
 
   final FeedRepository _repo;

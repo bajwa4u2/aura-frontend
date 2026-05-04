@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/auth/session_bootstrap.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
@@ -45,6 +47,10 @@ final realtimeControllerProvider =
 });
 
 final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
+  await ref.watch(sessionBootstrapProvider.future);
+  final authStatus = ref.watch(authStatusProvider);
+  if (authStatus != AuthStatus.authed) return [];
+
   final repo = ref.watch(realtimeRepositoryProvider);
   return repo.listMySessions();
 });
