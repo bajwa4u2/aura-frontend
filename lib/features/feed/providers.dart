@@ -11,12 +11,19 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(dio);
 });
 
-/// Compatibility provider for screens that expect AsyncValue + .when(...)
-/// Returns the initial list only (simple, stable for web build).
+/// Compatibility provider for screens that expect AsyncValue + .when(...).
+///
+/// `/posts/feed` is an unguarded public endpoint that returns only
+/// `status=PUBLISHED, visibility=PUBLIC` rows, so this provider must NOT
+/// short-circuit on unauthenticated visitors — the public home page is by
+/// definition unauthenticated. Awaiting `sessionBootstrapProvider` only
+/// ensures any cookie-based session is restored before we fire the request,
+/// so an authed reload sees their personalised view; an anonymous visitor
+/// proceeds to the same public endpoint with no Authorization header.
+/// The repository soft-fails on 401/403/404 so a refresh-failure cannot
+/// surface as a hard error on this surface.
 final feedProvider = FutureProvider<List<Post>>((ref) async {
   await ref.watch(sessionBootstrapProvider.future);
-  final authStatus = ref.watch(authStatusProvider);
-  if (authStatus != AuthStatus.authed) return [];
 
   final repo = ref.watch(feedRepositoryProvider);
   final page = await repo.fetchFeed(limit: 20);
