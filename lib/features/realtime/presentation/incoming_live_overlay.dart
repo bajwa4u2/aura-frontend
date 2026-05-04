@@ -210,25 +210,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     }
 
     // Already joined this exact session — never re-interrupt regardless of route.
+    // (For a different session we still surface the ringing card so the user
+    // can decide whether to switch calls; the previous "joined any call →
+    // suppress" rule caused new invites to silently fall through to PiP-only
+    // when a stale joined state lingered from an earlier session.)
     if (liveState.isJoined &&
         sessionId.isNotEmpty &&
         liveState.sessionId == sessionId) {
       return false;
-    }
-
-    // Joined any call on a non-thread route — suppress the card so the PiP
-    // widget is the only call UI visible.
-    if (liveState.isJoined && !currentPath.contains('/thread/')) {
-      return false;
-    }
-
-    // On any thread route: only suppress if we are already joined into this
-    // exact session. A call from a different thread must still show the overlay.
-    if (currentPath.contains('/thread/')) {
-      final alreadyInThisSession = sessionId.isNotEmpty &&
-          liveState.isJoined &&
-          liveState.sessionId == sessionId;
-      if (alreadyInThisSession) return false;
     }
 
     final attention = _stringOf(data['attention']).toUpperCase();
@@ -481,10 +470,13 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final isVideo = mode == 'video';
     final ringLabel = isVideo ? 'Incoming video call' : 'Incoming audio call';
 
+    // While a ringing card is on screen the user is in the "decide whether to
+    // accept" phase — the PiP must not render. Otherwise a stale joined state
+    // from a previous session would put a small floating widget at the bottom
+    // that the user mistakes for the call surface and misses the Accept card.
     return Stack(
       children: [
         widget.child,
-        if (liveState.isJoined && !_kBypassPiP) const FloatingCallWidget(),
         Positioned(
           right: MediaQuery.of(context).size.width >= 700 ? AuraSpace.s20 : AuraSpace.s12,
           left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,
