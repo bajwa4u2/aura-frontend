@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,8 +29,46 @@ class TokenStore extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
 
   /// IMPORTANT: only trust authed after load().
-  bool get isAuthed =>
-      _isLoaded && (_accessToken != null && _accessToken!.trim().isNotEmpty);
+  ///
+  /// Checks JWT `exp` claim so a stale token persisted from a previous boot
+  /// does not poison `sessionBootstrapProvider` (which early-exits on
+  /// `isAuthed`). When the persisted access token is past its exp, we report
+  /// unauthed so the bootstrap refresh path runs and swaps in a live token
+  /// before any protected request fires.
+  bool get isAuthed {
+    if (!_isLoaded) return false;
+    final token = _accessToken?.trim();
+    if (token == null || token.isEmpty) return false;
+    return !_isJwtExpired(token);
+  }
+
+  /// True only when token is present AND not yet expired (with 30s skew).
+  /// Returns false on parse error so a malformed token cannot lock the
+  /// account into a permanent "authed" state with no way to refresh.
+  static bool _isJwtExpired(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length != 3) return false; // not a JWT — leave to backend
+      final payload = parts[1];
+      // Pad base64url to a multiple of 4 before decoding.
+      final padLen = (4 - payload.length % 4) % 4;
+      final padded = payload + ('=' * padLen);
+      final bytes = base64Url.decode(padded);
+      final json = jsonDecode(utf8.decode(bytes));
+      if (json is! Map) return false;
+      final exp = json['exp'];
+      if (exp is! num) return false;
+      final expiresAt =
+          DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000, isUtc: true);
+      // 30s skew: refresh slightly before exp so a request mid-flight does
+      // not land at the backend with a just-expired token.
+      return DateTime.now().toUtc().isAfter(
+            expiresAt.subtract(const Duration(seconds: 30)),
+          );
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Called on app boot.
   Future<void> load() async {

@@ -193,6 +193,18 @@ final dioProvider = Provider<Dio>((ref) {
     // FCM target to push to (offline ringing silently broken).
     if (path.startsWith('/devices')) return true;
 
+    // Live-call POSTs are idempotent on the backend: start upserts a session
+    // and is skipped when one already exists; join upserts the participant
+    // row; leave/end/decline are idempotent terminations. Without refresh
+    // here, a token that expired between login and an incoming call fails
+    // the join with 401 → AppErrorMapper surfaces "Sign in to use this
+    // feature." even though a valid refresh token is sitting in storage.
+    final isLivePath = path.contains('/live/') ||
+        path.startsWith('/realtime/sessions') ||
+        path.endsWith('/audio/start') ||
+        path.endsWith('/video/start');
+    if (isLivePath) return true;
+
     return false;
   }
 
