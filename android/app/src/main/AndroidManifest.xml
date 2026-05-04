@@ -18,7 +18,7 @@
 
     <application
         android:label="Aura"
-        android:name="${applicationName}"
+        android:name=".AuraApplication"
         android:icon="@mipmap/ic_launcher">
 
         <activity
@@ -47,6 +47,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Default FCM channel for incoming-call ringing. Channel itself is
+             created at process start in AuraApplication.onCreate(). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="aura_calls" />
 
     </application>
 

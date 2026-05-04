@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +17,8 @@ class DeviceService {
 
   String? _cachedDeviceId;
   DateTime? _lastPresenceRefresh;
+  StreamSubscription<String>? _tokenRefreshSub;
+  bool _tokenRefreshBound = false;
 
   /// Registers the current device only when a valid payload can be built.
   ///
@@ -23,6 +27,12 @@ class DeviceService {
   /// On iOS, APNS/FCM wiring will be finalized separately.
   Future<void> registerCurrentDevice() async {
     try {
+      // On Android 13+ POST_NOTIFICATIONS is a runtime permission. Request it
+      // here so the OS surface a prompt the first time we have an authed user
+      // even if the explicit security-screen flow was never opened. Without
+      // this, a token can register but the system suppresses delivery.
+      await _ensureNativePushPermission();
+
       final payload = await _buildPayload();
       if (payload == null) return;
 
@@ -30,16 +40,77 @@ class DeviceService {
       if (id != null && id.isNotEmpty) {
         await _repository.updateDevice(id, payload);
         _cachedDeviceId = id;
-        return;
+      } else {
+        final device = await _repository.register(payload);
+        if (device.id.isNotEmpty) {
+          _cachedDeviceId = device.id;
+          await _persistDeviceId(device.id);
+        }
       }
 
-      final device = await _repository.register(payload);
-      if (device.id.isNotEmpty) {
-        _cachedDeviceId = device.id;
-        await _persistDeviceId(device.id);
-      }
+      _bindTokenRefresh();
     } catch (e) {
       debugPrint('DeviceService.registerCurrentDevice failed: $e');
+    }
+  }
+
+  Future<void> _ensureNativePushPermission() async {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    try {
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+    } catch (e) {
+      debugPrint('DeviceService._ensureNativePushPermission failed: $e');
+    }
+  }
+
+  /// Persist any FCM token rotation pushed by Firebase. Without this the
+  /// backend keeps a stale token after the OS rotates it, and offline rings
+  /// stop arriving silently.
+  void _bindTokenRefresh() {
+    if (_tokenRefreshBound || kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    try {
+      _tokenRefreshSub =
+          FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        if (newToken.isEmpty) return;
+        try {
+          final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
+          final platform =
+              defaultTargetPlatform == TargetPlatform.iOS ? 'IOS' : 'ANDROID';
+          final payload = <String, dynamic>{
+            'platform': platform,
+            'provider': 'FCM',
+            'token': newToken,
+            'isActive': true,
+          };
+          if (id != null && id.isNotEmpty) {
+            await _repository.updateDevice(id, payload);
+          } else {
+            final device = await _repository.register(payload);
+            if (device.id.isNotEmpty) {
+              _cachedDeviceId = device.id;
+              await _persistDeviceId(device.id);
+            }
+          }
+        } catch (e) {
+          debugPrint('DeviceService.onTokenRefresh sync failed: $e');
+        }
+      });
+      _tokenRefreshBound = true;
+    } catch (e) {
+      debugPrint('DeviceService._bindTokenRefresh failed: $e');
     }
   }
 
@@ -52,6 +123,10 @@ class DeviceService {
       await _clearPersistedDeviceId();
     } catch (e) {
       debugPrint('DeviceService.revokeCurrentDevice failed: $e');
+    } finally {
+      await _tokenRefreshSub?.cancel();
+      _tokenRefreshSub = null;
+      _tokenRefreshBound = false;
     }
   }
 

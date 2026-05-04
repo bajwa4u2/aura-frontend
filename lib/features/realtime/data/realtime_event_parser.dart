@@ -109,8 +109,16 @@ class RealtimeEventParser {
         break;
     }
 
-    if (participants.isNotEmpty) {
-      if (state.joinState == RealtimeJoinState.joining && participants.length < 2) {
+    // Promote to `joined` ONLY when the local user has explicitly initiated
+    // join (state already moved to `joining` via join()/resume()) AND the
+    // participant snapshot shows quorum. For idle/requested/etc., preserve
+    // the existing state — a remote participant arriving in the snapshot
+    // (e.g. the caller's join firing `session:participant.joined` on the
+    // receiver's correspondence socket) must never silently flip an unaccepted
+    // invitee into "joined" and cause the PiP/floating widget to take over
+    // the incoming-call surface.
+    if (state.joinState == RealtimeJoinState.joining) {
+      if (participants.length < 2) {
         return RealtimeJoinState.joining;
       }
       return RealtimeJoinState.joined;

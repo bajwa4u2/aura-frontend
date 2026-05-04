@@ -107,10 +107,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
+  // Captured at first didChangeDependencies so dispose() can emit a best-effort
+  // leave without using `ref` (which throws once the State is being disposed).
+  ProviderContainer? _capturedContainer;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _capturedContainer ??= ProviderScope.containerOf(context, listen: false);
     if (_didBoot) return;
     _didBoot = true;
 
@@ -144,11 +148,21 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   void dispose() {
     _durationTimer?.cancel();
     // Best-effort leave on dispose (browser refresh / forced navigation).
-    // The backend sweep handles any lingering presence if this call is lost,
-    // but sending it explicitly reduces the ghost-participant window.
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    if (ref.read(realtimeControllerProvider).isJoined) {
-      unawaited(controller.leave().catchError((_) {}));
+    // Read via the captured ProviderContainer — `ref` is invalid once the State
+    // is being disposed and would throw "Cannot use \"ref\" after the widget
+    // was disposed", silently aborting the leave RPC and leaving the backend
+    // session with a ghost participant.
+    final container = _capturedContainer;
+    if (container != null) {
+      try {
+        if (container.read(realtimeControllerProvider).isJoined) {
+          final controller =
+              container.read(realtimeControllerProvider.notifier);
+          unawaited(controller.leave().catchError((_) {}));
+        }
+      } catch (_) {
+        // best-effort: never let dispose throw
+      }
     }
     super.dispose();
   }

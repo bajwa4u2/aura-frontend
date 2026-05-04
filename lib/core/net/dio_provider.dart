@@ -183,6 +183,16 @@ final dioProvider = Provider<Dio>((ref) {
 
     if (path == '/auth/me' || path == '/me') return true;
 
+    // Device registration / update / revoke is idempotent w.r.t. the user's
+    // own device record (backend upserts on userId+provider+token unique key
+    // and deletes by id). Allow refresh-on-401 so a stale access token at
+    // app boot — bootstrap currently early-exits when an access token of any
+    // age exists in storage — does not permanently no-op the FCM device
+    // record. Without this, register fails once with "Sign in to use this
+    // feature.", DeviceService swallows the error, and the backend has no
+    // FCM target to push to (offline ringing silently broken).
+    if (path.startsWith('/devices')) return true;
+
     return false;
   }
 
