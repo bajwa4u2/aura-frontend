@@ -215,6 +215,22 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     ]);
   }
 
+  /// True when the FCM data carries an expiresAt and that timestamp is
+  /// already in the past. Used to suppress tap-to-join routing on a stale
+  /// notification that survived the TTL — the backend would reject the join
+  /// with `[join:invite_expired_ttl]`, so we route the user to the thread/space
+  /// context instead of /realtime.
+  bool _isPayloadExpired(Map<String, dynamic> payload) {
+    final raw = _firstNonEmpty([
+      _stringOf(payload['expiresAt']),
+      _stringOf(_mapOf(payload['data'])['expiresAt']),
+    ]);
+    if (raw.isEmpty) return false;
+    final expiresAt = DateTime.tryParse(raw);
+    if (expiresAt == null) return false;
+    return expiresAt.toUtc().isBefore(DateTime.now().toUtc());
+  }
+
   String _resolveSessionId(Map<String, dynamic> payload) {
     return _firstNonEmpty([
       _stringOf(payload['realtimeSessionId']),
@@ -226,15 +242,19 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final kind = _resolveNotificationKind(payload).toUpperCase();
     final isCall = kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
     final isTerminalCall = isCall && _isTerminalCallPayload(payload);
+    final isExpiredCall = isCall && _isPayloadExpired(payload);
+    final isJoinableCall = isCall && !isTerminalCall && !isExpiredCall;
 
-    // Prefer explicit deeplink/route from backend, except terminal call payloads
-    // must not resurrect /realtime after the call is missed or ended.
+    // Prefer explicit deeplink/route from backend, except terminal/expired
+    // call payloads must not resurrect /realtime after the call is missed,
+    // ended, or past its TTL — those would just hit a 403 from the backend.
     final deeplink = _firstNonEmpty([
       _stringOf(payload['deeplink']),
       _stringOf(payload['route']),
     ]);
     if (deeplink.isNotEmpty && deeplink.startsWith('/')) {
-      if (!(isTerminalCall && deeplink.startsWith('/realtime'))) {
+      final isRealtimeDeeplink = deeplink.startsWith('/realtime');
+      if (!((isTerminalCall || isExpiredCall) && isRealtimeDeeplink)) {
         return deeplink;
       }
     }
@@ -244,10 +264,10 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final spaceId = _stringOf(payload['spaceId']);
 
     // Call/live notification tap only opens realtime for active ringing/live
-    // invites. Missed/ended call notifications route back to the conversation
-    // context instead of resurrecting a dead full-screen call.
+    // invites. Missed/ended/expired call notifications route back to the
+    // conversation context instead of resurrecting a dead full-screen call.
     if (isCall) {
-      if (!_isTerminalCallPayload(payload) && sessionId.isNotEmpty) {
+      if (isJoinableCall && sessionId.isNotEmpty) {
         return '/realtime/$sessionId?action=join';
       }
       if (threadId.isNotEmpty && spaceId.isNotEmpty) {
