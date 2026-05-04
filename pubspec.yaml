@@ -36,7 +36,7 @@ dependencies:
   record: ^6.2.0
   cached_network_image: ^3.3.1
   video_player: ^2.11.1
-  flutter_webrtc: ^0.11.7
+  flutter_webrtc: ^1.4.1
 
   # SVG support (for Aura logo)
   flutter_svg: ^2.0.10
@@ -59,6 +59,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  msix: ^3.16.8
 
 dependency_overrides:
   record_linux: ^1.3.0
@@ -74,3 +75,15 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/aura_icon.png"
+
+msix_config:
+  display_name: Aura
+  publisher_display_name: Aura Platform
+  identity_name: AuraPlatform.Aura
+  msix_version: 1.0.0.0
+  description: Aura — a writing platform built for continuity.
+  publisher: CN=Aura Platform
+  logo_path: assets\aura_icon.png
+  icons_background_color: "#1A1A2E"
+  capabilities: internetClient
+  store: true

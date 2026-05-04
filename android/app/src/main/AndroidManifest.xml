@@ -1,13 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Allow the app to access the internet -->
+    <!-- Network access -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Required on Android 13+ for notifications -->
+    <!-- Push notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Audio recording (record package, WebRTC voice calls) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- Camera (image_picker, WebRTC video calls) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Camera is optional: app works on camera-less devices -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <application
-        android:label="aura"
+        android:label="Aura"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
