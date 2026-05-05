@@ -208,18 +208,31 @@ final dioProvider = Provider<Dio>((ref) {
     return false;
   }
 
+  /// Whether a refresh attempt has any chance of succeeding right now.
+  ///
+  /// IMPORTANT: do NOT gate on authStatus == authed. The whole point of
+  /// refresh-on-401 is to recover when the access token has expired — and an
+  /// expired access JWT flips `isAuthed` (and therefore authStatus) to
+  /// unauthed. Gating here on authed would self-block the very recovery path
+  /// we need.
+  ///
+  /// Refresh is plausible when we have a credential the backend can use to
+  /// mint a new access token:
+  /// - web: HttpOnly cookie (Dart can't see it; assume present unless
+  ///   bootstrap already proved otherwise this load).
+  /// - native: refresh token in storage.
   bool canAttemptRefreshNow() {
     final store = ref.read(tokenStoreProvider);
-
     if (!store.isLoaded) return false;
 
-    final boot = ref.read(sessionBootstrapProvider);
-    if (boot.isLoading) return false;
+    if (kIsWeb) {
+      // Cookie-based refresh. The interceptor will downgrade to a clean
+      // session reset on 401/403 from /auth/refresh, so it is safe to try.
+      return true;
+    }
 
-    final authStatus = ref.read(authStatusProvider);
-    if (authStatus != AuthStatus.authed) return false;
-
-    return true;
+    final rt = store.refreshToken;
+    return rt != null && rt.trim().isNotEmpty;
   }
 
   String? featureFromRequest(RequestOptions req) {
@@ -384,6 +397,21 @@ final dioProvider = Provider<Dio>((ref) {
         try {
           await store.waitUntilLoaded();
         } catch (_) {}
+
+        // Wait for session bootstrap to settle so a request fired during the
+        // /auth/refresh round-trip on app start does not race past it with no
+        // Authorization header — that race is a primary cause of "Sign in to
+        // use this feature" leaking into device registration and live-call
+        // join while a valid cookie session is being restored.
+        //
+        // Auth endpoints themselves must not wait on bootstrap (bootstrap
+        // performs an /auth/refresh through a separate Dio, and login/refresh
+        // run independently of bootstrap).
+        if (!isAuthEndpoint(options)) {
+          try {
+            await ref.read(sessionBootstrapProvider.future);
+          } catch (_) {}
+        }
 
         options.path = normalizePath(options.path);
         normalizeContentTypeForRequest(options);

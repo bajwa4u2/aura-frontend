@@ -11,12 +11,11 @@ import 'auth_providers.dart';
 /// Bootstraps session at app start.
 ///
 /// Web:
-/// - Attempts /auth/refresh once per app load using the HttpOnly cookie.
+/// - Always attempts /auth/refresh once per app load using the HttpOnly cookie.
 /// - Request transport is configured separately so browser credentials are sent.
-/// - Skips refresh entirely when the app boots on clearly public/auth surfaces.
 ///
 /// Non-web:
-/// - Uses the stored refresh token only when access token is missing.
+/// - Uses the stored refresh token only when access token is missing/expired.
 ///
 /// Important:
 /// - Runs at most once per app load.
@@ -43,9 +42,13 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
 
     if (store.isAuthed) return;
 
-    if (kIsWeb && _shouldSkipWebBootstrapForPath(Uri.base.path)) {
-      return;
-    }
+    // Web: always attempt one /auth/refresh per app load. Skipping it on
+    // "public" paths used to seem cheap, but it left a logged-in user landing
+    // on /, /u/<handle>, /institutions, /announcements, etc. with no session
+    // restored — so the public header rendered "Join | Sign in" and any
+    // protected call from those pages (e.g. an authed user opening a profile
+    // link from email) failed unauth'd. The request itself is one HTTP round
+    // trip and fast-fails with 204/401 when no cookie is present.
 
     final bootstrapDio = Dio(
       BaseOptions(
@@ -159,35 +162,6 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
     if (c != null && !c.isCompleted) c.complete();
   }
 });
-
-bool _shouldSkipWebBootstrapForPath(String path) {
-  // Only skip bootstrap for truly static public pages where the user is never
-  // already signed in. Auth-action paths (/verify-email, /verify-pending) are
-  // intentionally excluded so a signed-in user who reloads on those pages has
-  // their session restored instead of losing it.
-  const exactPublicPaths = <String>{
-    '/',
-    '/public',
-    '/mission',
-    '/privacy',
-    '/terms',
-    '/contact',
-    '/investors',
-    '/patrons',
-    '/supporters',
-    '/white-paper',
-    '/founder',
-    '/search',
-    '/announcements',
-  };
-
-  if (exactPublicPaths.contains(path)) return true;
-  if (path.startsWith('/institutions')) return true;
-  if (path.startsWith('/announcements/')) return true;
-  if (path.startsWith('/u/')) return true;
-
-  return false;
-}
 
 bool _bootstrapDone = false;
 Completer<void>? _bootstrapInFlight;

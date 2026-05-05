@@ -21,7 +21,11 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final path = GoRouterState.of(context).uri.path;
-    final isAuthed = ref.watch(isAuthedProvider);
+    // Use authStatusProvider (bootstrap-aware) instead of isAuthedProvider so
+    // a logged-in user landing on a public-looking URL during the
+    // /auth/refresh round-trip is not briefly rendered with the public shell.
+    final isAuthed =
+        ref.watch(authStatusProvider) == AuthStatus.authed;
     if (isAdminShellPath(path)) {
       return AdminShell(child: child);
     }

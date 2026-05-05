@@ -67,7 +67,13 @@ class _PublicHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAuthed = ref.watch(isAuthedProvider);
+    // Header auth state must mirror the canonical bootstrap-aware status so
+    // the page does not flash "Join | Sign in" for an authed user during the
+    // /auth/refresh round-trip on web reload. While bootstrap is in flight we
+    // render neither the authed nor the unauthed CTA — the wordmark stays.
+    final authStatus = ref.watch(authStatusProvider);
+    final isAuthed = authStatus == AuthStatus.authed;
+    final isAuthLoading = authStatus == AuthStatus.loading;
     final currentUri = GoRouterState.of(context).uri;
     final currentPath = currentUri.path;
 
@@ -95,7 +101,11 @@ class _PublicHeader extends ConsumerWidget {
                   onTap: () => context.go(isAuthed ? '/home' : '/public'),
                 ),
                 const Spacer(),
-                if (isAuthed) ...[
+                if (isAuthLoading) ...[
+                  // Bootstrap settles within one round-trip. Render nothing
+                  // rather than a misleading "Join | Sign in" or a premature
+                  // "Open Aura" — the moment authStatus settles we re-render.
+                ] else if (isAuthed) ...[
                   if (isTablet) ...[
                     _NavTextLink(
                       label: 'Explore',
