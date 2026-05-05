@@ -189,7 +189,7 @@ class InstitutionPost {
   bool get isInstitutionActor =>
       actorInstitutionId != null && actorInstitutionId!.trim().isNotEmpty;
 
-  static const int maxTitleChars = 200;
+  static const int maxTitleChars = 160;
   static const int maxBodyChars = 10000;
 
   /// Returns a user-facing message when [visibility]/[distribution] form

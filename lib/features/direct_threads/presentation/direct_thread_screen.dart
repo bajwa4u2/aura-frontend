@@ -88,6 +88,10 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
       );
       _bodyCtrl.clear();
       ref.invalidate(directMessagesProvider(key));
+      // Inbox snapshot (lastMessageAt/snippet/unread) updates server-side
+      // on send; refresh the actor's inbox so /messages/direct shows this
+      // thread at the top with the new preview without a manual reload.
+      ref.invalidate(inboxThreadsProvider(actor));
     } catch (e) {
       if (!mounted) return;
       setState(() => _sendError = 'Could not send message: $e');

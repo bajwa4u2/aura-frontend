@@ -176,36 +176,14 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   bool shouldAttemptRefreshForRequest(RequestOptions req) {
-    final method = req.method.toUpperCase();
-    final path = normalizePath(req.path);
-
-    if (method == 'GET') return true;
-
-    if (path == '/auth/me' || path == '/me') return true;
-
-    // Device registration / update / revoke is idempotent w.r.t. the user's
-    // own device record (backend upserts on userId+provider+token unique key
-    // and deletes by id). Allow refresh-on-401 so a stale access token at
-    // app boot — bootstrap currently early-exits when an access token of any
-    // age exists in storage — does not permanently no-op the FCM device
-    // record. Without this, register fails once with "Sign in to use this
-    // feature.", DeviceService swallows the error, and the backend has no
-    // FCM target to push to (offline ringing silently broken).
-    if (path.startsWith('/devices')) return true;
-
-    // Live-call POSTs are idempotent on the backend: start upserts a session
-    // and is skipped when one already exists; join upserts the participant
-    // row; leave/end/decline are idempotent terminations. Without refresh
-    // here, a token that expired between login and an incoming call fails
-    // the join with 401 → AppErrorMapper surfaces "Sign in to use this
-    // feature." even though a valid refresh token is sitting in storage.
-    final isLivePath = path.contains('/live/') ||
-        path.startsWith('/realtime/sessions') ||
-        path.endsWith('/audio/start') ||
-        path.endsWith('/video/start');
-    if (isLivePath) return true;
-
-    return false;
+    // 401 in this codebase is exclusively returned by JwtAuthGuard (Nest's
+    // AuthGuard). It runs *before* the controller body, so the request never
+    // produced any side effect — refreshing the token and retrying is always
+    // safe regardless of HTTP method. The `__retried_after_refresh` flag in
+    // the onError handler still prevents an infinite loop. Auth endpoints
+    // (/auth/*) are excluded earlier by the caller, so we don't need to gate
+    // them here.
+    return !isAuthEndpoint(req);
   }
 
   /// Whether a refresh attempt has any chance of succeeding right now.
