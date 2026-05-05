@@ -9,6 +9,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
+import '../domain/institution_post.dart';
 import '../units/institution_unit_card.dart';
 
 final institutionDetailProvider = FutureProvider.family<Institution, String>((
@@ -17,6 +18,20 @@ final institutionDetailProvider = FutureProvider.family<Institution, String>((
 ) async {
   final repo = ref.watch(institutionsRepositoryProvider);
   return repo.getBySlug(slug);
+});
+
+/// Public posts feed for the institution-detail page. Always uses the
+/// `public` scope so signed-out callers and members see the same content.
+final institutionPublicPostsProvider =
+    FutureProvider.family<List<InstitutionPost>, String>((ref, institutionId) async {
+  if (institutionId.trim().isEmpty) return const [];
+  final repo = ref.watch(institutionsRepositoryProvider);
+  final page = await repo.listInstitutionPosts(
+    institutionId: institutionId,
+    scope: 'public',
+    limit: 10,
+  );
+  return page.items;
 });
 
 class InstitutionDetailScreen extends ConsumerWidget {
@@ -55,14 +70,16 @@ class InstitutionDetailScreen extends ConsumerWidget {
   }
 }
 
-class _InstitutionDetailBody extends StatelessWidget {
+class _InstitutionDetailBody extends ConsumerWidget {
   const _InstitutionDetailBody({required this.institution});
 
   final Institution institution;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final coverUrl = institution.coverUrl?.trim() ?? '';
+    final postsAsync =
+        ref.watch(institutionPublicPostsProvider(institution.id));
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -83,7 +100,11 @@ class _InstitutionDetailBody extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _buildContent(),
+                    children: [
+                      ..._buildContent(),
+                      const SizedBox(height: AuraSpace.s14),
+                      _PublicPostsSection(postsAsync: postsAsync),
+                    ],
                   ),
                 ),
               ],
@@ -377,6 +398,137 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Public posts section ────────────────────────────────────────────────────
+
+class _PublicPostsSection extends StatelessWidget {
+  const _PublicPostsSection({required this.postsAsync});
+
+  final AsyncValue<List<InstitutionPost>> postsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'POSTS',
+            style: AuraText.small.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AuraSurface.faint,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          postsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (e, _) => Text(
+              'Could not load posts.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+            data: (posts) {
+              if (posts.isEmpty) {
+                return Text(
+                  'This institution has no public posts yet.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: posts
+                    .asMap()
+                    .entries
+                    .map((entry) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: entry.key < posts.length - 1
+                                ? AuraSpace.s10
+                                : 0,
+                          ),
+                          child: _PublicPostCard(post: entry.value),
+                        ))
+                    .toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicPostCard extends StatelessWidget {
+  const _PublicPostCard({required this.post});
+
+  final InstitutionPost post;
+
+  String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
+    final yyyy = local.year.toString().padLeft(4, '0');
+    final mm = local.month.toString().padLeft(2, '0');
+    final dd = local.day.toString().padLeft(2, '0');
+    return '$yyyy-$mm-$dd';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  post.title,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (post.publishedAt != null)
+                Text(
+                  _formatDate(post.publishedAt!),
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+            ],
+          ),
+          if (post.body.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              post.body,
+              style: AuraText.small
+                  .copyWith(color: AuraSurface.muted, height: 1.5),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

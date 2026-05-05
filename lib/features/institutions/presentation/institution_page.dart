@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_scaffold.dart';
+import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/aura_text.dart';
+
+/// Standard institution-scoped page frame.
+///
+/// One canonical page chrome shared by every institution screen so layout
+/// density, max width, page header, and empty/error states stay aligned
+/// across messages / spaces / announcements / members / domains / profile /
+/// edit / public preview.
+class InstitutionPage extends StatelessWidget {
+  const InstitutionPage({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.body,
+    this.scrollable = true,
+    this.padding,
+    this.showBack = false,
+    this.onBack,
+  });
+
+  /// Page title — rendered as the top-of-content headline. Required.
+  final String title;
+
+  /// Optional one-line subtitle under the title. Pass null to hide.
+  final String? subtitle;
+
+  /// Optional trailing action (e.g. a primary "Compose" button) shown at the
+  /// right edge of the title row.
+  final Widget? trailing;
+
+  /// Page body. Either a scrollable list (when [scrollable] is true) or a
+  /// fixed widget. When null an empty placeholder is rendered.
+  final Widget? body;
+
+  /// When true (default) the body is wrapped in a vertically scrollable
+  /// `SingleChildScrollView`. Pass false for screens that own their own
+  /// scrollable (e.g. paginated lists or `TabBarView`).
+  final bool scrollable;
+
+  /// Optional outer padding override. Defaults to 16px sides + 20px top +
+  /// 32px bottom which matches every other institution screen.
+  final EdgeInsetsGeometry? padding;
+
+  /// Optional back arrow next to the title. Defaults to `context.pop()`.
+  final bool showBack;
+  final VoidCallback? onBack;
+
+  /// Canonical institution content max width. Every institution screen MUST
+  /// use this constant — do not hard-code different values per screen.
+  static const double maxContentWidth = 920;
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = padding ??
+        const EdgeInsets.fromLTRB(
+          AuraSpace.s16,
+          AuraSpace.s20,
+          AuraSpace.s16,
+          AuraSpace.s32,
+        );
+
+    final header = _PageHeader(
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
+      showBack: showBack,
+      onBack: onBack,
+    );
+
+    final children = <Widget>[
+      header,
+      const SizedBox(height: AuraSpace.s14),
+      if (body != null) body!,
+    ];
+
+    final inner = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: maxContentWidth),
+        child: Padding(
+          padding: pad,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
+            children: children,
+          ),
+        ),
+      ),
+    );
+
+    return AuraScaffold(
+      showHeader: false,
+      body: scrollable ? SingleChildScrollView(child: inner) : inner,
+    );
+  }
+}
+
+class _PageHeader extends StatelessWidget {
+  const _PageHeader({
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+    required this.showBack,
+    required this.onBack,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final bool showBack;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (showBack) ...[
+              GestureDetector(
+                onTap: onBack ?? () => context.pop(),
+                child: const Padding(
+                  padding: EdgeInsets.only(right: AuraSpace.s12),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    size: 20,
+                    color: AuraSurface.muted,
+                  ),
+                ),
+              ),
+            ],
+            Expanded(
+              child: Text(
+                title,
+                style: AuraText.headline,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (trailing != null) ...[
+              const SizedBox(width: AuraSpace.s12),
+              trailing!,
+            ],
+          ],
+        ),
+        if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            subtitle!,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Standard institution-scoped empty state used across institution screens.
+/// Wraps [AuraEmptyState] with the same horizontal padding the page body
+/// uses so empty states sit at the same x-axis as content.
+class InstitutionEmptyState extends StatelessWidget {
+  const InstitutionEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.body,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s24),
+      child: AuraEmptyState(
+        icon: icon,
+        title: title,
+        body: body,
+        action: action,
+      ),
+    );
+  }
+}

@@ -195,10 +195,10 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                     context.go('/admin/institutions/${inst.id}/members?name=$name');
                   },
                   onViewAnnouncements: (inst) => context.go(
-                    '/institution/${inst.id}/announcements?admin=true',
+                    '/institution/${inst.id}/announcements',
                   ),
                   onViewSpaces: (inst) => context.go(
-                    '/institution/${inst.id}/spaces?admin=true',
+                    '/institution/${inst.id}/spaces',
                   ),
                 ),
                 _RequestList(
@@ -224,10 +224,10 @@ class _AdminInstitutionsScreenState extends ConsumerState<AdminInstitutionsScree
                     context.go('/admin/institutions/${inst.id}/members?name=$name');
                   },
                   onViewAnnouncements: (inst) => context.go(
-                    '/institution/${inst.id}/announcements?admin=true',
+                    '/institution/${inst.id}/announcements',
                   ),
                   onViewSpaces: (inst) => context.go(
-                    '/institution/${inst.id}/spaces?admin=true',
+                    '/institution/${inst.id}/spaces',
                   ),
                 ),
               ],

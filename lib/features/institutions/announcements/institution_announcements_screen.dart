@@ -3,23 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../features/institutions/presentation/institution_page.dart';
 import '../data/institutions_repository.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
     super.key,
     required this.institutionId,
-    this.isAdmin = false,
   });
 
   final String institutionId;
-  final bool isAdmin;
 
   @override
   ConsumerState<InstitutionAnnouncementsScreen> createState() =>
@@ -42,10 +41,19 @@ class _InstitutionAnnouncementsScreenState
 
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
+  /// Single source of truth for admin gating — never trust route query params.
+  /// Uses [ref.read] so the getter is safe from non-build call sites
+  /// (initState, async handlers). The `build()` method explicitly subscribes
+  /// to [institutionIdentityProvider] so rebuilds still happen on role change.
+  bool get _isAdmin =>
+      ref.read(institutionIdentityProvider)?.isAdmin ?? false;
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: widget.isAdmin ? 2 : 1, vsync: this);
+    // Always 2 tabs (Published + Drafts). The Drafts tab is rendered only for
+    // admins, so the controller length stays stable across role changes.
+    _tabs = TabController(length: 2, vsync: this);
     _load();
   }
 
@@ -62,7 +70,7 @@ class _InstitutionAnnouncementsScreenState
     });
     try {
       final published = await _repo.listInstitutionAnnouncements(widget.institutionId);
-      final drafts = widget.isAdmin
+      final drafts = _isAdmin
           ? await _repo.listInstitutionDrafts(widget.institutionId)
           : <Map<String, dynamic>>[];
       setState(() {
@@ -246,7 +254,7 @@ class _InstitutionAnnouncementsScreenState
               ],
             ],
           ),
-          if (widget.isAdmin) ...[
+          if (_isAdmin) ...[
             const SizedBox(height: AuraSpace.s12),
             if (isActing)
               const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -354,7 +362,7 @@ class _InstitutionAnnouncementsScreenState
       );
     }
 
-    if (!widget.isAdmin) {
+    if (!_isAdmin) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -394,49 +402,26 @@ class _InstitutionAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 740),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AuraSurface.muted),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      const Expanded(child: Text('Announcements', style: AuraText.headline)),
-                      if (widget.isAdmin) ...[
-                        AuraPrimaryButton(
-                          label: 'New',
-                          onPressed: () => context.push(
-                            '/institution/${widget.institutionId}/announcements/new',
-                          ).then((_) => _load()),
-                          icon: Icons.add_rounded,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Official institution announcements.',
-                    style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
-                  ),
-                  const SizedBox(height: AuraSpace.s24),
-                  _buildBody(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    // Subscribe explicitly so role changes drive a rebuild — the `_isAdmin`
+    // getter intentionally uses `ref.read` so it can be called from
+    // initState / async handlers.
+    ref.watch(institutionIdentityProvider);
+
+    return InstitutionPage(
+      title: 'Announcements',
+      subtitle: 'Official institution announcements.',
+      trailing: _isAdmin
+          ? AuraPrimaryButton(
+              label: 'New',
+              onPressed: () => context
+                  .push(
+                    '/institution/${widget.institutionId}/announcements/new',
+                  )
+                  .then((_) => _load()),
+              icon: Icons.add_rounded,
+            )
+          : null,
+      body: _buildBody(),
     );
   }
 }

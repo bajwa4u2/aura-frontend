@@ -451,7 +451,7 @@ class _InstitutionDashboardScreenState
         icon: Icons.campaign_outlined,
         enabled: _canUseInstitutionTools,
         onTap: _canUseInstitutionTools && institutionId.isNotEmpty
-            ? () => _go('/institution/$institutionId/announcements${_isAdmin ? '?admin=true' : ''}')
+            ? () => _go('/institution/$institutionId/announcements')
             : null,
       ),
       _ToolData(
@@ -460,7 +460,7 @@ class _InstitutionDashboardScreenState
         icon: Icons.forum_outlined,
         enabled: _canUseInstitutionTools,
         onTap: _canUseInstitutionTools && institutionId.isNotEmpty
-            ? () => _go('/institution/$institutionId/spaces${_isAdmin ? '?admin=true' : ''}')
+            ? () => _go('/institution/$institutionId/spaces')
             : null,
       ),
       _ToolData(
@@ -498,7 +498,7 @@ class _InstitutionDashboardScreenState
         enabled: _isAdmin,
         badge: pendingJoinCount > 0 ? pendingJoinCount : null,
         onTap: _isAdmin && institutionId.isNotEmpty
-            ? () => _go('/institution/$institutionId/join-requests?admin=true')
+            ? () => _go('/institution/$institutionId/join-requests')
             : null,
       ),
       _ToolData(

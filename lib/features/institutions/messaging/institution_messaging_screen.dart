@@ -6,17 +6,17 @@ import 'package:go_router/go_router.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../presentation/institution_page.dart';
 
 /// Institution Messaging — institution-context inbox built on Spaces.
 ///
-/// Lists the institution's Spaces, each tappable to open the existing
-/// space-thread surface (`/me/correspondence/:spaceId`). Wraps the existing
-/// Spaces backend; no separate "messaging" endpoint is called.
+/// Lists the institution's Spaces, each tappable to open the institution-
+/// scoped space-thread surface (`/institution/:id/spaces/:spaceId`). Wraps
+/// the existing Spaces backend; no separate "messaging" endpoint is called.
 class InstitutionMessagingScreen extends ConsumerStatefulWidget {
   const InstitutionMessagingScreen({
     super.key,
@@ -75,92 +75,63 @@ class _InstitutionMessagingScreenState
     return fallback;
   }
 
-  void _newConversation() {
-    // Existing space creation flow, prefilled with the institution. The
-    // hub picks up the institution from the active member context.
-    context.push(
-      '/me/correspondence/create/space?institutionId=${widget.institutionId}',
-    );
+  void _goCreateSpace() {
+    // Stay in institution context — the spaces screen has an inline create
+    // form for admins. Routing to /me/correspondence/create/space leaves
+    // the institution shell.
+    context.push('/institution/${widget.institutionId}/spaces');
   }
 
   @override
   Widget build(BuildContext context) {
-    final identity = ref.watch(institutionIdentityProvider);
-    final title = identity?.name.isNotEmpty == true
-        ? 'Institution Messages — ${identity!.name}'
-        : 'Institution Messages';
+    ref.watch(institutionIdentityProvider);
 
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
-          AuraSpace.s32,
-        ),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 920),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(title, style: AuraText.headline),
-                      ),
-                      AuraPrimaryButton(
-                        label: 'New conversation',
-                        icon: Icons.add_rounded,
-                        onPressed: _newConversation,
-                      ),
-                    ],
+    return InstitutionPage(
+      title: 'Messages',
+      subtitle: 'Spaces are this institution\'s messaging primitive. '
+          'Tap a space to open its threads.',
+      trailing: AuraPrimaryButton(
+        label: 'New space',
+        icon: Icons.add_rounded,
+        onPressed: _goCreateSpace,
+      ),
+      body: _loading
+          ? const AuraLoadingState(message: 'Loading spaces…')
+          : _error != null
+              ? AuraErrorState(
+                  title: 'Could not load spaces',
+                  body: _error!,
+                  action: AuraSecondaryButton(
+                    label: 'Try again',
+                    icon: Icons.refresh_rounded,
+                    onPressed: _load,
                   ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Spaces are this institution\'s messaging primitive. '
-                    'Tap a space to open its threads.',
-                    style: AuraText.body
-                        .copyWith(color: AuraSurface.muted, height: 1.5),
-                  ),
-                  const SizedBox(height: AuraSpace.s20),
-                  if (_loading)
-                    const AuraLoadingState(message: 'Loading spaces…')
-                  else if (_error != null)
-                    AuraErrorState(
-                      title: 'Could not load spaces',
-                      body: _error!,
-                      action: AuraSecondaryButton(
-                        label: 'Try again',
-                        icon: Icons.refresh_rounded,
-                        onPressed: _load,
-                      ),
-                    )
-                  else if (_spaces.isEmpty)
-                    const AuraEmptyState(
+                )
+              : _spaces.isEmpty
+                  ? const AuraEmptyState(
                       icon: Icons.forum_outlined,
                       title: 'No conversations yet',
                       body:
                           'Create a space to start a thread with members of this institution.',
                     )
-                  else
-                    ..._spaces.map((space) => _SpaceTile(space: space)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _spaces
+                          .map((space) => _SpaceTile(
+                                space: space,
+                                institutionId: widget.institutionId,
+                              ))
+                          .toList(),
+                    ),
     );
   }
 }
 
 class _SpaceTile extends StatelessWidget {
-  const _SpaceTile({required this.space});
+  const _SpaceTile({required this.space, required this.institutionId});
 
   final Map<String, dynamic> space;
+  final String institutionId;
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +146,7 @@ class _SpaceTile extends StatelessWidget {
       child: InkWell(
         onTap: id.isEmpty
             ? null
-            : () => context.push('/me/correspondence/$id'),
+            : () => context.push('/institution/$institutionId/spaces/$id'),
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
           padding: const EdgeInsets.all(AuraSpace.s14),

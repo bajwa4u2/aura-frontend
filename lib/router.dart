@@ -854,7 +854,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/announcements',
             builder: (context, state) => InstitutionAnnouncementsScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
-              isAdmin: state.uri.queryParameters['admin'] == 'true',
             ),
           ),
           GoRoute(
@@ -874,7 +873,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/spaces',
             builder: (context, state) => InstitutionSpacesScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
-              isAdmin: state.uri.queryParameters['admin'] == 'true',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/spaces/:spaceId',
+            builder: (context, state) => SpaceScreen(
+              spaceId: state.pathParameters['spaceId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/spaces/:spaceId/thread/:threadId',
+            builder: (context, state) => ThreadStateWrapper(
+              threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
           GoRoute(
@@ -893,7 +903,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/join-requests',
             builder: (context, state) => InstitutionJoinRequestsScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
-              isAdmin: state.uri.queryParameters['admin'] == 'true',
             ),
           ),
           GoRoute(

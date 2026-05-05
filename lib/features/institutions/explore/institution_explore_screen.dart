@@ -80,6 +80,34 @@ class _InstitutionExploreScreenState
   @override
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
+
+    // Hard guard: an empty institutionId makes the dio call hit
+    // `/institutions//posts` and 404 with no useful message. Show an empty
+    // state with a route back to the dashboard instead of letting the
+    // network layer surface a raw 404.
+    if (widget.institutionId.trim().isEmpty) {
+      return AuraScaffold(
+        showHeader: false,
+        body: ListView(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          children: [
+            AuraEmptyState(
+              icon: Icons.apartment_outlined,
+              title: 'Institution not selected',
+              body:
+                  'Open the institution dashboard to enter the workspace, '
+                  'then choose Explore from the workspace nav.',
+              action: AuraSecondaryButton(
+                label: 'Go to dashboard',
+                icon: Icons.arrow_forward_rounded,
+                onPressed: () => context.go('/institution/dashboard'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final scopes = _scopesFor(identity);
     if (!_listEquals(scopes, _visibleScopes)) {
       _visibleScopes = scopes;
@@ -116,7 +144,7 @@ class _InstitutionExploreScreenState
                               AuraPrimaryButton(
                                 label: 'Compose',
                                 icon: Icons.edit_rounded,
-                                onPressed: () => context.go(
+                                onPressed: () => context.push(
                                   '/institution/${widget.institutionId}/posts/new',
                                 ),
                               ),

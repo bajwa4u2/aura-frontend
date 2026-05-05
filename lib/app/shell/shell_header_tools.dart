@@ -45,7 +45,7 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
     super.key,
     required this.isTablet,
     required this.isDesktop,
-    required this.searchPath,
+    this.searchPath,
     this.activityPath,
     this.invitePath,
     this.showLive = true,
@@ -53,7 +53,12 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
 
   final bool isTablet;
   final bool isDesktop;
-  final String searchPath;
+
+  /// When null the search button is hidden. Member shell passes the global
+  /// `/search` route; institution shell currently passes null because there
+  /// is no institution-scoped search surface yet — the global search would
+  /// otherwise leak member content into institution context.
+  final String? searchPath;
 
   /// When null the activity (notifications) bell is hidden.
   final String? activityPath;
@@ -124,11 +129,12 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     const gap = SizedBox(width: AuraSpace.s6);
 
     final tools = <Widget>[
-      _HeaderIconBtn(
-        icon: Icons.search_rounded,
-        tooltip: 'Search',
-        onTap: () => context.push(widget.searchPath),
-      ),
+      if (widget.searchPath != null)
+        _HeaderIconBtn(
+          icon: Icons.search_rounded,
+          tooltip: 'Search',
+          onTap: () => context.push(widget.searchPath!),
+        ),
       if (widget.activityPath != null) ...[
         gap,
         _HeaderActivityBtn(

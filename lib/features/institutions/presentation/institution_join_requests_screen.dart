@@ -1,25 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import 'institution_page.dart';
 
 class InstitutionJoinRequestsScreen extends ConsumerStatefulWidget {
   const InstitutionJoinRequestsScreen({
     super.key,
     required this.institutionId,
-    this.isAdmin = false,
   });
 
   final String institutionId;
-  final bool isAdmin;
 
   @override
   ConsumerState<InstitutionJoinRequestsScreen> createState() =>
@@ -30,6 +28,7 @@ class _InstitutionJoinRequestsScreenState
     extends ConsumerState<InstitutionJoinRequestsScreen> {
   bool _loading = true;
   String? _error;
+  bool _initialLoadStarted = false;
 
   List<Map<String, dynamic>> _requests = const [];
 
@@ -44,10 +43,27 @@ class _InstitutionJoinRequestsScreenState
 
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
+  /// Single source of truth for admin gating — never trust route query params.
+  bool get _isAdmin =>
+      ref.read(institutionIdentityProvider)?.isAdmin ?? false;
+
   @override
   void initState() {
     super.initState();
-    if (widget.isAdmin) _load();
+    // Defer the admin-only load until the first build — at initState the
+    // institution identity may still be settling, so reading it here can
+    // race the access provider.
+  }
+
+  void _ensureInitialLoad() {
+    if (_initialLoadStarted) return;
+    if (!_isAdmin) {
+      _initialLoadStarted = true;
+      _loading = false;
+      return;
+    }
+    _initialLoadStarted = true;
+    _load();
   }
 
   @override
@@ -405,59 +421,16 @@ class _InstitutionJoinRequestsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
-          AuraSpace.s32,
-        ),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 740),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          size: 20,
-                          color: AuraSurface.muted,
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      Expanded(
-                        child: Text(
-                          widget.isAdmin ? 'Join requests' : 'Request access',
-                          style: AuraText.headline,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    widget.isAdmin
-                        ? 'Review and approve or reject member requests.'
-                        : 'Request to join this institution.',
-                    style: AuraText.body.copyWith(
-                      color: AuraSurface.muted,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s24),
-                  widget.isAdmin ? _buildAdminBody() : _buildNonMemberBody(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    // Subscribe so role changes drive a rebuild and re-render the right body.
+    ref.watch(institutionIdentityProvider);
+    _ensureInitialLoad();
+
+    return InstitutionPage(
+      title: _isAdmin ? 'Join requests' : 'Request access',
+      subtitle: _isAdmin
+          ? 'Review and approve or reject member requests.'
+          : 'Request to join this institution.',
+      body: _isAdmin ? _buildAdminBody() : _buildNonMemberBody(),
     );
   }
 }

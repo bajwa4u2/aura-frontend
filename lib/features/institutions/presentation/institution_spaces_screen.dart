@@ -3,23 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import 'institution_page.dart';
 
 class InstitutionSpacesScreen extends ConsumerStatefulWidget {
   const InstitutionSpacesScreen({
     super.key,
     required this.institutionId,
-    this.isAdmin = false,
   });
 
   final String institutionId;
-  final bool isAdmin;
 
   @override
   ConsumerState<InstitutionSpacesScreen> createState() =>
@@ -44,6 +43,10 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   String? _actionError;
 
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
+
+  /// Single source of truth for admin gating — never trust route query params.
+  bool get _isAdmin =>
+      ref.watch(institutionIdentityProvider)?.isAdmin ?? false;
 
   @override
   void initState() {
@@ -290,17 +293,19 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
                 const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               else ...[
                 GestureDetector(
-                  onTap: () => context.push('/me/correspondence/$id'),
+                  onTap: () => context.push(
+                    '/institution/${widget.institutionId}/spaces/$id',
+                  ),
                   child: Text('Open', style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700)),
                 ),
-                if (!widget.isAdmin) ...[
+                if (!_isAdmin) ...[
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _join(id),
                     child: Text('Join', style: AuraText.small.copyWith(color: AuraSurface.goodInk, fontWeight: FontWeight.w700)),
                   ),
                 ],
-                if (widget.isAdmin) ...[
+                if (_isAdmin) ...[
                   const SizedBox(width: AuraSpace.s12),
                   GestureDetector(
                     onTap: () => _archive(id),
@@ -347,7 +352,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
             ),
           ),
         ],
-        if (_showCreate && widget.isAdmin) _buildCreateForm(),
+        if (_showCreate && _isAdmin) _buildCreateForm(),
         if (_spaces.isEmpty && !_showCreate)
           const AuraEmptyState(
             icon: Icons.forum_outlined,
@@ -362,46 +367,19 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 740),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AuraSurface.muted),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      const Expanded(child: Text('Spaces', style: AuraText.headline)),
-                      if (widget.isAdmin && !_showCreate)
-                        AuraPrimaryButton(
-                          label: 'New space',
-                          onPressed: () => setState(() { _showCreate = true; }),
-                          icon: Icons.add_rounded,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Institution spaces for member collaboration.',
-                    style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
-                  ),
-                  const SizedBox(height: AuraSpace.s24),
-                  _buildBody(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return InstitutionPage(
+      title: 'Spaces',
+      subtitle: 'Institution spaces for member collaboration.',
+      trailing: _isAdmin && !_showCreate
+          ? AuraPrimaryButton(
+              label: 'New space',
+              onPressed: () => setState(() {
+                _showCreate = true;
+              }),
+              icon: Icons.add_rounded,
+            )
+          : null,
+      body: _buildBody(),
     );
   }
 }

@@ -353,12 +353,14 @@ class _InstitutionHeader extends StatelessWidget {
                       ],
                       const _WorkspaceBadge(),
                       const Spacer(),
-                      // Search + account only — Activity/Live/Invite move to
-                      // the primary nav row below to avoid duplication.
+                      // Account only — Activity/Live/Invite live in the
+                      // primary nav row below; the global search button is
+                      // omitted until an institution-scoped search exists,
+                      // since `/search` would leak member content into
+                      // institution context.
                       ShellHeaderTools(
                         isTablet: isTablet,
                         isDesktop: isDesktop,
-                        searchPath: '/search',
                         showLive: false,
                       ),
                     ],
@@ -921,7 +923,7 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       selectedIcon: Icons.person_add_rounded,
       adminOnly: true,
       pathBuilder: (_) => id.isNotEmpty && isAdmin
-          ? '/institution/$id/join-requests?admin=true'
+          ? '/institution/$id/join-requests'
           : null,
       pathMatcher: (p) =>
           p.contains('/join-requests') && p.startsWith('/institution/'),
@@ -1295,7 +1297,7 @@ class _InstitutionBottomNavMore extends StatelessWidget {
             icon: Icons.person_add_outlined,
           ),
           id.isNotEmpty
-              ? '/institution/$id/join-requests?admin=true'
+              ? '/institution/$id/join-requests'
               : null,
         ),
       if (isAdmin)

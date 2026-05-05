@@ -1,15 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import 'institution_page.dart';
 
 class InstitutionMembersScreen extends ConsumerStatefulWidget {
   const InstitutionMembersScreen({super.key, required this.institutionId});
@@ -435,54 +434,10 @@ class _InstitutionMembersScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
-          AuraSpace.s32,
-        ),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 740),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          size: 20,
-                          color: AuraSurface.muted,
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      const Expanded(
-                        child: Text('Institution members', style: AuraText.headline),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Active members and their roles.',
-                    style: AuraText.body.copyWith(
-                      color: AuraSurface.muted,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s24),
-                  _buildBody(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return InstitutionPage(
+      title: 'Members',
+      subtitle: 'Active members and their roles.',
+      body: _buildBody(),
     );
   }
 }
