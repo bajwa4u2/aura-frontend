@@ -93,7 +93,7 @@ class InteractionService {
 
     if (info.route.isEmpty) {
       throw const InteractionError(
-        'Server did not return a thread route. Try again.',
+        'Failed to open conversation. Try again.',
       );
     }
     if (!context.mounted) return;

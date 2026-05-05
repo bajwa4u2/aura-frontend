@@ -214,23 +214,35 @@ class DirectThreadsRepository {
 
   final Dio _dio;
 
+  /// Backend responses are wrapped by `ResponseWrapInterceptor` as
+  /// `{ ok: true, data: { ... } }`. Every read in this repository goes
+  /// through `_unwrap` so the inner payload is what callers see.
+  /// Falls through unwrapped when the body is already shaped correctly,
+  /// so a future deployment that returns a raw payload still parses.
+  Map<String, dynamic> _unwrap(dynamic raw) {
+    if (raw is! Map) return <String, dynamic>{};
+    final outer = Map<String, dynamic>.from(raw);
+    final inner = outer['data'];
+    if (inner is Map) {
+      return Map<String, dynamic>.from(inner);
+    }
+    return outer;
+  }
+
   Future<List<InboxThread>> listForActor({required ActorRef actor}) async {
     final query = <String, dynamic>{...actor.toQuery('actor')};
     final res = await _dio.get(
       '/direct-threads',
       queryParameters: query,
     );
-    final body = res.data;
+    final root = _unwrap(res.data);
     final items = <InboxThread>[];
-    if (body is Map) {
-      final root = Map<String, dynamic>.from(body);
-      final raw = root['items'];
-      if (raw is List) {
-        for (final entry in raw.whereType<Map>()) {
-          items.add(InboxThread.fromJson(
-            Map<String, dynamic>.from(entry),
-          ));
-        }
+    final raw = root['items'];
+    if (raw is List) {
+      for (final entry in raw.whereType<Map>()) {
+        items.add(InboxThread.fromJson(
+          Map<String, dynamic>.from(entry),
+        ));
       }
     }
     return items;
@@ -253,9 +265,7 @@ class DirectThreadsRepository {
       ...target.toFields('target'),
     };
     final res = await _dio.post('/correspondence/direct', data: body);
-    return DirectThreadInfo.fromJson(
-      Map<String, dynamic>.from(res.data as Map),
-    );
+    return DirectThreadInfo.fromJson(_unwrap(res.data));
   }
 
   Future<DirectThreadInfo> getThread({
@@ -267,9 +277,7 @@ class DirectThreadsRepository {
       '/direct-threads/$threadId',
       queryParameters: query,
     );
-    return DirectThreadInfo.fromJson(
-      Map<String, dynamic>.from(res.data as Map),
-    );
+    return DirectThreadInfo.fromJson(_unwrap(res.data));
   }
 
   Future<DirectMessagesPage> listMessages({
@@ -287,24 +295,21 @@ class DirectThreadsRepository {
       '/direct-threads/$threadId/messages',
       queryParameters: query,
     );
-    final body = res.data;
+    final root = _unwrap(res.data);
     final items = <DirectMessage>[];
     String? next;
-    if (body is Map) {
-      final root = Map<String, dynamic>.from(body);
-      final raw = root['items'];
-      if (raw is List) {
-        for (final entry in raw.whereType<Map>()) {
-          items.add(DirectMessage.fromJson(
-            Map<String, dynamic>.from(entry),
-          ));
-        }
+    final raw = root['items'];
+    if (raw is List) {
+      for (final entry in raw.whereType<Map>()) {
+        items.add(DirectMessage.fromJson(
+          Map<String, dynamic>.from(entry),
+        ));
       }
-      final c = root['nextCursor'];
-      if (c != null) {
-        final s = c.toString().trim();
-        if (s.isNotEmpty) next = s;
-      }
+    }
+    final c = root['nextCursor'];
+    if (c != null) {
+      final s = c.toString().trim();
+      if (s.isNotEmpty) next = s;
     }
     return DirectMessagesPage(items: items, nextCursor: next);
   }
@@ -322,8 +327,7 @@ class DirectThreadsRepository {
       '/direct-threads/$threadId/messages',
       data: payload,
     );
-    final raw = res.data;
-    final m = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final m = _unwrap(res.data);
     final messageMap = m['message'] is Map
         ? Map<String, dynamic>.from(m['message'] as Map)
         : m;
