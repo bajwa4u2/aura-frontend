@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -8,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_activity_event.dart';
 
@@ -437,7 +439,19 @@ class _ActivityCard extends StatelessWidget {
     final summary = _summaryForKind(event);
     final time = event.createdAt != null ? _formatTime(event.createdAt!) : '';
 
-    return Container(
+    // Backend now ships a canonical `targetRoute` on each event when it
+    // refers to a navigable entity (post, announcement, etc.). For events
+    // that don't resolve to a target (INSTITUTION_VERIFIED, role changes,
+    // …) the row stays untappable.
+    final route = event.targetRoute;
+    final adapted = route == null || route.isEmpty
+        ? null
+        : FeedRouting.adaptTargetRoute(
+            route,
+            currentPath: GoRouterState.of(context).uri.path,
+          );
+
+    final card = Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
         color: AuraSurface.card,
@@ -484,8 +498,21 @@ class _ActivityCard extends StatelessWidget {
               ],
             ),
           ),
+          if (adapted != null)
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 12,
+              color: AuraSurface.faint,
+            ),
         ],
       ),
+    );
+
+    if (adapted == null) return card;
+    return InkWell(
+      onTap: () => context.push(adapted),
+      borderRadius: BorderRadius.circular(AuraRadius.card),
+      child: card,
     );
   }
 

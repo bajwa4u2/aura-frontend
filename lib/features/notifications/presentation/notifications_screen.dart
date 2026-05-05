@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart';
 
 /// Phase-3 actor-aware notifications list. Each row carries enough data to
 /// route on tap (post detail, institution-post detail, direct thread,
@@ -50,7 +51,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (!mounted) return;
     final route = _routeFor(n);
     if (route == null) return;
-    context.push(route);
+    // Route through the shared shell adapter so notifications opened from
+    // inside an institution shell preserve that shell; otherwise the
+    // canonical route is returned untouched.
+    final adapted = FeedRouting.adaptTargetRoute(
+      route,
+      currentPath: GoRouterState.of(context).uri.path,
+    );
+    context.push(adapted);
   }
 
   String? _routeFor(AppNotification n) {

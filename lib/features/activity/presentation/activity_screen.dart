@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart';
 import '../../updates/providers.dart';
 import '../../correspondence/data/threads_repository.dart';
 
@@ -26,6 +27,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   static const _resolver = CommunicationResolver();
 
   _ActivityFilter _activeFilter = _ActivityFilter.all;
+
+  /// Shell-safe push: rewrites canonical routes (`/posts/:id`, `/u/:handle`,
+  /// `/institutions/:slug`) for the current shell context so a user inside an
+  /// institution shell stays there. For member-shell routes the helper is a
+  /// no-op. Today the member activity surface only runs at top-level
+  /// `/activity`; the helper exists so a future `/institution/:id/activity`
+  /// or shell-aware notification deeplink stays correct without changing
+  /// every call site again.
+  void _safePush(String route) {
+    if (route.isEmpty) return;
+    final adapted = FeedRouting.adaptTargetRoute(
+      route,
+      currentPath: GoRouterState.of(context).uri.path,
+    );
+    context.push(adapted);
+  }
 
   List<Map<String, dynamic>> _applyFilter(List<Map<String, dynamic>> items) {
     if (_activeFilter == _ActivityFilter.all) return items;
@@ -252,7 +269,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return;
       case 'FOLLOW_ACCEPTED':
       case 'FOLLOW':
-        if (handle.isNotEmpty) context.push('/u/$handle');
+        if (handle.isNotEmpty) _safePush('/u/$handle');
         return;
       case 'LIKE':
       case 'SAVE':
@@ -261,10 +278,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       case 'MENTION':
       case 'POST_PUBLISHED':
         if (postId.isNotEmpty) {
-          context.push('/posts/$postId');
+          _safePush('/posts/$postId');
           return;
         }
-        if (handle.isNotEmpty) context.push('/u/$handle');
+        if (handle.isNotEmpty) _safePush('/u/$handle');
         return;
       case 'POST_PUBLISH_FAILED':
         context.push('/me');
@@ -303,11 +320,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         return;
       default:
         if (postId.isNotEmpty) {
-          context.push('/posts/$postId');
+          _safePush('/posts/$postId');
           return;
         }
         if (handle.isNotEmpty) {
-          context.push('/u/$handle');
+          _safePush('/u/$handle');
           return;
         }
         if (spaceId.isNotEmpty && threadId.isNotEmpty) {

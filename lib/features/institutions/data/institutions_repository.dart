@@ -898,66 +898,6 @@ class InstitutionPostListArgs {
   int get hashCode => Object.hash(institutionId, scope);
 }
 
-/// First-page provider for institution posts. Pagination beyond the first
-/// page is handled imperatively by callers using the repository directly.
-final institutionPostsFirstPageProvider = FutureProvider.family<
-    InstitutionPostPage, InstitutionPostListArgs>((ref, args) async {
-  final repo = ref.watch(institutionsRepositoryProvider);
-  return repo.listInstitutionPosts(
-    institutionId: args.institutionId,
-    scope: args.scope,
-    limit: 20,
-  );
-});
-
-/// First-page provider for the merged global public feed used by the
-/// institution Explore "Public" tab. Keyed by institution id only because the
-/// underlying endpoint is global, but using a family lets each Explore screen
-/// invalidate its own cache without nuking unrelated state.
-final institutionExplorePublicFeedProvider =
-    FutureProvider.family<ExploreFeedPage, String>((ref, institutionId) async {
-  final repo = ref.watch(institutionsRepositoryProvider);
-  return repo.listGlobalPublicFeed(limit: 20);
-});
-
-/// Identifies a single InstitutionPost by feed institution + post id.
-class InstitutionPostKey {
-  const InstitutionPostKey({
-    required this.institutionId,
-    required this.postId,
-  });
-
-  final String institutionId;
-  final String postId;
-
-  @override
-  bool operator ==(Object other) =>
-      other is InstitutionPostKey &&
-      other.institutionId == institutionId &&
-      other.postId == postId;
-
-  @override
-  int get hashCode => Object.hash(institutionId, postId);
-}
-
-final institutionPostDetailProvider = FutureProvider.autoDispose
-    .family<InstitutionPost, InstitutionPostKey>((ref, key) async {
-  final repo = ref.watch(institutionsRepositoryProvider);
-  return repo.getInstitutionPost(
-    institutionId: key.institutionId,
-    postId: key.postId,
-  );
-});
-
-final institutionPostRepliesProvider = FutureProvider.autoDispose
-    .family<InstitutionPostPage, InstitutionPostKey>((ref, key) async {
-  final repo = ref.watch(institutionsRepositoryProvider);
-  return repo.listInstitutionPostReplies(
-    institutionId: key.institutionId,
-    postId: key.postId,
-    limit: 50,
-  );
-});
 
 /// Family arg for the activity feed provider.
 class InstitutionActivityArgs {

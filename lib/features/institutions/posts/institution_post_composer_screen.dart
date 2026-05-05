@@ -19,10 +19,10 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/data/unified_feed_providers.dart';
 import '../data/institution_draft_store.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_post.dart';
-import '../presentation/institution_detail_screen.dart' show institutionPublicPostsProvider;
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
@@ -723,36 +723,48 @@ class _InstitutionPostComposerScreenState
   }
 
   void _invalidatePostFeeds() {
-    // Mark the providers stale, then `read(.future)` to force the refetch
-    // immediately — `ref.invalidate` alone only refetches when a consumer is
-    // still listening at the moment of invalidation. Reading `.future`
-    // additionally kicks the request off so the cache is warm by the time
-    // the previous screen rebuilds and re-watches the provider.
-    final scopedProviders = <ProviderListenable<Future<InstitutionPostPage>>>[];
+    // Phase 2 publish invalidation: every surface now consumes the unified
+    // feed providers, so we invalidate exactly those (plus activity) and
+    // force-refetch them so caches are warm by the time the previous screen
+    // remounts.
     for (final scope in const ['public', 'member', 'internal']) {
-      final args = InstitutionPostListArgs(
-        institutionId: widget.institutionId,
-        scope: scope,
-      );
-      ref.invalidate(institutionPostsFirstPageProvider(args));
-      scopedProviders.add(institutionPostsFirstPageProvider(args).future);
+      ref.invalidate(institutionExploreFeedProvider(
+        InstitutionExploreFeedArgs(
+          institutionId: widget.institutionId,
+          scope: scope,
+        ),
+      ));
     }
-    ref.invalidate(
-      institutionExplorePublicFeedProvider(widget.institutionId),
-    );
-    ref.invalidate(institutionPublicPostsProvider(widget.institutionId));
+    ref.invalidate(institutionProfileFeedProvider(widget.institutionId));
+    ref.invalidate(globalPublicFeedProvider);
+    ref.invalidate(memberHomeFeedProvider);
+    ref.invalidate(institutionActivityFirstPageProvider(
+      InstitutionActivityArgs(institutionId: widget.institutionId),
+    ));
 
-    // Fire-and-forget the refetches. Errors are swallowed here — the watcher
-    // screens still render their own error states from the same providers.
-    for (final p in scopedProviders) {
-      ref.read(p).ignore();
+    // Fire-and-forget the refetches. Errors are swallowed here — the
+    // watcher screens still render their own error states from the same
+    // providers.
+    ref
+        .read(institutionProfileFeedProvider(widget.institutionId).future)
+        .ignore();
+    ref.read(globalPublicFeedProvider.future).ignore();
+    ref.read(memberHomeFeedProvider.future).ignore();
+    ref
+        .read(institutionActivityFirstPageProvider(
+          InstitutionActivityArgs(institutionId: widget.institutionId),
+        ).future)
+        .ignore();
+    for (final scope in const ['public', 'member', 'internal']) {
+      ref
+          .read(institutionExploreFeedProvider(
+            InstitutionExploreFeedArgs(
+              institutionId: widget.institutionId,
+              scope: scope,
+            ),
+          ).future)
+          .ignore();
     }
-    ref
-        .read(institutionExplorePublicFeedProvider(widget.institutionId).future)
-        .ignore();
-    ref
-        .read(institutionPublicPostsProvider(widget.institutionId).future)
-        .ignore();
   }
 
   String _readError(Object e, String fallback) {

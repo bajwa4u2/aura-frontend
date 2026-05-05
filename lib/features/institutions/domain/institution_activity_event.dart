@@ -48,6 +48,7 @@ class InstitutionActivityEvent {
     required this.visibility,
     required this.createdAt,
     this.actor,
+    this.targetRoute,
   });
 
   final String id;
@@ -63,6 +64,14 @@ class InstitutionActivityEvent {
   /// Optional embedded actor summary (display name, handle, avatarUrl) when
   /// the API includes it.
   final Map<String, dynamic>? actor;
+
+  /// Canonical navigation route when the activity refers to a navigable
+  /// entity (post, announcement, etc.). Null for non-actionable rows like
+  /// "INSTITUTION_VERIFIED". Surfaces inside a different shell may rewrite
+  /// via `FeedRouting.adaptTargetRoute`.
+  final String? targetRoute;
+
+  bool get isActionable => targetRoute != null && targetRoute!.isNotEmpty;
 
   factory InstitutionActivityEvent.fromJson(Map<String, dynamic> json) {
     String s(List<String> keys) {
@@ -104,6 +113,7 @@ class InstitutionActivityEvent {
       visibility: InstitutionActivityVisibilityX.fromWire(json['visibility']),
       createdAt: readDate(json['createdAt']),
       actor: readMap(json['actor']),
+      targetRoute: opt(['targetRoute']),
     );
   }
 

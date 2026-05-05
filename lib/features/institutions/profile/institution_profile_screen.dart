@@ -10,9 +10,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../domain/institution_post.dart';
-import '../presentation/institution_detail_screen.dart'
-    show institutionPublicPostsProvider;
+import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/presentation/unified_feed_card.dart';
 
 class InstitutionProfileScreen extends ConsumerWidget {
   const InstitutionProfileScreen({super.key});
@@ -812,7 +811,7 @@ class _PublicPostsPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (institutionId.isEmpty) return const SizedBox.shrink();
-    final async = ref.watch(institutionPublicPostsProvider(institutionId));
+    final async = ref.watch(institutionProfileFeedProvider(institutionId));
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
@@ -855,87 +854,25 @@ class _PublicPostsPreview extends ConsumerWidget {
               'Could not load posts: $e',
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
-            data: (posts) {
-              if (posts.isEmpty) {
+            data: (page) {
+              if (page.items.isEmpty) {
                 return Text(
                   'No public posts yet. Posts you publish to the institution feed will appear here.',
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
                 );
               }
-              final preview = posts.take(3).toList();
+              final preview = page.items.take(3).toList();
               return Column(
                 children: [
                   for (var i = 0; i < preview.length; i++) ...[
-                    _PostPreviewTile(post: preview[i]),
+                    UnifiedFeedCard(item: preview[i]),
                     if (i < preview.length - 1)
-                      const Divider(
-                        height: AuraSpace.s12,
-                        color: AuraSurface.divider,
-                      ),
+                      const SizedBox(height: AuraSpace.s10),
                   ],
                 ],
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PostPreviewTile extends StatelessWidget {
-  const _PostPreviewTile({required this.post});
-
-  final InstitutionPost post;
-
-  String _formatDate(DateTime dt) {
-    final local = dt.toLocal();
-    final yyyy = local.year.toString().padLeft(4, '0');
-    final mm = local.month.toString().padLeft(2, '0');
-    final dd = local.day.toString().padLeft(2, '0');
-    return '$yyyy-$mm-$dd';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final title = post.title.trim();
-    final body = post.body.trim();
-    final preview = body.length > 220 ? '${body.substring(0, 220)}…' : body;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (title.isNotEmpty)
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              if (post.publishedAt != null)
-                Text(
-                  _formatDate(post.publishedAt!),
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-            ],
-          ),
-          if (preview.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              preview,
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-                height: 1.5,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );

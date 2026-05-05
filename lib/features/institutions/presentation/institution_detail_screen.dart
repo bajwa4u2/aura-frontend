@@ -13,9 +13,11 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/domain/feed_item.dart';
+import '../../feed/presentation/unified_feed_card.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
-import '../domain/institution_post.dart';
 import '../units/institution_unit_card.dart';
 
 final institutionDetailProvider = FutureProvider.family<Institution, String>((
@@ -24,20 +26,6 @@ final institutionDetailProvider = FutureProvider.family<Institution, String>((
 ) async {
   final repo = ref.watch(institutionsRepositoryProvider);
   return repo.getBySlug(slug);
-});
-
-/// Public posts feed for the institution-detail page. Always uses the
-/// `public` scope so signed-out callers and members see the same content.
-final institutionPublicPostsProvider =
-    FutureProvider.family<List<InstitutionPost>, String>((ref, institutionId) async {
-  if (institutionId.trim().isEmpty) return const [];
-  final repo = ref.watch(institutionsRepositoryProvider);
-  final page = await repo.listInstitutionPosts(
-    institutionId: institutionId,
-    scope: 'public',
-    limit: 10,
-  );
-  return page.items;
 });
 
 class InstitutionDetailScreen extends ConsumerWidget {
@@ -84,7 +72,7 @@ class _InstitutionDetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final postsAsync =
-        ref.watch(institutionPublicPostsProvider(institution.id));
+        ref.watch(institutionProfileFeedProvider(institution.id));
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -334,11 +322,16 @@ class _InfoRow extends StatelessWidget {
 }
 
 // ── Public posts section ────────────────────────────────────────────────────
+//
+// Consumes the unified `institutionProfileFeedProvider` and renders rows via
+// the shared `UnifiedFeedCard`. Empty state only fires when the provider
+// returns an empty page — never when posts exist (per Phase 2 rule:
+// "❌ Remove false 'No posts' empty state").
 
 class _PublicPostsSection extends StatelessWidget {
   const _PublicPostsSection({required this.postsAsync});
 
-  final AsyncValue<List<InstitutionPost>> postsAsync;
+  final AsyncValue<FeedPage> postsAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -376,8 +369,8 @@ class _PublicPostsSection extends StatelessWidget {
               'Could not load posts.',
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
-            data: (posts) {
-              if (posts.isEmpty) {
+            data: (page) {
+              if (page.items.isEmpty) {
                 return Text(
                   'This institution has no public posts yet.',
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
@@ -385,79 +378,21 @@ class _PublicPostsSection extends StatelessWidget {
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: posts
+                children: page.items
                     .asMap()
                     .entries
                     .map((entry) => Padding(
                           padding: EdgeInsets.only(
-                            bottom: entry.key < posts.length - 1
+                            bottom: entry.key < page.items.length - 1
                                 ? AuraSpace.s10
                                 : 0,
                           ),
-                          child: _PublicPostCard(post: entry.value),
+                          child: UnifiedFeedCard(item: entry.value),
                         ))
                     .toList(),
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PublicPostCard extends StatelessWidget {
-  const _PublicPostCard({required this.post});
-
-  final InstitutionPost post;
-
-  String _formatDate(DateTime dt) {
-    final local = dt.toLocal();
-    final yyyy = local.year.toString().padLeft(4, '0');
-    final mm = local.month.toString().padLeft(2, '0');
-    final dd = local.day.toString().padLeft(2, '0');
-    return '$yyyy-$mm-$dd';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  post.title,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (post.publishedAt != null)
-                Text(
-                  _formatDate(post.publishedAt!),
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-            ],
-          ),
-          if (post.body.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              post.body,
-              style: AuraText.small
-                  .copyWith(color: AuraSurface.muted, height: 1.5),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );

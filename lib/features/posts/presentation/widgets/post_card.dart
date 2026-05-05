@@ -12,6 +12,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
+import '../../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
 import '../../data/reactions_repository.dart';
@@ -763,11 +764,18 @@ class _PostCardState extends ConsumerState<PostCard> {
         await _deletePost(context, postId);
         break;
       case 'open_post':
-        context.push('/posts/$postId');
+        context.push(FeedRouting.adaptTargetRoute(
+          '/posts/$postId',
+          currentPath: GoRouterState.of(context).uri.path,
+        ));
         break;
       case 'open_profile':
         if ((handle ?? '').trim().isNotEmpty) {
-          context.push('/u/${handle!.trim()}');
+          context.push(FeedRouting.adaptProfileRoute(
+                '/u/${handle!.trim()}',
+                currentPath: GoRouterState.of(context).uri.path,
+              ) ??
+              '/u/${handle.trim()}');
         }
         break;
       case 'copy_link':
@@ -793,7 +801,11 @@ class _PostCardState extends ConsumerState<PostCard> {
   void _openProfile(BuildContext context, String handle) {
     final h = handle.trim();
     if (h.isEmpty) return;
-    context.push('/u/$h');
+    context.push(FeedRouting.adaptProfileRoute(
+          '/u/$h',
+          currentPath: GoRouterState.of(context).uri.path,
+        ) ??
+        '/u/$h');
   }
 
   Future<void> _openMediaViewer(

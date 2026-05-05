@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart' show FeedRouting;
 import '../updates_repository.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
@@ -74,12 +75,18 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
       (post['id'] ?? '').toString(),
     ]);
 
+    final currentPath = GoRouterState.of(context).uri.path;
     if (targetUrl.isNotEmpty) {
-      context.push(targetUrl);
+      context.push(
+        FeedRouting.adaptTargetRoute(targetUrl, currentPath: currentPath),
+      );
       return;
     }
     if (postId.isNotEmpty) {
-      context.push('/posts/$postId');
+      context.push(FeedRouting.adaptTargetRoute(
+        '/posts/$postId',
+        currentPath: currentPath,
+      ));
       return;
     }
   }

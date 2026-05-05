@@ -14,8 +14,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
-import '../../feed/providers.dart';
-import '../../posts/presentation/widgets/post_card.dart';
+import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/presentation/unified_feed_card.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -145,7 +145,8 @@ class MemberHomeScreen extends ConsumerWidget {
   Future<void> _refresh(WidgetRef ref) async {
     ref.invalidate(latestHeldProvider);
     ref.invalidate(pinnedAnnouncementProvider);
-    await ref.read(feedControllerProvider.notifier).loadInitial();
+    ref.invalidate(memberHomeFeedProvider);
+    await ref.read(memberHomeFeedProvider.future);
   }
 
   @override
@@ -464,186 +465,81 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
 // WORKS SECTION WITH SORT TOGGLE
 // ─────────────────────────────────────────────────────────────────────────────
 
-enum _FeedSort { latest, top }
-
-class _WorksSection extends ConsumerStatefulWidget {
+/// Member Home "Works" feed — backed by the unified `memberHomeFeedProvider`
+/// (`GET /v1/feed/member`). Renders both user posts and globally-eligible
+/// institution posts with `UnifiedFeedCard`. Pagination beyond the first
+/// page is intentionally deferred to a follow-up phase — the legacy
+/// `feedControllerProvider` paging machinery was removed in this migration.
+class _WorksSection extends ConsumerWidget {
   const _WorksSection();
 
   @override
-  ConsumerState<_WorksSection> createState() => _WorksSectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feedAsync = ref.watch(memberHomeFeedProvider);
 
-class _WorksSectionState extends ConsumerState<_WorksSection> {
-  _FeedSort _sort = _FeedSort.latest;
-
-  void _setSort(_FeedSort sort) {
-    setState(() => _sort = sort);
-    ref.read(feedControllerProvider.notifier).loadInitial();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final feedState = ref.watch(feedControllerProvider);
-
-    if (feedState.isLoading && feedState.items.isEmpty) {
-      return const Column(
+    return feedAsync.when(
+      loading: () => const Column(
         children: [
           AuraCardSkeleton(),
           SizedBox(height: AuraSpace.s10),
           AuraCardSkeleton(),
         ],
-      );
-    }
-
-    if (feedState.error != null && feedState.items.isEmpty) {
-      return AuraErrorState(
+      ),
+      error: (e, _) => AuraErrorState(
         title: 'Could not load works',
         body: 'Refresh or try again in a moment.',
         action: AuraSecondaryButton(
           label: 'Refresh',
-          onPressed: () =>
-              ref.read(feedControllerProvider.notifier).loadInitial(),
+          onPressed: () => ref.invalidate(memberHomeFeedProvider),
           icon: Icons.refresh_rounded,
         ),
-      );
-    }
-
-    if (feedState.items.isEmpty) {
-      return const AuraEmptyState(
-        title: 'No works yet',
-        body: 'When you publish, your work will appear here.',
-        icon: Icons.auto_stories_outlined,
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text('Works', style: AuraText.subtitle),
-            const SizedBox(width: AuraSpace.s8),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s8,
-                vertical: AuraSpace.s2,
-              ),
-              decoration: BoxDecoration(
-                color: AuraSurface.subtle,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-              ),
-              child: Text(
-                '${feedState.items.length}',
-                style: AuraText.micro.copyWith(color: AuraSurface.faint),
-              ),
-            ),
-            const Spacer(),
-            _FeedSortToggle(sort: _sort, onChanged: _setSort),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s14),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: feedState.items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s14),
-          itemBuilder: (context, i) => PostCard(post: feedState.items[i]),
-        ),
-        const SizedBox(height: AuraSpace.s20),
-        if (feedState.isLoadingMore)
-          const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AuraSurface.muted,
-              ),
-            ),
-          ),
-        if (feedState.nextCursor != null &&
-            feedState.nextCursor!.trim().isNotEmpty &&
-            !feedState.isLoadingMore)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AuraGhostButton(
-              label: 'Load more',
-              onPressed: () =>
-                  ref.read(feedControllerProvider.notifier).loadMore(),
-              icon: Icons.expand_more_rounded,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _FeedSortToggle extends StatelessWidget {
-  const _FeedSortToggle({required this.sort, required this.onChanged});
-
-  final _FeedSort sort;
-  final ValueChanged<_FeedSort> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SortPill(
-          label: 'Latest',
-          selected: sort == _FeedSort.latest,
-          onTap: () => onChanged(_FeedSort.latest),
-        ),
-        const SizedBox(width: AuraSpace.s6),
-        _SortPill(
-          label: 'Top',
-          selected: sort == _FeedSort.top,
-          onTap: () => onChanged(_FeedSort.top),
-        ),
-      ],
-    );
-  }
-}
-
-class _SortPill extends StatelessWidget {
-  const _SortPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s10,
-          vertical: AuraSpace.s6,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? AuraSurface.accentSoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          border: Border.all(
-            color: selected
-                ? AuraSurface.accent.withValues(alpha: 0.4)
-                : AuraSurface.divider,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AuraText.small.copyWith(
-            fontWeight: FontWeight.w700,
-            color: selected ? AuraSurface.accentText : AuraSurface.muted,
-          ),
-        ),
       ),
+      data: (page) {
+        if (page.items.isEmpty) {
+          return const AuraEmptyState(
+            title: 'No works yet',
+            body: 'When you publish, your work will appear here.',
+            icon: Icons.auto_stories_outlined,
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text('Works', style: AuraText.subtitle),
+                const SizedBox(width: AuraSpace.s8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s8,
+                    vertical: AuraSpace.s2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.subtle,
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  ),
+                  child: Text(
+                    '${page.items.length}',
+                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s14),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: page.items.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AuraSpace.s14),
+              itemBuilder: (context, i) =>
+                  UnifiedFeedCard(item: page.items[i]),
+            ),
+            const SizedBox(height: AuraSpace.s20),
+          ],
+        );
+      },
     );
   }
 }

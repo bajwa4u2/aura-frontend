@@ -10,21 +10,16 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../app/shell/shell_shared.dart';
-import '../../feed/domain/post.dart';
-import '../../feed/providers.dart';
-
-Map<String, dynamic> _asMap(dynamic v) {
-  if (v is Map<String, dynamic>) return v;
-  if (v is Map) return Map<String, dynamic>.from(v);
-  return <String, dynamic>{};
-}
+import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/domain/feed_item.dart';
+import '../../feed/presentation/unified_feed_card.dart';
 
 class PublicHomeScreen extends ConsumerWidget {
   const PublicHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final worksAsync = ref.watch(feedProvider);
+    final worksAsync = ref.watch(globalPublicFeedProvider);
 
     return AuraScaffold(
       showHeader: false,
@@ -426,7 +421,7 @@ class _HeroOutlineButton extends StatelessWidget {
 class _PublicFeedSection extends StatelessWidget {
   const _PublicFeedSection({required this.worksAsync, required this.onExplore});
 
-  final AsyncValue<List<Post>> worksAsync;
+  final AsyncValue<FeedPage> worksAsync;
   final VoidCallback onExplore;
 
   @override
@@ -458,8 +453,8 @@ class _PublicFeedSection extends StatelessWidget {
         ),
         const SizedBox(height: AuraSpace.s20),
         worksAsync.when(
-          data: (posts) {
-            if (posts.isEmpty) {
+          data: (page) {
+            if (page.items.isEmpty) {
               return const AuraEmptyState(
                 title: 'No public work yet',
                 body: 'When people publish, their work will appear here.',
@@ -468,8 +463,8 @@ class _PublicFeedSection extends StatelessWidget {
             }
             return Column(
               children: [
-                for (final p in posts.take(6)) ...[
-                  _PublicPostCard(post: p),
+                for (final item in page.items.take(6)) ...[
+                  UnifiedFeedCard(item: item),
                   const SizedBox(height: AuraSpace.s10),
                 ],
                 const SizedBox(height: AuraSpace.s6),
@@ -492,98 +487,6 @@ class _PublicFeedSection extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PublicPostCard extends StatelessWidget {
-  const _PublicPostCard({required this.post});
-
-  final Post post;
-
-  @override
-  Widget build(BuildContext context) {
-    final a = post.author;
-    final aMap = _asMap(a);
-    final name = ((aMap['displayName'] ?? a?.displayName ?? '') as String)
-        .trim();
-    final handle = ((aMap['handle'] ?? a?.handle ?? '') as String).trim();
-    final byline = handle.isNotEmpty
-        ? '@$handle${name.isNotEmpty ? ' · $name' : ''}'
-        : name;
-
-    final text = post.text.trim();
-    final screenW = MediaQuery.of(context).size.width;
-    final maxLen = screenW < 600 ? 180 : 280;
-    final preview = text.length <= maxLen
-        ? text
-        : '${text.substring(0, maxLen).trim()}…';
-
-    final createdAt = post.createdAt;
-    final dateLabel =
-        '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        onTap: () => context.push('/posts/${post.id}'),
-        child: Container(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          decoration: BoxDecoration(
-            gradient: AuraGradients.card,
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
-            boxShadow: AuraShadows.card,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Author row
-              Row(
-                children: [
-                  AuraAvatar(name: name.isNotEmpty ? name : handle, size: 32),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          byline.isEmpty ? 'Aura member' : byline,
-                          style: AuraText.small.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AuraSurface.ink,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (dateLabel.isNotEmpty)
-                          Text(dateLabel, style: AuraText.micro),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 12,
-                    color: AuraSurface.faint,
-                  ),
-                ],
-              ),
-
-              // Text preview
-              if (preview.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s12),
-                Text(
-                  preview,
-                  style: AuraText.body.copyWith(height: 1.5),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

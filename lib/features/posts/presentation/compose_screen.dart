@@ -21,7 +21,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../ai/providers.dart';
-import '../../feed/providers.dart';
+import '../../feed/data/unified_feed_providers.dart';
 import '../../composition/domain/composition_models.dart';
 import 'compose/compose_models.dart';
 import 'compose/compose_widgets.dart';
@@ -2213,8 +2213,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
 
       if (!_isReply) {
-        ref.invalidate(feedProvider);
-        await ref.read(feedControllerProvider.notifier).loadInitial();
+        // Phase 2: invalidate the unified providers — every feed surface
+        // consumes them now. Force-refetch so the previous screen finds
+        // warm data when it re-mounts.
+        ref.invalidate(globalPublicFeedProvider);
+        ref.invalidate(memberHomeFeedProvider);
+        await ref.read(globalPublicFeedProvider.future);
+        await ref.read(memberHomeFeedProvider.future);
       }
 
       if (!mounted) return;

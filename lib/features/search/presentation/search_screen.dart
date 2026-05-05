@@ -11,6 +11,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../feed/domain/post.dart';
 import '../providers.dart';
 import '../search_repository.dart';
@@ -388,7 +389,13 @@ class _AuthorTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: handle.isEmpty ? null : () => context.push('/u/$handle'),
+          onTap: handle.isEmpty
+              ? null
+              : () => context.push(FeedRouting.adaptProfileRoute(
+                        '/u/$handle',
+                        currentPath: GoRouterState.of(context).uri.path,
+                      ) ??
+                      '/u/$handle'),
           borderRadius: BorderRadius.circular(AuraRadius.card),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
@@ -479,7 +486,11 @@ class _InstitutionTile extends StatelessWidget {
         child: InkWell(
           onTap: slug.isEmpty
               ? null
-              : () => context.push('/institutions/$slug'),
+              : () => context.push(FeedRouting.adaptProfileRoute(
+                        '/institutions/$slug',
+                        currentPath: GoRouterState.of(context).uri.path,
+                      ) ??
+                      '/institutions/$slug'),
           borderRadius: BorderRadius.circular(AuraRadius.card),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
@@ -588,7 +599,10 @@ class _PostTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/posts/${p.id}'),
+          onTap: () => context.push(FeedRouting.adaptTargetRoute(
+            '/posts/${p.id}',
+            currentPath: GoRouterState.of(context).uri.path,
+          )),
           borderRadius: BorderRadius.circular(AuraRadius.card),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
