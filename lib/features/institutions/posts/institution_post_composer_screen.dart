@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -661,22 +662,51 @@ class _InstitutionPostComposerScreenState
     });
     try {
       final repo = ref.read(institutionsRepositoryProvider);
+      InstitutionPost result;
       if (widget.isEditing) {
-        final post = await repo.updateInstitutionPost(
+        final updated = await repo.updateInstitutionPost(
           widget.institutionId,
           widget.postId!,
           _payload(),
         );
-        await repo.publishInstitutionPost(widget.institutionId, post.id);
+        result = await repo.publishInstitutionPost(
+          widget.institutionId,
+          updated.id,
+        );
       } else {
         // Single-shot create + publish via ?status=PUBLISHED (backend gates on
         // ADMIN/OWNER role and short-circuits the second round-trip).
-        await repo.createInstitutionPost(
+        result = await repo.createInstitutionPost(
           widget.institutionId,
           _payload(),
           status: 'PUBLISHED',
         );
       }
+      if (kDebugMode) {
+        debugPrint(
+          '[InstitutionPostComposer] publish-now response: '
+          'id=${result.id} status=${result.status.wire} '
+          'visibility=${result.visibility.wire} '
+          'distribution=${result.distribution.wire} '
+          'publishedAt=${result.publishedAt}',
+        );
+      }
+
+      // Defensive: if the backend somehow returned a non-PUBLISHED status
+      // (e.g. silent permission downgrade, gateway stripping the query
+      // string), bail out before clearing the draft so the user can retry.
+      if (result.status != InstitutionPostStatus.published) {
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error =
+              'Server saved this post as ${result.status.wire} instead of '
+              'PUBLISHED. Your role may not allow direct publishing — '
+              'try "Save draft" and ask an admin to publish.';
+        });
+        return;
+      }
+
       // Publish succeeded — clear every visibility-scoped draft this user
       // has on this institution so reopening the composer starts fresh.
       await _clearAllLocalDrafts();
@@ -693,23 +723,36 @@ class _InstitutionPostComposerScreenState
   }
 
   void _invalidatePostFeeds() {
-    // Refresh the institution-scoped scopes…
+    // Mark the providers stale, then `read(.future)` to force the refetch
+    // immediately — `ref.invalidate` alone only refetches when a consumer is
+    // still listening at the moment of invalidation. Reading `.future`
+    // additionally kicks the request off so the cache is warm by the time
+    // the previous screen rebuilds and re-watches the provider.
+    final scopedProviders = <ProviderListenable<Future<InstitutionPostPage>>>[];
     for (final scope in const ['public', 'member', 'internal']) {
-      ref.invalidate(
-        institutionPostsFirstPageProvider(
-          InstitutionPostListArgs(
-            institutionId: widget.institutionId,
-            scope: scope,
-          ),
-        ),
+      final args = InstitutionPostListArgs(
+        institutionId: widget.institutionId,
+        scope: scope,
       );
+      ref.invalidate(institutionPostsFirstPageProvider(args));
+      scopedProviders.add(institutionPostsFirstPageProvider(args).future);
     }
-    // …and the global merged Public feed used by the Explore Public tab.
     ref.invalidate(
       institutionExplorePublicFeedProvider(widget.institutionId),
     );
-    // …and the public-profile public-posts list.
     ref.invalidate(institutionPublicPostsProvider(widget.institutionId));
+
+    // Fire-and-forget the refetches. Errors are swallowed here — the watcher
+    // screens still render their own error states from the same providers.
+    for (final p in scopedProviders) {
+      ref.read(p).ignore();
+    }
+    ref
+        .read(institutionExplorePublicFeedProvider(widget.institutionId).future)
+        .ignore();
+    ref
+        .read(institutionPublicPostsProvider(widget.institutionId).future)
+        .ignore();
   }
 
   String _readError(Object e, String fallback) {

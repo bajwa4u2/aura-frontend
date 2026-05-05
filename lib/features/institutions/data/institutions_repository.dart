@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
@@ -646,7 +647,16 @@ class InstitutionsRepository {
       data: payload,
       queryParameters: s.isNotEmpty ? <String, dynamic>{'status': s} : null,
     );
-    return _readPost(res.data);
+    final post = _readPost(res.data);
+    if (kDebugMode) {
+      debugPrint(
+        '[InstitutionsRepository] createInstitutionPost: '
+        'sent ?status=${s.isEmpty ? "<none>" : s}, '
+        'savedStatus=${post.status.wire}, '
+        'id=${post.id}',
+      );
+    }
+    return post;
   }
 
   Future<InstitutionPost> updateInstitutionPost(
