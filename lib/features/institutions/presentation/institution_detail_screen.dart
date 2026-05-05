@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/interactions/actor_context.dart';
-import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
+import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -695,21 +695,19 @@ class _InstitutionProfileCtaRowState
   }
 
   Future<void> _openMessage(ActorContext actor) async {
-    final actorRef = _actorRefOf(actor);
-    if (actorRef == null) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final repo = ref.read(directThreadsRepositoryProvider);
-      final info = await repo.openOrCreate(
-        actor: actorRef,
-        target: _targetRef(),
-      );
+      await ref.read(interactionServiceProvider).openDirectThread(
+            context: context,
+            ref: ref,
+            target: _targetRef(),
+          );
+    } on InteractionError catch (e) {
       if (!mounted) return;
-      // Server-supplied route already encodes the actor's shell.
-      context.push(info.route);
+      setState(() => _error = e.message);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = _readError(e));

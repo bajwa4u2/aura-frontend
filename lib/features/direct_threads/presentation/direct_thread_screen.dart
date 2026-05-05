@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
+import '../../../core/interactions/presence_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -238,6 +239,7 @@ class _ThreadHeader extends StatelessWidget {
               ),
               data: (info) {
                 final other = _otherSideLabel(info, actor);
+                final otherActor = _otherSideActor(info, actor);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -248,6 +250,8 @@ class _ThreadHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (otherActor != null)
+                      _PresenceLabel(actor: otherActor),
                     if (actor.isInstitution)
                       Text(
                         'Sending as ${actor.displayName ?? "your institution"}',
@@ -262,6 +266,30 @@ class _ThreadHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  ActorRef? _otherSideActor(DirectThreadInfo info, ActorContext actor) {
+    final candidates = [info.participantA, info.participantB];
+    for (final p in candidates) {
+      if (actor.isInstitution &&
+          p.type == ActorType.institution &&
+          p.institutionId == actor.institutionId) {
+        continue;
+      }
+      if (actor.isUser &&
+          p.type == ActorType.user &&
+          p.userId == actor.userId) {
+        continue;
+      }
+      if (p.type == ActorType.institution &&
+          (p.institutionId ?? '').isNotEmpty) {
+        return ActorRef.institution(p.institutionId!);
+      }
+      if (p.type == ActorType.user && (p.userId ?? '').isNotEmpty) {
+        return ActorRef.user(p.userId!);
+      }
+    }
+    return null;
   }
 
   String _otherSideLabel(DirectThreadInfo info, ActorContext actor) {
@@ -465,6 +493,52 @@ class _Composer extends StatelessWidget {
             label: busy ? 'Sending…' : 'Send',
             icon: busy ? null : Icons.send_rounded,
             onPressed: busy ? null : onSend,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Renders the other-side actor's presence ("Active now" / "Active recently"
+/// / dim "Offline"). Cheap autoDispose family — refreshed on rebuild.
+class _PresenceLabel extends ConsumerWidget {
+  const _PresenceLabel({required this.actor});
+
+  final ActorRef actor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref
+        .watch(presenceStateProvider(actor))
+        .maybeWhen(data: (s) => s, orElse: () => null);
+    if (state == null) return const SizedBox.shrink();
+    final text = switch (state.status) {
+      PresenceStatus.online => 'Active now',
+      PresenceStatus.recent => 'Active recently',
+      PresenceStatus.offline => '',
+    };
+    if (text.isEmpty) return const SizedBox.shrink();
+    final color = state.status == PresenceStatus.online
+        ? AuraSurface.goodInk
+        : AuraSurface.faint;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: AuraText.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

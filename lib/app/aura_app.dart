@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/session_providers.dart';
+import '../core/interactions/presence_repository.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -63,14 +64,16 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     final theme = _buildTheme();
 
     return NotificationBridge(
-      child: MaterialApp.router(
-        scaffoldMessengerKey: auraScaffoldMessengerKey,
-        debugShowCheckedModeBanner: false,
-        title: 'Aura',
-        theme: theme,
-        darkTheme: theme,
-        themeMode: ThemeMode.dark,
-        routerConfig: router,
+      child: PresencePinger(
+        child: MaterialApp.router(
+          scaffoldMessengerKey: auraScaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Aura',
+          theme: theme,
+          darkTheme: theme,
+          themeMode: ThemeMode.dark,
+          routerConfig: router,
+        ),
       ),
     );
   }

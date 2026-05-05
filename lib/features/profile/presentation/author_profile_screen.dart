@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
-import '../../../core/interactions/actor_context.dart';
-import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
+import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -69,36 +68,23 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Phase-2 Message CTA. Opens (or creates) a direct thread between the
-  /// active actor (member or institution) and the profile owner via the
-  /// `/v1/correspondence/direct` endpoint, then navigates to the
-  /// server-supplied route. No create-space detour.
+  /// Single-source-of-truth Message CTA. Routes through
+  /// [InteractionService.openDirectThread]. Never falls back to /home or
+  /// /messages — failures surface as errors only.
   Future<void> _openPrivateConversation(Profile profile) async {
-    final actor = resolveActorContext(context, ref);
-    if (actor == null) {
-      _showMessage('Sign in to send messages');
-      return;
-    }
-    final actorRef = actor.isInstitution
-        ? ActorRef.institution(actor.institutionId ?? '')
-        : ActorRef.user(actor.userId ?? '');
-    if (actorRef.id.isEmpty) {
-      _showMessage('Sign in to send messages');
-      return;
-    }
     final targetId = _cleanValue(profile.id);
     if (targetId.isEmpty) {
       _showMessage('Profile is not available for messaging.');
       return;
     }
     try {
-      final repo = ref.read(directThreadsRepositoryProvider);
-      final info = await repo.openOrCreate(
-        actor: actorRef,
-        target: ActorRef.user(targetId),
-      );
-      if (!mounted) return;
-      context.push(info.route);
+      await ref.read(interactionServiceProvider).openDirectThread(
+            context: context,
+            ref: ref,
+            target: ActorRef.user(targetId),
+          );
+    } on InteractionError catch (e) {
+      _showMessage(e.message);
     } on DioException catch (e) {
       final msg = (e.response?.data is Map &&
               (e.response!.data as Map)['message'] != null)

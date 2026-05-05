@@ -1074,11 +1074,41 @@ class _ExploreInteractionBar extends ConsumerWidget {
     );
 
     Future<void> doRepost() async {
+      // Show a small commentary dialog so reposts can carry context. Empty
+      // commentary is allowed — the row is still created with body=''.
+      final controller = TextEditingController();
       try {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Repost'),
+            content: TextField(
+              controller: controller,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: 'Add a short line (optional)…',
+              ),
+            ),
+            actions: [
+              AuraGhostButton(
+                label: 'Cancel',
+                onPressed: () => Navigator.of(ctx).pop(false),
+              ),
+              AuraPrimaryButton(
+                label: 'Repost',
+                onPressed: () => Navigator.of(ctx).pop(true),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+
+        final text = controller.text.trim();
         final dio = ref.read(dioProvider);
         if (target is InstitutionPostReactionTarget) {
           final t = target as InstitutionPostReactionTarget;
           final body = <String, dynamic>{};
+          if (text.isNotEmpty) body['text'] = text;
           if (canActAsInstitution) {
             body['asInstitution'] = true;
             body['actorInstitutionId'] = actor.actorInstitutionId;
@@ -1089,6 +1119,7 @@ class _ExploreInteractionBar extends ConsumerWidget {
           );
         } else {
           final body = <String, dynamic>{};
+          if (text.isNotEmpty) body['text'] = text;
           if (canActAsInstitution) {
             body['asInstitution'] = true;
             body['institutionId'] = actor.actorInstitutionId;
@@ -1104,6 +1135,8 @@ class _ExploreInteractionBar extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not repost')),
         );
+      } finally {
+        controller.dispose();
       }
     }
 

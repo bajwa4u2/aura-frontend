@@ -73,6 +73,7 @@ import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
 import 'features/institutions/posts/institution_post_detail_screen.dart';
+import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
@@ -943,6 +944,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/direct/:threadId',
             builder: (context, state) => DirectThreadScreen(
               threadId: state.pathParameters['threadId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/direct-intent',
+            builder: (context, state) => DirectIntentScreen(
+              targetType: state.uri.queryParameters['targetType'] ?? '',
+              targetUserId: state.uri.queryParameters['targetUserId'],
+              targetInstitutionId:
+                  state.uri.queryParameters['targetInstitutionId'],
             ),
           ),
           GoRoute(
