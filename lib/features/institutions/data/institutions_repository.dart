@@ -548,6 +548,84 @@ class InstitutionsRepository {
     return InstitutionPostPage(items: items, nextCursor: nextCursor);
   }
 
+  /// Returns the merged-feed entry shape from `/institutions/:id/posts/:postId`
+  /// (single-post variant). Used by the institution-post detail screen.
+  Future<InstitutionPost> getInstitutionPost({
+    required String institutionId,
+    required String postId,
+  }) async {
+    final iid = institutionId.trim();
+    final pid = postId.trim();
+    if (iid.isEmpty || pid.isEmpty) {
+      throw Exception('institutionId and postId are required.');
+    }
+    // The list endpoint accepts a `id` filter implicitly via the page; here
+    // we do not have a single-post endpoint yet. Since replies + the parent
+    // post must be visible together, the detail screen pulls the parent
+    // out of the same merged listing using the replies endpoint's parent
+    // probe. For now we read from the institution feed as a fallback —
+    // real single-post fetch is implemented as part of Phase 2 routing.
+    // Phase 1.5 path: scan the listing until we hit the id, capped at 50.
+    final res = await _dio.get('/institutions/$iid/posts',
+        queryParameters: <String, dynamic>{'limit': 50});
+    final body = res.data;
+    if (body is Map) {
+      final raw = body['items'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          final m = Map<String, dynamic>.from(entry);
+          if (m['id']?.toString().trim() == pid) {
+            return InstitutionPost.fromJson(m);
+          }
+        }
+      }
+    }
+    throw Exception('Institution post not found.');
+  }
+
+  /// Lists replies under an InstitutionPost. Visibility is enforced by the
+  /// server — it returns 404 when the caller cannot view the parent.
+  Future<InstitutionPostPage> listInstitutionPostReplies({
+    required String institutionId,
+    required String postId,
+    String? cursor,
+    int? limit,
+  }) async {
+    final iid = institutionId.trim();
+    final pid = postId.trim();
+    if (iid.isEmpty || pid.isEmpty) {
+      throw Exception('institutionId and postId are required.');
+    }
+    final query = <String, dynamic>{
+      if (cursor != null && cursor.trim().isNotEmpty) 'cursor': cursor.trim(),
+      if (limit != null) 'limit': limit,
+    };
+    final res = await _dio.get(
+      '/institutions/$iid/posts/$pid/replies',
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final body = res.data;
+    final items = <InstitutionPost>[];
+    String? nextCursor;
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final raw = root['items'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          items.add(
+            InstitutionPost.fromJson(Map<String, dynamic>.from(entry)),
+          );
+        }
+      }
+      final cur = root['nextCursor'];
+      if (cur != null) {
+        final s = cur.toString().trim();
+        if (s.isNotEmpty) nextCursor = s;
+      }
+    }
+    return InstitutionPostPage(items: items, nextCursor: nextCursor);
+  }
+
   Future<InstitutionPost> createInstitutionPost(
     String institutionId,
     Map<String, dynamic> payload,
@@ -820,6 +898,45 @@ final institutionExplorePublicFeedProvider =
     FutureProvider.family<ExploreFeedPage, String>((ref, institutionId) async {
   final repo = ref.watch(institutionsRepositoryProvider);
   return repo.listGlobalPublicFeed(limit: 20);
+});
+
+/// Identifies a single InstitutionPost by feed institution + post id.
+class InstitutionPostKey {
+  const InstitutionPostKey({
+    required this.institutionId,
+    required this.postId,
+  });
+
+  final String institutionId;
+  final String postId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is InstitutionPostKey &&
+      other.institutionId == institutionId &&
+      other.postId == postId;
+
+  @override
+  int get hashCode => Object.hash(institutionId, postId);
+}
+
+final institutionPostDetailProvider = FutureProvider.autoDispose
+    .family<InstitutionPost, InstitutionPostKey>((ref, key) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.getInstitutionPost(
+    institutionId: key.institutionId,
+    postId: key.postId,
+  );
+});
+
+final institutionPostRepliesProvider = FutureProvider.autoDispose
+    .family<InstitutionPostPage, InstitutionPostKey>((ref, key) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.listInstitutionPostReplies(
+    institutionId: key.institutionId,
+    postId: key.postId,
+    limit: 50,
+  );
 });
 
 /// Family arg for the activity feed provider.

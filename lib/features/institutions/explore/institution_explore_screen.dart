@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,9 +10,28 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../posts/data/reactions_repository.dart';
 import '../data/institutions_repository.dart';
 import '../domain/explore_feed_item.dart';
 import '../domain/institution_post.dart';
+
+/// Maps a member-shell route like `/u/:handle` or `/institutions/:slug` to
+/// the equivalent institution-shell variant when the caller is currently
+/// inside `/institution/:institutionId/...`. This keeps institution actor
+/// context intact when a user opens a profile from inside the workspace.
+String _profileRoute(BuildContext context, String memberShellPath) {
+  final path = GoRouterState.of(context).uri.path;
+  final m = RegExp(r'^/institution/([^/]+)(/|$)').firstMatch(path);
+  if (m == null) return memberShellPath;
+  final institutionId = m.group(1)!;
+  if (institutionId.isEmpty) return memberShellPath;
+  // memberShellPath starts with '/' — strip the leading slash so we can
+  // splice it under /institution/:id.
+  final tail = memberShellPath.startsWith('/')
+      ? memberShellPath.substring(1)
+      : memberShellPath;
+  return '/institution/$institutionId/$tail';
+}
 
 /// Institution Explore — three distinct surfaces:
 ///
@@ -517,13 +537,13 @@ class _ExploreFeedCard extends StatelessWidget {
   }
 }
 
-class _ExploreUserPostCard extends StatelessWidget {
+class _ExploreUserPostCard extends ConsumerWidget {
   const _ExploreUserPostCard({required this.post});
 
   final ExploreUserPost post;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final initial = post.authorDisplayName.trim().isNotEmpty
         ? post.authorDisplayName.trim()[0].toUpperCase()
         : (post.authorHandle.isNotEmpty ? post.authorHandle[0].toUpperCase() : 'U');
@@ -541,34 +561,44 @@ class _ExploreUserPostCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _AuthorAvatar(
-                imageUrl: post.authorAvatarUrl,
-                fallback: initial,
-              ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Column(
+              InkWell(
+                onTap: post.authorHandle.isNotEmpty
+                    ? () => context.push(
+                        _profileRoute(context, '/u/${post.authorHandle}'))
+                    : null,
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      post.authorDisplayName.isNotEmpty
-                          ? post.authorDisplayName
-                          : (post.authorHandle.isNotEmpty
-                              ? '@${post.authorHandle}'
-                              : 'Unknown'),
-                      style:
-                          AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    _AuthorAvatar(
+                      imageUrl: post.authorAvatarUrl,
+                      fallback: initial,
                     ),
-                    if (post.authorHandle.isNotEmpty &&
-                        post.authorDisplayName.isNotEmpty)
-                      Text(
-                        '@${post.authorHandle}',
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.faint),
-                      ),
+                    const SizedBox(width: AuraSpace.s10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.authorDisplayName.isNotEmpty
+                              ? post.authorDisplayName
+                              : (post.authorHandle.isNotEmpty
+                                  ? '@${post.authorHandle}'
+                                  : 'Unknown'),
+                          style: AuraText.small
+                              .copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        if (post.authorHandle.isNotEmpty &&
+                            post.authorDisplayName.isNotEmpty)
+                          Text(
+                            '@${post.authorHandle}',
+                            style: AuraText.micro
+                                .copyWith(color: AuraSurface.faint),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
+              const Spacer(),
               if (post.publishedAt != null)
                 Text(
                   _formatDate(post.publishedAt!),
@@ -590,24 +620,31 @@ class _ExploreUserPostCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             _MediaThumb(url: post.media.first.url, isVideo: post.media.first.isVideo),
           ],
+          const SizedBox(height: AuraSpace.s12),
+          _ExploreInteractionBar(target: PostReactionTarget(post.id)),
         ],
       ),
     );
   }
 }
 
-class _ExploreInstitutionPostCard extends StatelessWidget {
+class _ExploreInstitutionPostCard extends ConsumerWidget {
   const _ExploreInstitutionPostCard({required this.post});
 
   final ExploreInstitutionPost post;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final initial = post.institutionName.trim().isNotEmpty
         ? post.institutionName.trim()[0].toUpperCase()
         : 'I';
 
-    return Container(
+    return InkWell(
+      onTap: () => context.push(
+        '/institution/${post.institutionId}/posts/${post.id}',
+      ),
+      borderRadius: BorderRadius.circular(AuraRadius.card),
+      child: Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
         color: AuraSurface.card,
@@ -620,9 +657,19 @@ class _ExploreInstitutionPostCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _AuthorAvatar(
-                imageUrl: post.institutionLogoUrl,
-                fallback: initial,
+              InkWell(
+                onTap: post.institutionSlug.isNotEmpty
+                    ? () => context.push(
+                        _profileRoute(
+                          context,
+                          '/institutions/${post.institutionSlug}',
+                        ),
+                      )
+                    : null,
+                child: _AuthorAvatar(
+                  imageUrl: post.institutionLogoUrl,
+                  fallback: initial,
+                ),
               ),
               const SizedBox(width: AuraSpace.s10),
               Expanded(
@@ -697,20 +744,33 @@ class _ExploreInstitutionPostCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             _MediaThumb(url: post.mediaUrl!, isVideo: false),
           ],
+          const SizedBox(height: AuraSpace.s12),
+          _ExploreInteractionBar(
+            target: InstitutionPostReactionTarget(
+              institutionId: post.institutionId,
+              postId: post.id,
+            ),
+          ),
         ],
+      ),
       ),
     );
   }
 }
 
-class _InstitutionPostCard extends StatelessWidget {
+class _InstitutionPostCard extends ConsumerWidget {
   const _InstitutionPostCard({required this.post});
 
   final InstitutionPost post;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      onTap: () => context.push(
+        '/institution/${post.institutionId}/posts/${post.id}',
+      ),
+      borderRadius: BorderRadius.circular(AuraRadius.card),
+      child: Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
         color: AuraSurface.card,
@@ -752,7 +812,15 @@ class _InstitutionPostCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s10),
             _MediaThumb(url: post.mediaUrl!, isVideo: false),
           ],
+          const SizedBox(height: AuraSpace.s12),
+          _ExploreInteractionBar(
+            target: InstitutionPostReactionTarget(
+              institutionId: post.institutionId,
+              postId: post.id,
+            ),
+          ),
         ],
+      ),
       ),
     );
   }
@@ -924,6 +992,102 @@ class _VisibilityChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Action bar shared by every Explore card ────────────────────────────────
+//
+// Phase 1.5: this bar now serves both `_ExploreUserPostCard` (regular Post)
+// and `_ExploreInstitutionPostCard` / `_InstitutionPostCard` (InstitutionPost
+// rows). The `target` discriminator routes the toggle/state calls to the
+// right backend surface.
+//
+// Reply CTA opens compose pre-loaded with the institution actor when the
+// active institution identity has speaker rights; otherwise the user is the
+// actor.
+class _ExploreInteractionBar extends ConsumerWidget {
+  const _ExploreInteractionBar({required this.target});
+
+  final ReactionTarget target;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final identity = ref.watch(institutionIdentityProvider);
+    final actor = identity != null && identity.id.isNotEmpty
+        ? ReactionActor.institution(identity.id)
+        : const ReactionActor.user();
+    final canActAsInstitution =
+        actor.isInstitution && (identity?.canPublishPosts ?? false);
+
+    final reactionKey = ReactionStateKey(target: target, actor: actor);
+    final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
+
+    Future<void> toggleLike() async {
+      try {
+        final repo = ref.read(reactionsRepositoryProvider);
+        await repo.toggle(target, actor: actor);
+        ref.invalidate(reactionStateProvider(reactionKey));
+      } catch (e) {
+        if (!context.mounted) return;
+        if (e is DioException && e.response?.statusCode == 403) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Only institution speakers can react as institution.',
+              ),
+            ),
+          );
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update like')),
+        );
+      }
+    }
+
+    String composeReplyTarget() {
+      final replyKey = target is InstitutionPostReactionTarget
+          ? 'replyToInstitutionPostId=${target.postId}'
+              '&parentInstitutionId='
+              '${(target as InstitutionPostReactionTarget).institutionId}'
+          : 'replyTo=${target.postId}';
+      final base = '/compose?$replyKey&surface=dm';
+      if (actor.isInstitution && canActAsInstitution) {
+        return '$base&asInstitution=1'
+            '&institutionId=${actor.actorInstitutionId}';
+      }
+      return base;
+    }
+
+    final liked = reactionAsync.maybeWhen(
+      data: (s) => s.liked,
+      orElse: () => false,
+    );
+    final likeLabel = reactionAsync.maybeWhen(
+      data: (s) {
+        final base = s.liked ? 'Liked' : 'Like';
+        return s.likeCount > 0 ? '$base · ${s.likeCount}' : base;
+      },
+      orElse: () => 'Like',
+    );
+
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        AuraActionPill(
+          icon: liked ? Icons.favorite : Icons.favorite_border,
+          label: likeLabel,
+          onTap: toggleLike,
+          active: liked,
+        ),
+        AuraActionPill(
+          icon: Icons.reply_outlined,
+          label: 'Reply',
+          onTap: () => context.push(composeReplyTarget()),
+        ),
+      ],
     );
   }
 }

@@ -22,6 +22,7 @@ bool isMemberShellPath(String path) {
   return path == '/home' ||
       path == '/messages' ||
       path.startsWith('/messages/') ||
+      path.startsWith('/direct/') ||
       path == '/saved' ||
       path == '/updates' ||
       path == '/conversations' ||

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -27,16 +28,35 @@ import 'compose/compose_widgets.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
+
+  /// When set, the compose screen replies to an InstitutionPost (separate
+  /// table from `Post`). The two reply paths are mutually exclusive — the
+  /// caller passes one or the other. `parentInstitutionId` is the feed
+  /// institution that owns the parent post; required alongside the reply id.
+  final String? replyToInstitutionPostId;
+  final String? parentInstitutionId;
+
   final String? heldPostId;
   final String? surface;
   final String? mode;
 
+  /// When true and `institutionId` is set, the reply is published with the
+  /// institution as the post actor (Post.institutionId/institutionMemberId/
+  /// institutionSpeechMode='AUTHORIZED_INSTITUTIONAL' for regular posts;
+  /// InstitutionPost.actorInstitutionId for institution-post replies).
+  final bool asInstitution;
+  final String? institutionId;
+
   const ComposeScreen({
     super.key,
     this.replyToPostId,
+    this.replyToInstitutionPostId,
+    this.parentInstitutionId,
     this.heldPostId,
     this.surface,
     this.mode,
+    this.asInstitution = false,
+    this.institutionId,
   });
 
   @override
@@ -93,9 +113,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String _linkedinAccountLabel = '';
   String? _linkedinError;
 
-  bool get _isReply => widget.replyToPostId != null;
+  bool get _isReply =>
+      widget.replyToPostId != null ||
+      widget.replyToInstitutionPostId != null;
+  bool get _isInstitutionPostReply =>
+      (widget.replyToInstitutionPostId ?? '').trim().isNotEmpty &&
+      (widget.parentInstitutionId ?? '').trim().isNotEmpty;
 
   String get _replyToPostId => (widget.replyToPostId ?? '').trim();
+  String get _replyToInstitutionPostId =>
+      (widget.replyToInstitutionPostId ?? '').trim();
+  String get _parentInstitutionId =>
+      (widget.parentInstitutionId ?? '').trim();
   String get _heldPostId => (widget.heldPostId ?? '').trim();
 
   bool get _hasText => _textController.text.trim().isNotEmpty;
@@ -1705,6 +1734,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
               const SizedBox(height: AuraSpace.s4),
+              if (_isReply && widget.asInstitution &&
+                  (widget.institutionId ?? '').trim().isNotEmpty) ...[
+                _ReplyActorBanner(institutionId: widget.institutionId!.trim()),
+                const SizedBox(height: AuraSpace.s4),
+              ],
               Text(
                 _savedLine(),
                 style: AuraText.small.copyWith(color: AuraSurface.muted),
@@ -1929,16 +1963,36 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<String?> _publishReplyNow() async {
     final dio = ref.read(dioProvider);
+    final text = _textController.text.trim();
+    final instId = (widget.institutionId ?? '').trim();
+
+    // Branch on the reply target: regular post vs institution post live in
+    // different tables and behind different endpoints.
+    if (_isInstitutionPostReply) {
+      final body = <String, dynamic>{
+        'body': text,
+      };
+      if (widget.asInstitution && instId.isNotEmpty) {
+        body['asInstitution'] = true;
+        body['actorInstitutionId'] = instId;
+      }
+      await dio.post(
+        '/institutions/$_parentInstitutionId/posts/$_replyToInstitutionPostId/replies',
+        data: body,
+      );
+      return null;
+    }
 
     if (_replyToPostId.isEmpty) {
       throw Exception('Reply target missing.');
     }
 
-    await dio.post(
-      '/posts/$_replyToPostId/reply',
-      data: {'text': _textController.text.trim()},
-    );
-
+    final body = <String, dynamic>{'text': text};
+    if (widget.asInstitution && instId.isNotEmpty) {
+      body['asInstitution'] = true;
+      body['institutionId'] = instId;
+    }
+    await dio.post('/posts/$_replyToPostId/reply', data: body);
     return null;
   }
 
@@ -3268,4 +3322,43 @@ String _time(DateTime dt) {
   final mm = dt.minute.toString().padLeft(2, '0');
   final ap = dt.hour >= 12 ? 'pm' : 'am';
   return '$h:$mm $ap';
+}
+
+/// Renders "Replying as: <Institution Name>" when the compose screen is
+/// launched with `asInstitution=true&institutionId=...`. Reads the live
+/// institution identity so the name follows whatever institution the user
+/// is acting as.
+class _ReplyActorBanner extends ConsumerWidget {
+  const _ReplyActorBanner({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final identity = ref.watch(institutionIdentityProvider);
+    final name =
+        identity != null && identity.id == institutionId && identity.name.isNotEmpty
+            ? identity.name
+            : 'institution';
+    return Container(
+      margin: const EdgeInsets.only(top: AuraSpace.s4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: AuraSpace.s4,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        'Replying as $name',
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
 }

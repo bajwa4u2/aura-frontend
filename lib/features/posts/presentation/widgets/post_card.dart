@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/institutions/institution_access_provider.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_platform_components.dart';
@@ -13,6 +14,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
+import '../../data/reactions_repository.dart';
 import 'post_card/post_card_media.dart';
 import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
@@ -74,25 +76,6 @@ String _defaultTranslationLanguage(BuildContext context) {
   ).languageCode.trim().toLowerCase();
   if (_translationLanguageLabels.containsKey(code)) return code;
   return 'en';
-}
-
-bool _extractBool(dynamic data, List<String> keys) {
-  if (data is! Map) return false;
-
-  for (final k in keys) {
-    final v = data[k];
-    if (v is bool) return v;
-  }
-
-  final inner = data['data'];
-  if (inner is Map) {
-    for (final k in keys) {
-      final v = inner[k];
-      if (v is bool) return v;
-    }
-  }
-
-  return false;
 }
 
 Map<String, dynamic> _asMap(dynamic v) {
@@ -187,24 +170,25 @@ final viewerIdentityProvider = FutureProvider<_ViewerIdentity?>((ref) async {
   }
 });
 
-final isLikedProvider = FutureProvider.family<bool, String>((
-  ref,
-  postId,
-) async {
-  final dio = ref.read(dioProvider);
-  final pid = postId.trim();
-  if (pid.isEmpty) return false;
-
-  try {
-    final res = await dio.get('/reactions/$pid');
-    return _extractBool(res.data, const ['liked', 'isLiked']);
-  } on DioException catch (e) {
-    if (e.response?.statusCode == 404) return false;
-    return false;
-  } catch (_) {
-    return false;
+/// Returns the reaction actor that should drive Like/Reply on the current
+/// route. Determined by the route path so a user with institution-speaker
+/// rights still likes as themselves while browsing in member shell. Inside
+/// the institution shell (`/institution/...`) the active institution acts
+/// as the actor.
+///
+/// Falls back to the personal user actor whenever institution identity is
+/// not loaded or the route is not within the institution shell.
+ReactionActor activeReactionActor(BuildContext context, WidgetRef ref) {
+  final path = GoRouterState.of(context).uri.path;
+  if (!path.startsWith('/institution/') && path != '/institution') {
+    return const ReactionActor.user();
   }
-});
+  final identity = ref.watch(institutionIdentityProvider);
+  if (identity == null || identity.id.isEmpty) {
+    return const ReactionActor.user();
+  }
+  return ReactionActor.institution(identity.id);
+}
 
 final isSavedProvider = FutureProvider.family<bool, String>((
   ref,
@@ -1331,6 +1315,39 @@ class _ActionRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(isSavedProvider(postId));
+    final actor = activeReactionActor(context, ref);
+    final target = PostReactionTarget(postId);
+    final reactionKey = ReactionStateKey(target: target, actor: actor);
+    final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
+
+    Future<void> toggleLike() async {
+      try {
+        final repo = ref.read(reactionsRepositoryProvider);
+        await repo.toggle(target, actor: actor);
+        // Re-fetch so the pill reflects the new state + count from the
+        // canonical server reply (handles concurrent likes from elsewhere).
+        ref.invalidate(reactionStateProvider(reactionKey));
+      } catch (e) {
+        if (!context.mounted) return;
+        if (e is DioException && e.response?.statusCode == 403) {
+          _showError(
+            context,
+            'Only institution speakers can react as institution.',
+          );
+          return;
+        }
+        _showError(context, 'Could not update like');
+      }
+    }
+
+    String composeReplyTarget() {
+      final base = '/compose?replyTo=$postId&surface=dm';
+      if (actor.isInstitution) {
+        return '$base&asInstitution=1'
+            '&institutionId=${actor.actorInstitutionId}';
+      }
+      return base;
+    }
 
     Future<void> toggleSave() async {
       try {
@@ -1472,14 +1489,32 @@ class _ActionRow extends ConsumerWidget {
       );
     }
 
+    final likeLabel = reactionAsync.maybeWhen(
+      data: (s) {
+        final base = s.liked ? 'Liked' : 'Like';
+        return s.likeCount > 0 ? '$base · ${s.likeCount}' : base;
+      },
+      orElse: () => 'Like',
+    );
+    final liked = reactionAsync.maybeWhen(
+      data: (s) => s.liked,
+      orElse: () => false,
+    );
+
     return Wrap(
       spacing: AuraSpace.s8,
       runSpacing: AuraSpace.s8,
       children: [
         AuraActionPill(
+          icon: liked ? Icons.favorite : Icons.favorite_border,
+          label: likeLabel,
+          onTap: toggleLike,
+          active: liked,
+        ),
+        AuraActionPill(
           icon: Icons.reply_outlined,
           label: 'Respond',
-          onTap: () => context.push('/compose?replyTo=$postId&surface=dm'),
+          onTap: () => context.push(composeReplyTarget()),
         ),
         AuraActionPill(icon: Icons.repeat, label: 'Repost', onTap: repost),
         saved.when(

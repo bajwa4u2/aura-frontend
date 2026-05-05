@@ -145,6 +145,10 @@ class InstitutionPost {
     this.createdAt,
     this.updatedAt,
     this.author,
+    this.institution,
+    this.actorInstitutionId,
+    this.actorInstitution,
+    this.replyToInstitutionPostId,
   });
 
   final String id;
@@ -164,6 +168,26 @@ class InstitutionPost {
   /// Optional embedded author summary (display name, handle, avatarUrl)
   /// when the API returns it as a sibling object.
   final Map<String, dynamic>? author;
+
+  /// Embedded summary of the **feed** institution that owns this post (where
+  /// it lives). Distinct from [actorInstitution] which is the speaking actor
+  /// on a cross-institution reply.
+  final Map<String, dynamic>? institution;
+
+  /// When set, the institution speaking through this post (post is attributed
+  /// to this institution rather than the personal author).
+  final String? actorInstitutionId;
+  final Map<String, dynamic>? actorInstitution;
+
+  /// Set when this post is a reply under another InstitutionPost.
+  final String? replyToInstitutionPostId;
+
+  bool get isReply =>
+      replyToInstitutionPostId != null &&
+      replyToInstitutionPostId!.trim().isNotEmpty;
+
+  bool get isInstitutionActor =>
+      actorInstitutionId != null && actorInstitutionId!.trim().isNotEmpty;
 
   static const int maxTitleChars = 200;
   static const int maxBodyChars = 10000;
@@ -209,6 +233,8 @@ class InstitutionPost {
     }
 
     final author = json['author'];
+    final institution = json['institution'];
+    final actorInstitution = json['actorInstitution'];
 
     return InstitutionPost(
       id: s(['id']),
@@ -225,6 +251,14 @@ class InstitutionPost {
       createdAt: readDate(json['createdAt']),
       updatedAt: readDate(json['updatedAt']),
       author: author is Map ? Map<String, dynamic>.from(author) : null,
+      institution: institution is Map
+          ? Map<String, dynamic>.from(institution)
+          : null,
+      actorInstitutionId: opt(['actorInstitutionId']),
+      actorInstitution: actorInstitution is Map
+          ? Map<String, dynamic>.from(actorInstitution)
+          : null,
+      replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
     );
   }
 

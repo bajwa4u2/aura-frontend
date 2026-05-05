@@ -1,6 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
+import '../../../core/interactions/actor_context.dart';
+import '../../../core/interactions/direct_threads_repository.dart';
+import '../../../core/interactions/follows_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -102,6 +108,8 @@ class _InstitutionDetailBody extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ..._buildContent(),
+                      const SizedBox(height: AuraSpace.s10),
+                      _InstitutionProfileCtaRow(institutionId: institution.id),
                       const SizedBox(height: AuraSpace.s14),
                       _PublicPostsSection(postsAsync: postsAsync),
                     ],
@@ -620,6 +628,217 @@ class _PublicInstitutionAvatar extends StatelessWidget {
               errorBuilder: (_, __, ___) => fallback(),
             )
           : fallback(),
+    );
+  }
+}
+
+// ── Profile Follow + Message CTAs ────────────────────────────────────────────
+
+class _InstitutionProfileCtaRow extends ConsumerStatefulWidget {
+  const _InstitutionProfileCtaRow({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  ConsumerState<_InstitutionProfileCtaRow> createState() =>
+      _InstitutionProfileCtaRowState();
+}
+
+class _InstitutionProfileCtaRowState
+    extends ConsumerState<_InstitutionProfileCtaRow> {
+  bool _busy = false;
+  String? _error;
+
+  ActorRef _targetRef() => ActorRef.institution(widget.institutionId);
+
+  ActorRef? _actorRefOf(ActorContext actor) {
+    if (actor.isInstitution) {
+      final id = (actor.institutionId ?? '').trim();
+      if (id.isEmpty) return null;
+      return ActorRef.institution(id);
+    }
+    final uid = (actor.userId ?? '').trim();
+    if (uid.isEmpty) return null;
+    return ActorRef.user(uid);
+  }
+
+  bool _isOwnInstitution(ActorContext actor) {
+    return actor.isInstitution &&
+        (actor.institutionId ?? '') == widget.institutionId;
+  }
+
+  Future<void> _toggleFollow(
+    ActorContext actor,
+    FollowState current,
+    FollowStateKey key,
+  ) async {
+    final actorRef = _actorRefOf(actor);
+    if (actorRef == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final repo = ref.read(followsRepositoryProvider);
+      if (current.following) {
+        await repo.unfollow(actor: actorRef, target: _targetRef());
+      } else {
+        await repo.follow(actor: actorRef, target: _targetRef());
+      }
+      ref.invalidate(followStateProvider(key));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _readError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openMessage(ActorContext actor) async {
+    final actorRef = _actorRefOf(actor);
+    if (actorRef == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final repo = ref.read(directThreadsRepositoryProvider);
+      final info = await repo.openOrCreate(
+        actor: actorRef,
+        target: _targetRef(),
+      );
+      if (!mounted) return;
+      // Server-supplied route already encodes the actor's shell.
+      context.push(info.route);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _readError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  String _readError(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map) {
+        final m = data['message']?.toString().trim() ?? '';
+        if (m.isNotEmpty) return m;
+      }
+      if (e.response?.statusCode == 403) {
+        return 'Not allowed.';
+      }
+    }
+    return 'Something went wrong. Try again.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = ref.watch(authStatusProvider);
+
+    if (auth != AuthStatus.authed) {
+      return Wrap(
+        spacing: AuraSpace.s10,
+        runSpacing: AuraSpace.s10,
+        children: [
+          AuraPrimaryButton(
+            label: 'Sign in',
+            icon: Icons.login_rounded,
+            onPressed: () => context.push('/login'),
+          ),
+          AuraSecondaryButton(
+            label: 'Join Aura',
+            icon: Icons.person_add_alt_1_rounded,
+            onPressed: () => context.push('/register'),
+          ),
+        ],
+      );
+    }
+
+    final actor = resolveActorContext(context, ref);
+    if (actor == null) {
+      return const SizedBox.shrink();
+    }
+    final actorRef = _actorRefOf(actor);
+    if (actorRef == null) return const SizedBox.shrink();
+
+    if (_isOwnInstitution(actor)) {
+      // Acting as the institution viewing its own public profile — show a
+      // shortcut into the workspace rather than self-follow buttons.
+      return Wrap(
+        spacing: AuraSpace.s10,
+        children: [
+          AuraPrimaryButton(
+            label: 'Open workspace',
+            icon: Icons.dashboard_rounded,
+            onPressed: () => context.push('/institution/dashboard'),
+          ),
+        ],
+      );
+    }
+
+    final key = FollowStateKey(actor: actorRef, target: _targetRef());
+    final stateAsync = ref.watch(followStateProvider(key));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        stateAsync.when(
+          loading: () => const SizedBox(
+            height: 38,
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+          error: (e, _) => Text(
+            'Could not load follow state.',
+            style:
+                AuraText.small.copyWith(color: AuraSurface.dangerInk),
+          ),
+          data: (state) {
+            return Wrap(
+              spacing: AuraSpace.s10,
+              runSpacing: AuraSpace.s10,
+              children: [
+                AuraPrimaryButton(
+                  label: _busy
+                      ? 'Working…'
+                      : (state.following ? 'Following' : 'Follow'),
+                  icon: state.following
+                      ? Icons.check_rounded
+                      : Icons.add_rounded,
+                  onPressed: _busy
+                      ? null
+                      : () => _toggleFollow(actor, state, key),
+                ),
+                AuraSecondaryButton(
+                  label: state.canMessage
+                      ? (_busy ? 'Opening…' : 'Message')
+                      : (actor.isUser
+                          ? 'Follow to message'
+                          : 'Cannot message'),
+                  icon: Icons.mail_outline_rounded,
+                  onPressed: state.canMessage && !_busy
+                      ? () => _openMessage(actor)
+                      : null,
+                ),
+              ],
+            );
+          },
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            _error!,
+            style: AuraText.small
+                .copyWith(color: AuraSurface.dangerInk),
+          ),
+        ],
+      ],
     );
   }
 }

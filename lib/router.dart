@@ -73,6 +73,8 @@ import 'features/institutions/correspondence/institution_correspondence_screen.d
 import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
 import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
+import 'features/institutions/posts/institution_post_detail_screen.dart';
+import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
@@ -799,12 +801,24 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           GoRoute(
             path: '/compose',
-            builder: (context, state) => ComposeScreen(
-              replyToPostId: state.uri.queryParameters['replyTo'],
-              heldPostId: state.uri.queryParameters['held'],
-              surface: state.uri.queryParameters['surface'],
-              mode: state.uri.queryParameters['mode'],
-            ),
+            builder: (context, state) {
+              final asInstitution = _queryBool(
+                state.uri.queryParameters['asInstitution'],
+              );
+              return ComposeScreen(
+                replyToPostId: state.uri.queryParameters['replyTo'],
+                replyToInstitutionPostId:
+                    state.uri.queryParameters['replyToInstitutionPostId'],
+                parentInstitutionId:
+                    state.uri.queryParameters['parentInstitutionId'],
+                heldPostId: state.uri.queryParameters['held'],
+                surface: state.uri.queryParameters['surface'],
+                mode: state.uri.queryParameters['mode'],
+                asInstitution: asInstitution,
+                institutionId:
+                    state.uri.queryParameters['institutionId']?.trim(),
+              );
+            },
           ),
           GoRoute(
             path: kEnterInstitutionRoute,
@@ -916,6 +930,42 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => InstitutionPostComposerScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
               defaultScope: state.uri.queryParameters['scope'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/posts/:postId',
+            builder: (context, state) => InstitutionPostDetailScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              postId: state.pathParameters['postId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/direct/:threadId',
+            builder: (context, state) => DirectThreadScreen(
+              threadId: state.pathParameters['threadId'] ?? '',
+            ),
+          ),
+          // Phase-2 shell-preserving variants: opening a profile from inside
+          // the institution shell keeps the institution actor context (no
+          // accidental drop to MemberShell). The screen itself reads the
+          // active actor from the route path so the inner Follow/Message
+          // buttons act as the institution.
+          GoRoute(
+            path: '/institution/:institutionId/u/:handle',
+            builder: (context, state) => AuthorProfileScreen(
+              handle: state.pathParameters['handle'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/institutions/:slug',
+            builder: (context, state) => InstitutionDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/direct/:threadId',
+            builder: (context, state) => DirectThreadScreen(
+              threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
           GoRoute(

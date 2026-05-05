@@ -1,8 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/interactions/actor_context.dart';
+import '../../../core/interactions/direct_threads_repository.dart';
+import '../../../core/interactions/follows_repository.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -65,21 +69,45 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _openPrivateConversation(Profile profile) {
-    final userId = _cleanValue(profile.id);
-    final displayName = _cleanValue(profile.displayName);
-    final handle = _cleanValue(widget.handle);
-
-    final uri = Uri(
-      path: '/me/correspondence/create/conversation',
-      queryParameters: {
-        if (userId.isNotEmpty) 'userId': userId,
-        if (handle.isNotEmpty) 'handle': handle,
-        if (displayName.isNotEmpty) 'name': displayName,
-      },
-    );
-
-    context.push(uri.toString());
+  /// Phase-2 Message CTA. Opens (or creates) a direct thread between the
+  /// active actor (member or institution) and the profile owner via the
+  /// `/v1/correspondence/direct` endpoint, then navigates to the
+  /// server-supplied route. No create-space detour.
+  Future<void> _openPrivateConversation(Profile profile) async {
+    final actor = resolveActorContext(context, ref);
+    if (actor == null) {
+      _showMessage('Sign in to send messages');
+      return;
+    }
+    final actorRef = actor.isInstitution
+        ? ActorRef.institution(actor.institutionId ?? '')
+        : ActorRef.user(actor.userId ?? '');
+    if (actorRef.id.isEmpty) {
+      _showMessage('Sign in to send messages');
+      return;
+    }
+    final targetId = _cleanValue(profile.id);
+    if (targetId.isEmpty) {
+      _showMessage('Profile is not available for messaging.');
+      return;
+    }
+    try {
+      final repo = ref.read(directThreadsRepositoryProvider);
+      final info = await repo.openOrCreate(
+        actor: actorRef,
+        target: ActorRef.user(targetId),
+      );
+      if (!mounted) return;
+      context.push(info.route);
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map &&
+              (e.response!.data as Map)['message'] != null)
+          ? (e.response!.data as Map)['message'].toString()
+          : 'Could not open message thread.';
+      _showMessage(msg);
+    } catch (_) {
+      _showMessage('Could not open message thread.');
+    }
   }
 
   void _openInviteToSpace(Profile profile) {
