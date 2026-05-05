@@ -10,6 +10,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../live/institution_live_invite_widget.dart';
 
 final _institutionLiveRoomsProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, institutionId) async {
@@ -216,6 +217,12 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
                 ],
 
                 const SizedBox(height: AuraSpace.s24),
+
+                // Live invite cards (incoming/outgoing ringing) — handled by
+                // the institution live invite widget; auto-dismisses on TTL.
+                InstitutionLiveInviteWidget(
+                  institutionId: widget.institutionId,
+                ),
 
                 if (widget.activeSession != null) ...[
                   const _SectionLabel(label: 'ACTIVE'),

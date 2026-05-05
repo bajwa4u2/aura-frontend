@@ -71,6 +71,10 @@ import 'features/institutions/announcements/institution_announcement_composer.da
 import 'features/institutions/presentation/institution_spaces_screen.dart';
 import 'features/institutions/correspondence/institution_correspondence_screen.dart';
 import 'features/institutions/live_rooms/institution_live_rooms_screen.dart';
+import 'features/institutions/explore/institution_explore_screen.dart';
+import 'features/institutions/posts/institution_post_composer_screen.dart';
+import 'features/institutions/activity/institution_activity_screen.dart';
+import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
@@ -890,6 +894,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => InstitutionJoinRequestsScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
               isAdmin: state.uri.queryParameters['admin'] == 'true',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/explore',
+            builder: (context, state) => InstitutionExploreScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/posts/new',
+            builder: (context, state) => InstitutionPostComposerScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/posts/:postId/edit',
+            builder: (context, state) => InstitutionPostComposerScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+              postId: state.pathParameters['postId'],
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/activity',
+            builder: (context, state) => InstitutionActivityScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/messages',
+            builder: (context, state) => InstitutionMessagingScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
         ],

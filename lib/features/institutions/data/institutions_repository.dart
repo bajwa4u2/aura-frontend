@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../domain/institution.dart';
+import '../domain/institution_activity_event.dart';
+import '../domain/institution_post.dart';
 
 final institutionsRepositoryProvider = Provider<InstitutionsRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -504,6 +506,182 @@ class InstitutionsRepository {
     await _dio.post('/institutions/$institutionId/spaces/$spaceId/join');
   }
 
+  // ── Institution Posts ─────────────────────────────────────────────────────
+
+  Future<InstitutionPostPage> listInstitutionPosts({
+    required String institutionId,
+    String? scope,
+    String? cursor,
+    int? limit,
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final query = <String, dynamic>{
+      if (scope != null && scope.trim().isNotEmpty) 'scope': scope.trim(),
+      if (cursor != null && cursor.trim().isNotEmpty) 'cursor': cursor.trim(),
+      if (limit != null) 'limit': limit,
+    };
+    final res = await _dio.get(
+      '/institutions/$id/posts',
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final body = res.data;
+    final items = <InstitutionPost>[];
+    String? nextCursor;
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final raw = root['items'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          items.add(
+            InstitutionPost.fromJson(Map<String, dynamic>.from(entry)),
+          );
+        }
+      }
+      final cur = root['nextCursor'];
+      if (cur != null) {
+        final s = cur.toString().trim();
+        if (s.isNotEmpty) nextCursor = s;
+      }
+    }
+    return InstitutionPostPage(items: items, nextCursor: nextCursor);
+  }
+
+  Future<InstitutionPost> createInstitutionPost(
+    String institutionId,
+    Map<String, dynamic> payload,
+  ) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final res = await _dio.post(
+      '/institutions/$id/posts',
+      data: payload,
+    );
+    return _readPost(res.data);
+  }
+
+  Future<InstitutionPost> updateInstitutionPost(
+    String institutionId,
+    String postId,
+    Map<String, dynamic> payload,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.patch(
+      '/institutions/$id/posts/$pid',
+      data: payload,
+    );
+    return _readPost(res.data);
+  }
+
+  Future<InstitutionPost> submitInstitutionPost(
+    String institutionId,
+    String postId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.post('/institutions/$id/posts/$pid/submit');
+    return _readPost(res.data);
+  }
+
+  Future<InstitutionPost> publishInstitutionPost(
+    String institutionId,
+    String postId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.post('/institutions/$id/posts/$pid/publish');
+    return _readPost(res.data);
+  }
+
+  Future<InstitutionPost> archiveInstitutionPost(
+    String institutionId,
+    String postId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.post('/institutions/$id/posts/$pid/archive');
+    return _readPost(res.data);
+  }
+
+  Future<void> deleteInstitutionPost(
+    String institutionId,
+    String postId,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    await _dio.delete('/institutions/$id/posts/$pid');
+  }
+
+  InstitutionPost _readPost(dynamic body) {
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final post = root['post'] ?? root['item'] ?? root['data'] ?? root;
+      if (post is Map) {
+        return InstitutionPost.fromJson(Map<String, dynamic>.from(post));
+      }
+    }
+    throw Exception('Unexpected post response.');
+  }
+
+  // ── Institution Activity ──────────────────────────────────────────────────
+
+  Future<InstitutionActivityPage> listInstitutionActivity({
+    required String institutionId,
+    String? kind,
+    String? cursor,
+    int? limit,
+  }) async {
+    final id = institutionId.trim();
+    if (id.isEmpty) throw Exception('Institution id is missing.');
+    final query = <String, dynamic>{
+      if (kind != null && kind.trim().isNotEmpty) 'kind': kind.trim(),
+      if (cursor != null && cursor.trim().isNotEmpty) 'cursor': cursor.trim(),
+      if (limit != null) 'limit': limit,
+    };
+    final res = await _dio.get(
+      '/institutions/$id/activity',
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final body = res.data;
+    final items = <InstitutionActivityEvent>[];
+    String? nextCursor;
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final raw = root['items'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          items.add(
+            InstitutionActivityEvent.fromJson(
+              Map<String, dynamic>.from(entry),
+            ),
+          );
+        }
+      }
+      final cur = root['nextCursor'];
+      if (cur != null) {
+        final s = cur.toString().trim();
+        if (s.isNotEmpty) nextCursor = s;
+      }
+    }
+    return InstitutionActivityPage(items: items, nextCursor: nextCursor);
+  }
+
   List<Map<String, dynamic>> _readItems(dynamic body) {
     if (body is Map) {
       final root = Map<String, dynamic>.from(body);
@@ -540,3 +718,85 @@ class InstitutionsRepository {
     return <Map<String, dynamic>>[];
   }
 }
+
+/// Paginated result wrapper for [InstitutionPost] listings.
+class InstitutionPostPage {
+  const InstitutionPostPage({required this.items, this.nextCursor});
+
+  final List<InstitutionPost> items;
+  final String? nextCursor;
+
+  bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
+}
+
+/// Paginated result wrapper for [InstitutionActivityEvent] listings.
+class InstitutionActivityPage {
+  const InstitutionActivityPage({required this.items, this.nextCursor});
+
+  final List<InstitutionActivityEvent> items;
+  final String? nextCursor;
+
+  bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
+}
+
+/// Family arg for the institution post list provider.
+class InstitutionPostListArgs {
+  const InstitutionPostListArgs({
+    required this.institutionId,
+    required this.scope,
+  });
+
+  final String institutionId;
+  final String scope; // 'public' | 'member' | 'internal'
+
+  @override
+  bool operator ==(Object other) =>
+      other is InstitutionPostListArgs &&
+      other.institutionId == institutionId &&
+      other.scope == scope;
+
+  @override
+  int get hashCode => Object.hash(institutionId, scope);
+}
+
+/// First-page provider for institution posts. Pagination beyond the first
+/// page is handled imperatively by callers using the repository directly.
+final institutionPostsFirstPageProvider = FutureProvider.family<
+    InstitutionPostPage, InstitutionPostListArgs>((ref, args) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.listInstitutionPosts(
+    institutionId: args.institutionId,
+    scope: args.scope,
+    limit: 20,
+  );
+});
+
+/// Family arg for the activity feed provider.
+class InstitutionActivityArgs {
+  const InstitutionActivityArgs({
+    required this.institutionId,
+    this.kind,
+  });
+
+  final String institutionId;
+  final String? kind;
+
+  @override
+  bool operator ==(Object other) =>
+      other is InstitutionActivityArgs &&
+      other.institutionId == institutionId &&
+      other.kind == kind;
+
+  @override
+  int get hashCode => Object.hash(institutionId, kind);
+}
+
+final institutionActivityFirstPageProvider = FutureProvider.family<
+    InstitutionActivityPage, InstitutionActivityArgs>((ref, args) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.listInstitutionActivity(
+    institutionId: args.institutionId,
+    kind: args.kind,
+    limit: 30,
+  );
+});

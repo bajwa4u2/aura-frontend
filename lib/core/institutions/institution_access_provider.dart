@@ -42,6 +42,8 @@ class InstitutionIdentity {
     this.logoUrl,
     required this.isAdmin,
     required this.isAuthorizedSpeaker,
+    this.status,
+    this.role,
   });
 
   final String id;
@@ -50,6 +52,33 @@ class InstitutionIdentity {
   final String? logoUrl;
   final bool isAdmin;
   final bool isAuthorizedSpeaker;
+
+  /// Institution verification/lifecycle status, e.g. 'VERIFIED', 'PENDING'.
+  final String? status;
+
+  /// Membership role in canonical wire format, e.g. 'OWNER', 'ADMIN',
+  /// 'EDITOR', 'MEMBER'. Null for institution-account tokens.
+  final String? role;
+
+  bool get isVerified => (status ?? '').toUpperCase() == 'VERIFIED';
+
+  bool get isOwner => (role ?? '').toUpperCase() == 'OWNER';
+
+  /// True when the acting member is at least EDITOR (EDITOR/ADMIN/OWNER).
+  bool get canCreatePosts {
+    final r = (role ?? '').toUpperCase();
+    return r == 'OWNER' ||
+        r == 'ADMIN' ||
+        r == 'EDITOR' ||
+        isAdmin ||
+        isAuthorizedSpeaker;
+  }
+
+  /// True when the acting member can publish/approve posts directly.
+  bool get canPublishPosts {
+    final r = (role ?? '').toUpperCase();
+    return r == 'OWNER' || r == 'ADMIN' || isAdmin || isAuthorizedSpeaker;
+  }
 }
 
 final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
@@ -82,7 +111,9 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
   final canSpeak = membership?['canSpeakOfficially'] == true;
   final isAuthorizedSpeaker =
       access.state == InstitutionAccessState.authorizedSpeaker;
-  final isAdmin = role == 'ADMIN' || canSpeak || isAuthorizedSpeaker;
+  final isAdmin =
+      role == 'ADMIN' || role == 'OWNER' || canSpeak || isAuthorizedSpeaker;
+  final status = readStr(inst, ['status', 'verificationStatus']);
 
   String? readOpt(Map<String, dynamic> m, List<String> keys) {
     for (final k in keys) {
@@ -92,6 +123,15 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     return null;
   }
 
+  // Synthesize a status when the inst payload only carries an isVerified flag.
+  String? finalStatus = status.isNotEmpty ? status.toUpperCase() : null;
+  if (finalStatus == null) {
+    final isVerifiedRaw = inst['isVerified'] ?? inst['verified'];
+    if (isVerifiedRaw == true || isVerifiedRaw == 1 || isVerifiedRaw == 'true') {
+      finalStatus = 'VERIFIED';
+    }
+  }
+
   return InstitutionIdentity(
     id: id,
     name: readStr(inst, ['name', 'displayName', 'title', 'organizationName']),
@@ -99,6 +139,8 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     logoUrl: readOpt(inst, ['logoUrl', 'avatarUrl', 'logo']),
     isAdmin: isAdmin,
     isAuthorizedSpeaker: isAuthorizedSpeaker,
+    status: finalStatus,
+    role: role.isEmpty ? null : role,
   );
 });
 

@@ -39,7 +39,9 @@ class _InstitutionInvitesScreenState
   String? _revoking;
   String? _revokeError;
 
-  static const _roles = ['MEMBER', 'EDITOR', 'ADMIN'];
+  // OWNER is shown at the top so owner-tier invites are surfaced first;
+  // backend enforces who may actually issue an OWNER invite.
+  static const _roles = ['OWNER', 'ADMIN', 'EDITOR', 'MEMBER'];
 
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 

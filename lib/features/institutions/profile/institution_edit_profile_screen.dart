@@ -71,12 +71,49 @@ class _InstitutionEditProfileScreenState
   String? _error;
   String? _successMessage;
 
+  // Hard caps required for the rebuild.
+  static const int _kNameMax = 120;
+  static const int _kTaglineMax = 160;
+  static const int _kDescMax = 2000;
+
+  // Image upload limits.
+  static const int _kLogoMaxBytes = 2 * 1024 * 1024; // 2 MB
+  static const int _kCoverMaxBytes = 4 * 1024 * 1024; // 4 MB
+  static const Set<String> _kImageMimeWhitelist = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Live counters: rebuild whenever name/tagline/description change so
+    // the helper labels reflect the current input length.
+    _nameCtrl.addListener(_onTextChanged);
+    _taglineCtrl.addListener(_onTextChanged);
+    _descCtrl.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _nameCtrl.removeListener(_onTextChanged);
+    _taglineCtrl.removeListener(_onTextChanged);
+    _descCtrl.removeListener(_onTextChanged);
     for (final c in _allControllers) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  bool get _exceedsLimits {
+    return _nameCtrl.text.trim().length > _kNameMax ||
+        _taglineCtrl.text.trim().length > _kTaglineMax ||
+        _descCtrl.text.trim().length > _kDescMax;
   }
 
   List<TextEditingController> get _allControllers => [
@@ -135,6 +172,15 @@ class _InstitutionEditProfileScreenState
 
   Future<void> _save(String institutionId) async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Hard-block submit when any tightened-limit field exceeds its cap.
+    if (_exceedsLimits) {
+      setState(() {
+        _error = 'Some fields exceed character limits. Trim before saving.';
+        _successMessage = null;
+      });
+      return;
+    }
 
     setState(() {
       _saving = true;
@@ -219,7 +265,48 @@ class _InstitutionEditProfileScreenState
     try {
       final bytes = await file.readAsBytes();
       final mimeType = file.mimeType ?? _inferMime(file.name);
+
+      // Reject silently-truncated values.
+      if (bytes.isEmpty) {
+        throw _ImageValidationException('Image file is empty.');
+      }
+
+      // MIME whitelist.
+      if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
+        throw _ImageValidationException(
+          'Unsupported image type. Use JPEG, PNG, or WebP.',
+        );
+      }
+
+      // Size limits per kind.
+      final maxBytes = isLogo ? _kLogoMaxBytes : _kCoverMaxBytes;
+      if (bytes.length > maxBytes) {
+        final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
+        throw _ImageValidationException(
+          isLogo
+              ? 'Logo must be $mb MB or smaller.'
+              : 'Cover must be $mb MB or smaller.',
+        );
+      }
+
       final size = await _decodeImageSize(bytes);
+
+      // Cover: warn (do not block) when far from 16:9.
+      if (!isLogo && size != null && size['width'] != null && size['height'] != null) {
+        final w = size['width']!.toDouble();
+        final h = size['height']!.toDouble();
+        if (h > 0) {
+          final ratio = w / h;
+          const target = 16 / 9;
+          if ((ratio - target).abs() > 0.4) {
+            // Soft warning surfaces in the error banner space briefly via
+            // _successMessage replacement below; leave as a non-blocking note.
+            _successMessage =
+                'Cover saved. Tip: use a 16:9 image for best framing.';
+          }
+        }
+      }
+
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
         bytes: bytes,
@@ -250,6 +337,9 @@ class _InstitutionEditProfileScreenState
       setState(() {
         _error = _readDioError(e, 'Could not upload image.');
       });
+    } on _ImageValidationException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Could not upload image.');
@@ -546,30 +636,46 @@ class _EditBody extends StatelessWidget {
 
                   // ── 1. Basic identity ─────────────────────────────────────
                   const _SectionHeader(label: '1. BASIC IDENTITY'),
-                  _Field(
+                  _CountedField(
                     label: 'Display name *',
+                    controller: nameCtrl,
+                    maxChars: 120,
                     child: TextFormField(
                       controller: nameCtrl,
                       style: AuraText.body,
                       decoration: _dec('Institution name'),
+                      maxLength: 120,
+                      buildCounter: _emptyCounter,
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Name is required.';
-                        if (v.trim().length > 128) return 'Max 128 characters.';
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Name is required.';
+                        }
+                        if (v.trim().length > 120) return 'Max 120 characters.';
                         return null;
                       },
                     ),
                   ),
-                  _Field(
+                  _CountedField(
                     label: 'Tagline',
+                    controller: taglineCtrl,
+                    maxChars: 160,
                     child: TextFormField(
                       controller: taglineCtrl,
                       style: AuraText.body,
                       decoration: _dec('Short tagline or motto…'),
-                      maxLength: 200,
+                      maxLength: 160,
+                      buildCounter: _emptyCounter,
+                      validator: (v) {
+                        if (v == null) return null;
+                        if (v.trim().length > 160) return 'Max 160 characters.';
+                        return null;
+                      },
                     ),
                   ),
-                  _Field(
+                  _CountedField(
                     label: 'About',
+                    controller: descCtrl,
+                    maxChars: 2000,
                     child: TextFormField(
                       controller: descCtrl,
                       style: AuraText.body,
@@ -577,6 +683,14 @@ class _EditBody extends StatelessWidget {
                       minLines: 3,
                       maxLines: 8,
                       maxLength: 2000,
+                      buildCounter: _emptyCounter,
+                      validator: (v) {
+                        if (v == null) return null;
+                        if (v.trim().length > 2000) {
+                          return 'Max 2000 characters.';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   _TwoCol(
@@ -1114,6 +1228,80 @@ class _ThreeCol extends StatelessWidget {
       },
     );
   }
+}
+
+/// Counted version of [_Field] — wraps a TextFormField with a live `used/max`
+/// counter under the label. Counter color goes red within the last 10% and
+/// bold red when at limit.
+class _CountedField extends StatelessWidget {
+  const _CountedField({
+    required this.label,
+    required this.controller,
+    required this.maxChars,
+    required this.child,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final int maxChars;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final used = controller.text.length;
+    final ratio = maxChars == 0 ? 0.0 : used / maxChars;
+    final atLimit = used >= maxChars;
+    final danger = atLimit || ratio >= 0.9;
+    final color = danger ? AuraSurface.dangerInk : AuraSurface.faint;
+    final fontWeight = atLimit ? FontWeight.w800 : FontWeight.w600;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+              Text(
+                '$used/$maxChars',
+                style: AuraText.micro.copyWith(
+                  color: color,
+                  fontWeight: fontWeight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+Widget? _emptyCounter(
+  BuildContext context, {
+  required int currentLength,
+  required int? maxLength,
+  required bool isFocused,
+}) =>
+    const SizedBox.shrink();
+
+class _ImageValidationException implements Exception {
+  _ImageValidationException(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
 
 class _Banner extends StatelessWidget {

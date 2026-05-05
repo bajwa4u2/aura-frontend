@@ -306,6 +306,7 @@ class _InstitutionHeader extends StatelessWidget {
 
     final name = identity?.name ?? '';
     final logoUrl = identity?.logoUrl;
+    final isVerified = identity?.isVerified ?? false;
 
     return Container(
       decoration: const BoxDecoration(
@@ -323,10 +324,9 @@ class _InstitutionHeader extends StatelessWidget {
                 hPad, AuraSpace.s10, hPad, AuraSpace.s10),
             child: Row(
               children: [
-                // Institution avatar
+                // Institution identity stays primary in the header.
                 _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
                 const SizedBox(width: AuraSpace.s10),
-                // Institution name (hidden on very small screens)
                 if (isTablet && name.isNotEmpty) ...[
                   Flexible(
                     child: Text(
@@ -339,22 +339,97 @@ class _InstitutionHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: AuraSpace.s10),
+                  const SizedBox(width: AuraSpace.s8),
+                ],
+                if (isVerified) ...[
+                  const _InstitutionVerifiedBadge(),
+                  const SizedBox(width: AuraSpace.s6),
                 ],
                 _WorkspaceBadge(),
                 const Spacer(),
-                ShellHeaderTools(
-                  isTablet: isTablet,
-                  isDesktop: isDesktop,
-                  searchPath: '/search',
-                  activityPath: '/institution/correspondence',
-                  invitePath: '/invite',
-                ),
+                // Operator profile (avatar) is demoted to the top-right corner
+                // on desktop. The primary nav lives in the side nav now.
+                if (isDesktop)
+                  ShellHeaderTools(
+                    isTablet: isTablet,
+                    isDesktop: isDesktop,
+                    searchPath: '/search',
+                    activityPath: _institutionActivityPath(identity),
+                    invitePath: '/invite',
+                  )
+                else
+                  // Compact: only search + account on tablet/mobile so the
+                  // institution identity has visual room.
+                  _CompactHeaderTools(identity: identity),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+String _institutionActivityPath(InstitutionIdentity? identity) {
+  final id = identity?.id ?? '';
+  if (id.isEmpty) return '/activity';
+  return '/institution/$id/activity';
+}
+
+class _InstitutionVerifiedBadge extends StatelessWidget {
+  const _InstitutionVerifiedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Verified institution',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s8,
+          vertical: 3,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.goodBg,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.verified_rounded,
+                size: 12, color: AuraSurface.goodInk),
+            const SizedBox(width: 4),
+            Text(
+              'Verified',
+              style: AuraText.label.copyWith(
+                color: AuraSurface.goodInk,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact header tools for tablet/mobile inside the institution shell.
+/// Shows only search + account; primary nav (Explore/Activity/Live/Invite)
+/// is rendered in the bottom nav at small widths.
+class _CompactHeaderTools extends StatelessWidget {
+  const _CompactHeaderTools({required this.identity});
+
+  final InstitutionIdentity? identity;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShellHeaderTools(
+      isTablet: false,
+      isDesktop: false,
+      searchPath: '/search',
+      activityPath: _institutionActivityPath(identity),
+      invitePath: '/invite',
     );
   }
 }
@@ -657,13 +732,111 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
   final isAdmin = identity?.isAdmin ?? false;
 
   return [
-    // ── INSTITUTION section ──────────────────────────────────────────────
+    // ── PRIMARY: Explore / Activity / Live / Invite ─────────────────────
     _InstEntry(
-      sectionLabel: 'INSTITUTION',
+      sectionLabel: 'WORKSPACE',
+      label: 'Explore',
+      icon: Icons.explore_outlined,
+      selectedIcon: Icons.explore_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/explore' : '/institution/dashboard',
+      pathMatcher: (p) =>
+          p == '/institution/dashboard' ||
+          (p.startsWith('/institution/') && p.contains('/explore')),
+    ),
+    _InstEntry(
+      label: 'Activity',
+      icon: Icons.timeline_outlined,
+      selectedIcon: Icons.timeline_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/activity' : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.contains('/activity'),
+    ),
+    _InstEntry(
+      label: 'Live',
+      icon: Icons.radio_outlined,
+      selectedIcon: Icons.radio_rounded,
+      pathBuilder: (_) => '/institution/live-rooms',
+      pathMatcher: (p) =>
+          p == '/institution/live-rooms' ||
+          (p.startsWith('/institution/') && p.contains('/live')),
+    ),
+    _InstEntry(
+      label: 'Invite',
+      icon: Icons.outbound_outlined,
+      selectedIcon: Icons.outbound_rounded,
+      pathBuilder: (_) => id.isNotEmpty
+          ? '/institution/$id/invites'
+          : '/invite',
+      pathMatcher: (p) =>
+          p == '/invite' ||
+          (p.startsWith('/institution/') && p.contains('/invite')),
+    ),
+
+    // ── SECONDARY: Workspace tools (formerly the bulk of the side nav) ─
+    _InstEntry(
+      sectionLabel: 'WORKSPACE TOOLS',
+      label: 'Messages',
+      icon: Icons.mail_outline_rounded,
+      selectedIcon: Icons.mail_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/messages' : null,
+      pathMatcher: (p) =>
+          (p.startsWith('/institution/') && p.contains('/messages')) ||
+          p == '/institution/correspondence',
+    ),
+    _InstEntry(
+      label: 'Spaces',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/spaces' : null,
+      pathMatcher: (p) =>
+          p.contains('/spaces') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Announcements',
+      icon: Icons.campaign_outlined,
+      selectedIcon: Icons.campaign_rounded,
+      pathBuilder: (_) =>
+          id.isNotEmpty ? '/institution/$id/announcements' : null,
+      pathMatcher: (p) =>
+          p.contains('/announcements') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Members',
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
+      pathMatcher: (p) =>
+          p.contains('/members') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Join Requests',
+      icon: Icons.person_add_outlined,
+      selectedIcon: Icons.person_add_rounded,
+      adminOnly: true,
+      pathBuilder: (_) => id.isNotEmpty && isAdmin
+          ? '/institution/$id/join-requests?admin=true'
+          : null,
+      pathMatcher: (p) =>
+          p.contains('/join-requests') && p.startsWith('/institution/'),
+    ),
+    _InstEntry(
+      label: 'Domains',
+      icon: Icons.language_rounded,
+      selectedIcon: Icons.language_rounded,
+      pathBuilder: (_) => '/institution/domains',
+    ),
+
+    // ── PROFILE section (institution profile only — not operator profile) ─
+    _InstEntry(
+      sectionLabel: 'PROFILE',
       label: 'Overview',
       icon: Icons.grid_view_outlined,
       selectedIcon: Icons.grid_view_rounded,
       pathBuilder: (_) => '/institution/dashboard',
+      pathMatcher: (p) => p == '/institution/dashboard',
     ),
     _InstEntry(
       label: 'Profile',
@@ -678,87 +851,12 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       adminOnly: true,
       pathBuilder: (_) => isAdmin ? '/institution/edit-profile' : null,
     ),
-
-    // ── ACTIVITY section ─────────────────────────────────────────────────
     _InstEntry(
-      sectionLabel: 'ACTIVITY',
-      label: 'Announcements',
-      icon: Icons.campaign_outlined,
-      selectedIcon: Icons.campaign_rounded,
-      pathBuilder: (_) =>
-          id.isNotEmpty ? '/institution/$id/announcements' : null,
-      pathMatcher: (p) =>
-          p.contains('/announcements') && p.startsWith('/institution/'),
-    ),
-    _InstEntry(
-      label: 'Spaces',
-      icon: Icons.forum_outlined,
-      selectedIcon: Icons.forum_rounded,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/spaces' : null,
-      pathMatcher: (p) =>
-          p.contains('/spaces') && p.startsWith('/institution/'),
-    ),
-    _InstEntry(
-      label: 'Messages',
-      icon: Icons.mail_outline_rounded,
-      selectedIcon: Icons.mail_rounded,
-      pathBuilder: (_) => '/institution/correspondence',
-    ),
-    _InstEntry(
-      label: 'Live Rooms',
-      icon: Icons.radio_outlined,
-      selectedIcon: Icons.radio_rounded,
-      pathBuilder: (_) => '/institution/live-rooms',
-      pathMatcher: (p) => p == '/institution/live-rooms',
-    ),
-
-    // ── MANAGEMENT section ───────────────────────────────────────────────
-    _InstEntry(
-      sectionLabel: 'MANAGEMENT',
-      label: 'Members',
-      icon: Icons.people_outline_rounded,
-      selectedIcon: Icons.people_rounded,
-      pathBuilder: (_) => id.isNotEmpty ? '/institution/$id/members' : null,
-      pathMatcher: (p) =>
-          p.contains('/members') && p.startsWith('/institution/'),
-    ),
-    _InstEntry(
-      label: 'Invites',
-      icon: Icons.group_add_outlined,
-      selectedIcon: Icons.group_add_rounded,
-      adminOnly: true,
-      pathBuilder: (_) =>
-          id.isNotEmpty && isAdmin ? '/institution/$id/invites' : null,
-      pathMatcher: (p) =>
-          p.contains('/invites') && p.startsWith('/institution/'),
-    ),
-    _InstEntry(
-      label: 'Join Requests',
-      icon: Icons.person_add_outlined,
-      selectedIcon: Icons.person_add_rounded,
-      adminOnly: true,
-      pathBuilder: (_) => id.isNotEmpty && isAdmin
-          ? '/institution/$id/join-requests?admin=true'
-          : null,
-      pathMatcher: (p) =>
-          p.contains('/join-requests') && p.startsWith('/institution/'),
-    ),
-
-    // ── ACCESS section ───────────────────────────────────────────────────
-    _InstEntry(
-      sectionLabel: 'ACCESS',
       label: 'Public Preview',
       icon: Icons.open_in_new_rounded,
       selectedIcon: Icons.open_in_new_rounded,
-      pathBuilder: (_) =>
-          slug.isNotEmpty ? '/institutions/$slug' : null,
+      pathBuilder: (_) => slug.isNotEmpty ? '/institutions/$slug' : null,
       pathMatcher: (p) => p.startsWith('/institutions/'),
-    ),
-    _InstEntry(
-      label: 'Domains',
-      icon: Icons.language_rounded,
-      selectedIcon: Icons.language_rounded,
-      pathBuilder: (_) => '/institution/domains',
     ),
   ];
 }
@@ -976,49 +1074,44 @@ class _InstitutionBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final id = identity?.id ?? '';
-    // 5 bottom-nav items: Overview, Announcements, Spaces, Members, Profile
-    final items = [
-      (
-        label: 'Overview',
-        icon: Icons.grid_view_outlined,
-        selectedIcon: Icons.grid_view_rounded,
-        path: '/institution/dashboard',
-        matcher: (String p) => p == '/institution/dashboard',
+    // Primary nav: Explore, Activity, Live, Invite + overflow "More".
+    final items = <_InstBottomItem>[
+      _InstBottomItem(
+        label: 'Explore',
+        icon: Icons.explore_outlined,
+        selectedIcon: Icons.explore_rounded,
+        path: id.isNotEmpty
+            ? '/institution/$id/explore'
+            : '/institution/dashboard',
+        matcher: (p) =>
+            p == '/institution/dashboard' ||
+            (p.startsWith('/institution/') && p.contains('/explore')),
       ),
-      (
-        label: 'Posts',
-        icon: Icons.campaign_outlined,
-        selectedIcon: Icons.campaign_rounded,
-        path: id.isNotEmpty ? '/institution/$id/announcements' : null,
-        matcher: (String p) =>
-            p.contains('/announcements') && p.startsWith('/institution/'),
+      _InstBottomItem(
+        label: 'Activity',
+        icon: Icons.timeline_outlined,
+        selectedIcon: Icons.timeline_rounded,
+        path: id.isNotEmpty ? '/institution/$id/activity' : null,
+        matcher: (p) =>
+            p.startsWith('/institution/') && p.contains('/activity'),
       ),
-      (
-        label: 'Spaces',
-        icon: Icons.forum_outlined,
-        selectedIcon: Icons.forum_rounded,
-        path: id.isNotEmpty ? '/institution/$id/spaces' : null,
-        matcher: (String p) =>
-            p.contains('/spaces') && p.startsWith('/institution/'),
+      _InstBottomItem(
+        label: 'Live',
+        icon: Icons.radio_outlined,
+        selectedIcon: Icons.radio_rounded,
+        path: '/institution/live-rooms',
+        matcher: (p) =>
+            p == '/institution/live-rooms' ||
+            (p.startsWith('/institution/') && p.contains('/live')),
       ),
-      (
-        label: 'Members',
-        icon: Icons.people_outline_rounded,
-        selectedIcon: Icons.people_rounded,
-        path: id.isNotEmpty ? '/institution/$id/members' : null,
-        matcher: (String p) =>
-            p.contains('/members') && p.startsWith('/institution/'),
-      ),
-      (
-        label: 'Profile',
-        icon: Icons.badge_outlined,
-        selectedIcon: Icons.badge_rounded,
-        path: '/institution/profile',
-        matcher: (String p) =>
-            p == '/institution/profile' ||
-            p == '/institution/edit-profile' ||
-            p == '/institution/domains' ||
-            p == '/institution/correspondence',
+      _InstBottomItem(
+        label: 'Invite',
+        icon: Icons.outbound_outlined,
+        selectedIcon: Icons.outbound_rounded,
+        path: id.isNotEmpty ? '/institution/$id/invites' : '/invite',
+        matcher: (p) =>
+            p == '/invite' ||
+            (p.startsWith('/institution/') && p.contains('/invite')),
       ),
     ];
 
@@ -1035,28 +1128,180 @@ class _InstitutionBottomNav extends StatelessWidget {
             vertical: compact ? AuraSpace.s6 : AuraSpace.s8,
           ),
           child: Row(
-            children: items.map((item) {
-              final selected = item.matcher(currentPath);
-              final isDisabled = item.path == null;
-              return Expanded(
-                child: _InstitutionBottomNavBtn(
-                  label: item.label,
-                  icon: item.icon,
-                  selectedIcon: item.selectedIcon,
-                  selected: selected,
-                  compact: compact,
-                  disabled: isDisabled,
-                  onTap: isDisabled || selected
-                      ? null
-                      : () => context.go(item.path!),
+            children: [
+              for (final item in items)
+                Expanded(
+                  child: _InstitutionBottomNavBtn(
+                    label: item.label,
+                    icon: item.icon,
+                    selectedIcon: item.selectedIcon,
+                    selected: item.matcher(currentPath),
+                    compact: compact,
+                    disabled: item.path == null,
+                    onTap: item.path == null || item.matcher(currentPath)
+                        ? null
+                        : () => context.go(item.path!),
+                  ),
                 ),
-              );
-            }).toList(),
+              Expanded(
+                child: _InstitutionBottomNavMore(
+                  identity: identity,
+                  compact: compact,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+class _InstBottomItem {
+  const _InstBottomItem({
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
+    required this.path,
+    required this.matcher,
+  });
+
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+  final String? path;
+  final bool Function(String) matcher;
+}
+
+/// Overflow menu for the institution bottom nav. Hosts the secondary
+/// "Workspace tools" entries (Messages, Spaces, Announcements, Members,
+/// Domains, Profile) on tablet/mobile, where there is no side nav.
+class _InstitutionBottomNavMore extends StatelessWidget {
+  const _InstitutionBottomNavMore({
+    required this.identity,
+    required this.compact,
+  });
+
+  final InstitutionIdentity? identity;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = identity?.id ?? '';
+    final slug = identity?.slug ?? '';
+    final isAdmin = identity?.isAdmin ?? false;
+
+    final entries = <(_MoreEntry, String?)>[
+      (
+        const _MoreEntry(
+          label: 'Messages',
+          icon: Icons.mail_outline_rounded,
+        ),
+        id.isNotEmpty ? '/institution/$id/messages' : null,
+      ),
+      (
+        const _MoreEntry(label: 'Spaces', icon: Icons.forum_outlined),
+        id.isNotEmpty ? '/institution/$id/spaces' : null,
+      ),
+      (
+        const _MoreEntry(
+          label: 'Announcements',
+          icon: Icons.campaign_outlined,
+        ),
+        id.isNotEmpty ? '/institution/$id/announcements' : null,
+      ),
+      (
+        const _MoreEntry(label: 'Members', icon: Icons.people_outline_rounded),
+        id.isNotEmpty ? '/institution/$id/members' : null,
+      ),
+      if (isAdmin)
+        (
+          const _MoreEntry(
+            label: 'Join Requests',
+            icon: Icons.person_add_outlined,
+          ),
+          id.isNotEmpty
+              ? '/institution/$id/join-requests?admin=true'
+              : null,
+        ),
+      (
+        const _MoreEntry(label: 'Domains', icon: Icons.language_rounded),
+        '/institution/domains',
+      ),
+      (
+        const _MoreEntry(label: 'Profile', icon: Icons.badge_outlined),
+        '/institution/profile',
+      ),
+      if (isAdmin)
+        (
+          const _MoreEntry(label: 'Edit Profile', icon: Icons.edit_outlined),
+          '/institution/edit-profile',
+        ),
+      (
+        const _MoreEntry(
+          label: 'Public Preview',
+          icon: Icons.open_in_new_rounded,
+        ),
+        slug.isNotEmpty ? '/institutions/$slug' : null,
+      ),
+    ];
+
+    return PopupMenuButton<String>(
+      tooltip: 'More',
+      offset: const Offset(0, -8),
+      color: AuraSurface.overlay,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AuraRadius.r16),
+        side: const BorderSide(color: AuraSurface.divider),
+      ),
+      itemBuilder: (_) {
+        return [
+          for (final pair in entries)
+            PopupMenuItem<String>(
+              enabled: pair.$2 != null,
+              value: pair.$2 ?? '',
+              child: Row(
+                children: [
+                  Icon(pair.$1.icon,
+                      size: 16,
+                      color: pair.$2 == null
+                          ? AuraSurface.faint
+                          : AuraSurface.muted),
+                  const SizedBox(width: AuraSpace.s10),
+                  Text(
+                    pair.$1.label,
+                    style: AuraText.small.copyWith(
+                      color: pair.$2 == null
+                          ? AuraSurface.faint
+                          : AuraSurface.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ];
+      },
+      onSelected: (target) {
+        if (target.isNotEmpty) context.go(target);
+      },
+      child: _InstitutionBottomNavBtn(
+        label: 'More',
+        icon: Icons.more_horiz_rounded,
+        selectedIcon: Icons.more_horiz_rounded,
+        selected: false,
+        compact: compact,
+        disabled: false,
+        onTap: null,
+      ),
+    );
+  }
+}
+
+class _MoreEntry {
+  const _MoreEntry({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
 }
 
 class _InstitutionBottomNavBtn extends StatelessWidget {

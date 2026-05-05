@@ -220,8 +220,19 @@ class _MemberRow extends StatelessWidget {
   final VoidCallback onRemove;
 
   Color _roleColor(String role) {
-    return role.toUpperCase() == 'ADMIN' ? AuraSurface.accentText : AuraSurface.muted;
+    switch (role.toUpperCase()) {
+      case 'OWNER':
+        return AuraSurface.goodInk;
+      case 'ADMIN':
+        return AuraSurface.accentText;
+      case 'EDITOR':
+        return AuraSurface.warnInk;
+      default:
+        return AuraSurface.muted;
+    }
   }
+
+  bool get _isOwner => member.role.toUpperCase() == 'OWNER';
 
   @override
   Widget build(BuildContext context) {
@@ -269,30 +280,56 @@ class _MemberRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AuraSpace.s8),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 18),
-            onSelected: (value) {
-              if (value == 'REMOVE') {
-                onRemove();
-              } else {
-                onChangeRole(value);
-              }
-            },
-            itemBuilder: (_) => [
-              if (member.role != 'ADMIN')
-                const PopupMenuItem(value: 'ADMIN', child: Text('Promote to Admin')),
-              if (member.role != 'MEMBER')
-                const PopupMenuItem(value: 'MEMBER', child: Text('Demote to Member')),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'REMOVE',
-                child: Text(
-                  'Remove from institution',
-                  style: TextStyle(color: AuraSurface.dangerInk),
-                ),
+          if (_isOwner)
+            const Tooltip(
+              message: 'Owners cannot be demoted from this UI',
+              child: Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: AuraSurface.faint,
               ),
-            ],
-          ),
+            )
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, size: 18),
+              onSelected: (value) {
+                if (value == 'REMOVE') {
+                  onRemove();
+                } else {
+                  onChangeRole(value);
+                }
+              },
+              itemBuilder: (_) => [
+                if (member.role != 'OWNER')
+                  const PopupMenuItem(
+                    value: 'OWNER',
+                    child: Text('Promote to Owner'),
+                  ),
+                if (member.role != 'ADMIN' && member.role != 'OWNER')
+                  const PopupMenuItem(
+                    value: 'ADMIN',
+                    child: Text('Promote to Admin'),
+                  ),
+                if (member.role != 'EDITOR' && member.role != 'OWNER')
+                  const PopupMenuItem(
+                    value: 'EDITOR',
+                    child: Text('Make Editor'),
+                  ),
+                if (member.role != 'MEMBER')
+                  const PopupMenuItem(
+                    value: 'MEMBER',
+                    child: Text('Demote to Member'),
+                  ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'REMOVE',
+                  child: Text(
+                    'Remove from institution',
+                    style: TextStyle(color: AuraSurface.dangerInk),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

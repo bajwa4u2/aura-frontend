@@ -36,7 +36,12 @@ class _InstitutionMembersScreenState
   InstitutionsRepository get _repo =>
       ref.read(institutionsRepositoryProvider);
 
-  bool get _isAdmin => _callerRole.toUpperCase() == 'ADMIN';
+  bool get _isAdmin {
+    final r = _callerRole.toUpperCase();
+    return r == 'ADMIN' || r == 'OWNER';
+  }
+
+  bool get _isOwner => _callerRole.toUpperCase() == 'OWNER';
 
   @override
   void initState() {
@@ -118,6 +123,8 @@ class _InstitutionMembersScreenState
 
   String _roleBadge(String role) {
     switch (role.toUpperCase()) {
+      case 'OWNER':
+        return 'Owner';
       case 'ADMIN':
         return 'Admin';
       case 'EDITOR':
@@ -129,6 +136,8 @@ class _InstitutionMembersScreenState
 
   Color _roleColor(String role) {
     switch (role.toUpperCase()) {
+      case 'OWNER':
+        return AuraSurface.goodInk;
       case 'ADMIN':
         return AuraSurface.accentText;
       case 'EDITOR':
@@ -140,6 +149,8 @@ class _InstitutionMembersScreenState
 
   Color _roleBg(String role) {
     switch (role.toUpperCase()) {
+      case 'OWNER':
+        return AuraSurface.goodBg;
       case 'ADMIN':
         return AuraSurface.accentSoft;
       case 'EDITOR':
@@ -216,6 +227,16 @@ class _InstitutionMembersScreenState
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
+            else if (role.toUpperCase() == 'OWNER')
+              // OWNER is the highest tier; cannot be demoted in UI.
+              const Tooltip(
+                message: 'Owners cannot be demoted from the workspace UI',
+                child: Icon(
+                  Icons.lock_outline_rounded,
+                  size: 16,
+                  color: AuraSurface.faint,
+                ),
+              )
             else
               PopupMenuButton<String>(
                 icon: const Icon(
@@ -230,7 +251,17 @@ class _InstitutionMembersScreenState
                   side: const BorderSide(color: AuraSurface.divider),
                 ),
                 itemBuilder: (_) => [
-                  if (role.toUpperCase() != 'ADMIN')
+                  if (_isOwner && role.toUpperCase() != 'OWNER')
+                    PopupMenuItem(
+                      value: 'MAKE_OWNER',
+                      child: Text(
+                        'Promote to Owner',
+                        style: AuraText.small
+                            .copyWith(color: AuraSurface.goodInk),
+                      ),
+                    ),
+                  if (role.toUpperCase() != 'ADMIN' &&
+                      role.toUpperCase() != 'OWNER')
                     PopupMenuItem(
                       value: 'PROMOTE',
                       child: Text(
@@ -268,6 +299,8 @@ class _InstitutionMembersScreenState
                 onSelected: (value) {
                   if (value == 'REMOVE') {
                     _confirmRemove(memberId, nameOrHandle);
+                  } else if (value == 'MAKE_OWNER') {
+                    _changeRole(memberId, 'OWNER');
                   } else if (value == 'PROMOTE') {
                     _changeRole(memberId, 'ADMIN');
                   } else if (value == 'DEMOTE' || value == 'MAKE_MEMBER') {
