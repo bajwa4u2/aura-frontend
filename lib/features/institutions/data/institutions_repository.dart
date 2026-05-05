@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
+import '../domain/explore_feed_item.dart';
 import '../domain/institution.dart';
 import '../domain/institution_activity_event.dart';
 import '../domain/institution_post.dart';
@@ -639,6 +640,46 @@ class InstitutionsRepository {
     throw Exception('Unexpected post response.');
   }
 
+  // ── Global public feed (people + institutions, merged) ────────────────────
+
+  /// Calls `/posts/public` (a.k.a. `/posts/feed`) and parses the merged feed
+  /// of user posts and globally-distributable institution posts. Used by the
+  /// institution Explore "Public" tab so the institution is showing the same
+  /// global interaction feed that public/member home shows.
+  Future<ExploreFeedPage> listGlobalPublicFeed({
+    String? cursor,
+    int? limit,
+  }) async {
+    final query = <String, dynamic>{
+      if (cursor != null && cursor.trim().isNotEmpty) 'cursor': cursor.trim(),
+      if (limit != null) 'limit': limit,
+    };
+    final res = await _dio.get(
+      '/posts/public',
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final body = res.data;
+    final items = <ExploreFeedItem>[];
+    String? nextCursor;
+    if (body is Map) {
+      final root = Map<String, dynamic>.from(body);
+      final raw = root['items'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          final parsed =
+              ExploreFeedItem.fromJson(Map<String, dynamic>.from(entry));
+          if (parsed != null) items.add(parsed);
+        }
+      }
+      final cur = root['nextCursor'];
+      if (cur != null) {
+        final s = cur.toString().trim();
+        if (s.isNotEmpty) nextCursor = s;
+      }
+    }
+    return ExploreFeedPage(items: items, nextCursor: nextCursor);
+  }
+
   // ── Institution Activity ──────────────────────────────────────────────────
 
   Future<InstitutionActivityPage> listInstitutionActivity({
@@ -769,6 +810,16 @@ final institutionPostsFirstPageProvider = FutureProvider.family<
     scope: args.scope,
     limit: 20,
   );
+});
+
+/// First-page provider for the merged global public feed used by the
+/// institution Explore "Public" tab. Keyed by institution id only because the
+/// underlying endpoint is global, but using a family lets each Explore screen
+/// invalidate its own cache without nuking unrelated state.
+final institutionExplorePublicFeedProvider =
+    FutureProvider.family<ExploreFeedPage, String>((ref, institutionId) async {
+  final repo = ref.watch(institutionsRepositoryProvider);
+  return repo.listGlobalPublicFeed(limit: 20);
 });
 
 /// Family arg for the activity feed provider.

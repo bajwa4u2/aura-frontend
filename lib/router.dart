@@ -915,6 +915,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/posts/new',
             builder: (context, state) => InstitutionPostComposerScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
+              defaultScope: state.uri.queryParameters['scope'],
             ),
           ),
           GoRoute(

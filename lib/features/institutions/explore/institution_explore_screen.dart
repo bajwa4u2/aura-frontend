@@ -10,11 +10,23 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../domain/explore_feed_item.dart';
 import '../domain/institution_post.dart';
 
-/// Institution Explore — paginated feed of [InstitutionPost]s, scoped by
-/// visibility tabs (Public / Member / Internal). Visibility tabs are gated
-/// by the viewer's role.
+/// Institution Explore — three distinct surfaces:
+///
+///  * **Public** — global feed merging user posts + globally-distributable
+///    institution posts. Backend `GET /posts/public` (handled by the platform
+///    posts controller, NOT the institution-scoped controller).
+///  * **Member** — institution-scoped feed visible to members.
+///    `GET /institutions/:id/posts?scope=member`.
+///  * **Internal** — institution-scoped feed visible to admins/editors only.
+///    `GET /institutions/:id/posts?scope=internal`.
+///
+/// Each tab owns its own provider so a 404 / load error in one surface
+/// cannot empty the others. The Compose pill defaults the post visibility
+/// to the active tab's scope and pushes onto the navigator so popping
+/// returns the user to the same tab.
 class InstitutionExploreScreen extends ConsumerStatefulWidget {
   const InstitutionExploreScreen({
     super.key,
@@ -28,22 +40,42 @@ class InstitutionExploreScreen extends ConsumerStatefulWidget {
       _InstitutionExploreScreenState();
 }
 
+enum _ExploreScopeKey { public, member, internal }
+
+extension on _ExploreScopeKey {
+  String get label {
+    switch (this) {
+      case _ExploreScopeKey.public:
+        return 'Public';
+      case _ExploreScopeKey.member:
+        return 'Member';
+      case _ExploreScopeKey.internal:
+        return 'Internal';
+    }
+  }
+
+  /// Maps the tab key to the scope query param the composer expects.
+  String get composeScope {
+    switch (this) {
+      case _ExploreScopeKey.public:
+        return 'public';
+      case _ExploreScopeKey.member:
+        return 'member';
+      case _ExploreScopeKey.internal:
+        return 'internal';
+    }
+  }
+}
+
 class _InstitutionExploreScreenState
     extends ConsumerState<InstitutionExploreScreen>
     with SingleTickerProviderStateMixin {
-  static const _scopes = <_ExploreScope>[
-    _ExploreScope(key: 'public', label: 'Public'),
-    _ExploreScope(key: 'member', label: 'Member'),
-    _ExploreScope(key: 'internal', label: 'Internal'),
-  ];
-
   late TabController _tabController;
-  List<_ExploreScope> _visibleScopes = const [];
+  List<_ExploreScopeKey> _visibleScopes = const [];
 
   @override
   void initState() {
     super.initState();
-    // Initialize with a single tab; we'll reconfigure when identity loads.
     _tabController = TabController(length: 1, vsync: this);
   }
 
@@ -59,33 +91,37 @@ class _InstitutionExploreScreenState
     _tabController = TabController(length: length, vsync: this);
   }
 
-  List<_ExploreScope> _scopesFor(InstitutionIdentity? identity) {
+  List<_ExploreScopeKey> _scopesFor(InstitutionIdentity? identity) {
     final role = (identity?.role ?? '').toUpperCase();
     final isAdminLike = identity?.canPublishPosts ?? false;
     final isMember = identity != null;
+    return [
+      // Public is always visible — it is the global feed and any user can
+      // see it. Member requires institution membership; Internal requires
+      // editor/admin/owner.
+      _ExploreScopeKey.public,
+      if (isMember) _ExploreScopeKey.member,
+      if (isAdminLike || role == 'EDITOR') _ExploreScopeKey.internal,
+    ];
+  }
 
-    return _scopes.where((scope) {
-      switch (scope.key) {
-        case 'public':
-          return true;
-        case 'member':
-          return isMember; // any authenticated member can see member-only.
-        case 'internal':
-          return isAdminLike || role == 'EDITOR';
-      }
-      return false;
-    }).toList();
+  void _onCompose(_ExploreScopeKey scope) {
+    final id = widget.institutionId.trim();
+    if (id.isEmpty) return;
+    context.push(
+      '/institution/$id/posts/new?scope=${scope.composeScope}',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
+    final id = widget.institutionId.trim();
 
-    // Hard guard: an empty institutionId makes the dio call hit
-    // `/institutions//posts` and 404 with no useful message. Show an empty
-    // state with a route back to the dashboard instead of letting the
-    // network layer surface a raw 404.
-    if (widget.institutionId.trim().isEmpty) {
+    if (id.isEmpty) {
+      // Defensive: the primary nav routes to /institution/dashboard when id
+      // is empty so this case should not normally fire. Keep a clean fallback
+      // rather than crash if a deep-link slips through.
       return AuraScaffold(
         showHeader: false,
         body: ListView(
@@ -95,8 +131,7 @@ class _InstitutionExploreScreenState
               icon: Icons.apartment_outlined,
               title: 'Institution not selected',
               body:
-                  'Open the institution dashboard to enter the workspace, '
-                  'then choose Explore from the workspace nav.',
+                  'Open the institution dashboard to enter the workspace.',
               action: AuraSecondaryButton(
                 label: 'Go to dashboard',
                 icon: Icons.arrow_forward_rounded,
@@ -115,6 +150,9 @@ class _InstitutionExploreScreenState
     }
 
     final canCompose = identity?.canCreatePosts ?? false;
+    final activeScope = scopes.isEmpty
+        ? _ExploreScopeKey.public
+        : scopes[_tabController.index.clamp(0, scopes.length - 1)];
 
     return AuraScaffold(
       showHeader: false,
@@ -144,23 +182,22 @@ class _InstitutionExploreScreenState
                               AuraPrimaryButton(
                                 label: 'Compose',
                                 icon: Icons.edit_rounded,
-                                onPressed: () => context.push(
-                                  '/institution/${widget.institutionId}/posts/new',
-                                ),
+                                onPressed: () => _onCompose(activeScope),
                               ),
                           ],
                         ),
                         const SizedBox(height: AuraSpace.s6),
                         Text(
-                          'Posts published by this institution, scoped by audience.',
-                          style:
-                              AuraText.body.copyWith(color: AuraSurface.muted),
+                          _scopeBlurb(activeScope),
+                          style: AuraText.body
+                              .copyWith(color: AuraSurface.muted),
                         ),
                         const SizedBox(height: AuraSpace.s14),
                         if (scopes.isNotEmpty)
                           _ScopeTabs(
                             controller: _tabController,
                             scopes: scopes,
+                            onChanged: (_) => setState(() {}),
                           ),
                       ],
                     ),
@@ -177,9 +214,9 @@ class _InstitutionExploreScreenState
                             controller: _tabController,
                             children: [
                               for (final scope in scopes)
-                                _ExploreList(
+                                _scopeBody(
+                                  scope: scope,
                                   institutionId: widget.institutionId,
-                                  scope: scope.key,
                                 ),
                             ],
                           ),
@@ -188,8 +225,6 @@ class _InstitutionExploreScreenState
               ),
             ],
           ),
-          // FAB-style overlay button. When the viewer cannot compose, the
-          // pill is shown in a disabled state with an explanatory tooltip.
           if (!canCompose)
             const Positioned(
               right: AuraSpace.s20,
@@ -210,26 +245,59 @@ class _InstitutionExploreScreenState
     );
   }
 
-  bool _listEquals(List<_ExploreScope> a, List<_ExploreScope> b) {
+  Widget _scopeBody({
+    required _ExploreScopeKey scope,
+    required String institutionId,
+  }) {
+    switch (scope) {
+      case _ExploreScopeKey.public:
+        return _PublicGlobalList(institutionId: institutionId);
+      case _ExploreScopeKey.member:
+        return _InstitutionScopedList(
+          institutionId: institutionId,
+          scope: 'member',
+        );
+      case _ExploreScopeKey.internal:
+        return _InstitutionScopedList(
+          institutionId: institutionId,
+          scope: 'internal',
+        );
+    }
+  }
+
+  String _scopeBlurb(_ExploreScopeKey scope) {
+    switch (scope) {
+      case _ExploreScopeKey.public:
+        return 'Global feed — public posts from people and institutions across Aura. '
+            'Posting here as your institution publishes to this feed.';
+      case _ExploreScopeKey.member:
+        return 'Posts visible to verified members of this institution.';
+      case _ExploreScopeKey.internal:
+        return 'Internal posts — visible only to admins and editors.';
+    }
+  }
+
+  bool _listEquals(List<_ExploreScopeKey> a, List<_ExploreScopeKey> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i].key != b[i].key) return false;
+      if (a[i] != b[i]) return false;
     }
     return true;
   }
 }
 
-class _ExploreScope {
-  const _ExploreScope({required this.key, required this.label});
-  final String key;
-  final String label;
-}
+// ── Tab strip ────────────────────────────────────────────────────────────────
 
 class _ScopeTabs extends StatelessWidget {
-  const _ScopeTabs({required this.controller, required this.scopes});
+  const _ScopeTabs({
+    required this.controller,
+    required this.scopes,
+    required this.onChanged,
+  });
 
   final TabController controller;
-  final List<_ExploreScope> scopes;
+  final List<_ExploreScopeKey> scopes;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +311,7 @@ class _ScopeTabs extends StatelessWidget {
         controller: controller,
         isScrollable: true,
         tabAlignment: TabAlignment.start,
+        onTap: onChanged,
         indicator: BoxDecoration(
           color: AuraSurface.accentSoft,
           borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -251,14 +320,12 @@ class _ScopeTabs extends StatelessWidget {
         dividerColor: Colors.transparent,
         labelColor: AuraSurface.accentText,
         unselectedLabelColor: AuraSurface.muted,
-        labelStyle:
-            AuraText.small.copyWith(fontWeight: FontWeight.w700),
+        labelStyle: AuraText.small.copyWith(fontWeight: FontWeight.w700),
         unselectedLabelStyle:
             AuraText.small.copyWith(fontWeight: FontWeight.w600),
         padding: const EdgeInsets.all(4),
         tabs: [
-          for (final scope in scopes)
-            Tab(text: scope.label, height: 34),
+          for (final scope in scopes) Tab(text: scope.label, height: 34),
         ],
       ),
     );
@@ -278,83 +345,96 @@ class _NoScopeAccess extends StatelessWidget {
   }
 }
 
-class _ExploreList extends ConsumerStatefulWidget {
-  const _ExploreList({required this.institutionId, required this.scope});
+// ── Public global merged feed ────────────────────────────────────────────────
+
+class _PublicGlobalList extends ConsumerStatefulWidget {
+  const _PublicGlobalList({required this.institutionId});
 
   final String institutionId;
-  final String scope;
 
   @override
-  ConsumerState<_ExploreList> createState() => _ExploreListState();
+  ConsumerState<_PublicGlobalList> createState() => _PublicGlobalListState();
 }
 
-class _ExploreListState extends ConsumerState<_ExploreList>
+class _PublicGlobalListState extends ConsumerState<_PublicGlobalList>
     with AutomaticKeepAliveClientMixin {
-  final _scrollController = ScrollController();
-
-  bool _loadingMore = false;
-  String? _cursor;
-  String? _moreError;
-  final List<InstitutionPost> _additional = <InstitutionPost>[];
-  bool _exhausted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   bool get wantKeepAlive => true;
 
-  void _onScroll() {
-    if (_loadingMore || _exhausted) return;
-    if (!_scrollController.hasClients) return;
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 240) {
-      _loadMore();
-    }
-  }
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final asyncFeed =
+        ref.watch(institutionExplorePublicFeedProvider(widget.institutionId));
 
-  Future<void> _loadMore() async {
-    if (_cursor == null || _cursor!.isEmpty) {
-      _exhausted = true;
-      return;
-    }
-    setState(() {
-      _loadingMore = true;
-      _moreError = null;
-    });
-    try {
-      final repo = ref.read(institutionsRepositoryProvider);
-      final next = await repo.listInstitutionPosts(
-        institutionId: widget.institutionId,
-        scope: widget.scope,
-        cursor: _cursor,
-        limit: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _additional.addAll(next.items);
-        _cursor = next.nextCursor;
-        _exhausted = !next.hasMore;
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _moreError = 'Could not load more: $e';
-        _loadingMore = false;
-      });
-    }
+    return asyncFeed.when(
+      loading: () => const AuraLoadingState(message: 'Loading public feed…'),
+      error: (e, _) => ListView(
+        padding: const EdgeInsets.all(AuraSpace.s16),
+        children: [
+          AuraErrorState(
+            title: 'Could not load public feed',
+            body: '$e',
+            action: AuraSecondaryButton(
+              label: 'Try again',
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(
+                institutionExplorePublicFeedProvider(widget.institutionId),
+              ),
+            ),
+          ),
+        ],
+      ),
+      data: (page) {
+        if (page.items.isEmpty) {
+          return const AuraEmptyState(
+            icon: Icons.public_rounded,
+            title: 'Public feed is empty',
+            body:
+                'Public posts from people and institutions will appear here.',
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(
+              institutionExplorePublicFeedProvider(widget.institutionId),
+            );
+          },
+          child: ListView.separated(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            itemCount: page.items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+            itemBuilder: (context, i) =>
+                _ExploreFeedCard(item: page.items[i]),
+          ),
+        );
+      },
+    );
   }
+}
+
+// ── Institution-scoped feed (Member / Internal) ──────────────────────────────
+
+class _InstitutionScopedList extends ConsumerStatefulWidget {
+  const _InstitutionScopedList({
+    required this.institutionId,
+    required this.scope,
+  });
+
+  final String institutionId;
+
+  /// 'member' | 'internal'
+  final String scope;
+
+  @override
+  ConsumerState<_InstitutionScopedList> createState() =>
+      _InstitutionScopedListState();
+}
+
+class _InstitutionScopedListState extends ConsumerState<_InstitutionScopedList>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
@@ -383,62 +463,25 @@ class _ExploreListState extends ConsumerState<_ExploreList>
         ],
       ),
       data: (page) {
-        if (_cursor == null && !_exhausted) {
-          _cursor = page.nextCursor;
-          _exhausted = !page.hasMore;
-        }
-        final posts = <InstitutionPost>[
-          ...page.items,
-          ..._additional,
-        ];
-        if (posts.isEmpty) {
-          return const AuraEmptyState(
+        if (page.items.isEmpty) {
+          return AuraEmptyState(
             icon: Icons.feed_outlined,
             title: 'No posts yet',
-            body: 'When this scope has posts they will show up here.',
+            body: widget.scope == 'internal'
+                ? 'Internal posts visible only to admins and editors will appear here.'
+                : 'Member-only posts from this institution will appear here.',
           );
         }
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {
-              _additional.clear();
-              _cursor = null;
-              _exhausted = false;
-              _moreError = null;
-            });
             ref.invalidate(institutionPostsFirstPageProvider(args));
           },
           child: ListView.separated(
-            controller: _scrollController,
             padding: const EdgeInsets.all(AuraSpace.s16),
-            itemCount: posts.length + (_loadingMore || _moreError != null ? 1 : 0),
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: AuraSpace.s10),
-            itemBuilder: (context, index) {
-              if (index >= posts.length) {
-                if (_moreError != null) {
-                  return Padding(
-                    padding: const EdgeInsets.all(AuraSpace.s12),
-                    child: Text(
-                      _moreError!,
-                      style:
-                          AuraText.small.copyWith(color: AuraSurface.dangerInk),
-                    ),
-                  );
-                }
-                return const Padding(
-                  padding: EdgeInsets.all(AuraSpace.s16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                );
-              }
-              return _PostCard(post: posts[index]);
-            },
+            itemCount: page.items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s10),
+            itemBuilder: (context, i) =>
+                _InstitutionPostCard(post: page.items[i]),
           ),
         );
       },
@@ -446,8 +489,222 @@ class _ExploreListState extends ConsumerState<_ExploreList>
   }
 }
 
-class _PostCard extends StatelessWidget {
-  const _PostCard({required this.post});
+// ── Cards ────────────────────────────────────────────────────────────────────
+
+String _formatDate(DateTime dt) {
+  final local = dt.toLocal();
+  final yyyy = local.year.toString().padLeft(4, '0');
+  final mm = local.month.toString().padLeft(2, '0');
+  final dd = local.day.toString().padLeft(2, '0');
+  return '$yyyy-$mm-$dd';
+}
+
+class _ExploreFeedCard extends StatelessWidget {
+  const _ExploreFeedCard({required this.item});
+
+  final ExploreFeedItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = item;
+    if (entry is ExploreUserPost) {
+      return _ExploreUserPostCard(post: entry);
+    }
+    if (entry is ExploreInstitutionPost) {
+      return _ExploreInstitutionPostCard(post: entry);
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+class _ExploreUserPostCard extends StatelessWidget {
+  const _ExploreUserPostCard({required this.post});
+
+  final ExploreUserPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = post.authorDisplayName.trim().isNotEmpty
+        ? post.authorDisplayName.trim()[0].toUpperCase()
+        : (post.authorHandle.isNotEmpty ? post.authorHandle[0].toUpperCase() : 'U');
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AuthorAvatar(
+                imageUrl: post.authorAvatarUrl,
+                fallback: initial,
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      post.authorDisplayName.isNotEmpty
+                          ? post.authorDisplayName
+                          : (post.authorHandle.isNotEmpty
+                              ? '@${post.authorHandle}'
+                              : 'Unknown'),
+                      style:
+                          AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (post.authorHandle.isNotEmpty &&
+                        post.authorDisplayName.isNotEmpty)
+                      Text(
+                        '@${post.authorHandle}',
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.faint),
+                      ),
+                  ],
+                ),
+              ),
+              if (post.publishedAt != null)
+                Text(
+                  _formatDate(post.publishedAt!),
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+            ],
+          ),
+          if (post.text.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              post.text,
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  AuraText.body.copyWith(color: AuraSurface.ink, height: 1.5),
+            ),
+          ],
+          if (post.media.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            _MediaThumb(url: post.media.first.url, isVideo: post.media.first.isVideo),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ExploreInstitutionPostCard extends StatelessWidget {
+  const _ExploreInstitutionPostCard({required this.post});
+
+  final ExploreInstitutionPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = post.institutionName.trim().isNotEmpty
+        ? post.institutionName.trim()[0].toUpperCase()
+        : 'I';
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AuthorAvatar(
+                imageUrl: post.institutionLogoUrl,
+                fallback: initial,
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            post.institutionName.isNotEmpty
+                                ? post.institutionName
+                                : 'Institution',
+                            style: AuraText.small
+                                .copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: AuraSpace.s6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AuraSurface.accentSoft,
+                            borderRadius: BorderRadius.circular(AuraRadius.pill),
+                          ),
+                          child: Text(
+                            'Institution',
+                            style: AuraText.micro.copyWith(
+                              color: AuraSurface.accentText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (post.institutionSlug.isNotEmpty)
+                      Text(
+                        '@${post.institutionSlug}',
+                        style: AuraText.micro
+                            .copyWith(color: AuraSurface.faint),
+                      ),
+                  ],
+                ),
+              ),
+              if (post.publishedAt != null)
+                Text(
+                  _formatDate(post.publishedAt!),
+                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                ),
+            ],
+          ),
+          if (post.title.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(
+              post.title,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ],
+          if (post.body.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              post.body,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+            ),
+          ],
+          if (post.mediaUrl != null) ...[
+            const SizedBox(height: AuraSpace.s10),
+            _MediaThumb(url: post.mediaUrl!, isVideo: false),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InstitutionPostCard extends StatelessWidget {
+  const _InstitutionPostCard({required this.post});
 
   final InstitutionPost post;
 
@@ -491,18 +748,100 @@ class _PostCard extends StatelessWidget {
                   AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
             ),
           ],
+          if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            _MediaThumb(url: post.mediaUrl!, isVideo: false),
+          ],
         ],
       ),
     );
   }
 }
 
-String _formatDate(DateTime dt) {
-  final local = dt.toLocal();
-  final yyyy = local.year.toString().padLeft(4, '0');
-  final mm = local.month.toString().padLeft(2, '0');
-  final dd = local.day.toString().padLeft(2, '0');
-  return '$yyyy-$mm-$dd';
+class _AuthorAvatar extends StatelessWidget {
+  const _AuthorAvatar({this.imageUrl, required this.fallback});
+
+  final String? imageUrl;
+  final String fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        shape: BoxShape.circle,
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: (imageUrl != null && imageUrl!.isNotEmpty)
+          ? Image.network(
+              imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _initialFallback(fallback),
+            )
+          : _initialFallback(fallback),
+    );
+  }
+
+  Widget _initialFallback(String text) {
+    return Center(
+      child: Text(
+        text,
+        style: AuraText.small.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MediaThumb extends StatelessWidget {
+  const _MediaThumb({required this.url, required this.isVideo});
+
+  final String url;
+  final bool isVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: AuraSurface.subtle,
+                child: const Center(
+                  child: Icon(Icons.broken_image_outlined,
+                      color: AuraSurface.faint),
+                ),
+              ),
+            ),
+          ),
+          if (isVideo)
+            Container(
+              padding: const EdgeInsets.all(AuraSpace.s8),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _StatusChip extends StatelessWidget {
@@ -540,8 +879,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style:
-            AuraText.micro.copyWith(color: ink, fontWeight: FontWeight.w700),
+        style: AuraText.micro.copyWith(color: ink, fontWeight: FontWeight.w700),
       ),
     );
   }

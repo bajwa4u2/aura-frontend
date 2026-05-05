@@ -1,9 +1,15 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -12,30 +18,39 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_post.dart';
+import '../presentation/institution_detail_screen.dart' show institutionPublicPostsProvider;
 
-/// Composer for [InstitutionPost]s. Used in both create and edit modes.
+/// Composer for [InstitutionPost]s in create mode.
 ///
-/// Behavior by role:
-///   * EDITOR — single CTA "Submit for review" (DRAFT -> PENDING_APPROVAL)
-///   * OWNER / ADMIN — split control: Save draft, or Publish now
+/// Behaviour by role:
+///   * EDITOR — single CTA "Submit for review" (DRAFT -> PENDING_APPROVAL).
+///   * OWNER / ADMIN — split control: Save draft / Publish now.
 ///
-/// Note: edit mode opens the form blank unless an [initial] post is passed in
-/// by the caller. Screens that route via `/posts/:postId/edit` should fetch
-/// the post and pass it through the route extras (or upgrade this screen to
-/// fetch by `postId` itself once a getById endpoint is wired). Today's
-/// repository does not expose `getInstitutionPost` so the edit route is
-/// best-effort.
+/// The composer is **scope-aware**: when launched from the Public / Member /
+/// Internal tab of Explore, the active tab is passed via `?scope=` and
+/// becomes the default visibility for the new post. Distribution is gated
+/// to the public scope (the only scope where global feed eligibility is
+/// meaningful — the backend rejects other combinations).
+///
+/// Media is uploaded via the existing presign flow (`uploadAuraMedia`); the
+/// previous URL-input field has been replaced with a real picker + bounded
+/// preview that mirrors the institution profile logo upload widget.
 class InstitutionPostComposerScreen extends ConsumerStatefulWidget {
   const InstitutionPostComposerScreen({
     super.key,
     required this.institutionId,
     this.postId,
     this.initial,
+    this.defaultScope,
   });
 
   final String institutionId;
   final String? postId;
   final InstitutionPost? initial;
+
+  /// 'public' | 'member' | 'internal' — passed by the Explore tab so the
+  /// composer opens with the right visibility preselected.
+  final String? defaultScope;
 
   bool get isEditing => postId != null && postId!.isNotEmpty;
 
@@ -48,14 +63,37 @@ class _InstitutionPostComposerScreenState
     extends ConsumerState<InstitutionPostComposerScreen> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
-  final _mediaCtrl = TextEditingController();
 
-  InstitutionPostVisibility _visibility = InstitutionPostVisibility.memberOnly;
+  late InstitutionPostVisibility _visibility;
   InstitutionPostDistribution _distribution =
       InstitutionPostDistribution.institutionOnly;
 
+  // Single-attachment state. The backend `InstitutionPost` schema accepts one
+  // `mediaUrl`; the composer surfaces a real upload widget but persists only
+  // the URL of the first uploaded asset. Multi-asset support is a separate
+  // backend contract change (flagged below).
+  final ImagePicker _picker = ImagePicker();
+  String? _mediaUrl;
+  String? _mediaThumbUrl;
+  String? _mediaMimeType;
+  bool _uploading = false;
+
   bool _busy = false;
   String? _error;
+
+  static const int _kImageMaxBytes = 8 * 1024 * 1024; // 8 MB
+  static const int _kVideoMaxBytes = 50 * 1024 * 1024; // 50 MB
+  static const Set<String> _kImageMimeWhitelist = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  };
+  static const Set<String> _kVideoMimeWhitelist = {
+    'video/mp4',
+    'video/quicktime',
+    'video/webm',
+  };
 
   @override
   void initState() {
@@ -64,19 +102,36 @@ class _InstitutionPostComposerScreenState
     if (initial != null) {
       _titleCtrl.text = initial.title;
       _bodyCtrl.text = initial.body;
-      _mediaCtrl.text = initial.mediaUrl ?? '';
+      _mediaUrl = initial.mediaUrl;
       _visibility = initial.visibility;
       _distribution = initial.distribution;
+    } else {
+      _visibility = _scopeToVisibility(widget.defaultScope);
     }
     _titleCtrl.addListener(_rebuildOnInput);
     _bodyCtrl.addListener(_rebuildOnInput);
+  }
+
+  static InstitutionPostVisibility _scopeToVisibility(String? scope) {
+    switch ((scope ?? '').trim().toLowerCase()) {
+      case 'public':
+        return InstitutionPostVisibility.publicAll;
+      case 'internal':
+        return InstitutionPostVisibility.internal;
+      case 'member':
+      case 'members':
+        return InstitutionPostVisibility.memberOnly;
+      default:
+        // Without an explicit hint, default to member-only — the safe choice
+        // that does not surface to the global feed accidentally.
+        return InstitutionPostVisibility.memberOnly;
+    }
   }
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     _bodyCtrl.dispose();
-    _mediaCtrl.dispose();
     super.dispose();
   }
 
@@ -103,12 +158,143 @@ class _InstitutionPostComposerScreenState
     return <String, dynamic>{
       'title': _titleCtrl.text.trim(),
       'body': _bodyCtrl.text.trim(),
-      if (_mediaCtrl.text.trim().isNotEmpty) 'mediaUrl': _mediaCtrl.text.trim(),
+      if (_mediaUrl != null && _mediaUrl!.isNotEmpty) 'mediaUrl': _mediaUrl,
       'visibility': _visibility.wire,
       'distribution': _distribution.wire,
       if (statusOverride != null) 'status': statusOverride,
     };
   }
+
+  // ── Media upload (presign flow) ───────────────────────────────────────────
+
+  Future<void> _pickMedia({required bool video}) async {
+    if (_busy || _uploading) return;
+    XFile? file;
+    if (video) {
+      file = await _picker.pickVideo(source: ImageSource.gallery);
+    } else {
+      file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+      );
+    }
+    if (file == null) return;
+
+    setState(() {
+      _uploading = true;
+      _error = null;
+    });
+
+    try {
+      final bytes = await file.readAsBytes();
+      final mimeType = file.mimeType ?? _inferMime(file.name, video: video);
+
+      if (bytes.isEmpty) {
+        throw const _MediaValidationException('File is empty.');
+      }
+
+      if (video) {
+        if (!_kVideoMimeWhitelist.contains(mimeType.toLowerCase())) {
+          throw const _MediaValidationException(
+              'Unsupported video format. Use MP4, MOV, or WebM.');
+        }
+        if (bytes.length > _kVideoMaxBytes) {
+          throw const _MediaValidationException(
+              'Video must be ${_kVideoMaxBytes ~/ (1024 * 1024)} MB or smaller.');
+        }
+      } else {
+        if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
+          throw const _MediaValidationException(
+              'Unsupported image format. Use JPEG, PNG, WebP, or GIF.');
+        }
+        if (bytes.length > _kImageMaxBytes) {
+          throw const _MediaValidationException(
+              'Image must be ${_kImageMaxBytes ~/ (1024 * 1024)} MB or smaller.');
+        }
+      }
+
+      final size = video ? null : await _decodeImageSize(bytes);
+
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: bytes,
+        fileName: file.name,
+        mimeType: mimeType,
+        kind: video ? 'VIDEO' : 'IMAGE',
+        source: 'UPLOAD',
+        width: size?['width'],
+        height: size?['height'],
+        metadataPatch: <String, dynamic>{
+          if (size?['width'] != null) 'width': size!['width'],
+          if (size?['height'] != null) 'height': size!['height'],
+          'editDisclosure': false,
+        },
+      );
+
+      final url = result.url.trim();
+      if (url.isEmpty) {
+        throw Exception('Uploaded media URL missing from response.');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _mediaUrl = url;
+        _mediaThumbUrl = result.thumbUrl.trim().isNotEmpty
+            ? result.thumbUrl.trim()
+            : url;
+        _mediaMimeType = mimeType;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _readError(e, 'Could not upload media.'));
+    } on _MediaValidationException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _readError(e, 'Could not upload media.'));
+    } finally {
+      if (mounted) {
+        setState(() => _uploading = false);
+      }
+    }
+  }
+
+  void _removeMedia() {
+    setState(() {
+      _mediaUrl = null;
+      _mediaThumbUrl = null;
+      _mediaMimeType = null;
+    });
+  }
+
+  String _inferMime(String name, {required bool video}) {
+    final ext = name.split('.').last.toLowerCase();
+    if (video) {
+      if (ext == 'mov') return 'video/quicktime';
+      if (ext == 'webm') return 'video/webm';
+      return 'video/mp4';
+    }
+    if (ext == 'png') return 'image/png';
+    if (ext == 'webp') return 'image/webp';
+    if (ext == 'gif') return 'image/gif';
+    return 'image/jpeg';
+  }
+
+  Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final w = frame.image.width;
+      final h = frame.image.height;
+      frame.image.dispose();
+      return {'width': w, 'height': h};
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Save / submit / publish ────────────────────────────────────────────────
 
   Future<void> _submitForReview() async {
     final err = _localValidationError;
@@ -224,6 +410,7 @@ class _InstitutionPostComposerScreenState
   }
 
   void _invalidatePostFeeds() {
+    // Refresh the institution-scoped scopes…
     for (final scope in const ['public', 'member', 'internal']) {
       ref.invalidate(
         institutionPostsFirstPageProvider(
@@ -234,6 +421,12 @@ class _InstitutionPostComposerScreenState
         ),
       );
     }
+    // …and the global merged Public feed used by the Explore Public tab.
+    ref.invalidate(
+      institutionExplorePublicFeedProvider(widget.institutionId),
+    );
+    // …and the public-profile public-posts list.
+    ref.invalidate(institutionPublicPostsProvider(widget.institutionId));
   }
 
   String _readError(Object e, String fallback) {
@@ -246,6 +439,8 @@ class _InstitutionPostComposerScreenState
     }
     return fallback;
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +500,9 @@ class _InstitutionPostComposerScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: AuraSpace.s6),
+                  const SizedBox(height: AuraSpace.s10),
+                  _ActorBanner(identity: identity),
+                  const SizedBox(height: AuraSpace.s16),
                   Text(
                     'Posts are scoped by visibility. Distribution controls '
                     'whether public posts may surface in the global feed.',
@@ -352,12 +549,15 @@ class _InstitutionPostComposerScreenState
                     ),
                   ),
                   _LabeledField(
-                    label: 'Media URL (optional)',
-                    child: TextField(
-                      controller: _mediaCtrl,
-                      keyboardType: TextInputType.url,
-                      decoration: _decoration('https://…'),
-                      style: AuraText.body,
+                    label: 'Media (optional)',
+                    child: _MediaUploadSlot(
+                      mediaUrl: _mediaUrl,
+                      thumbUrl: _mediaThumbUrl,
+                      mimeType: _mediaMimeType,
+                      uploading: _uploading,
+                      onPickImage: () => _pickMedia(video: false),
+                      onPickVideo: () => _pickMedia(video: true),
+                      onRemove: _removeMedia,
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s8),
@@ -366,7 +566,6 @@ class _InstitutionPostComposerScreenState
                     onChange: (v) {
                       setState(() {
                         _visibility = v;
-                        // Hard-block invalid combinations on the client.
                         if (v != InstitutionPostVisibility.publicAll) {
                           _distribution =
                               InstitutionPostDistribution.institutionOnly;
@@ -382,7 +581,7 @@ class _InstitutionPostComposerScreenState
                   ),
                   const SizedBox(height: AuraSpace.s24),
                   _ComposerActions(
-                    busy: _busy,
+                    busy: _busy || _uploading,
                     canPublish: canPublish,
                     onSubmitForReview: _submitForReview,
                     onSaveDraft: _saveDraft,
@@ -436,6 +635,282 @@ class _InstitutionPostComposerScreenState
         ),
       );
 }
+
+// ── Actor banner — "Posting as: <Institution Name>" ─────────────────────────
+
+class _ActorBanner extends StatelessWidget {
+  const _ActorBanner({required this.identity});
+
+  final InstitutionIdentity? identity;
+
+  static const Color _accent = Color(0xFF0D9488);
+  static const Color _accentSoft = Color(0x1E0D9488);
+  static const Color _accentText = Color(0xFF5EEAD4);
+
+  @override
+  Widget build(BuildContext context) {
+    final name = identity?.name ?? '';
+    final logoUrl = identity?.logoUrl ?? '';
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'I';
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: _accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: _accent.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _accentSoft,
+              shape: BoxShape.circle,
+              border: Border.all(color: _accent.withValues(alpha: 0.4)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: logoUrl.isNotEmpty
+                ? Image.network(
+                    logoUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Text(
+                        initial,
+                        style: AuraText.small.copyWith(
+                          color: _accentText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      initial,
+                      style: AuraText.small.copyWith(
+                        color: _accentText,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Posting as',
+                  style: AuraText.micro.copyWith(
+                    color: _accentText,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                Text(
+                  name.isNotEmpty ? name : 'Institution',
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AuraSurface.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Media slot — bounded preview, image/video picker, progress, remove ───────
+
+class _MediaUploadSlot extends StatelessWidget {
+  const _MediaUploadSlot({
+    required this.mediaUrl,
+    required this.thumbUrl,
+    required this.mimeType,
+    required this.uploading,
+    required this.onPickImage,
+    required this.onPickVideo,
+    required this.onRemove,
+  });
+
+  final String? mediaUrl;
+  final String? thumbUrl;
+  final String? mimeType;
+  final bool uploading;
+  final VoidCallback onPickImage;
+  final VoidCallback onPickVideo;
+  final VoidCallback onRemove;
+
+  bool get _hasMedia => mediaUrl != null && mediaUrl!.isNotEmpty;
+  bool get _isVideo => (mimeType ?? '').toLowerCase().startsWith('video/');
+
+  static const double _kPreviewMaxWidth = 600;
+  static const double _kPreviewMaxHeight = 340;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: _kPreviewMaxWidth,
+              maxHeight: _kPreviewMaxHeight,
+            ),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                child: _previewBody(),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: uploading ? null : onPickImage,
+              icon: Icon(
+                _hasMedia && !_isVideo
+                    ? Icons.swap_horiz_rounded
+                    : Icons.image_outlined,
+                size: 16,
+              ),
+              label: Text(
+                uploading
+                    ? 'Uploading…'
+                    : _hasMedia && !_isVideo
+                        ? 'Replace image'
+                        : 'Add image',
+              ),
+              style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            OutlinedButton.icon(
+              onPressed: uploading ? null : onPickVideo,
+              icon: Icon(
+                _hasMedia && _isVideo
+                    ? Icons.swap_horiz_rounded
+                    : Icons.videocam_outlined,
+                size: 16,
+              ),
+              label: Text(
+                uploading
+                    ? 'Uploading…'
+                    : _hasMedia && _isVideo
+                        ? 'Replace video'
+                        : 'Add video',
+              ),
+              style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (_hasMedia) ...[
+              const SizedBox(width: AuraSpace.s8),
+              TextButton(
+                onPressed: uploading ? null : onRemove,
+                child: Text(
+                  'Remove',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.dangerInk,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          'Image up to 8 MB · Video up to 50 MB · uploaded via Aura media presign.',
+          style: AuraText.micro.copyWith(color: AuraSurface.faint, height: 1.4),
+        ),
+      ],
+    );
+  }
+
+  Widget _previewBody() {
+    if (uploading) {
+      return Container(
+        color: AuraSurface.subtle,
+        child: const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    if (_hasMedia) {
+      final url = thumbUrl?.isNotEmpty == true ? thumbUrl! : mediaUrl!;
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: AuraSurface.subtle,
+              child: const Center(
+                child: Icon(Icons.broken_image_outlined,
+                    color: AuraSurface.faint),
+              ),
+            ),
+          ),
+          if (_isVideo)
+            Container(
+              padding: const EdgeInsets.all(AuraSpace.s8),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+        ],
+      );
+    }
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.add_photo_alternate_outlined,
+          color: AuraSurface.faint,
+          size: 32,
+        ),
+      ),
+    );
+  }
+}
+
+class _MediaValidationException implements Exception {
+  const _MediaValidationException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+// ── Layout helpers (unchanged) ───────────────────────────────────────────────
 
 class _LabeledField extends StatelessWidget {
   const _LabeledField({
@@ -631,7 +1106,6 @@ class _ComposerActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!canPublish) {
-      // EDITOR: single CTA submitting for review.
       return Row(
         children: [
           Expanded(
@@ -645,7 +1119,6 @@ class _ComposerActions extends StatelessWidget {
       );
     }
 
-    // OWNER / ADMIN: split — Save draft / Publish now.
     return Row(
       children: [
         Expanded(

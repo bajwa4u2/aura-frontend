@@ -154,39 +154,26 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
 
   final dio = ref.watch(dioProvider);
 
-  // Institution account tokens represent the institution itself.
-  // /institutions/me is a personal-member endpoint and returns no meaningful
-  // state for institution account tokens (typically 401/403 or empty).
-  // Detect INSTITUTION accountType from /auth/me and grant full access directly,
-  // passing through any institution/membership data the endpoint provides.
+  // Probe accountType from /auth/me. INSTITUTION accounts represent the
+  // institution itself; PUBLIC accounts may be members of an institution.
+  // Both rely on /institutions/me for the actual institution + membership
+  // payload — /auth/me itself does not return institution data.
+  String accountType = 'PUBLIC';
   try {
     final meData = await ref.watch(authMeDataProvider.future);
-    final accountType = (meData['accountType'] ?? '').toString().toUpperCase();
-
-    if (accountType == 'INSTITUTION') {
-      return InstitutionAccess(
-        state: InstitutionAccessState.authorizedSpeaker,
-        institution: meData['institution'] is Map
-            ? Map<String, dynamic>.from(meData['institution'])
-            : null,
-        membership: meData['membership'] is Map
-            ? Map<String, dynamic>.from(meData['membership'])
-            : null,
-      );
-    }
+    accountType = (meData['accountType'] ?? '').toString().toUpperCase();
   } catch (_) {
-    // Fall through to personal-member /institutions/me check.
+    // /auth/me may transiently fail; treat as PUBLIC and let the call below
+    // surface the real error if institutional access is required.
   }
 
-  // Personal member path: check institution membership via /institutions/me.
   try {
     final res = await dio.get('/institutions/me');
-
     final data = Map<String, dynamic>.from(res.data);
-    final state = (data['state'] ?? '').toString().trim();
+    final stateRaw = (data['state'] ?? '').toString().trim();
 
     InstitutionAccessState parsed;
-    switch (state) {
+    switch (stateRaw) {
       case 'PENDING_REQUEST':
         parsed = InstitutionAccessState.pending;
         break;
@@ -200,14 +187,28 @@ final institutionAccessProvider = FutureProvider<InstitutionAccess>((ref) async 
         parsed = InstitutionAccessState.none;
     }
 
+    final institution = data['institution'] is Map
+        ? Map<String, dynamic>.from(data['institution'])
+        : null;
+    final membership = data['membership'] is Map
+        ? Map<String, dynamic>.from(data['membership'])
+        : (institution != null
+            // Institution-account users without an explicit membership row
+            // still act as the institution itself; synthesise a minimal
+            // membership envelope so downstream consumers see the institution.
+            ? <String, dynamic>{'institution': institution}
+            : null);
+
+    // Institution-account tokens always grant full speaker rights, even if
+    // the /institutions/me state field is missing or downgraded.
+    if (accountType == 'INSTITUTION' && institution != null) {
+      parsed = InstitutionAccessState.authorizedSpeaker;
+    }
+
     return InstitutionAccess(
       state: parsed,
-      institution: data['institution'] is Map
-          ? Map<String, dynamic>.from(data['institution'])
-          : null,
-      membership: data['membership'] is Map
-          ? Map<String, dynamic>.from(data['membership'])
-          : null,
+      institution: institution,
+      membership: membership,
       request: data['request'] is Map
           ? Map<String, dynamic>.from(data['request'])
           : null,
