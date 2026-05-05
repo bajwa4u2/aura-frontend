@@ -626,15 +626,25 @@ class InstitutionsRepository {
     return InstitutionPostPage(items: items, nextCursor: nextCursor);
   }
 
+  /// Creates an InstitutionPost.
+  ///
+  /// `status` is sent as a query parameter (`?status=DRAFT|PUBLISHED`) — the
+  /// backend's `CreateInstitutionPostDto` does not allow `status` in the body
+  /// and will reject the request with `property status should not exist`.
+  /// `payload` must contain only: title, body, mediaUrl?, visibility,
+  /// distribution.
   Future<InstitutionPost> createInstitutionPost(
     String institutionId,
-    Map<String, dynamic> payload,
-  ) async {
+    Map<String, dynamic> payload, {
+    String? status,
+  }) async {
     final id = institutionId.trim();
     if (id.isEmpty) throw Exception('Institution id is missing.');
+    final s = (status ?? '').trim().toUpperCase();
     final res = await _dio.post(
       '/institutions/$id/posts',
       data: payload,
+      queryParameters: s.isNotEmpty ? <String, dynamic>{'status': s} : null,
     );
     return _readPost(res.data);
   }
