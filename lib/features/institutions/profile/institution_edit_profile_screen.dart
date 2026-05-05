@@ -1004,10 +1004,49 @@ class _MediaUploadControl extends StatelessWidget {
 
   final String? imageUrl;
   final bool uploading;
+
+  /// 1 for square logo, 4 for wide cover banner.
   final double aspectRatio;
   final String hint;
   final VoidCallback onPick;
   final VoidCallback onRemove;
+
+  // Hard caps for the preview surface so an uploaded image cannot bleed into
+  // page content.
+  static const double _kLogoMaxSize = 160;
+  static const double _kCoverMaxWidth = 600;
+  static const double _kCoverMaxHeight = 150;
+
+  bool get _isLogo => aspectRatio == 1;
+
+  BoxConstraints get _previewConstraints {
+    if (_isLogo) {
+      return const BoxConstraints(
+        maxWidth: _kLogoMaxSize,
+        maxHeight: _kLogoMaxSize,
+      );
+    }
+    return const BoxConstraints(
+      maxWidth: _kCoverMaxWidth,
+      maxHeight: _kCoverMaxHeight,
+    );
+  }
+
+  Widget _previewBox({required Widget child}) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: _previewConstraints,
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1017,18 +1056,15 @@ class _MediaUploadControl extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (hasImage) ...[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AuraRadius.md),
-            child: AspectRatio(
-              aspectRatio: aspectRatio,
-              child: Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AuraSurface.elevated,
-                  child: const Center(
-                    child: Icon(Icons.broken_image_outlined, color: AuraSurface.faint),
-                  ),
+          _previewBox(
+            child: Image.network(
+              imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: AuraSurface.elevated,
+                child: const Center(
+                  child: Icon(Icons.broken_image_outlined,
+                      color: AuraSurface.faint),
                 ),
               ),
             ),
@@ -1036,34 +1072,34 @@ class _MediaUploadControl extends StatelessWidget {
           const SizedBox(height: AuraSpace.s10),
         ],
         if (!hasImage && !uploading)
-          Container(
-            height: aspectRatio == 1 ? 80 : 64,
-            decoration: BoxDecoration(
-              color: AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Center(
-              child: Icon(
-                aspectRatio == 1 ? Icons.image_outlined : Icons.panorama_outlined,
-                color: AuraSurface.faint,
-                size: 28,
+          _previewBox(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AuraSurface.subtle,
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Center(
+                child: Icon(
+                  _isLogo ? Icons.image_outlined : Icons.panorama_outlined,
+                  color: AuraSurface.faint,
+                  size: 28,
+                ),
               ),
             ),
           ),
         if (uploading) ...[
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+          _previewBox(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AuraSurface.subtle,
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
             ),
           ),

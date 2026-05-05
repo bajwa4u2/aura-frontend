@@ -62,23 +62,31 @@ class _InstitutionDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final coverUrl = institution.coverUrl?.trim() ?? '';
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 920),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s20,
-                AuraSpace.s16,
-                AuraSpace.s32,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _buildContent(),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (coverUrl.isNotEmpty) _PublicCoverBanner(coverUrl: coverUrl),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s16,
+                    AuraSpace.s20,
+                    AuraSpace.s16,
+                    AuraSpace.s32,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildContent(),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -97,6 +105,7 @@ class _InstitutionDetailBody extends StatelessWidget {
     ];
 
     final isVerified = institution.isVerified;
+    final logoUrl = institution.logoUrl?.trim() ?? '';
 
     return [
       // Hero header card
@@ -113,21 +122,10 @@ class _InstitutionDetailBody extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.apartment_outlined,
-                    size: 24,
-                    color: AuraSurface.accentText,
-                  ),
+                _PublicInstitutionAvatar(
+                  size: 52,
+                  name: title,
+                  logoUrl: logoUrl,
                 ),
                 const SizedBox(width: AuraSpace.s14),
                 Expanded(
@@ -379,6 +377,97 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Public-shell cover banner ────────────────────────────────────────────────
+
+class _PublicCoverBanner extends StatelessWidget {
+  const _PublicCoverBanner({required this.coverUrl});
+
+  final String coverUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      color: AuraSurface.accentSoft,
+      child: Image.network(
+        coverUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: AuraSurface.accentSoft,
+          child: const Center(
+            child: Icon(
+              Icons.image_outlined,
+              color: AuraSurface.accentText,
+              size: 48,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Public-shell institution avatar ──────────────────────────────────────────
+
+class _PublicInstitutionAvatar extends StatelessWidget {
+  const _PublicInstitutionAvatar({
+    required this.size,
+    required this.name,
+    required this.logoUrl,
+  });
+
+  final double size;
+  final String name;
+  final String logoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget fallback() {
+      final initial = name.trim().isNotEmpty
+          ? name.trim()[0].toUpperCase()
+          : '';
+      if (initial.isNotEmpty) {
+        return Center(
+          child: Text(
+            initial,
+            style: TextStyle(
+              color: AuraSurface.accentText,
+              fontSize: size * 0.4,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      }
+      return Icon(
+        Icons.apartment_outlined,
+        size: size * 0.46,
+        color: AuraSurface.accentText,
+      );
+    }
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AuraSurface.accent.withValues(alpha: 0.3),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: logoUrl.isNotEmpty
+          ? Image.network(
+              logoUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => fallback(),
+            )
+          : fallback(),
     );
   }
 }

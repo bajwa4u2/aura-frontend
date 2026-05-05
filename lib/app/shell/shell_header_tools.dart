@@ -46,15 +46,23 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
     required this.isTablet,
     required this.isDesktop,
     required this.searchPath,
-    required this.activityPath,
-    required this.invitePath,
+    this.activityPath,
+    this.invitePath,
+    this.showLive = true,
   });
 
   final bool isTablet;
   final bool isDesktop;
   final String searchPath;
-  final String activityPath;
-  final String invitePath;
+
+  /// When null the activity (notifications) bell is hidden.
+  final String? activityPath;
+
+  /// When null the invite icon is hidden.
+  final String? invitePath;
+
+  /// When false the Live pill is hidden.
+  final bool showLive;
 
   @override
   ConsumerState<ShellHeaderTools> createState() => _ShellHeaderToolsState();
@@ -121,19 +129,25 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         tooltip: 'Search',
         onTap: () => context.push(widget.searchPath),
       ),
-      gap,
-      _HeaderActivityBtn(
-        unreadCount: unreadCount,
-        onTap: () => context.push(widget.activityPath),
-      ),
-      gap,
-      const _HeaderLiveBtn(),
-      gap,
-      _HeaderIconBtn(
-        icon: Icons.outbound_outlined,
-        tooltip: 'Invite',
-        onTap: () => context.push(widget.invitePath),
-      ),
+      if (widget.activityPath != null) ...[
+        gap,
+        _HeaderActivityBtn(
+          unreadCount: unreadCount,
+          onTap: () => context.push(widget.activityPath!),
+        ),
+      ],
+      if (widget.showLive) ...[
+        gap,
+        const _HeaderLiveBtn(),
+      ],
+      if (widget.invitePath != null) ...[
+        gap,
+        _HeaderIconBtn(
+          icon: Icons.outbound_outlined,
+          tooltip: 'Invite',
+          onTap: () => context.push(widget.invitePath!),
+        ),
+      ],
       gap,
       _HeaderAccountBtn(
         busy: _busyLogout,
