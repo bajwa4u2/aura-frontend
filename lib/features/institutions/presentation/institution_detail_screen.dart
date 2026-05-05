@@ -83,7 +83,6 @@ class _InstitutionDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coverUrl = institution.coverUrl?.trim() ?? '';
     final postsAsync =
         ref.watch(institutionPublicPostsProvider(institution.id));
 
@@ -92,24 +91,105 @@ class _InstitutionDetailBody extends ConsumerWidget {
       children: [
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
+            constraints: const BoxConstraints(maxWidth: 960),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (coverUrl.isNotEmpty) _PublicCoverBanner(coverUrl: coverUrl),
+                _PublicHero(institution: institution),
+                const SizedBox(height: AuraSpace.s12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s16,
+                  ),
+                  child: _PublicIdentity(institution: institution),
+                ),
+                const SizedBox(height: AuraSpace.s14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s16,
+                  ),
+                  child: _InstitutionProfileCtaRow(
+                    institutionId: institution.id,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s16,
+                  ),
+                  child: _PublicStatChips(institution: institution),
+                ),
+                const SizedBox(height: AuraSpace.s14),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AuraSpace.s16,
-                    AuraSpace.s20,
+                    0,
                     AuraSpace.s16,
                     AuraSpace.s32,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ..._buildContent(),
-                      const SizedBox(height: AuraSpace.s10),
-                      _InstitutionProfileCtaRow(institutionId: institution.id),
+                      if (institution.description.trim().isNotEmpty) ...[
+                        _InfoSection(
+                          title: 'About',
+                          rows: [
+                            _InfoRow(
+                              label: 'Description',
+                              value: institution.description.trim(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AuraSpace.s14),
+                      ],
+                      if (institution.website.trim().isNotEmpty) ...[
+                        _InfoSection(
+                          title: 'Contact',
+                          rows: [
+                            _InfoRow(
+                              label: 'Website',
+                              value: institution.website.trim(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AuraSpace.s14),
+                      ],
+                      _InfoSection(
+                        title: 'Domains & verification',
+                        rows: [
+                          _InfoRow(
+                            label: 'Verification',
+                            value: institution.isVerified
+                                ? 'Verified'
+                                : 'Not verified',
+                            valueColor: institution.isVerified
+                                ? AuraSurface.goodInk
+                                : AuraSurface.muted,
+                          ),
+                          if (institution.domain.trim().isNotEmpty)
+                            _InfoRow(
+                              label: 'Domain',
+                              value: institution.domain.trim(),
+                            ),
+                          if (institution.jurisdiction.trim().isNotEmpty)
+                            _InfoRow(
+                              label: 'Jurisdiction',
+                              value: institution.jurisdiction.trim(),
+                            ),
+                          if ((institution.category ?? '').trim().isNotEmpty)
+                            _InfoRow(
+                              label: 'Category',
+                              value: (institution.category ?? '').trim(),
+                            ),
+                        ],
+                      ),
+                      if (institution.units.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        _UnitsSection(
+                          institutionName: institution.name,
+                          units: institution.units,
+                        ),
+                      ],
                       const SizedBox(height: AuraSpace.s14),
                       _PublicPostsSection(postsAsync: postsAsync),
                     ],
@@ -121,163 +201,6 @@ class _InstitutionDetailBody extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  List<Widget> _buildContent() {
-    final title = institution.name.trim().isNotEmpty
-        ? institution.name.trim()
-        : 'Institution';
-
-    final subtitleParts = <String>[
-      if (institution.slug.trim().isNotEmpty) institution.slug.trim(),
-      if (institution.domain.trim().isNotEmpty) institution.domain.trim(),
-    ];
-
-    final isVerified = institution.isVerified;
-    final logoUrl = institution.logoUrl?.trim() ?? '';
-
-    return [
-      // Hero header card
-      Container(
-        padding: const EdgeInsets.all(AuraSpace.s20),
-        decoration: BoxDecoration(
-          color: AuraSurface.card,
-          borderRadius: BorderRadius.circular(AuraRadius.xl),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _PublicInstitutionAvatar(
-                  size: 52,
-                  name: title,
-                  logoUrl: logoUrl,
-                ),
-                const SizedBox(width: AuraSpace.s14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(child: Text(title, style: AuraText.title)),
-                          if (isVerified) ...[
-                            const SizedBox(width: AuraSpace.s8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s8,
-                                vertical: AuraSpace.s4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AuraSurface.goodBg,
-                                borderRadius: BorderRadius.circular(
-                                  AuraRadius.pill,
-                                ),
-                                border: Border.all(
-                                  color: AuraSurface.goodInk.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    size: 12,
-                                    color: AuraSurface.goodInk,
-                                  ),
-                                  const SizedBox(width: AuraSpace.s4),
-                                  Text(
-                                    'Verified',
-                                    style: AuraText.micro.copyWith(
-                                      color: AuraSurface.goodInk,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      if (subtitleParts.isNotEmpty) ...[
-                        const SizedBox(height: AuraSpace.s6),
-                        Text(
-                          subtitleParts.join(' · '),
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (institution.description.trim().isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s16),
-              Text(
-                institution.description.trim(),
-                style: AuraText.body.copyWith(
-                  color: AuraSurface.muted,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      const SizedBox(height: AuraSpace.s14),
-      // Standing card
-      _InfoSection(
-        title: 'Standing',
-        rows: [
-          _InfoRow(
-            label: 'Verification',
-            value: isVerified ? 'Verified' : 'Not verified',
-            valueColor: isVerified ? AuraSurface.goodInk : AuraSurface.muted,
-          ),
-          if (institution.jurisdiction.trim().isNotEmpty)
-            _InfoRow(
-              label: 'Jurisdiction',
-              value: institution.jurisdiction.trim(),
-            ),
-          if (institution.domain.trim().isNotEmpty)
-            _InfoRow(label: 'Domain', value: institution.domain.trim()),
-        ],
-      ),
-      const SizedBox(height: AuraSpace.s14),
-      // Details card
-      _InfoSection(
-        title: 'Details',
-        rows: [
-          _InfoRow(label: 'Name', value: institution.name),
-          _InfoRow(label: 'Slug', value: institution.slug),
-          if (institution.domain.trim().isNotEmpty)
-            _InfoRow(label: 'Domain', value: institution.domain),
-          if (institution.jurisdiction.trim().isNotEmpty)
-            _InfoRow(label: 'Jurisdiction', value: institution.jurisdiction),
-          if (institution.website.trim().isNotEmpty)
-            _InfoRow(label: 'Website', value: institution.website),
-          _InfoRow(
-            label: 'Standing',
-            value: isVerified ? 'Verified' : 'Unverified',
-          ),
-        ],
-      ),
-      if (institution.units.isNotEmpty) ...[
-        const SizedBox(height: AuraSpace.s14),
-        _UnitsSection(
-          institutionName: institution.name,
-          units: institution.units,
-        ),
-      ],
-    ];
   }
 }
 
@@ -541,32 +464,288 @@ class _PublicPostCard extends StatelessWidget {
   }
 }
 
-// ── Public-shell cover banner ────────────────────────────────────────────────
+// ── Public hero (cover + avatar overlap) ─────────────────────────────────────
 
-class _PublicCoverBanner extends StatelessWidget {
-  const _PublicCoverBanner({required this.coverUrl});
+class _PublicHero extends StatelessWidget {
+  const _PublicHero({required this.institution});
 
-  final String coverUrl;
+  final Institution institution;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 180,
-      width: double.infinity,
-      color: AuraSurface.accentSoft,
-      child: Image.network(
-        coverUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          color: AuraSurface.accentSoft,
-          child: const Center(
-            child: Icon(
-              Icons.image_outlined,
-              color: AuraSurface.accentText,
-              size: 48,
+    const double coverHeight = 220;
+    const double avatarSize = 96;
+    final coverUrl = institution.coverUrl?.trim() ?? '';
+    final logoUrl = institution.logoUrl?.trim() ?? '';
+    final name = institution.name.trim().isNotEmpty
+        ? institution.name.trim()
+        : 'Institution';
+
+    return SizedBox(
+      height: coverHeight + avatarSize / 2,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            bottom: avatarSize / 2,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AuraSurface.accent.withValues(alpha: 0.30),
+                    AuraSurface.accent.withValues(alpha: 0.08),
+                    AuraSurface.subtle,
+                  ],
+                ),
+              ),
+              child: coverUrl.isEmpty
+                  ? const Center(
+                      child: Icon(
+                        Icons.apartment_rounded,
+                        size: 56,
+                        color: AuraSurface.accentText,
+                      ),
+                    )
+                  : Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          coverUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AuraSurface.accentSoft,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_outlined,
+                                color: AuraSurface.accentText,
+                                size: 48,
+                              ),
+                            ),
+                          ),
+                        ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.35),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
+          Positioned(
+            left: AuraSpace.s16,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AuraSurface.page,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: _PublicInstitutionAvatar(
+                size: avatarSize,
+                name: name,
+                logoUrl: logoUrl,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Public identity (name / verified / slug · domain / description) ─────────
+
+class _PublicIdentity extends StatelessWidget {
+  const _PublicIdentity({required this.institution});
+
+  final Institution institution;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = institution.name.trim().isNotEmpty
+        ? institution.name.trim()
+        : 'Institution';
+    final slug = institution.slug.trim();
+    final domain = institution.domain.trim();
+    final subtitleParts = <String>[
+      if (slug.isNotEmpty) '@$slug',
+      if (domain.isNotEmpty) domain,
+    ];
+    final description = institution.description.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s6,
+          children: [
+            Text(title, style: AuraText.title),
+            if (institution.isVerified)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: AuraSurface.goodBg,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(
+                    color: AuraSurface.goodInk.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 12,
+                      color: AuraSurface.goodInk,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Verified',
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.goodInk,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
+        if (subtitleParts.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s4),
+          Text(
+            subtitleParts.join(' · '),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        if (description.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s10),
+          Text(
+            description,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
+            ),
+            maxLines: 6,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Public stat chips ────────────────────────────────────────────────────────
+
+class _PublicStatChips extends StatelessWidget {
+  const _PublicStatChips({required this.institution});
+
+  final Institution institution;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <Widget>[
+      _PublicStatChip(
+        icon: Icons.verified_rounded,
+        label: institution.isVerified ? 'Verified' : 'Unverified',
+        good: institution.isVerified,
+      ),
+      if (institution.domain.trim().isNotEmpty)
+        _PublicStatChip(
+          icon: Icons.dns_rounded,
+          label: institution.domain.trim(),
+        ),
+      if (institution.jurisdiction.trim().isNotEmpty)
+        _PublicStatChip(
+          icon: Icons.public_rounded,
+          label: institution.jurisdiction.trim(),
+        ),
+      if ((institution.category ?? '').trim().isNotEmpty)
+        _PublicStatChip(
+          icon: Icons.category_rounded,
+          label: (institution.category ?? '').trim(),
+        ),
+      if ((institution.location ?? '').trim().isNotEmpty)
+        _PublicStatChip(
+          icon: Icons.place_rounded,
+          label: (institution.location ?? '').trim(),
+        ),
+    ];
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: chips,
+    );
+  }
+}
+
+class _PublicStatChip extends StatelessWidget {
+  const _PublicStatChip({
+    required this.icon,
+    required this.label,
+    this.good = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool good;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = good ? AuraSurface.goodInk : AuraSurface.muted;
+    final bg = good ? AuraSurface.goodBg : AuraSurface.subtle;
+    final border = good
+        ? AuraSurface.goodInk.withValues(alpha: 0.3)
+        : AuraSurface.divider;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -761,15 +940,19 @@ class _InstitutionProfileCtaRowState
     if (actorRef == null) return const SizedBox.shrink();
 
     if (_isOwnInstitution(actor)) {
-      // Acting as the institution viewing its own public profile — show a
-      // shortcut into the workspace rather than self-follow buttons.
       return Wrap(
         spacing: AuraSpace.s10,
+        runSpacing: AuraSpace.s10,
         children: [
           AuraPrimaryButton(
             label: 'Open workspace',
             icon: Icons.dashboard_rounded,
             onPressed: () => context.push('/institution/dashboard'),
+          ),
+          AuraSecondaryButton(
+            label: 'Edit profile',
+            icon: Icons.edit_outlined,
+            onPressed: () => context.push('/institution/edit-profile'),
           ),
         ],
       );

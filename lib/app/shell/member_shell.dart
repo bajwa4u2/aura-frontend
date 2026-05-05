@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -184,6 +185,7 @@ class InstitutionShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
     final path = GoRouterState.of(context).uri.path;
+    final isPreview = _isPublicPreviewPath(path);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -212,7 +214,15 @@ class InstitutionShell extends ConsumerWidget {
                             currentPath: path,
                             identity: identity,
                           ),
-                        Expanded(child: child),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (isPreview)
+                                _PublicPreviewToolbar(identity: identity),
+                              Expanded(child: child),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -228,6 +238,107 @@ class InstitutionShell extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  static bool _isPublicPreviewPath(String path) {
+    final parts = path.split('/').where((s) => s.isNotEmpty).toList();
+    // ['institution', ':id', 'institutions', ':slug', ...]
+    return parts.length >= 4 &&
+        parts[0] == 'institution' &&
+        parts[2] == 'institutions';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC PREVIEW TOOLBAR — sticky banner shown above the public profile when
+// rendered inside InstitutionShell (path: /institution/:id/institutions/:slug).
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PublicPreviewToolbar extends StatelessWidget {
+  const _PublicPreviewToolbar({required this.identity});
+
+  final InstitutionIdentity? identity;
+
+  String _publicLink(String slug) {
+    if (slug.isEmpty) return '';
+    final base = Uri.base;
+    if (base.scheme.startsWith('http')) {
+      return '${base.origin}/institutions/$slug';
+    }
+    return '/institutions/$slug';
+  }
+
+  Future<void> _copy(BuildContext context, String link) async {
+    if (link.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: link));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Public URL copied')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slug = identity?.slug ?? '';
+    final link = _publicLink(slug);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s10,
+      ),
+      decoration: const BoxDecoration(
+        color: _institutionAccentSoft,
+        border: Border(
+          bottom: BorderSide(color: Color(0x330D9488)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.visibility_outlined,
+            size: 16,
+            color: _institutionAccentText,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              'Viewing public profile preview',
+              style: AuraText.small.copyWith(
+                color: _institutionAccentText,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () => context.go('/institution/profile'),
+            icon: const Icon(Icons.edit_outlined, size: 14),
+            label: const Text('Edit profile'),
+          ),
+          if (link.isNotEmpty)
+            TextButton.icon(
+              onPressed: () => _copy(context, link),
+              icon: const Icon(Icons.link_rounded, size: 14),
+              label: const Text('Copy URL'),
+            ),
+          if (link.isNotEmpty && Uri.base.scheme.startsWith('http'))
+            TextButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: link));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Open in new tab: $link')),
+                );
+              },
+              icon: const Icon(Icons.open_in_new_rounded, size: 14),
+              label: const Text('Open URL'),
+            ),
+        ],
+      ),
     );
   }
 }
