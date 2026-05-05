@@ -270,7 +270,7 @@ class _MemberHeader extends StatelessWidget {
                   isTablet: isTablet,
                   isDesktop: isDesktop,
                   searchPath: '/search',
-                  activityPath: '/activity',
+                  activityPath: '/notifications',
                   invitePath: '/invite',
                 ),
               ],

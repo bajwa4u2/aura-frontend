@@ -1399,6 +1399,13 @@ class _ActionRow extends ConsumerWidget {
         final payload = <String, dynamic>{};
         if (text.isNotEmpty) payload['text'] = text;
 
+        // Phase-3 actor-aware repost: forward asInstitution + institutionId
+        // when the active context is the institution shell so the repost
+        // attributes to the institution.
+        if (actor.isInstitution) {
+          payload['asInstitution'] = true;
+          payload['institutionId'] = actor.actorInstitutionId;
+        }
         await dio.post('/posts/$postId/repost', data: payload);
 
         if (!context.mounted) return;

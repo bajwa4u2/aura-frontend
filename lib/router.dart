@@ -25,7 +25,6 @@ import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
-import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
 import 'features/announcements/presentation/announcements_screen.dart';
 import 'features/announcements/presentation/announcement_detail_screen.dart';
@@ -75,8 +74,9 @@ import 'features/institutions/explore/institution_explore_screen.dart';
 import 'features/institutions/posts/institution_post_composer_screen.dart';
 import 'features/institutions/posts/institution_post_detail_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
+import 'features/direct_threads/presentation/inbox_screen.dart';
+import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
-import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
@@ -612,7 +612,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // Member + institution routes
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
-          GoRoute(path: kMessagesRoute, builder: (_, __) => const MessagesHubScreen()),
+          GoRoute(path: kMessagesRoute, builder: (_, __) => const InboxScreen()),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
@@ -945,6 +945,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               threadId: state.pathParameters['threadId'] ?? '',
             ),
           ),
+          GoRoute(
+            path: '/notifications',
+            builder: (_, __) => const NotificationsScreen(),
+          ),
           // Phase-2 shell-preserving variants: opening a profile from inside
           // the institution shell keeps the institution actor context (no
           // accidental drop to MemberShell). The screen itself reads the
@@ -983,9 +987,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/messages',
-            builder: (context, state) => InstitutionMessagingScreen(
-              institutionId: state.pathParameters['institutionId'] ?? '',
-            ),
+            builder: (_, __) => const InboxScreen(),
           ),
         ],
       ),

@@ -34,11 +34,29 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   final _bodyCtrl = TextEditingController();
   bool _sending = false;
   String? _sendError;
+  String? _seenForActorKey;
 
   @override
   void dispose() {
     _bodyCtrl.dispose();
     super.dispose();
+  }
+
+  /// Mark messages as seen the first time we render the screen with a
+  /// resolved actor — and again every time the messages list rebuilds with
+  /// new content. Best-effort: failures are silent.
+  void _ensureSeen(ActorRef actor) {
+    final key = '${actor.cacheKey}:${widget.threadId}';
+    if (_seenForActorKey == key) return;
+    _seenForActorKey = key;
+    Future<void>(() async {
+      try {
+        await ref.read(directThreadsRepositoryProvider).markSeen(
+              threadId: widget.threadId,
+              actor: actor,
+            );
+      } catch (_) {}
+    });
   }
 
   ActorRef? _actorRefFor(ActorContext? actor) {
@@ -101,6 +119,9 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
     final key = DirectThreadKey(threadId: widget.threadId, actor: actorRef);
     final threadAsync = ref.watch(directThreadProvider(key));
     final messagesAsync = ref.watch(directMessagesProvider(key));
+
+    // Mark as seen once we have an actor; rerun when actor changes.
+    _ensureSeen(actorRef);
 
     return AuraScaffold(
       showHeader: false,
@@ -353,6 +374,20 @@ class _MessageBubble extends StatelessWidget {
                 message.body,
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
               ),
+              if (_mine) ...[
+                const SizedBox(height: 4),
+                Text(
+                  message.seenAt != null
+                      ? 'Seen'
+                      : (message.deliveredAt != null ? 'Delivered' : 'Sending…'),
+                  style: AuraText.micro.copyWith(
+                    color: message.seenAt != null
+                        ? AuraSurface.accentText
+                        : AuraSurface.faint,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

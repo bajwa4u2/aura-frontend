@@ -11,10 +11,10 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../core/interactions/notifications_repository.dart';
 import '../../features/realtime/application/realtime_providers.dart';
 import '../../features/realtime/domain/realtime_enums.dart';
 import '../../features/realtime/domain/realtime_models.dart';
-import '../../features/updates/providers.dart';
 import '../route_targets.dart';
 
 // Cached current-user profile for header avatar.
@@ -122,7 +122,9 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = ref.watch(notificationsUnreadCountProvider);
+    final unreadCount = ref
+        .watch(unreadNotificationCountProvider)
+        .maybeWhen(data: (c) => c, orElse: () => 0);
     final me = ref
         .watch(_shellMeProvider)
         .maybeWhen(data: (d) => d, orElse: () => <String, dynamic>{});

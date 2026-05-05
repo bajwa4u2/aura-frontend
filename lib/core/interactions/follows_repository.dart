@@ -23,6 +23,10 @@ class ActorRef {
       ? (userId ?? '')
       : (institutionId ?? '');
 
+  /// Stable cache key that uniquely identifies this actor in family providers.
+  String get cacheKey =>
+      type == ActorType.user ? 'U:${userId ?? ""}' : 'I:${institutionId ?? ""}';
+
   Map<String, dynamic> toFields(String prefix) => <String, dynamic>{
         '${prefix}Type': type == ActorType.user ? 'USER' : 'INSTITUTION',
         if (type == ActorType.user) '${prefix}UserId': userId,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -1072,6 +1073,40 @@ class _ExploreInteractionBar extends ConsumerWidget {
       orElse: () => 'Like',
     );
 
+    Future<void> doRepost() async {
+      try {
+        final dio = ref.read(dioProvider);
+        if (target is InstitutionPostReactionTarget) {
+          final t = target as InstitutionPostReactionTarget;
+          final body = <String, dynamic>{};
+          if (canActAsInstitution) {
+            body['asInstitution'] = true;
+            body['actorInstitutionId'] = actor.actorInstitutionId;
+          }
+          await dio.post(
+            '/institutions/${t.institutionId}/posts/${t.postId}/repost',
+            data: body,
+          );
+        } else {
+          final body = <String, dynamic>{};
+          if (canActAsInstitution) {
+            body['asInstitution'] = true;
+            body['institutionId'] = actor.actorInstitutionId;
+          }
+          await dio.post('/posts/${target.postId}/repost', data: body);
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reposted')),
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not repost')),
+        );
+      }
+    }
+
     return Wrap(
       spacing: AuraSpace.s8,
       runSpacing: AuraSpace.s8,
@@ -1086,6 +1121,11 @@ class _ExploreInteractionBar extends ConsumerWidget {
           icon: Icons.reply_outlined,
           label: 'Reply',
           onTap: () => context.push(composeReplyTarget()),
+        ),
+        AuraActionPill(
+          icon: Icons.repeat_rounded,
+          label: 'Repost',
+          onTap: doRepost,
         ),
       ],
     );
