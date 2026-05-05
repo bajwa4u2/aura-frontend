@@ -562,11 +562,16 @@ class _ActionRow extends StatelessWidget {
             icon: Icons.edit_outlined,
             onPressed: () => context.go('/institution/edit-profile'),
           ),
-        if (identity != null && identity!.slug.isNotEmpty)
+        if (identity != null &&
+            identity!.slug.isNotEmpty &&
+            identity!.id.isNotEmpty)
           AuraSecondaryButton(
             label: 'Public preview',
             icon: Icons.open_in_new_rounded,
-            onPressed: () => context.go('/institutions/${identity!.slug}'),
+            // Shell-preserving — keeps the preview inside InstitutionShell.
+            onPressed: () => context.push(
+              '/institution/${identity!.id}/institutions/${identity!.slug}',
+            ),
           ),
         AuraSecondaryButton(
           label: 'Domains',

@@ -76,6 +76,8 @@ import 'features/institutions/posts/institution_post_detail_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'features/direct_threads/presentation/direct_thread_screen.dart';
 import 'features/direct_threads/presentation/inbox_screen.dart';
+import 'features/messages/presentation/messages_hub_screen.dart';
+import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
@@ -613,7 +615,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // Member + institution routes
           GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
-          GoRoute(path: kMessagesRoute, builder: (_, __) => const InboxScreen()),
+          // /messages — restored to MessagesHubScreen (existing
+          // conversations/spaces/invites). The new actor-aware direct
+          // inbox is mounted as a sub-route at /messages/direct so it's
+          // an addition, not a replacement.
+          GoRoute(
+            path: kMessagesRoute,
+            builder: (_, __) => const MessagesHubScreen(),
+          ),
+          GoRoute(
+            path: '$kMessagesRoute/direct',
+            builder: (_, __) => const InboxScreen(),
+          ),
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
@@ -995,8 +1008,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
+          // /institution/:id/messages — restored to InstitutionMessagingScreen
+          // (existing workspace messaging). The new actor-aware direct
+          // inbox lives at /institution/:id/messages/direct.
           GoRoute(
             path: '/institution/:institutionId/messages',
+            builder: (context, state) => InstitutionMessagingScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/messages/direct',
             builder: (_, __) => const InboxScreen(),
           ),
         ],

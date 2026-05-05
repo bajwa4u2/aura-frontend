@@ -95,34 +95,71 @@ class _InstitutionMessagingScreenState
         icon: Icons.add_rounded,
         onPressed: _goCreateSpace,
       ),
-      body: _loading
-          ? const AuraLoadingState(message: 'Loading spaces…')
-          : _error != null
-              ? AuraErrorState(
-                  title: 'Could not load spaces',
-                  body: _error!,
-                  action: AuraSecondaryButton(
-                    label: 'Try again',
-                    icon: Icons.refresh_rounded,
-                    onPressed: _load,
-                  ),
-                )
-              : _spaces.isEmpty
-                  ? const AuraEmptyState(
-                      icon: Icons.forum_outlined,
-                      title: 'No conversations yet',
-                      body:
-                          'Create a space to start a thread with members of this institution.',
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _spaces
-                          .map((space) => _SpaceTile(
-                                space: space,
-                                institutionId: widget.institutionId,
-                              ))
-                          .toList(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Entry point to the new actor-aware direct inbox. Direct is an
+          // *addition* — the workspace messaging (Spaces) below remains
+          // the canonical institution-internal channel.
+          InkWell(
+            onTap: () => context.push(
+              '/institution/${widget.institutionId}/messages/direct',
+            ),
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s14,
+                vertical: AuraSpace.s12,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.accentSoft,
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.forum_outlined,
+                      size: 18, color: AuraSurface.accentText),
+                  SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Text(
+                      'Direct messages',
+                      style: AuraText.body,
                     ),
+                  ),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 18, color: AuraSurface.muted),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          if (_loading)
+            const AuraLoadingState(message: 'Loading spaces…')
+          else if (_error != null)
+            AuraErrorState(
+              title: 'Could not load spaces',
+              body: _error!,
+              action: AuraSecondaryButton(
+                label: 'Try again',
+                icon: Icons.refresh_rounded,
+                onPressed: _load,
+              ),
+            )
+          else if (_spaces.isEmpty)
+            const AuraEmptyState(
+              icon: Icons.forum_outlined,
+              title: 'No conversations yet',
+              body:
+                  'Create a space to start a thread with members of this institution.',
+            )
+          else
+            ..._spaces.map((space) => _SpaceTile(
+                  space: space,
+                  institutionId: widget.institutionId,
+                )),
+        ],
+      ),
     );
   }
 }

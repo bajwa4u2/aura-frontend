@@ -960,8 +960,15 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       label: 'Public Preview',
       icon: Icons.open_in_new_rounded,
       selectedIcon: Icons.open_in_new_rounded,
-      pathBuilder: (_) => slug.isNotEmpty ? '/institutions/$slug' : null,
-      pathMatcher: (p) => p.startsWith('/institutions/'),
+      // Shell-preserving variant: keeps the user inside InstitutionShell so
+      // the preview is reachable from the workspace without dropping
+      // institution context. Only fires when both id and slug are loaded.
+      pathBuilder: (_) => (slug.isNotEmpty && id.isNotEmpty)
+          ? '/institution/$id/institutions/$slug'
+          : null,
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') &&
+          p.contains('/institutions/'),
     ),
   ];
 }
@@ -1310,7 +1317,10 @@ class _InstitutionBottomNavMore extends StatelessWidget {
           label: 'Public Preview',
           icon: Icons.open_in_new_rounded,
         ),
-        slug.isNotEmpty ? '/institutions/$slug' : null,
+        // Shell-preserving — see sidebar variant for context.
+        (slug.isNotEmpty && id.isNotEmpty)
+            ? '/institution/$id/institutions/$slug'
+            : null,
       ),
     ];
 

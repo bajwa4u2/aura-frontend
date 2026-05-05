@@ -218,6 +218,10 @@ class _MessagesHubScreenState extends ConsumerState<MessagesHubScreen> {
           unreadCount: unreadCount,
           inviteCount: activeInvites.length,
         ),
+        const SizedBox(height: AuraSpace.s12),
+        _DirectInboxLink(
+          onTap: () => context.push('/messages/direct'),
+        ),
         const SizedBox(height: AuraSpace.s16),
         _TabRow(
           tab: _tab,
@@ -1304,4 +1308,47 @@ int _pickInt(Map<String, dynamic> map, List<String> keys) {
     }
   }
   return 0;
+}
+
+/// Small entry point to the new actor-aware direct inbox. Lives ABOVE the
+/// existing tab system — Direct is an *addition* to the existing
+/// conversations / spaces / invites system, not a replacement.
+class _DirectInboxLink extends StatelessWidget {
+  const _DirectInboxLink({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s14,
+          vertical: AuraSpace.s12,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.accentSoft,
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.forum_outlined,
+                size: 18, color: AuraSurface.accentText),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Text(
+                'Direct messages',
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: AuraSurface.muted),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -425,22 +425,47 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     final cover = (profile.coverUrl ?? '').trim();
     final trailingMeta = _presenceMeta(profile);
 
+    // Self-profile detection. Compare viewer's handle (from /auth/me) to
+    // the routed handle, with profile.id as a secondary fallback. When
+    // the viewer is the profile owner, hide Follow + Message and show
+    // account-management entries instead.
+    final me = ref.watch(authMeDataProvider).valueOrNull;
+    String normalizeHandle(String h) =>
+        h.trim().replaceAll(RegExp(r'^@+'), '').toLowerCase();
+    String? viewerId;
+    String? viewerHandle;
+    if (me != null) {
+      final user = me['user'];
+      if (user is Map) {
+        viewerId = user['id']?.toString();
+        viewerHandle = user['handle']?.toString();
+      }
+    }
+    final isSelf = isAuthed &&
+        ((viewerHandle != null &&
+                normalizeHandle(viewerHandle) ==
+                    normalizeHandle(widget.handle)) ||
+            (viewerId != null &&
+                viewerId.isNotEmpty &&
+                viewerId == _cleanValue(profile.id)));
+
     final followLabel = switch (followState) {
       'following' => 'Following',
       'outgoing_pending' => 'Requested',
       _ => 'Follow',
     };
 
-    final canFollowAction =
-        followState == 'none' || followState == 'outgoing_pending';
-    final canCorrespond = isAuthed && followState == 'following';
+    final canFollowAction = !isSelf &&
+        (followState == 'none' || followState == 'outgoing_pending');
+    final canCorrespond =
+        isAuthed && !isSelf && followState == 'following';
 
     final notice = _presenceNotice(
       isAuthed: isAuthed,
       canCorrespond: canCorrespond,
       followState: followState,
     );
-    final showNotice = isAuthed && !canCorrespond;
+    final showNotice = isAuthed && !isSelf && !canCorrespond;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -474,6 +499,20 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                           );
                         },
                       )
+                    else if (isSelf) ...[
+                      PresenceHeaderAction(
+                        label: 'Edit profile',
+                        primary: true,
+                        icon: Icons.edit_outlined,
+                        onTap: () => context.push('/me/edit'),
+                      ),
+                      PresenceHeaderAction(
+                        label: 'Settings',
+                        primary: false,
+                        icon: Icons.settings_outlined,
+                        onTap: () => context.push('/security'),
+                      ),
+                    ]
                     else
                       PresenceHeaderAction(
                         label: followLabel,
@@ -500,14 +539,15 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                                 }
                               },
                       ),
-                    PresenceHeaderAction(
-                      label: 'Message',
-                      primary: false,
-                      icon: Icons.chat_bubble_outline,
-                      onTap: canCorrespond
-                          ? () => _openPrivateConversation(profile)
-                          : null,
-                    ),
+                    if (!isSelf)
+                      PresenceHeaderAction(
+                        label: 'Message',
+                        primary: false,
+                        icon: Icons.chat_bubble_outline,
+                        onTap: canCorrespond
+                            ? () => _openPrivateConversation(profile)
+                            : null,
+                      ),
                   ],
                 ),
                 if (showNotice) ...[
