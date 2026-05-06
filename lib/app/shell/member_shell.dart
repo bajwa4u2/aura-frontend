@@ -446,7 +446,13 @@ class _InstitutionHeader extends StatelessWidget {
                       _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
                       const SizedBox(width: AuraSpace.s10),
                       if (isTablet && name.isNotEmpty) ...[
-                        Flexible(
+                        // Bound the name so it does not compete with the
+                        // Spacer below for remaining row space — without
+                        // this, a long institution name pulls the account
+                        // cluster off the far-right edge toward the centre.
+                        ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxWidth: 220),
                           child: Text(
                             name,
                             maxLines: 1,
@@ -470,10 +476,13 @@ class _InstitutionHeader extends StatelessWidget {
                       // omitted until an institution-scoped search exists,
                       // since `/search` would leak member content into
                       // institution context.
-                      ShellHeaderTools(
-                        isTablet: isTablet,
-                        isDesktop: isDesktop,
-                        showLive: false,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ShellHeaderTools(
+                          isTablet: isTablet,
+                          isDesktop: isDesktop,
+                          showLive: false,
+                        ),
                       ),
                     ],
                   ),

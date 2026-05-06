@@ -36,10 +36,15 @@ class PublicShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
+            // Phase 6.5 — public footer is owned by the shell. The child
+            // screen renders inside Expanded with its own scroll; the footer
+            // sits as a calm closing band below the viewport scroll. Workspace
+            // shells (Member / Institution / Admin) deliberately omit this.
             child: Column(
               children: [
                 _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
                 Expanded(child: child),
+                const ShellFooter(),
               ],
             ),
           ),

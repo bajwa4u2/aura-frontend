@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../app/shell/shell_shared.dart';
 import 'aura_radius.dart';
 import 'aura_scaffold.dart';
 import 'aura_space.dart';
@@ -14,7 +13,9 @@ import 'aura_text.dart';
 /// - Always uses AuraScaffold
 /// - Always scrolls
 /// - Reading-first atmosphere
-/// - Public footer is part of normal scroll flow, never fixed over content
+/// - The public footer is owned by `PublicShell` and never rendered here, so
+///   workspace screens that reuse this scaffold (e.g. institution units /
+///   domains / verification) don't accidentally surface public chrome.
 class DocumentScaffold extends StatelessWidget {
   const DocumentScaffold({
     super.key,
@@ -39,7 +40,7 @@ class DocumentScaffold extends StatelessWidget {
       title: title,
       actions: actions,
       homePath: homePath,
-      maxWidth: ShellFooter.maxWidth,
+      maxWidth: 1080,
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -65,7 +66,6 @@ class DocumentScaffold extends StatelessWidget {
               ),
             ),
           ),
-          const ShellFooter(),
         ],
       ),
     );
