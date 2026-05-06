@@ -348,6 +348,30 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
     });
   }
 
+  /// Nudge the image by a fixed step. Used by the directional pan buttons so
+  /// every input device (mouse, keyboard, touch) gets symmetric pan controls
+  /// — gestures still work, this just adds explicit affordances.
+  static const double _panStep = 40;
+
+  void _nudge(double dx, double dy) {
+    final frame = _frameSize;
+    if (frame == null || _image == null) return;
+    final next = _clamp(_offset + Offset(dx, dy), frame);
+    if (next == _offset) return;
+    setState(() => _offset = next);
+  }
+
+  void _zoomBy(double delta) {
+    final frame = _frameSize;
+    if (frame == null || _image == null) return;
+    final next = (_scale + delta).clamp(_minScale, _maxScale);
+    if (next == _scale) return;
+    setState(() {
+      _scale = next;
+      _offset = _clamp(_offset, frame);
+    });
+  }
+
   // ── Save (crop) ───────────────────────────────────────────────────────────
 
   Future<void> _save() async {
@@ -554,18 +578,23 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            widget.config.subtitle,
+            'Drag to reposition · pinch or use the slider to zoom · use ◀▲▼▶ for fine moves',
             style: AuraText.micro.copyWith(
               color: Colors.white.withValues(alpha: 0.65),
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AuraSpace.s8),
+          const SizedBox(height: AuraSpace.s10),
+          // Zoom row.
           Row(
             children: [
-              const Icon(Icons.zoom_out_rounded,
-                  color: Colors.white70, size: 18),
+              _IconChipBtn(
+                icon: Icons.remove_rounded,
+                tooltip: 'Zoom out',
+                onPressed: disabled ? null : () => _zoomBy(-0.1),
+              ),
+              const SizedBox(width: AuraSpace.s6),
               Expanded(
                 child: Slider(
                   value: _scale.clamp(_minScale, _maxScale),
@@ -583,11 +612,55 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
                         },
                 ),
               ),
-              const Icon(Icons.zoom_in_rounded,
-                  color: Colors.white70, size: 18),
+              const SizedBox(width: AuraSpace.s6),
+              _IconChipBtn(
+                icon: Icons.add_rounded,
+                tooltip: 'Zoom in',
+                onPressed: disabled ? null : () => _zoomBy(0.1),
+              ),
             ],
           ),
-          const SizedBox(height: AuraSpace.s8),
+          const SizedBox(height: AuraSpace.s10),
+          // Pan dpad — explicit directional controls so every input device
+          // (mouse, keyboard, touch) gets symmetric movement, even when an
+          // image perfectly fits the frame and gesture-pan is bounded out.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _IconChipBtn(
+                icon: Icons.chevron_left_rounded,
+                tooltip: 'Move left',
+                onPressed: disabled ? null : () => _nudge(_panStep, 0),
+              ),
+              const SizedBox(width: AuraSpace.s6),
+              _IconChipBtn(
+                icon: Icons.expand_less_rounded,
+                tooltip: 'Move up',
+                onPressed: disabled ? null : () => _nudge(0, _panStep),
+              ),
+              const SizedBox(width: AuraSpace.s6),
+              _IconChipBtn(
+                icon: Icons.expand_more_rounded,
+                tooltip: 'Move down',
+                onPressed: disabled ? null : () => _nudge(0, -_panStep),
+              ),
+              const SizedBox(width: AuraSpace.s6),
+              _IconChipBtn(
+                icon: Icons.chevron_right_rounded,
+                tooltip: 'Move right',
+                onPressed: disabled ? null : () => _nudge(-_panStep, 0),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              _IconChipBtn(
+                icon: Icons.center_focus_strong_rounded,
+                tooltip: 'Center',
+                onPressed: disabled
+                    ? null
+                    : () => setState(() => _offset = Offset.zero),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
           Row(
             children: [
               Expanded(
@@ -784,6 +857,44 @@ class _DarkActionButton extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconChipBtn extends StatelessWidget {
+  const _IconChipBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: const Color(0xFF1B1B26),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              icon,
+              size: 18,
+              color: enabled
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.35),
+            ),
           ),
         ),
       ),

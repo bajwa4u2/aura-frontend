@@ -12,7 +12,23 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../ui/institution_ds.dart';
 
+/// Phase 6.6c — Institution Profile / Workspace Identity hub.
+///
+/// Layout:
+///   1. `InsCoverHeader` — cover band, overlapping avatar, identity row
+///      (name / handle / badges / tagline / facts).
+///   2. `InsActionGroup` — primary "Edit profile" + secondary cluster
+///      (Public preview · Copy public link · Share · Domains).
+///   3. Section cards — About / Mission & representation / Contact /
+///      Domains & verification / Social. Each composed on `InsSection` +
+///      `InsCard`. Sections collapse cleanly when their data isn't set.
+///   4. Public posts preview — last three posts, framed as a section so it
+///      reads as part of the same hub.
+///
+/// Data + behaviour parity with the prior screen: same `/institutions/me`
+/// pull, same copy/share callbacks, same routing.
 class InstitutionProfileScreen extends ConsumerWidget {
   const InstitutionProfileScreen({super.key});
 
@@ -25,24 +41,17 @@ class InstitutionProfileScreen extends ConsumerWidget {
       showHeader: false,
       body: accessAsync.when(
         loading: () => const AuraLoadingState(message: 'Loading profile…'),
-        error: (e, _) => ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AuraSpace.s16,
-            AuraSpace.s20,
-            AuraSpace.s16,
-            AuraSpace.s32,
-          ),
-          children: [
-            AuraErrorState(
-              title: 'Profile unavailable',
-              body: '$e',
-              action: AuraSecondaryButton(
-                label: 'Try again',
-                onPressed: () => ref.invalidate(institutionAccessProvider),
-                icon: Icons.refresh_rounded,
-              ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(InsSpacing.screenHPad),
+          child: AuraErrorState(
+            title: 'Profile unavailable',
+            body: '$e',
+            action: AuraSecondaryButton(
+              label: 'Try again',
+              onPressed: () => ref.invalidate(institutionAccessProvider),
+              icon: Icons.refresh_rounded,
             ),
-          ],
+          ),
         ),
         data: (access) {
           final inst = access.institution ??
@@ -53,19 +62,12 @@ class InstitutionProfileScreen extends ConsumerWidget {
                   : null);
 
           if (inst == null) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s20,
-                AuraSpace.s16,
-                AuraSpace.s32,
+            return const Padding(
+              padding: EdgeInsets.all(InsSpacing.screenHPad),
+              child: AuraErrorState(
+                title: 'No institution',
+                body: 'Institution data is not available for this account.',
               ),
-              children: const [
-                AuraErrorState(
-                  title: 'No institution',
-                  body: 'Institution data is not available for this account.',
-                ),
-              ],
             );
           }
 
@@ -127,6 +129,7 @@ class _ProfileBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ── Pull data ────────────────────────────────────────────────────────
     final name = _str(['name', 'displayName', 'organizationName']);
     final slug = _str(['slug', 'handle']);
     final domain = _str(['domain']);
@@ -141,7 +144,6 @@ class _ProfileBody extends ConsumerWidget {
     final domainVerified = _str(['domainVerifiedAt']).isNotEmpty;
     final jurisdiction = _str(['jurisdiction', 'country', 'region']);
 
-    // contact
     final publicEmail = _str(['publicEmail', 'email']);
     final phone = _str(['phone', 'phoneNumber']);
     final address = _str(['address']);
@@ -149,7 +151,6 @@ class _ProfileBody extends ConsumerWidget {
     final region = _str(['region', 'state']);
     final country = _str(['country']);
 
-    // social
     final xUrl = _str(['xUrl', 'twitterUrl', 'twitter']);
     final linkedinUrl = _str(['linkedinUrl', 'linkedin']);
     final facebookUrl = _str(['facebookUrl', 'facebook']);
@@ -161,22 +162,20 @@ class _ProfileBody extends ConsumerWidget {
         instagramUrl.isNotEmpty ||
         youtubeUrl.isNotEmpty;
 
-    // mission
     final mission = _str(['mission']);
     final services = _str(['services']);
     final audience = _str(['audience']);
     final foundedYearRaw = inst['foundedYear'];
     final foundedYear = foundedYearRaw != null ? foundedYearRaw.toString() : '';
 
-    // contact section visibility
     final hasContact = publicEmail.isNotEmpty ||
         phone.isNotEmpty ||
+        website.isNotEmpty ||
         address.isNotEmpty ||
         city.isNotEmpty ||
         region.isNotEmpty ||
         country.isNotEmpty;
 
-    // build location line
     final locationParts = <String>[
       if (city.isNotEmpty) city,
       if (region.isNotEmpty) region,
@@ -187,139 +186,184 @@ class _ProfileBody extends ConsumerWidget {
         : location;
 
     final memberCount = _int(['memberCount', 'membersCount', 'memberTotal']);
-    final resolvedLogo = logoUrl.isNotEmpty ? logoUrl : identity?.logoUrl;
+    final resolvedLogo =
+        logoUrl.isNotEmpty ? logoUrl : (identity?.logoUrl ?? '');
     final publicLink = _publicLink(slug);
 
+    // ── Identity badges (tone-driven, no rainbow) ────────────────────────
+    final badges = <Widget>[
+      if (isVerified)
+        const InsBadge(
+          label: 'VERIFIED',
+          tone: InsTone.ok,
+          icon: Icons.verified_rounded,
+        )
+      else
+        const InsBadge(
+          label: 'UNVERIFIED',
+          tone: InsTone.neutral,
+          icon: Icons.help_outline_rounded,
+        ),
+      const InsBadge(
+        label: 'WORKSPACE',
+        tone: InsTone.info,
+        icon: Icons.apartment_rounded,
+      ),
+      if (domainVerified)
+        const InsBadge(
+          label: 'DOMAIN VERIFIED',
+          tone: InsTone.ok,
+          icon: Icons.dns_rounded,
+        ),
+    ];
+
+    // ── Identity facts (calm, replaces noisy chip wrap) ──────────────────
+    final facts = <InsFact>[
+      if (memberCount != null && memberCount > 0)
+        InsFact(
+          icon: Icons.people_outline_rounded,
+          text: '$memberCount '
+              '${memberCount == 1 ? 'member' : 'members'}',
+        ),
+      if (locationLine.isNotEmpty)
+        InsFact(icon: Icons.place_outlined, text: locationLine),
+      if (category.isNotEmpty)
+        InsFact(icon: Icons.workspaces_outlined, text: category),
+      if (foundedYear.isNotEmpty)
+        InsFact(
+          icon: Icons.event_available_outlined,
+          text: 'Founded $foundedYear',
+        ),
+      if (jurisdiction.isNotEmpty)
+        InsFact(icon: Icons.public_rounded, text: jurisdiction),
+    ];
+
+    // ── Compose ──────────────────────────────────────────────────────────
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, AuraSpace.s32),
+      padding: const EdgeInsets.fromLTRB(0, AuraSpace.s12, 0, AuraSpace.s32),
       children: [
+        InsCoverHeader(
+          name: name,
+          handle: slug.isEmpty ? null : 'institutions/$slug',
+          tagline: tagline.isEmpty ? null : tagline,
+          logoUrl: resolvedLogo.isEmpty ? null : resolvedLogo,
+          coverUrl: coverUrl.isEmpty ? null : coverUrl,
+          badges: badges,
+          facts: facts,
+        ),
+        const SizedBox(height: AuraSpace.s20),
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 960),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeroCover(
-                  coverUrl: coverUrl,
-                  logoUrl: resolvedLogo,
-                  name: name.isEmpty ? 'Institution' : name,
-                ),
-                const SizedBox(height: AuraSpace.s12),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s16,
-                    0,
-                    AuraSpace.s16,
-                    0,
-                  ),
-                  child: _HeroIdentity(
-                    name: name,
-                    slug: slug,
-                    tagline: tagline,
-                    description: description,
-                    isVerified: isVerified,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s16,
-                  ),
-                  child: _WorkspaceActionRow(
+            constraints: const BoxConstraints(
+              maxWidth: InsSpacing.contentMaxWidth,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: InsSpacing.screenHPad,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Action group ─────────────────────────────────────
+                  _ActionGroup(
                     identity: identity,
                     publicLink: publicLink,
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s16,
-                  ),
-                  child: _StatChips(
-                    isVerified: isVerified,
-                    domainVerified: domainVerified,
-                    memberCount: memberCount,
-                    foundedYear: foundedYear,
-                    jurisdiction: jurisdiction,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s14),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s16,
-                    0,
-                    AuraSpace.s16,
-                    0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (description.isNotEmpty) ...[
-                        _InfoSection(
-                          title: 'ABOUT',
-                          rows: [
-                            _DescriptionRow(text: description),
-                          ],
+
+                  const InsSectionGap(),
+
+                  // ── About ────────────────────────────────────────────
+                  if (description.isNotEmpty) ...[
+                    InsSection(
+                      eyebrow: 'About',
+                      title: 'What this institution is',
+                      child: InsCard(
+                        child: Text(
+                          description,
+                          style: AuraText.body.copyWith(
+                            color: AuraSurface.ink,
+                            height: 1.7,
+                          ),
                         ),
-                        const SizedBox(height: AuraSpace.s14),
-                      ],
-                      if (mission.isNotEmpty ||
-                          services.isNotEmpty ||
-                          audience.isNotEmpty) ...[
-                        _InfoSection(
-                          title: 'MISSION & REPRESENTATION',
-                          rows: [
+                      ),
+                    ),
+                    const InsSectionGap(),
+                  ],
+
+                  // ── Mission & representation ─────────────────────────
+                  if (mission.isNotEmpty ||
+                      services.isNotEmpty ||
+                      audience.isNotEmpty) ...[
+                    InsSection(
+                      eyebrow: 'Representation',
+                      title: 'Mission, services, audience',
+                      child: InsCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             if (mission.isNotEmpty)
                               _LabeledBlock(label: 'Mission', text: mission),
                             if (services.isNotEmpty)
-                              _LabeledBlock(
-                                label: 'Services',
-                                text: services,
-                              ),
+                              _LabeledBlock(label: 'Services', text: services),
                             if (audience.isNotEmpty)
                               _LabeledBlock(
                                 label: 'Audience',
                                 text: audience,
+                                isLast: true,
                               ),
                           ],
                         ),
-                        const SizedBox(height: AuraSpace.s14),
-                      ],
-                      if (hasContact ||
-                          website.isNotEmpty ||
-                          locationLine.isNotEmpty) ...[
-                        _InfoSection(
-                          title: 'CONTACT',
-                          rows: [
+                      ),
+                    ),
+                    const InsSectionGap(),
+                  ],
+
+                  // ── Contact ──────────────────────────────────────────
+                  if (hasContact || locationLine.isNotEmpty) ...[
+                    InsSection(
+                      eyebrow: 'Contact',
+                      title: 'How to reach this institution',
+                      child: InsCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             if (publicEmail.isNotEmpty)
-                              _InfoRow(label: 'Email', value: publicEmail),
+                              _KeyValue(label: 'Email', value: publicEmail),
                             if (phone.isNotEmpty)
-                              _InfoRow(label: 'Phone', value: phone),
+                              _KeyValue(label: 'Phone', value: phone),
                             if (website.isNotEmpty)
-                              _InfoRow(
+                              _KeyValue(
                                 label: 'Website',
                                 value: website,
                                 isLink: true,
                               ),
                             if (address.isNotEmpty)
-                              _InfoRow(label: 'Address', value: address),
+                              _KeyValue(label: 'Address', value: address),
                             if (locationLine.isNotEmpty)
-                              _InfoRow(label: 'Location', value: locationLine),
+                              _KeyValue(label: 'Location', value: locationLine),
                           ],
                         ),
-                        const SizedBox(height: AuraSpace.s14),
-                      ],
-                      _InfoSection(
-                        title: 'DOMAINS & VERIFICATION',
-                        rows: [
-                          _InfoRow(
+                      ),
+                    ),
+                    const InsSectionGap(),
+                  ],
+
+                  // ── Domains & verification ───────────────────────────
+                  InsSection(
+                    eyebrow: 'Trust',
+                    title: 'Domains & verification',
+                    child: InsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _KeyValue(
                             label: 'Institution',
                             value: isVerified ? 'Verified' : 'Unverified',
                             valueColor: isVerified
                                 ? AuraSurface.goodInk
                                 : AuraSurface.muted,
                           ),
-                          _InfoRow(
+                          _KeyValue(
                             label: 'Domain DNS',
                             value: domainVerified
                                 ? 'Verified'
@@ -329,301 +373,74 @@ class _ProfileBody extends ConsumerWidget {
                                 : AuraSurface.muted,
                           ),
                           if (domain.isNotEmpty)
-                            _InfoRow(label: 'Domain', value: domain),
+                            _KeyValue(label: 'Domain', value: domain),
                           if (jurisdiction.isNotEmpty)
-                            _InfoRow(
+                            _KeyValue(
                               label: 'Jurisdiction',
                               value: jurisdiction,
                             ),
                           if (category.isNotEmpty)
-                            _InfoRow(label: 'Category', value: category),
+                            _KeyValue(
+                              label: 'Category',
+                              value: category,
+                            ),
                         ],
                       ),
-                      const SizedBox(height: AuraSpace.s14),
-                      if (hasSocial) ...[
-                        _InfoSection(
-                          title: 'SOCIAL',
-                          rows: [
-                            if (linkedinUrl.isNotEmpty)
-                              _InfoRow(
-                                label: 'LinkedIn',
-                                value: linkedinUrl,
-                                isLink: true,
-                              ),
-                            if (xUrl.isNotEmpty)
-                              _InfoRow(
-                                label: 'X / Twitter',
-                                value: xUrl,
-                                isLink: true,
-                              ),
-                            if (facebookUrl.isNotEmpty)
-                              _InfoRow(
-                                label: 'Facebook',
-                                value: facebookUrl,
-                                isLink: true,
-                              ),
-                            if (instagramUrl.isNotEmpty)
-                              _InfoRow(
-                                label: 'Instagram',
-                                value: instagramUrl,
-                                isLink: true,
-                              ),
-                            if (youtubeUrl.isNotEmpty)
-                              _InfoRow(
-                                label: 'YouTube',
-                                value: youtubeUrl,
-                                isLink: true,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: AuraSpace.s14),
-                      ],
-                      if (slug.isNotEmpty)
-                        _PublicPostsPreview(
-                          slug: slug,
-                          institutionId: identity?.id ?? '',
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Hero cover (cover + avatar overlap) ──────────────────────────────────────
-
-class _HeroCover extends StatelessWidget {
-  const _HeroCover({
-    required this.coverUrl,
-    required this.logoUrl,
-    required this.name,
-  });
-
-  final String coverUrl;
-  final String? logoUrl;
-  final String name;
-
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentText = Color(0xFF5EEAD4);
-
-  @override
-  Widget build(BuildContext context) {
-    const double coverHeight = 220;
-    const double avatarSize = 96;
-    return SizedBox(
-      height: coverHeight + avatarSize / 2,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            bottom: avatarSize / 2,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    _accent.withValues(alpha: 0.30),
-                    _accent.withValues(alpha: 0.08),
-                    AuraSurface.subtle,
-                  ],
-                ),
-              ),
-              child: coverUrl.isEmpty
-                  ? const Center(
-                      child: Icon(
-                        Icons.apartment_rounded,
-                        size: 56,
-                        color: _accentText,
-                      ),
-                    )
-                  : Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          coverUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: _accent.withValues(alpha: 0.12),
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_outlined,
-                                color: _accentText,
-                                size: 48,
-                              ),
-                            ),
-                          ),
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.35),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
-            ),
-          ),
-          Positioned(
-            left: AuraSpace.s16,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: AuraSurface.page,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
                   ),
+
+                  if (hasSocial) ...[
+                    const InsSectionGap(),
+                    InsSection(
+                      eyebrow: 'Social',
+                      title: 'Where this institution lives elsewhere',
+                      child: InsCard(
+                        child: _SocialList(
+                          linkedinUrl: linkedinUrl,
+                          xUrl: xUrl,
+                          facebookUrl: facebookUrl,
+                          instagramUrl: instagramUrl,
+                          youtubeUrl: youtubeUrl,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  if (slug.isNotEmpty &&
+                      identity?.id != null &&
+                      identity!.id.isNotEmpty) ...[
+                    const InsSectionGap(),
+                    InsSection(
+                      eyebrow: 'Public',
+                      title: 'Recent public posts',
+                      trailing: AuraGhostButton(
+                        label: 'Open public profile',
+                        icon: Icons.open_in_new_rounded,
+                        onPressed: () => context.push(
+                          '/institution/${identity!.id}/institutions/$slug',
+                        ),
+                      ),
+                      child: _PublicPostsPreview(
+                        institutionId: identity!.id,
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              child: _InstitutionAvatar(
-                logoUrl: logoUrl,
-                size: avatarSize,
-                name: name,
-              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Hero identity (name / slug / verified / workspace badge / tagline) ──────
-
-class _HeroIdentity extends StatelessWidget {
-  const _HeroIdentity({
-    required this.name,
-    required this.slug,
-    required this.tagline,
-    required this.description,
-    required this.isVerified,
-  });
-
-  final String name;
-  final String slug;
-  final String tagline;
-  final String description;
-  final bool isVerified;
-
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentSoft = Color(0x1E0D9488);
-  static const Color _accentText = Color(0xFF5EEAD4);
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = name.isNotEmpty ? name : 'Institution';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: AuraSpace.s8,
-          runSpacing: AuraSpace.s6,
-          children: [
-            Text(displayName, style: AuraText.title),
-            if (isVerified)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: AuraSurface.goodBg,
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  border: Border.all(
-                    color: AuraSurface.goodInk.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 12,
-                      color: AuraSurface.goodInk,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Verified',
-                      style: AuraText.micro.copyWith(
-                        color: AuraSurface.goodInk,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s8,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color: _accentSoft,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                border: Border.all(color: _accent.withValues(alpha: 0.35)),
-              ),
-              child: Text(
-                'Workspace',
-                style: AuraText.micro.copyWith(
-                  color: _accentText,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-          ],
         ),
-        if (slug.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s4),
-          Text(
-            '@$slug',
-            style: AuraText.small.copyWith(
-              color: _accentText,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-        if (tagline.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            tagline,
-            style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
-              fontStyle: FontStyle.italic,
-              height: 1.45,
-            ),
-          ),
-        ],
       ],
     );
   }
 }
 
-// ── Action row ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Action group — primary Edit + secondary cluster
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _WorkspaceActionRow extends StatelessWidget {
-  const _WorkspaceActionRow({
-    required this.identity,
-    required this.publicLink,
-  });
+class _ActionGroup extends StatelessWidget {
+  const _ActionGroup({required this.identity, required this.publicLink});
 
   final InstitutionIdentity? identity;
   final String publicLink;
@@ -655,16 +472,15 @@ class _WorkspaceActionRow extends StatelessWidget {
         identity!.slug.isNotEmpty &&
         identity!.id.isNotEmpty;
 
-    return Wrap(
-      spacing: AuraSpace.s10,
-      runSpacing: AuraSpace.s10,
-      children: [
-        if (canEdit)
-          AuraPrimaryButton(
-            label: 'Edit profile',
-            icon: Icons.edit_outlined,
-            onPressed: () => context.go('/institution/edit-profile'),
-          ),
+    return InsActionGroup(
+      primary: canEdit
+          ? AuraPrimaryButton(
+              label: 'Edit profile',
+              icon: Icons.edit_outlined,
+              onPressed: () => context.go('/institution/edit-profile'),
+            )
+          : null,
+      secondary: [
         if (canPreview)
           AuraSecondaryButton(
             label: 'Public preview',
@@ -675,7 +491,7 @@ class _WorkspaceActionRow extends StatelessWidget {
           ),
         if (publicLink.isNotEmpty)
           AuraSecondaryButton(
-            label: 'Copy public link',
+            label: 'Copy link',
             icon: Icons.link_rounded,
             onPressed: () => _copyLink(context),
           ),
@@ -695,303 +511,12 @@ class _WorkspaceActionRow extends StatelessWidget {
   }
 }
 
-// ── Stat chips ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Content atoms — calm key/value, labeled block, social anchors
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _StatChips extends StatelessWidget {
-  const _StatChips({
-    required this.isVerified,
-    required this.domainVerified,
-    required this.memberCount,
-    required this.foundedYear,
-    required this.jurisdiction,
-  });
-
-  final bool isVerified;
-  final bool domainVerified;
-  final int? memberCount;
-  final String foundedYear;
-  final String jurisdiction;
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <Widget>[
-      _StatChip(
-        icon: Icons.verified_rounded,
-        label: isVerified ? 'Verified' : 'Unverified',
-        good: isVerified,
-      ),
-      _StatChip(
-        icon: Icons.dns_rounded,
-        label: domainVerified ? 'Domain DNS verified' : 'Domain unverified',
-        good: domainVerified,
-      ),
-      if (memberCount != null)
-        _StatChip(
-          icon: Icons.groups_2_rounded,
-          label: '${memberCount!} '
-              '${memberCount == 1 ? 'member' : 'members'}',
-        ),
-      if (foundedYear.isNotEmpty)
-        _StatChip(
-          icon: Icons.flag_rounded,
-          label: 'Founded $foundedYear',
-        ),
-      if (jurisdiction.isNotEmpty)
-        _StatChip(
-          icon: Icons.public_rounded,
-          label: jurisdiction,
-        ),
-    ];
-    if (chips.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: AuraSpace.s8,
-      runSpacing: AuraSpace.s8,
-      children: chips,
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    this.good = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool good;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = good ? AuraSurface.goodInk : AuraSurface.muted;
-    final bg = good ? AuraSurface.goodBg : AuraSurface.subtle;
-    final border = good
-        ? AuraSurface.goodInk.withValues(alpha: 0.3)
-        : AuraSurface.divider;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Public posts preview ─────────────────────────────────────────────────────
-
-class _PublicPostsPreview extends ConsumerWidget {
-  const _PublicPostsPreview({
-    required this.slug,
-    required this.institutionId,
-  });
-
-  final String slug;
-  final String institutionId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (institutionId.isEmpty) return const SizedBox.shrink();
-    final async = ref.watch(institutionProfileFeedProvider(institutionId));
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'PUBLIC POSTS',
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.faint,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              if (institutionId.isNotEmpty && slug.isNotEmpty)
-                TextButton.icon(
-                  onPressed: () => context.push(
-                    '/institution/$institutionId/institutions/$slug',
-                  ),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                  label: const Text('View public profile'),
-                ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          async.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: AuraSpace.s14),
-              child: AuraLoadingState(message: 'Loading posts…'),
-            ),
-            error: (e, _) => Text(
-              'Could not load posts: $e',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-            data: (page) {
-              if (page.items.isEmpty) {
-                return Text(
-                  'No public posts yet. Posts you publish to the institution feed will appear here.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
-                );
-              }
-              final preview = page.items.take(3).toList();
-              return Column(
-                children: [
-                  for (var i = 0; i < preview.length; i++) ...[
-                    UnifiedFeedCard(item: preview[i]),
-                    if (i < preview.length - 1)
-                      const SizedBox(height: AuraSpace.s10),
-                  ],
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Shared widgets ─────────────────────────────────────────────────────────
-
-class _InstitutionAvatar extends StatelessWidget {
-  const _InstitutionAvatar({
-    required this.size,
-    required this.name,
-    this.logoUrl,
-  });
-
-  final double size;
-  final String name;
-  final String? logoUrl;
-
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentSoft = Color(0x1E0D9488);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _accentSoft,
-        shape: BoxShape.circle,
-        border: Border.all(color: _accent.withValues(alpha: 0.3)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: logoUrl != null && logoUrl!.isNotEmpty
-          ? Image.network(
-              logoUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  _FallbackIcon(size: size, name: name),
-            )
-          : _FallbackIcon(size: size, name: name),
-    );
-  }
-}
-
-class _FallbackIcon extends StatelessWidget {
-  const _FallbackIcon({required this.size, required this.name});
-
-  final double size;
-  final String name;
-
-  static const Color _accentText = Color(0xFF5EEAD4);
-
-  @override
-  Widget build(BuildContext context) {
-    if (name.isNotEmpty) {
-      return Center(
-        child: Text(
-          name[0].toUpperCase(),
-          style: TextStyle(
-            color: _accentText,
-            fontSize: size * 0.38,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-    }
-    return Icon(
-      Icons.apartment_outlined,
-      size: size * 0.45,
-      color: _accentText,
-    );
-  }
-}
-
-class _InfoSection extends StatelessWidget {
-  const _InfoSection({required this.title, required this.rows});
-
-  final String title;
-  final List<Widget> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    if (rows.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          ...rows.asMap().entries.map(
-            (e) => Padding(
-              padding: EdgeInsets.only(
-                bottom: e.key < rows.length - 1 ? AuraSpace.s10 : 0,
-              ),
-              child: e.value,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
+class _KeyValue extends StatelessWidget {
+  const _KeyValue({
     required this.label,
     required this.value,
     this.valueColor,
@@ -1003,83 +528,274 @@ class _InfoRow extends StatelessWidget {
   final Color? valueColor;
   final bool isLink;
 
-  static const Color _linkColor = Color(0xFF5EEAD4);
-
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AuraSurface.muted,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value.isEmpty ? '—' : value,
-            style: AuraText.small.copyWith(
-              color: isLink
-                  ? _linkColor
-                  : (valueColor ?? AuraSurface.ink),
-              decoration:
-                  isLink ? TextDecoration.underline : TextDecoration.none,
-            ),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stack = constraints.maxWidth < 440;
+          final labelW = AuraText.small.copyWith(
+            color: AuraSurface.faint,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          );
+          final valueW = AuraText.body.copyWith(
+            color: isLink
+                ? AuraSurface.accentText
+                : (valueColor ?? AuraSurface.ink),
+            decoration: isLink ? TextDecoration.underline : TextDecoration.none,
+            height: 1.5,
+          );
+          if (stack) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label.toUpperCase(), style: labelW),
+                const SizedBox(height: 2),
+                Text(value.isEmpty ? '—' : value, style: valueW),
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 130,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(label.toUpperCase(), style: labelW),
+                ),
+              ),
+              Expanded(
+                child: Text(value.isEmpty ? '—' : value, style: valueW),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
 class _LabeledBlock extends StatelessWidget {
-  const _LabeledBlock({required this.label, required this.text});
+  const _LabeledBlock({
+    required this.label,
+    required this.text,
+    this.isLast = false,
+  });
 
   final String label;
   final String text;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AuraSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            text,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.ink,
+              height: 1.65,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialList extends StatelessWidget {
+  const _SocialList({
+    required this.linkedinUrl,
+    required this.xUrl,
+    required this.facebookUrl,
+    required this.instagramUrl,
+    required this.youtubeUrl,
+  });
+
+  final String linkedinUrl;
+  final String xUrl;
+  final String facebookUrl;
+  final String instagramUrl;
+  final String youtubeUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <_SocialAnchor>[
+      if (linkedinUrl.isNotEmpty)
+        _SocialAnchor(
+          label: 'LinkedIn',
+          url: linkedinUrl,
+          icon: Icons.business_center_outlined,
+        ),
+      if (xUrl.isNotEmpty)
+        _SocialAnchor(
+          label: 'X',
+          url: xUrl,
+          icon: Icons.alternate_email_rounded,
+        ),
+      if (facebookUrl.isNotEmpty)
+        _SocialAnchor(
+          label: 'Facebook',
+          url: facebookUrl,
+          icon: Icons.facebook_rounded,
+        ),
+      if (instagramUrl.isNotEmpty)
+        _SocialAnchor(
+          label: 'Instagram',
+          url: instagramUrl,
+          icon: Icons.camera_alt_outlined,
+        ),
+      if (youtubeUrl.isNotEmpty)
+        _SocialAnchor(
+          label: 'YouTube',
+          url: youtubeUrl,
+          icon: Icons.play_circle_outline_rounded,
+        ),
+    ];
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          label,
-          style: AuraText.small.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AuraSurface.muted,
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s4),
-        Text(
-          text,
-          style: AuraText.body.copyWith(
-            color: AuraSurface.ink,
-            height: 1.55,
-          ),
-        ),
+        for (var i = 0; i < entries.length; i++) ...[
+          _SocialRow(entry: entries[i]),
+          if (i < entries.length - 1)
+            const Divider(height: 1, color: AuraSurface.divider),
+        ],
       ],
     );
   }
 }
 
-class _DescriptionRow extends StatelessWidget {
-  const _DescriptionRow({required this.text});
+class _SocialAnchor {
+  const _SocialAnchor({
+    required this.label,
+    required this.url,
+    required this.icon,
+  });
+  final String label;
+  final String url;
+  final IconData icon;
+}
 
-  final String text;
+class _SocialRow extends StatelessWidget {
+  const _SocialRow({required this.entry});
+
+  final _SocialAnchor entry;
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: entry.url));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${entry.label} link copied')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AuraText.body.copyWith(
-        color: AuraSurface.muted,
-        height: 1.55,
+    return InkWell(
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      onTap: () => _copy(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
+        child: Row(
+          children: [
+            Icon(entry.icon, size: 16, color: AuraSurface.muted),
+            const SizedBox(width: AuraSpace.s10),
+            SizedBox(
+              width: 100,
+              child: Text(
+                entry.label,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                entry.url,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.accentText,
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            const Icon(
+              Icons.content_copy_rounded,
+              size: 14,
+              color: AuraSurface.faint,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public posts preview — last 3 posts, framed inside an InsCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PublicPostsPreview extends ConsumerWidget {
+  const _PublicPostsPreview({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(institutionProfileFeedProvider(institutionId));
+    return InsCard(
+      child: async.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
+          child: AuraLoadingState(message: 'Loading posts…'),
+        ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
+          child: Text(
+            'Could not load posts: $e',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+        ),
+        data: (page) {
+          if (page.items.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
+              child: Text(
+                'No public posts yet. Posts you publish to the institution feed will appear here.',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            );
+          }
+          final preview = page.items.take(3).toList();
+          return Column(
+            children: [
+              for (var i = 0; i < preview.length; i++) ...[
+                UnifiedFeedCard(item: preview[i]),
+                if (i < preview.length - 1)
+                  const SizedBox(height: AuraSpace.s10),
+              ],
+            ],
+          );
+        },
       ),
     );
   }

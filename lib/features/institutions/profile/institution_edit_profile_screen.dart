@@ -15,7 +15,22 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../shared/media/profile_media_editor.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 
+/// Phase 6.6b — Institution Edit Profile / Identity Studio.
+///
+/// The form contract is unchanged: same controllers, same validators, same
+/// save endpoint. Everything on top of that is rewritten on the institution
+/// design system primitives so this screen feels like one cohesive editor
+/// rather than five stacked admin forms.
+///
+/// Layout:
+///   1. Title + identity-led live preview (mirrors what the public profile
+///      will look like as the user types).
+///   2. Five `InsCard`-wrapped sections — Basic / About / Contact /
+///      Representation / Social — each introduced by an `InsSection`.
+///   3. Sticky save bar pinned to the bottom of the viewport so the save
+///      action is always one click away.
 class InstitutionEditProfileScreen extends ConsumerStatefulWidget {
   const InstitutionEditProfileScreen({super.key});
 
@@ -28,21 +43,23 @@ class _InstitutionEditProfileScreenState
     extends ConsumerState<InstitutionEditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // ── Section 1: Basic identity ───────────────────────────────────────────────
+  // ── Basic identity ──────────────────────────────────────────────────────
   final _nameCtrl = TextEditingController();
   final _taglineCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
   final _categoryCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
 
-  // ── Section 2: Branding ─────────────────────────────���────────────────────────
+  // ── About ───────────────────────────────────────────────────────────────
+  final _descCtrl = TextEditingController();
+
+  // ── Branding ────────────────────────────────────────────────────────────
   final _picker = ImagePicker();
   String? _logoUrl;
   String? _coverUrl;
   bool _uploadingLogo = false;
   bool _uploadingCover = false;
 
-  // ── Section 3: Public presence ───────────────────────────────────────────────
+  // ── Contact ─────────────────────────────────────────────────────────────
   final _websiteCtrl = TextEditingController();
   final _publicEmailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -51,32 +68,30 @@ class _InstitutionEditProfileScreenState
   final _regionCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
 
-  // ── Section 4: Social links ──────────────────────────────────────────────────
+  // ── Representation ──────────────────────────────────────────────────────
+  final _missionCtrl = TextEditingController();
+  final _servicesCtrl = TextEditingController();
+  final _audienceCtrl = TextEditingController();
+  final _foundedYearCtrl = TextEditingController();
+
+  // ── Social ──────────────────────────────────────────────────────────────
   final _linkedinCtrl = TextEditingController();
   final _xCtrl = TextEditingController();
   final _facebookCtrl = TextEditingController();
   final _instagramCtrl = TextEditingController();
   final _youtubeCtrl = TextEditingController();
 
-  // ── Section 5: Mission / representation ─────────────────────────────────────
-  final _missionCtrl = TextEditingController();
-  final _servicesCtrl = TextEditingController();
-  final _audienceCtrl = TextEditingController();
-  final _foundedYearCtrl = TextEditingController();
-
   bool _loaded = false;
   bool _saving = false;
   String? _error;
   String? _successMessage;
 
-  // Hard caps required for the rebuild.
   static const int _kNameMax = 120;
   static const int _kTaglineMax = 160;
   static const int _kDescMax = 2000;
 
-  // Image upload limits.
-  static const int _kLogoMaxBytes = 2 * 1024 * 1024; // 2 MB
-  static const int _kCoverMaxBytes = 4 * 1024 * 1024; // 4 MB
+  static const int _kLogoMaxBytes = 2 * 1024 * 1024;
+  static const int _kCoverMaxBytes = 4 * 1024 * 1024;
   static const Set<String> _kImageMimeWhitelist = {
     'image/jpeg',
     'image/png',
@@ -86,8 +101,8 @@ class _InstitutionEditProfileScreenState
   @override
   void initState() {
     super.initState();
-    // Live counters: rebuild whenever name/tagline/description change so
-    // the helper labels reflect the current input length.
+    // Live counters + live preview rebuild whenever name/tagline/description
+    // change so the preview tile and counters reflect the current input.
     _nameCtrl.addListener(_onTextChanged);
     _taglineCtrl.addListener(_onTextChanged);
     _descCtrl.addListener(_onTextChanged);
@@ -168,10 +183,11 @@ class _InstitutionEditProfileScreenState
     if (fy != null) _foundedYearCtrl.text = fy.toString();
   }
 
+  // ── Save ────────────────────────────────────────────────────────────────
+
   Future<void> _save(String institutionId) async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Hard-block submit when any tightened-limit field exceeds its cap.
     if (_exceedsLimits) {
       setState(() {
         _error = 'Some fields exceed character limits. Trim before saving.';
@@ -217,7 +233,6 @@ class _InstitutionEditProfileScreenState
       };
 
       await repo.updateInstitutionProfile(institutionId, fields);
-
       ref.invalidate(institutionAccessProvider);
 
       setState(() {
@@ -227,7 +242,6 @@ class _InstitutionEditProfileScreenState
     } catch (e) {
       String msg = 'Could not save profile.';
       final raw = e.toString();
-      // Try to extract backend message from DioException response
       final match = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(raw);
       if (match != null) {
         msg = match.group(1) ?? msg;
@@ -243,11 +257,11 @@ class _InstitutionEditProfileScreenState
 
   bool get _busy => _saving || _uploadingLogo || _uploadingCover;
 
+  void clearLogo() => setState(() => _logoUrl = null);
+  void clearCover() => setState(() => _coverUrl = null);
+
   Future<void> _pickLogo() => _pickAndUploadImage(isLogo: true);
   Future<void> _pickCover() => _pickAndUploadImage(isLogo: false);
-
-  /// "Edit current" — open the editor against the existing media URL so
-  /// the user can pan/zoom + re-save without re-picking a file.
   Future<void> _editCurrentLogo() => _editFromCurrentUrl(isLogo: true);
   Future<void> _editCurrentCover() => _editFromCurrentUrl(isLogo: false);
 
@@ -334,9 +348,6 @@ class _InstitutionEditProfileScreenState
     if (file == null) return;
 
     final pickedBytes = await file.readAsBytes();
-
-    // MIME + size validation runs before the editor so the user doesn't
-    // tune a crop on a file we'll reject anyway.
     final mimeType = file.mimeType ?? _inferMime(file.name);
     if (pickedBytes.isEmpty) {
       if (mounted) setState(() => _error = 'Image file is empty.');
@@ -344,8 +355,8 @@ class _InstitutionEditProfileScreenState
     }
     if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
       if (mounted) {
-        setState(() => _error =
-            'Unsupported image type. Use JPEG, PNG, or WebP.');
+        setState(() =>
+            _error = 'Unsupported image type. Use JPEG, PNG, or WebP.');
       }
       return;
     }
@@ -362,9 +373,6 @@ class _InstitutionEditProfileScreenState
 
     if (!mounted) return;
 
-    // Phase 5.2: route every picked file through the shared editor so the
-    // user can frame the crop deliberately. Editor returns PNG bytes at the
-    // mode's output resolution — or null on cancel.
     final cropped = await ProfileMediaEditor.open(
       context,
       imageBytes: pickedBytes,
@@ -457,6 +465,8 @@ class _InstitutionEditProfileScreenState
     return fallback;
   }
 
+  // ── Build ──────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final accessAsync = ref.watch(institutionAccessProvider);
@@ -465,25 +475,24 @@ class _InstitutionEditProfileScreenState
     return AuraScaffold(
       showHeader: false,
       body: accessAsync.when(
-        loading: () => const AuraLoadingState(message: 'Loading…'),
-        error: (e, _) => ListView(
-          padding: _pagePad,
-          children: [AuraErrorState(title: 'Unavailable', body: '$e')],
+        loading: () =>
+            const AuraLoadingState(message: 'Loading identity studio…'),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(InsSpacing.screenHPad),
+          child: AuraErrorState(title: 'Unavailable', body: '$e'),
         ),
         data: (access) {
           if (identity == null || !identity.isAdmin) {
-            return ListView(
-              padding: _pagePad,
-              children: [
-                AuraErrorState(
-                  title: 'Access denied',
-                  body: 'Only institution admins can edit the profile.',
-                  action: AuraSecondaryButton(
-                    label: 'Back to profile',
-                    onPressed: () => context.go('/institution/profile'),
-                  ),
+            return Padding(
+              padding: const EdgeInsets.all(InsSpacing.screenHPad),
+              child: AuraErrorState(
+                title: 'Access denied',
+                body: 'Only institution admins can edit the profile.',
+                action: AuraSecondaryButton(
+                  label: 'Back to profile',
+                  onPressed: () => context.go('/institution/profile'),
                 ),
-              ],
+              ),
             );
           }
 
@@ -493,147 +502,835 @@ class _InstitutionEditProfileScreenState
                       access.membership!['institution'] as Map,
                     )
                   : null);
-
           if (inst != null) _populate(inst);
 
-          return _EditBody(
-            formKey: _formKey,
-            saving: _saving,
-            error: _error,
-            successMessage: _successMessage,
-            nameCtrl: _nameCtrl,
-            taglineCtrl: _taglineCtrl,
-            descCtrl: _descCtrl,
-            categoryCtrl: _categoryCtrl,
-            locationCtrl: _locationCtrl,
-            logoUrl: _logoUrl,
-            coverUrl: _coverUrl,
-            uploadingLogo: _uploadingLogo,
-            uploadingCover: _uploadingCover,
-            onPickLogo: _pickLogo,
-            onPickCover: _pickCover,
-            onEditCurrentLogo: _editCurrentLogo,
-            onEditCurrentCover: _editCurrentCover,
-            onRemoveLogo: () => setState(() => _logoUrl = null),
-            onRemoveCover: () => setState(() => _coverUrl = null),
-            websiteCtrl: _websiteCtrl,
-            publicEmailCtrl: _publicEmailCtrl,
-            phoneCtrl: _phoneCtrl,
-            addressCtrl: _addressCtrl,
-            cityCtrl: _cityCtrl,
-            regionCtrl: _regionCtrl,
-            countryCtrl: _countryCtrl,
-            linkedinCtrl: _linkedinCtrl,
-            xCtrl: _xCtrl,
-            facebookCtrl: _facebookCtrl,
-            instagramCtrl: _instagramCtrl,
-            youtubeCtrl: _youtubeCtrl,
-            missionCtrl: _missionCtrl,
-            servicesCtrl: _servicesCtrl,
-            audienceCtrl: _audienceCtrl,
-            foundedYearCtrl: _foundedYearCtrl,
-            onSave: () => _save(identity.id),
-            onCancel: () => context.go('/institution/profile'),
-          );
+          return _StudioBody(state: this, institutionId: identity.id);
         },
       ),
     );
   }
-
-  static const _pagePad = EdgeInsets.fromLTRB(
-    AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32,
-  );
 }
 
-// ── Edit body ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Studio body — composes the live preview, sectioned form, and sticky save bar
+// ─────────────────────────────────────────────────────────────────────────────
 
-class _EditBody extends StatelessWidget {
-  const _EditBody({
-    required this.formKey,
-    required this.saving,
-    required this.error,
-    required this.successMessage,
-    required this.nameCtrl,
-    required this.taglineCtrl,
-    required this.descCtrl,
-    required this.categoryCtrl,
-    required this.locationCtrl,
+class _StudioBody extends StatelessWidget {
+  const _StudioBody({required this.state, required this.institutionId});
+
+  final _InstitutionEditProfileScreenState state;
+  final String institutionId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Form(
+          key: state._formKey,
+          child: InsScreen(
+            maxWidth: 820,
+            children: [
+              // ── Title strip ───────────────────────────────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Identity studio', style: AuraText.headline),
+                        SizedBox(height: 4),
+                        Text(
+                          'A guided editor for everything the public sees about this institution.',
+                          style: AuraText.muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  AuraSecondaryButton(
+                    label: 'Cancel',
+                    icon: Icons.close_rounded,
+                    onPressed: () => context.go('/institution/profile'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s20),
+
+              // ── Live preview ──────────────────────────────────────────
+              _LivePreviewCard(
+                name: state._nameCtrl.text,
+                tagline: state._taglineCtrl.text,
+                logoUrl: state._logoUrl,
+                coverUrl: state._coverUrl,
+                location: state._locationCtrl.text,
+                category: state._categoryCtrl.text,
+              ),
+
+              const InsSectionGap(),
+
+              // ── Banners ───────────────────────────────────────────────
+              if (state._error != null) ...[
+                _ToneBanner(
+                  tone: InsTone.danger,
+                  message: state._error!,
+                ),
+                const SizedBox(height: AuraSpace.s14),
+              ],
+              if (state._successMessage != null) ...[
+                _ToneBanner(
+                  tone: InsTone.ok,
+                  message: state._successMessage!,
+                ),
+                const SizedBox(height: AuraSpace.s14),
+              ],
+
+              // ── 1. Basic identity ─────────────────────────────────────
+              InsSection(
+                eyebrow: 'Section 1',
+                title: 'Basic identity',
+                helper:
+                    'Display name, tagline, category, and the institution’s public media.',
+                child: InsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StudioCountedField(
+                        label: 'Display name',
+                        required: true,
+                        controller: state._nameCtrl,
+                        maxChars: _InstitutionEditProfileScreenState._kNameMax,
+                        child: _StudioTextField(
+                          controller: state._nameCtrl,
+                          hint: 'Institution name',
+                          maxLength:
+                              _InstitutionEditProfileScreenState._kNameMax,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Name is required.';
+                            }
+                            if (v.trim().length >
+                                _InstitutionEditProfileScreenState
+                                    ._kNameMax) {
+                              return 'Max ${_InstitutionEditProfileScreenState._kNameMax} characters.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      _StudioCountedField(
+                        label: 'Tagline',
+                        controller: state._taglineCtrl,
+                        maxChars:
+                            _InstitutionEditProfileScreenState._kTaglineMax,
+                        helper:
+                            'A single line of identity — shown beside the name.',
+                        child: _StudioTextField(
+                          controller: state._taglineCtrl,
+                          hint: 'Short tagline or motto…',
+                          maxLength: _InstitutionEditProfileScreenState
+                              ._kTaglineMax,
+                          validator: (v) {
+                            if (v == null) return null;
+                            if (v.trim().length >
+                                _InstitutionEditProfileScreenState
+                                    ._kTaglineMax) {
+                              return 'Max ${_InstitutionEditProfileScreenState._kTaglineMax} characters.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      _StudioTwoCol(
+                        left: _StudioField(
+                          label: 'Category / type',
+                          child: _StudioTextField(
+                            controller: state._categoryCtrl,
+                            hint: 'e.g. University · NGO · Foundation',
+                            maxLength: 128,
+                          ),
+                        ),
+                        right: _StudioField(
+                          label: 'Headquarters',
+                          child: _StudioTextField(
+                            controller: state._locationCtrl,
+                            hint: 'City or region',
+                            maxLength: 128,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s8),
+                      const Divider(height: 1, color: AuraSurface.divider),
+                      const SizedBox(height: AuraSpace.s14),
+                      _MediaSlot(
+                        label: 'Logo',
+                        helper:
+                            'Square image · at least 200×200 px · PNG, JPEG, or WebP',
+                        child: _MediaUploadControl(
+                          imageUrl: state._logoUrl,
+                          uploading: state._uploadingLogo,
+                          aspectRatio: 1,
+                          onPick: state._pickLogo,
+                          onEditCurrent: state._editCurrentLogo,
+                          onRemove: state.clearLogo,
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      _MediaSlot(
+                        label: 'Cover banner',
+                        helper:
+                            'Wide image · 4:1 ratio · 1600×400 recommended',
+                        child: _MediaUploadControl(
+                          imageUrl: state._coverUrl,
+                          uploading: state._uploadingCover,
+                          aspectRatio: 4,
+                          onPick: state._pickCover,
+                          onEditCurrent: state._editCurrentCover,
+                          onRemove: state.clearCover,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const InsSectionGap(),
+
+              // ── 2. About ──────────────────────────────────────────────
+              InsSection(
+                eyebrow: 'Section 2',
+                title: 'About',
+                helper:
+                    'A long-form description of the institution. Plain text, will appear on the public profile.',
+                child: InsCard(
+                  child: _StudioCountedField(
+                    label: 'Description',
+                    controller: state._descCtrl,
+                    maxChars: _InstitutionEditProfileScreenState._kDescMax,
+                    child: _StudioTextField(
+                      controller: state._descCtrl,
+                      hint:
+                          'What is this institution, who does it serve, and what does it stand for?',
+                      maxLength:
+                          _InstitutionEditProfileScreenState._kDescMax,
+                      minLines: 4,
+                      maxLines: 10,
+                      validator: (v) {
+                        if (v == null) return null;
+                        if (v.trim().length >
+                            _InstitutionEditProfileScreenState._kDescMax) {
+                          return 'Max ${_InstitutionEditProfileScreenState._kDescMax} characters.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              const InsSectionGap(),
+
+              // ── 3. Contact ────────────────────────────────────────────
+              InsSection(
+                eyebrow: 'Section 3',
+                title: 'Contact',
+                helper:
+                    'How members of the public can reach this institution off-platform.',
+                child: InsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StudioField(
+                        label: 'Website',
+                        child: _StudioTextField(
+                          controller: state._websiteCtrl,
+                          hint: 'https://…',
+                          keyboardType: TextInputType.url,
+                          validator: _urlValidator,
+                          maxLength: 2048,
+                        ),
+                      ),
+                      _StudioTwoCol(
+                        left: _StudioField(
+                          label: 'Public email',
+                          child: _StudioTextField(
+                            controller: state._publicEmailCtrl,
+                            hint: 'contact@institution.edu',
+                            keyboardType: TextInputType.emailAddress,
+                            maxLength: 256,
+                          ),
+                        ),
+                        right: _StudioField(
+                          label: 'Phone',
+                          child: _StudioTextField(
+                            controller: state._phoneCtrl,
+                            hint: '+1 (555) 000-0000',
+                            keyboardType: TextInputType.phone,
+                            maxLength: 50,
+                          ),
+                        ),
+                      ),
+                      _StudioField(
+                        label: 'Street address',
+                        child: _StudioTextField(
+                          controller: state._addressCtrl,
+                          hint: 'Street address',
+                          maxLength: 500,
+                        ),
+                      ),
+                      _StudioThreeCol(
+                        a: _StudioField(
+                          label: 'City',
+                          child: _StudioTextField(
+                            controller: state._cityCtrl,
+                            hint: 'City',
+                            maxLength: 128,
+                          ),
+                        ),
+                        b: _StudioField(
+                          label: 'Region / state',
+                          child: _StudioTextField(
+                            controller: state._regionCtrl,
+                            hint: 'State or province',
+                            maxLength: 128,
+                          ),
+                        ),
+                        c: _StudioField(
+                          label: 'Country',
+                          child: _StudioTextField(
+                            controller: state._countryCtrl,
+                            hint: 'Country',
+                            maxLength: 128,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const InsSectionGap(),
+
+              // ── 4. Representation ─────────────────────────────────────
+              InsSection(
+                eyebrow: 'Section 4',
+                title: 'Representation',
+                helper:
+                    'Mission, services, audience, and history. The substance behind the identity.',
+                child: InsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StudioField(
+                        label: 'Mission',
+                        child: _StudioTextField(
+                          controller: state._missionCtrl,
+                          hint: 'What this institution exists to do.',
+                          minLines: 2,
+                          maxLines: 6,
+                          maxLength: 2000,
+                        ),
+                      ),
+                      _StudioField(
+                        label: 'Services or programs',
+                        child: _StudioTextField(
+                          controller: state._servicesCtrl,
+                          hint: 'Key services, programs, or offerings.',
+                          minLines: 2,
+                          maxLines: 6,
+                          maxLength: 2000,
+                        ),
+                      ),
+                      _StudioTwoCol(
+                        left: _StudioField(
+                          label: 'Target audience',
+                          child: _StudioTextField(
+                            controller: state._audienceCtrl,
+                            hint: 'e.g. Researchers, alumni, the public',
+                            maxLength: 1000,
+                          ),
+                        ),
+                        right: _StudioField(
+                          label: 'Founded year',
+                          child: _StudioTextField(
+                            controller: state._foundedYearCtrl,
+                            hint: 'e.g. 1970',
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return null;
+                              final n = int.tryParse(v.trim());
+                              if (n == null || n < 1800 || n > 2100) {
+                                return 'Enter a valid year (1800–2100)';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const InsSectionGap(),
+
+              // ── 5. Social ─────────────────────────────────────────────
+              InsSection(
+                eyebrow: 'Section 5',
+                title: 'Social',
+                helper:
+                    'Optional links to where this institution lives elsewhere on the web.',
+                child: InsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StudioTwoCol(
+                        left: _SocialField(
+                          label: 'LinkedIn',
+                          icon: Icons.business_center_outlined,
+                          controller: state._linkedinCtrl,
+                          hint: 'https://linkedin.com/in/…',
+                          validator: _urlValidator,
+                        ),
+                        right: _SocialField(
+                          label: 'X / Twitter',
+                          icon: Icons.alternate_email_rounded,
+                          controller: state._xCtrl,
+                          hint: 'https://x.com/…',
+                          validator: _urlValidator,
+                        ),
+                      ),
+                      _StudioTwoCol(
+                        left: _SocialField(
+                          label: 'Facebook',
+                          icon: Icons.facebook_rounded,
+                          controller: state._facebookCtrl,
+                          hint: 'https://facebook.com/…',
+                          validator: _urlValidator,
+                        ),
+                        right: _SocialField(
+                          label: 'Instagram',
+                          icon: Icons.camera_alt_outlined,
+                          controller: state._instagramCtrl,
+                          hint: 'https://instagram.com/…',
+                          validator: _urlValidator,
+                        ),
+                      ),
+                      _SocialField(
+                        label: 'YouTube',
+                        icon: Icons.play_circle_outline_rounded,
+                        controller: state._youtubeCtrl,
+                        hint: 'https://youtube.com/@…',
+                        validator: _urlValidator,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AuraSpace.s24),
+
+              const _ManagedFieldsNote(),
+
+              // Bottom breath — leaves room above the sticky save bar so
+              // the last field is never trapped under it.
+              const SizedBox(height: 96),
+            ],
+          ),
+        ),
+        // Sticky save bar.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _SaveBar(
+            saving: state._saving,
+            busy: state._busy,
+            dirty: true,
+            onSave: () => state._save(institutionId),
+            onCancel: () => context.go('/institution/profile'),
+            onPreview: () => context.go('/institution/profile?preview=1'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _urlValidator(String? v) {
+    if (v == null || v.trim().isEmpty) return null;
+    final uri = Uri.tryParse(v.trim());
+    if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+      return 'Enter a valid URL (http:// or https://)';
+    }
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live preview — small InsIdentityHeader that updates while editing
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LivePreviewCard extends StatelessWidget {
+  const _LivePreviewCard({
+    required this.name,
+    required this.tagline,
     required this.logoUrl,
     required this.coverUrl,
-    required this.uploadingLogo,
-    required this.uploadingCover,
-    required this.onPickLogo,
-    required this.onPickCover,
-    required this.onEditCurrentLogo,
-    required this.onEditCurrentCover,
-    required this.onRemoveLogo,
-    required this.onRemoveCover,
-    required this.websiteCtrl,
-    required this.publicEmailCtrl,
-    required this.phoneCtrl,
-    required this.addressCtrl,
-    required this.cityCtrl,
-    required this.regionCtrl,
-    required this.countryCtrl,
-    required this.linkedinCtrl,
-    required this.xCtrl,
-    required this.facebookCtrl,
-    required this.instagramCtrl,
-    required this.youtubeCtrl,
-    required this.missionCtrl,
-    required this.servicesCtrl,
-    required this.audienceCtrl,
-    required this.foundedYearCtrl,
-    required this.onSave,
-    required this.onCancel,
+    required this.location,
+    required this.category,
   });
 
-  final GlobalKey<FormState> formKey;
-  final bool saving;
-  final String? error;
-  final String? successMessage;
-  final TextEditingController nameCtrl;
-  final TextEditingController taglineCtrl;
-  final TextEditingController descCtrl;
-  final TextEditingController categoryCtrl;
-  final TextEditingController locationCtrl;
+  final String name;
+  final String tagline;
   final String? logoUrl;
   final String? coverUrl;
-  final bool uploadingLogo;
-  final bool uploadingCover;
-  final VoidCallback onPickLogo;
-  final VoidCallback onPickCover;
-  final VoidCallback onEditCurrentLogo;
-  final VoidCallback onEditCurrentCover;
-  final VoidCallback onRemoveLogo;
-  final VoidCallback onRemoveCover;
-  final TextEditingController websiteCtrl;
-  final TextEditingController publicEmailCtrl;
-  final TextEditingController phoneCtrl;
-  final TextEditingController addressCtrl;
-  final TextEditingController cityCtrl;
-  final TextEditingController regionCtrl;
-  final TextEditingController countryCtrl;
-  final TextEditingController linkedinCtrl;
-  final TextEditingController xCtrl;
-  final TextEditingController facebookCtrl;
-  final TextEditingController instagramCtrl;
-  final TextEditingController youtubeCtrl;
-  final TextEditingController missionCtrl;
-  final TextEditingController servicesCtrl;
-  final TextEditingController audienceCtrl;
-  final TextEditingController foundedYearCtrl;
+  final String location;
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    final facts = <InsFact>[];
+    if (category.trim().isNotEmpty) {
+      facts.add(InsFact(icon: Icons.workspaces_outlined, text: category.trim()));
+    }
+    if (location.trim().isNotEmpty) {
+      facts.add(InsFact(icon: Icons.place_outlined, text: location.trim()));
+    }
+
+    final hasCover = coverUrl != null && coverUrl!.trim().isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Eyebrow.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              InsSpacing.cardPadding,
+              InsSpacing.cardPadding,
+              InsSpacing.cardPadding,
+              0,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.visibility_outlined,
+                  size: 14,
+                  color: AuraSurface.faint,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'LIVE PREVIEW',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.9,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Cover band.
+          if (hasCover)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                InsSpacing.cardPadding,
+                AuraSpace.s10,
+                InsSpacing.cardPadding,
+                0,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+                child: AspectRatio(
+                  aspectRatio: 4,
+                  child: Image.network(
+                    coverUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AuraSurface.subtle,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(InsSpacing.cardPadding),
+            child: InsIdentityHeader(
+              name: name.trim().isEmpty ? 'Institution name' : name,
+              tagline: tagline.trim().isEmpty ? null : tagline,
+              logoUrl: logoUrl,
+              facts: facts,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sticky save bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SaveBar extends StatelessWidget {
+  const _SaveBar({
+    required this.saving,
+    required this.busy,
+    required this.dirty,
+    required this.onSave,
+    required this.onCancel,
+    required this.onPreview,
+  });
+
+  final bool saving;
+  final bool busy;
+  final bool dirty;
   final VoidCallback onSave;
   final VoidCallback onCancel;
+  final VoidCallback onPreview;
 
-  static const Color _accent = Color(0xFF0D9488);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.page.withValues(alpha: 0.96),
+        border: const Border(
+          top: BorderSide(color: AuraSurface.divider),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x44000000),
+            blurRadius: 14,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            InsSpacing.screenHPad,
+            AuraSpace.s10,
+            InsSpacing.screenHPad,
+            AuraSpace.s10,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: dirty
+                                ? AuraSurface.warnInk
+                                : AuraSurface.faint,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            saving
+                                ? 'Saving changes…'
+                                : (dirty
+                                    ? 'You have unsaved changes'
+                                    : 'All changes saved'),
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.muted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AuraGhostButton(
+                    label: 'Preview',
+                    icon: Icons.visibility_outlined,
+                    onPressed: busy ? null : onPreview,
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  AuraSecondaryButton(
+                    label: 'Cancel',
+                    onPressed: busy ? null : onCancel,
+                  ),
+                  const SizedBox(width: AuraSpace.s8),
+                  AuraPrimaryButton(
+                    label: saving ? 'Saving…' : 'Save changes',
+                    icon: saving ? null : Icons.check_rounded,
+                    onPressed: busy ? null : onSave,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-  InputDecoration _dec(String hint, {String? prefix}) => InputDecoration(
+// ─────────────────────────────────────────────────────────────────────────────
+// Studio form atoms — labels, fields, layout helpers, banners
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StudioField extends StatelessWidget {
+  const _StudioField({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s6),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _StudioCountedField extends StatelessWidget {
+  const _StudioCountedField({
+    required this.label,
+    required this.controller,
+    required this.maxChars,
+    required this.child,
+    this.required = false,
+    this.helper,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final int maxChars;
+  final Widget child;
+  final bool required;
+  final String? helper;
+
+  @override
+  Widget build(BuildContext context) {
+    final used = controller.text.length;
+    final ratio = maxChars == 0 ? 0.0 : used / maxChars;
+    final atLimit = used >= maxChars;
+    final danger = atLimit || ratio >= 0.9;
+    final color = danger ? AuraSurface.dangerInk : AuraSurface.faint;
+    final fontWeight = atLimit ? FontWeight.w800 : FontWeight.w600;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Text(
+                      label,
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (required) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '*',
+                        style: AuraText.small
+                            .copyWith(color: AuraSurface.dangerInk),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                '$used / $maxChars',
+                style: AuraText.micro.copyWith(
+                  color: color,
+                  fontWeight: fontWeight,
+                ),
+              ),
+            ],
+          ),
+          if (helper != null && helper!.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              helper!,
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+          const SizedBox(height: AuraSpace.s6),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _StudioTextField extends StatelessWidget {
+  const _StudioTextField({
+    required this.controller,
+    required this.hint,
+    this.maxLength,
+    this.minLines,
+    this.maxLines,
+    this.keyboardType,
+    this.validator,
+    this.prefix,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final int? maxLength;
+  final int? minLines;
+  final int? maxLines;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final Widget? prefix;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      style: AuraText.body,
+      decoration: InputDecoration(
         hintText: hint,
-        prefixText: prefix,
+        prefixIcon: prefix,
         hintStyle: AuraText.body.copyWith(color: AuraSurface.faint),
         filled: true,
         fillColor: AuraSurface.subtle,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s14,
+          vertical: AuraSpace.s12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
           borderSide: const BorderSide(color: AuraSurface.divider),
@@ -644,424 +1341,190 @@ class _EditBody extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: const BorderSide(color: _accent, width: 1.5),
+          borderSide: const BorderSide(color: AuraSurface.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
+          borderSide:
+              const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          borderSide: const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
+          borderSide:
+              const BorderSide(color: AuraSurface.dangerInk, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14,
-          vertical: AuraSpace.s12,
-        ),
-      );
-
-  String? _urlValidator(String? v) {
-    if (v == null || v.trim().isEmpty) return null;
-    final uri = Uri.tryParse(v.trim());
-    if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
-      return 'Enter a valid URL (http:// or https://)';
-    }
-    return null;
+      ),
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      minLines: minLines,
+      maxLines: maxLines ?? 1,
+      validator: validator,
+      buildCounter: _emptyCounter,
+    );
   }
+}
+
+Widget? _emptyCounter(
+  BuildContext context, {
+  required int currentLength,
+  required int? maxLength,
+  required bool isFocused,
+}) =>
+    const SizedBox.shrink();
+
+class _SocialField extends StatelessWidget {
+  const _SocialField({
+    required this.label,
+    required this.icon,
+    required this.controller,
+    required this.hint,
+    this.validator,
+  });
+
+  final String label;
+  final IconData icon;
+  final TextEditingController controller;
+  final String hint;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32,
+    return _StudioField(
+      label: label,
+      child: _StudioTextField(
+        controller: controller,
+        hint: hint,
+        keyboardType: TextInputType.url,
+        maxLength: 2048,
+        validator: validator,
+        prefix: Padding(
+          padding: const EdgeInsets.only(left: 6, right: 2),
+          child: Icon(icon, size: 18, color: AuraSurface.faint),
+        ),
       ),
+    );
+  }
+}
+
+class _StudioTwoCol extends StatelessWidget {
+  const _StudioTwoCol({required this.left, required this.right});
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 480) {
+          return Column(children: [left, right]);
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: left),
+            const SizedBox(width: AuraSpace.s14),
+            Expanded(child: right),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StudioThreeCol extends StatelessWidget {
+  const _StudioThreeCol(
+      {required this.a, required this.b, required this.c});
+
+  final Widget a;
+  final Widget b;
+  final Widget c;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 480) {
+          return Column(children: [a, b, c]);
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: a),
+            const SizedBox(width: AuraSpace.s14),
+            Expanded(child: b),
+            const SizedBox(width: AuraSpace.s14),
+            Expanded(child: c),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MediaSlot extends StatelessWidget {
+  const _MediaSlot({
+    required this.label,
+    required this.helper,
+    required this.child,
+  });
+
+  final String label;
+  final String helper;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Edit institution profile', style: AuraText.headline),
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Update your institution\'s public-facing identity, contact, and representation.',
-                    style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
-                  ),
-                  const SizedBox(height: AuraSpace.s24),
-
-                  if (error != null) ...[
-                    _Banner(
-                      message: error!,
-                      color: AuraSurface.dangerBg,
-                      textColor: AuraSurface.dangerInk,
-                      icon: Icons.error_outline_rounded,
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  if (successMessage != null) ...[
-                    _Banner(
-                      message: successMessage!,
-                      color: AuraSurface.goodBg,
-                      textColor: AuraSurface.goodInk,
-                      icon: Icons.check_circle_outline_rounded,
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  // ── 1. Basic identity ─────────────────────────────────────
-                  const _SectionHeader(label: '1. BASIC IDENTITY'),
-                  _CountedField(
-                    label: 'Display name *',
-                    controller: nameCtrl,
-                    maxChars: 120,
-                    child: TextFormField(
-                      controller: nameCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Institution name'),
-                      maxLength: 120,
-                      buildCounter: _emptyCounter,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Name is required.';
-                        }
-                        if (v.trim().length > 120) return 'Max 120 characters.';
-                        return null;
-                      },
-                    ),
-                  ),
-                  _CountedField(
-                    label: 'Tagline',
-                    controller: taglineCtrl,
-                    maxChars: 160,
-                    child: TextFormField(
-                      controller: taglineCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Short tagline or motto…'),
-                      maxLength: 160,
-                      buildCounter: _emptyCounter,
-                      validator: (v) {
-                        if (v == null) return null;
-                        if (v.trim().length > 160) return 'Max 160 characters.';
-                        return null;
-                      },
-                    ),
-                  ),
-                  _CountedField(
-                    label: 'About',
-                    controller: descCtrl,
-                    maxChars: 2000,
-                    child: TextFormField(
-                      controller: descCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Describe your institution…'),
-                      minLines: 3,
-                      maxLines: 8,
-                      maxLength: 2000,
-                      buildCounter: _emptyCounter,
-                      validator: (v) {
-                        if (v == null) return null;
-                        if (v.trim().length > 2000) {
-                          return 'Max 2000 characters.';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  _TwoCol(
-                    left: _Field(
-                      label: 'Category / type',
-                      child: TextFormField(
-                        controller: categoryCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('e.g. University, NGO…'),
-                        maxLength: 128,
-                      ),
-                    ),
-                    right: _Field(
-                      label: 'Location',
-                      child: TextFormField(
-                        controller: locationCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('City or region…'),
-                        maxLength: 128,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s20),
-
-                  // ── 2. Branding ───────────────────────────────────────────
-                  const _SectionHeader(label: '2. BRANDING'),
-                  _Field(
-                    label: 'Logo',
-                    child: _MediaUploadControl(
-                      imageUrl: logoUrl,
-                      uploading: uploadingLogo,
-                      aspectRatio: 1,
-                      hint: 'Square image · at least 200×200 px · PNG, JPEG, or WebP',
-                      onPick: onPickLogo,
-                      onEditCurrent: onEditCurrentLogo,
-                      onRemove: onRemoveLogo,
-                    ),
-                  ),
-                  _Field(
-                    label: 'Cover / banner',
-                    child: _MediaUploadControl(
-                      imageUrl: coverUrl,
-                      uploading: uploadingCover,
-                      aspectRatio: 4,
-                      hint: 'Wide image · 1600×400 px or 4:1 ratio · PNG, JPEG, or WebP',
-                      onPick: onPickCover,
-                      onEditCurrent: onEditCurrentCover,
-                      onRemove: onRemoveCover,
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s20),
-
-                  // ── 3. Public presence ────────────────────────────────────
-                  const _SectionHeader(label: '3. PUBLIC PRESENCE'),
-                  _Field(
-                    label: 'Website',
-                    child: TextFormField(
-                      controller: websiteCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('https://…'),
-                      keyboardType: TextInputType.url,
-                      validator: _urlValidator,
-                      maxLength: 2048,
-                    ),
-                  ),
-                  _TwoCol(
-                    left: _Field(
-                      label: 'Public email',
-                      child: TextFormField(
-                        controller: publicEmailCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('contact@institution.edu'),
-                        keyboardType: TextInputType.emailAddress,
-                        maxLength: 256,
-                      ),
-                    ),
-                    right: _Field(
-                      label: 'Phone',
-                      child: TextFormField(
-                        controller: phoneCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('+1 (555) 000-0000'),
-                        keyboardType: TextInputType.phone,
-                        maxLength: 50,
-                      ),
-                    ),
-                  ),
-                  _Field(
-                    label: 'Address',
-                    child: TextFormField(
-                      controller: addressCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Street address…'),
-                      maxLength: 500,
-                    ),
-                  ),
-                  _ThreeCol(
-                    a: _Field(
-                      label: 'City',
-                      child: TextFormField(
-                        controller: cityCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('City'),
-                        maxLength: 128,
-                      ),
-                    ),
-                    b: _Field(
-                      label: 'Region / state',
-                      child: TextFormField(
-                        controller: regionCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('State / province'),
-                        maxLength: 128,
-                      ),
-                    ),
-                    c: _Field(
-                      label: 'Country',
-                      child: TextFormField(
-                        controller: countryCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('Country'),
-                        maxLength: 128,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s20),
-
-                  // ── 4. Social links ───────────────────────────────────────
-                  const _SectionHeader(label: '4. SOCIAL LINKS'),
-                  _TwoCol(
-                    left: _Field(
-                      label: 'LinkedIn',
-                      child: TextFormField(
-                        controller: linkedinCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('https://linkedin.com/in/…'),
-                        keyboardType: TextInputType.url,
-                        validator: _urlValidator,
-                        maxLength: 2048,
-                      ),
-                    ),
-                    right: _Field(
-                      label: 'X / Twitter',
-                      child: TextFormField(
-                        controller: xCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('https://x.com/…'),
-                        keyboardType: TextInputType.url,
-                        validator: _urlValidator,
-                        maxLength: 2048,
-                      ),
-                    ),
-                  ),
-                  _TwoCol(
-                    left: _Field(
-                      label: 'Facebook',
-                      child: TextFormField(
-                        controller: facebookCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('https://facebook.com/…'),
-                        keyboardType: TextInputType.url,
-                        validator: _urlValidator,
-                        maxLength: 2048,
-                      ),
-                    ),
-                    right: _Field(
-                      label: 'Instagram',
-                      child: TextFormField(
-                        controller: instagramCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('https://instagram.com/…'),
-                        keyboardType: TextInputType.url,
-                        validator: _urlValidator,
-                        maxLength: 2048,
-                      ),
-                    ),
-                  ),
-                  _Field(
-                    label: 'YouTube',
-                    child: TextFormField(
-                      controller: youtubeCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('https://youtube.com/@…'),
-                      keyboardType: TextInputType.url,
-                      validator: _urlValidator,
-                      maxLength: 2048,
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s20),
-
-                  // ── 5. Mission / representation ───────────────────────────
-                  const _SectionHeader(label: '5. MISSION & REPRESENTATION'),
-                  _Field(
-                    label: 'Mission',
-                    child: TextFormField(
-                      controller: missionCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Your institution\'s mission statement…'),
-                      minLines: 2,
-                      maxLines: 6,
-                      maxLength: 2000,
-                    ),
-                  ),
-                  _Field(
-                    label: 'Services / programs',
-                    child: TextFormField(
-                      controller: servicesCtrl,
-                      style: AuraText.body,
-                      decoration: _dec('Key services or academic programs…'),
-                      minLines: 2,
-                      maxLines: 6,
-                      maxLength: 2000,
-                    ),
-                  ),
-                  _TwoCol(
-                    left: _Field(
-                      label: 'Target audience',
-                      child: TextFormField(
-                        controller: audienceCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('e.g. Graduate students, researchers…'),
-                        maxLength: 1000,
-                      ),
-                    ),
-                    right: _Field(
-                      label: 'Founded year',
-                      child: TextFormField(
-                        controller: foundedYearCtrl,
-                        style: AuraText.body,
-                        decoration: _dec('e.g. 1970'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return null;
-                          final n = int.tryParse(v.trim());
-                          if (n == null || n < 1800 || n > 2100) {
-                            return 'Enter a valid year (1800–2100)';
-                          }
-                          return null;
-                        },
-                        maxLength: 4,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s28),
-
-                  // ── Save / cancel ─────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AuraPrimaryButton(
-                          label: saving ? 'Saving…' : 'Save changes',
-                          icon: saving ? null : Icons.check_rounded,
-                          onPressed: saving ? null : onSave,
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s10),
-                      AuraSecondaryButton(label: 'Cancel', onPressed: onCancel),
-                    ],
-                  ),
-
-                  const SizedBox(height: AuraSpace.s20),
-                  _managedFieldsNote(),
-                ],
+        Row(
+          children: [
+            Text(
+              label,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
+          ],
         ),
+        const SizedBox(height: 2),
+        Text(
+          helper,
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        child,
       ],
     );
   }
+}
 
-  Widget _managedFieldsNote() {
+class _ToneBanner extends StatelessWidget {
+  const _ToneBanner({required this.tone, required this.message});
+
+  final InsTone tone;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = InsToneStyle.of(tone);
     return Container(
-      padding: const EdgeInsets.all(AuraSpace.s14),
+      padding: const EdgeInsets.all(InsSpacing.cardPaddingDense),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: t.bg,
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: t.border),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, size: 14, color: AuraSurface.muted),
-          const SizedBox(width: AuraSpace.s8),
+          Icon(t.icon, size: 16, color: t.fg),
+          const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
-              'Slug, domain, jurisdiction, and verification status are managed through separate workflows (Domains screen and admin review).',
-              style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.45),
+              message,
+              style: AuraText.small.copyWith(color: t.fg, height: 1.4),
             ),
           ),
         ],
@@ -1070,14 +1533,49 @@ class _EditBody extends StatelessWidget {
   }
 }
 
-// ── Media upload control ──────────────────────────────────────────────────────
+class _ManagedFieldsNote extends StatelessWidget {
+  const _ManagedFieldsNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return const InsCard(
+      padding: EdgeInsets.all(InsSpacing.cardPaddingDense),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 14,
+            color: AuraSurface.muted,
+          ),
+          SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(
+              'Slug, domain, jurisdiction, and verification status are managed through separate workflows (Domains screen and admin review).',
+              style: TextStyle(
+                color: AuraSurface.faint,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Media upload control — visual chrome refreshed; flow unchanged from prior
+// implementation (pick → editor → upload, plus "Edit current" against the
+// existing CDN URL).
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MediaUploadControl extends StatelessWidget {
   const _MediaUploadControl({
     required this.imageUrl,
     required this.uploading,
     required this.aspectRatio,
-    required this.hint,
     required this.onPick,
     required this.onEditCurrent,
     required this.onRemove,
@@ -1085,17 +1583,11 @@ class _MediaUploadControl extends StatelessWidget {
 
   final String? imageUrl;
   final bool uploading;
-
-  /// 1 for square logo, 4 for wide cover banner.
   final double aspectRatio;
-  final String hint;
   final VoidCallback onPick;
-  /// Phase 5.2: open the existing image in the unified editor (no re-pick).
   final VoidCallback onEditCurrent;
   final VoidCallback onRemove;
 
-  // Hard caps for the preview surface so an uploaded image cannot bleed into
-  // page content.
   static const double _kLogoMaxSize = 160;
   static const double _kCoverMaxWidth = 600;
   static const double _kCoverMaxHeight = 150;
@@ -1146,8 +1638,10 @@ class _MediaUploadControl extends StatelessWidget {
               errorBuilder: (_, __, ___) => Container(
                 color: AuraSurface.elevated,
                 child: const Center(
-                  child: Icon(Icons.broken_image_outlined,
-                      color: AuraSurface.faint),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: AuraSurface.faint,
+                  ),
                 ),
               ),
             ),
@@ -1170,7 +1664,7 @@ class _MediaUploadControl extends StatelessWidget {
               ),
             ),
           ),
-        if (uploading) ...[
+        if (uploading)
           _previewBox(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -1186,29 +1680,36 @@ class _MediaUploadControl extends StatelessWidget {
               ),
             ),
           ),
-        ],
-        const SizedBox(height: AuraSpace.s8),
-        Row(
+        const SizedBox(height: AuraSpace.s10),
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
           children: [
             OutlinedButton.icon(
               onPressed: uploading ? null : onPick,
-              icon: Icon(hasImage ? Icons.swap_horiz_rounded : Icons.upload_rounded, size: 16),
+              icon: Icon(
+                hasImage ? Icons.swap_horiz_rounded : Icons.upload_rounded,
+                size: 16,
+              ),
               label: Text(uploading
                   ? 'Uploading…'
                   : hasImage
                       ? 'Replace'
                       : 'Upload'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                textStyle:
+                    AuraText.small.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
-            if (hasImage) ...[
-              const SizedBox(width: AuraSpace.s8),
+            if (hasImage)
               OutlinedButton.icon(
                 onPressed: uploading ? null : onEditCurrent,
-                icon: const Icon(Icons.crop_rounded, size: 16),
-                label: const Text('Edit current'),
+                icon: const Icon(Icons.tune_rounded, size: 16),
+                label: const Text('Reframe / re-edit'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -1218,7 +1719,7 @@ class _MediaUploadControl extends StatelessWidget {
                       AuraText.small.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              const SizedBox(width: AuraSpace.s8),
+            if (hasImage)
               TextButton(
                 onPressed: uploading ? null : onRemove,
                 child: Text(
@@ -1229,241 +1730,9 @@ class _MediaUploadControl extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
           ],
-        ),
-        const SizedBox(height: AuraSpace.s6),
-        Text(
-          hint,
-          style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.4),
         ),
       ],
-    );
-  }
-}
-
-// ── Layout helpers ──────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentSoft = Color(0x1E0D9488);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s8,
-        ),
-        decoration: BoxDecoration(
-          color: _accentSoft,
-          borderRadius: BorderRadius.circular(AuraRadius.md),
-          border: Border.all(color: _accent.withValues(alpha: 0.2)),
-        ),
-        child: Text(
-          label,
-          style: AuraText.micro.copyWith(
-            color: const Color(0xFF5EEAD4),
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _TwoCol extends StatelessWidget {
-  const _TwoCol({required this.left, required this.right});
-
-  final Widget left;
-  final Widget right;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 480) {
-          return Column(children: [left, right]);
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: left),
-            const SizedBox(width: AuraSpace.s14),
-            Expanded(child: right),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ThreeCol extends StatelessWidget {
-  const _ThreeCol({required this.a, required this.b, required this.c});
-
-  final Widget a;
-  final Widget b;
-  final Widget c;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 480) {
-          return Column(children: [a, b, c]);
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: a),
-            const SizedBox(width: AuraSpace.s14),
-            Expanded(child: b),
-            const SizedBox(width: AuraSpace.s14),
-            Expanded(child: c),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Counted version of [_Field] — wraps a TextFormField with a live `used/max`
-/// counter under the label. Counter color goes red within the last 10% and
-/// bold red when at limit.
-class _CountedField extends StatelessWidget {
-  const _CountedField({
-    required this.label,
-    required this.controller,
-    required this.maxChars,
-    required this.child,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final int maxChars;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final used = controller.text.length;
-    final ratio = maxChars == 0 ? 0.0 : used / maxChars;
-    final atLimit = used >= maxChars;
-    final danger = atLimit || ratio >= 0.9;
-    final color = danger ? AuraSurface.dangerInk : AuraSurface.faint;
-    final fontWeight = atLimit ? FontWeight.w800 : FontWeight.w600;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.faint,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-              Text(
-                '$used/$maxChars',
-                style: AuraText.micro.copyWith(
-                  color: color,
-                  fontWeight: fontWeight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-Widget? _emptyCounter(
-  BuildContext context, {
-  required int currentLength,
-  required int? maxLength,
-  required bool isFocused,
-}) =>
-    const SizedBox.shrink();
-
-class _Banner extends StatelessWidget {
-  const _Banner({
-    required this.message,
-    required this.color,
-    required this.textColor,
-    required this.icon,
-  });
-
-  final String message;
-  final Color color;
-  final Color textColor;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: textColor.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: textColor),
-          const SizedBox(width: AuraSpace.s10),
-          Expanded(
-            child: Text(
-              message,
-              style: AuraText.small.copyWith(color: textColor, height: 1.4),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

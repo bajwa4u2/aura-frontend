@@ -10,6 +10,7 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import '../../shared/identity/aura_identity_badge.dart';
 import 'public_shell.dart';
@@ -256,6 +257,19 @@ class InstitutionShell extends ConsumerWidget {
 // rendered inside InstitutionShell (path: /institution/:id/institutions/:slug).
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Phase 6.6d — Public preview framing.
+///
+/// Sticky band that sits above the canonical public-profile screen
+/// (`InstitutionDetailScreen`) when it is rendered inside the institution
+/// workspace. Renders the **same** widget as the public route, so accuracy
+/// is automatic by construction; this toolbar is purely framing.
+///
+/// Visuals:
+///   * `InsTone.info` background + border — calm, non-alarming, reads as
+///     "you are looking at the public face of this institution".
+///   * Eyebrow + status line + tiny URL meta line on the left.
+///   * Action cluster on the right: Edit profile · Copy URL · Open URL
+///     (web only) · Exit preview.
 class _PublicPreviewToolbar extends StatelessWidget {
   const _PublicPreviewToolbar({required this.identity});
 
@@ -279,66 +293,252 @@ class _PublicPreviewToolbar extends StatelessWidget {
     );
   }
 
+  Future<void> _openExternal(BuildContext context, String link) async {
+    // Web builds: copy + announce; native builds keep the same fallback.
+    await Clipboard.setData(ClipboardData(text: link));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Open in new tab: $link')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final slug = identity?.slug ?? '';
     final link = _publicLink(slug);
+    final tone = InsToneStyle.of(InsTone.info);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s16,
-        vertical: AuraSpace.s10,
+      decoration: BoxDecoration(
+        color: tone.bg,
+        border: Border(bottom: BorderSide(color: tone.border)),
       ),
-      decoration: const BoxDecoration(
-        color: _institutionAccentSoft,
-        border: Border(
-          bottom: BorderSide(color: Color(0x330D9488)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s10,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 760;
+            final headline = _PreviewHeadline(link: link, tone: tone);
+            final actions = _PreviewActions(
+              link: link,
+              tone: tone,
+              onEdit: () => context.go('/institution/edit-profile'),
+              onCopy: () => _copy(context, link),
+              onOpen: link.isNotEmpty && Uri.base.scheme.startsWith('http')
+                  ? () => _openExternal(context, link)
+                  : null,
+              onExit: () => context.go('/institution/profile'),
+            );
+            if (wide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: headline),
+                  const SizedBox(width: AuraSpace.s12),
+                  actions,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                headline,
+                const SizedBox(height: AuraSpace.s8),
+                actions,
+              ],
+            );
+          },
         ),
       ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.visibility_outlined,
-            size: 16,
-            color: _institutionAccentText,
+    );
+  }
+}
+
+class _PreviewHeadline extends StatelessWidget {
+  const _PreviewHeadline({required this.link, required this.tone});
+
+  final String link;
+  final InsToneStyle tone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: tone.bg,
+            shape: BoxShape.circle,
+            border: Border.all(color: tone.border),
           ),
-          const SizedBox(width: AuraSpace.s8),
-          Expanded(
-            child: Text(
-              'Viewing public profile preview',
-              style: AuraText.small.copyWith(
-                color: _institutionAccentText,
-                fontWeight: FontWeight.w700,
+          alignment: Alignment.center,
+          child: Icon(Icons.visibility_outlined, size: 15, color: tone.fg),
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'PREVIEW',
+                style: AuraText.micro.copyWith(
+                  color: tone.fg,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.9,
+                  fontSize: 10,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+              const SizedBox(height: 1),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Viewing the public profile',
+                      style: AuraText.small.copyWith(
+                        color: tone.fg,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (link.isNotEmpty) ...[
+                    const SizedBox(width: AuraSpace.s8),
+                    Flexible(
+                      child: Text(
+                        link,
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
-          TextButton.icon(
-            onPressed: () => context.go('/institution/profile'),
-            icon: const Icon(Icons.edit_outlined, size: 14),
-            label: const Text('Edit profile'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewActions extends StatelessWidget {
+  const _PreviewActions({
+    required this.link,
+    required this.tone,
+    required this.onEdit,
+    required this.onCopy,
+    required this.onOpen,
+    required this.onExit,
+  });
+
+  final String link;
+  final InsToneStyle tone;
+  final VoidCallback onEdit;
+  final VoidCallback onCopy;
+  final VoidCallback? onOpen;
+  final VoidCallback onExit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _PreviewChip(
+          label: 'Edit profile',
+          icon: Icons.edit_outlined,
+          tone: tone,
+          onTap: onEdit,
+        ),
+        if (link.isNotEmpty)
+          _PreviewChip(
+            label: 'Copy URL',
+            icon: Icons.link_rounded,
+            tone: tone,
+            onTap: onCopy,
           ),
-          if (link.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => _copy(context, link),
-              icon: const Icon(Icons.link_rounded, size: 14),
-              label: const Text('Copy URL'),
-            ),
-          if (link.isNotEmpty && Uri.base.scheme.startsWith('http'))
-            TextButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: link));
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Open in new tab: $link')),
-                );
-              },
-              icon: const Icon(Icons.open_in_new_rounded, size: 14),
-              label: const Text('Open URL'),
-            ),
-        ],
+        if (onOpen != null)
+          _PreviewChip(
+            label: 'Open URL',
+            icon: Icons.open_in_new_rounded,
+            tone: tone,
+            onTap: onOpen!,
+          ),
+        _PreviewChip(
+          label: 'Exit preview',
+          icon: Icons.close_rounded,
+          tone: tone,
+          onTap: onExit,
+          emphasized: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewChip extends StatelessWidget {
+  const _PreviewChip({
+    required this.label,
+    required this.icon,
+    required this.tone,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final InsToneStyle tone;
+  final VoidCallback onTap;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = tone.fg;
+    final bg = emphasized ? tone.bg : Colors.transparent;
+    final border = emphasized ? tone.border : tone.border;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s10,
+            vertical: 6,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: fg),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: AuraText.small.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
