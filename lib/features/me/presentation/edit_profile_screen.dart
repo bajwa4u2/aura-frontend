@@ -264,6 +264,80 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     await _pickAndUploadImage(isAvatar: false);
   }
 
+  /// "Edit current" — open the editor against the existing avatar URL so the
+  /// user can pan/zoom + re-save without re-picking a file.
+  Future<void> _editCurrentAvatar() async {
+    final url = (_avatarUrl ?? '').trim();
+    if (_busy || url.isEmpty) return;
+    await _editFromUrl(url, isAvatar: true);
+  }
+
+  /// "Edit current" — same flow for the cover image.
+  Future<void> _editCurrentCover() async {
+    final url = (_coverUrl ?? '').trim();
+    if (_busy || url.isEmpty) return;
+    await _editFromUrl(url, isAvatar: false);
+  }
+
+  Future<void> _editFromUrl(String url, {required bool isAvatar}) async {
+    final cropped = await ProfileMediaEditor.openFromUrl(
+      context,
+      imageUrl: url,
+      config: isAvatar
+          ? ProfileMediaEditorConfig.memberAvatar
+          : ProfileMediaEditorConfig.memberCover,
+    );
+    if (cropped == null || !mounted) return;
+
+    setState(() {
+      _errorText = null;
+      if (isAvatar) {
+        _uploadingAvatar = true;
+      } else {
+        _uploadingCover = true;
+      }
+    });
+
+    try {
+      final uploadedUrl = await _uploadProcessedBytes(
+        bytes: cropped,
+        fileName: isAvatar ? 'avatar-edit.png' : 'cover-edit.png',
+        outputW: isAvatar
+            ? ProfileMediaEditorConfig.memberAvatar.outputWidth
+            : ProfileMediaEditorConfig.memberCover.outputWidth,
+        outputH: isAvatar
+            ? ProfileMediaEditorConfig.memberAvatar.outputHeight
+            : ProfileMediaEditorConfig.memberCover.outputHeight,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (isAvatar) {
+          _avatarUrl = uploadedUrl;
+        } else {
+          _coverUrl = uploadedUrl;
+        }
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = _readApiError(e, fallback: 'Could not upload image.');
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorText = 'Could not upload image.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (isAvatar) {
+            _uploadingAvatar = false;
+          } else {
+            _uploadingCover = false;
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _pickAndUploadImage({required bool isAvatar}) async {
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -662,39 +736,32 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           Positioned(
             top: AuraSpace.s14,
             right: AuraSpace.s14,
-            // Phase 5.2: contrast-safe container so the action buttons stay
-            // legible regardless of the cover image's brightness. Glass-tint
-            // backdrop with a subtle shadow; on top of it sit the existing
-            // surface buttons whose own white tint then has guaranteed
-            // contrast.
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+            // Phase 5.2 completion: dark glass control cluster sits directly
+            // on top of the cover image. Each button is a self-contained
+            // dark pill with white text, a hairline white border, and a
+            // strong shadow — readable on bright OR dark imagery without
+            // depending on the cover's own gradient overlay.
+            child: Wrap(
+              spacing: AuraSpace.s8,
+              children: [
+                _glassActionButton(
+                  label: _uploadingCover ? 'Uploading…' : 'Change cover',
+                  icon: Icons.upload_rounded,
+                  onPressed: _busy ? null : _pickCover,
+                ),
+                if ((_coverUrl ?? '').isNotEmpty)
+                  _glassActionButton(
+                    label: 'Edit current',
+                    icon: Icons.crop_rounded,
+                    onPressed: _busy ? null : _editCurrentCover,
                   ),
-                ],
-              ),
-              child: Wrap(
-                spacing: AuraSpace.s8,
-                children: [
-                  _surfaceActionButton(
-                    label:
-                        _uploadingCover ? 'Uploading...' : 'Change cover',
-                    onPressed: _busy ? null : _pickCover,
+                if ((_coverUrl ?? '').isNotEmpty)
+                  _glassActionButton(
+                    label: 'Remove',
+                    icon: Icons.delete_outline_rounded,
+                    onPressed: _busy ? null : _removeCover,
                   ),
-                  if ((_coverUrl ?? '').isNotEmpty)
-                    _surfaceActionButton(
-                      label: 'Remove',
-                      onPressed: _busy ? null : _removeCover,
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
         ],
@@ -745,6 +812,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             onSelected: (value) {
               if (value == 'change') {
                 _pickAvatar();
+              } else if (value == 'edit') {
+                _editCurrentAvatar();
               } else if (value == 'remove') {
                 _removeAvatar();
               }
@@ -757,6 +826,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   style: AuraText.body,
                 ),
               ),
+              if ((_avatarUrl ?? '').isNotEmpty)
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Text('Edit current', style: AuraText.body),
+                ),
               if ((_avatarUrl ?? '').isNotEmpty)
                 const PopupMenuItem<String>(
                   value: 'remove',
@@ -1543,33 +1617,67 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _surfaceActionButton({
+  /// Dark-glass action pill used for cover overlays. Unlike a white surface
+  /// button, this stays readable on **any** cover image — bright sky, dark
+  /// scene, busy collage. The combination of `black @ 0.65` background,
+  /// a hairline white border at `0.12` alpha, and a strong shadow means
+  /// the button never dissolves into the underlying photo.
+  Widget _glassActionButton({
     required String label,
+    required IconData icon,
     required VoidCallback? onPressed,
   }) {
+    final disabled = onPressed == null;
     return Material(
-      color: Colors.white.withValues(alpha: 0.92),
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(AuraRadius.pill),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s14,
+            horizontal: AuraSpace.s12,
             vertical: 9,
           ),
-          child: Text(
-            label,
-            style: AuraText.body.copyWith(
-              fontSize: 13,
-              color: AuraSurface.ink,
-              fontWeight: FontWeight.w600,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: disabled ? 0.4 : 0.65),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: Colors.white.withValues(alpha: disabled ? 0.6 : 1),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AuraText.body.copyWith(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: disabled ? 0.6 : 1),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
 
   Widget _divider() {
     return Container(

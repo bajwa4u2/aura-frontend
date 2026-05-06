@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/ui/aura_platform_components.dart';
 import '../../core/ui/aura_radius.dart';
@@ -80,27 +81,33 @@ class ProfileMediaEditorConfig {
 /// Full-screen modal editor for profile media (avatars, logos, covers).
 ///
 /// Architecture:
-///   1. Caller picks a file and gets the raw bytes.
-///   2. Caller invokes [ProfileMediaEditor.open] with the bytes + a config.
+///   1. Caller invokes [ProfileMediaEditor.open] with **either**
+///      `imageBytes` (newly picked file) **or** `imageUrl` (existing media
+///      already on the CDN — used for the "Edit current" action so users
+///      can reposition the cover/avatar/logo they already published).
+///   2. If url, the editor fetches bytes via `http.get` (the CDN must allow
+///      CORS on the asset; mobile builds aren't subject to CORS).
 ///   3. The editor decodes the image with `dart:ui`, lets the user pan + zoom
 ///      inside a fixed-aspect frame, and on Save renders the visible crop
 ///      into a `Canvas`/`Picture` at the configured output resolution.
 ///   4. The cropped PNG bytes flow back to the caller's `await`, which is
 ///      then responsible for uploading via `uploadAuraMedia(...)`.
-///
-/// This editor never talks to the network. It is a pure pixel pipeline.
 class ProfileMediaEditor extends StatefulWidget {
   const ProfileMediaEditor({
     super.key,
-    required this.imageBytes,
+    this.imageBytes,
+    this.imageUrl,
     required this.config,
-  });
+  }) : assert(imageBytes != null || imageUrl != null,
+            'ProfileMediaEditor requires imageBytes OR imageUrl');
 
-  final Uint8List imageBytes;
+  final Uint8List? imageBytes;
+  final String? imageUrl;
   final ProfileMediaEditorConfig config;
 
-  /// Push the editor as a fullscreen dialog. Resolves to the cropped PNG
-  /// bytes, or `null` if the user cancelled.
+  /// Push the editor as a fullscreen dialog with bytes that the caller
+  /// already has in memory (typical "I just picked a file" case). Resolves
+  /// to the cropped PNG bytes, or `null` if the user cancelled.
   static Future<Uint8List?> open(
     BuildContext context, {
     required Uint8List imageBytes,
@@ -117,6 +124,26 @@ class ProfileMediaEditor extends StatefulWidget {
     );
   }
 
+  /// Push the editor against an image already published on the CDN — used
+  /// by "Edit current" actions to reposition the existing avatar/cover
+  /// without re-picking. Returns the cropped PNG bytes, or `null` if
+  /// cancelled or the image couldn't be fetched.
+  static Future<Uint8List?> openFromUrl(
+    BuildContext context, {
+    required String imageUrl,
+    required ProfileMediaEditorConfig config,
+  }) {
+    return Navigator.of(context).push<Uint8List>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ProfileMediaEditor(
+          imageUrl: imageUrl,
+          config: config,
+        ),
+      ),
+    );
+  }
+
   @override
   State<ProfileMediaEditor> createState() => _ProfileMediaEditorState();
 }
@@ -124,6 +151,7 @@ class ProfileMediaEditor extends StatefulWidget {
 class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   ui.Image? _image;
   Object? _decodeError;
+  bool _loadingFromUrl = false;
 
   // Transform state — `_scale = 1.0` means the image fully covers the frame
   // (cover-fit). User can scale up to `_maxScale`. Offset is the pan delta
@@ -131,11 +159,10 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   double _scale = 1.0;
   Offset _offset = Offset.zero;
 
-  // Gesture pivots — captured at scaleStart and reused on each update so
-  // pan + pinch combine cleanly without drift.
+  // Gesture pivot — captured at scaleStart for the cumulative scale
+  // multiplier. (Pan uses `focalPointDelta` per update so we don't need a
+  // start-offset anchor for it.)
   double _gestureStartScale = 1.0;
-  Offset _gestureStartOffset = Offset.zero;
-  Offset? _gestureFocalStart;
 
   // Computed each layout pass.
   Size? _frameSize;
@@ -148,12 +175,50 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
   @override
   void initState() {
     super.initState();
-    _decodeImage();
+    _bootstrap();
   }
 
-  Future<void> _decodeImage() async {
+  Future<void> _bootstrap() async {
+    final bytes = widget.imageBytes;
+    if (bytes != null) {
+      await _decodeBytes(bytes);
+      return;
+    }
+    final url = widget.imageUrl;
+    if (url != null && url.isNotEmpty) {
+      await _loadFromUrl(url);
+    }
+  }
+
+  Future<void> _loadFromUrl(String url) async {
+    if (!mounted) return;
+    setState(() {
+      _loadingFromUrl = true;
+      _decodeError = null;
+    });
     try {
-      final codec = await ui.instantiateImageCodec(widget.imageBytes);
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode != 200) {
+        throw StateError('HTTP ${res.statusCode}');
+      }
+      if (!mounted) return;
+      await _decodeBytes(res.bodyBytes);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _decodeError = e;
+        _loadingFromUrl = false;
+      });
+    } finally {
+      if (mounted && _loadingFromUrl) {
+        setState(() => _loadingFromUrl = false);
+      }
+    }
+  }
+
+  Future<void> _decodeBytes(Uint8List bytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       if (!mounted) {
         frame.image.dispose();
@@ -203,44 +268,59 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
     return scaleW > scaleH ? scaleW : scaleH;
   }
 
-  /// Max allowed offset in screen pixels: the image must always cover the
-  /// frame, so at scale `_scale` we can pan by at most half the overhang on
-  /// each side.
+  /// Maximum allowed offset on each axis, **independently**.
+  ///
+  /// The X and Y bounds are deliberately separate — they share **no** value
+  /// and are not collapsed into a shared limit:
+  ///
+  ///   maxX = max(0, (imageScreenW - frameW) / 2)
+  ///   maxY = max(0, (imageScreenH - frameH) / 2)
+  ///
+  /// At scale=1 with cover-fit, exactly one axis fully fits and the other
+  /// overhangs — so one of `maxX`/`maxY` is 0 and the other is the
+  /// half-overhang. When the user zooms in (`_scale > 1`), both axes
+  /// overhang and both bounds become positive. The gesture clamp respects
+  /// each axis on its own so a wide image in a square frame can pan
+  /// horizontally even when the height fits exactly.
   Offset _maxOffsetFor(Size frame) {
     final image = _image!;
     final s = _baseFitScale(frame) * _scale;
     final imageScreenW = image.width * s;
     final imageScreenH = image.height * s;
-    final maxX = ((imageScreenW - frame.width) / 2).clamp(0.0, double.infinity);
-    final maxY =
-        ((imageScreenH - frame.height) / 2).clamp(0.0, double.infinity);
+    final overflowX = imageScreenW - frame.width;
+    final overflowY = imageScreenH - frame.height;
+    final maxX = overflowX > 0 ? overflowX / 2 : 0.0;
+    final maxY = overflowY > 0 ? overflowY / 2 : 0.0;
     return Offset(maxX, maxY);
   }
 
   Offset _clamp(Offset offset, Size frame) {
     final max = _maxOffsetFor(frame);
-    return Offset(
-      offset.dx.clamp(-max.dx, max.dx),
-      offset.dy.clamp(-max.dy, max.dy),
-    );
+    // Per-axis clamp — `dx` is bounded by `maxX`, `dy` by `maxY`. Never
+    // share bounds; never fall back to the smaller of the two.
+    final dx = max.dx == 0 ? 0.0 : offset.dx.clamp(-max.dx, max.dx);
+    final dy = max.dy == 0 ? 0.0 : offset.dy.clamp(-max.dy, max.dy);
+    return Offset(dx, dy);
   }
 
   // ── Gesture ───────────────────────────────────────────────────────────────
 
   void _onScaleStart(ScaleStartDetails details) {
     _gestureStartScale = _scale;
-    _gestureStartOffset = _offset;
-    _gestureFocalStart = details.localFocalPoint;
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final frame = _frameSize;
     if (frame == null || _image == null) return;
-    final start = _gestureFocalStart ?? details.localFocalPoint;
-    final delta = details.localFocalPoint - start;
+
+    // `details.scale` is cumulative since gesture start (1.0 = unchanged).
+    // `details.focalPointDelta` is per-update — already in local coords —
+    // so we add it directly to the live offset for pan. This is more
+    // robust than tracking start positions because each frame moves by
+    // exactly the pointer's delta this frame.
     final newScale =
         (_gestureStartScale * details.scale).clamp(_minScale, _maxScale);
-    final newOffset = _clamp(_gestureStartOffset + delta, frame);
+    final newOffset = _clamp(_offset + details.focalPointDelta, frame);
     if (newScale == _scale && newOffset == _offset) return;
     setState(() {
       _scale = newScale;
@@ -388,20 +468,26 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
       return Center(
         child: AuraErrorState(
           title: 'Could not load image',
-          body: 'The selected file may be corrupted or unsupported.',
+          body: widget.imageUrl != null
+              ? 'The image could not be downloaded. Check your network and try again.'
+              : 'The selected file may be corrupted or unsupported.',
           action: AuraSecondaryButton(
             label: 'Try again',
             icon: Icons.refresh_rounded,
             onPressed: () {
               setState(() => _decodeError = null);
-              _decodeImage();
+              _bootstrap();
             },
           ),
         ),
       );
     }
     if (_image == null) {
-      return const Center(child: AuraLoadingState(message: 'Preparing…'));
+      return Center(
+        child: AuraLoadingState(
+          message: _loadingFromUrl ? 'Loading current image…' : 'Preparing…',
+        ),
+      );
     }
 
     final aspect = widget.config.aspectRatio;

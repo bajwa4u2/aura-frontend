@@ -246,6 +246,85 @@ class _InstitutionEditProfileScreenState
   Future<void> _pickLogo() => _pickAndUploadImage(isLogo: true);
   Future<void> _pickCover() => _pickAndUploadImage(isLogo: false);
 
+  /// "Edit current" — open the editor against the existing media URL so
+  /// the user can pan/zoom + re-save without re-picking a file.
+  Future<void> _editCurrentLogo() => _editFromCurrentUrl(isLogo: true);
+  Future<void> _editCurrentCover() => _editFromCurrentUrl(isLogo: false);
+
+  Future<void> _editFromCurrentUrl({required bool isLogo}) async {
+    if (_busy) return;
+    final url = (isLogo ? _logoUrl : _coverUrl)?.trim() ?? '';
+    if (url.isEmpty) return;
+
+    final cropped = await ProfileMediaEditor.openFromUrl(
+      context,
+      imageUrl: url,
+      config: isLogo
+          ? ProfileMediaEditorConfig.institutionLogo
+          : ProfileMediaEditorConfig.institutionCover,
+    );
+    if (cropped == null || !mounted) return;
+
+    setState(() {
+      _error = null;
+      if (isLogo) {
+        _uploadingLogo = true;
+      } else {
+        _uploadingCover = true;
+      }
+    });
+
+    try {
+      final outW = isLogo
+          ? ProfileMediaEditorConfig.institutionLogo.outputWidth
+          : ProfileMediaEditorConfig.institutionCover.outputWidth;
+      final outH = isLogo
+          ? ProfileMediaEditorConfig.institutionLogo.outputHeight
+          : ProfileMediaEditorConfig.institutionCover.outputHeight;
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: cropped,
+        fileName: isLogo ? 'logo-edit.png' : 'cover-edit.png',
+        mimeType: 'image/png',
+        kind: 'IMAGE',
+        source: 'UPLOAD',
+        width: outW,
+        height: outH,
+        metadataPatch: <String, dynamic>{
+          'width': outW,
+          'height': outH,
+          'editDisclosure': true,
+        },
+      );
+      final newUrl = result.url.trim();
+      if (newUrl.isEmpty) throw Exception('Uploaded image URL missing.');
+      if (!mounted) return;
+      setState(() {
+        if (isLogo) {
+          _logoUrl = newUrl;
+        } else {
+          _coverUrl = newUrl;
+        }
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _readDioError(e, 'Could not upload image.'));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Could not upload image.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (isLogo) {
+            _uploadingLogo = false;
+          } else {
+            _uploadingCover = false;
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _pickAndUploadImage({required bool isLogo}) async {
     if (_busy) return;
     final file = await _picker.pickImage(
@@ -433,6 +512,8 @@ class _InstitutionEditProfileScreenState
             uploadingCover: _uploadingCover,
             onPickLogo: _pickLogo,
             onPickCover: _pickCover,
+            onEditCurrentLogo: _editCurrentLogo,
+            onEditCurrentCover: _editCurrentCover,
             onRemoveLogo: () => setState(() => _logoUrl = null),
             onRemoveCover: () => setState(() => _coverUrl = null),
             websiteCtrl: _websiteCtrl,
@@ -483,6 +564,8 @@ class _EditBody extends StatelessWidget {
     required this.uploadingCover,
     required this.onPickLogo,
     required this.onPickCover,
+    required this.onEditCurrentLogo,
+    required this.onEditCurrentCover,
     required this.onRemoveLogo,
     required this.onRemoveCover,
     required this.websiteCtrl,
@@ -520,6 +603,8 @@ class _EditBody extends StatelessWidget {
   final bool uploadingCover;
   final VoidCallback onPickLogo;
   final VoidCallback onPickCover;
+  final VoidCallback onEditCurrentLogo;
+  final VoidCallback onEditCurrentCover;
   final VoidCallback onRemoveLogo;
   final VoidCallback onRemoveCover;
   final TextEditingController websiteCtrl;
@@ -719,6 +804,7 @@ class _EditBody extends StatelessWidget {
                       aspectRatio: 1,
                       hint: 'Square image · at least 200×200 px · PNG, JPEG, or WebP',
                       onPick: onPickLogo,
+                      onEditCurrent: onEditCurrentLogo,
                       onRemove: onRemoveLogo,
                     ),
                   ),
@@ -730,6 +816,7 @@ class _EditBody extends StatelessWidget {
                       aspectRatio: 4,
                       hint: 'Wide image · 1600×400 px or 4:1 ratio · PNG, JPEG, or WebP',
                       onPick: onPickCover,
+                      onEditCurrent: onEditCurrentCover,
                       onRemove: onRemoveCover,
                     ),
                   ),
@@ -992,6 +1079,7 @@ class _MediaUploadControl extends StatelessWidget {
     required this.aspectRatio,
     required this.hint,
     required this.onPick,
+    required this.onEditCurrent,
     required this.onRemove,
   });
 
@@ -1002,6 +1090,8 @@ class _MediaUploadControl extends StatelessWidget {
   final double aspectRatio;
   final String hint;
   final VoidCallback onPick;
+  /// Phase 5.2: open the existing image in the unified editor (no re-pick).
+  final VoidCallback onEditCurrent;
   final VoidCallback onRemove;
 
   // Hard caps for the preview surface so an uploaded image cannot bleed into
@@ -1114,6 +1204,20 @@ class _MediaUploadControl extends StatelessWidget {
               ),
             ),
             if (hasImage) ...[
+              const SizedBox(width: AuraSpace.s8),
+              OutlinedButton.icon(
+                onPressed: uploading ? null : onEditCurrent,
+                icon: const Icon(Icons.crop_rounded, size: 16),
+                label: const Text('Edit current'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  textStyle:
+                      AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
               const SizedBox(width: AuraSpace.s8),
               TextButton(
                 onPressed: uploading ? null : onRemove,
