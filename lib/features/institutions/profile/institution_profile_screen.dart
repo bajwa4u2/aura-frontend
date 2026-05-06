@@ -506,6 +506,16 @@ class _ActionGroup extends StatelessWidget {
           icon: Icons.language_rounded,
           onPressed: () => context.go('/institution/domains'),
         ),
+        // Surface billing only for institution admins/owners. Backend
+        // enforces the same on POST /v1/monetization/checkout/*.
+        if (canEdit && (identity?.id.isNotEmpty ?? false))
+          AuraSecondaryButton(
+            label: 'Manage billing',
+            icon: Icons.receipt_long_rounded,
+            onPressed: () => context.go(
+              '/institution/${identity!.id}/billing',
+            ),
+          ),
       ],
     );
   }

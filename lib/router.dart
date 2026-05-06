@@ -80,6 +80,7 @@ import 'features/messages/presentation/messages_hub_screen.dart';
 import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/notifications/presentation/notifications_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
+import 'features/monetization/presentation/institution_billing_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
 import 'features/correspondence/presentation/correspondence_hub_screen.dart';
 import 'features/correspondence/presentation/space_screen.dart';
@@ -1005,6 +1006,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/institution/:institutionId/activity',
             builder: (context, state) => InstitutionActivityScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
+          ),
+          // Institution billing — backend-gated to OWNER/ADMIN at the
+          // checkout endpoint. Screen itself disables purchases on iOS/
+          // Android via defaultTargetPlatform.
+          GoRoute(
+            path: '/institution/:institutionId/billing',
+            builder: (context, state) => InstitutionBillingScreen(
               institutionId: state.pathParameters['institutionId'] ?? '',
             ),
           ),
