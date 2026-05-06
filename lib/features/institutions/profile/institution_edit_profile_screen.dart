@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +13,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../shared/media/profile_media_editor.dart';
 import '../data/institutions_repository.dart';
 
 class InstitutionEditProfileScreen extends ConsumerStatefulWidget {
@@ -250,8 +248,52 @@ class _InstitutionEditProfileScreenState
 
   Future<void> _pickAndUploadImage({required bool isLogo}) async {
     if (_busy) return;
-    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 92,
+    );
     if (file == null) return;
+
+    final pickedBytes = await file.readAsBytes();
+
+    // MIME + size validation runs before the editor so the user doesn't
+    // tune a crop on a file we'll reject anyway.
+    final mimeType = file.mimeType ?? _inferMime(file.name);
+    if (pickedBytes.isEmpty) {
+      if (mounted) setState(() => _error = 'Image file is empty.');
+      return;
+    }
+    if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
+      if (mounted) {
+        setState(() => _error =
+            'Unsupported image type. Use JPEG, PNG, or WebP.');
+      }
+      return;
+    }
+    final maxBytes = isLogo ? _kLogoMaxBytes : _kCoverMaxBytes;
+    if (pickedBytes.length > maxBytes) {
+      final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
+      if (mounted) {
+        setState(() => _error = isLogo
+            ? 'Logo must be $mb MB or smaller.'
+            : 'Cover must be $mb MB or smaller.');
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    // Phase 5.2: route every picked file through the shared editor so the
+    // user can frame the crop deliberately. Editor returns PNG bytes at the
+    // mode's output resolution — or null on cancel.
+    final cropped = await ProfileMediaEditor.open(
+      context,
+      imageBytes: pickedBytes,
+      config: isLogo
+          ? ProfileMediaEditorConfig.institutionLogo
+          : ProfileMediaEditorConfig.institutionCover,
+    );
+    if (cropped == null || !mounted) return;
 
     setState(() {
       _error = null;
@@ -263,63 +305,30 @@ class _InstitutionEditProfileScreenState
     });
 
     try {
-      final bytes = await file.readAsBytes();
-      final mimeType = file.mimeType ?? _inferMime(file.name);
-
-      // Reject silently-truncated values.
-      if (bytes.isEmpty) {
-        throw _ImageValidationException('Image file is empty.');
-      }
-
-      // MIME whitelist.
-      if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
-        throw _ImageValidationException(
-          'Unsupported image type. Use JPEG, PNG, or WebP.',
-        );
-      }
-
-      // Size limits per kind.
-      final maxBytes = isLogo ? _kLogoMaxBytes : _kCoverMaxBytes;
-      if (bytes.length > maxBytes) {
-        final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
-        throw _ImageValidationException(
-          isLogo
-              ? 'Logo must be $mb MB or smaller.'
-              : 'Cover must be $mb MB or smaller.',
-        );
-      }
-
-      final size = await _decodeImageSize(bytes);
-
-      // Cover: warn (do not block) when far from 16:9.
-      if (!isLogo && size != null && size['width'] != null && size['height'] != null) {
-        final w = size['width']!.toDouble();
-        final h = size['height']!.toDouble();
-        if (h > 0) {
-          final ratio = w / h;
-          const target = 16 / 9;
-          if ((ratio - target).abs() > 0.4) {
-            // Soft warning surfaces in the error banner space briefly via
-            // _successMessage replacement below; leave as a non-blocking note.
-            _successMessage =
-                'Cover saved. Tip: use a 16:9 image for best framing.';
-          }
-        }
-      }
+      final outW = isLogo
+          ? ProfileMediaEditorConfig.institutionLogo.outputWidth
+          : ProfileMediaEditorConfig.institutionCover.outputWidth;
+      final outH = isLogo
+          ? ProfileMediaEditorConfig.institutionLogo.outputHeight
+          : ProfileMediaEditorConfig.institutionCover.outputHeight;
+      final base = file.name.contains('.')
+          ? file.name.substring(0, file.name.lastIndexOf('.'))
+          : file.name;
+      final processedName = '$base-${isLogo ? 'logo' : 'cover'}.png';
 
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
-        fileName: file.name,
-        mimeType: mimeType,
+        bytes: cropped,
+        fileName: processedName,
+        mimeType: 'image/png',
         kind: 'IMAGE',
         source: 'UPLOAD',
-        width: size?['width'],
-        height: size?['height'],
+        width: outW,
+        height: outH,
         metadataPatch: <String, dynamic>{
-          if (size?['width'] != null) 'width': size!['width'],
-          if (size?['height'] != null) 'height': size!['height'],
-          'editDisclosure': false,
+          'width': outW,
+          'height': outH,
+          'editDisclosure': true,
         },
       );
       final url = result.url.trim();
@@ -337,9 +346,6 @@ class _InstitutionEditProfileScreenState
       setState(() {
         _error = _readDioError(e, 'Could not upload image.');
       });
-    } on _ImageValidationException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.message);
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Could not upload image.');
@@ -361,19 +367,6 @@ class _InstitutionEditProfileScreenState
     if (ext == 'png') return 'image/png';
     if (ext == 'webp') return 'image/webp';
     return 'image/jpeg';
-  }
-
-  Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
-    try {
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final w = frame.image.width;
-      final h = frame.image.height;
-      frame.image.dispose();
-      return {'width': w, 'height': h};
-    } catch (_) {
-      return null;
-    }
   }
 
   String _readDioError(DioException e, String fallback) {
@@ -1332,13 +1325,6 @@ Widget? _emptyCounter(
   required bool isFocused,
 }) =>
     const SizedBox.shrink();
-
-class _ImageValidationException implements Exception {
-  _ImageValidationException(this.message);
-  final String message;
-  @override
-  String toString() => message;
-}
 
 class _Banner extends StatelessWidget {
   const _Banner({

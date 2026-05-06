@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../shared/media/profile_media_editor.dart';
 import 'edit_profile/edit_profile_widgets.dart';
 
 enum _EditSection { identity, coverAndAvatar, presence, publications, links, account }
@@ -271,6 +271,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
     if (file == null) return;
 
+    final pickedBytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    // Route every picked file through the shared ProfileMediaEditor so
+    // the user can pan + zoom before save. The editor returns the cropped
+    // PNG bytes (or null on cancel).
+    final cropped = await ProfileMediaEditor.open(
+      context,
+      imageBytes: pickedBytes,
+      config: isAvatar
+          ? ProfileMediaEditorConfig.memberAvatar
+          : ProfileMediaEditorConfig.memberCover,
+    );
+    if (cropped == null || !mounted) return;
+
     setState(() {
       _errorText = null;
       if (isAvatar) {
@@ -281,7 +296,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
 
     try {
-      final uploadedUrl = await _uploadImage(file);
+      final uploadedUrl = await _uploadProcessedBytes(
+        bytes: cropped,
+        fileName: _processedFileName(file.name, isAvatar),
+        outputW: isAvatar
+            ? ProfileMediaEditorConfig.memberAvatar.outputWidth
+            : ProfileMediaEditorConfig.memberCover.outputWidth,
+        outputH: isAvatar
+            ? ProfileMediaEditorConfig.memberAvatar.outputHeight
+            : ProfileMediaEditorConfig.memberCover.outputHeight,
+      );
 
       if (!mounted) return;
       setState(() {
@@ -314,23 +338,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
-  Future<String> _uploadImage(XFile file) async {
-    final bytes = await file.readAsBytes();
-    final mimeType = file.mimeType ?? _inferMime(file.name);
-    final size = await _decodeImageSize(bytes);
+  String _processedFileName(String original, bool isAvatar) {
+    // Editor outputs PNG; replace the extension so the upload signs the
+    // correct content-type and the CDN serves it back as PNG.
+    final base = original.contains('.')
+        ? original.substring(0, original.lastIndexOf('.'))
+        : original;
+    final tag = isAvatar ? 'avatar' : 'cover';
+    return '$base-$tag.png';
+  }
+
+  Future<String> _uploadProcessedBytes({
+    required Uint8List bytes,
+    required String fileName,
+    required int outputW,
+    required int outputH,
+  }) async {
     final result = await uploadAuraMedia(
       dio: ref.read(dioProvider),
       bytes: bytes,
-      fileName: file.name,
-      mimeType: mimeType,
+      fileName: fileName,
+      mimeType: 'image/png',
       kind: 'IMAGE',
       source: 'UPLOAD',
-      width: size?['width'],
-      height: size?['height'],
+      width: outputW,
+      height: outputH,
       metadataPatch: <String, dynamic>{
-        if (size?['width'] != null) 'width': size!['width'],
-        if (size?['height'] != null) 'height': size!['height'],
-        'editDisclosure': false,
+        'width': outputW,
+        'height': outputH,
+        'editDisclosure': true,
       },
     );
 
@@ -626,19 +662,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           Positioned(
             top: AuraSpace.s14,
             right: AuraSpace.s14,
-            child: Wrap(
-              spacing: AuraSpace.s8,
-              children: [
-                _surfaceActionButton(
-                  label: _uploadingCover ? 'Uploading...' : 'Change cover',
-                  onPressed: _busy ? null : _pickCover,
-                ),
-                if ((_coverUrl ?? '').isNotEmpty)
-                  _surfaceActionButton(
-                    label: 'Remove',
-                    onPressed: _busy ? null : _removeCover,
+            // Phase 5.2: contrast-safe container so the action buttons stay
+            // legible regardless of the cover image's brightness. Glass-tint
+            // backdrop with a subtle shadow; on top of it sit the existing
+            // surface buttons whose own white tint then has guaranteed
+            // contrast.
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
-              ],
+                ],
+              ),
+              child: Wrap(
+                spacing: AuraSpace.s8,
+                children: [
+                  _surfaceActionButton(
+                    label:
+                        _uploadingCover ? 'Uploading...' : 'Change cover',
+                    onPressed: _busy ? null : _pickCover,
+                  ),
+                  if ((_coverUrl ?? '').isNotEmpty)
+                    _surfaceActionButton(
+                      label: 'Remove',
+                      onPressed: _busy ? null : _removeCover,
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1677,22 +1733,6 @@ String _readString(Map<String, dynamic> map, List<String> keys) {
 String? _emptyToNull(String? value) {
   final text = (value ?? '').trim();
   return text.isEmpty ? null : text;
-}
-
-String _inferMime(String fileName) {
-  final lower = fileName.toLowerCase();
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.gif')) return 'image/gif';
-  if (lower.endsWith('.webp')) return 'image/webp';
-  return 'application/octet-stream';
-}
-
-Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
-  final codec = await ui.instantiateImageCodec(bytes);
-  final frame = await codec.getNextFrame();
-  final image = frame.image;
-  return {'width': image.width, 'height': image.height};
 }
 
 List<Map<String, dynamic>> _extractPublications(Map<String, dynamic> data) {
