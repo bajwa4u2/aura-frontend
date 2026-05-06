@@ -60,6 +60,10 @@ class UnifiedFeedCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (item.signal != null) ...[
+              _SignalLabel(signal: item.signal!),
+              const SizedBox(height: AuraSpace.s8),
+            ],
             _AuthorRow(
               author: item.author,
               publishedAt: item.publishedAt ?? item.createdAt,
@@ -101,7 +105,11 @@ class UnifiedFeedCard extends ConsumerWidget {
             ],
             if (showInteractionBar) ...[
               const SizedBox(height: AuraSpace.s12),
-              FeedInteractionBar(target: _reactionTargetFor(item)),
+              if (_reactionTargetFor(item) case final reactionTarget?)
+                FeedInteractionBar(
+                  target: reactionTarget,
+                  visibility: item.interaction,
+                ),
             ],
           ],
         ),
@@ -116,13 +124,22 @@ class UnifiedFeedCard extends ConsumerWidget {
 /// Institution posts → `InstitutionPostReactionTarget` keyed by the
 /// institution that owns the post (which is `author.id` for institution-
 /// authored items, since the projection uses the institution as the author).
-ReactionTarget _reactionTargetFor(FeedItem item) {
+///
+/// Returns `null` when the item is missing the data needed to build a
+/// stable target — defensive against any backend regression that fails to
+/// populate `author.id` on an institution post. With `null`, the card hides
+/// the interaction bar instead of rendering a button that would hit
+/// `/v1/institutions//posts/.../reactions/state` and 404.
+ReactionTarget? _reactionTargetFor(FeedItem item) {
   if (item.type == FeedItemType.institutionPost) {
+    final instId = item.author.id.trim();
+    if (instId.isEmpty) return null;
     return InstitutionPostReactionTarget(
-      institutionId: item.author.id,
+      institutionId: instId,
       postId: item.id,
     );
   }
+  if (item.id.trim().isEmpty) return null;
   return PostReactionTarget(item.id);
 }
 
@@ -384,6 +401,74 @@ class _Badge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Muhammad reposted" / "You reposted" / "2 people you follow reposted".
+///
+/// Phase 4 product principle: this is a **label**, not a metric. We never
+/// render counts or icons that imply popularity. When the signal carries
+/// multiple actors, we name the first (most recent) and aggregate the rest
+/// as "and N others" if there are more.
+class _SignalLabel extends StatelessWidget {
+  const _SignalLabel({required this.signal});
+
+  final FeedSignal signal;
+
+  String _label() {
+    if (signal.actors.isEmpty) return '';
+    final first = signal.actors.first;
+    final firstName = first.isViewer
+        ? 'You'
+        : (first.displayName.trim().isNotEmpty
+            ? first.displayName.trim()
+            : (first.handle ?? '').trim().isNotEmpty
+                ? first.type == FeedAuthorType.institution
+                    ? '/${first.handle}'
+                    : '@${first.handle}'
+                : 'Someone');
+    final verb = first.isViewer ? 'reposted' : 'reposted';
+    final more = signal.actors.length - 1;
+    if (more <= 0) return '$firstName $verb';
+    if (more == 1) {
+      final second = signal.actors[1];
+      final secondName = second.isViewer
+          ? 'you'
+          : (second.displayName.trim().isNotEmpty
+              ? second.displayName.trim()
+              : (second.handle ?? '').trim().isNotEmpty
+                  ? '@${second.handle}'
+                  : 'someone');
+      return '$firstName and $secondName $verb';
+    }
+    return '$firstName and $more others $verb';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _label();
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Row(
+      children: [
+        const Icon(
+          Icons.repeat_rounded,
+          size: 13,
+          color: AuraSurface.faint,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

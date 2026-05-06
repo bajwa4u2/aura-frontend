@@ -366,7 +366,15 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
     );
   }
 
-  Widget _connectionsSection(Profile profile) {
+  /// Connections section.
+  ///
+  /// Aura's follow principle: counts are private. We render the row only
+  /// for the profile owner (`isSelf`); other viewers see neither the
+  /// trailing number nor the section. Follow/Following lists remain
+  /// reachable from elsewhere in the app for the owner; we don't expose
+  /// "0 followers" or placeholders in the public layout.
+  Widget _connectionsSection(Profile profile, {required bool isSelf}) {
+    if (!isSelf) return const SizedBox.shrink();
     return _surfaceSection(
       title: 'Connections',
       children: [
@@ -563,8 +571,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _connectionsSection(profile),
-                      const SizedBox(height: AuraSpace.s24),
+                      _connectionsSection(profile, isSelf: isSelf),
+                      if (isSelf) const SizedBox(height: AuraSpace.s24),
                       _correspondenceSection(
                         isAuthed: isAuthed,
                         canCorrespond: canCorrespond,

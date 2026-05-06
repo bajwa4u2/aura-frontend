@@ -8,6 +8,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../domain/feed_item.dart' show FeedInteraction;
 
 /// Like / Reply / Repost row used by every feed surface.
 ///
@@ -20,9 +21,21 @@ import '../../posts/data/reactions_repository.dart';
 /// `InstitutionPostReactionTarget` (institution posts) — the reactions
 /// service routes the toggle/state calls to the right backend surface.
 class FeedInteractionBar extends ConsumerWidget {
-  const FeedInteractionBar({super.key, required this.target});
+  const FeedInteractionBar({
+    super.key,
+    required this.target,
+    this.visibility = FeedInteraction.empty,
+  });
 
   final ReactionTarget target;
+
+  /// Aura interaction visibility & counts as projected by the backend.
+  /// The bar always renders Like / Reply / Repost actions; numeric counts
+  /// only render when the corresponding `canView*Count` flag is true.
+  /// Default is `FeedInteraction.empty` (all flags closed), so any caller
+  /// that forgets to pass real visibility will never accidentally expose a
+  /// count.
+  final FeedInteraction visibility;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,13 +90,34 @@ class FeedInteractionBar extends ConsumerWidget {
       data: (s) => s.liked,
       orElse: () => false,
     );
+    // Like label honors the visibility flag: state ("Like"/"Liked") is
+    // always shown so the viewer knows whether they reacted, but the
+    // count is appended only when canViewLikeCount=true. We never render
+    // "0", "—", or placeholders.
     final likeLabel = reactionAsync.maybeWhen(
       data: (s) {
         final base = s.liked ? 'Liked' : 'Like';
-        return s.likeCount > 0 ? '$base · ${s.likeCount}' : base;
+        if (visibility.canViewLikeCount && s.likeCount > 0) {
+          return '$base · ${s.likeCount}';
+        }
+        return base;
       },
       orElse: () => 'Like',
     );
+
+    String replyLabel() {
+      if (visibility.canViewReplyCount && visibility.replyCount > 0) {
+        return 'Reply · ${visibility.replyCount}';
+      }
+      return 'Reply';
+    }
+
+    String repostLabel() {
+      if (visibility.canViewRepostCount && visibility.repostCount > 0) {
+        return 'Repost · ${visibility.repostCount}';
+      }
+      return 'Repost';
+    }
 
     Future<void> doRepost() async {
       final controller = TextEditingController();
@@ -162,12 +196,12 @@ class FeedInteractionBar extends ConsumerWidget {
         ),
         AuraActionPill(
           icon: Icons.reply_outlined,
-          label: 'Reply',
+          label: replyLabel(),
           onTap: () => context.push(composeReplyTarget()),
         ),
         AuraActionPill(
           icon: Icons.repeat_rounded,
-          label: 'Repost',
+          label: repostLabel(),
           onTap: doRepost,
         ),
       ],

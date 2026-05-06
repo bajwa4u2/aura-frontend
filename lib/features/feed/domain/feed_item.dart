@@ -160,12 +160,25 @@ class FeedInteraction {
   const FeedInteraction({
     required this.likeCount,
     required this.replyCount,
+    required this.repostCount,
     required this.viewerLiked,
+    required this.canViewLikeCount,
+    required this.canViewReplyCount,
+    required this.canViewRepostCount,
   });
 
   final int likeCount;
   final int replyCount;
+  final int repostCount;
   final bool viewerLiked;
+
+  /// Aura interaction-visibility flags. Counts are signals, not scores —
+  /// like/repost counts are private to the post's author / institution
+  /// owner-admin-editor; reply counts are public for visible items. UI
+  /// surfaces must consult these flags before rendering any number.
+  final bool canViewLikeCount;
+  final bool canViewReplyCount;
+  final bool canViewRepostCount;
 
   factory FeedInteraction.fromJson(Map<String, dynamic> m) {
     int readInt(dynamic v) {
@@ -177,15 +190,104 @@ class FeedInteraction {
     return FeedInteraction(
       likeCount: readInt(m['likeCount']),
       replyCount: readInt(m['replyCount']),
+      repostCount: readInt(m['repostCount']),
       viewerLiked: m['viewerLiked'] == true,
+      // Default closed: a missing/legacy flag must NEVER expose a count to
+      // a viewer who shouldn't see it. The reply-count flag is opened by
+      // the backend for every visible item; older payloads without flags
+      // therefore correctly hide everything.
+      canViewLikeCount: m['canViewLikeCount'] == true,
+      canViewReplyCount: m['canViewReplyCount'] == true,
+      canViewRepostCount: m['canViewRepostCount'] == true,
     );
   }
 
   static const empty = FeedInteraction(
     likeCount: 0,
     replyCount: 0,
+    repostCount: 0,
     viewerLiked: false,
+    canViewLikeCount: false,
+    canViewReplyCount: false,
+    canViewRepostCount: false,
   );
+}
+
+/// Phase 4: an actor that contributed a relevance signal to a feed item.
+///
+/// The actor is **not** the post's author — that lives on `FeedItem.author`.
+/// Signal actors are people the viewer follows (or themselves) whose
+/// repost surfaced the parent.
+class FeedSignalActor {
+  const FeedSignalActor({
+    required this.id,
+    required this.type,
+    required this.displayName,
+    this.handle,
+    this.avatarUrl,
+    this.isViewer = false,
+  });
+
+  final String id;
+  final FeedAuthorType type;
+  final String displayName;
+  final String? handle;
+  final String? avatarUrl;
+
+  /// True when this actor is the viewer — clients render "You reposted"
+  /// instead of the displayName.
+  final bool isViewer;
+
+  factory FeedSignalActor.fromJson(Map<String, dynamic> m) {
+    String s(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return '';
+    }
+
+    String? opt(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
+    return FeedSignalActor(
+      id: s(['id']),
+      type: FeedAuthorType.fromWire(m['type']),
+      displayName: s(['displayName', 'name']),
+      handle: opt(['handle']),
+      avatarUrl: opt(['avatarUrl', 'avatarOrLogoUrl']),
+      isViewer: m['isViewer'] == true,
+    );
+  }
+}
+
+/// Relevance signal attached to a feed item. Phase 4 currently emits only
+/// `REPOST` signals; the wire format reserves room for future signal
+/// kinds without breaking clients.
+class FeedSignal {
+  const FeedSignal({required this.type, required this.actors});
+
+  final String type; // 'REPOST'
+  final List<FeedSignalActor> actors;
+
+  factory FeedSignal.fromJson(Map<String, dynamic> m) {
+    final raw = m['actors'];
+    final actors = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((e) => FeedSignalActor.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <FeedSignalActor>[];
+    return FeedSignal(
+      type: (m['type'] ?? '').toString().toUpperCase(),
+      actors: actors,
+    );
+  }
 }
 
 class FeedItem {
@@ -204,6 +306,7 @@ class FeedItem {
     this.publishedAt,
     required this.targetRoute,
     required this.interaction,
+    this.signal,
   });
 
   final String id;
@@ -223,6 +326,10 @@ class FeedItem {
   /// this via `FeedRouting.adaptTargetRoute`.
   final String targetRoute;
   final FeedInteraction interaction;
+
+  /// Phase 4 — optional relevance signal (e.g. "Muhammad reposted"). Absent
+  /// when the item surfaced through normal sources only.
+  final FeedSignal? signal;
 
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
@@ -266,6 +373,11 @@ class FeedItem {
         ? FeedInteraction.fromJson(Map<String, dynamic>.from(interactionRaw))
         : FeedInteraction.empty;
 
+    final signalRaw = m['signal'];
+    final signal = signalRaw is Map
+        ? FeedSignal.fromJson(Map<String, dynamic>.from(signalRaw))
+        : null;
+
     return FeedItem(
       id: s(['id']),
       type: FeedItemType.fromWire(m['type']),
@@ -281,6 +393,7 @@ class FeedItem {
       publishedAt: readDate(m['publishedAt']),
       targetRoute: s(['targetRoute']),
       interaction: interaction,
+      signal: signal,
     );
   }
 }
