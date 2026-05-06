@@ -105,6 +105,321 @@ enum FeedDistribution {
   }
 }
 
+/// Phase 6.1 — identity context describes *how* the author is speaking.
+/// See backend `FeedIdentityContextDto` for the full spec. The frontend
+/// renders this as a small label/badge under the author name; it never
+/// becomes a count or popularity indicator.
+enum FeedIdentityContextType {
+  personal,
+  officialInstitution,
+  institutionMember,
+  institutionAdmin,
+  platformAdmin,
+  unknown;
+
+  static FeedIdentityContextType fromWire(dynamic raw) {
+    final s = (raw ?? '').toString().trim().toUpperCase();
+    switch (s) {
+      case 'PERSONAL':
+        return FeedIdentityContextType.personal;
+      case 'OFFICIAL_INSTITUTION':
+        return FeedIdentityContextType.officialInstitution;
+      case 'INSTITUTION_MEMBER':
+        return FeedIdentityContextType.institutionMember;
+      case 'INSTITUTION_ADMIN':
+        return FeedIdentityContextType.institutionAdmin;
+      case 'PLATFORM_ADMIN':
+        return FeedIdentityContextType.platformAdmin;
+      default:
+        return FeedIdentityContextType.unknown;
+    }
+  }
+}
+
+class FeedIdentityContext {
+  const FeedIdentityContext({
+    required this.type,
+    required this.label,
+    this.institutionId,
+    this.institutionName,
+    this.institutionSlug,
+    this.role,
+    this.verified = false,
+  });
+
+  final FeedIdentityContextType type;
+  final String label;
+  final String? institutionId;
+  final String? institutionName;
+  final String? institutionSlug;
+  final String? role;
+  final bool verified;
+
+  /// True for context types that warrant a visible chip (everything except
+  /// personal-with-no-extra-data, which is the implied default and would
+  /// only add noise to render).
+  bool get isMeaningful =>
+      type != FeedIdentityContextType.personal &&
+      type != FeedIdentityContextType.unknown;
+
+  factory FeedIdentityContext.fromJson(Map<String, dynamic> m) {
+    String? opt(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
+    return FeedIdentityContext(
+      type: FeedIdentityContextType.fromWire(m['type']),
+      label: opt(['label']) ?? '',
+      institutionId: opt(['institutionId']),
+      institutionName: opt(['institutionName']),
+      institutionSlug: opt(['institutionSlug']),
+      role: opt(['role']),
+      verified: m['verified'] == true,
+    );
+  }
+}
+
+/// Phase 6.2 — calm freshness signal. Backend derives state from
+/// `lastActiveAt` against fixed thresholds; the frontend renders a small
+/// dot for everything except `idle`, which goes silent.
+enum FeedPresenceState {
+  activeNow,
+  recentlyActive,
+  activeToday,
+  idle,
+  unknown;
+
+  static FeedPresenceState fromWire(dynamic raw) {
+    final s = (raw ?? '').toString().trim().toUpperCase();
+    switch (s) {
+      case 'ACTIVE_NOW':
+        return FeedPresenceState.activeNow;
+      case 'RECENTLY_ACTIVE':
+        return FeedPresenceState.recentlyActive;
+      case 'ACTIVE_TODAY':
+        return FeedPresenceState.activeToday;
+      case 'IDLE':
+        return FeedPresenceState.idle;
+      default:
+        return FeedPresenceState.unknown;
+    }
+  }
+
+  bool get hasDot =>
+      this == FeedPresenceState.activeNow ||
+      this == FeedPresenceState.recentlyActive ||
+      this == FeedPresenceState.activeToday;
+}
+
+class FeedPresence {
+  const FeedPresence({required this.state, this.lastActiveAt});
+
+  final FeedPresenceState state;
+  final DateTime? lastActiveAt;
+
+  factory FeedPresence.fromJson(Map<String, dynamic> m) {
+    DateTime? readDate(dynamic raw) {
+      if (raw == null) return null;
+      final s = raw.toString().trim();
+      if (s.isEmpty) return null;
+      return DateTime.tryParse(s);
+    }
+
+    return FeedPresence(
+      state: FeedPresenceState.fromWire(m['state']),
+      lastActiveAt: readDate(m['lastActiveAt']),
+    );
+  }
+}
+
+/// Phase 6.4 — calm voice indicator. "Official" / "Member contribution" /
+/// nothing (personal). Rendered as a tiny muted line below the secondary
+/// attribution. Never carries a count or icon.
+enum FeedVoiceType {
+  official,
+  member,
+  personal,
+  unknown;
+
+  static FeedVoiceType fromWire(dynamic raw) {
+    final s = (raw ?? '').toString().trim().toUpperCase();
+    switch (s) {
+      case 'OFFICIAL':
+        return FeedVoiceType.official;
+      case 'MEMBER':
+        return FeedVoiceType.member;
+      case 'PERSONAL':
+        return FeedVoiceType.personal;
+      default:
+        return FeedVoiceType.unknown;
+    }
+  }
+
+  /// Whether this voice deserves a visible label. Personal is the default
+  /// tone and renders nothing.
+  bool get rendersLabel =>
+      this == FeedVoiceType.official || this == FeedVoiceType.member;
+}
+
+class FeedVoice {
+  const FeedVoice({required this.type, required this.label});
+
+  final FeedVoiceType type;
+  final String label;
+
+  factory FeedVoice.fromJson(Map<String, dynamic> m) {
+    return FeedVoice(
+      type: FeedVoiceType.fromWire(m['type']),
+      label: (m['label'] ?? '').toString(),
+    );
+  }
+}
+
+/// Phase 6.3 — accountable human actor for institution-voice posts.
+///
+/// Rendered as a small muted line below the primary author row. The
+/// primary `FeedItem.author` stays the institution; this is the secondary
+/// "Posted by Founder · M S Bajwa" attribution. Absent when the primary
+/// author is a person, when the institution post has no human author
+/// loaded, or when the actor is incomplete.
+enum FeedSecondaryAttributionType {
+  postedBy,
+  repostedBy,
+  respondedBy,
+  unknown;
+
+  static FeedSecondaryAttributionType fromWire(dynamic raw) {
+    final s = (raw ?? '').toString().trim().toUpperCase();
+    switch (s) {
+      case 'POSTED_BY':
+        return FeedSecondaryAttributionType.postedBy;
+      case 'REPOSTED_BY':
+        return FeedSecondaryAttributionType.repostedBy;
+      case 'RESPONDED_BY':
+        return FeedSecondaryAttributionType.respondedBy;
+      default:
+        return FeedSecondaryAttributionType.unknown;
+    }
+  }
+
+  String get verb {
+    switch (this) {
+      case FeedSecondaryAttributionType.postedBy:
+        return 'Posted by';
+      case FeedSecondaryAttributionType.repostedBy:
+        return 'Reposted by';
+      case FeedSecondaryAttributionType.respondedBy:
+        return 'Responded by';
+      case FeedSecondaryAttributionType.unknown:
+        return '';
+    }
+  }
+}
+
+class FeedSecondaryActor {
+  const FeedSecondaryActor({
+    required this.id,
+    required this.displayName,
+    this.handle,
+    this.avatarUrl,
+    this.profileRoute,
+    this.context,
+    this.presence,
+  });
+
+  final String id;
+  final String displayName;
+  final String? handle;
+  final String? avatarUrl;
+  final String? profileRoute;
+  final FeedIdentityContext? context;
+  final FeedPresence? presence;
+
+  factory FeedSecondaryActor.fromJson(Map<String, dynamic> m) {
+    String s(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return '';
+    }
+
+    String? opt(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
+    final ctxRaw = m['context'];
+    final ctx = ctxRaw is Map
+        ? FeedIdentityContext.fromJson(Map<String, dynamic>.from(ctxRaw))
+        : null;
+
+    final presenceRaw = m['presence'];
+    final presence = presenceRaw is Map
+        ? FeedPresence.fromJson(Map<String, dynamic>.from(presenceRaw))
+        : null;
+
+    return FeedSecondaryActor(
+      id: s(['id']),
+      displayName: s(['displayName']),
+      handle: opt(['handle']),
+      avatarUrl: opt(['avatarUrl']),
+      profileRoute: opt(['profileRoute']),
+      context: ctx,
+      presence: presence,
+    );
+  }
+}
+
+class FeedSecondaryAttribution {
+  const FeedSecondaryAttribution({required this.type, required this.actor});
+
+  final FeedSecondaryAttributionType type;
+  final FeedSecondaryActor actor;
+
+  factory FeedSecondaryAttribution.fromJson(Map<String, dynamic> m) {
+    final actorRaw = m['actor'];
+    final actor = actorRaw is Map
+        ? FeedSecondaryActor.fromJson(Map<String, dynamic>.from(actorRaw))
+        : const FeedSecondaryActor(id: '', displayName: '');
+    return FeedSecondaryAttribution(
+      type: FeedSecondaryAttributionType.fromWire(m['type']),
+      actor: actor,
+    );
+  }
+}
+
+/// Phase 6.2 — calm activity hint. `recentReply` is the only flag the UI
+/// reads today; the timestamp is exposed for surfaces that want a softer
+/// "last reply 23m ago" copy without re-fetching.
+class FeedActivityHint {
+  const FeedActivityHint({this.lastReplyAt, this.recentReply = false});
+
+  final DateTime? lastReplyAt;
+  final bool recentReply;
+
+  factory FeedActivityHint.fromJson(Map<String, dynamic> m) {
+    DateTime? readDate(dynamic raw) {
+      if (raw == null) return null;
+      final s = raw.toString().trim();
+      if (s.isEmpty) return null;
+      return DateTime.tryParse(s);
+    }
+
+    return FeedActivityHint(
+      lastReplyAt: readDate(m['lastReplyAt']),
+      recentReply: m['recentReply'] == true,
+    );
+  }
+}
+
 class FeedAuthor {
   const FeedAuthor({
     required this.id,
@@ -113,6 +428,8 @@ class FeedAuthor {
     required this.handleOrSlug,
     this.avatarOrLogoUrl,
     this.profileRoute,
+    this.context,
+    this.presence,
   });
 
   final String id;
@@ -125,6 +442,14 @@ class FeedAuthor {
   /// Surfaces inside an institution shell may rewrite this to keep shell
   /// context — see `FeedRouting.adaptProfileRoute`.
   final String? profileRoute;
+
+  /// Phase 6.1 — identity context (Personal / Official / Member / Admin).
+  /// Optional and additive; older payloads parse to null.
+  final FeedIdentityContext? context;
+
+  /// Phase 6.2 — presence freshness. Optional; null when no presence row
+  /// exists for this actor.
+  final FeedPresence? presence;
 
   bool get isInstitution => type == FeedAuthorType.institution;
 
@@ -145,6 +470,16 @@ class FeedAuthor {
       return null;
     }
 
+    final ctxRaw = m['context'];
+    final ctx = ctxRaw is Map
+        ? FeedIdentityContext.fromJson(Map<String, dynamic>.from(ctxRaw))
+        : null;
+
+    final presenceRaw = m['presence'];
+    final presence = presenceRaw is Map
+        ? FeedPresence.fromJson(Map<String, dynamic>.from(presenceRaw))
+        : null;
+
     return FeedAuthor(
       id: s(['id']),
       type: FeedAuthorType.fromWire(m['type']),
@@ -152,6 +487,8 @@ class FeedAuthor {
       handleOrSlug: s(['handleOrSlug', 'handle', 'slug']),
       avatarOrLogoUrl: opt(['avatarOrLogoUrl', 'avatarUrl', 'logoUrl']),
       profileRoute: opt(['profileRoute']),
+      context: ctx,
+      presence: presence,
     );
   }
 }
@@ -211,6 +548,140 @@ class FeedInteraction {
     canViewReplyCount: false,
     canViewRepostCount: false,
   );
+}
+
+/// Phase 5.1 — minimal conversation depth shown under a feed card.
+///
+/// `items` is at most 2 of the parent's earliest replies. `hasMore` tells
+/// the UI whether to render a "View discussion" affordance that opens the
+/// full reply list in the post-detail screen.
+class FeedReplyPreview {
+  const FeedReplyPreview({required this.items, required this.hasMore});
+
+  final List<FeedReplyPreviewItem> items;
+  final bool hasMore;
+
+  bool get isEmpty => items.isEmpty;
+
+  factory FeedReplyPreview.fromJson(Map<String, dynamic> m) {
+    final raw = m['items'];
+    final items = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((e) =>
+                FeedReplyPreviewItem.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <FeedReplyPreviewItem>[];
+    return FeedReplyPreview(
+      items: items,
+      hasMore: m['hasMore'] == true,
+    );
+  }
+}
+
+class FeedReplyPreviewItem {
+  const FeedReplyPreviewItem({
+    required this.id,
+    required this.body,
+    required this.author,
+    this.createdAt,
+  });
+
+  final String id;
+  final String body;
+  final FeedReplyPreviewAuthor author;
+  final DateTime? createdAt;
+
+  factory FeedReplyPreviewItem.fromJson(Map<String, dynamic> m) {
+    DateTime? readDate(dynamic raw) {
+      if (raw == null) return null;
+      final s = raw.toString().trim();
+      if (s.isEmpty) return null;
+      return DateTime.tryParse(s);
+    }
+
+    String s(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return '';
+    }
+
+    final authorRaw = m['author'];
+    final author = authorRaw is Map
+        ? FeedReplyPreviewAuthor.fromJson(
+            Map<String, dynamic>.from(authorRaw),
+          )
+        : const FeedReplyPreviewAuthor(id: '', displayName: '');
+
+    return FeedReplyPreviewItem(
+      id: s(['id']),
+      body: s(['body']),
+      author: author,
+      createdAt: readDate(m['createdAt']),
+    );
+  }
+}
+
+class FeedReplyPreviewAuthor {
+  const FeedReplyPreviewAuthor({
+    required this.id,
+    required this.displayName,
+    this.handle,
+    this.avatarUrl,
+    this.profileRoute,
+    this.context,
+    this.presence,
+  });
+
+  final String id;
+  final String displayName;
+  final String? handle;
+  final String? avatarUrl;
+  final String? profileRoute;
+  /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
+  final FeedIdentityContext? context;
+  /// Phase 6.2 — presence freshness.
+  final FeedPresence? presence;
+
+  factory FeedReplyPreviewAuthor.fromJson(Map<String, dynamic> m) {
+    String s(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return '';
+    }
+
+    String? opt(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
+    final ctxRaw = m['context'];
+    final ctx = ctxRaw is Map
+        ? FeedIdentityContext.fromJson(Map<String, dynamic>.from(ctxRaw))
+        : null;
+
+    final presenceRaw = m['presence'];
+    final presence = presenceRaw is Map
+        ? FeedPresence.fromJson(Map<String, dynamic>.from(presenceRaw))
+        : null;
+
+    return FeedReplyPreviewAuthor(
+      id: s(['id']),
+      displayName: s(['displayName']),
+      handle: opt(['handle']),
+      avatarUrl: opt(['avatarUrl']),
+      profileRoute: opt(['profileRoute']),
+      context: ctx,
+      presence: presence,
+    );
+  }
 }
 
 /// Phase 4: an actor that contributed a relevance signal to a feed item.
@@ -307,6 +778,10 @@ class FeedItem {
     required this.targetRoute,
     required this.interaction,
     this.signal,
+    this.replyPreview,
+    this.activity,
+    this.secondaryAttribution,
+    this.voice,
   });
 
   final String id;
@@ -330,6 +805,22 @@ class FeedItem {
   /// Phase 4 — optional relevance signal (e.g. "Muhammad reposted"). Absent
   /// when the item surfaced through normal sources only.
   final FeedSignal? signal;
+
+  /// Phase 5.1 — minimal conversation depth (≤2 replies + hasMore). Absent
+  /// when the parent has no replies.
+  final FeedReplyPreview? replyPreview;
+
+  /// Phase 6.2 — calm activity hint. Absent when no recent activity exists.
+  final FeedActivityHint? activity;
+
+  /// Phase 6.3 — accountable human actor for institution-voice posts.
+  /// Absent for personal posts and for institution posts with no human
+  /// author available.
+  final FeedSecondaryAttribution? secondaryAttribution;
+
+  /// Phase 6.4 — calm voice indicator. Absent for personal posts; present
+  /// only when the backend has data to back the label.
+  final FeedVoice? voice;
 
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
@@ -378,6 +869,30 @@ class FeedItem {
         ? FeedSignal.fromJson(Map<String, dynamic>.from(signalRaw))
         : null;
 
+    final replyPreviewRaw = m['replyPreview'];
+    final replyPreview = replyPreviewRaw is Map
+        ? FeedReplyPreview.fromJson(
+            Map<String, dynamic>.from(replyPreviewRaw),
+          )
+        : null;
+
+    final activityRaw = m['activity'];
+    final activity = activityRaw is Map
+        ? FeedActivityHint.fromJson(Map<String, dynamic>.from(activityRaw))
+        : null;
+
+    final secondaryRaw = m['secondaryAttribution'];
+    final secondaryAttribution = secondaryRaw is Map
+        ? FeedSecondaryAttribution.fromJson(
+            Map<String, dynamic>.from(secondaryRaw),
+          )
+        : null;
+
+    final voiceRaw = m['voice'];
+    final voice = voiceRaw is Map
+        ? FeedVoice.fromJson(Map<String, dynamic>.from(voiceRaw))
+        : null;
+
     return FeedItem(
       id: s(['id']),
       type: FeedItemType.fromWire(m['type']),
@@ -394,6 +909,10 @@ class FeedItem {
       targetRoute: s(['targetRoute']),
       interaction: interaction,
       signal: signal,
+      replyPreview: replyPreview,
+      activity: activity,
+      secondaryAttribution: secondaryAttribution,
+      voice: voice,
     );
   }
 }
@@ -469,6 +988,8 @@ class FeedReplyAuthor {
     required this.handle,
     this.avatarUrl,
     this.profileRoute,
+    this.context,
+    this.presence,
   });
 
   final String id;
@@ -476,6 +997,10 @@ class FeedReplyAuthor {
   final String handle;
   final String? avatarUrl;
   final String? profileRoute;
+  /// Phase 6.1.1 — optional identity context. Renders nothing when absent.
+  final FeedIdentityContext? context;
+  /// Phase 6.2 — presence freshness.
+  final FeedPresence? presence;
 
   factory FeedReplyAuthor.fromJson(Map<String, dynamic> m) {
     String s(List<String> keys) {
@@ -494,12 +1019,24 @@ class FeedReplyAuthor {
       return null;
     }
 
+    final ctxRaw = m['context'];
+    final ctx = ctxRaw is Map
+        ? FeedIdentityContext.fromJson(Map<String, dynamic>.from(ctxRaw))
+        : null;
+
+    final presenceRaw = m['presence'];
+    final presence = presenceRaw is Map
+        ? FeedPresence.fromJson(Map<String, dynamic>.from(presenceRaw))
+        : null;
+
     return FeedReplyAuthor(
       id: s(['id']),
       displayName: s(['displayName', 'name']),
       handle: s(['handle']),
       avatarUrl: opt(['avatarUrl', 'avatarOrLogoUrl']),
       profileRoute: opt(['profileRoute']),
+      context: ctx,
+      presence: presence,
     );
   }
 }

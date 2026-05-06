@@ -7,6 +7,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../shared/identity/aura_identity_badge.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
@@ -23,6 +24,7 @@ class UnifiedFeedCard extends ConsumerWidget {
     required this.item,
     this.showVisibilityBadge = true,
     this.showInteractionBar = true,
+    this.showReplyPreview = true,
   });
 
   final FeedItem item;
@@ -34,6 +36,12 @@ class UnifiedFeedCard extends ConsumerWidget {
   /// When false, hides the like/reply/repost row. Useful for compact preview
   /// surfaces (search, activity).
   final bool showInteractionBar;
+
+  /// Phase 5.1 — when false, the inline reply-preview block doesn't render.
+  /// Detail screens turn this off because they already render the full
+  /// reply list below the parent card; rendering both would duplicate the
+  /// first 1–2 replies.
+  final bool showReplyPreview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,6 +77,17 @@ class UnifiedFeedCard extends ConsumerWidget {
               publishedAt: item.publishedAt ?? item.createdAt,
               profileRoute: adaptedProfile,
             ),
+            if (_shouldRenderSecondary(item)) ...[
+              const SizedBox(height: AuraSpace.s6),
+              _SecondaryAttributionLine(
+                attribution: item.secondaryAttribution!,
+                currentPath: currentPath,
+              ),
+            ],
+            if (item.voice != null && item.voice!.type.rendersLabel) ...[
+              const SizedBox(height: 2),
+              _VoiceLabelLine(voice: item.voice!),
+            ],
             if (item.title != null && item.title!.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
               Text(
@@ -103,6 +122,19 @@ class UnifiedFeedCard extends ConsumerWidget {
                 distribution: item.distribution,
               ),
             ],
+            if (showReplyPreview &&
+                item.replyPreview != null &&
+                item.replyPreview!.items.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s10),
+              if (item.activity?.recentReply == true) ...[
+                const _ActivityHintLine(label: 'New reply'),
+                const SizedBox(height: 6),
+              ],
+              _ReplyPreviewBlock(
+                preview: item.replyPreview!,
+                openTarget: adaptedTarget,
+              ),
+            ],
             if (showInteractionBar) ...[
               const SizedBox(height: AuraSpace.s12),
               if (_reactionTargetFor(item) case final reactionTarget?)
@@ -112,6 +144,137 @@ class UnifiedFeedCard extends ConsumerWidget {
                 ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Phase 6.4 — voice clarity line. Subordinate to both the primary author
+/// and the secondary attribution; renders as a single uppercase micro-line
+/// in the lightest UI color so it informs without competing.
+class _VoiceLabelLine extends StatelessWidget {
+  const _VoiceLabelLine({required this.voice});
+
+  final FeedVoice voice;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = voice.label.trim();
+    if (label.isEmpty) return const SizedBox.shrink();
+    return Text(
+      label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AuraText.micro.copyWith(
+        color: AuraSurface.faint,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+        fontSize: 10,
+      ),
+    );
+  }
+}
+
+/// Phase 6.3 — secondary attribution gating.
+///
+/// Only renders when the backend supplied real data AND the actor is
+/// distinct from the primary author (defensive: an institution post whose
+/// human author somehow shares an id with the institution should not show
+/// "Posted by itself").
+bool _shouldRenderSecondary(FeedItem item) {
+  final attr = item.secondaryAttribution;
+  if (attr == null) return false;
+  if (attr.type == FeedSecondaryAttributionType.unknown) return false;
+  final actor = attr.actor;
+  if (actor.id.isEmpty) return false;
+  if (actor.displayName.trim().isEmpty &&
+      (actor.handle ?? '').trim().isEmpty) {
+    return false;
+  }
+  // Skip when the secondary actor would duplicate the visible primary
+  // identity. With current data this only happens in odd/legacy rows; the
+  // safe default is to suppress.
+  if (actor.id == item.author.id) return false;
+  return true;
+}
+
+/// Phase 6.3 — small, muted, accountable line that sits below the author
+/// row when an institution voice has a real human behind it.
+///
+/// Style rules: subordinate to the primary author row (smaller text,
+/// muted color), tappable to the actor's profile, never rendered as a
+/// metric. The optional context badge from Phase 6.1.1 is reused in
+/// `replyPreview` mode so the line stays compact.
+class _SecondaryAttributionLine extends StatelessWidget {
+  const _SecondaryAttributionLine({
+    required this.attribution,
+    required this.currentPath,
+  });
+
+  final FeedSecondaryAttribution attribution;
+  final String currentPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final actor = attribution.actor;
+    final adaptedProfile = FeedRouting.adaptProfileRoute(
+      actor.profileRoute,
+      currentPath: currentPath,
+    );
+    final tap = (adaptedProfile == null || adaptedProfile.isEmpty)
+        ? null
+        : () => context.push(adaptedProfile);
+    final ctxLabel = actor.context?.label;
+    final hasMeaningfulCtx =
+        actor.context != null && actor.context!.isMeaningful;
+
+    final nameText = actor.displayName.isNotEmpty
+        ? actor.displayName
+        : ((actor.handle ?? '').isNotEmpty
+            ? '@${actor.handle}'
+            : 'A member');
+
+    // Compose: "Posted by Founder · M S Bajwa"
+    //   * verb              — neutral "Posted by"
+    //   * role + dot        — when role context is meaningful (e.g. "Founder · ")
+    //   * accountable name  — bolder than verb but still muted
+    final composed = StringBuffer(attribution.type.verb)
+      ..write(' ');
+    if (hasMeaningfulCtx && ctxLabel != null && ctxLabel.contains(' · ')) {
+      // ctxLabel like "Founder · Aura Platform" — take the role half only.
+      composed.write(ctxLabel.split(' · ').first);
+      composed.write(' · ');
+    } else if (hasMeaningfulCtx && ctxLabel != null && ctxLabel.isNotEmpty) {
+      composed.write(ctxLabel);
+      composed.write(' · ');
+    }
+
+    return InkWell(
+      onTap: tap,
+      borderRadius: BorderRadius.circular(AuraRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+            children: [
+              TextSpan(text: composed.toString()),
+              TextSpan(
+                text: nameText,
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.ink,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -171,10 +334,14 @@ class _AuthorRow extends StatelessWidget {
         InkWell(
           onTap: tap,
           borderRadius: BorderRadius.circular(20),
-          child: _Avatar(
-            imageUrl: author.avatarOrLogoUrl,
-            fallback: initial,
-            isInstitution: author.isInstitution,
+          child: _AvatarWithPresence(
+            avatar: _Avatar(
+              imageUrl: author.avatarOrLogoUrl,
+              fallback: initial,
+              isInstitution: author.isInstitution,
+            ),
+            presence: author.presence,
+            avatarSize: 36,
           ),
         ),
         const SizedBox(width: AuraSpace.s10),
@@ -184,15 +351,29 @@ class _AuthorRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  author.name.isNotEmpty
-                      ? author.name
-                      : (author.handleOrSlug.isNotEmpty
-                          ? '@${author.handleOrSlug}'
-                          : 'Unknown'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        author.name.isNotEmpty
+                            ? author.name
+                            : (author.handleOrSlug.isNotEmpty
+                                ? '@${author.handleOrSlug}'
+                                : 'Unknown'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.small
+                            .copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    if (author.context != null &&
+                        author.context!.isMeaningful) ...[
+                      const SizedBox(width: AuraSpace.s6),
+                      Flexible(
+                        child: AuraIdentityBadge(context: author.context!),
+                      ),
+                    ],
+                  ],
                 ),
                 if (author.handleOrSlug.isNotEmpty &&
                     author.name.isNotEmpty)
@@ -215,6 +396,78 @@ class _AuthorRow extends StatelessWidget {
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
       ],
+    );
+  }
+}
+
+/// Phase 6.2 — wraps any avatar with a small presence dot in the bottom-right
+/// corner. No animation, no pulse, no tooltip. Rendered only for the three
+/// "active" presence states; IDLE / unknown / null = no dot.
+class _AvatarWithPresence extends StatelessWidget {
+  const _AvatarWithPresence({
+    required this.avatar,
+    required this.avatarSize,
+    this.presence,
+  });
+
+  final Widget avatar;
+  final double avatarSize;
+  final FeedPresence? presence;
+
+  @override
+  Widget build(BuildContext context) {
+    final showDot = presence != null && presence!.state.hasDot;
+    if (!showDot) return avatar;
+    final dotSize = avatarSize <= 24 ? 6.0 : 8.0;
+    return SizedBox(
+      width: avatarSize,
+      height: avatarSize,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(child: avatar),
+          Positioned(
+            right: -1,
+            bottom: -1,
+            child: _PresenceDot(state: presence!.state, size: dotSize),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PresenceDot extends StatelessWidget {
+  const _PresenceDot({required this.state, required this.size});
+
+  final FeedPresenceState state;
+  final double size;
+
+  Color get _color {
+    switch (state) {
+      case FeedPresenceState.activeNow:
+        return const Color(0xFF22C55E); // soft green
+      case FeedPresenceState.recentlyActive:
+        return const Color(0xFF60A5FA); // muted blue
+      case FeedPresenceState.activeToday:
+        return const Color(0xFF94A3B8); // gray
+      case FeedPresenceState.idle:
+      case FeedPresenceState.unknown:
+        return Colors.transparent;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _color,
+        // Hairline ring so the dot reads against any avatar background.
+        border: Border.all(color: AuraSurface.card, width: 1.5),
+      ),
     );
   }
 }
@@ -400,6 +653,238 @@ class _Badge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Phase 6.2 — calm activity hint line above the reply-preview block.
+/// "New reply" / "Recently replied" — single subtle line, no animation, no
+/// counts, no color emphasis beyond the soft accent. Never reorders the
+/// feed; just communicates that the conversation is fresh.
+class _ActivityHintLine extends StatelessWidget {
+  const _ActivityHintLine({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF22C55E),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Subordinate preview block sitting between the post body and the
+/// interaction bar. Shows up to two reply summaries plus an optional
+/// "View discussion" link.
+///
+/// Phase 5.1 product principle: this is conversation depth, not feed
+/// noise. The block is visually quieter than the parent post — same card
+/// surface, indented avatars, smaller type, no like counts on individual
+/// replies. Tapping any reply or the "View discussion" link opens the
+/// post-detail screen via the parent's already-shell-adapted
+/// `targetRoute`.
+class _ReplyPreviewBlock extends StatelessWidget {
+  const _ReplyPreviewBlock({
+    required this.preview,
+    required this.openTarget,
+  });
+
+  final FeedReplyPreview preview;
+  final String openTarget;
+
+  @override
+  Widget build(BuildContext context) {
+    final tap = openTarget.isEmpty
+        ? null
+        : () => context.push(openTarget);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s10,
+        AuraSpace.s10,
+        AuraSpace.s10,
+        AuraSpace.s8,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < preview.items.length; i++) ...[
+            _PreviewLine(item: preview.items[i], onTap: tap),
+            if (i < preview.items.length - 1)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: Divider(height: 1, color: AuraSurface.divider),
+              ),
+          ],
+          if (preview.hasMore && tap != null) ...[
+            const SizedBox(height: AuraSpace.s8),
+            InkWell(
+              onTap: tap,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View discussion',
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.accentText,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 12,
+                      color: AuraSurface.accentText,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewLine extends StatelessWidget {
+  const _PreviewLine({required this.item, required this.onTap});
+
+  final FeedReplyPreviewItem item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = item.author.displayName.trim().isNotEmpty
+        ? item.author.displayName.trim()[0].toUpperCase()
+        : ((item.author.handle ?? '').isNotEmpty
+            ? item.author.handle![0].toUpperCase()
+            : '?');
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AvatarWithPresence(
+              avatarSize: 22,
+              presence: item.author.presence,
+              avatar: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: (item.author.avatarUrl ?? '').isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: item.author.avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Center(
+                          child: Text(
+                            initial,
+                            style: AuraText.micro.copyWith(
+                              color: AuraSurface.accentText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          initial,
+                          style: AuraText.micro.copyWith(
+                            color: AuraSurface.accentText,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            Expanded(
+              child: RichText(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.ink,
+                    height: 1.4,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: item.author.displayName.isNotEmpty
+                          ? item.author.displayName
+                          : ((item.author.handle ?? '').isNotEmpty
+                              ? '@${item.author.handle}'
+                              : 'Someone'),
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.ink,
+                        fontWeight: FontWeight.w800,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (item.author.context != null &&
+                        item.author.context!.isMeaningful) ...[
+                      const WidgetSpan(child: SizedBox(width: 6)),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: AuraIdentityBadge(
+                          context: item.author.context!,
+                          mode: AuraIdentityBadgeMode.replyPreview,
+                        ),
+                      ),
+                    ],
+                    const TextSpan(text: '   '),
+                    TextSpan(
+                      text: item.body.replaceAll('\n', ' ').trim(),
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.muted,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

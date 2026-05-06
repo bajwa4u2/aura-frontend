@@ -11,6 +11,7 @@ import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
+import '../../shared/identity/aura_identity_badge.dart';
 import 'public_shell.dart';
 import 'shell_header_tools.dart';
 import 'shell_shared.dart';
@@ -678,40 +679,17 @@ class _PrimaryNavTab extends StatelessWidget {
   }
 }
 
+/// Shell verified marker — delegates to the shared `AuraIdentityBadge` so
+/// the workspace shell, feed cards, and any future identity surface share
+/// one visual definition of "verified institution".
 class _InstitutionVerifiedBadge extends StatelessWidget {
   const _InstitutionVerifiedBadge();
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return const Tooltip(
       message: 'Verified institution',
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s8,
-          vertical: 3,
-        ),
-        decoration: BoxDecoration(
-          color: AuraSurface.goodBg,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          border: Border.all(color: AuraSurface.goodInk.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.verified_rounded,
-                size: 12, color: AuraSurface.goodInk),
-            const SizedBox(width: 4),
-            Text(
-              'Verified',
-              style: AuraText.label.copyWith(
-                color: AuraSurface.goodInk,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: AuraVerifiedInstitutionBadge(),
     );
   }
 }

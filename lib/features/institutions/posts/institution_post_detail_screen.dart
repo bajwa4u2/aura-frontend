@@ -8,6 +8,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../shared/identity/aura_identity_badge.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
@@ -87,8 +88,35 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              UnifiedFeedCard(item: item),
+              // Detail screen renders the full replies list below — turn
+              // off the inline preview to avoid duplicating the first 1–2
+              // replies in two places on the same screen.
+              UnifiedFeedCard(item: item, showReplyPreview: false),
               const SizedBox(height: AuraSpace.s14),
+              if (item.activity?.recentReply == true) ...[
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF22C55E),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Active discussion',
+                      style: AuraText.micro.copyWith(
+                        color: AuraSurface.muted,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s8),
+              ],
               Row(
                 children: [
                   Text(
@@ -214,16 +242,32 @@ class _ReplyCard extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s10),
               Expanded(
-                child: Text(
-                  reply.author.displayName.isNotEmpty
-                      ? reply.author.displayName
-                      : (reply.author.handle.isNotEmpty
-                          ? '@${reply.author.handle}'
-                          : 'Unknown'),
-                  style:
-                      AuraText.small.copyWith(fontWeight: FontWeight.w700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        reply.author.displayName.isNotEmpty
+                            ? reply.author.displayName
+                            : (reply.author.handle.isNotEmpty
+                                ? '@${reply.author.handle}'
+                                : 'Unknown'),
+                        style: AuraText.small
+                            .copyWith(fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (reply.author.context != null &&
+                        reply.author.context!.isMeaningful) ...[
+                      const SizedBox(width: AuraSpace.s6),
+                      Flexible(
+                        child: AuraIdentityBadge(
+                          context: reply.author.context!,
+                          mode: AuraIdentityBadgeMode.replyPreview,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
