@@ -39,8 +39,12 @@ class DirectThreadInfo {
   });
 
   final String threadId;
-  final DirectThreadParticipant participantA;
-  final DirectThreadParticipant participantB;
+  // Use the embedded participants so the thread header can render real
+  // display names / handles instead of generic "Direct message" labels.
+  // The bare DirectThreadParticipant is the parent class so existing
+  // call sites keep compiling.
+  final DirectThreadParticipantWithEmbed participantA;
+  final DirectThreadParticipantWithEmbed participantB;
 
   /// Server-supplied frontend route. Use this directly for navigation.
   final String route;
@@ -49,12 +53,8 @@ class DirectThreadInfo {
   factory DirectThreadInfo.fromJson(Map<String, dynamic> json) {
     return DirectThreadInfo(
       threadId: json['threadId']?.toString() ?? '',
-      participantA: DirectThreadParticipant.fromJson(
-        Map<String, dynamic>.from(json['participantA'] as Map? ?? {}),
-      ),
-      participantB: DirectThreadParticipant.fromJson(
-        Map<String, dynamic>.from(json['participantB'] as Map? ?? {}),
-      ),
+      participantA: _parseParticipantWithEmbed(json['participantA']),
+      participantB: _parseParticipantWithEmbed(json['participantB']),
       route: json['route']?.toString() ?? '',
       createdNow: json['createdNow'] == true,
     );
@@ -245,6 +245,15 @@ class DirectThreadsRepository {
         ));
       }
     }
+    // Defense-in-depth: enforce lastMessageAt DESC ordering on the client
+    // so the inbox is consistent regardless of server ordering. Threads
+    // with no messages yet sink to the bottom (epoch 0 fallback).
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    items.sort((a, b) {
+      final aTs = a.lastMessageAt ?? epoch;
+      final bTs = b.lastMessageAt ?? epoch;
+      return bTs.compareTo(aTs);
+    });
     return items;
   }
 

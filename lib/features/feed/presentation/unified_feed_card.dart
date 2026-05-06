@@ -72,6 +72,14 @@ class UnifiedFeedCard extends ConsumerWidget {
               _SignalLabel(signal: item.signal!),
               const SizedBox(height: AuraSpace.s8),
             ],
+            // Visual distinction: top-level institution posts are
+            // institutional speech (announcements), not chat. A small
+            // OFFICIAL pill above the author row makes the difference
+            // legible without redesigning the card.
+            if (_isOfficialInstitutionPost(item)) ...[
+              const _OfficialPill(),
+              const SizedBox(height: AuraSpace.s6),
+            ],
             _AuthorRow(
               author: item.author,
               publishedAt: item.publishedAt ?? item.createdAt,
@@ -171,6 +179,50 @@ class _VoiceLabelLine extends StatelessWidget {
         fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
         fontSize: 10,
+      ),
+    );
+  }
+}
+
+/// True when the card represents a top-level institution post (i.e.
+/// institutional speech / announcement) — distinct from a personal user
+/// post or a reply *under* an institution post. The OFFICIAL pill renders
+/// only for these so the card reads as institutional voice.
+bool _isOfficialInstitutionPost(FeedItem item) {
+  if (item.type != FeedItemType.institutionPost) return false;
+  // Institution-post replies and reposts have a non-empty body but a blank
+  // title and are conversational; only original posts with a title are
+  // truly "official".
+  final hasTitle = item.title != null && item.title!.trim().isNotEmpty;
+  return hasTitle;
+}
+
+/// Small "OFFICIAL" pill rendered above the author row of top-level
+/// institution posts. Calm, monochrome, never animated — its only job is
+/// to make institutional speech visually distinct from a chat message in
+/// the same feed.
+class _OfficialPill extends StatelessWidget {
+  const _OfficialPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(
+          color: AuraSurface.accent.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        'OFFICIAL',
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+          fontSize: 10,
+        ),
       ),
     );
   }

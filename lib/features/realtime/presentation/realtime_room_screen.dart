@@ -102,6 +102,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _isEnding = false;
   bool _wasJoined = false;
   bool _hasNavigatedAway = false;
+  // True only when the user explicitly ended/left the call (via the End or
+  // Leave buttons). Minimize / browser-back must NOT set this — minimizing
+  // keeps the call alive and dispose() must therefore NOT call leave() on
+  // those paths. Without this guard, every back-navigation tore down the
+  // call and produced the "blank wrapped" UI the user reported.
+  bool _intentToLeave = false;
   String? _lastConsentSyncKey;
   Timer? _durationTimer;
   DateTime _now = DateTime.now();
@@ -147,21 +153,24 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   @override
   void dispose() {
     _durationTimer?.cancel();
-    // Best-effort leave on dispose (browser refresh / forced navigation).
-    // Read via the captured ProviderContainer — `ref` is invalid once the State
-    // is being disposed and would throw "Cannot use \"ref\" after the widget
-    // was disposed", silently aborting the leave RPC and leaving the backend
-    // session with a ghost participant.
-    final container = _capturedContainer;
-    if (container != null) {
-      try {
-        if (container.read(realtimeControllerProvider).isJoined) {
-          final controller =
-              container.read(realtimeControllerProvider.notifier);
-          unawaited(controller.leave().catchError((_) {}));
+    // Only leave on dispose when the user *explicitly* ended/left the call.
+    // Minimize, browser back, and PiP transitions must NOT terminate the
+    // session — that was the root cause of the "post-back blank UI". Real
+    // browser-refresh / window-close coverage lives in the presence
+    // bridge's `beforeunload` listener (call_presence_bridge.dart) and
+    // the backend heartbeat-timeout, not here.
+    if (_intentToLeave) {
+      final container = _capturedContainer;
+      if (container != null) {
+        try {
+          if (container.read(realtimeControllerProvider).isJoined) {
+            final controller =
+                container.read(realtimeControllerProvider.notifier);
+            unawaited(controller.leave().catchError((_) {}));
+          }
+        } catch (_) {
+          // best-effort: never let dispose throw
         }
-      } catch (_) {
-        // best-effort: never let dispose throw
       }
     }
     super.dispose();
@@ -195,6 +204,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   Future<void> _endCallAndClose(RealtimeController controller) async {
     if (_isEnding) return;
     setState(() => _isEnding = true);
+    // Mark intent BEFORE the await so a concurrent dispose (rare, but
+    // possible if the user closes the tab mid-tap) still routes through
+    // the explicit-leave codepath.
+    _intentToLeave = true;
     final session = ref.read(realtimeControllerProvider).session;
     debugPrint('[END] End button tapped: sessionId=${session?.id}');
     try {
@@ -208,11 +221,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (mounted) {
         _hasNavigatedAway = true;
         _navigateAfterCall(session);
+      } else {
+        // Reset to allow a retry if the screen rebuilt without disposing.
+        _isEnding = false;
       }
     }
   }
 
   Future<void> _leaveAndNavigate(RealtimeController controller) async {
+    _intentToLeave = true;
     final session = ref.read(realtimeControllerProvider).session;
     try {
       await controller.leave();

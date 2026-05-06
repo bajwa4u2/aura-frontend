@@ -51,6 +51,13 @@ final liveSessionsProvider = FutureProvider<List<RealtimeSession>>((ref) async {
   final authStatus = ref.watch(authStatusProvider);
   if (authStatus != AuthStatus.authed) return [];
 
+  // Re-fetch whenever the local controller transitions joined→idle so the
+  // header "Live" pill, the conversation ribbons, and any other surface
+  // backed by this provider clear immediately on call end. The
+  // `realtimeControllerProvider.select` keeps the provider from rebuilding
+  // on every controller mutation; only `isJoined` toggles trigger.
+  ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
+
   final repo = ref.watch(realtimeRepositoryProvider);
   return repo.listMySessions();
 });

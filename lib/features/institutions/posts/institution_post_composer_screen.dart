@@ -771,8 +771,36 @@ class _InstitutionPostComposerScreenState
     if (e is DioException) {
       final data = e.response?.data;
       if (data is Map) {
-        final m = data['message']?.toString().trim() ?? '';
-        if (m.isNotEmpty) return m;
+        // The Aura error envelope is `{ ok:false, error:{ code, message, details } }`.
+        // Map well-known monetization codes to friendly UI copy so users see
+        // a clear next step rather than a raw backend message.
+        final errorBlock = data['error'];
+        String? code;
+        String? message;
+        if (errorBlock is Map) {
+          code = errorBlock['code']?.toString();
+          message = errorBlock['message']?.toString();
+        } else {
+          code = data['code']?.toString();
+          message = data['message']?.toString();
+        }
+
+        switch (code) {
+          case 'PLAN_REQUIRED_PRO':
+            return 'Official posts require Pro. Upgrade your institution to publish in the institution voice.';
+          case 'PLAN_REQUIRED_VERIFIED':
+            return 'This action requires a Verified institution.';
+          case 'MEMBER_LIMIT_REACHED':
+            return 'Your plan\'s member limit is reached. Upgrade to add more members.';
+          case 'CREDITS_REQUIRED':
+            return 'Not enough credits for this action.';
+          case 'BILLING_FORBIDDEN':
+            return 'Only institution owners or admins can perform this action.';
+        }
+
+        if (message != null && message.trim().isNotEmpty) {
+          return message.trim();
+        }
       }
     }
     return fallback;

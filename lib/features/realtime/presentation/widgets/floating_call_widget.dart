@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/services/call_presence_bridge.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -125,20 +126,40 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   _CallInfo? _resolve() {
     final local = ref.read(realtimeControllerProvider);
     final sessionId = local.sessionId;
-    if (!local.isJoined || sessionId == null || sessionId.isEmpty) return null;
-    // Do not render PiP for sessions that have ended on the server — the
-    // session:ended handler will clear joinState, but guard here too so
-    // a brief race window never shows a stale PiP.
-    if (local.session?.isActive == false) return null;
+    if (local.isJoined && sessionId != null && sessionId.isNotEmpty) {
+      // Active in this tab — render the owner PiP with full controls.
+      // Guard against the server-ended race window.
+      if (local.session?.isActive == false) {
+        return null;
+      }
+      return _CallInfo(
+        sessionId: sessionId,
+        isVideo: local.isVideoMode,
+        micOn: local.microphoneEnabled,
+        cameraOn: local.cameraEnabled,
+        startedAt: local.session?.startedAt,
+        participants: local.participants.where((p) => p.isPresent).toList(),
+        isOwner: true,
+        localRenderer: local.localRenderer,
+      );
+    }
+
+    // Fallback: a call is active in *another* tab. Show a passive PiP so
+    // the user can see at a glance that they're still in a call (e.g.
+    // after navigating to another tab/window). Owner controls are
+    // suppressed because this tab does not own the media session.
+    final presence = ref.read(callPresenceBridgeProvider);
+    if (presence == null) return null;
+    if (presence.sessionId.isEmpty) return null;
     return _CallInfo(
-      sessionId: sessionId,
-      isVideo: local.isVideoMode,
-      micOn: local.microphoneEnabled,
-      cameraOn: local.cameraEnabled,
-      startedAt: local.session?.startedAt,
-      participants: local.participants.where((p) => p.isPresent).toList(),
-      isOwner: true,
-      localRenderer: local.localRenderer,
+      sessionId: presence.sessionId,
+      isVideo: presence.isVideo,
+      micOn: presence.micOn,
+      cameraOn: presence.cameraOn,
+      startedAt: presence.startedAt,
+      participants: const [],
+      isOwner: false,
+      localRenderer: null,
     );
   }
 
@@ -171,6 +192,9 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   @override
   Widget build(BuildContext context) {
     ref.watch(realtimeControllerProvider);
+    // Re-render when cross-tab presence changes so passive PiP appears /
+    // disappears within one heartbeat without polling.
+    ref.watch(callPresenceBridgeProvider);
 
     final path = GoRouterState.of(context).uri.path;
 

@@ -569,8 +569,8 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   /// socket membership, and call state are torn down regardless of that result.
   Future<void> endCall() async {
     debugPrint('[END] endCall: called _endingCall=$_endingCall _terminating=$_terminating sessionId=${state.sessionId} session=${state.session?.id}');
-    if (_endingCall || _terminating) {
-      debugPrint('[END] endCall: bailed — already ending/terminating');
+    if (_endingCall) {
+      debugPrint('[END] endCall: bailed — already ending');
       return;
     }
 
@@ -592,17 +592,28 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
     _endingCall = true;
     try {
+      // Always fire the server-end RPC on a host tap, even if a concurrent
+      // socket teardown set `_terminating`. The backend is idempotent on
+      // double-end; not firing leaves the host's authoritative end stuck
+      // on the client and the UI navigates away with the server still
+      // believing the session is live.
       unawaited(
         _repository.endSession(session).catchError((Object error) {
           debugPrint('[END] endCall: backend end failed after local teardown: $error');
         }),
       );
 
-      await _terminateSession(
-        keepSocketConnected: true,
-        infoMessage: 'Call ended.',
-        alsoCallRepository: false,
-      );
+      // If a concurrent teardown is already in-flight, skip the second
+      // local teardown — but the server end above has already fired.
+      if (!_terminating) {
+        await _terminateSession(
+          keepSocketConnected: true,
+          infoMessage: 'Call ended.',
+          alsoCallRepository: false,
+        );
+      } else {
+        debugPrint('[END] endCall: skipping second local teardown — already terminating');
+      }
       debugPrint('[END] endCall: local teardown done isJoined=${state.isJoined}');
     } finally {
       _endingCall = false;

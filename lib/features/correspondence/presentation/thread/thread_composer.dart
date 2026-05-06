@@ -972,11 +972,16 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         ? Duration.zero
         : DateTime.now().difference(_recordingStartedAt!);
 
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    // The host Scaffold already shifts the body for the keyboard via
+    // resizeToAvoidBottomInset; adding `viewInsets.bottom` here on top
+    // double-counts and pushes the composer above the keyboard by an
+    // extra ~280 px on focus. Drop the second adjustment so the
+    // composer sits flush against the top of the keyboard like other
+    // Aura input surfaces.
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(12, 8, 12, 12 + keyboardInset),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

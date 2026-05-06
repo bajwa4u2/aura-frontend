@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../translation/translation_repository.dart';
 
 /// Phase-2 direct-message thread surface — works for both
 /// `/direct/:threadId` (member shell) and
@@ -36,6 +39,12 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   bool _sending = false;
   String? _sendError;
   String? _seenForActorKey;
+
+  /// Optimistic outbound messages — inserted into the bubble list the
+  /// moment the user taps Send so the conversation feels real-time.
+  /// Cleared on successful refresh (the just-sent message returns from
+  /// the server) or on send failure.
+  final List<DirectMessage> _optimistic = [];
 
   @override
   void dispose() {
@@ -75,10 +84,31 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
   Future<void> _send(ActorRef actor, DirectThreadKey key) async {
     final body = _bodyCtrl.text.trim();
     if (body.isEmpty || _sending) return;
+
+    // Optimistic insert: build a placeholder DirectMessage so the bubble
+    // appears immediately. We tag it with a synthetic id starting with
+    // `local-` so the merge step below can drop it once the server's
+    // canonical row arrives in the next refresh.
+    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final isInstitutionActor = actor.type == ActorType.institution;
+    final optimistic = DirectMessage(
+      id: localId,
+      threadId: widget.threadId,
+      senderUserId: !isInstitutionActor ? (actor.userId ?? '') : '',
+      actorType: isInstitutionActor ? ActorType.institution : ActorType.user,
+      actorInstitutionId: isInstitutionActor ? actor.institutionId : null,
+      body: body,
+      createdAt: DateTime.now(),
+      // deliveredAt/seenAt left null → bubble shows "Sending…".
+    );
+
     setState(() {
       _sending = true;
       _sendError = null;
+      _optimistic.add(optimistic);
+      _bodyCtrl.clear();
     });
+
     try {
       final repo = ref.read(directThreadsRepositoryProvider);
       await repo.sendMessage(
@@ -86,7 +116,6 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
         actor: actor,
         body: body,
       );
-      _bodyCtrl.clear();
       ref.invalidate(directMessagesProvider(key));
       // Inbox snapshot (lastMessageAt/snippet/unread) updates server-side
       // on send; refresh the actor's inbox so /messages/direct shows this
@@ -94,9 +123,41 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
       ref.invalidate(inboxThreadsProvider(actor));
     } catch (e) {
       if (!mounted) return;
-      setState(() => _sendError = 'Could not send message: $e');
+      setState(() {
+        _sendError = 'Could not send message: $e';
+        // Drop the optimistic bubble on failure so the user can retry
+        // without seeing a phantom "sending" message.
+        _optimistic.removeWhere((m) => m.id == localId);
+        // Restore the body so they don't have to retype.
+        if (_bodyCtrl.text.isEmpty) _bodyCtrl.text = body;
+      });
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Drop optimistic entries whose body now appears in the server-fetched
+  /// page. Called on every messages-rebuild so the local placeholder is
+  /// replaced by the canonical row without duplicating.
+  void _reconcileOptimistic(List<DirectMessage> serverMessages) {
+    if (_optimistic.isEmpty) return;
+    final removed = <String>[];
+    for (final local in _optimistic) {
+      final match = serverMessages.any((s) =>
+          s.body.trim() == local.body.trim() &&
+          s.senderUserId == local.senderUserId &&
+          s.actorType == local.actorType &&
+          s.createdAt.difference(local.createdAt).abs() <
+              const Duration(minutes: 2));
+      if (match) removed.add(local.id);
+    }
+    if (removed.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _optimistic.removeWhere((m) => removed.contains(m.id));
+        });
+      });
     }
   }
 
@@ -151,7 +212,17 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
                   ),
                 ),
                 data: (page) {
-                  if (page.items.isEmpty) {
+                  // Reconcile optimistic bubbles against the freshly-
+                  // fetched server page. Cancelled by post-frame so we
+                  // never call setState during build.
+                  _reconcileOptimistic(page.items);
+
+                  // Append optimistic bubbles to the END of the list so
+                  // they appear immediately under the most recent
+                  // server-fetched message.
+                  final combined = [...page.items, ..._optimistic];
+
+                  if (combined.isEmpty) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(AuraSpace.s24),
@@ -169,9 +240,12 @@ class _DirectThreadScreenState extends ConsumerState<DirectThreadScreen> {
                     },
                     child: ListView.builder(
                       padding: const EdgeInsets.all(AuraSpace.s12),
-                      itemCount: page.items.length,
-                      itemBuilder: (context, i) =>
-                          _MessageBubble(message: page.items[i], actor: actor),
+                      itemCount: combined.length,
+                      itemBuilder: (context, i) => _MessageBubble(
+                        key: ValueKey(combined[i].id),
+                        message: combined[i],
+                        actor: actor,
+                      ),
                     ),
                   );
                 },
@@ -309,21 +383,53 @@ class _ThreadHeader extends StatelessWidget {
           p.userId == actor.userId) {
         continue;
       }
-      return p.type == ActorType.institution
-          ? 'Institution thread'
-          : 'Direct message';
+      // Pull the real display name from the embedded user/institution
+      // payload. Falls back to handle / generic label if neither exists.
+      if (p.type == ActorType.institution) {
+        final inst = p.institution;
+        final name = (inst?['name'] ?? inst?['displayName'] ?? '')
+            .toString()
+            .trim();
+        final slug = (inst?['slug'] ?? '').toString().trim();
+        if (name.isNotEmpty) return name;
+        if (slug.isNotEmpty) return '/$slug';
+        return 'Institution';
+      }
+      final user = p.user;
+      final display = (user?['displayName'] ?? user?['name'] ?? '')
+          .toString()
+          .trim();
+      final handle = (user?['handle'] ?? '').toString().trim();
+      if (display.isNotEmpty) return display;
+      if (handle.isNotEmpty) return '@$handle';
+      return 'Direct message';
     }
     return 'Direct thread';
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.actor});
+class _MessageBubble extends ConsumerStatefulWidget {
+  const _MessageBubble({
+    super.key,
+    required this.message,
+    required this.actor,
+  });
 
   final DirectMessage message;
   final ActorContext actor;
 
+  @override
+  ConsumerState<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends ConsumerState<_MessageBubble> {
+  String? _translatedText;
+  bool _translateBusy = false;
+  bool _translationFailed = false;
+
   bool get _mine {
+    final actor = widget.actor;
+    final message = widget.message;
     if (actor.isInstitution &&
         message.actorType == ActorType.institution &&
         message.actorInstitutionId == actor.institutionId) {
@@ -337,8 +443,60 @@ class _MessageBubble extends StatelessWidget {
     return false;
   }
 
+  /// Two-letter language tag from the device locale. Falls back to English.
+  String get _targetLanguage {
+    final locale = ui.PlatformDispatcher.instance.locale;
+    final code = locale.languageCode.trim().toLowerCase();
+    return code.isEmpty ? 'en' : code;
+  }
+
+  Future<void> _runTranslate() async {
+    if (_translateBusy) return;
+    final body = widget.message.body.trim();
+    if (body.isEmpty) return;
+    setState(() {
+      _translateBusy = true;
+      _translationFailed = false;
+    });
+    try {
+      final repo = ref.read(translationRepositoryProvider);
+      final result = await repo.translate(
+        text: body,
+        targetLanguage: _targetLanguage,
+      );
+      if (!mounted) return;
+      setState(() {
+        _translateBusy = false;
+        if (result.fallback || result.translatedText.trim().isEmpty) {
+          // Translation could not actually run — surface the failure
+          // explicitly rather than silently displaying the original.
+          _translationFailed = true;
+          _translatedText = null;
+        } else {
+          _translationFailed = false;
+          _translatedText = result.translatedText;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _translateBusy = false;
+        _translationFailed = true;
+        _translatedText = null;
+      });
+    }
+  }
+
+  void _hideTranslation() {
+    setState(() {
+      _translatedText = null;
+      _translationFailed = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final message = widget.message;
     final isInstitution = message.isInstitutionVoice;
     final actorMap = isInstitution
         ? message.actorInstitution
@@ -406,6 +564,58 @@ class _MessageBubble extends StatelessWidget {
                 message.body,
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
               ),
+              // Inline translation surface. Renders below the original
+              // text when present so users keep context.
+              if (_translatedText != null) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.subtle,
+                    borderRadius: BorderRadius.circular(AuraRadius.sm),
+                    border: Border.all(color: AuraSurface.divider),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Translated',
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.faint,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _translatedText!,
+                        style:
+                            AuraText.body.copyWith(color: AuraSurface.ink),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_translationFailed) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Translation unavailable. Try again later.',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.dangerInk,
+                  ),
+                ),
+              ],
+              // Translate / Hide / Translating affordance. Skip when the
+              // message has no body (e.g. media-only).
+              if (message.body.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _TranslateAction(
+                  busy: _translateBusy,
+                  hasTranslation: _translatedText != null,
+                  hadFailure: _translationFailed,
+                  onTranslate: _runTranslate,
+                  onHide: _hideTranslation,
+                ),
+              ],
               if (_mine) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -421,6 +631,56 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TranslateAction extends StatelessWidget {
+  const _TranslateAction({
+    required this.busy,
+    required this.hasTranslation,
+    required this.hadFailure,
+    required this.onTranslate,
+    required this.onHide,
+  });
+
+  final bool busy;
+  final bool hasTranslation;
+  final bool hadFailure;
+  final VoidCallback onTranslate;
+  final VoidCallback onHide;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label;
+    final VoidCallback? onTap;
+    if (busy) {
+      label = 'Translating…';
+      onTap = null;
+    } else if (hasTranslation) {
+      label = 'Hide translation';
+      onTap = onHide;
+    } else if (hadFailure) {
+      label = 'Try again';
+      onTap = onTranslate;
+    } else {
+      label = 'Translate';
+      onTap = onTranslate;
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(
+          label,
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.accentText,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
           ),
         ),
       ),
