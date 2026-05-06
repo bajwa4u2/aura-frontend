@@ -9,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../app/shell/shell_shared.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/unified_feed_card.dart';
@@ -46,6 +47,7 @@ class PublicHomeScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const ShellFooter(),
         ],
       ),
     );

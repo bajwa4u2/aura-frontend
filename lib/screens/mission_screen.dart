@@ -10,6 +10,7 @@ class MissionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DocumentScaffold(
       title: 'Mission',
+      showSiteFooter: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

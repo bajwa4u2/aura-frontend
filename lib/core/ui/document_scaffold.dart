@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/shell/shell_shared.dart';
 import 'aura_radius.dart';
 import 'aura_scaffold.dart';
 import 'aura_space.dart';
@@ -13,9 +14,11 @@ import 'aura_text.dart';
 /// - Always uses AuraScaffold
 /// - Always scrolls
 /// - Reading-first atmosphere
-/// - The public footer is owned by `PublicShell` and never rendered here, so
-///   workspace screens that reuse this scaffold (e.g. institution units /
-///   domains / verification) don't accidentally surface public chrome.
+/// - The public site footer is opt-in via [showSiteFooter]. Public-shell
+///   screens (mission / privacy / terms / founder / hubs) pass `true` so the
+///   footer flows at the end of the page scroll. Workspace screens that
+///   reuse this scaffold (institution units / domains / verification) leave
+///   it `false` so public chrome never leaks into a workspace.
 class DocumentScaffold extends StatelessWidget {
   const DocumentScaffold({
     super.key,
@@ -25,6 +28,7 @@ class DocumentScaffold extends StatelessWidget {
     this.actions,
     this.footer,
     this.homePath = '/',
+    this.showSiteFooter = false,
   });
 
   final String title;
@@ -33,6 +37,7 @@ class DocumentScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? footer;
   final String homePath;
+  final bool showSiteFooter;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +71,7 @@ class DocumentScaffold extends StatelessWidget {
               ),
             ),
           ),
+          if (showSiteFooter) const ShellFooter(),
         ],
       ),
     );

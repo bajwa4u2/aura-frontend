@@ -16,6 +16,7 @@ class TermsScreen extends StatelessWidget {
     return const DocumentScaffold(
       title: 'Terms',
       maxWidth: 920,
+      showSiteFooter: true,
       child: _TermsBody(),
     );
   }

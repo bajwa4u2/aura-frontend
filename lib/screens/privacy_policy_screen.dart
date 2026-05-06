@@ -15,6 +15,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     return const DocumentScaffold(
       title: 'Privacy',
       maxWidth: 920,
+      showSiteFooter: true,
       child: _PrivacyBody(),
     );
   }

@@ -11,6 +11,7 @@ class SupportersHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DocumentScaffold(
       title: 'Supporters',
+      showSiteFooter: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

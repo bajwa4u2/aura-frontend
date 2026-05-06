@@ -9,6 +9,7 @@ class FounderMessageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DocumentScaffold(
       title: 'Founder',
+      showSiteFooter: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

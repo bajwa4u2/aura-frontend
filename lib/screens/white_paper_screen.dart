@@ -90,6 +90,7 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
   Widget build(BuildContext context) {
     return DocumentScaffold(
       title: 'White Paper',
+      showSiteFooter: true,
       child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error

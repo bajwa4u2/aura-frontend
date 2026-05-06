@@ -11,6 +11,7 @@ class PatronsHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DocumentScaffold(
       title: 'Patrons',
+      showSiteFooter: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
