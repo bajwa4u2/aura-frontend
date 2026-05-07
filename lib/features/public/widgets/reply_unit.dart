@@ -7,6 +7,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../feed/domain/feed_item.dart';
+import '../domain/accountability_tag.dart';
 import '../domain/monetization_kind.dart';
 import 'monetization_label.dart';
 
@@ -25,6 +26,8 @@ class ReplyUnit extends StatelessWidget {
     super.key,
     required this.reply,
     this.parentIsOfficial = false,
+    this.children = const [],
+    this.depth = 0,
   });
 
   final FeedReply reply;
@@ -33,11 +36,26 @@ class ReplyUnit extends StatelessWidget {
   /// thread screen passes this so non-official replies dim correctly.
   final bool parentIsOfficial;
 
+  /// Public-UX Phase 3 — nested replies-of-this-reply. Rendered indented
+  /// underneath the body up to a hard depth cap of 2 (the depth-2 child
+  /// is rendered, but its `children` are flattened to siblings to avoid
+  /// runaway indentation).
+  final List<FeedReply> children;
+  final int depth;
+
+  static const int _kMaxDepth = 2;
+
   bool get _isOfficial {
     final ctx = reply.author.context;
     if (ctx == null) return false;
     return ctx.type == FeedIdentityContextType.officialInstitution;
   }
+
+  InsAccountabilityTag? get _accountabilityTag =>
+      InsAccountabilityTagX.fromWire(reply.accountabilityTagWire);
+
+  MonetizationKind? get _paidLabel =>
+      MonetizationKindX.fromPaidActionWire(reply.paidActionWire);
 
   @override
   Widget build(BuildContext context) {
@@ -74,13 +92,20 @@ class ReplyUnit extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_isOfficial) ...[
-            const Row(
+          if (_isOfficial || _accountabilityTag != null || _paidLabel != null) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                MonetizationLabel(
-                  kind: MonetizationKind.officialResponse,
-                  compact: true,
-                ),
+                if (_isOfficial)
+                  const MonetizationLabel(
+                    kind: MonetizationKind.officialResponse,
+                    compact: true,
+                  ),
+                if (_paidLabel != null)
+                  MonetizationLabel(kind: _paidLabel!, compact: true),
+                if (_accountabilityTag != null)
+                  _AccountabilityChip(tag: _accountabilityTag!),
               ],
             ),
             const SizedBox(height: AuraSpace.s8),
@@ -166,11 +191,100 @@ class ReplyUnit extends StatelessWidget {
       ),
     );
 
-    // Phase 4 (Value Layer) carryover: non-official replies under an
-    // official parent dim slightly so institutional voice dominates.
-    if (parentIsOfficial && !_isOfficial) {
-      return Opacity(opacity: 0.85, child: card);
-    }
-    return card;
+    // Public-UX Phase 3 — render nested children up to the depth cap.
+    // At depth 0 (top-level reply), children render indented beneath
+    // the body. At depth 1, children render flush so we don't run
+    // into runaway indentation on small screens.
+    final hasChildren = children.isNotEmpty && depth < _kMaxDepth;
+    final wrapped = parentIsOfficial && !_isOfficial
+        ? Opacity(opacity: 0.85, child: card)
+        : card;
+
+    if (!hasChildren) return wrapped;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        wrapped,
+        const SizedBox(height: AuraSpace.s8),
+        Padding(
+          padding: EdgeInsets.only(
+            left: depth == 0 ? AuraSpace.s24 : 0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                ReplyUnit(
+                  reply: children[i],
+                  parentIsOfficial: _isOfficial || parentIsOfficial,
+                  depth: depth + 1,
+                ),
+                if (i < children.length - 1)
+                  const SizedBox(height: AuraSpace.s8),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Accountability tag chip rendered next to the OFFICIAL label on
+/// institution replies. The three tags signal lifecycle stages of an
+/// institutional commitment (commit → update → resolve) so readers
+/// can see whether the discussion produced an outcome.
+class _AccountabilityChip extends StatelessWidget {
+  const _AccountabilityChip({required this.tag});
+
+  final InsAccountabilityTag tag;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Color bg, Color ink, Color border, IconData icon) = switch (tag) {
+      InsAccountabilityTag.commitment => (
+        AuraSurface.accentSoft,
+        AuraSurface.accentText,
+        AuraSurface.accent.withValues(alpha: 0.4),
+        Icons.handshake_outlined,
+      ),
+      InsAccountabilityTag.update => (
+        AuraSurface.warnBg,
+        AuraSurface.warnInk,
+        AuraSurface.warnInk.withValues(alpha: 0.35),
+        Icons.update_rounded,
+      ),
+      InsAccountabilityTag.resolved => (
+        AuraSurface.goodBg,
+        AuraSurface.goodInk,
+        AuraSurface.goodInk.withValues(alpha: 0.4),
+        Icons.check_circle_outline_rounded,
+      ),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: ink),
+          const SizedBox(width: 4),
+          Text(
+            tag.label.toUpperCase(),
+            style: AuraText.micro.copyWith(
+              color: ink,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.6,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

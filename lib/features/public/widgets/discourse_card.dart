@@ -90,10 +90,16 @@ class DiscourseCard extends StatelessWidget {
       item.type == FeedItemType.institutionPost &&
       (item.title?.trim().isNotEmpty ?? false);
 
-  /// The label we'll render in the stripe band. Free-OFFICIAL is
-  /// derived; everything else needs an explicit override.
+  /// The label we'll render in the stripe band. Order of precedence:
+  ///   1. Explicit caller override (still supported for hand-rendered
+  ///      surfaces that want to force a specific label).
+  ///   2. Backend `paidAction` field on the FeedItem (Phase 3 wiring).
+  ///   3. Free-OFFICIAL — derived from the institution-post heuristic.
   MonetizationKind? get _stripeLabel {
     if (paidLabel != null) return paidLabel;
+    final fromWire =
+        MonetizationKindX.fromPaidActionWire(item.paidActionWire);
+    if (fromWire != null) return fromWire;
     if (_isOfficial) return MonetizationKind.officialResponse;
     return null;
   }
@@ -124,15 +130,20 @@ class DiscourseCard extends StatelessWidget {
     return null;
   }
 
-  void _openSpace(BuildContext context) {
-    final route = spaceRoute?.trim() ?? '';
-    if (route.isEmpty) return;
-    context.push(route);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final hasContextEyebrow = (spaceName?.trim().isNotEmpty ?? false);
+    // Public-UX Phase 3 — when the caller didn't pass a space context
+    // explicitly, fall back to whatever the backend ships on the item
+    // itself so a card on the global feed surfaces the space anchor.
+    final resolvedSpaceName =
+        (spaceName?.trim().isNotEmpty ?? false)
+            ? spaceName!.trim()
+            : (item.publicSpaceName?.trim() ?? '');
+    final resolvedSpaceRoute = spaceRoute ??
+        ((item.publicSpaceSlug?.trim().isNotEmpty ?? false)
+            ? '/spaces/${item.publicSpaceSlug!.trim()}'
+            : null);
+    final hasContextEyebrow = resolvedSpaceName.isNotEmpty;
     final pulse = _pulse;
 
     return Column(
@@ -145,9 +156,10 @@ class DiscourseCard extends StatelessWidget {
             children: [
               if (hasContextEyebrow)
                 _ContextEyebrow(
-                  label: spaceName!.trim(),
-                  onTap:
-                      spaceRoute == null ? null : () => _openSpace(context),
+                  label: resolvedSpaceName,
+                  onTap: resolvedSpaceRoute == null
+                      ? null
+                      : () => context.push(resolvedSpaceRoute),
                 ),
               if (pulse != null) _PulsePill(kind: pulse),
             ],

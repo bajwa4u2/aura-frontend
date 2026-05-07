@@ -8,11 +8,15 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/utils/relative_time.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../institutions/ui/institution_ds.dart';
+import '../domain/accountability_tag.dart';
+import '../domain/monetization_kind.dart';
+import '../widgets/monetization_label.dart';
 import '../widgets/reply_unit.dart';
 import '../widgets/thread_header.dart';
 
@@ -56,6 +60,80 @@ enum _ReplyFilter { all, institutions }
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   _ReplyFilter _filter = _ReplyFilter.all;
+
+  /// Public-UX Phase 3 — child index built each render. Maps a parent
+  /// reply id to its direct children (sorted oldest → newest). Empty
+  /// for replies with no children.
+  Map<String, List<FeedReply>> _byParent = const {};
+
+  bool _isOfficialReply(FeedReply r) {
+    final ctx = r.author.context;
+    return ctx != null &&
+        ctx.type == FeedIdentityContextType.officialInstitution;
+  }
+
+  /// Build the nested reply tree from a flat list. Replies with no
+  /// `parentReplyId` are top-level; everything else slots under its
+  /// parent (when the parent is in the list).
+  List<FeedReply> _buildReplyTree(List<FeedReply> all) {
+    final children = <String, List<FeedReply>>{};
+    final ids = <String>{for (final r in all) r.id};
+    final top = <FeedReply>[];
+    for (final r in all) {
+      final pid = r.parentReplyId;
+      if (pid == null || !ids.contains(pid)) {
+        top.add(r);
+        continue;
+      }
+      children.putIfAbsent(pid, () => []).add(r);
+    }
+    for (final list in children.values) {
+      list.sort((a, b) {
+        final at = a.createdAt?.millisecondsSinceEpoch ?? 0;
+        final bt = b.createdAt?.millisecondsSinceEpoch ?? 0;
+        return at.compareTo(bt);
+      });
+    }
+    _byParent = children;
+    return top;
+  }
+
+  /// PRIORITY paid replies are pinned to the top of the thread —
+  /// rendered first, with the visible PRIORITY label.
+  List<FeedReply> _priorityPinned(List<FeedReply> top) {
+    return top.where((r) {
+      final kind =
+          MonetizationKindX.fromPaidActionWire(r.paidActionWire);
+      return kind == MonetizationKind.priorityResponse;
+    }).toList(growable: false);
+  }
+
+  /// Build the accountability timeline events. Includes only replies
+  /// that carry a tag; ordered oldest → newest so the timeline reads
+  /// as a real lifecycle (commitment → update → resolved).
+  List<_TimelineEvent> _buildTimeline(List<FeedReply> all) {
+    final events = <_TimelineEvent>[];
+    for (final r in all) {
+      final tag = InsAccountabilityTagX.fromWire(r.accountabilityTagWire);
+      if (tag == null) continue;
+      events.add(_TimelineEvent(
+        tag: tag,
+        when: r.createdAt,
+        actorName: r.author.displayName.isNotEmpty
+            ? r.author.displayName
+            : (r.author.handle.isNotEmpty
+                ? '@${r.author.handle}'
+                : 'Institution'),
+        replyId: r.id,
+      ));
+    }
+    events.sort((a, b) {
+      final at = a.when?.millisecondsSinceEpoch ?? 0;
+      final bt = b.when?.millisecondsSinceEpoch ?? 0;
+      return at.compareTo(bt);
+    });
+    return events;
+  }
 
   FeedItemDetailArgs get _args =>
       FeedItemDetailArgs(type: widget.type, id: widget.postId);
@@ -176,46 +254,62 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           ),
                         ),
                         data: (page) {
-                          // Split replies into two bands so
-                          // institutional voices read as a distinct,
-                          // promoted strand. Filter chip can narrow to
-                          // institutions-only.
-                          final officials = page.items.where((r) {
-                            final ctx = r.author.context;
-                            return ctx != null &&
-                                ctx.type ==
-                                    FeedIdentityContextType
-                                        .officialInstitution;
-                          }).toList(growable: false);
-                          final members = page.items.where((r) {
-                            final ctx = r.author.context;
-                            return !(ctx != null &&
-                                ctx.type ==
-                                    FeedIdentityContextType
-                                        .officialInstitution);
-                          }).toList(growable: false);
+                          // Public-UX Phase 3 — assemble nested reply
+                          // tree, accountability timeline, paid-pin.
+                          final tree = _buildReplyTree(page.items);
+                          final priorityPins = _priorityPinned(tree);
+                          final officials = tree
+                              .where(_isOfficialReply)
+                              .where((r) => !priorityPins.contains(r))
+                              .toList(growable: false);
+                          final members = tree
+                              .where((r) => !_isOfficialReply(r))
+                              .where((r) => !priorityPins.contains(r))
+                              .toList(growable: false);
 
-                          final showOfficials =
-                              officials.isNotEmpty;
-                          final showMembers =
-                              members.isNotEmpty &&
-                                  _filter == _ReplyFilter.all;
+                          final showPriority = priorityPins.isNotEmpty;
+                          final showOfficials = officials.isNotEmpty;
+                          final showMembers = members.isNotEmpty &&
+                              _filter == _ReplyFilter.all;
 
-                          if (!showOfficials && !showMembers) {
+                          if (!showPriority &&
+                              !showOfficials &&
+                              !showMembers) {
                             return _NoRepliesEmpty(
                               onJoin: _composeReply,
                             );
                           }
+
+                          // Build a chronological list of accountability
+                          // events for the timeline. Includes only tagged
+                          // institutional replies (commitment / update /
+                          // resolved); empty list = no timeline rendered.
+                          final timeline = _buildTimeline(page.items);
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (timeline.isNotEmpty) ...[
+                                _AccountabilityTimeline(events: timeline),
+                                const SizedBox(height: AuraSpace.s14),
+                              ],
+                              if (showPriority) ...[
+                                _PriorityPinnedBand(
+                                  pinned: priorityPins
+                                      .map((r) =>
+                                          ReplyWithChildren.from(r, _byParent))
+                                      .toList(growable: false),
+                                ),
+                                if (showOfficials || showMembers)
+                                  const SizedBox(height: AuraSpace.s14),
+                              ],
                               if (showOfficials) ...[
                                 _OfficialRepliesBand(
                                   officials: officials,
+                                  byParent: _byParent,
                                 ),
                                 if (showMembers)
-                                  const SizedBox(
-                                      height: AuraSpace.s14),
+                                  const SizedBox(height: AuraSpace.s14),
                               ],
                               if (showMembers) ...[
                                 const _SectionLabel(
@@ -227,10 +321,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                   ReplyUnit(
                                     reply: members[i],
                                     parentIsOfficial: isOfficial,
+                                    children: _byParent[members[i].id] ??
+                                        const [],
                                   ),
                                   if (i < members.length - 1)
-                                    const SizedBox(
-                                        height: AuraSpace.s10),
+                                    const SizedBox(height: AuraSpace.s10),
                                 ],
                               ],
                               const SizedBox(height: AuraSpace.s14),
@@ -459,9 +554,13 @@ class _StickyReplyBar extends StatelessWidget {
 /// reply renders as a normal `ReplyUnit` (preserves the inline reading
 /// stream); the band is just a labeled wrapper.
 class _OfficialRepliesBand extends StatelessWidget {
-  const _OfficialRepliesBand({required this.officials});
+  const _OfficialRepliesBand({
+    required this.officials,
+    this.byParent = const {},
+  });
 
   final List<FeedReply> officials;
+  final Map<String, List<FeedReply>> byParent;
 
   @override
   Widget build(BuildContext context) {
@@ -511,6 +610,7 @@ class _OfficialRepliesBand extends StatelessWidget {
             ReplyUnit(
               reply: officials[i],
               parentIsOfficial: true,
+              children: byParent[officials[i].id] ?? const [],
             ),
             if (i < officials.length - 1)
               const SizedBox(height: AuraSpace.s10),
@@ -624,6 +724,295 @@ class _JoinDiscussionCue extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Public-UX Phase 3 — bag carrying a reply alongside its direct
+/// children, used by `_PriorityPinnedBand` to drop the children index
+/// into a stateless context cleanly.
+class ReplyWithChildren {
+  const ReplyWithChildren({required this.reply, required this.children});
+
+  final FeedReply reply;
+  final List<FeedReply> children;
+
+  static ReplyWithChildren from(
+    FeedReply reply,
+    Map<String, List<FeedReply>> byParent,
+  ) =>
+      ReplyWithChildren(
+        reply: reply,
+        children: byParent[reply.id] ?? const [],
+      );
+}
+
+/// Priority-paid replies pinned to the top of the thread. Renders as
+/// a thin bordered band with a "PINNED · PRIORITY · PAID" eyebrow so
+/// readers can see immediately that placement was paid for.
+class _PriorityPinnedBand extends StatelessWidget {
+  const _PriorityPinnedBand({required this.pinned});
+
+  final List<ReplyWithChildren> pinned;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s10,
+        AuraSpace.s12,
+        AuraSpace.s10,
+        AuraSpace.s12,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(
+          color: AuraSurface.muted.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.push_pin_rounded,
+                  size: 12,
+                  color: AuraSurface.muted,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'PINNED',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.9,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const MonetizationLabel(
+                  kind: MonetizationKind.priorityResponse,
+                  compact: true,
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < pinned.length; i++) ...[
+            ReplyUnit(
+              reply: pinned[i].reply,
+              parentIsOfficial: true,
+              children: pinned[i].children,
+            ),
+            if (i < pinned.length - 1)
+              const SizedBox(height: AuraSpace.s10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One step in the accountability timeline.
+class _TimelineEvent {
+  const _TimelineEvent({
+    required this.tag,
+    required this.actorName,
+    required this.replyId,
+    this.when,
+  });
+
+  final InsAccountabilityTag tag;
+  final String actorName;
+  final String replyId;
+  final DateTime? when;
+}
+
+/// Public-UX Phase 3 — accountability timeline.
+///
+/// Renders a horizontal compressed view of the institutional
+/// commitments / updates / resolutions on this thread, oldest first.
+/// The timeline answers "did discourse produce an outcome?" without
+/// the reader having to scan the whole thread.
+class _AccountabilityTimeline extends StatelessWidget {
+  const _AccountabilityTimeline({required this.events});
+
+  final List<_TimelineEvent> events;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.timeline_rounded,
+                size: 13,
+                color: AuraSurface.muted,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'ACCOUNTABILITY TIMELINE',
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.faint,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          for (var i = 0; i < events.length; i++) ...[
+            _TimelineRow(
+              event: events[i],
+              isFirst: i == 0,
+              isLast: i == events.length - 1,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
+    required this.event,
+    required this.isFirst,
+    required this.isLast,
+  });
+
+  final _TimelineEvent event;
+  final bool isFirst;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Color dot, IconData icon) = switch (event.tag) {
+      InsAccountabilityTag.commitment => (
+        AuraSurface.accentText,
+        Icons.handshake_outlined,
+      ),
+      InsAccountabilityTag.update => (
+        AuraSurface.warnInk,
+        Icons.update_rounded,
+      ),
+      InsAccountabilityTag.resolved => (
+        AuraSurface.goodInk,
+        Icons.check_circle_outline_rounded,
+      ),
+    };
+    final whenLabel = event.when != null ? formatRelative(event.when!) : '';
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Vertical track + dot
+          Column(
+            children: [
+              SizedBox(
+                width: 16,
+                child: Center(
+                  child: SizedBox(
+                    width: 1,
+                    child: Container(
+                      color: isFirst
+                          ? Colors.transparent
+                          : AuraSurface.divider,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: dot,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AuraSurface.card,
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(icon, size: 8, color: Colors.white),
+              ),
+              Expanded(
+                child: SizedBox(
+                  width: 16,
+                  child: Center(
+                    child: SizedBox(
+                      width: 1,
+                      child: Container(
+                        color: isLast
+                            ? Colors.transparent
+                            : AuraSurface.divider,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        event.tag.label.toUpperCase(),
+                        style: AuraText.micro.copyWith(
+                          color: dot,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.7,
+                          fontSize: 10,
+                        ),
+                      ),
+                      if (whenLabel.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '· $whenLabel',
+                          style: AuraText.micro.copyWith(
+                            color: AuraSurface.faint,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'by ${event.actorName}',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

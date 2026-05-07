@@ -23,6 +23,25 @@ enum MonetizationKind {
 }
 
 extension MonetizationKindX on MonetizationKind {
+  /// Parses the backend `PaidActionKind` wire token. Backend ships
+  /// PRIORITY / HOSTED / DISTRIBUTED — `OFFICIAL_RESPONSE` is purely
+  /// frontend-derived (it's a "free verified" label, not a paid one).
+  static MonetizationKind? fromPaidActionWire(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString().trim().toUpperCase();
+    switch (s) {
+      case 'PRIORITY':
+        return MonetizationKind.priorityResponse;
+      case 'HOSTED':
+        return MonetizationKind.hostedSession;
+      case 'DISTRIBUTED':
+      case 'DISTRIBUTION':
+        return MonetizationKind.paidDistribution;
+      default:
+        return null;
+    }
+  }
+
   /// True when the action is paid. Drives the "PAID" suffix on the
   /// label so the user can distinguish authority-only labels from
   /// monetary ones.

@@ -782,6 +782,10 @@ class FeedItem {
     this.activity,
     this.secondaryAttribution,
     this.voice,
+    this.paidActionWire,
+    this.publicSpaceId,
+    this.publicSpaceSlug,
+    this.publicSpaceName,
   });
 
   final String id;
@@ -821,6 +825,18 @@ class FeedItem {
   /// Phase 6.4 — calm voice indicator. Absent for personal posts; present
   /// only when the backend has data to back the label.
   final FeedVoice? voice;
+
+  /// Public-UX Phase 3 — backend `paidAction` wire token (PRIORITY /
+  /// HOSTED / DISTRIBUTED). Null for organic posts. Frontend resolves
+  /// this to a `MonetizationKind` for in-context label rendering.
+  final String? paidActionWire;
+
+  /// Public-UX Phase 3 — anchoring to a public discourse space. Null
+  /// when the post is unanchored. Slug + name are denormalized so the
+  /// frontend doesn't need a second fetch to render the eyebrow chip.
+  final String? publicSpaceId;
+  final String? publicSpaceSlug;
+  final String? publicSpaceName;
 
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
@@ -893,6 +909,22 @@ class FeedItem {
         ? FeedVoice.fromJson(Map<String, dynamic>.from(voiceRaw))
         : null;
 
+    // Public-UX Phase 3 — extract the optional space anchoring. The
+    // space block may arrive as a nested map (`publicSpace: {…}`) or
+    // as denormalized top-level keys.
+    String? spaceId;
+    String? spaceSlug;
+    String? spaceName;
+    final spaceRaw = m['publicSpace'];
+    if (spaceRaw is Map) {
+      spaceId = spaceRaw['id']?.toString().trim();
+      spaceSlug = spaceRaw['slug']?.toString().trim();
+      spaceName = spaceRaw['name']?.toString().trim();
+    }
+    spaceId ??= opt(['publicSpaceId']);
+    spaceSlug ??= opt(['publicSpaceSlug']);
+    spaceName ??= opt(['publicSpaceName']);
+
     return FeedItem(
       id: s(['id']),
       type: FeedItemType.fromWire(m['type']),
@@ -913,6 +945,10 @@ class FeedItem {
       activity: activity,
       secondaryAttribution: secondaryAttribution,
       voice: voice,
+      paidActionWire: opt(['paidAction']),
+      publicSpaceId: spaceId,
+      publicSpaceSlug: spaceSlug,
+      publicSpaceName: spaceName,
     );
   }
 }
@@ -932,6 +968,9 @@ class FeedReply {
     required this.author,
     this.createdAt,
     this.updatedAt,
+    this.parentReplyId,
+    this.accountabilityTagWire,
+    this.paidActionWire,
   });
 
   final String id;
@@ -940,6 +979,22 @@ class FeedReply {
   final FeedReplyAuthor author;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// Public-UX Phase 3 — parent-reply pointer for nested replies. Null
+  /// for top-level replies (replies directly under the parent post).
+  /// The frontend renders nested children up to a depth cap of 2.
+  /// Wire: `parentReplyId` — the existing `replyToPostId` /
+  /// `replyToInstitutionPostId` self-pointer surfaced as a
+  /// type-agnostic field name so the same code path handles both.
+  final String? parentReplyId;
+
+  /// Public-UX Phase 3 — institution-set accountability tag
+  /// (COMMITMENT / UPDATE / RESOLVED). Null for unset replies.
+  final String? accountabilityTagWire;
+
+  /// Public-UX Phase 3 — backend `paidAction` wire token
+  /// (PRIORITY / HOSTED / DISTRIBUTED). Null for organic replies.
+  final String? paidActionWire;
 
   factory FeedReply.fromJson(Map<String, dynamic> m) {
     DateTime? readDate(dynamic raw) {
@@ -977,6 +1032,13 @@ class FeedReply {
       author: author,
       createdAt: readDate(m['createdAt']),
       updatedAt: readDate(m['updatedAt']),
+      parentReplyId: opt([
+        'parentReplyId',
+        'replyToPostId',
+        'replyToInstitutionPostId',
+      ]),
+      accountabilityTagWire: opt(['accountabilityTag']),
+      paidActionWire: opt(['paidAction']),
     );
   }
 }

@@ -8,10 +8,9 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../feed/data/unified_feed_providers.dart';
-import '../../feed/domain/feed_item.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../data/public_spaces_registry.dart';
+import '../data/public_spaces_repository.dart';
 import '../domain/space.dart';
 import '../widgets/discourse_card.dart';
 
@@ -46,156 +45,228 @@ class SpaceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final space = ref.watch(publicSpaceBySlugProvider(slug));
-    if (space == null) {
-      return AuraScaffold(
+    // Phase 3 — primary source is the backend feed; the local registry
+    // is only consulted as a fallback for the *header* (so signed-out
+    // viewers without a network call still see space identity).
+    final feedAsync = ref.watch(publicSpaceFeedProvider(slug));
+    final summaryAsync = ref.watch(publicSpaceSummaryProvider(slug));
+    final fallbackSpace = ref.watch(publicSpaceBySlugProvider(slug));
+
+    return feedAsync.when(
+      loading: () => AuraScaffold(
         showHeader: false,
         body: InsScreen(
           children: [
             InsModeHeader(
-              title: 'Space not found',
-              description: 'No space matches the slug "$slug".',
-              primaryAction: AuraSecondaryButton(
-                label: 'See all spaces',
-                icon: Icons.grid_view_rounded,
-                onPressed: () => context.go('/spaces'),
-              ),
+              title: fallbackSpace?.name ?? 'Loading space',
+              description: fallbackSpace?.description ?? '',
             ),
             const InsModeHeaderGap(),
-            const InsEmptyState(
-              icon: Icons.public_off_outlined,
-              title: 'Space unavailable',
-              description:
-                  'It may have been renamed or removed. Try the spaces directory.',
-            ),
+            const Center(child: AuraLoadingState(message: 'Loading…')),
           ],
         ),
-      );
-    }
-
-    final feedAsync = ref.watch(globalPublicFeedProvider);
-
-    return AuraScaffold(
-      showHeader: false,
-      body: InsScreen(
-        children: [
-          // ── Mode header ───────────────────────────────────────────
-          InsModeHeader(
-            title: space.name,
-            description: space.description,
-            primaryAction: AuraPrimaryButton(
-              label: 'Post in space',
-              icon: Icons.edit_rounded,
-              onPressed: () => _openCompose(context, space),
+      ),
+      error: (e, _) {
+        // 404 / missing migration — render a calm "no posts yet" using
+        // the local registry's identity if available. This is the
+        // explicit graceful-fallback path: real backend, real space,
+        // empty stream until posts exist.
+        if (fallbackSpace == null) {
+          return AuraScaffold(
+            showHeader: false,
+            body: InsScreen(
+              children: [
+                InsModeHeader(
+                  title: 'Space not found',
+                  description: 'No space matches the slug "$slug".',
+                  primaryAction: AuraSecondaryButton(
+                    label: 'See all spaces',
+                    icon: Icons.grid_view_rounded,
+                    onPressed: () => context.go('/spaces'),
+                  ),
+                ),
+                const InsModeHeaderGap(),
+                const InsEmptyState(
+                  icon: Icons.public_off_outlined,
+                  title: 'Space unavailable',
+                  description:
+                      'It may have been renamed or removed. '
+                      'Try the spaces directory.',
+                ),
+              ],
             ),
-          ),
-          const InsModeHeaderGap(),
-
-          // ── Compose hint band ────────────────────────────────────
-          _ComposeHintBand(
-            space: space,
-            onTap: () => _openCompose(context, space),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-
-          // ── Discourse stream + participants ──────────────────────
-          feedAsync.when(
-            loading: () => const AuraLoadingState(message: 'Loading…'),
-            error: (e, _) => AuraErrorState(
-              title: 'Could not load this space',
-              body: '$e',
-              action: AuraSecondaryButton(
-                label: 'Try again',
-                icon: Icons.refresh_rounded,
-                onPressed: () => ref.invalidate(globalPublicFeedProvider),
+          );
+        }
+        return AuraScaffold(
+          showHeader: false,
+          body: InsScreen(
+            children: [
+              InsModeHeader(
+                title: fallbackSpace.name,
+                description: fallbackSpace.description,
+                primaryAction: AuraPrimaryButton(
+                  label: 'Post in space',
+                  icon: Icons.edit_rounded,
+                  onPressed: () => _openCompose(context, fallbackSpace),
+                ),
               ),
-            ),
-            data: (page) {
-              final inSpace = _filterToSpace(page.items, space);
-              if (inSpace.isEmpty) {
-                return const InsEmptyState(
+              const InsModeHeaderGap(),
+              _ComposeHintBand(
+                space: fallbackSpace,
+                onTap: () => _openCompose(context, fallbackSpace),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              const InsEmptyState(
+                icon: Icons.forum_outlined,
+                title: 'No posts in this space yet',
+                description:
+                    'Use the action above to start the first discussion.',
+              ),
+            ],
+          ),
+        );
+      },
+      data: (page) {
+        final space = page.space;
+        return AuraScaffold(
+          showHeader: false,
+          body: InsScreen(
+            children: [
+              // ── Mode header ────────────────────────────────────
+              InsModeHeader(
+                title: space.name,
+                description: space.description,
+                primaryAction: AuraPrimaryButton(
+                  label: 'Post in space',
+                  icon: Icons.edit_rounded,
+                  onPressed: () => _openCompose(context, space),
+                ),
+              ),
+              const InsModeHeaderGap(),
+
+              // ── Identity panel — real counts from /summary ──────
+              _SpaceIdentityPanel(slug: space.slug, summary: summaryAsync),
+              const SizedBox(height: AuraSpace.s14),
+
+              // ── Compose hint ────────────────────────────────────
+              _ComposeHintBand(
+                space: space,
+                onTap: () => _openCompose(context, space),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+
+              // ── Discourse stream ────────────────────────────────
+              if (page.items.isEmpty)
+                const InsEmptyState(
                   icon: Icons.forum_outlined,
                   title: 'No posts in this space yet',
                   description:
-                      'Use the action above to start the first discussion. '
-                      'Posts that mention the space’s tag in their text appear here.',
-                );
-              }
-              final participants = _participantNames(inSpace);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ParticipantsLine(
-                    count: participants.length,
-                    sample: participants,
+                      'Use the action above to start the first discussion.',
+                )
+              else ...[
+                const _SectionEyebrow(label: 'DISCUSSION'),
+                const SizedBox(height: AuraSpace.s10),
+                for (var i = 0; i < page.items.length; i++) ...[
+                  DiscourseCard(
+                    item: page.items[i],
+                    spaceName: space.name,
+                    spaceRoute: '/spaces/${space.slug}',
                   ),
-                  const SizedBox(height: AuraSpace.s14),
-                  const _SectionEyebrow(label: 'DISCUSSION'),
-                  const SizedBox(height: AuraSpace.s10),
-                  for (var i = 0; i < inSpace.length; i++) ...[
-                    DiscourseCard(
-                      item: inSpace[i],
-                      spaceName: space.name,
-                      spaceRoute: '/spaces/${space.slug}',
-                    ),
-                    if (i < inSpace.length - 1)
-                      const SizedBox(height: AuraSpace.s10),
-                  ],
+                  if (i < page.items.length - 1)
+                    const SizedBox(height: AuraSpace.s10),
                 ],
-              );
-            },
+              ],
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
 
-  /// Frontend filter: an item is "in" the space when its title or body
-  /// contains the space tag (case-insensitive, word-boundaryish). Loose
-  /// on purpose — we'd rather over-include than miss tagged content.
-  List<FeedItem> _filterToSpace(List<FeedItem> all, PubSpace space) {
-    final tag = space.tag.toLowerCase();
-    final hashed = '#$tag';
-    final out = <FeedItem>[];
-    for (final i in all) {
-      final t = (i.title ?? '').toLowerCase();
-      final b = i.body.toLowerCase();
-      if (t.contains(hashed) ||
-          b.contains(hashed) ||
-          _hasWord(t, tag) ||
-          _hasWord(b, tag)) {
-        out.add(i);
-      }
-    }
-    return out;
+/// Identity panel shown beneath the space mode header — backend-truth
+/// counts of active discussions, participants, and institutions
+/// involved. While the summary is loading or unavailable, render
+/// nothing rather than fake numbers.
+class _SpaceIdentityPanel extends StatelessWidget {
+  const _SpaceIdentityPanel({required this.slug, required this.summary});
+
+  final String slug;
+  final AsyncValue<PublicSpaceSummary> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return summary.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (s) {
+        if (s.activeDiscussionCount == 0 &&
+            s.participantCount == 0 &&
+            s.institutionCount == 0) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s14,
+            vertical: AuraSpace.s10,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.lg),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Wrap(
+            spacing: AuraSpace.s14,
+            runSpacing: AuraSpace.s8,
+            children: [
+              _CountChip(
+                icon: Icons.forum_outlined,
+                label: s.activeDiscussionCount == 1
+                    ? '1 active discussion'
+                    : '${s.activeDiscussionCount} active discussions',
+              ),
+              _CountChip(
+                icon: Icons.people_outline_rounded,
+                label: s.participantCount == 1
+                    ? '1 participant'
+                    : '${s.participantCount} participants',
+              ),
+              _CountChip(
+                icon: Icons.apartment_rounded,
+                label: s.institutionCount == 1
+                    ? '1 institution involved'
+                    : '${s.institutionCount} institutions involved',
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
+}
 
-  bool _hasWord(String haystack, String needle) {
-    // Quick word-boundary check without the cost of a RegExp per call.
-    if (haystack.isEmpty || needle.isEmpty) return false;
-    final idx = haystack.indexOf(needle);
-    if (idx < 0) return false;
-    final before = idx == 0 ? ' ' : haystack[idx - 1];
-    final afterIdx = idx + needle.length;
-    final after =
-        afterIdx >= haystack.length ? ' ' : haystack[afterIdx];
-    bool isBoundary(String c) =>
-        !RegExp(r'[a-z0-9_]').hasMatch(c.toLowerCase());
-    return isBoundary(before) && isBoundary(after);
-  }
+class _CountChip extends StatelessWidget {
+  const _CountChip({required this.icon, required this.label});
 
-  List<String> _participantNames(List<FeedItem> items) {
-    final seen = <String>{};
-    final names = <String>[];
-    for (final i in items) {
-      final id = i.author.id;
-      if (id.isEmpty) continue;
-      if (seen.contains(id)) continue;
-      seen.add(id);
-      final n = i.author.name.trim();
-      names.add(n.isNotEmpty ? n : '@${i.author.handleOrSlug}');
-    }
-    return names;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: AuraSurface.muted),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -272,43 +343,6 @@ class _ComposeHintBand extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ParticipantsLine extends StatelessWidget {
-  const _ParticipantsLine({required this.count, required this.sample});
-
-  final int count;
-  final List<String> sample;
-
-  @override
-  Widget build(BuildContext context) {
-    if (count == 0) return const SizedBox.shrink();
-    final visibleSample =
-        sample.take(2).join(', ') + (count > 2 ? ' and others' : '');
-    return Row(
-      children: [
-        const Icon(
-          Icons.people_outline_rounded,
-          size: 14,
-          color: AuraSurface.muted,
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            count == 1
-                ? '1 participant · $visibleSample'
-                : '$count participants · $visibleSample',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
