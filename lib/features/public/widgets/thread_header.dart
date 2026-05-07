@@ -12,6 +12,7 @@ import '../../feed/domain/feed_item.dart';
 import '../../institutions/domain/communication_type.dart';
 import '../domain/monetization_kind.dart';
 import '../domain/public_visibility.dart';
+import 'mention_text.dart';
 import 'monetization_label.dart';
 import 'visibility_selector.dart';
 
@@ -162,7 +163,9 @@ class ThreadHeader extends StatelessWidget {
           ],
           if (item.body.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s10),
-            Text(
+            // Phase 6.1 — accent-style + tappable @mentions in the
+            // post body, mirroring reply rendering.
+            MentionText(
               item.body,
               style: AuraText.body.copyWith(
                 color: AuraSurface.ink,

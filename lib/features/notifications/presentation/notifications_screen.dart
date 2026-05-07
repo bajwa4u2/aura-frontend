@@ -40,10 +40,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
-  Future<void> _onTap(AppNotification n) async {
-    // Mark this row as read first (best-effort).
+  Future<void> _onTap(AppNotification n, {List<String> alsoMark = const []}) async {
+    // Mark this row (and any other ids in the same group) as read.
+    final ids = <String>{n.id, ...alsoMark}.toList(growable: false);
     try {
-      await ref.read(notificationsRepositoryProvider).markRead([n.id]);
+      await ref.read(notificationsRepositoryProvider).markRead(ids);
       ref.invalidate(notificationsListProvider);
       ref.invalidate(unreadNotificationCountProvider);
     } catch (_) {}
@@ -64,6 +65,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String? _routeFor(AppNotification n) {
     if (n.directThreadId != null && n.directThreadId!.isNotEmpty) {
       return '/direct/${n.directThreadId}';
+    }
+    // Phase 6.1 — SPACE_ACTIVITY notifications carry a `slug` payload
+    // pointing at the followed space.
+    if (n.type.toUpperCase() == 'SPACE_ACTIVITY') {
+      final slug = n.payload['slug']?.toString().trim() ?? '';
+      if (slug.isNotEmpty) return '/spaces/$slug';
     }
     if (n.institutionPostId != null && n.institutionPostId!.isNotEmpty) {
       final inst = n.institutionPost?['institutionId']?.toString() ?? '';
@@ -123,6 +130,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       ),
                     );
                   }
+                  // Phase 6.1 — collapse runs of REPLY / THREAD_ACTIVITY
+                  // notifications about the same parent post into a
+                  // single rollup tile. Other types remain 1:1.
+                  final groups = _groupNotifications(page.items);
                   return RefreshIndicator(
                     onRefresh: () async {
                       ref.invalidate(notificationsListProvider);
@@ -130,12 +141,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     },
                     child: ListView.separated(
                       padding: const EdgeInsets.all(AuraSpace.s12),
-                      itemCount: page.items.length,
+                      itemCount: groups.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AuraSpace.s8),
                       itemBuilder: (context, i) => _Tile(
-                        notification: page.items[i],
-                        onTap: () => _onTap(page.items[i]),
+                        group: groups[i],
+                        onTap: () => _onTap(
+                          groups[i].representative,
+                          alsoMark: [
+                            for (final x in groups[i].items.skip(1)) x.id,
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -188,11 +204,52 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({required this.notification, required this.onTap});
+/// Phase 6.1 — rollup container.
+///
+/// Holds 1+ notifications that should render as a single tile. Single-
+/// notification groups behave exactly like the old per-row rendering.
+/// Multi-notification groups show a "X new replies in this discussion"
+/// summary using the most-recent entry as the representative.
+class _TileGroup {
+  _TileGroup(this.items);
+  final List<AppNotification> items;
+  bool get isGroup => items.length > 1;
+  AppNotification get representative => items.first;
+}
 
-  final AppNotification notification;
+/// Walk a freshly-fetched (newest-first) notifications list and merge
+/// runs of same-parent REPLY / THREAD_ACTIVITY entries. We only collapse
+/// when the run is contiguous in the timeline so distant duplicates
+/// stay separate rows. Other types pass through 1:1.
+List<_TileGroup> _groupNotifications(List<AppNotification> items) {
+  final out = <_TileGroup>[];
+  for (final n in items) {
+    final type = n.type.toUpperCase();
+    final groupable = type == 'REPLY' || type == 'THREAD_ACTIVITY';
+    if (groupable && out.isNotEmpty) {
+      final last = out.last;
+      final lastType = last.representative.type.toUpperCase();
+      final samePost = (n.postId ?? '').isNotEmpty &&
+          n.postId == last.representative.postId;
+      final sameInst = (n.institutionPostId ?? '').isNotEmpty &&
+          n.institutionPostId == last.representative.institutionPostId;
+      if (lastType == type && (samePost || sameInst)) {
+        last.items.add(n);
+        continue;
+      }
+    }
+    out.add(_TileGroup([n]));
+  }
+  return out;
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.group, required this.onTap});
+
+  final _TileGroup group;
   final VoidCallback onTap;
+
+  AppNotification get notification => group.representative;
 
   String _label() {
     final actorName = notification.isInstitutionVoice
@@ -200,6 +257,15 @@ class _Tile extends StatelessWidget {
         : (notification.actor?['displayName']?.toString() ??
             notification.actor?['handle']?.toString() ??
             'Someone');
+    // Rollup label first — overrides per-type wording when multiple.
+    if (group.isGroup) {
+      final n = group.items.length;
+      final type = notification.type.toUpperCase();
+      if (type == 'THREAD_ACTIVITY') {
+        return '$n new replies in a discussion you follow';
+      }
+      return '$n new replies in this discussion';
+    }
     switch (notification.type.toUpperCase()) {
       case 'LIKE':
         return '$actorName liked your post';
@@ -211,6 +277,16 @@ class _Tile extends StatelessWidget {
         return '$actorName started following you';
       case 'MESSAGE':
         return '$actorName sent you a message';
+      case 'MENTION':
+        return '$actorName mentioned you';
+      case 'THREAD_ACTIVITY':
+        return '$actorName replied in a discussion you follow';
+      case 'SPACE_ACTIVITY':
+        final spaceName =
+            notification.payload['spaceName']?.toString().trim() ?? '';
+        return spaceName.isNotEmpty
+            ? '$actorName posted in $spaceName'
+            : '$actorName posted in a space you follow';
       default:
         return '$actorName interacted with your content';
     }
@@ -232,15 +308,16 @@ class _Tile extends StatelessWidget {
             .toUpperCase());
     final snippet = notification.payload['snippet']?.toString() ?? '';
 
+    // For grouped tiles, the row is "unread" when any underlying entry
+    // is unread — so the wash persists until the user opens the post.
+    final allRead = group.items.every((e) => e.isRead);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AuraRadius.md),
       child: Container(
         padding: const EdgeInsets.all(AuraSpace.s12),
         decoration: BoxDecoration(
-          color: notification.isRead
-              ? AuraSurface.subtle
-              : AuraSurface.accentSoft,
+          color: allRead ? AuraSurface.subtle : AuraSurface.accentSoft,
           borderRadius: BorderRadius.circular(AuraRadius.md),
           border: Border.all(color: AuraSurface.divider),
         ),

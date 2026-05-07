@@ -12,6 +12,7 @@ import '../../feed/domain/feed_item.dart';
 import '../domain/accountability_tag.dart';
 import '../domain/monetization_kind.dart';
 import 'institution_action_sheet.dart';
+import 'mention_text.dart';
 import 'monetization_label.dart';
 
 /// One reply in the discourse thread.
@@ -218,7 +219,9 @@ class ReplyUnit extends ConsumerWidget {
           ),
           if (reply.body.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(
+            // Phase 6.1 — render @handles as accent-tinted, tappable
+            // spans linking to /u/:handle.
+            MentionText(
               reply.body,
               style: AuraText.body.copyWith(
                 color: AuraSurface.ink,

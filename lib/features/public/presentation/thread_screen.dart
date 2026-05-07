@@ -17,6 +17,7 @@ import '../../institutions/ui/institution_ds.dart';
 import '../data/thread_last_seen_cache.dart';
 import '../domain/accountability_tag.dart';
 import '../domain/monetization_kind.dart';
+import '../widgets/follow_button.dart';
 import '../widgets/monetization_label.dart';
 import '../widgets/reply_unit.dart';
 import '../widgets/thread_header.dart';
@@ -40,6 +41,8 @@ class ThreadScreen extends ConsumerStatefulWidget {
     required this.postId,
     this.type = FeedItemType.userPost,
     this.parentInstitutionId,
+    this.focusTarget,
+    this.focusReplyId,
   });
 
   final String postId;
@@ -52,6 +55,18 @@ class ThreadScreen extends ConsumerStatefulWidget {
   /// can route through `/institutions/:institutionId/posts/:postId/replies`
   /// rather than the user-reply path.
   final String? parentInstitutionId;
+
+  /// Public-UX Phase 6.1 — entry-accuracy hint. Read from `?focus=`.
+  /// Recognized values:
+  ///   * `timeline`         → scroll to the accountability timeline
+  ///   * `first-official`   → scroll to the first official reply
+  ///   * `last-reply`       → scroll to the most recent member reply
+  /// Anything else (or null) leaves scroll position alone.
+  final String? focusTarget;
+
+  /// Public-UX Phase 6.1 — focus a specific reply by id. Read from
+  /// `?replyId=`. Wins over [focusTarget] when both are present.
+  final String? focusReplyId;
 
   @override
   ConsumerState<ThreadScreen> createState() => _ThreadScreenState();
@@ -75,10 +90,66 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   DateTime? _lastSeenAt;
   bool _seenLoaded = false;
 
+  /// Public-UX Phase 6.1 — scroll-to-focus keys + state.
+  ///
+  /// We attach `GlobalKey`s to the surfaces that route hints can target
+  /// (timeline, first official, last member reply) plus a per-reply map
+  /// for arbitrary `?replyId=` deep links. After the first build that
+  /// renders the requested anchor, we run `Scrollable.ensureVisible`
+  /// once and flip `_autoScrolled` so we don't yank the viewport again
+  /// on later rebuilds.
+  final GlobalKey _timelineKey = GlobalKey();
+  final GlobalKey _firstOfficialKey = GlobalKey();
+  final GlobalKey _lastReplyKey = GlobalKey();
+  final Map<String, GlobalKey> _replyKeys = {};
+  bool _autoScrolled = false;
+
   @override
   void initState() {
     super.initState();
     _loadLastSeen();
+  }
+
+  GlobalKey _keyForReply(String replyId) =>
+      _replyKeys.putIfAbsent(replyId, () => GlobalKey());
+
+  /// Resolve which key (if any) the route asked us to focus. Returns
+  /// null when no hint applies or the relevant widget hasn't mounted
+  /// yet — callers should retry on the next frame in that case.
+  GlobalKey? _resolveFocusKey() {
+    final id = widget.focusReplyId?.trim();
+    if (id != null && id.isNotEmpty) {
+      return _replyKeys[id];
+    }
+    switch ((widget.focusTarget ?? '').trim().toLowerCase()) {
+      case 'timeline':
+        return _timelineKey.currentContext == null ? null : _timelineKey;
+      case 'first-official':
+        return _firstOfficialKey.currentContext == null
+            ? null
+            : _firstOfficialKey;
+      case 'last-reply':
+        return _lastReplyKey.currentContext == null ? null : _lastReplyKey;
+    }
+    return null;
+  }
+
+  void _maybeAutoScroll() {
+    if (_autoScrolled) return;
+    if (widget.focusReplyId == null && widget.focusTarget == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _autoScrolled) return;
+      final key = _resolveFocusKey();
+      final ctx = key?.currentContext;
+      if (ctx == null) return; // anchor not built yet — retry next build
+      _autoScrolled = true;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: 0.15,
+      );
+    });
   }
 
   Future<void> _loadLastSeen() async {
@@ -105,6 +176,16 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final prev = members[i - 1].createdAt;
     if (prev == null) return false;
     return !prev.isAfter(last);
+  }
+
+  /// Phase 6.1 — true when this reply landed after the cached
+  /// `_lastSeenAt`. Used to apply the fade-in highlight tint.
+  bool _isNewReply(FeedReply r) {
+    final last = _lastSeenAt;
+    if (last == null || !_seenLoaded) return false;
+    final ts = r.createdAt;
+    if (ts == null) return false;
+    return ts.isAfter(last);
   }
 
   @override
@@ -224,6 +305,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         child: Column(
           children: [
             _ThreadAppBar(
+              // Phase 6.1 — show the Follow toggle only on user-post
+              // threads (the backend follow target is `Post`, not
+              // `InstitutionPost`).
+              followablePostId: widget.type == FeedItemType.userPost
+                  ? widget.postId
+                  : null,
               onBack: () => context.canPop()
                   ? context.pop()
                   : context.go('/'),
@@ -304,6 +391,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           ),
                         ),
                         data: (page) {
+                          // Phase 6.1 — entry accuracy. Schedule a
+                          // post-frame scroll once anchors are mounted.
+                          _maybeAutoScroll();
                           // Public-UX Phase 3 — assemble nested reply
                           // tree, accountability timeline, paid-pin.
                           final tree = _buildReplyTree(page.items);
@@ -359,7 +449,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 const SizedBox(height: AuraSpace.s14),
                               ],
                               if (timeline.isNotEmpty) ...[
-                                _AccountabilityTimeline(events: timeline),
+                                KeyedSubtree(
+                                  key: _timelineKey,
+                                  child: _AccountabilityTimeline(
+                                      events: timeline),
+                                ),
                                 const SizedBox(height: AuraSpace.s14),
                               ],
                               if (showPriority) ...[
@@ -373,9 +467,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                   const SizedBox(height: AuraSpace.s14),
                               ],
                               if (showOfficials) ...[
-                                _OfficialRepliesBand(
-                                  officials: officials,
-                                  byParent: _byParent,
+                                KeyedSubtree(
+                                  key: _firstOfficialKey,
+                                  child: _OfficialRepliesBand(
+                                    officials: officials,
+                                    byParent: _byParent,
+                                  ),
                                 ),
                                 if (showMembers)
                                   const SizedBox(height: AuraSpace.s14),
@@ -400,11 +497,34 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                     const _NewSinceDivider(),
                                     const SizedBox(height: AuraSpace.s10),
                                   ],
-                                  ReplyUnit(
-                                    reply: members[i],
-                                    parentIsOfficial: isOfficial,
-                                    children: _byParent[members[i].id] ??
-                                        const [],
+                                  // Phase 6.1 — per-reply scroll
+                                  // anchor + last-reply marker + new-
+                                  // reply fade-in tint for replies
+                                  // after _lastSeenAt.
+                                  KeyedSubtree(
+                                    key: _keyForReply(members[i].id),
+                                    child: _NewReplyHighlight(
+                                      isNew: _isNewReply(members[i]),
+                                      child: i == members.length - 1
+                                          ? KeyedSubtree(
+                                              key: _lastReplyKey,
+                                              child: ReplyUnit(
+                                                reply: members[i],
+                                                parentIsOfficial:
+                                                    isOfficial,
+                                                children: _byParent[
+                                                        members[i].id] ??
+                                                    const [],
+                                              ),
+                                            )
+                                          : ReplyUnit(
+                                              reply: members[i],
+                                              parentIsOfficial: isOfficial,
+                                              children: _byParent[
+                                                      members[i].id] ??
+                                                  const [],
+                                            ),
+                                    ),
                                   ),
                                   if (i < members.length - 1)
                                     const SizedBox(height: AuraSpace.s10),
@@ -467,10 +587,17 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 }
 
 class _ThreadAppBar extends StatelessWidget {
-  const _ThreadAppBar({required this.onBack, required this.onShare});
+  const _ThreadAppBar({
+    required this.onBack,
+    required this.onShare,
+    this.followablePostId,
+  });
 
   final VoidCallback onBack;
   final VoidCallback onShare;
+
+  /// When non-null, render the Follow toggle for this thread post id.
+  final String? followablePostId;
 
   @override
   Widget build(BuildContext context) {
@@ -492,6 +619,10 @@ class _ThreadAppBar extends StatelessWidget {
             onPressed: onBack,
           ),
           const Spacer(),
+          if (followablePostId != null) ...[
+            FollowButton.thread(threadPostId: followablePostId!),
+            const SizedBox(width: AuraSpace.s8),
+          ],
           IconButton(
             tooltip: 'Share',
             icon: const Icon(Icons.ios_share_rounded, size: 18),
@@ -1120,6 +1251,60 @@ class _TimelineRow extends StatelessWidget {
 /// renders before the first reply newer than the cached last-seen
 /// timestamp. Calm — a thin accent line + small label, never a
 /// blocky band.
+/// Public-UX Phase 6.1 — fade-in tint applied to replies that landed
+/// after the cached `_lastSeenAt`. Starts at a soft accent wash and
+/// decays to transparent over ~3 seconds so the highlight registers
+/// then yields to normal reading.
+class _NewReplyHighlight extends StatefulWidget {
+  const _NewReplyHighlight({
+    required this.isNew,
+    required this.child,
+  });
+
+  final bool isNew;
+  final Widget child;
+
+  @override
+  State<_NewReplyHighlight> createState() => _NewReplyHighlightState();
+}
+
+class _NewReplyHighlightState extends State<_NewReplyHighlight> {
+  late bool _showTint = widget.isNew;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isNew) {
+      // Decay the tint shortly after first paint. Single timer per
+      // mount; once cleared we never re-tint (changing isNew on an
+      // already-mounted reply isn't a real case here).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Future<void>.delayed(const Duration(milliseconds: 2400), () {
+          if (!mounted) return;
+          setState(() => _showTint = false);
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        color: _showTint
+            ? AuraSurface.accentSoft.withValues(alpha: 0.55)
+            : Colors.transparent,
+      ),
+      padding: EdgeInsets.all(_showTint ? AuraSpace.s4 : 0),
+      child: widget.child,
+    );
+  }
+}
+
 class _NewSinceDivider extends StatelessWidget {
   const _NewSinceDivider();
 

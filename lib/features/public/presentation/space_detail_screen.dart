@@ -14,6 +14,7 @@ import '../data/public_spaces_registry.dart';
 import '../data/public_spaces_repository.dart';
 import '../domain/space.dart';
 import '../widgets/discourse_card.dart';
+import '../widgets/follow_button.dart';
 
 /// Space detail screen at `/spaces/:slug`.
 ///
@@ -143,6 +144,11 @@ class SpaceDetailScreen extends ConsumerWidget {
           body: InsScreen(
             children: [
               // ── Mode header ────────────────────────────────────
+              // Public-UX Phase 6.1 — primary action is the Post CTA;
+              // secondary action below it is the Follow toggle so the
+              // header stays clean. We render the follow button as a
+              // separate row immediately under the header instead of
+              // overloading the mode-header trailing slot.
               InsModeHeader(
                 title: space.name,
                 description: space.description,
@@ -151,6 +157,11 @@ class SpaceDetailScreen extends ConsumerWidget {
                   icon: Icons.edit_rounded,
                   onPressed: () => _openCompose(context, space),
                 ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FollowButton.space(spaceSlug: space.slug),
               ),
               const InsModeHeaderGap(),
 

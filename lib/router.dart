@@ -556,6 +556,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 postId: state.pathParameters['id'] ?? '',
                 type: type,
                 parentInstitutionId: qp['parentInstitutionId'],
+                // Phase 6.1 — entry-accuracy hints. `focus` selects a
+                // named anchor (timeline / first-official / last-reply);
+                // `replyId` deep-links to a specific reply.
+                focusTarget: qp['focus'],
+                focusReplyId: qp['replyId'],
               );
             },
           ),
