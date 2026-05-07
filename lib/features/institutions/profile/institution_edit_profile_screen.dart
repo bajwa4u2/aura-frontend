@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -490,7 +491,12 @@ class _InstitutionEditProfileScreenState
                 body: 'Only institution admins can edit the profile.',
                 action: AuraSecondaryButton(
                   label: 'Back to profile',
-                  onPressed: () => context.go('/institution/profile'),
+                  onPressed: () => context.go(
+                    (identity?.id.isNotEmpty ?? false)
+                        ? institutionWorkspacePath(
+                            identity!.id, InstitutionSection.profile)
+                        : '/institution/dashboard',
+                  ),
                 ),
               ),
             );
@@ -537,7 +543,12 @@ class _StudioBody extends StatelessWidget {
                 primaryAction: AuraSecondaryButton(
                   label: 'Cancel',
                   icon: Icons.close_rounded,
-                  onPressed: () => context.go('/institution/profile'),
+                  onPressed: () => context.go(
+                    institutionId.isNotEmpty
+                        ? institutionWorkspacePath(
+                            institutionId, InstitutionSection.profile)
+                        : '/institution/dashboard',
+                  ),
                 ),
               ),
               const SizedBox(height: AuraSpace.s20),
@@ -934,8 +945,17 @@ class _StudioBody extends StatelessWidget {
             busy: state._busy,
             dirty: true,
             onSave: () => state._save(institutionId),
-            onCancel: () => context.go('/institution/profile'),
-            onPreview: () => context.go('/institution/profile?preview=1'),
+            onCancel: () => context.go(
+              institutionId.isNotEmpty
+                  ? institutionWorkspacePath(
+                      institutionId, InstitutionSection.profile)
+                  : '/institution/dashboard',
+            ),
+            onPreview: () => context.go(
+              institutionId.isNotEmpty
+                  ? '${institutionWorkspacePath(institutionId, InstitutionSection.profile)}?preview=1'
+                  : '/institution/dashboard',
+            ),
           ),
         ),
       ],

@@ -154,6 +154,43 @@ bool _queryBool(String? value) {
   return v == '1' || v == 'true' || v == 'yes' || v == 'on';
 }
 
+/// Routing-hardening — convert a legacy `/institution/<section>`
+/// shorthand into a canonical `/institution/:id/<section>` URL using
+/// the active institution identity. Falls back to the global
+/// dashboard selector when no id can be resolved.
+String _redirectShorthandToCanonical(Ref ref, String section) {
+  final id = ref.read(institutionIdentityProvider)?.id ?? '';
+  if (id.isNotEmpty) return '/institution/$id/$section';
+  return kInstitutionDashboardRoute;
+}
+
+/// Enforce "path id dominates provider" for canonical workspace
+/// routes. If the URL carries an institution id that doesn't match the
+/// active identity (or carries no id at all), rewrite to the active
+/// identity's URL — or to the global dashboard if no identity exists.
+/// Returning `null` means the route may proceed unchanged.
+String? _enforceCanonicalIdMatch(
+  Ref ref,
+  String? pathId,
+  String section,
+) {
+  final pathTrim = (pathId ?? '').trim();
+  final activeId = ref.read(institutionIdentityProvider)?.id ?? '';
+  if (pathTrim.isEmpty) {
+    return activeId.isNotEmpty
+        ? '/institution/$activeId/$section'
+        : kInstitutionDashboardRoute;
+  }
+  // When the active identity is known and disagrees with the URL,
+  // canonicalize. When no active identity is resolved (e.g. transient
+  // bootstrap state on a deep link), trust the URL — the auth gate
+  // higher up has already verified institution access.
+  if (activeId.isNotEmpty && pathTrim != activeId) {
+    return '/institution/$activeId/$section';
+  }
+  return null;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.onDispose(refresh.dispose);
@@ -892,45 +929,152 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: kEnterInstitutionRoute,
             builder: (_, __) => const InstitutionSignInScreen(),
           ),
+          // ── Institution workspace routing ─────────────────────────
+          //
+          // Routing-hardening pass — every institution-scoped section
+          // is reachable through a canonical `/institution/:id/<section>`
+          // route. Legacy `/institution/<section>` shorthands are now
+          // pure redirect helpers; they never render a screen.
+          //
+          // Canonical routes carry a redirect guard that enforces the
+          // rule "path id dominates provider": if a user lands on
+          // `/institution/<other>/profile` while their active identity
+          // is `<self>`, the router rewrites the URL to
+          // `/institution/<self>/profile` before the screen builds. The
+          // screens themselves are unchanged — they still hydrate
+          // display data via `institutionIdentityProvider`, but the URL
+          // is always consistent with that identity.
+          //
+          // The institution **dashboard** is intentionally left as a
+          // global selector at `/institution/dashboard`. It loads
+          // `/institutions/me` to discover the user's primary
+          // institution and acts as the safe fallback when no id can be
+          // resolved. The id-aware alias `/institution/:id/dashboard`
+          // exists for symmetry and redirects to the global path.
+
+          // Global institution selector (no id required).
           GoRoute(
             path: kInstitutionDashboardRoute,
             builder: (_, __) => const InstitutionDashboardScreen(),
           ),
+          // Symmetric canonical alias — redirects to the global selector.
+          GoRoute(
+            path: '/institution/:institutionId/dashboard',
+            redirect: (_, __) => kInstitutionDashboardRoute,
+          ),
+
+          // Domains — shorthand redirects, canonical builds.
           GoRoute(
             path: kInstitutionDomainsRoute,
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'domains'),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/domains',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'domains',
+            ),
             builder: (_, __) => const InstitutionDomainsScreen(),
           ),
+
+          // Units (already canonical, kept here for proximity).
           GoRoute(
             path: '/institution/:institutionId/units',
             builder: (_, state) => InstitutionUnitsScreen(
               institutionId: state.pathParameters['institutionId']!,
             ),
           ),
+
+          // Profile.
           GoRoute(
             path: kInstitutionProfileRoute,
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'profile'),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/profile',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'profile',
+            ),
             builder: (_, __) => const InstitutionProfileScreen(),
           ),
+
+          // Edit profile.
           GoRoute(
             path: kInstitutionEditProfileRoute,
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'edit-profile'),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/edit-profile',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'edit-profile',
+            ),
             builder: (_, __) => const InstitutionEditProfileScreen(),
           ),
+
+          // Request verification.
           GoRoute(
             path: kInstitutionVerificationRoute,
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'request-verification'),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/request-verification',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'request-verification',
+            ),
             builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
+
+          // Correspondence.
           GoRoute(
             path: kInstitutionCorrespondenceRoute,
-            builder: (_, __) => const InstitutionCorrespondenceScreen(),
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'correspondence'),
           ),
           GoRoute(
+            path: '/institution/:institutionId/correspondence',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'correspondence',
+            ),
+            builder: (_, __) => const InstitutionCorrespondenceScreen(),
+          ),
+
+          // Announcements (the const was dead — keep a redirect helper
+          // so any external link is canonicalized rather than 404).
+          GoRoute(
+            path: kInstitutionAnnouncementsRoute,
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'announcements'),
+          ),
+
+          // Live rooms.
+          GoRoute(
             path: kInstitutionLiveRoomsRoute,
-            builder: (context, state) {
-              final container = ProviderScope.containerOf(context);
-              final identity = container.read(institutionIdentityProvider);
-              return InstitutionLiveRoomsScreen(
-                institutionId: identity?.id ?? '',
-              );
-            },
+            redirect: (context, state) =>
+                _redirectShorthandToCanonical(ref, 'live-rooms'),
+          ),
+          GoRoute(
+            path: '/institution/:institutionId/live-rooms',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state.pathParameters['institutionId'],
+              'live-rooms',
+            ),
+            builder: (context, state) => InstitutionLiveRoomsScreen(
+              institutionId: state.pathParameters['institutionId'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/institution/:institutionId/announcements',

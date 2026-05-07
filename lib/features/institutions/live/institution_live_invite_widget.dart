@@ -108,8 +108,13 @@ class _InstitutionLiveInviteWidgetState
   }
 
   void _join(String sessionId) {
+    // Phase-7 regression fix — return to the canonical id-aware
+    // path so leaving the realtime room lands on the same workspace
+    // tab the user came from. The legacy shorthand
+    // `/institution/live-rooms` was a context-blind redirect that
+    // crashed when the identity provider was null.
     context.push('/realtime/$sessionId?action=join'
-        '&returnTo=/institution/live-rooms');
+        '&returnTo=/institution/${widget.institutionId}/live-rooms');
   }
 
   @override

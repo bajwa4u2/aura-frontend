@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/institutions/institution_paths.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
@@ -887,7 +888,12 @@ class _InstitutionProfileCtaRowState
           AuraSecondaryButton(
             label: 'Edit profile',
             icon: Icons.edit_outlined,
-            onPressed: () => context.push('/institution/edit-profile'),
+            onPressed: () => context.push(
+              widget.institutionId.isNotEmpty
+                  ? institutionWorkspacePath(
+                      widget.institutionId, InstitutionSection.editProfile)
+                  : '/institution/dashboard',
+            ),
           ),
         ],
       );

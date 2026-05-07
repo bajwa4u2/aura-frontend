@@ -36,7 +36,34 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
-    final roomsAsync = ref.watch(institutionLiveRoomsProvider(institutionId));
+    // Phase-7 regression fix — fail safe when this screen is rendered
+    // without a real institution id. The repo otherwise throws
+    // "Institution id is missing" and the user sees a red error card
+    // in the workspace shell. The router-level redirect on the legacy
+    // shorthand should already prevent this, but we keep the screen
+    // defensive so a stale link can never produce a broken page.
+    final cleanId = institutionId.trim();
+    if (cleanId.isEmpty) {
+      return AuraScaffold(
+        showHeader: false,
+        body: InsScreen(
+          children: [
+            AuraEmptyState(
+              icon: Icons.podcasts_rounded,
+              title: 'No active institution',
+              body:
+                  'Pick an institution from the workspace to view its live rooms.',
+              action: AuraSecondaryButton(
+                label: 'Open dashboard',
+                icon: Icons.arrow_forward_rounded,
+                onPressed: () => context.go('/institution/dashboard'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final roomsAsync = ref.watch(institutionLiveRoomsProvider(cleanId));
 
     return AuraScaffold(
       showHeader: false,
@@ -49,7 +76,7 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
               body: '$e',
               action: AuraSecondaryButton(
                 label: 'Try again',
-                onPressed: () => ref.invalidate(institutionLiveRoomsProvider(institutionId)),
+                onPressed: () => ref.invalidate(institutionLiveRoomsProvider(cleanId)),
                 icon: Icons.refresh_rounded,
               ),
             ),
@@ -60,13 +87,13 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
           final activeSession = data['activeSession'];
 
           return _LiveRoomsBody(
-            institutionId: institutionId,
+            institutionId: cleanId,
             identity: identity,
             sessions: sessions,
             activeSession: activeSession is Map
                 ? Map<String, dynamic>.from(activeSession)
                 : null,
-            onRefresh: () => ref.invalidate(institutionLiveRoomsProvider(institutionId)),
+            onRefresh: () => ref.invalidate(institutionLiveRoomsProvider(cleanId)),
           );
         },
       ),
@@ -156,7 +183,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
         // round-trips.
         final qp = <String, String>{
           'action': 'join',
-          'returnTo': '/institution/live-rooms',
+          'returnTo': '/institution/${widget.institutionId}/live-rooms',
           'sessionType': picked.type.wire,
           'sessionAudience': picked.audience.wire,
           if (picked.title != null && picked.title!.trim().isNotEmpty)
@@ -185,7 +212,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
       if (mounted) {
         final qp = <String, String>{
           'action': 'join',
-          'returnTo': '/institution/live-rooms',
+          'returnTo': '/institution/${widget.institutionId}/live-rooms',
           if (meta != null) 'sessionType': meta.type.wire,
           if (meta != null) 'sessionAudience': meta.audience.wire,
           if (meta != null && (meta.title?.trim().isNotEmpty ?? false))

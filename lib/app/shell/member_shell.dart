@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/institutions/institution_access_provider.dart';
+import '../../core/institutions/institution_paths.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -328,15 +329,26 @@ class _PublicPreviewToolbar extends StatelessWidget {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 760;
             final headline = _PreviewHeadline(link: link, tone: tone);
+            final id = identity?.id ?? '';
             final actions = _PreviewActions(
               link: link,
               tone: tone,
-              onEdit: () => context.go('/institution/edit-profile'),
+              onEdit: () => context.go(
+                id.isNotEmpty
+                    ? institutionWorkspacePath(
+                        id, InstitutionSection.editProfile)
+                    : '/institution/dashboard',
+              ),
               onCopy: () => _copy(context, link),
               onOpen: link.isNotEmpty && Uri.base.scheme.startsWith('http')
                   ? () => _openExternal(context, link)
                   : null,
-              onExit: () => context.go('/institution/profile'),
+              onExit: () => context.go(
+                id.isNotEmpty
+                    ? institutionWorkspacePath(
+                        id, InstitutionSection.profile)
+                    : '/institution/dashboard',
+              ),
             );
             if (wide) {
               return Row(
@@ -804,7 +816,12 @@ List<_PrimaryNavItem> _institutionPrimaryItems(String id) {
     ),
     _PrimaryNavItem(
       label: 'Live',
-      path: '/institution/live-rooms',
+      // Phase-7 regression fix — every other institution tab passes the
+      // active id explicitly. Live used to use the shorthand
+      // `/institution/live-rooms`, which crashed when the identity
+      // provider was null at navigation time. Match the rest of the
+      // tabs so the screen always receives a real id.
+      path: id.isNotEmpty ? '/institution/$id/live-rooms' : null,
       matcher: (p) =>
           p == '/institution/live-rooms' ||
           (p.startsWith('/institution/') && p.contains('/live')),
@@ -1235,7 +1252,13 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       label: 'Domains',
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
-      pathBuilder: (_) => '/institution/domains',
+      // Routing-hardening — every workspace tab routes through the
+      // canonical id-aware path. Disabled (null) when no id is yet
+      // resolved so the tab fails closed instead of routing through
+      // a shorthand redirect mid-bootstrap.
+      pathBuilder: (_) => id.isNotEmpty
+          ? institutionWorkspacePath(id, InstitutionSection.domains)
+          : null,
     ),
 
     _InstEntry(
@@ -1243,21 +1266,28 @@ List<_InstEntry> _buildInstEntries(InstitutionIdentity? identity) {
       label: 'Overview',
       icon: Icons.grid_view_outlined,
       selectedIcon: Icons.grid_view_rounded,
+      // Dashboard is the global selector — kept at /institution/dashboard.
       pathBuilder: (_) => '/institution/dashboard',
-      pathMatcher: (p) => p == '/institution/dashboard',
+      pathMatcher: (p) =>
+          p == '/institution/dashboard' ||
+          (p.startsWith('/institution/') && p.endsWith('/dashboard')),
     ),
     _InstEntry(
       label: 'Profile',
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge_rounded,
-      pathBuilder: (_) => '/institution/profile',
+      pathBuilder: (_) => id.isNotEmpty
+          ? institutionWorkspacePath(id, InstitutionSection.profile)
+          : null,
     ),
     _InstEntry(
       label: 'Edit Profile',
       icon: Icons.edit_outlined,
       selectedIcon: Icons.edit_rounded,
       adminOnly: true,
-      pathBuilder: (_) => isAdmin ? '/institution/edit-profile' : null,
+      pathBuilder: (_) => (isAdmin && id.isNotEmpty)
+          ? institutionWorkspacePath(id, InstitutionSection.editProfile)
+          : null,
     ),
     _InstEntry(
       label: 'Public Preview',
@@ -1511,15 +1541,23 @@ class _InstitutionBottomNav extends StatelessWidget {
         label: 'Domains',
         icon: Icons.language_rounded,
         selectedIcon: Icons.language_rounded,
-        path: '/institution/domains',
-        matcher: (p) => p == '/institution/domains',
+        path: id.isNotEmpty
+            ? institutionWorkspacePath(id, InstitutionSection.domains)
+            : null,
+        matcher: (p) =>
+            p == '/institution/domains' ||
+            (p.startsWith('/institution/') && p.endsWith('/domains')),
       ),
       _InstBottomItem(
         label: 'Profile',
         icon: Icons.badge_outlined,
         selectedIcon: Icons.badge_rounded,
-        path: '/institution/profile',
-        matcher: (p) => p == '/institution/profile',
+        path: id.isNotEmpty
+            ? institutionWorkspacePath(id, InstitutionSection.profile)
+            : null,
+        matcher: (p) =>
+            p == '/institution/profile' ||
+            (p.startsWith('/institution/') && p.endsWith('/profile')),
       ),
     ];
 
@@ -1613,7 +1651,10 @@ class _InstitutionBottomNavMore extends StatelessWidget {
       if (isAdmin)
         (
           const _MoreEntry(label: 'Edit Profile', icon: Icons.edit_outlined),
-          '/institution/edit-profile',
+          id.isNotEmpty
+              ? institutionWorkspacePath(
+                  id, InstitutionSection.editProfile)
+              : null,
         ),
       (
         const _MoreEntry(

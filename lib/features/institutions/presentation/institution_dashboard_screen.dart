@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -446,7 +447,10 @@ class _InstitutionDashboardScreenState
             : 'Confirm DNS ownership of $_domain to finish domain trust.',
         cta: 'Open domains',
         tone: InsTone.info,
-        onTap: () => _go('/institution/domains'),
+        onTap: () => _go(_institutionId.isNotEmpty
+            ? institutionWorkspacePath(
+                _institutionId, InstitutionSection.domains)
+            : '/institution/dashboard'),
       ));
     }
 
@@ -652,11 +656,13 @@ class _InstitutionDashboardScreenState
             title: 'Workspace overview',
             description:
                 'Standing, role, and the most relevant next moves for this institution.',
-            primaryAction: _canUseInstitutionTools
+            primaryAction: (_canUseInstitutionTools &&
+                    _institutionId.isNotEmpty)
                 ? AuraSecondaryButton(
                     label: 'Profile',
                     icon: Icons.badge_outlined,
-                    onPressed: () => _go('/institution/profile'),
+                    onPressed: () => _go(institutionWorkspacePath(
+                      _institutionId, InstitutionSection.profile)),
                   )
                 : null,
           ),

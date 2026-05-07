@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/institutions/institution_paths.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -270,12 +271,18 @@ class _ProfileBody extends ConsumerWidget {
                     description:
                         'Identity, mission, and trust signals that members and the public see.',
                     primaryAction:
-                        (identity != null && identity!.isAdmin)
+                        (identity != null &&
+                                identity!.isAdmin &&
+                                identity!.id.isNotEmpty)
                             ? AuraPrimaryButton(
                                 label: 'Edit profile',
                                 icon: Icons.edit_outlined,
-                                onPressed: () =>
-                                    context.go('/institution/edit-profile'),
+                                onPressed: () => context.go(
+                                  institutionWorkspacePath(
+                                    identity!.id,
+                                    InstitutionSection.editProfile,
+                                  ),
+                                ),
                               )
                             : null,
                   ),
@@ -517,7 +524,12 @@ class _ActionGroup extends StatelessWidget {
         AuraSecondaryButton(
           label: 'Domains',
           icon: Icons.language_rounded,
-          onPressed: () => context.go('/institution/domains'),
+          onPressed: () => context.go(
+            (identity?.id.isNotEmpty ?? false)
+                ? institutionWorkspacePath(
+                    identity!.id, InstitutionSection.domains)
+                : '/institution/dashboard',
+          ),
         ),
         // Surface billing only for institution admins/owners. Backend
         // enforces the same on POST /v1/monetization/checkout/*.
