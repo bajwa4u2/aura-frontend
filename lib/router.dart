@@ -873,6 +873,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 asInstitution: asInstitution,
                 institutionId:
                     state.uri.queryParameters['institutionId']?.trim(),
+                publicSpaceId:
+                    state.uri.queryParameters['publicSpaceId']?.trim(),
+                publicSpaceName:
+                    state.uri.queryParameters['publicSpaceName']?.trim(),
+                publicSpaceSlug:
+                    state.uri.queryParameters['publicSpaceSlug']?.trim(),
               );
             },
           ),

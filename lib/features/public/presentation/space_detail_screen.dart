@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_item.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../data/public_spaces_registry.dart';
 import '../data/public_spaces_repository.dart';
@@ -36,11 +37,20 @@ class SpaceDetailScreen extends ConsumerWidget {
   final String slug;
 
   void _openCompose(BuildContext context, PubSpace space) {
-    // The compose screen does not yet accept a `bodyPrefill` query
-    // param. Until it does, we route to the canonical `/compose` route
-    // — the visibility selector is restricted to Social/Public per
-    // Phase 1, so a "Social — [Space]" framing is the next step.
-    context.push('/compose');
+    // Public-UX Phase 4 — pass the space anchoring through query
+    // params. The composer reads them, displays the "Posting in
+    // [Name]" chip, and sends `publicSpaceId` on the draft so the
+    // post lands inside the space without hashtag mentions.
+    final qp = <String, String>{
+      'publicSpaceId': space.id,
+      'publicSpaceSlug': space.slug,
+      'publicSpaceName': space.name,
+    };
+    final qs = qp.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    context.push('/compose?$qs');
   }
 
   @override
@@ -163,19 +173,11 @@ class SpaceDetailScreen extends ConsumerWidget {
                   description:
                       'Use the action above to start the first discussion.',
                 )
-              else ...[
-                const _SectionEyebrow(label: 'DISCUSSION'),
-                const SizedBox(height: AuraSpace.s10),
-                for (var i = 0; i < page.items.length; i++) ...[
-                  DiscourseCard(
-                    item: page.items[i],
-                    spaceName: space.name,
-                    spaceRoute: '/spaces/${space.slug}',
-                  ),
-                  if (i < page.items.length - 1)
-                    const SizedBox(height: AuraSpace.s10),
-                ],
-              ],
+              else
+                _SpaceStreamTabs(
+                  space: space,
+                  items: page.items,
+                ),
             ],
           ),
         );
@@ -325,7 +327,7 @@ class _ComposeHintBand extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Mention ${space.composeTagPrefix} in your post so it appears here.',
+                      'Your post will be anchored to this space — no hashtag needed.',
                       style: AuraText.micro.copyWith(
                         color: AuraSurface.faint,
                         fontWeight: FontWeight.w600,
@@ -347,20 +349,158 @@ class _ComposeHintBand extends StatelessWidget {
   }
 }
 
-class _SectionEyebrow extends StatelessWidget {
-  const _SectionEyebrow({required this.label});
+/// Public-UX Phase 4 — three-tab discourse stream for space detail:
+///   * **All** — every post in the space (backend order).
+///   * **Top** — sorted by reply count desc (client-side reorder, no
+///     extra fetch).
+///   * **Outcomes** — only threads where institutions have responded
+///     and the activity hint suggests the discussion is concluded.
+///     Today this is heuristic (institution involved + recent reply
+///     true). Once the reply preview surfaces accountabilityTag, this
+///     filter will tighten to "has at least one RESOLVED reply".
+class _SpaceStreamTabs extends StatefulWidget {
+  const _SpaceStreamTabs({required this.space, required this.items});
 
-  final String label;
+  final dynamic space; // PubSpace; loose to avoid extra import
+  final List items;
+
+  @override
+  State<_SpaceStreamTabs> createState() => _SpaceStreamTabsState();
+}
+
+enum _StreamTab { all, top, outcomes }
+
+class _SpaceStreamTabsState extends State<_SpaceStreamTabs> {
+  _StreamTab _tab = _StreamTab.all;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AuraText.micro.copyWith(
-        color: AuraSurface.faint,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.8,
-        fontSize: 10,
+    final list = _filtered();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AuraSpace.s8,
+          children: [
+            _TabChip(
+              label: 'All',
+              selected: _tab == _StreamTab.all,
+              onTap: () => setState(() => _tab = _StreamTab.all),
+            ),
+            _TabChip(
+              label: 'Top',
+              selected: _tab == _StreamTab.top,
+              onTap: () => setState(() => _tab = _StreamTab.top),
+            ),
+            _TabChip(
+              label: 'Outcomes',
+              selected: _tab == _StreamTab.outcomes,
+              onTap: () => setState(() => _tab = _StreamTab.outcomes),
+            ),
+          ],
+        ),
+        const SizedBox(height: AuraSpace.s14),
+        if (list.isEmpty)
+          const InsEmptyState(
+            icon: Icons.search_off_rounded,
+            title: 'Nothing here yet',
+            description:
+                'Try a different tab — or be the first to post in this space.',
+          )
+        else
+          for (var i = 0; i < list.length; i++) ...[
+            DiscourseCard(
+              item: list[i],
+              spaceName: (widget.space as dynamic).name as String,
+              spaceRoute:
+                  '/spaces/${(widget.space as dynamic).slug as String}',
+            ),
+            if (i < list.length - 1) const SizedBox(height: AuraSpace.s10),
+          ],
+      ],
+    );
+  }
+
+  List _filtered() {
+    final raw = widget.items;
+    switch (_tab) {
+      case _StreamTab.all:
+        return raw;
+      case _StreamTab.top:
+        // Sort by reply count desc; preserve backend order for ties.
+        final indexed = <MapEntry<int, dynamic>>[];
+        for (var i = 0; i < raw.length; i++) {
+          indexed.add(MapEntry(i, raw[i]));
+        }
+        indexed.sort((a, b) {
+          final ar = (a.value as dynamic).interaction.canViewReplyCount
+              ? (a.value as dynamic).interaction.replyCount as int
+              : 0;
+          final br = (b.value as dynamic).interaction.canViewReplyCount
+              ? (b.value as dynamic).interaction.replyCount as int
+              : 0;
+          if (ar != br) return br.compareTo(ar);
+          return a.key.compareTo(b.key);
+        });
+        return indexed.map((e) => e.value).toList(growable: false);
+      case _StreamTab.outcomes:
+        // Heuristic: an "outcome" thread is one where institutions
+        // have responded AND the activity hint suggests it's settled
+        // (has replies, not actively churning). When the backend
+        // surfaces the RESOLVED tag on reply previews, tighten this.
+        return raw.where((item) {
+          final preview = (item as dynamic).replyPreview;
+          if (preview == null) return false;
+          final hasInstitutional = (preview.items as List).any((r) =>
+              (r as dynamic).author?.context?.type ==
+              FeedIdentityContextType.officialInstitution);
+          final replyCount =
+              (item as dynamic).interaction.canViewReplyCount
+                  ? (item as dynamic).interaction.replyCount as int
+                  : 0;
+          return hasInstitutional && replyCount >= 2;
+        }).toList(growable: false);
+    }
+  }
+}
+
+class _TabChip extends StatelessWidget {
+  const _TabChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.4)
+                : AuraSurface.divider,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }

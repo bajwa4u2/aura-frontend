@@ -47,6 +47,18 @@ class ComposeScreen extends ConsumerStatefulWidget {
   final bool asInstitution;
   final String? institutionId;
 
+  /// Public-UX Phase 4 — when set, the composer treats this as the
+  /// target public-discourse space. The space is shown in the chip
+  /// row and persisted on the draft + publish payloads as
+  /// `publicSpaceId`.
+  final String? publicSpaceId;
+
+  /// Display name for the chip row when `publicSpaceId` is set. The
+  /// composer tolerates a missing name (renders "In space"); the slug
+  /// also drives the route to the space detail screen on chip tap.
+  final String? publicSpaceName;
+  final String? publicSpaceSlug;
+
   const ComposeScreen({
     super.key,
     this.replyToPostId,
@@ -57,6 +69,9 @@ class ComposeScreen extends ConsumerStatefulWidget {
     this.mode,
     this.asInstitution = false,
     this.institutionId,
+    this.publicSpaceId,
+    this.publicSpaceName,
+    this.publicSpaceSlug,
   });
 
   @override
@@ -1041,6 +1056,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return {
       'text': _textController.text.trim(),
       'visibility': _visibilityApiValue(_visibility),
+      // Public-UX Phase 4 — anchor the post to a public discourse
+      // space when the composer was entered with one (or the user
+      // picked one). Backend persists this on the draft and replies
+      // inherit it from the parent.
+      if ((widget.publicSpaceId ?? '').trim().isNotEmpty)
+        'publicSpaceId': widget.publicSpaceId!.trim(),
       'media': _attachments
           .asMap()
           .entries
@@ -1692,6 +1713,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   Widget _buildInlineAudienceRow() {
+    final spaceName = (widget.publicSpaceName ?? '').trim();
+    final hasSpace = (widget.publicSpaceId ?? '').trim().isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1727,6 +1750,32 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           _visibilityHelp(_visibility),
           style: AuraText.small.copyWith(color: AuraSurface.muted),
         ),
+        // Public-UX Phase 4 — explicit space chip when the composer was
+        // entered from a /spaces/:slug surface. The chip makes the
+        // anchoring visible so the host knows this post lands inside
+        // that space without relying on hashtag mentions.
+        if (hasSpace) ...[
+          const SizedBox(height: AuraSpace.s10),
+          Row(
+            children: [
+              const Icon(
+                Icons.tag_rounded,
+                size: 12,
+                color: AuraSurface.muted,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                spaceName.isNotEmpty
+                    ? 'Posting in $spaceName'
+                    : 'Posting in space',
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -9,6 +11,7 @@ import '../../../shared/identity/aura_identity_badge.dart';
 import '../../feed/domain/feed_item.dart';
 import '../domain/accountability_tag.dart';
 import '../domain/monetization_kind.dart';
+import 'institution_action_sheet.dart';
 import 'monetization_label.dart';
 
 /// One reply in the discourse thread.
@@ -21,7 +24,7 @@ import 'monetization_label.dart';
 ///   * **Non-official replies under an official parent** — slightly
 ///     dimmed (opacity 0.85) so institutional voice is dominant. We
 ///     keep readability intact.
-class ReplyUnit extends StatelessWidget {
+class ReplyUnit extends ConsumerWidget {
   const ReplyUnit({
     super.key,
     required this.reply,
@@ -58,7 +61,7 @@ class ReplyUnit extends StatelessWidget {
       MonetizationKindX.fromPaidActionWire(reply.paidActionWire);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ctx = reply.author.context;
     final hasBadge = ctx != null && ctx.isMeaningful;
     final initial = reply.author.displayName.trim().isNotEmpty
@@ -66,6 +69,20 @@ class ReplyUnit extends StatelessWidget {
         : (reply.author.handle.isNotEmpty
             ? reply.author.handle[0].toUpperCase()
             : '?');
+
+    // Public-UX Phase 4 — render the institution-action kebab only
+    // when (a) the reply is institutional, (b) we know its
+    // institutionId from the identity context, and (c) the current
+    // viewer is an admin/owner of that same institution. This is
+    // conservative: a viewer admin'ing a *different* institution
+    // won't see the kebab on someone else's reply.
+    final replyInstitutionId = ctx?.institutionId?.trim() ?? '';
+    final viewerIdentity = ref.watch(institutionIdentityProvider);
+    final canManage = _isOfficial &&
+        replyInstitutionId.isNotEmpty &&
+        viewerIdentity != null &&
+        viewerIdentity.id == replyInstitutionId &&
+        viewerIdentity.isAdmin;
 
     final card = Container(
       padding: const EdgeInsets.fromLTRB(
@@ -175,6 +192,28 @@ class ReplyUnit extends StatelessWidget {
                   ],
                 ),
               ),
+              if (canManage) ...[
+                const SizedBox(width: AuraSpace.s6),
+                InkWell(
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  onTap: () => showInstitutionActionSheet(
+                    context: context,
+                    institutionId: replyInstitutionId,
+                    postId: reply.id,
+                    currentTag: _accountabilityTag,
+                    currentPaidLabel: _paidLabel,
+                    onApplied: () {},
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 16,
+                      color: AuraSurface.muted,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           if (reply.body.trim().isNotEmpty) ...[

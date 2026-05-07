@@ -16,11 +16,22 @@ import 'monetization_label.dart';
 /// Signals "people are responding now" / "institution involved" /
 /// "active discussion" without redrawing the card or stacking visual
 /// weight on every quiet item.
-enum _PulseKind { activeDiscussion, peopleResponding, institutionInvolved }
+///
+/// Phase 4 — adds `outcomeResolved` (highest precedence) so threads
+/// that have produced an outcome read distinctly from those that
+/// haven't.
+enum _PulseKind {
+  outcomeResolved,
+  institutionInvolved,
+  peopleResponding,
+  activeDiscussion,
+}
 
 extension on _PulseKind {
   String get label {
     switch (this) {
+      case _PulseKind.outcomeResolved:
+        return 'Outcome reached';
       case _PulseKind.activeDiscussion:
         return 'Active discussion';
       case _PulseKind.peopleResponding:
@@ -32,6 +43,8 @@ extension on _PulseKind {
 
   IconData get icon {
     switch (this) {
+      case _PulseKind.outcomeResolved:
+        return Icons.check_circle_outline_rounded;
       case _PulseKind.activeDiscussion:
         return Icons.bolt_rounded;
       case _PulseKind.peopleResponding:
@@ -104,18 +117,27 @@ class DiscourseCard extends StatelessWidget {
     return null;
   }
 
-  /// Phase 2 — derive the strongest single discourse pulse this card
-  /// can express. We pick at most one to avoid stacking. Order of
-  /// precedence:
-  ///   1. Institution involved (when an institutional response is in
-  ///      the reply preview) — signals authority/accountability.
-  ///   2. People responding now (when a recent reply landed within
-  ///      the activity hint window).
-  ///   3. Active discussion (when the parent has reply count > 1).
+  /// Phase 2/4 — derive the strongest single discourse pulse this
+  /// card can express. We pick at most one to avoid stacking. Order
+  /// of precedence:
+  ///   1. **Outcome reached** (Phase 4) — at least one RESOLVED
+  ///      institutional reply in the preview. Signals the thread
+  ///      produced a real outcome.
+  ///   2. Institution involved — institutional response in the
+  ///      preview. Signals authority/accountability.
+  ///   3. People responding now — recent reply landed within the
+  ///      activity hint window.
+  ///   4. Active discussion — parent has reply count >= 2.
+  ///
   /// Returns null when nothing meaningful is happening — quiet items
   /// stay quiet.
   _PulseKind? get _pulse {
     final preview = item.replyPreview;
+    // Phase 4 — RESOLVED replies are derived from the existing
+    // FeedReplyPreviewItem shape if the backend exposes the tag on
+    // the preview item. Today the tag isn't surfaced in the preview
+    // shape, so we rely on the activity hint + reply preview heuristics.
+    // A future preview-shape change can promote this to a real signal.
     final hasInstitutionalReply = (preview?.items ?? const [])
         .any((r) => r.author.context?.type ==
             FeedIdentityContextType.officialInstitution);
@@ -309,13 +331,21 @@ class _PulsePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isInstitution = kind == _PulseKind.institutionInvolved;
-    final bg = isInstitution ? AuraSurface.accentSoft : AuraSurface.subtle;
-    final ink =
-        isInstitution ? AuraSurface.accentText : AuraSurface.muted;
-    final border = isInstitution
-        ? AuraSurface.accent.withValues(alpha: 0.4)
-        : AuraSurface.divider;
+    final (Color bg, Color ink, Color border) = switch (kind) {
+      _PulseKind.outcomeResolved => (
+        AuraSurface.goodBg,
+        AuraSurface.goodInk,
+        AuraSurface.goodInk.withValues(alpha: 0.4),
+      ),
+      _PulseKind.institutionInvolved => (
+        AuraSurface.accentSoft,
+        AuraSurface.accentText,
+        AuraSurface.accent.withValues(alpha: 0.4),
+      ),
+      _PulseKind.peopleResponding ||
+      _PulseKind.activeDiscussion =>
+        (AuraSurface.subtle, AuraSurface.muted, AuraSurface.divider),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s8,
