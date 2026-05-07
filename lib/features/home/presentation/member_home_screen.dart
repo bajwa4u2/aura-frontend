@@ -16,6 +16,8 @@ import '../../../core/ui/aura_text.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../institutions/live_rooms/global_live_discovery.dart';
+import '../../institutions/live_rooms/live_now_card.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -476,6 +478,11 @@ class _WorksSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(memberHomeFeedProvider);
+    // Phase 2 Distribution — surface up to 3 active institution live
+    // sessions at the top of the member home feed. Reuses the same
+    // shared `LiveNowCard` used by the institution explore feed and
+    // the public home feed. Hidden silently when none.
+    final liveAsync = ref.watch(globalDiscoverableLiveProvider);
 
     return feedAsync.when(
       loading: () => const Column(
@@ -505,6 +512,23 @@ class _WorksSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Phase 2 Distribution — LIVE NOW band(s) above the works
+            // header. Reuses the global discovery provider already
+            // watched at the top of build().
+            ...liveAsync.maybeWhen(
+              data: (entries) => [
+                for (final e in entries) ...[
+                  LiveNowCard(
+                    data: LiveNowCardData.fromDiscovery(
+                      entry: e,
+                      returnTo: '/home',
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+              ],
+              orElse: () => const <Widget>[],
+            ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

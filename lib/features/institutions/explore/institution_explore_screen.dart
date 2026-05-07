@@ -16,6 +16,7 @@ import '../domain/communication_type.dart';
 import '../live_rooms/institution_live_rooms_screen.dart'
     show institutionLiveRoomsProvider;
 import '../live_rooms/institution_session_meta.dart';
+import '../live_rooms/live_now_card.dart';
 import '../ui/institution_ds.dart';
 
 /// Institution Explore — three distinct surfaces, all served by the unified
@@ -649,6 +650,10 @@ class _PinnedAnnouncementBand extends ConsumerWidget {
 /// navigates to `/realtime/:id` on tap with the same query params used
 /// elsewhere so the in-session header carries the institutional
 /// context immediately on join.
+/// Thin wrapper that loads cached session meta for the institution
+/// active session and delegates rendering to the shared [LiveNowCard].
+/// Kept here so the institution explore feed gets the same "LIVE NOW"
+/// surface as the global feeds, with a single rendering path.
 class _LiveNowBand extends ConsumerStatefulWidget {
   const _LiveNowBand({
     required this.institutionId,
@@ -677,154 +682,16 @@ class _LiveNowBandState extends ConsumerState<_LiveNowBand> {
     if (mounted) setState(() => _meta = m);
   }
 
-  void _join() {
-    final id = (widget.session['id'] ?? '').toString();
-    if (id.isEmpty) return;
-    final m = _meta;
-    final qp = <String, String>{
-      'action': 'join',
-      'returnTo': '/institution/${widget.institutionId}/explore',
-      if (m != null) 'sessionType': m.type.wire,
-      if (m != null) 'sessionAudience': m.audience.wire,
-      if (m != null && (m.title?.trim().isNotEmpty ?? false))
-        'sessionTitle': m.title!.trim(),
-    };
-    final qs = qp.entries
-        .map((e) =>
-            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
-        .join('&');
-    context.push('/realtime/$id?$qs');
-  }
-
   @override
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
-    final hostName = identity?.name.trim() ?? '';
-    final m = _meta;
-    final headline = m != null
-        ? '${m.type.label.toUpperCase()} • ${m.audience.label}'
-        : 'LIVE SESSION';
-    final title =
-        (m?.title?.trim().isNotEmpty ?? false) ? m!.title!.trim() : null;
-
-    return InkWell(
-      onTap: _join,
-      borderRadius: BorderRadius.circular(AuraRadius.lg),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s14,
-          AuraSpace.s12,
-          AuraSpace.s12,
-          AuraSpace.s12,
-        ),
-        decoration: BoxDecoration(
-          color: AuraSurface.goodBg.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(AuraRadius.lg),
-          border: Border.all(
-            color: AuraSurface.goodInk.withValues(alpha: 0.45),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Status dot — same anchor used everywhere else for "Live now".
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AuraSurface.goodInk,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'LIVE NOW',
-                        style: AuraText.micro.copyWith(
-                          color: AuraSurface.goodInk,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.9,
-                          fontSize: 10,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '· $headline',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AuraText.micro.copyWith(
-                            color: AuraSurface.muted,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (title != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.body.copyWith(
-                        color: AuraSurface.ink,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                  if (hostName.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.apartment_rounded,
-                          size: 11,
-                          color: AuraSurface.faint,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Hosted by $hostName',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.micro.copyWith(
-                              color: AuraSurface.faint,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        if (identity?.isVerified == true) ...[
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 11,
-                            color: AuraSurface.accentText,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s10),
-            AuraPrimaryButton(
-              label: 'Join',
-              icon: Icons.call_rounded,
-              onPressed: _join,
-            ),
-          ],
-        ),
-      ),
+    final data = LiveNowCardData.fromInstitution(
+      session: widget.session,
+      institutionId: widget.institutionId,
+      hostName: identity?.name.trim() ?? '',
+      isVerifiedHost: identity?.isVerified == true,
+      meta: _meta,
     );
+    return LiveNowCard(data: data);
   }
 }

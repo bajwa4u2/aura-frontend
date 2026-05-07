@@ -13,6 +13,8 @@ import '../../../app/shell/shell_shared.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../institutions/live_rooms/global_live_discovery.dart';
+import '../../institutions/live_rooms/live_now_card.dart';
 
 class PublicHomeScreen extends ConsumerWidget {
   const PublicHomeScreen({super.key});
@@ -20,6 +22,7 @@ class PublicHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final worksAsync = ref.watch(globalPublicFeedProvider);
+    final liveAsync = ref.watch(globalDiscoverableLiveProvider);
 
     return AuraScaffold(
       showHeader: false,
@@ -42,6 +45,7 @@ class PublicHomeScreen extends ConsumerWidget {
                 constraints: const BoxConstraints(maxWidth: 1160),
                 child: _PublicFeedSection(
                   worksAsync: worksAsync,
+                  liveAsync: liveAsync,
                   onExplore: () => context.go('/search'),
                 ),
               ),
@@ -419,9 +423,14 @@ class _HeroOutlineButton extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PublicFeedSection extends StatelessWidget {
-  const _PublicFeedSection({required this.worksAsync, required this.onExplore});
+  const _PublicFeedSection({
+    required this.worksAsync,
+    required this.liveAsync,
+    required this.onExplore,
+  });
 
   final AsyncValue<FeedPage> worksAsync;
+  final AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync;
   final VoidCallback onExplore;
 
   @override
@@ -429,6 +438,24 @@ class _PublicFeedSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Phase 2 Distribution — LIVE NOW band(s) above the works
+        // section. Up to 3 entries (the upstream provider's cap).
+        // Hidden silently when the loader is still working or no live
+        // sessions are visible to this viewer.
+        ...liveAsync.maybeWhen(
+          data: (entries) => [
+            for (final e in entries) ...[
+              LiveNowCard(
+                data: LiveNowCardData.fromDiscovery(
+                  entry: e,
+                  returnTo: '/',
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+          ],
+          orElse: () => const <Widget>[],
+        ),
         Row(
           children: [
             const Expanded(

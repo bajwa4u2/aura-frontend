@@ -10,6 +10,7 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import '../../shared/identity/aura_identity_badge.dart';
@@ -125,34 +126,36 @@ class MemberShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: AuraIncomingLiveLayer(
-              child: Column(
-                children: [
-                  _MemberHeader(
-                    isDesktop: isDesktop,
-                    isTablet: isTablet,
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        if (isDesktop)
-                          _MemberSideNav(
-                            items: _items,
-                            selectedIndex: selectedIndex,
-                            currentPath: path,
-                          ),
-                        Expanded(child: child),
-                      ],
+            child: GlobalLiveBannerLayer(
+              child: AuraIncomingLiveLayer(
+                child: Column(
+                  children: [
+                    _MemberHeader(
+                      isDesktop: isDesktop,
+                      isTablet: isTablet,
                     ),
-                  ),
-                  if (!isDesktop && _showMemberBottomNav(path))
-                    _MemberBottomNav(
-                      items: _items,
-                      selectedIndex: selectedIndex,
-                      currentPath: path,
-                      compact: !isTablet,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          if (isDesktop)
+                            _MemberSideNav(
+                              items: _items,
+                              selectedIndex: selectedIndex,
+                              currentPath: path,
+                            ),
+                          Expanded(child: child),
+                        ],
+                      ),
                     ),
-                ],
+                    if (!isDesktop && _showMemberBottomNav(path))
+                      _MemberBottomNav(
+                        items: _items,
+                        selectedIndex: selectedIndex,
+                        currentPath: path,
+                        compact: !isTablet,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -200,41 +203,43 @@ class InstitutionShell extends ConsumerWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: AuraIncomingLiveLayer(
-              child: Column(
-                children: [
-                  _InstitutionHeader(
-                    isDesktop: isDesktop,
-                    isTablet: isTablet,
-                    identity: identity,
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        if (isDesktop)
-                          _InstitutionSideNav(
-                            currentPath: path,
-                            identity: identity,
-                          ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              if (isPreview)
-                                _PublicPreviewToolbar(identity: identity),
-                              Expanded(child: child),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isDesktop)
-                    _InstitutionBottomNav(
-                      currentPath: path,
-                      compact: !isTablet,
+            child: GlobalLiveBannerLayer(
+              child: AuraIncomingLiveLayer(
+                child: Column(
+                  children: [
+                    _InstitutionHeader(
+                      isDesktop: isDesktop,
+                      isTablet: isTablet,
                       identity: identity,
                     ),
-                ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          if (isDesktop)
+                            _InstitutionSideNav(
+                              currentPath: path,
+                              identity: identity,
+                            ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                if (isPreview)
+                                  _PublicPreviewToolbar(identity: identity),
+                                Expanded(child: child),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isDesktop)
+                      _InstitutionBottomNav(
+                        currentPath: path,
+                        compact: !isTablet,
+                        identity: identity,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
