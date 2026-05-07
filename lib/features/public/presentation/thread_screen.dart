@@ -14,6 +14,7 @@ import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../institutions/ui/institution_ds.dart';
+import '../data/thread_last_seen_cache.dart';
 import '../domain/accountability_tag.dart';
 import '../domain/monetization_kind.dart';
 import '../widgets/monetization_label.dart';
@@ -65,6 +66,55 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   /// reply id to its direct children (sorted oldest → newest). Empty
   /// for replies with no children.
   Map<String, List<FeedReply>> _byParent = const {};
+
+  /// Public-UX Phase 6 — last-seen timestamp for THIS thread, loaded
+  /// async from SharedPreferences on initState. Replies created after
+  /// this point render below a "New since you last visited" divider.
+  /// Null on first load while the cache resolves; null on first-ever
+  /// visit (no divider then — everything's new).
+  DateTime? _lastSeenAt;
+  bool _seenLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastSeen();
+  }
+
+  Future<void> _loadLastSeen() async {
+    final ts = await ThreadLastSeenCache.read(widget.postId);
+    if (!mounted) return;
+    setState(() {
+      _lastSeenAt = ts;
+      _seenLoaded = true;
+    });
+  }
+
+  /// True when `members[i]` is the first reply newer than the cached
+  /// `lastSeenAt`. Returns false when there's no previous reply
+  /// (everything's "new" on first visit — no divider needed) and when
+  /// the cache hasn't loaded yet.
+  bool _isFirstNewReply(List<FeedReply> members, int i) {
+    final last = _lastSeenAt;
+    if (last == null) return false;
+    final r = members[i];
+    final ts = r.createdAt;
+    if (ts == null) return false;
+    if (!ts.isAfter(last)) return false;
+    if (i == 0) return false;
+    final prev = members[i - 1].createdAt;
+    if (prev == null) return false;
+    return !prev.isAfter(last);
+  }
+
+  @override
+  void dispose() {
+    // Best-effort: stamp the current time on dispose so the next visit
+    // has a fresh baseline. Fire-and-forget — we deliberately don't
+    // await; SharedPreferences is fast enough on real devices.
+    ThreadLastSeenCache.markSeenNow(widget.postId);
+    super.dispose();
+  }
 
   bool _isOfficialReply(FeedReply r) {
     final ctx = r.author.context;
@@ -286,9 +336,28 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           // resolved); empty list = no timeline rendered.
                           final timeline = _buildTimeline(page.items);
 
+                          // Public-UX Phase 5 — outcome banner at the
+                          // very top of the discussion when this thread
+                          // already produced a resolution. Distinct from
+                          // (and additive to) the timeline below — the
+                          // banner is the "headline", the timeline is
+                          // the lifecycle.
+                          final hasResolution = timeline.any((e) =>
+                              e.tag == InsAccountabilityTag.resolved);
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (hasResolution) ...[
+                                _ResolutionBanner(
+                                  actorName: timeline
+                                      .lastWhere((e) =>
+                                          e.tag ==
+                                          InsAccountabilityTag.resolved)
+                                      .actorName,
+                                ),
+                                const SizedBox(height: AuraSpace.s14),
+                              ],
                               if (timeline.isNotEmpty) ...[
                                 _AccountabilityTimeline(events: timeline),
                                 const SizedBox(height: AuraSpace.s14),
@@ -318,6 +387,19 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                 for (var i = 0;
                                     i < members.length;
                                     i++) ...[
+                                  // Public-UX Phase 6 — "New since you
+                                  // last visited" divider before the
+                                  // first reply that's newer than the
+                                  // cached lastSeenAt. Renders only
+                                  // when (a) the cache loaded, (b)
+                                  // there IS a previous visit, (c) at
+                                  // least one earlier reply existed.
+                                  if (_seenLoaded &&
+                                      _lastSeenAt != null &&
+                                      _isFirstNewReply(members, i)) ...[
+                                    const _NewSinceDivider(),
+                                    const SizedBox(height: AuraSpace.s10),
+                                  ],
                                   ReplyUnit(
                                     reply: members[i],
                                     parentIsOfficial: isOfficial,
@@ -326,6 +408,22 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                   ),
                                   if (i < members.length - 1)
                                     const SizedBox(height: AuraSpace.s10),
+                                  // Public-UX Phase 5 — inline "What do
+                                  // you think?" prompt mid-thread when
+                                  // discussion has substance (≥ 3
+                                  // member replies above). Shown once
+                                  // at the i==2 boundary so it splits
+                                  // the rendered list rather than
+                                  // appearing repeatedly.
+                                  if (i == 2 &&
+                                      members.length > 3 &&
+                                      i < members.length - 1) ...[
+                                    const SizedBox(height: AuraSpace.s12),
+                                    _InlineEngagementPrompt(
+                                      onTap: _composeReply,
+                                    ),
+                                    const SizedBox(height: AuraSpace.s12),
+                                  ],
                                 ],
                               ],
                               const SizedBox(height: AuraSpace.s14),
@@ -1013,6 +1111,167 @@ class _TimelineRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Public-UX Phase 6 — "New since you last visited" divider that
+/// renders before the first reply newer than the cached last-seen
+/// timestamp. Calm — a thin accent line + small label, never a
+/// blocky band.
+class _NewSinceDivider extends StatelessWidget {
+  const _NewSinceDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AuraSurface.accent.withValues(alpha: 0.4),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8),
+          child: Text(
+            'NEW SINCE YOU LAST VISITED',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.accentText,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.9,
+              fontSize: 9,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AuraSurface.accent.withValues(alpha: 0.4),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Public-UX Phase 5 — strong banner rendered above the thread content
+/// when the discussion has reached a resolution (a RESOLVED-tagged
+/// institutional reply exists). Calm but distinct.
+class _ResolutionBanner extends StatelessWidget {
+  const _ResolutionBanner({required this.actorName});
+
+  final String actorName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s14,
+        AuraSpace.s12,
+        AuraSpace.s14,
+        AuraSpace.s12,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.goodBg,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(
+          color: AuraSurface.goodInk.withValues(alpha: 0.45),
+          width: 1.4,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18,
+            color: AuraSurface.goodInk,
+          ),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This discussion led to a resolution',
+                  style: AuraText.body.copyWith(
+                    color: AuraSurface.goodInk,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (actorName.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Resolved by $actorName',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.goodInk.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Public-UX Phase 5 — inline mid-thread engagement prompt. One tappable
+/// row that opens the reply composer for the current thread. Shown
+/// exactly once per thread render (after the 3rd member reply) so it
+/// splits the list rather than repeating.
+class _InlineEngagementPrompt extends StatelessWidget {
+  const _InlineEngagementPrompt({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s14,
+            vertical: AuraSpace.s10,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.forum_rounded,
+                size: 14,
+                color: AuraSurface.accentText,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  'What do you think? Add your perspective.',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: AuraSurface.accentText,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

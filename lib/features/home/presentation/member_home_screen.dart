@@ -17,8 +17,10 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../public/widgets/activation_overlay.dart';
 import '../../public/widgets/discourse_card.dart';
 import '../../public/widgets/public_composer.dart';
+import '../../public/widgets/since_you_were_here.dart';
 import '../../public/widgets/space_card.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
@@ -131,14 +133,17 @@ final latestHeldProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
   return null;
 });
 
-class MemberHomeScreen extends ConsumerWidget {
+class MemberHomeScreen extends ConsumerStatefulWidget {
   const MemberHomeScreen({super.key});
 
-  Future<void> _openCompose(
-    BuildContext context,
-    WidgetRef ref, {
-    String? heldId,
-  }) async {
+  @override
+  ConsumerState<MemberHomeScreen> createState() => _MemberHomeScreenState();
+}
+
+class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
+  bool _activationChecked = false;
+
+  Future<void> _openCompose({String? heldId}) async {
     final target = (heldId ?? '').trim().isNotEmpty
         ? '/compose?held=${Uri.encodeComponent(heldId!.trim())}'
         : '/compose';
@@ -146,16 +151,39 @@ class MemberHomeScreen extends ConsumerWidget {
     ref.invalidate(latestHeldProvider);
   }
 
-  Future<void> _refresh(WidgetRef ref) async {
+  Future<void> _refresh() async {
     ref.invalidate(latestHeldProvider);
     ref.invalidate(pinnedAnnouncementProvider);
     ref.invalidate(memberHomeFeedProvider);
     await ref.read(memberHomeFeedProvider.future);
   }
 
+  Future<void> _maybeShowActivationOverlay() async {
+    if (_activationChecked) return;
+    _activationChecked = true;
+    final shouldShow = await ActivationOverlay.shouldShow();
+    if (!shouldShow || !mounted) return;
+    // Defer one frame so the home renders behind the overlay first.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (_) => const ActivationOverlay(),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
+    if (isAuthed) {
+      // Schedule the activation overlay check after build. Only fires
+      // once per device (SharedPreferences-backed inside the overlay).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _maybeShowActivationOverlay();
+      });
+    }
     final heldAsync = isAuthed
         ? ref.watch(latestHeldProvider)
         : const AsyncValue<Map<String, dynamic>?>.data(null);
@@ -163,7 +191,7 @@ class MemberHomeScreen extends ConsumerWidget {
     return AuraScaffold(
       showHeader: false,
       body: RefreshIndicator(
-        onRefresh: () => _refresh(ref),
+        onRefresh: _refresh,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1160),
@@ -177,6 +205,12 @@ class MemberHomeScreen extends ConsumerWidget {
               children: [
                 // ── Pinned announcement (silent if absent)
                 const _PinnedAnnouncementBanner(),
+
+                // ── Public-UX Phase 6: re-entry "Since you were here"
+                // Renders only when there are unread, recent,
+                // discourse-relevant notifications. Collapsible.
+                const SinceYouWereHereSection(),
+                const SizedBox(height: AuraSpace.s10),
 
                 // ── Public composer (primary discourse entry)
                 const PublicComposer(),
@@ -194,7 +228,7 @@ class MemberHomeScreen extends ConsumerWidget {
                       child: _HeldDraftHint(
                         text: heldMap['text']?.toString(),
                         onTap: () =>
-                            _openCompose(context, ref, heldId: heldId),
+                            _openCompose(heldId: heldId),
                       ),
                     );
                   },

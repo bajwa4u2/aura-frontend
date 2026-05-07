@@ -59,6 +59,12 @@ class ComposeScreen extends ConsumerStatefulWidget {
   final String? publicSpaceName;
   final String? publicSpaceSlug;
 
+  /// Public-UX Phase 5 — discourse intent token: `ask` / `raise` /
+  /// `share`. Pre-selects the intent button on entry; the composer
+  /// updates the placeholder + tone hint accordingly. Null leaves the
+  /// composer in its default rotating-prompt state.
+  final String? intent;
+
   const ComposeScreen({
     super.key,
     this.replyToPostId,
@@ -72,15 +78,110 @@ class ComposeScreen extends ConsumerStatefulWidget {
     this.publicSpaceId,
     this.publicSpaceName,
     this.publicSpaceSlug,
+    this.intent,
   });
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
+/// Public-UX Phase 5 — discourse intent. Shapes placeholder, tone
+/// hint, and the "intent" chip group. Backend doesn't know about
+/// intent today — it's purely a UX-shaping signal.
+enum _ComposeIntent { none, ask, raise, share }
+
+extension on _ComposeIntent {
+  String get label {
+    switch (this) {
+      case _ComposeIntent.ask:
+        return 'Ask';
+      case _ComposeIntent.raise:
+        return 'Raise issue';
+      case _ComposeIntent.share:
+        return 'Share update';
+      case _ComposeIntent.none:
+        return '';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _ComposeIntent.ask:
+        return Icons.help_outline_rounded;
+      case _ComposeIntent.raise:
+        return Icons.report_problem_outlined;
+      case _ComposeIntent.share:
+        return Icons.campaign_outlined;
+      case _ComposeIntent.none:
+        return Icons.edit_outlined;
+    }
+  }
+
+  /// Tone hint shown beneath the intent row when an intent is picked.
+  String? get toneHint {
+    switch (this) {
+      case _ComposeIntent.ask:
+        return 'Frame this as a question others can answer.';
+      case _ComposeIntent.raise:
+        return 'State the issue clearly. People should be able to respond to it.';
+      case _ComposeIntent.share:
+        return 'Share something that needs attention. Be direct.';
+      case _ComposeIntent.none:
+        return null;
+    }
+  }
+
+  /// Placeholder for the body field when this intent is selected.
+  String get placeholder {
+    switch (this) {
+      case _ComposeIntent.ask:
+        return 'Ask something others can answer';
+      case _ComposeIntent.raise:
+        return 'Raise an issue people should respond to';
+      case _ComposeIntent.share:
+        return 'Share something that needs attention';
+      case _ComposeIntent.none:
+        return '';
+    }
+  }
+}
+
+_ComposeIntent _intentFromWire(String? raw) {
+  switch ((raw ?? '').toLowerCase().trim()) {
+    case 'ask':
+      return _ComposeIntent.ask;
+    case 'raise':
+    case 'raise_issue':
+      return _ComposeIntent.raise;
+    case 'share':
+    case 'share_update':
+      return _ComposeIntent.share;
+    default:
+      return _ComposeIntent.none;
+  }
+}
+
+/// Default rotating placeholder pool used when no intent is set.
+const List<String> _kRotatingPrompts = [
+  'Ask something others can answer',
+  'Raise an issue people should respond to',
+  'Share something that needs attention',
+];
+
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   static const int _limit = 2000;
   static const int _maxAttachments = 5;
+
+  /// Public-UX Phase 5 — current selected intent. Initialised from
+  /// the route query param (`?intent=ask`) and rotated to `_none`
+  /// when the user clears it.
+  late _ComposeIntent _intent = _intentFromWire(widget.intent);
+
+  /// Index into `_kRotatingPrompts` — used only when `_intent` is
+  /// `_ComposeIntent.none`. Set once on each composer mount so the
+  /// prompt rotates by entry count, not by clock.
+  final int _rotatingIdx = DateTime.now().millisecondsSinceEpoch %
+      _kRotatingPrompts.length;
 
   final _textController = TextEditingController();
 
@@ -1688,6 +1789,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatusRow(),
+          // Public-UX Phase 5 — discourse intent buttons. Hidden on
+          // replies (replies inherit intent from the parent) and
+          // shown above the body input on new posts.
+          if (!_isReply) ...[
+            const SizedBox(height: AuraSpace.s12),
+            _buildIntentRow(),
+          ],
           const SizedBox(height: AuraSpace.s14),
           _buildComposerBox(),
           const SizedBox(height: AuraSpace.s8),
@@ -1709,6 +1817,60 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  /// Public-UX Phase 5 — discourse intent buttons. Three optional
+  /// chips above the body input that shape the placeholder + tone
+  /// hint. Tapping a selected chip clears the intent (toggle).
+  Widget _buildIntentRow() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: [
+            _IntentChip(
+              kind: _ComposeIntent.ask,
+              selected: _intent == _ComposeIntent.ask,
+              onTap: () => setState(() {
+                _intent = _intent == _ComposeIntent.ask
+                    ? _ComposeIntent.none
+                    : _ComposeIntent.ask;
+              }),
+            ),
+            _IntentChip(
+              kind: _ComposeIntent.raise,
+              selected: _intent == _ComposeIntent.raise,
+              onTap: () => setState(() {
+                _intent = _intent == _ComposeIntent.raise
+                    ? _ComposeIntent.none
+                    : _ComposeIntent.raise;
+              }),
+            ),
+            _IntentChip(
+              kind: _ComposeIntent.share,
+              selected: _intent == _ComposeIntent.share,
+              onTap: () => setState(() {
+                _intent = _intent == _ComposeIntent.share
+                    ? _ComposeIntent.none
+                    : _ComposeIntent.share;
+              }),
+            ),
+          ],
+        ),
+        if (_intent != _ComposeIntent.none && _intent.toneHint != null) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            _intent.toneHint!,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -2290,6 +2452,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
 
       if (!mounted) return;
+
+      // Public-UX Phase 5 — micro-feedback on publish so the host feels
+      // the action landed. Distinct copy for replies vs. statements.
+      // We render via ScaffoldMessenger.maybeOf so it survives even if
+      // we've already popped this scaffold off the stack.
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            _isReply
+                ? 'Your reply is live in the discussion.'
+                : 'Your discussion is live.',
+          ),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 
       final router = GoRouter.of(context);
       if (router.canPop()) {
@@ -2976,15 +3155,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         textDirection: _editorDirection(),
         textAlign: _editorTextAlign(),
         decoration: InputDecoration(
-          hintText: _isReply
-              ? 'Add your response with care.'
-              : 'Write for the record — your words, your voice.',
+          hintText: _composerHint(),
           hintStyle: AuraText.small.copyWith(color: AuraSurface.muted),
           border: InputBorder.none,
           errorText: _showTextError ? 'Text is required' : null,
         ),
       ),
     );
+  }
+
+  /// Public-UX Phase 5 — placeholder driven by reply context, then
+  /// intent selection, then a rotating discourse prompt.
+  String _composerHint() {
+    if (_isReply) return 'Add your response with care.';
+    if (_intent != _ComposeIntent.none) return _intent.placeholder;
+    final idx = _rotatingIdx % _kRotatingPrompts.length;
+    return _kRotatingPrompts[idx.abs()];
   }
 
   Widget _buildCharacterLine() {
@@ -3429,6 +3615,60 @@ class _ReplyActorBanner extends ConsumerWidget {
           color: AuraSurface.accentText,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Public-UX Phase 5 — single intent chip for the composer.
+class _IntentChip extends StatelessWidget {
+  const _IntentChip({
+    required this.kind,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _ComposeIntent kind;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.4)
+                : AuraSurface.divider,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              kind.icon,
+              size: 13,
+              color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              kind.label,
+              style: AuraText.small.copyWith(
+                color: selected ? AuraSurface.accentText : AuraSurface.muted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );
