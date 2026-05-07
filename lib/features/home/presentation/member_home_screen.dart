@@ -14,6 +14,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
 import '../../public/widgets/discourse_card.dart';
@@ -354,6 +355,10 @@ class _DiscourseStream extends ConsumerWidget {
         ),
       ),
       data: (page) {
+        final liveEntries = liveAsync.maybeWhen(
+          data: (entries) => entries,
+          orElse: () => const <LiveNowDiscoveryEntry>[],
+        );
         if (page.items.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,20 +366,23 @@ class _DiscourseStream extends ConsumerWidget {
               // Even with no works, show LIVE NOW + spaces strip so
               // the home doesn't feel dead and the user has somewhere
               // to enter discourse from.
-              ...liveAsync.maybeWhen(
-                data: (entries) => [
-                  for (final e in entries) ...[
-                    LiveNowCard(
-                      data: LiveNowCardData.fromDiscovery(
-                        entry: e,
-                        returnTo: '/home',
-                      ),
+              if (liveEntries.isNotEmpty) ...[
+                const _SectionTitle(
+                  title: 'Live now',
+                  subtitle: 'Sessions happening this moment.',
+                ),
+                const SizedBox(height: AuraSpace.s10),
+                for (final e in liveEntries) ...[
+                  LiveNowCard(
+                    data: LiveNowCardData.fromDiscovery(
+                      entry: e,
+                      returnTo: '/home',
                     ),
-                    const SizedBox(height: AuraSpace.s10),
-                  ],
+                  ),
+                  const SizedBox(height: AuraSpace.s10),
                 ],
-                orElse: () => const <Widget>[],
-              ),
+                const SizedBox(height: AuraSpace.s14),
+              ],
               const AuraEmptyState(
                 title: 'Quiet on the public stream right now',
                 body:
@@ -386,61 +394,161 @@ class _DiscourseStream extends ConsumerWidget {
             ],
           );
         }
+        // Phase 2 — group items by activity:
+        //   * Active discussions: items with replies or recent activity.
+        //   * Institutional voices: items authored by institutions OR
+        //     where institutions have responded.
+        //   * Recent statements: everything else, in original order.
+        // An item appears in at most one band — the strongest one — so
+        // we never show the same statement twice.
+        final byBand = _bandItems(page.items);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Live first — it's "happening now".
-            ...liveAsync.maybeWhen(
-              data: (entries) => [
-                for (final e in entries) ...[
-                  LiveNowCard(
-                    data: LiveNowCardData.fromDiscovery(
-                      entry: e,
-                      returnTo: '/home',
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                ],
-              ],
-              orElse: () => const <Widget>[],
-            ),
-            // Section header — discourse, not "works".
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text('Discourse', style: AuraText.subtitle),
-                const SizedBox(width: AuraSpace.s8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s8,
-                    vertical: AuraSpace.s2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.subtle,
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  ),
-                  child: Text(
-                    '${page.items.length}',
-                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
+            if (liveEntries.isNotEmpty) ...[
+              const _SectionTitle(
+                title: 'Live now',
+                subtitle: 'Sessions happening this moment.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              for (final e in liveEntries) ...[
+                LiveNowCard(
+                  data: LiveNowCardData.fromDiscovery(
+                    entry: e,
+                    returnTo: '/home',
                   ),
                 ),
+                const SizedBox(height: AuraSpace.s10),
               ],
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: page.items.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AuraSpace.s14),
-              itemBuilder: (context, i) =>
-                  DiscourseCard(item: page.items[i]),
-            ),
-            const SizedBox(height: AuraSpace.s24),
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            if (byBand.activeDiscussions.isNotEmpty) ...[
+              const _SectionTitle(
+                title: 'Active discussions',
+                subtitle: 'People are responding now.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              for (var i = 0;
+                  i < byBand.activeDiscussions.length;
+                  i++) ...[
+                DiscourseCard(item: byBand.activeDiscussions[i]),
+                if (i < byBand.activeDiscussions.length - 1)
+                  const SizedBox(height: AuraSpace.s12),
+              ],
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            if (byBand.institutional.isNotEmpty) ...[
+              const _SectionTitle(
+                title: 'Institutional voices',
+                subtitle:
+                    'Verified institutions speaking and responding.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              for (var i = 0; i < byBand.institutional.length; i++) ...[
+                DiscourseCard(item: byBand.institutional[i]),
+                if (i < byBand.institutional.length - 1)
+                  const SizedBox(height: AuraSpace.s12),
+              ],
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            if (byBand.recent.isNotEmpty) ...[
+              const _SectionTitle(
+                title: 'Recent statements',
+                subtitle: 'Everything else, in order.',
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              for (var i = 0; i < byBand.recent.length; i++) ...[
+                DiscourseCard(item: byBand.recent[i]),
+                if (i < byBand.recent.length - 1)
+                  const SizedBox(height: AuraSpace.s12),
+              ],
+              const SizedBox(height: AuraSpace.s18),
+            ],
             const _SpacesSection(),
           ],
         );
       },
+    );
+  }
+
+  /// Group items into bands by activity. Each item appears in at most
+  /// one band — the strongest one wins. Order within each band is the
+  /// original feed order so backend sort is preserved as the
+  /// tiebreaker.
+  _BandedItems _bandItems(List<FeedItem> all) {
+    final active = <FeedItem>[];
+    final institutional = <FeedItem>[];
+    final recent = <FeedItem>[];
+    for (final item in all) {
+      if (_isActive(item)) {
+        active.add(item);
+      } else if (_isInstitutionalVoice(item)) {
+        institutional.add(item);
+      } else {
+        recent.add(item);
+      }
+    }
+    return _BandedItems(
+      activeDiscussions: active,
+      institutional: institutional,
+      recent: recent,
+    );
+  }
+
+  bool _isActive(FeedItem item) {
+    final inter = item.interaction;
+    final hasMomentum =
+        inter.canViewReplyCount && inter.replyCount >= 2;
+    return hasMomentum || item.activity?.recentReply == true;
+  }
+
+  bool _isInstitutionalVoice(FeedItem item) {
+    if (item.type == FeedItemType.institutionPost) return true;
+    final preview = item.replyPreview;
+    if (preview == null) return false;
+    return preview.items.any((r) =>
+        r.author.context?.type ==
+        FeedIdentityContextType.officialInstitution);
+  }
+}
+
+/// Three-band item grouping for the discourse stream.
+class _BandedItems {
+  const _BandedItems({
+    required this.activeDiscussions,
+    required this.institutional,
+    required this.recent,
+  });
+
+  final List<FeedItem> activeDiscussions;
+  final List<FeedItem> institutional;
+  final List<FeedItem> recent;
+}
+
+/// Stronger section title — heading + one-line subtitle. Anchors each
+/// activity band so the home doesn't read as a flat content list.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AuraText.subtitle),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

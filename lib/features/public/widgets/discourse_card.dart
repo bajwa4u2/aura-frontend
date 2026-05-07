@@ -11,6 +11,37 @@ import '../domain/monetization_kind.dart';
 import 'activity_tail.dart';
 import 'monetization_label.dart';
 
+/// Phase 2 — promoted activity pulse rendered as a small attention-
+/// grabbing chip ABOVE the card body when there's meaningful activity.
+/// Signals "people are responding now" / "institution involved" /
+/// "active discussion" without redrawing the card or stacking visual
+/// weight on every quiet item.
+enum _PulseKind { activeDiscussion, peopleResponding, institutionInvolved }
+
+extension on _PulseKind {
+  String get label {
+    switch (this) {
+      case _PulseKind.activeDiscussion:
+        return 'Active discussion';
+      case _PulseKind.peopleResponding:
+        return 'People are responding now';
+      case _PulseKind.institutionInvolved:
+        return 'Institution involved';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _PulseKind.activeDiscussion:
+        return Icons.bolt_rounded;
+      case _PulseKind.peopleResponding:
+        return Icons.forum_rounded;
+      case _PulseKind.institutionInvolved:
+        return Icons.verified_rounded;
+    }
+  }
+}
+
 /// Discourse-flavored feed item.
 ///
 /// Wraps the existing `UnifiedFeedCard` so all of its rendering logic
@@ -67,6 +98,32 @@ class DiscourseCard extends StatelessWidget {
     return null;
   }
 
+  /// Phase 2 — derive the strongest single discourse pulse this card
+  /// can express. We pick at most one to avoid stacking. Order of
+  /// precedence:
+  ///   1. Institution involved (when an institutional response is in
+  ///      the reply preview) — signals authority/accountability.
+  ///   2. People responding now (when a recent reply landed within
+  ///      the activity hint window).
+  ///   3. Active discussion (when the parent has reply count > 1).
+  /// Returns null when nothing meaningful is happening — quiet items
+  /// stay quiet.
+  _PulseKind? get _pulse {
+    final preview = item.replyPreview;
+    final hasInstitutionalReply = (preview?.items ?? const [])
+        .any((r) => r.author.context?.type ==
+            FeedIdentityContextType.officialInstitution);
+    if (hasInstitutionalReply) return _PulseKind.institutionInvolved;
+    if (item.activity?.recentReply == true) {
+      return _PulseKind.peopleResponding;
+    }
+    if (item.interaction.canViewReplyCount &&
+        item.interaction.replyCount >= 2) {
+      return _PulseKind.activeDiscussion;
+    }
+    return null;
+  }
+
   void _openSpace(BuildContext context) {
     final route = spaceRoute?.trim() ?? '';
     if (route.isEmpty) return;
@@ -76,14 +133,24 @@ class DiscourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasContextEyebrow = (spaceName?.trim().isNotEmpty ?? false);
+    final pulse = _pulse;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasContextEyebrow) ...[
-          _ContextEyebrow(
-            label: spaceName!.trim(),
-            onTap: spaceRoute == null ? null : () => _openSpace(context),
+        if (hasContextEyebrow || pulse != null) ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (hasContextEyebrow)
+                _ContextEyebrow(
+                  label: spaceName!.trim(),
+                  onTap:
+                      spaceRoute == null ? null : () => _openSpace(context),
+                ),
+              if (pulse != null) _PulsePill(kind: pulse),
+            ],
           ),
           const SizedBox(height: AuraSpace.s6),
         ],
@@ -217,5 +284,52 @@ extension on ActivityTail {
       n++;
     }
     return n;
+  }
+}
+
+/// Promoted activity-pulse pill rendered above the card body. Calm —
+/// no animation, no color escalation. Its job is to make the card
+/// read as "something is happening" without crossing into noise.
+class _PulsePill extends StatelessWidget {
+  const _PulsePill({required this.kind});
+
+  final _PulseKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final isInstitution = kind == _PulseKind.institutionInvolved;
+    final bg = isInstitution ? AuraSurface.accentSoft : AuraSurface.subtle;
+    final ink =
+        isInstitution ? AuraSurface.accentText : AuraSurface.muted;
+    final border = isInstitution
+        ? AuraSurface.accent.withValues(alpha: 0.4)
+        : AuraSurface.divider;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(kind.icon, size: 11, color: ink),
+          const SizedBox(width: 4),
+          Text(
+            kind.label,
+            style: AuraText.micro.copyWith(
+              color: ink,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

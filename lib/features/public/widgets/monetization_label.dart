@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -42,17 +43,10 @@ class MonetizationLabel extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text(
-                paid
-                    ? '${kind.label} — paid action. Pricing and rules at /aura/participation.'
-                    : '${kind.label} — verified institutional voice. No payment.',
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-            ),
-          );
+          // Phase 2 — tap routes to the transparency page so the
+          // reader gets the full explanation of what each label
+          // means, not just a one-line confirmation.
+          context.push('/aura/participation');
         },
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Container(

@@ -176,34 +176,67 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           ),
                         ),
                         data: (page) {
-                          final filtered = _filter == _ReplyFilter.all
-                              ? page.items
-                              : page.items.where((r) {
-                                  final ctx = r.author.context;
-                                  return ctx != null &&
-                                      ctx.type ==
-                                          FeedIdentityContextType
-                                              .officialInstitution;
-                                }).toList(growable: false);
-                          if (filtered.isEmpty) {
-                            return const InsEmptyState(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              title: 'No replies yet',
-                              description:
-                                  'Use the composer below to be the first to respond.',
+                          // Split replies into two bands so
+                          // institutional voices read as a distinct,
+                          // promoted strand. Filter chip can narrow to
+                          // institutions-only.
+                          final officials = page.items.where((r) {
+                            final ctx = r.author.context;
+                            return ctx != null &&
+                                ctx.type ==
+                                    FeedIdentityContextType
+                                        .officialInstitution;
+                          }).toList(growable: false);
+                          final members = page.items.where((r) {
+                            final ctx = r.author.context;
+                            return !(ctx != null &&
+                                ctx.type ==
+                                    FeedIdentityContextType
+                                        .officialInstitution);
+                          }).toList(growable: false);
+
+                          final showOfficials =
+                              officials.isNotEmpty;
+                          final showMembers =
+                              members.isNotEmpty &&
+                                  _filter == _ReplyFilter.all;
+
+                          if (!showOfficials && !showMembers) {
+                            return _NoRepliesEmpty(
+                              onJoin: _composeReply,
                             );
                           }
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              for (var i = 0; i < filtered.length; i++) ...[
-                                ReplyUnit(
-                                  reply: filtered[i],
-                                  parentIsOfficial: isOfficial,
+                              if (showOfficials) ...[
+                                _OfficialRepliesBand(
+                                  officials: officials,
                                 ),
-                                if (i < filtered.length - 1)
-                                  const SizedBox(height: AuraSpace.s10),
+                                if (showMembers)
+                                  const SizedBox(
+                                      height: AuraSpace.s14),
                               ],
+                              if (showMembers) ...[
+                                const _SectionLabel(
+                                    label: 'Member replies'),
+                                const SizedBox(height: AuraSpace.s8),
+                                for (var i = 0;
+                                    i < members.length;
+                                    i++) ...[
+                                  ReplyUnit(
+                                    reply: members[i],
+                                    parentIsOfficial: isOfficial,
+                                  ),
+                                  if (i < members.length - 1)
+                                    const SizedBox(
+                                        height: AuraSpace.s10),
+                                ],
+                              ],
+                              const SizedBox(height: AuraSpace.s14),
+                              _JoinDiscussionCue(
+                                onTap: _composeReply,
+                              ),
                             ],
                           );
                         },
@@ -414,6 +447,181 @@ class _StickyReplyBar extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Promoted band for institutional responses. Sits at the top of the
+/// replies area so the authoritative voices are unmistakable. Each
+/// reply renders as a normal `ReplyUnit` (preserves the inline reading
+/// stream); the band is just a labeled wrapper.
+class _OfficialRepliesBand extends StatelessWidget {
+  const _OfficialRepliesBand({required this.officials});
+
+  final List<FeedReply> officials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s10,
+        AuraSpace.s12,
+        AuraSpace.s10,
+        AuraSpace.s12,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(
+          color: AuraSurface.accent.withValues(alpha: 0.4),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: 6),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 12,
+                  color: AuraSurface.accentText,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  officials.length == 1
+                      ? 'OFFICIAL RESPONSE'
+                      : 'OFFICIAL RESPONSES (${officials.length})',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.9,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < officials.length; i++) ...[
+            ReplyUnit(
+              reply: officials[i],
+              parentIsOfficial: true,
+            ),
+            if (i < officials.length - 1)
+              const SizedBox(height: AuraSpace.s10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Empty-state widget when there are no replies yet — lifts a "Join
+/// the discussion" CTA so the thread doesn't read as dead space.
+class _NoRepliesEmpty extends StatelessWidget {
+  const _NoRepliesEmpty({required this.onJoin});
+
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s14,
+        vertical: AuraSpace.s18,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.forum_outlined,
+            size: 22,
+            color: AuraSurface.muted,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          const Text(
+            'No replies yet — be the first',
+            style: AuraText.subtitle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'This is public discourse. Anyone can reply, including '
+            'institutional voices. Your statement will sit alongside theirs.',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          AuraPrimaryButton(
+            label: 'Join the discussion',
+            icon: Icons.reply_rounded,
+            onPressed: onJoin,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Calm "Join the discussion" cue rendered after the visible replies.
+/// Pairs the sticky bottom composer at the bottom of the screen — but
+/// is in-flow so it survives keyboards and small screens.
+class _JoinDiscussionCue extends StatelessWidget {
+  const _JoinDiscussionCue({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s12,
+            vertical: AuraSpace.s10,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 14,
+                color: AuraSurface.muted,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  'Join the discussion — your reply lands here.',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: AuraSurface.muted,
+              ),
+            ],
           ),
         ),
       ),

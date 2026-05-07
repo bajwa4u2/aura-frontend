@@ -24,7 +24,10 @@ import 'features/auth/presentation/reset_password_screen.dart';
 import 'features/feed/domain/feed_item.dart' show FeedItemType;
 import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
+import 'features/public/presentation/space_detail_screen.dart';
+import 'features/public/presentation/spaces_discovery_screen.dart';
 import 'features/public/presentation/thread_screen.dart';
+import 'features/public/presentation/transparency_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
@@ -555,6 +558,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                 parentInstitutionId: qp['parentInstitutionId'],
               );
             },
+          ),
+          // Public-UX Phase 2 — Spaces.
+          GoRoute(
+            path: '/spaces',
+            builder: (_, __) => const SpacesDiscoveryScreen(),
+          ),
+          GoRoute(
+            path: '/spaces/:slug',
+            builder: (_, state) => SpaceDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          // Public-UX Phase 2 — Transparency page.
+          GoRoute(
+            path: '/aura/participation',
+            builder: (_, __) => const TransparencyScreen(),
           ),
           GoRoute(
             path: '/author/:handle',
