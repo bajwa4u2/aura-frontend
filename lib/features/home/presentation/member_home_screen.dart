@@ -154,8 +154,8 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
   Future<void> _refresh() async {
     ref.invalidate(latestHeldProvider);
     ref.invalidate(pinnedAnnouncementProvider);
-    ref.invalidate(memberHomeFeedProvider);
-    await ref.read(memberHomeFeedProvider.future);
+    // Phase 3 — pull-to-refresh resets the paged feed back to page 1.
+    await ref.read(memberHomeFeedPagedProvider.notifier).refresh();
   }
 
   Future<void> _maybeShowActivationOverlay() async {
@@ -354,17 +354,18 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
 // WORKS SECTION WITH SORT TOGGLE
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Member Home "Works" feed — backed by the unified `memberHomeFeedProvider`
-/// (`GET /v1/feed/member`). Renders both user posts and globally-eligible
-/// institution posts with `UnifiedFeedCard`. Pagination beyond the first
-/// page is intentionally deferred to a follow-up phase — the legacy
-/// `feedControllerProvider` paging machinery was removed in this migration.
+/// Member Home "Works" feed — backed by the unified
+/// `memberHomeFeedPagedProvider` (`GET /v1/feed/member`). Renders both
+/// user posts and globally-eligible institution posts with
+/// `UnifiedFeedCard`. Phase 3 restored cursor pagination — a "Load more"
+/// button at the bottom of the feed advances through pages without
+/// duplicates (the paged notifier de-dupes by `(type, id)`).
 class _DiscourseStream extends ConsumerWidget {
   const _DiscourseStream();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(memberHomeFeedProvider);
+    final feedAsync = ref.watch(memberHomeFeedPagedProvider);
     // Phase 2 Distribution — surface up to 3 active institution live
     // sessions at the top of the member home feed. Reuses the same
     // shared `LiveNowCard` used by the institution explore feed and
@@ -384,7 +385,8 @@ class _DiscourseStream extends ConsumerWidget {
         body: 'Refresh or try again in a moment.',
         action: AuraSecondaryButton(
           label: 'Refresh',
-          onPressed: () => ref.invalidate(memberHomeFeedProvider),
+          onPressed: () =>
+              ref.read(memberHomeFeedPagedProvider.notifier).refresh(),
           icon: Icons.refresh_rounded,
         ),
       ),
@@ -497,6 +499,23 @@ class _DiscourseStream extends ConsumerWidget {
                 if (i < byBand.recent.length - 1)
                   const SizedBox(height: AuraSpace.s12),
               ],
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            // Phase 3 — cursor-driven Load more.
+            if (page.hasMore) ...[
+              Center(
+                child: AuraSecondaryButton(
+                  label: page.loadingMore ? 'Loading…' : 'Load more',
+                  icon: page.loadingMore
+                      ? Icons.hourglass_empty_rounded
+                      : Icons.expand_more_rounded,
+                  onPressed: page.loadingMore
+                      ? null
+                      : () => ref
+                          .read(memberHomeFeedPagedProvider.notifier)
+                          .loadMore(),
+                ),
+              ),
               const SizedBox(height: AuraSpace.s18),
             ],
             const _SpacesSection(),

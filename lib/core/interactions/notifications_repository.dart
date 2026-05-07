@@ -51,6 +51,20 @@ class AppNotification {
 
   bool get isRead => readAt != null;
 
+  /// Phase 3 — backend-stored deeplink. The notification creator places
+  /// the canonical target route inside `payload.deeplink`; consumers
+  /// should prefer this over rebuilding routes from individual fields.
+  /// Returns null when the backend didn't ship one (older rows or
+  /// notification kinds without a target).
+  String? get deeplink {
+    final raw = payload['deeplink'];
+    if (raw is String) {
+      final trimmed = raw.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+    return null;
+  }
+
   bool get isInstitutionVoice =>
       actorType == ActorType.institution &&
       actorInstitutionId != null &&

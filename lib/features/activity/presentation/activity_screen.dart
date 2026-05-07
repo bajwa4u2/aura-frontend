@@ -240,7 +240,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
             .first
             .trim();
         if (idFromLink.isNotEmpty) {
-          context.push(
+          // Phase 3 — route through `_safePush` so the route is adapted
+          // for the current shell context (member vs institution) and
+          // the navigator preserves the workspace.
+          _safePush(
             _withLiveQuery(
               '/me/correspondence/$idFromLink',
               sessionId: realtimeSessionId,
@@ -252,7 +255,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       }
 
       if (!deeplink.startsWith('/realtime')) {
-        context.push(
+        _safePush(
           _withLiveQuery(
             deeplink,
             sessionId: realtimeSessionId,

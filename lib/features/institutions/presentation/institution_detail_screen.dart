@@ -15,7 +15,6 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
-import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
@@ -73,7 +72,7 @@ class _InstitutionDetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final postsAsync =
-        ref.watch(institutionProfileFeedProvider(institution.id));
+        ref.watch(institutionProfileFeedPagedProvider(institution.id));
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -180,7 +179,10 @@ class _InstitutionDetailBody extends ConsumerWidget {
                         ),
                       ],
                       const SizedBox(height: AuraSpace.s14),
-                      _PublicPostsSection(postsAsync: postsAsync),
+                      _PublicPostsSection(
+                        institutionId: institution.id,
+                        postsAsync: postsAsync,
+                      ),
                     ],
                   ),
                 ),
@@ -329,13 +331,17 @@ class _InfoRow extends StatelessWidget {
 // returns an empty page — never when posts exist (per Phase 2 rule:
 // "❌ Remove false 'No posts' empty state").
 
-class _PublicPostsSection extends StatelessWidget {
-  const _PublicPostsSection({required this.postsAsync});
+class _PublicPostsSection extends ConsumerWidget {
+  const _PublicPostsSection({
+    required this.institutionId,
+    required this.postsAsync,
+  });
 
-  final AsyncValue<FeedPage> postsAsync;
+  final String institutionId;
+  final AsyncValue<FeedPagedState> postsAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
@@ -379,18 +385,34 @@ class _PublicPostsSection extends StatelessWidget {
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: page.items
-                    .asMap()
-                    .entries
-                    .map((entry) => Padding(
-                          padding: EdgeInsets.only(
-                            bottom: entry.key < page.items.length - 1
-                                ? AuraSpace.s10
-                                : 0,
-                          ),
-                          child: UnifiedFeedCard(item: entry.value),
-                        ))
-                    .toList(),
+                children: [
+                  for (var i = 0; i < page.items.length; i++) ...[
+                    UnifiedFeedCard(item: page.items[i]),
+                    if (i < page.items.length - 1)
+                      const SizedBox(height: AuraSpace.s10),
+                  ],
+                  // Phase 3 — Load more for institution profile feed.
+                  if (page.hasMore) ...[
+                    const SizedBox(height: AuraSpace.s14),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: AuraSecondaryButton(
+                        label:
+                            page.loadingMore ? 'Loading…' : 'Load more',
+                        icon: page.loadingMore
+                            ? Icons.hourglass_empty_rounded
+                            : Icons.expand_more_rounded,
+                        onPressed: page.loadingMore
+                            ? null
+                            : () => ref
+                                .read(institutionProfileFeedPagedProvider(
+                                        institutionId)
+                                    .notifier)
+                                .loadMore(),
+                      ),
+                    ),
+                  ],
+                ],
               );
             },
           ),

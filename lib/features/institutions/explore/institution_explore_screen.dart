@@ -400,7 +400,7 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
       institutionId: widget.institutionId,
       scope: widget.scope,
     );
-    final feed = ref.watch(institutionExploreFeedProvider(args));
+    final feed = ref.watch(institutionExploreFeedPagedProvider(args));
 
     return feed.when(
       loading: () => const AuraLoadingState(message: 'Loading…'),
@@ -413,8 +413,9 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
             action: AuraSecondaryButton(
               label: 'Try again',
               icon: Icons.refresh_rounded,
-              onPressed: () =>
-                  ref.invalidate(institutionExploreFeedProvider(args)),
+              onPressed: () => ref
+                  .read(institutionExploreFeedPagedProvider(args).notifier)
+                  .refresh(),
             ),
           ),
         ],
@@ -459,8 +460,9 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
 
         return RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(institutionExploreFeedProvider(args));
-            await ref.read(institutionExploreFeedProvider(args).future);
+            await ref
+                .read(institutionExploreFeedPagedProvider(args).notifier)
+                .refresh();
           },
           child: ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
@@ -480,6 +482,24 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
                 UnifiedFeedCard(item: rest[i]),
                 if (i < rest.length - 1)
                   const SizedBox(height: AuraSpace.s10),
+              ],
+              // Phase 3 — Load more for the institution explore feed.
+              if (page.hasMore) ...[
+                const SizedBox(height: AuraSpace.s14),
+                Center(
+                  child: AuraSecondaryButton(
+                    label: page.loadingMore ? 'Loading…' : 'Load more',
+                    icon: page.loadingMore
+                        ? Icons.hourglass_empty_rounded
+                        : Icons.expand_more_rounded,
+                    onPressed: page.loadingMore
+                        ? null
+                        : () => ref
+                            .read(institutionExploreFeedPagedProvider(args)
+                                .notifier)
+                            .loadMore(),
+                  ),
+                ),
               ],
             ],
           ),

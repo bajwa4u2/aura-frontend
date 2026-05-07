@@ -63,6 +63,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String? _routeFor(AppNotification n) {
+    // Phase 3 — backend stores a canonical deeplink in payload.deeplink
+    // for every notification kind that has a target. Honor it first; the
+    // manual resolver below is the legacy fallback for older rows.
+    final stored = n.deeplink;
+    if (stored != null) return stored;
     if (n.directThreadId != null && n.directThreadId!.isNotEmpty) {
       return '/direct/${n.directThreadId}';
     }

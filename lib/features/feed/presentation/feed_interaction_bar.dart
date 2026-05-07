@@ -8,6 +8,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../data/unified_feed_providers.dart';
 import '../domain/feed_item.dart' show FeedInteraction;
 
 /// Like / Reply / Repost row used by every feed surface.
@@ -53,7 +54,11 @@ class FeedInteractionBar extends ConsumerWidget {
       try {
         final repo = ref.read(reactionsRepositoryProvider);
         await repo.toggle(target, actor: actor);
+        // Phase 3 — refresh the per-actor reaction state for the bar
+        // and the feed surfaces so the snapshot in surrounding cards
+        // updates without requiring navigation.
         ref.invalidate(reactionStateProvider(reactionKey));
+        invalidateUnifiedFeedSurfaces(ref);
       } catch (e) {
         if (!context.mounted) return;
         if (e is DioException && e.response?.statusCode == 403) {
@@ -170,6 +175,10 @@ class FeedInteractionBar extends ConsumerWidget {
           }
           await dio.post('/posts/${target.postId}/repost', data: body);
         }
+        // Phase 3 — refresh feed surfaces so the new repost lands on
+        // public/member home and the source post's repost count updates
+        // without requiring a navigate-away/return cycle.
+        invalidateUnifiedFeedSurfaces(ref);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Reposted')),
@@ -197,7 +206,14 @@ class FeedInteractionBar extends ConsumerWidget {
         AuraActionPill(
           icon: Icons.reply_outlined,
           label: replyLabel(),
-          onTap: () => context.push(composeReplyTarget()),
+          // Phase 3 — await the compose result so we can refresh feed
+          // counts when the user actually publishes the reply. The
+          // compose screen pops with `true` on successful publish.
+          onTap: () async {
+            final result =
+                await context.push<dynamic>(composeReplyTarget());
+            if (result == true) invalidateUnifiedFeedSurfaces(ref);
+          },
         ),
         AuraActionPill(
           icon: Icons.repeat_rounded,
