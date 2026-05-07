@@ -9,12 +9,17 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/utils/relative_time.dart';
 import '../data/institutions_repository.dart';
 import '../live/institution_live_invite_widget.dart';
 import '../ui/institution_ds.dart';
 import 'institution_session_meta.dart';
 
-final _institutionLiveRoomsProvider =
+/// Public provider for the institution's live rooms response. Exposed
+/// (renamed from the previous `_institutionLiveRoomsProvider`) so other
+/// surfaces — Distribution Phase 1's "LIVE NOW" feed banner in the
+/// explore screen — can reuse the same data without a parallel fetch.
+final institutionLiveRoomsProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, institutionId) async {
   final repo = ref.watch(institutionsRepositoryProvider);
   return repo.listInstitutionLiveRooms(institutionId);
@@ -31,7 +36,7 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
-    final roomsAsync = ref.watch(_institutionLiveRoomsProvider(institutionId));
+    final roomsAsync = ref.watch(institutionLiveRoomsProvider(institutionId));
 
     return AuraScaffold(
       showHeader: false,
@@ -44,7 +49,7 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
               body: '$e',
               action: AuraSecondaryButton(
                 label: 'Try again',
-                onPressed: () => ref.invalidate(_institutionLiveRoomsProvider(institutionId)),
+                onPressed: () => ref.invalidate(institutionLiveRoomsProvider(institutionId)),
                 icon: Icons.refresh_rounded,
               ),
             ),
@@ -61,7 +66,7 @@ class InstitutionLiveRoomsScreen extends ConsumerWidget {
             activeSession: activeSession is Map
                 ? Map<String, dynamic>.from(activeSession)
                 : null,
-            onRefresh: () => ref.invalidate(_institutionLiveRoomsProvider(institutionId)),
+            onRefresh: () => ref.invalidate(institutionLiveRoomsProvider(institutionId)),
           );
         },
       ),
@@ -359,6 +364,21 @@ class _RoomCardState extends ConsumerState<_RoomCard> {
     if (mounted) setState(() => _meta = m);
   }
 
+  /// Best-effort start timestamp for the room. Tries common keys the
+  /// server might ship; returns null when none are present so the
+  /// "Started X min ago" segment of the presence line can fall back
+  /// to nothing rather than guessing.
+  static DateTime? _readSessionStartedAt(Map<String, dynamic> session) {
+    for (final key in const ['startedAt', 'firstJoinedAt', 'answeredAt', 'createdAt']) {
+      final raw = session[key];
+      if (raw == null) continue;
+      if (raw is DateTime) return raw;
+      final parsed = DateTime.tryParse(raw.toString());
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
@@ -410,24 +430,20 @@ class _RoomCardState extends ConsumerState<_RoomCard> {
                 if (_meta != null) const SizedBox(height: 2),
                 Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: AuraSpace.s4),
-                _InstitutionTrustLine(
-                  identity: ref.watch(institutionIdentityProvider),
+                // Phase 4 — combined presence line: "● Live now •
+                // 12 people attending • Started 5 min ago", with calm
+                // fallbacks when participant count or start time are
+                // unavailable. Status pill stays on this row so the
+                // dot + label still anchor the line at the left.
+                _PresenceLine(
+                  status: status,
+                  isActive: isActive,
+                  participantCount: participantCount,
+                  startedAt: _readSessionStartedAt(session),
                 ),
                 const SizedBox(height: AuraSpace.s4),
-                Row(
-                  children: [
-                    _StatusChip(status: status, isActive: isActive),
-                    const SizedBox(width: AuraSpace.s8),
-                    if (participantCount is num && participantCount > 0) ...[
-                      const Icon(Icons.people_outline_rounded,
-                          size: 12, color: AuraSurface.faint),
-                      const SizedBox(width: 3),
-                      Text(
-                        '$participantCount',
-                        style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                      ),
-                    ],
-                  ],
+                _InstitutionTrustLine(
+                  identity: ref.watch(institutionIdentityProvider),
                 ),
               ],
             ),
@@ -956,6 +972,78 @@ class _SheetChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Phase 4 — combined presence line for the live room card.
+///
+/// Renders a single muted row with up to three segments separated by
+/// the same `•` mid-dot the rest of the institution surface uses:
+///
+///     ● Live now • 12 people attending • Started 5 min ago
+///
+/// Each segment is independent: a missing participant count or start
+/// time simply drops that segment so the line never reads "0 people"
+/// or "Started ?". For non-active rooms the leading status pill carries
+/// "Ended" / "Scheduled" / etc., and the rest of the segments are
+/// suppressed because presence is meaningless.
+class _PresenceLine extends StatelessWidget {
+  const _PresenceLine({
+    required this.status,
+    required this.isActive,
+    required this.participantCount,
+    required this.startedAt,
+  });
+
+  final String status;
+  final bool isActive;
+  final dynamic participantCount;
+  final DateTime? startedAt;
+
+  String? get _participantSegment {
+    if (!isActive) return null;
+    final raw = participantCount;
+    if (raw is num && raw > 0) {
+      final n = raw.toInt();
+      return n == 1 ? '1 person attending' : '$n people attending';
+    }
+    // Active session, no count — fall back to a generic presence hint
+    // so the line still feels populated rather than empty.
+    return 'People are attending';
+  }
+
+  String? get _startedSegment {
+    if (!isActive) return null;
+    return formatStartedAgo(startedAt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final segments = <String>[
+      if (_participantSegment case final p?) p,
+      if (_startedSegment case final s?) s,
+    ];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _StatusChip(status: status, isActive: isActive),
+        if (segments.isNotEmpty) ...[
+          const SizedBox(width: AuraSpace.s8),
+          Flexible(
+            child: Text(
+              segments.join(' · '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

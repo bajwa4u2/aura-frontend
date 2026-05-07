@@ -382,8 +382,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     // Track when the session first becomes joined so the post-end guard
     // can distinguish "never joined" from "joined and now torn down".
-    ref.listen<RealtimeState>(realtimeControllerProvider, (_, next) {
-      if (next.isJoined && !_wasJoined) _wasJoined = true;
+    // Phase 4 — also fire a one-shot snackbar on the connecting → joined
+    // transition for institution sessions so the host/participant gets
+    // explicit feedback that they're now inside a live institutional
+    // session, not a generic call. The guard `_wasJoined` ensures the
+    // toast fires exactly once per screen lifetime even if joinState
+    // oscillates afterwards.
+    ref.listen<RealtimeState>(realtimeControllerProvider, (prev, next) {
+      if (next.isJoined && !_wasJoined) {
+        _wasJoined = true;
+        _showJoinedToast();
+      }
     });
 
     final state = ref.watch(realtimeControllerProvider);
@@ -481,6 +490,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               // "Q&A session" for media interactions. Internal meetings
               // and research sessions stay quiet.
               if (_buildFocusBanner() case final focus?) focus,
+
+              // ── Phase 4 — in-session presence line ───────────────────────
+              // Calm line beneath the focus banner (or directly under
+              // the top bar when there's no focus banner) that names
+              // how many participants are present. Reads from existing
+              // realtime state — no extra fetch.
+              if (_buildPresenceLine(state) case final presence?) presence,
 
               // ── Consent banner ────────────────────────────────────────────
               RealtimeConsentSheet(
@@ -817,6 +833,73 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
+  /// Phase 4 — fired once when the user crosses into the joined state
+  /// for an institution session. Uses `ScaffoldMessenger` so the
+  /// feedback rides the existing scaffold without a new overlay layer.
+  /// Skipped silently when there's no session meta (legacy / non-
+  /// institution rooms) so DM/space calls keep their original UX.
+  void _showJoinedToast() {
+    final meta = _insSessionMeta;
+    if (meta == null) return;
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('You joined a live ${meta.type.label}'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Phase 4 — in-session presence line. Uses the count of joined
+  /// participants from the existing realtime state; falls back to a
+  /// generic "Participants present" hint when the count is zero or
+  /// unavailable so a freshly-joined host doesn't see "0 participants
+  /// in session" before peers arrive. Returns null entirely for non-
+  /// institution sessions so DM/thread/space calls keep their look.
+  Widget? _buildPresenceLine(RealtimeState state) {
+    if (_insSessionMeta == null) return null;
+    if (!state.isJoined) return null;
+    final n = state.participants.length;
+    final String label = n > 1
+        ? '$n participants in session'
+        : 'Participants present';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: 6,
+      ),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.people_outline_rounded,
+            size: 12,
+            color: AuraSurface.faint,
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              label,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Phase 3 — per-type focus reinforcement. Renders a thin text band
   /// directly under the call top bar that names the session's focus.
   /// Returns null when the type is internal/research (intentionally
@@ -932,16 +1015,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   /// get a slightly stronger accent (blue), internal types stay muted —
   /// the chip's job is to remind hosts and participants what kind of
   /// session this is for the entire duration.
+  ///
+  /// Phase 4 — Public Briefing and Media Interaction also surface an
+  /// "Official broadcast" pill so the institutional weight of an
+  /// outward-facing session is unambiguous on the in-call header.
   Widget? _buildSessionTypeChip() {
     final meta = _insSessionMeta;
     if (meta == null) return null;
     final isPublic = meta.audience == InsSessionAudience.publicAudience;
     String label;
     IconData icon;
+    bool isBroadcast = false;
     switch (meta.type) {
       case InsSessionType.publicBriefing:
         label = 'Public session';
         icon = Icons.public_rounded;
+        isBroadcast = true;
         break;
       case InsSessionType.classSession:
         label = 'Class session';
@@ -954,6 +1043,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       case InsSessionType.mediaInteraction:
         label = 'Media interaction';
         icon = Icons.mic_external_on_rounded;
+        isBroadcast = true;
         break;
       case InsSessionType.internalMeeting:
         // Compact header for internal meetings — the contextLabel below
@@ -961,10 +1051,19 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         // noise, so we suppress it here.
         return null;
     }
-    return _SessionTypeChip(
+    final typeChip = _SessionTypeChip(
       label: label,
       icon: icon,
       isPublic: isPublic,
+    );
+    if (!isBroadcast) return typeChip;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _BroadcastChip(),
+        const SizedBox(width: 6),
+        typeChip,
+      ],
     );
   }
 
@@ -2566,6 +2665,51 @@ class _SessionTypeChip extends StatelessWidget {
             label,
             style: AuraText.micro.copyWith(
               color: isPublic ? AuraSurface.accentText : AuraSurface.muted,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Official broadcast" pill rendered on the in-session header for
+/// outward-facing institutional sessions (Public Briefing, Media
+/// Interaction). Sits next to the session-type chip so participants
+/// can immediately tell they are inside an authoritative broadcast.
+class _BroadcastChip extends StatelessWidget {
+  const _BroadcastChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(
+          color: AuraSurface.accent.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.campaign_rounded,
+            size: 11,
+            color: AuraSurface.accentText,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Official broadcast',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.accentText,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.3,
               fontSize: 10,

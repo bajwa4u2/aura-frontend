@@ -13,6 +13,7 @@ import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../domain/communication_type.dart';
 import '../presentation/institution_page.dart';
@@ -117,7 +118,10 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (isAnnouncement) ...[
-                _OfficialAnnouncementStrip(publisher: publisher),
+                _OfficialAnnouncementStrip(
+                  publisher: publisher,
+                  publishedAt: item.publishedAt ?? item.createdAt,
+                ),
                 const SizedBox(height: AuraSpace.s10),
               ],
               // Detail screen renders the full replies list below — turn
@@ -218,7 +222,11 @@ class _ReplyCard extends StatelessWidget {
             ? reply.author.handle[0].toUpperCase()
             : '?');
 
-    return Container(
+    // Phase 4 — under an official post, non-official replies sit at
+    // a slightly reduced visual weight so the institutional voice
+    // stays dominant. Official responses keep full intensity.
+    final isOfficial = _isOfficialInstitutionReply(reply);
+    final card = Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
@@ -320,6 +328,12 @@ class _ReplyCard extends StatelessWidget {
         ],
       ),
     );
+
+    // Non-official replies dim slightly so institutional voice (and any
+    // "Official response" reply) reads as the dominant track. Opacity
+    // 0.85 keeps text fully readable; the contract says: keep
+    // readability intact.
+    return isOfficial ? card : Opacity(opacity: 0.85, child: card);
   }
 }
 
@@ -337,19 +351,29 @@ bool _isOfficialInstitutionReply(FeedReply reply) {
 /// monochrome — its only job is to make the institutional weight of the
 /// statement unmistakable before the reader scans the title.
 ///
-/// Phase 3: when a publisher name is known, an additional sub-line
-/// "Published by [Name]" sits beneath the eyebrow so the source of the
-/// statement is part of the reinforcement, not just a separate badge.
+/// Phase 3 added "Published by [Name]" below the eyebrow.
+/// Phase 4 adds:
+///   * Long-form "Published X ago" timestamp under the publisher line.
+///   * "Recent update from [Name]" reinforcement when the post is ≤12h
+///     old, so a freshly-issued announcement reads as time-sensitive.
 class _OfficialAnnouncementStrip extends StatelessWidget {
-  const _OfficialAnnouncementStrip({this.publisher});
+  const _OfficialAnnouncementStrip({this.publisher, this.publishedAt});
 
   /// Display name of the publishing institution. When empty/null, the
   /// strip renders only the OFFICIAL ANNOUNCEMENT eyebrow.
   final String? publisher;
 
+  /// Source timestamp for the "Published X ago" line. When null, the
+  /// long-form timestamp is omitted entirely — the strip degrades to
+  /// just the eyebrow + publisher.
+  final DateTime? publishedAt;
+
   @override
   Widget build(BuildContext context) {
     final p = publisher?.trim() ?? '';
+    final ts = publishedAt;
+    final isVeryRecent = ts != null &&
+        DateTime.now().difference(ts) <= const Duration(hours: 12);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s12,
@@ -390,6 +414,18 @@ class _OfficialAnnouncementStrip extends StatelessWidget {
                     style: AuraText.micro.copyWith(
                       color: AuraSurface.accentText.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                if (ts != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    isVeryRecent && p.isNotEmpty
+                        ? 'Recent update from $p · Published ${formatPastPhrase(ts)}'
+                        : 'Published ${formatPastPhrase(ts)}',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.accentText.withValues(alpha: 0.75),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

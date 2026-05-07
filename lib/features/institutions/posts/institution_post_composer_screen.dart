@@ -653,6 +653,14 @@ class _InstitutionPostComposerScreenState
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text('Submitted for review'),
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -693,6 +701,12 @@ class _InstitutionPostComposerScreenState
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
+      _showDistributionToast(
+        published: false,
+        type: _communicationType,
+        visibility: _visibility,
+        distribution: _distribution,
+      );
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -765,6 +779,16 @@ class _InstitutionPostComposerScreenState
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
+      // Distribution Phase 1 — publish-success acknowledgment that names
+      // the audience reach. The backend may or may not enqueue push on
+      // this endpoint; the snackbar communicates frontend intent so the
+      // host knows which audience just received the statement.
+      _showDistributionToast(
+        published: true,
+        type: _communicationType,
+        visibility: _visibility,
+        distribution: _distribution,
+      );
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -773,6 +797,50 @@ class _InstitutionPostComposerScreenState
         _error = _readError(e, 'Could not publish post.');
       });
     }
+  }
+
+  /// Distribution Phase 1 — surface a calm publish-confirmation snackbar
+  /// that tells the host who they just reached. The text reflects the
+  /// post's [visibility] (and global eligibility for public posts) so
+  /// the institutional voice is closing the loop on its own action.
+  void _showDistributionToast({
+    required bool published,
+    required InsCommunicationType type,
+    required InstitutionPostVisibility visibility,
+    required InstitutionPostDistribution distribution,
+  }) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+
+    String reach;
+    switch (visibility) {
+      case InstitutionPostVisibility.publicAll:
+        reach = distribution == InstitutionPostDistribution.globalEligible
+            ? 'Public audience · eligible for the global feed'
+            : 'Public audience';
+        break;
+      case InstitutionPostVisibility.memberOnly:
+        reach = 'Members only';
+        break;
+      case InstitutionPostVisibility.internal:
+        reach = 'Internal — admins and editors';
+        break;
+    }
+
+    final headline = !published
+        ? 'Draft saved'
+        : type == InsCommunicationType.announcement
+            ? 'Announcement published'
+            : 'Statement published';
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('$headline · $reach'),
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _invalidatePostFeeds() {
@@ -1470,7 +1538,11 @@ class _VisibilitySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'VISIBILITY',
+            // Phase 1 Distribution: framed as AUDIENCE to make "who this
+            // reaches" the explicit decision the host is making. Backed
+            // by the existing post `visibility` enum so no schema change
+            // is needed.
+            'AUDIENCE',
             style: AuraText.micro.copyWith(
               color: AuraSurface.faint,
               fontWeight: FontWeight.w800,

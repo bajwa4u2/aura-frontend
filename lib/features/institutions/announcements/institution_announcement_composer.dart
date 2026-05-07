@@ -169,7 +169,9 @@ class _InstitutionAnnouncementComposerState
       final id = await _save();
       if (id == null) { setState(() => _publishing = false); return; }
       await _repo.publishInstitutionAnnouncement(widget.institutionId, id);
-      if (mounted) context.pop(true);
+      if (!mounted) return;
+      _showAudienceToast(published: true);
+      context.pop(true);
     } catch (e) {
       setState(() { _error = _message(e, 'Could not publish.'); _publishing = false; });
     }
@@ -177,7 +179,43 @@ class _InstitutionAnnouncementComposerState
 
   Future<void> _saveDraft() async {
     final id = await _save();
-    if (id != null && mounted) context.pop(false);
+    if (id != null && mounted) {
+      _showAudienceToast(published: false);
+      context.pop(false);
+    }
+  }
+
+  /// Distribution Phase 1 — publish-confirmation toast that names the
+  /// audience reach so the host knows which group just received the
+  /// announcement. The backend may or may not actually trigger push;
+  /// this snackbar communicates the *intent* of the action.
+  void _showAudienceToast({required bool published}) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    String reach;
+    switch (_audience.toUpperCase()) {
+      case 'PUBLIC':
+        reach = 'Public audience';
+        break;
+      case 'MEMBERS':
+        reach = 'Members';
+        break;
+      case 'INTERNAL':
+        reach = 'Internal — admins and editors';
+        break;
+      default:
+        reach = 'Public audience';
+    }
+    final headline =
+        published ? 'Announcement published' : 'Draft saved';
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('$headline · $reach'),
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Widget _buildDropdownRow(String label, String value, List<String> options, void Function(String) onChanged) {

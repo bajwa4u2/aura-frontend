@@ -7,6 +7,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
@@ -69,6 +70,15 @@ class UnifiedFeedCard extends ConsumerWidget {
     final isUpdate = decodedTitle?.hadMarker == true &&
         decodedTitle!.type == InsCommunicationType.update;
 
+    // Phase 4 — time decay. Older official posts are intentionally
+    // "quieter": ≤24 h reads at full intensity, 24–72 h sits at a
+    // calmer accent, >72 h drops to the divider color so an old
+    // statement no longer competes with fresh institutional speech.
+    final ageBucket = _ageBucketFor(item);
+    final accentBorder = isAnnouncement
+        ? AuraSurface.accent.withValues(alpha: ageBucket.accentBorderAlpha)
+        : AuraSurface.divider;
+
     return InkWell(
       onTap: adaptedTarget.isEmpty ? null : () => context.push(adaptedTarget),
       borderRadius: BorderRadius.circular(AuraRadius.card),
@@ -85,9 +95,7 @@ class UnifiedFeedCard extends ConsumerWidget {
           color: AuraSurface.card,
           borderRadius: BorderRadius.circular(AuraRadius.card),
           border: Border.all(
-            color: isAnnouncement
-                ? AuraSurface.accent.withValues(alpha: 0.45)
-                : AuraSurface.divider,
+            color: accentBorder,
             width: isAnnouncement ? 1.5 : 1,
           ),
         ),
@@ -112,8 +120,12 @@ class UnifiedFeedCard extends ConsumerWidget {
                     type: decodedTitle?.hadMarker == true
                         ? decodedTitle!.type
                         : null,
+                    ageBucket: ageBucket,
                   ),
-                  if (_isRecentlyPublished(item)) ...[
+                  // Phase 4 — NEW chip is suppressed past 72 h so old
+                  // posts can't masquerade as fresh.
+                  if (_isRecentlyPublished(item) &&
+                      ageBucket != _AgeBucket.stale) ...[
                     const SizedBox(width: 6),
                     const _NewChip(),
                   ],
@@ -133,6 +145,22 @@ class UnifiedFeedCard extends ConsumerWidget {
             if (officialPost && !_authorBadgeShown(item)) ...[
               const SizedBox(height: 4),
               const _VerifiedInstitutionLine(),
+            ],
+            // Phase 4 — "Source: Verified institution" sub-line for
+            // official posts whose author identity is explicitly
+            // verified. Only renders when verification is *known* to
+            // be true; never renders when the data is missing so we
+            // can't accidentally claim authority.
+            if (officialPost && _isAuthorExplicitlyVerified(item)) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Source: Verified institution',
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.faint,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ],
             if (_shouldRenderSecondary(item)) ...[
               const SizedBox(height: AuraSpace.s6),
@@ -187,6 +215,20 @@ class UnifiedFeedCard extends ConsumerWidget {
                   ),
                 ),
               ],
+              // Phase 4 — soft urgency for ≤12 h announcements. Plain
+              // text reinforcement, not a chip — calm but visible.
+              if (isAnnouncement && _isVeryRecent(item)) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Recent update',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ],
             if (item.body.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s8),
@@ -208,6 +250,16 @@ class UnifiedFeedCard extends ConsumerWidget {
                 visibility: item.visibility,
                 distribution: item.distribution,
               ),
+            ],
+            // Phase 4 — "Recent activity around this" line. Renders only
+            // for official posts when the existing FeedItem.activity /
+            // FeedItem.interaction signal carries a usable hint. No
+            // backend fetch — purely derived from data already shipped.
+            if (officialPost) ...[
+              if (_recentActivityLabelFor(item) case final label?) ...[
+                const SizedBox(height: AuraSpace.s8),
+                _RecentActivityLine(label: label),
+              ],
             ],
             if (showReplyPreview &&
                 item.replyPreview != null &&
@@ -282,52 +334,63 @@ bool _isOfficialInstitutionPost(FeedItem item) {
 /// (secondary, lighter) when the post carries a communication-type marker.
 /// Calm, monochrome, never animated — its only job is to make institutional
 /// speech visually distinct from a chat message in the same feed.
+///
+/// Phase 4 — accepts an `ageBucket` so older posts wear a less intense
+/// eyebrow without losing the OFFICIAL signal entirely.
 class _OfficialPill extends StatelessWidget {
-  const _OfficialPill({this.type});
+  const _OfficialPill({this.type, this.ageBucket = _AgeBucket.fresh});
 
   /// When non-null, the type label renders as a secondary token after the
   /// OFFICIAL eyebrow. When null (legacy posts without the marker), only
   /// the OFFICIAL pill is shown.
   final InsCommunicationType? type;
 
+  /// Time-decay bucket. Drives a single opacity modifier — the rest of
+  /// the eyebrow stays identical so the legibility of OFFICIAL is
+  /// preserved regardless of age.
+  final _AgeBucket ageBucket;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AuraSurface.accentSoft,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.35),
+    return Opacity(
+      opacity: ageBucket.eyebrowOpacity,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AuraSurface.accentSoft,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Text(
+              'OFFICIAL',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.accentText,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                fontSize: 10,
+              ),
             ),
           ),
-          child: Text(
-            'OFFICIAL',
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.accentText,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              fontSize: 10,
+          if (type != null) ...[
+            const SizedBox(width: 6),
+            Text(
+              '• ${type!.label.toUpperCase()}',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.7,
+                fontSize: 10,
+              ),
             ),
-          ),
-        ),
-        if (type != null) ...[
-          const SizedBox(width: 6),
-          Text(
-            '• ${type!.label.toUpperCase()}',
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.7,
-              fontSize: 10,
-            ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -548,7 +611,7 @@ class _AuthorRow extends StatelessWidget {
         ),
         if (publishedAt != null)
           Text(
-            _formatRelative(publishedAt!),
+            formatRelative(publishedAt!),
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
       ],
@@ -1123,6 +1186,16 @@ bool _authorBadgeShown(FeedItem item) {
   return ctx != null && ctx.isMeaningful;
 }
 
+/// True only when the author identity context explicitly reports
+/// `verified = true`. Used to gate the "Source: Verified institution"
+/// sub-line — we never render that line on the absence of data so the
+/// claim of authority is always backed by a real signal.
+bool _isAuthorExplicitlyVerified(FeedItem item) {
+  final ctx = item.author.context;
+  if (ctx == null) return false;
+  return ctx.verified;
+}
+
 /// Calm reinforcement line: small icon + "Verified institution" label.
 /// Rendered for official institution posts when no `AuraIdentityBadge`
 /// is present so trust authority is visible on every official card.
@@ -1162,6 +1235,115 @@ bool _isRecentlyPublished(FeedItem item) {
   final ts = item.publishedAt ?? item.createdAt;
   if (ts == null) return false;
   return DateTime.now().difference(ts) <= const Duration(hours: 24);
+}
+
+/// True when the post is ≤ 12 hours old. Drives the soft "Recent update"
+/// reinforcement under announcement titles.
+bool _isVeryRecent(FeedItem item) {
+  final ts = item.publishedAt ?? item.createdAt;
+  if (ts == null) return false;
+  return DateTime.now().difference(ts) <= const Duration(hours: 12);
+}
+
+/// Phase 4 time-decay bucketing. Drives the eyebrow opacity + accent
+/// border alpha for official posts so old statements feel less urgent
+/// without disappearing.
+///
+/// Buckets:
+///   * `fresh`    — ≤ 24 h: full intensity.
+///   * `recent`   — 24–72 h: subtle dim on the eyebrow + lighter
+///                  accent border on the card.
+///   * `stale`    — > 72 h: card border drops to the regular divider
+///                  color and the NEW chip is suppressed.
+///   * `unknown`  — no timestamp: behaves like `fresh` (legacy
+///                  content keeps reading the same way it did before
+///                  Phase 4).
+enum _AgeBucket { fresh, recent, stale, unknown }
+
+extension on _AgeBucket {
+  double get eyebrowOpacity {
+    switch (this) {
+      case _AgeBucket.fresh:
+      case _AgeBucket.unknown:
+        return 1.0;
+      case _AgeBucket.recent:
+        return 0.85;
+      case _AgeBucket.stale:
+        return 0.65;
+    }
+  }
+
+  double get accentBorderAlpha {
+    switch (this) {
+      case _AgeBucket.fresh:
+      case _AgeBucket.unknown:
+        return 0.45;
+      case _AgeBucket.recent:
+        return 0.28;
+      case _AgeBucket.stale:
+        // Past 72 h, the border drops back to plain divider via the
+        // caller's `accentBorder` selector — but for safety we still
+        // expose a low alpha here so any direct user gets a calm
+        // accent rather than a hard one.
+        return 0.18;
+    }
+  }
+}
+
+_AgeBucket _ageBucketFor(FeedItem item) {
+  final ts = item.publishedAt ?? item.createdAt;
+  if (ts == null) return _AgeBucket.unknown;
+  final age = DateTime.now().difference(ts);
+  if (age <= const Duration(hours: 24)) return _AgeBucket.fresh;
+  if (age <= const Duration(hours: 72)) return _AgeBucket.recent;
+  return _AgeBucket.stale;
+}
+
+/// Phase 4 — derive a "Recent activity around this" label from existing
+/// FeedItem signals. Prefers a precise reply count when the backend
+/// flagged it as visible (`canViewReplyCount`); falls back to a generic
+/// "Active discussion" hint when only the recent-reply boolean is set.
+/// Returns null when there's nothing meaningful to say — the caller
+/// should then render no line at all.
+String? _recentActivityLabelFor(FeedItem item) {
+  final replyCount = item.interaction.replyCount;
+  if (item.interaction.canViewReplyCount && replyCount > 0) {
+    return replyCount == 1
+        ? '1 response from members'
+        : '$replyCount responses from members';
+  }
+  if (item.activity?.recentReply == true) return 'Active discussion';
+  return null;
+}
+
+/// Calm one-line activity hint rendered under the visibility row on
+/// official posts that have generated reader response.
+class _RecentActivityLine extends StatelessWidget {
+  const _RecentActivityLine({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.forum_outlined,
+          size: 12,
+          color: AuraSurface.muted,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Under-title intent label per communication type. Keep the mapping
@@ -1255,15 +1437,6 @@ class _AdvisoryIndicator extends StatelessWidget {
   }
 }
 
-String _formatRelative(DateTime when) {
-  final now = DateTime.now();
-  final diff = now.difference(when);
-  if (diff.inSeconds < 60) return 'now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-  if (diff.inHours < 24) return '${diff.inHours}h';
-  if (diff.inDays < 7) return '${diff.inDays}d';
-  final yyyy = when.year.toString().padLeft(4, '0');
-  final mm = when.month.toString().padLeft(2, '0');
-  final dd = when.day.toString().padLeft(2, '0');
-  return '$yyyy-$mm-$dd';
-}
+// `_formatRelative` was lifted into `lib/core/utils/relative_time.dart`
+// (`formatRelative`) so the live room cards and post detail strips can
+// reuse the same calibrated phrasing. This file imports it directly.
