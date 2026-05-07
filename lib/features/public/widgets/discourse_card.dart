@@ -88,9 +88,21 @@ class DiscourseCard extends StatelessWidget {
     this.spaceName,
     this.spaceRoute,
     this.paidLabel,
+    this.showInteractionBar = true,
+    this.showEntryHookCta = true,
   });
 
   final FeedItem item;
+
+  /// When false, the underlying like/reply/repost row is hidden. Used
+  /// on the signed-out public homepage where interactions require an
+  /// account — surfacing them with no behavior is misleading.
+  final bool showInteractionBar;
+
+  /// When false, the bottom single-line entry-hook CTA is hidden.
+  /// Used on surfaces (e.g. Public homepage) that wrap the card with
+  /// their own footer strip — keeping both would double up the CTA.
+  final bool showEntryHookCta;
 
   /// Optional context label (space / topic). When non-null, an "In
   /// space [name]" chip is rendered as the leading eyebrow segment.
@@ -201,7 +213,7 @@ class DiscourseCard extends StatelessWidget {
         ],
         // Engine: UnifiedFeedCard owns author row, OFFICIAL pill, title,
         // body, media, visibility row, reply preview, interaction bar.
-        UnifiedFeedCard(item: item),
+        UnifiedFeedCard(item: item, showInteractionBar: showInteractionBar),
         // Activity tail: replies + institutions responded + recent.
         Builder(
           builder: (_) {
@@ -233,16 +245,18 @@ class DiscourseCard extends StatelessWidget {
         // card. Single tappable line that takes the user directly
         // into the thread instead of leaving them scrolling. The
         // label is chosen by the dominant pulse so the CTA matches
-        // the framing of the card.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AuraSpace.s14,
-            AuraSpace.s4,
-            AuraSpace.s14,
-            AuraSpace.s10,
+        // the framing of the card. Suppressed on surfaces that wrap
+        // the card with their own footer strip.
+        if (showEntryHookCta)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s14,
+              AuraSpace.s4,
+              AuraSpace.s14,
+              AuraSpace.s10,
+            ),
+            child: _EntryHookCTA(item: item, pulse: _pulse),
           ),
-          child: _EntryHookCTA(item: item, pulse: _pulse),
-        ),
       ],
     );
   }

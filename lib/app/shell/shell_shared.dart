@@ -58,8 +58,8 @@ class ShellFooter extends StatelessWidget {
   static const double _wideBreakpoint = 760;
 
   static const _platformNote =
-      'Aura is built for structured public communication, '
-      'trusted institutions, and meaningful participation.';
+      'Aura is public discourse infrastructure. People raise issues, '
+      'institutions respond, and outcomes are public.';
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +273,7 @@ class _FooterBottomRow extends StatelessWidget {
       style: AuraText.micro.copyWith(color: AuraSurface.faint),
     );
     final tagline = Text(
-      'Signals not scores · calm not loud',
+      'Public discourse · accountable participation',
       style: AuraText.micro.copyWith(color: AuraSurface.faint),
     );
 

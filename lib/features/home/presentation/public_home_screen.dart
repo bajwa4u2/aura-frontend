@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/shell_shared.dart';
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -9,20 +11,34 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../app/shell/shell_shared.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../public/data/public_spaces_repository.dart';
+import '../../public/domain/space.dart';
 import '../../public/widgets/discourse_card.dart';
 
+/// Public-UX Phase 7 — homepage restructured around discourse: live
+/// discussions, institution responses, spaces, and outcomes. Replaces
+/// the prior publishing/work-platform framing.
+///
+/// Section order:
+///   1. Hero (discourse positioning + auth-aware CTAs + live pulse)
+///   2. Live Discourse rails (Active / Institution responded)
+///   3. Discussion preview ("What's being discussed now")
+///   4. How Aura works (4 steps)
+///   5. Spaces (3 featured)
+///   6. Participation band → /aura/participation
+///   7. ShellFooter
 class PublicHomeScreen extends ConsumerWidget {
   const PublicHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final worksAsync = ref.watch(globalPublicFeedProvider);
+    final feedAsync = ref.watch(globalPublicFeedProvider);
     final liveAsync = ref.watch(globalDiscoverableLiveProvider);
+    final isAuthed = ref.watch(isAuthedProvider);
 
     return AuraScaffold(
       showHeader: false,
@@ -30,31 +46,115 @@ class PublicHomeScreen extends ConsumerWidget {
         padding: EdgeInsets.zero,
         children: [
           _HeroSection(
-            onJoin: () => context.go('/register'),
-            onExplore: () => context.go('/search'),
+            feedAsync: feedAsync,
+            liveAsync: liveAsync,
+            isAuthed: isAuthed,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s28,
-              AuraSpace.s16,
-              AuraSpace.s32,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1160),
-                child: _PublicFeedSection(
-                  worksAsync: worksAsync,
-                  liveAsync: liveAsync,
-                  onExplore: () => context.go('/search'),
-                ),
-              ),
-            ),
-          ),
+          _LiveDiscourseSection(feedAsync: feedAsync, isAuthed: isAuthed),
+          _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
+          const _HowItWorksSection(),
+          const _SpacesSection(),
+          const _ParticipationBand(),
           const ShellFooter(),
         ],
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLASSIFIER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Splits the public feed into the rails the homepage cares about.
+///
+/// "Recently resolved" is intentionally NOT a rail — the global feed's
+/// `replyPreview` payload doesn't carry an accountability-tag field, so
+/// we can't reliably flag a thread as resolved from the homepage data.
+/// Per the locked correction "do not show placeholder text that makes
+/// the product feel empty", the rail is omitted rather than rendered
+/// with weak data.
+class _ClassifiedFeed {
+  const _ClassifiedFeed({
+    required this.active,
+    required this.institutionResponded,
+    required this.institutionResponseCount,
+  });
+
+  final List<FeedItem> active;
+  final List<FeedItem> institutionResponded;
+
+  /// Total institutional reply hits in the feed page (used by hero pulse).
+  final int institutionResponseCount;
+
+  bool get isEmpty => active.isEmpty && institutionResponded.isEmpty;
+
+  static _ClassifiedFeed from(List<FeedItem> items) {
+    final active = <FeedItem>[];
+    final institution = <FeedItem>[];
+    var instReplyHits = 0;
+    for (final it in items) {
+      final officialReplies = (it.replyPreview?.items ?? const [])
+          .where((r) =>
+              r.author.context?.type ==
+              FeedIdentityContextType.officialInstitution)
+          .toList(growable: false);
+      if (officialReplies.isNotEmpty) {
+        institution.add(it);
+        instReplyHits += officialReplies.length;
+        continue;
+      }
+      final replyCount = it.interaction.canViewReplyCount
+          ? it.interaction.replyCount
+          : 0;
+      if (replyCount > 0 || (it.activity?.recentReply == true)) {
+        active.add(it);
+      }
+    }
+    return _ClassifiedFeed(
+      active: active,
+      institutionResponded: institution,
+      institutionResponseCount: instReplyHits,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH-AWARE ROUTING HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+String _registerWithRedirect(String redirect) {
+  final encoded = Uri.encodeComponent(redirect);
+  return '/register?redirect=$encoded';
+}
+
+void _goJoinAura(BuildContext context, {required bool isAuthed}) {
+  if (isAuthed) {
+    context.go('/home');
+  } else {
+    context.go('/register');
+  }
+}
+
+void _openThread(BuildContext context, FeedItem item) {
+  context.push(item.targetRoute);
+}
+
+void _openThreadFocused(BuildContext context, FeedItem item, String focus) {
+  final base = item.targetRoute;
+  final sep = base.contains('?') ? '&' : '?';
+  context.push('$base${sep}focus=$focus');
+}
+
+void _startDiscussion(
+  BuildContext context,
+  FeedItem item, {
+  required bool isAuthed,
+}) {
+  if (isAuthed) {
+    _openThread(context, item);
+  } else {
+    context.push(_registerWithRedirect(item.targetRoute));
   }
 }
 
@@ -64,12 +164,14 @@ class PublicHomeScreen extends ConsumerWidget {
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection({
-    required this.onJoin,
-    required this.onExplore,
+    required this.feedAsync,
+    required this.liveAsync,
+    required this.isAuthed,
   });
 
-  final VoidCallback onJoin;
-  final VoidCallback onExplore;
+  final AsyncValue<FeedPage> feedAsync;
+  final AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync;
+  final bool isAuthed;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +183,6 @@ class _HeroSection extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Subtle accent radial glow behind headline
           Positioned(
             top: -60,
             left: -80,
@@ -110,32 +211,29 @@ class _HeroSection extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 720;
-                    return wide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: _HeroLeft(
-                                  onJoin: onJoin,
-                                  onExplore: onExplore,
-                                ),
-                              ),
-                              const SizedBox(width: AuraSpace.s32),
-                              const Expanded(
-                                flex: 3,
-                                child: _HeroPlatformCard(),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _HeroLeft(onJoin: onJoin, onExplore: onExplore),
-                              const SizedBox(height: AuraSpace.s24),
-                              const _HeroPlatformCard(),
-                            ],
-                          );
+                    final left = _HeroLeft(isAuthed: isAuthed);
+                    final right = _LiveDiscoursePulse(
+                      feedAsync: feedAsync,
+                      liveAsync: liveAsync,
+                    );
+                    if (wide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(flex: 5, child: left),
+                          const SizedBox(width: AuraSpace.s32),
+                          Expanded(flex: 3, child: right),
+                        ],
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        left,
+                        const SizedBox(height: AuraSpace.s24),
+                        right,
+                      ],
+                    );
                   },
                 ),
               ),
@@ -148,17 +246,15 @@ class _HeroSection extends StatelessWidget {
 }
 
 class _HeroLeft extends StatelessWidget {
-  const _HeroLeft({required this.onJoin, required this.onExplore});
+  const _HeroLeft({required this.isAuthed});
 
-  final VoidCallback onJoin;
-  final VoidCallback onExplore;
+  final bool isAuthed;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Eyebrow label
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s10,
@@ -181,44 +277,39 @@ class _HeroLeft extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s6),
               Text(
-                'Civic communication platform',
+                'Public discourse infrastructure',
                 style: AuraText.label.copyWith(color: AuraSurface.accentText),
               ),
             ],
           ),
         ),
         const SizedBox(height: AuraSpace.s20),
-
-        // Display headline
         const Text(
-          'Work that earns\nreal consideration',
+          'Where public discussions\nlead to real outcomes',
           style: AuraText.display,
         ),
         const SizedBox(height: AuraSpace.s16),
-
-        // Sub-headline
         Text(
-          'Publish writing, share creations, and build a public record that institutions and people take seriously — with no noise.',
+          'People raise issues. Institutions respond. Outcomes are public.',
           style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
-
-        // CTAs
         Wrap(
           spacing: AuraSpace.s10,
           runSpacing: AuraSpace.s10,
           children: [
             AuraPrimaryButton(
-              label: 'Join Aura',
-              onPressed: onJoin,
+              label: isAuthed ? 'Open your feed' : 'Join Aura',
               icon: Icons.arrow_forward_rounded,
+              onPressed: () => _goJoinAura(context, isAuthed: isAuthed),
             ),
-            _HeroOutlineButton(label: 'Explore work', onTap: onExplore),
+            _HeroOutlineButton(
+              label: 'Explore discussions',
+              onTap: () => context.go('/search'),
+            ),
           ],
         ),
         const SizedBox(height: AuraSpace.s20),
-
-        // Trust pills
         const Wrap(
           spacing: AuraSpace.s8,
           runSpacing: AuraSpace.s8,
@@ -228,10 +319,13 @@ class _HeroLeft extends StatelessWidget {
               icon: Icons.verified_user_outlined,
             ),
             _TrustPill(
-              label: 'Institution ready',
-              icon: Icons.apartment_outlined,
+              label: 'Institutions on record',
+              icon: Icons.account_balance_outlined,
             ),
-            _TrustPill(label: 'No noise', icon: Icons.block_flipped),
+            _TrustPill(
+              label: 'Outcomes are public',
+              icon: Icons.task_alt_rounded,
+            ),
           ],
         ),
       ],
@@ -239,11 +333,34 @@ class _HeroLeft extends StatelessWidget {
   }
 }
 
-class _HeroPlatformCard extends StatelessWidget {
-  const _HeroPlatformCard();
+class _LiveDiscoursePulse extends StatelessWidget {
+  const _LiveDiscoursePulse({
+    required this.feedAsync,
+    required this.liveAsync,
+  });
+
+  final AsyncValue<FeedPage> feedAsync;
+  final AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync;
 
   @override
   Widget build(BuildContext context) {
+    final classified = feedAsync.maybeWhen(
+      data: (p) => _ClassifiedFeed.from(p.items),
+      orElse: () => const _ClassifiedFeed(
+        active: [],
+        institutionResponded: [],
+        institutionResponseCount: 0,
+      ),
+    );
+    final activeCount = classified.active.length +
+        classified.institutionResponded.length;
+    final liveEntries = liveAsync.maybeWhen(
+      data: (l) => l,
+      orElse: () => const <LiveNowDiscoveryEntry>[],
+    );
+    final liveCount = liveEntries.length;
+    final firstLive = liveEntries.isNotEmpty ? liveEntries.first : null;
+
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s20),
       decoration: BoxDecoration(
@@ -255,94 +372,117 @@ class _HeroPlatformCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Text(
+                'HAPPENING NOW',
+                style: AuraText.label.copyWith(
+                  color: AuraSurface.faint,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          _PulseStatRow(
+            icon: Icons.forum_rounded,
+            tint: AuraSurface.accent,
+            label: 'active discussions',
+            count: activeCount,
+            loading: feedAsync.isLoading,
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          _PulseStatRow(
+            icon: Icons.verified_rounded,
+            tint: AuraSurface.accent,
+            label: 'institution responses',
+            count: classified.institutionResponseCount,
+            loading: feedAsync.isLoading,
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          _PulseStatRow(
+            icon: Icons.podcasts_rounded,
+            tint: AuraSurface.accent,
+            label: 'live now',
+            count: liveCount,
+            loading: liveAsync.isLoading,
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          // Phase-7 polish — single calm context line so the numbers
+          // read as something happening, not as abstract stats.
           Text(
-            'Platform overview',
-            style: AuraText.label.copyWith(
-              color: AuraSurface.faint,
-              letterSpacing: 0.8,
+            'Discussions are happening across spaces right now',
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
             ),
           ),
-          const SizedBox(height: AuraSpace.s16),
-          const _FeatureRow(
-            icon: Icons.edit_note_rounded,
-            title: 'Publish works',
-            body: 'Writing, media, and long-form content with full provenance.',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          const Divider(color: AuraSurface.divider, height: 1),
-          const SizedBox(height: AuraSpace.s12),
-          const _FeatureRow(
-            icon: Icons.apartment_rounded,
-            title: 'Institutional trust',
-            body: 'Verified institutions that signal professional context.',
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          const Divider(color: AuraSurface.divider, height: 1),
-          const SizedBox(height: AuraSpace.s12),
-          const _FeatureRow(
-            icon: Icons.mail_outline_rounded,
-            title: 'Direct messages',
-            body: 'Private, structured messaging for serious communication.',
-          ),
+          if (firstLive != null) ...[
+            const SizedBox(height: AuraSpace.s14),
+            const Divider(color: AuraSurface.divider, height: 1),
+            const SizedBox(height: AuraSpace.s14),
+            LiveNowCard(
+              data: LiveNowCardData.fromDiscovery(
+                entry: firstLive,
+                returnTo: '/',
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
+class _PulseStatRow extends StatelessWidget {
+  const _PulseStatRow({
     required this.icon,
-    required this.title,
-    required this.body,
+    required this.tint,
+    required this.label,
+    required this.count,
+    required this.loading,
   });
 
   final IconData icon;
-  final String title;
-  final String body;
+  final Color tint;
+  final String label;
+  final int count;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
+    final value = loading ? '—' : '$count';
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.r10),
-            border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.2),
-            ),
+            border: Border.all(color: tint.withValues(alpha: 0.25)),
           ),
-          child: Icon(
-            icon,
-            size: AuraIconSize.sm,
-            color: AuraSurface.accentText,
-          ),
+          child: Icon(icon, size: AuraIconSize.sm, color: AuraSurface.accentText),
         ),
         const SizedBox(width: AuraSpace.s12),
+        Text(
+          value,
+          style: AuraText.headline.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(width: AuraSpace.s8),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AuraSurface.ink,
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s2),
-              Text(
-                body,
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
-                  height: 1.4,
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
         ),
       ],
@@ -419,100 +559,996 @@ class _HeroOutlineButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUBLIC FEED SECTION
+// SECTION 2 — LIVE DISCOURSE RAILS
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PublicFeedSection extends StatelessWidget {
-  const _PublicFeedSection({
-    required this.worksAsync,
-    required this.liveAsync,
-    required this.onExplore,
+class _LiveDiscourseSection extends StatelessWidget {
+  const _LiveDiscourseSection({
+    required this.feedAsync,
+    required this.isAuthed,
   });
 
-  final AsyncValue<FeedPage> worksAsync;
-  final AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync;
-  final VoidCallback onExplore;
+  final AsyncValue<FeedPage> feedAsync;
+  final bool isAuthed;
+
+  @override
+  Widget build(BuildContext context) {
+    return feedAsync.maybeWhen(
+      data: (page) {
+        final classified = _ClassifiedFeed.from(page.items);
+        // If both rails would be empty, omit the entire section so the
+        // homepage doesn't broadcast emptiness.
+        if (classified.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+            0,
+            AuraSpace.s28,
+            0,
+            AuraSpace.s4,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1160),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionHeading(
+                      title: 'Live discourse',
+                      subtitle:
+                          "What's happening across the network right now",
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                    if (classified.active.isNotEmpty) ...[
+                      _DiscourseRail(
+                        title: 'Active discussions',
+                        icon: Icons.bolt_rounded,
+                        count: classified.active.length,
+                        items: classified.active.take(5).toList(),
+                        kind: _RailKind.active,
+                        ctaLabel: 'Join discussion',
+                        onTap: (it) => _openThread(context, it),
+                      ),
+                      const SizedBox(height: AuraSpace.s16),
+                    ],
+                    if (classified.institutionResponded.isNotEmpty)
+                      _DiscourseRail(
+                        title: 'Institution responded',
+                        icon: Icons.verified_rounded,
+                        count: classified.institutionResponded.length,
+                        items: classified.institutionResponded
+                            .take(5)
+                            .toList(),
+                        kind: _RailKind.institutionResponded,
+                        ctaLabel: 'View responses',
+                        onTap: (it) => _openThreadFocused(
+                          context,
+                          it,
+                          'first-official',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _DiscourseRail extends StatelessWidget {
+  const _DiscourseRail({
+    required this.title,
+    required this.icon,
+    required this.count,
+    required this.items,
+    required this.kind,
+    required this.ctaLabel,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final int count;
+  final List<FeedItem> items;
+  final _RailKind kind;
+  final String ctaLabel;
+  final void Function(FeedItem) onTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Phase 2 Distribution — LIVE NOW band(s) above the works
-        // section. Up to 3 entries (the upstream provider's cap).
-        // Hidden silently when the loader is still working or no live
-        // sessions are visible to this viewer.
-        ...liveAsync.maybeWhen(
-          data: (entries) => [
-            for (final e in entries) ...[
-              LiveNowCard(
-                data: LiveNowCardData.fromDiscovery(
-                  entry: e,
-                  returnTo: '/',
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s10),
-            ],
-          ],
-          orElse: () => const <Widget>[],
-        ),
         Row(
           children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Public work', style: AuraText.headline),
-                  SizedBox(height: AuraSpace.s4),
-                  Text(
-                    'Recent writing and creations from the network.',
-                    style: AuraText.muted,
-                  ),
-                ],
-              ),
+            Icon(icon, size: AuraIconSize.sm, color: AuraSurface.accentText),
+            const SizedBox(width: AuraSpace.s8),
+            Text(
+              title,
+              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
             ),
-            AuraGhostButton(
-              label: 'Explore all',
-              onPressed: onExplore,
-              icon: Icons.explore_outlined,
+            const SizedBox(width: AuraSpace.s8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.accentSoft,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(
+                  color: AuraSurface.accent.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                '$count',
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.accentText,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: AuraSpace.s20),
-        worksAsync.when(
-          data: (page) {
-            if (page.items.isEmpty) {
-              return const AuraEmptyState(
-                title: 'No public work yet',
-                body: 'When people publish, their work will appear here.',
-                icon: Icons.public_outlined,
-              );
-            }
-            return Column(
-              children: [
-                for (final item in page.items.take(6)) ...[
-                  DiscourseCard(item: item),
-                  const SizedBox(height: AuraSpace.s10),
-                ],
-                const SizedBox(height: AuraSpace.s6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AuraSecondaryButton(
-                    label: 'Explore more work',
-                    onPressed: onExplore,
-                    icon: Icons.explore_outlined,
-                  ),
-                ),
-              ],
-            );
-          },
-          loading: () =>
-              const AuraLoadingState(message: 'Loading public work…'),
-          error: (e, _) => const AuraErrorState(
-            title: 'Could not load public work',
-            body: 'Refresh the page or try again in a moment.',
+        const SizedBox(height: AuraSpace.s10),
+        SizedBox(
+          height: 196,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AuraSpace.s10),
+            itemBuilder: (context, i) => _RailCard(
+              item: items[i],
+              kind: kind,
+              ctaLabel: ctaLabel,
+              onTap: () => onTap(items[i]),
+            ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Phase-7 polish — differentiates rail cards visually so a scanning
+/// eye instantly tells "Active" from "Institution responded". Both
+/// pills stay inside the existing accent token family so we don't
+/// introduce new colors.
+enum _RailKind { active, institutionResponded }
+
+class _RailCard extends StatelessWidget {
+  const _RailCard({
+    required this.item,
+    required this.kind,
+    required this.ctaLabel,
+    required this.onTap,
+  });
+
+  final FeedItem item;
+  final _RailKind kind;
+  final String ctaLabel;
+  final VoidCallback onTap;
+
+  String get _headline {
+    final t = item.title?.trim() ?? '';
+    if (t.isNotEmpty) return t;
+    final body = item.body.trim();
+    if (body.length <= 80) return body;
+    return '${body.substring(0, 80)}…';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final replyCount = item.interaction.canViewReplyCount
+        ? item.interaction.replyCount
+        : 0;
+    final spaceName = item.publicSpaceName?.trim() ?? '';
+    final authorName = item.author.name.trim();
+    final officialReplies = (item.replyPreview?.items ?? const [])
+        .where((r) =>
+            r.author.context?.type ==
+            FeedIdentityContextType.officialInstitution)
+        .toList(growable: false);
+    return SizedBox(
+      width: 320,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.lg),
+          child: Container(
+            padding: const EdgeInsets.all(AuraSpace.s14),
+            decoration: BoxDecoration(
+              color: AuraSurface.card,
+              borderRadius: BorderRadius.circular(AuraRadius.lg),
+              border: Border.all(color: AuraSurface.divider),
+              boxShadow: AuraShadows.panel,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RailPill(kind: kind),
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  _headline,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s6),
+                Text(
+                  [
+                    if (authorName.isNotEmpty) authorName,
+                    if (spaceName.isNotEmpty) 'in $spaceName',
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 14,
+                      color: AuraSurface.faint,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$replyCount ${replyCount == 1 ? 'reply' : 'replies'}',
+                      style: AuraText.micro
+                          .copyWith(color: AuraSurface.muted),
+                    ),
+                    if (officialReplies.isNotEmpty) ...[
+                      const SizedBox(width: AuraSpace.s8),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 14,
+                        color: AuraSurface.accentText,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${officialReplies.length} institution${officialReplies.length == 1 ? '' : 's'}',
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.accentText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s8),
+                Row(
+                  children: [
+                    Text(
+                      ctaLabel,
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AuraSurface.accentText,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: AuraSurface.accentText,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pulse pill on the rail card — leading marker that distinguishes
+/// active discussions from institution-responded threads at a glance.
+/// Both variants use existing accent tokens; the institutional variant
+/// gets a stronger fill + border so it reads as authoritative without
+/// introducing a new color.
+class _RailPill extends StatelessWidget {
+  const _RailPill({required this.kind});
+
+  final _RailKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final isInstitutional = kind == _RailKind.institutionResponded;
+    final label =
+        isInstitutional ? 'Institution involved' : 'Active discussion';
+    final icon = isInstitutional ? Icons.verified_rounded : Icons.bolt_rounded;
+    final bg = isInstitutional
+        ? AuraSurface.accent.withValues(alpha: 0.18)
+        : AuraSurface.accentSoft;
+    final border = isInstitutional
+        ? AuraSurface.accent.withValues(alpha: 0.55)
+        : AuraSurface.accent.withValues(alpha: 0.3);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: AuraSurface.accentText),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.accentText,
+              fontWeight: isInstitutional ? FontWeight.w900 : FontWeight.w800,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 3 — DISCUSSION PREVIEW
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DiscussionPreviewSection extends StatelessWidget {
+  const _DiscussionPreviewSection({
+    required this.feedAsync,
+    required this.isAuthed,
+  });
+
+  final AsyncValue<FeedPage> feedAsync;
+  final bool isAuthed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s28,
+        AuraSpace.s16,
+        AuraSpace.s8,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1160),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: _SectionHeading(
+                      title: "What's being discussed now",
+                      subtitle: 'Live conversations across spaces',
+                    ),
+                  ),
+                  AuraGhostButton(
+                    label: 'See all discussions',
+                    icon: Icons.explore_outlined,
+                    onPressed: () => context.go('/search'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              feedAsync.when(
+                data: (page) {
+                  if (page.items.isEmpty) {
+                    return const AuraEmptyState(
+                      title: 'No public discussions yet',
+                      body:
+                          'When people raise issues and institutions respond, those discussions appear here.',
+                      icon: Icons.forum_outlined,
+                    );
+                  }
+                  final items = page.items.take(6).toList(growable: false);
+                  return Column(
+                    children: [
+                      for (final item in items) ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DiscourseCard(
+                              item: item,
+                              showInteractionBar: isAuthed,
+                              // Phase-7 polish — homepage owns its own
+                              // footer strip below; suppress the card's
+                              // built-in CTA so we don't stack two.
+                              showEntryHookCta: false,
+                            ),
+                            _DiscourseRailFooter(
+                              item: item,
+                              isAuthed: isAuthed,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AuraSpace.s10),
+                      ],
+                    ],
+                  );
+                },
+                loading: () =>
+                    const AuraLoadingState(message: 'Loading discussions…'),
+                error: (e, _) => const AuraErrorState(
+                  title: 'Could not load discussions',
+                  body: 'Refresh the page or try again in a moment.',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Per-card footer strip — single-line participation CTA matched to the
+/// discussion's state. Auth-aware: signed-out "Start the discussion"
+/// routes through `/register?redirect=…`; everything else lands on the
+/// thread directly (where the existing compose flow handles auth).
+class _DiscourseRailFooter extends StatelessWidget {
+  const _DiscourseRailFooter({
+    required this.item,
+    required this.isAuthed,
+  });
+
+  final FeedItem item;
+  final bool isAuthed;
+
+  bool get _hasInstitutionalReply =>
+      (item.replyPreview?.items ?? const []).any((r) =>
+          r.author.context?.type ==
+          FeedIdentityContextType.officialInstitution);
+
+  int get _replyCount => item.interaction.canViewReplyCount
+      ? item.interaction.replyCount
+      : 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label;
+    final String cta;
+    final VoidCallback onTap;
+    final IconData icon;
+    if (_hasInstitutionalReply) {
+      label = 'Institution responded';
+      cta = 'View responses';
+      icon = Icons.verified_rounded;
+      onTap = () => _openThreadFocused(context, item, 'first-official');
+    } else if (_replyCount == 0) {
+      label = 'No responses yet';
+      cta = 'Start the discussion';
+      icon = Icons.bolt_outlined;
+      onTap = () => _startDiscussion(context, item, isAuthed: isAuthed);
+    } else {
+      label = '$_replyCount people discussing';
+      cta = 'Join discussion';
+      icon = Icons.forum_outlined;
+      onTap = () => _openThread(context, item);
+    }
+    // Phase-7 polish — tinted background + top divider so the strip
+    // reads as a separate actionable layer beneath the card body, not
+    // as an extension of the content. Fixed height keeps every state
+    // visually identical so the eye lands in the same spot every row.
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(AuraRadius.lg),
+          bottomRight: Radius.circular(AuraRadius.lg),
+        ),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s14,
+          ),
+          decoration: const BoxDecoration(
+            color: AuraSurface.subtle,
+            border: Border(top: BorderSide(color: AuraSurface.divider)),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(AuraRadius.lg),
+              bottomRight: Radius.circular(AuraRadius.lg),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: AuraSurface.muted),
+              const SizedBox(width: AuraSpace.s6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              const Spacer(),
+              Text(
+                cta,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.accentText,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: AuraSurface.accentText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 4 — HOW AURA WORKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HowItWorksSection extends StatelessWidget {
+  const _HowItWorksSection();
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = [
+      _HowItWorksStep(
+        index: 1,
+        icon: Icons.forum_outlined,
+        label: 'People raise issues',
+      ),
+      _HowItWorksStep(
+        index: 2,
+        icon: Icons.reply_rounded,
+        label: 'Others respond',
+      ),
+      _HowItWorksStep(
+        index: 3,
+        icon: Icons.account_balance_outlined,
+        label: 'Institutions act',
+      ),
+      _HowItWorksStep(
+        index: 4,
+        icon: Icons.task_alt_rounded,
+        label: 'Outcomes are public',
+      ),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s32,
+        AuraSpace.s16,
+        AuraSpace.s8,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1160),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeading(
+                title: 'How Aura works',
+                subtitle: 'Four steps. That is the whole loop.',
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final wide = c.maxWidth >= 720;
+                  if (wide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < steps.length; i++) ...[
+                          Expanded(child: steps[i]),
+                          if (i != steps.length - 1)
+                            const SizedBox(width: AuraSpace.s12),
+                        ],
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      for (final s in steps) ...[
+                        s,
+                        const SizedBox(height: AuraSpace.s10),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HowItWorksStep extends StatelessWidget {
+  const _HowItWorksStep({
+    required this.index,
+    required this.icon,
+    required this.label,
+  });
+
+  final int index;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AuraSurface.accentSoft,
+              borderRadius: BorderRadius.circular(AuraRadius.r10),
+              border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Icon(icon, color: AuraSurface.accentText, size: 20),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'STEP $index',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 5 — SPACES
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SpacesSection extends ConsumerWidget {
+  const _SpacesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spacesAsync = ref.watch(publicSpacesListProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s32,
+        AuraSpace.s16,
+        AuraSpace.s8,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1160),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: _SectionHeading(
+                      title: 'Where discourse lives',
+                      subtitle: 'Topic homes for serious discussion',
+                    ),
+                  ),
+                  AuraGhostButton(
+                    label: 'Browse all spaces',
+                    icon: Icons.grid_view_rounded,
+                    onPressed: () => context.go('/spaces'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s16),
+              spacesAsync.when(
+                data: (spaces) {
+                  if (spaces.isEmpty) return const SizedBox.shrink();
+                  final featured = spaces.take(3).toList(growable: false);
+                  return LayoutBuilder(
+                    builder: (context, c) {
+                      final wide = c.maxWidth >= 720;
+                      if (wide) {
+                        return Row(
+                          children: [
+                            for (var i = 0; i < featured.length; i++) ...[
+                              Expanded(
+                                child: _SpaceTile(space: featured[i]),
+                              ),
+                              if (i != featured.length - 1)
+                                const SizedBox(width: AuraSpace.s12),
+                            ],
+                          ],
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (final s in featured) ...[
+                            _SpaceTile(space: s),
+                            const SizedBox(height: AuraSpace.s10),
+                          ],
+                        ],
+                      );
+                    },
+                  );
+                },
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
+                  child: AuraLoadingState(message: 'Loading spaces…'),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpaceTile extends ConsumerWidget {
+  const _SpaceTile({required this.space});
+
+  final PubSpace space;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(publicSpaceSummaryProvider(space.slug));
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                  border: Border.all(
+                    color: AuraSurface.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Icon(
+                  space.icon,
+                  size: 18,
+                  color: AuraSurface.accentText,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Text(
+                  space.name,
+                  style: AuraText.body.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            space.description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          summaryAsync.when(
+            data: (s) => Text(
+              '${s.activeDiscussionCount} active · ${s.institutionCount} institutions',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            loading: () => Text(
+              'Active',
+              style: AuraText.micro.copyWith(color: AuraSurface.faint),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          const SizedBox(height: AuraSpace.s4),
+          // Phase-7 polish — single muted line so each space tile reads
+          // as alive, not as a static directory entry.
+          Text(
+            'Discussions happening now',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          AuraSecondaryButton(
+            label: 'Enter space',
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () => context.push('/spaces/${space.slug}'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 6 — PARTICIPATION BAND
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ParticipationBand extends StatelessWidget {
+  const _ParticipationBand();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s16,
+        AuraSpace.s32,
+        AuraSpace.s16,
+        AuraSpace.s32,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1160),
+          child: Container(
+            padding: const EdgeInsets.all(AuraSpace.s20),
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.lg),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final wide = c.maxWidth >= 720;
+                final body = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'How participation works',
+                      style: AuraText.headline.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s8),
+                    Text.rich(
+                      TextSpan(
+                        style: AuraText.body.copyWith(
+                          color: AuraSurface.muted,
+                          height: 1.55,
+                        ),
+                        children: [
+                          TextSpan(
+                            text:
+                                'Institutions respond and act publicly here.',
+                            style: AuraText.body.copyWith(
+                              color: AuraSurface.ink,
+                              fontWeight: FontWeight.w800,
+                              height: 1.55,
+                            ),
+                          ),
+                          const TextSpan(text: ' '),
+                          const TextSpan(
+                            text:
+                                'Paid actions — priority responses and hosted sessions — are always labeled. Identities are verified.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+                final cta = AuraSecondaryButton(
+                  label: 'How participation works',
+                  icon: Icons.arrow_forward_rounded,
+                  onPressed: () => context.push('/aura/participation'),
+                );
+                if (wide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: body),
+                      const SizedBox(width: AuraSpace.s24),
+                      cta,
+                    ],
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    body,
+                    const SizedBox(height: AuraSpace.s16),
+                    cta,
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED — SECTION HEADING
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AuraText.headline),
+        const SizedBox(height: AuraSpace.s4),
+        Text(subtitle, style: AuraText.muted),
       ],
     );
   }
