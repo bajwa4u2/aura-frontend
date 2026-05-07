@@ -60,6 +60,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   msix: ^3.16.8
+  # Pure-Dart image library used by tool/generate_store_assets.dart to
+  # rasterize the master Aura SVG into platform/store PNGs without any
+  # native imaging dependency.
+  image: ^4.8.0
 
 dependency_overrides:
   record_linux: ^1.3.0
@@ -72,9 +76,31 @@ flutter:
     - assets/brand/
 
 flutter_launcher_icons:
-  android: true
+  # Pure-Dart pipeline produced every platform/store asset under
+  # `assets/store/`; we already copied those into the platform res
+  # directories. This block is kept so `dart run flutter_launcher_icons`
+  # remains a one-shot way to refresh launcher icons from a single
+  # square master PNG (the generator's `play_icon_512.png` output) — it
+  # writes the same density-bucket mipmaps and adaptive icon layers the
+  # generator wrote, so re-running it is idempotent.
+  android: "ic_launcher"
+  # iOS icons are written natively at every required size by the
+  # pure-Dart generator (App Store wants 1024 unscaled). Skipping
+  # flutter_launcher_icons' iOS pass keeps those crisp.
   ios: false
-  image_path: "assets/aura_icon.png"
+  image_path: "assets/store/android/play_icon_512.png"
+  adaptive_icon_background: "#1A1A2E"
+  adaptive_icon_foreground: "assets/store/android/adaptive_foreground.png"
+  remove_alpha_ios: true
+  web:
+    generate: false
+  windows:
+    generate: false
+    image_path: "assets/store/windows/app_icon_310.png"
+    icon_size: 256
+  macos:
+    generate: false
+    image_path: "assets/store/macos/app_icon_1024.png"
 
 msix_config:
   display_name: Aura
