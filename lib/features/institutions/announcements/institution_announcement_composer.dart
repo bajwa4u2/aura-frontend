@@ -10,6 +10,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../domain/communication_type.dart';
+import '../ui/institution_ds.dart';
 
 class InstitutionAnnouncementComposer extends ConsumerStatefulWidget {
   const InstitutionAnnouncementComposer({
@@ -39,6 +41,11 @@ class _InstitutionAnnouncementComposerState
   String _kind = 'GENERAL';
   String _audience = 'PUBLIC';
 
+  /// Frontend-only institutional type — encoded into the stored `title` via
+  /// `[OFFICIAL:TYPE]` marker. The backend `kind` field is a separate
+  /// taxonomy (GENERAL / RELEASE / SAFETY / GOVERNANCE) and stays untouched.
+  InsCommunicationType _communicationType = InsCommunicationType.announcement;
+
   bool _saving = false;
   bool _publishing = false;
   String? _error;
@@ -54,7 +61,15 @@ class _InstitutionAnnouncementComposerState
     super.initState();
     final d = widget.initialData;
     if (d != null) {
-      _titleController.text = d['title']?.toString() ?? '';
+      // Edit mode: peel the [OFFICIAL:TYPE] marker so the user edits the
+      // clean title and the chip group reflects the existing type.
+      final rawTitle = d['title']?.toString() ?? '';
+      final decoded = InsCommunicationDecoded.parse(rawTitle);
+      _titleController.text =
+          decoded.hadMarker ? decoded.cleanTitle : rawTitle;
+      _communicationType = decoded.hadMarker
+          ? decoded.type
+          : InsCommunicationType.announcement;
       _summaryController.text = d['summary']?.toString() ?? '';
       _bodyController.text = d['bodyMarkdown']?.toString() ?? '';
       _kind = d['kind']?.toString() ?? 'GENERAL';
@@ -82,14 +97,39 @@ class _InstitutionAnnouncementComposerState
     return fallback;
   }
 
+  /// Returns the headline used at submission time. Falls back to the
+  /// first non-empty body line (capped at 80 chars) when the user left
+  /// the title field blank, so every institutional statement carries a
+  /// headline.
+  String _resolvedCleanTitle() {
+    final t = _titleController.text.trim();
+    if (t.isNotEmpty) return t;
+    final body = _bodyController.text.trim();
+    if (body.isEmpty) return '';
+    final firstLine = body.split('\n').firstWhere(
+          (l) => l.trim().isNotEmpty,
+          orElse: () => '',
+        ).trim();
+    if (firstLine.isEmpty) return '';
+    return firstLine.length > 80 ? firstLine.substring(0, 80).trim() : firstLine;
+  }
+
   Future<String?> _save() async {
-    final title = _titleController.text.trim();
+    final cleanTitle = _resolvedCleanTitle();
     final summary = _summaryController.text.trim();
     final body = _bodyController.text.trim();
 
-    if (title.isEmpty) { setState(() => _error = 'Title is required.'); return null; }
+    if (cleanTitle.isEmpty && body.isEmpty) {
+      setState(() => _error = 'Title or body is required.');
+      return null;
+    }
     if (summary.isEmpty) { setState(() => _error = 'Summary is required.'); return null; }
     if (body.isEmpty) { setState(() => _error = 'Body is required.'); return null; }
+
+    final encodedTitle = InsCommunicationDecoded.encode(
+      type: _communicationType,
+      cleanTitle: cleanTitle,
+    );
 
     setState(() { _saving = true; _error = null; });
 
@@ -97,7 +137,7 @@ class _InstitutionAnnouncementComposerState
       if (_savedId == null) {
         final result = await _repo.createInstitutionAnnouncement(
           widget.institutionId,
-          title: title,
+          title: encodedTitle,
           summary: summary,
           bodyMarkdown: body,
           kind: _kind,
@@ -108,7 +148,7 @@ class _InstitutionAnnouncementComposerState
         await _repo.updateInstitutionAnnouncement(
           widget.institutionId,
           _savedId!,
-          title: title,
+          title: encodedTitle,
           summary: summary,
           bodyMarkdown: body,
           kind: _kind,
@@ -169,30 +209,50 @@ class _InstitutionAnnouncementComposerState
     return AuraScaffold(
       showHeader: false,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s20, AuraSpace.s16, AuraSpace.s32),
+        padding: const EdgeInsets.fromLTRB(
+          InsSpacing.screenHPad,
+          InsSpacing.screenVPad,
+          InsSpacing.screenHPad,
+          AuraSpace.s32,
+        ),
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 740),
+              constraints: const BoxConstraints(
+                maxWidth: InsSpacing.contentMaxWidth,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       GestureDetector(
                         onTap: () => context.pop(),
-                        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AuraSurface.muted),
+                        child: const Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Icon(Icons.arrow_back_rounded, size: 20, color: AuraSurface.muted),
+                        ),
                       ),
                       const SizedBox(width: AuraSpace.s12),
                       Expanded(
-                        child: Text(
-                          widget.isEditing ? 'Edit announcement' : 'New announcement',
-                          style: AuraText.headline,
+                        child: InsModeHeader(
+                          title: widget.isEditing
+                              ? 'Edit announcement'
+                              : 'New announcement',
+                          description:
+                              'Publish official institutional notices and public statements.',
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: AuraSpace.s24),
+                  _AnnouncementCommunicationTypePicker(
+                    selected: _communicationType,
+                    onChanged: (t) =>
+                        setState(() => _communicationType = t),
+                  ),
+                  const SizedBox(height: AuraSpace.s14),
                   Container(
                     padding: const EdgeInsets.all(AuraSpace.s16),
                     decoration: BoxDecoration(
@@ -207,8 +267,8 @@ class _InstitutionAnnouncementComposerState
                           controller: _titleController,
                           style: AuraText.body.copyWith(fontWeight: FontWeight.w700, fontSize: 18),
                           decoration: const InputDecoration(
-                            labelText: 'Title',
-                            hintText: 'Announcement title',
+                            labelText: 'Title (optional — derived from body if empty)',
+                            hintText: 'Headline for this statement',
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -310,6 +370,72 @@ class _InstitutionAnnouncementComposerState
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AnnouncementCommunicationTypePicker extends StatelessWidget {
+  const _AnnouncementCommunicationTypePicker({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final InsCommunicationType selected;
+  final ValueChanged<InsCommunicationType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'COMMUNICATION TYPE',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.faint,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: [
+            for (final t in InsCommunicationType.values)
+              InkWell(
+                onTap: () => onChanged(t),
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected == t
+                        ? AuraSurface.accentSoft
+                        : AuraSurface.subtle,
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                    border: Border.all(
+                      color: selected == t
+                          ? AuraSurface.accent.withValues(alpha: 0.4)
+                          : AuraSurface.divider,
+                    ),
+                  ),
+                  child: Text(
+                    t.label,
+                    style: AuraText.small.copyWith(
+                      color: selected == t
+                          ? AuraSurface.accentText
+                          : AuraSurface.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

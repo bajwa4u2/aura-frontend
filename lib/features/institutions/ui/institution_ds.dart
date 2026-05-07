@@ -1084,3 +1084,160 @@ class InsActionGroup extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODE HEADER — every institution surface declares its institutional mode
+// here. Same layout everywhere: title (left) + primary action (top-right) on
+// one row, description on the next line, optional tabs below.
+//
+// Frame = constant. Mode = meaning. Content = variable.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class InsModeHeader extends StatelessWidget {
+  const InsModeHeader({
+    super.key,
+    required this.title,
+    this.description,
+    this.primaryAction,
+    this.tabs,
+  });
+
+  final String title;
+  final String? description;
+  final Widget? primaryAction;
+  final Widget? tabs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: AuraText.headline,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (primaryAction != null) ...[
+              const SizedBox(width: AuraSpace.s12),
+              primaryAction!,
+            ],
+          ],
+        ),
+        if (description != null && description!.trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            description!,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
+            ),
+          ),
+        ],
+        if (tabs != null) ...[
+          const SizedBox(height: AuraSpace.s14),
+          tabs!,
+        ],
+      ],
+    );
+  }
+}
+
+/// Standard vertical gap between the Mode Header and the first section.
+class InsModeHeaderGap extends StatelessWidget {
+  const InsModeHeaderGap({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const SizedBox(height: InsSpacing.sectionGap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY STATE — in-container, never a center-page hero.
+//
+// Pattern:  [small icon]  [title]  [description]  [optional secondary]
+// Primary action lives in the Mode Header, never inside the empty state.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class InsEmptyState extends StatelessWidget {
+  const InsEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.description,
+    this.secondary,
+    this.tone = InsTone.neutral,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? description;
+
+  /// Optional second line for nuance ("Members can post here when…",
+  /// "Visible only to admins…"). Not a CTA — CTAs live in Mode Header.
+  final String? secondary;
+
+  final InsTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = InsToneStyle.of(tone);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: InsSpacing.cardPadding,
+        vertical: AuraSpace.s24,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: t.bg,
+              borderRadius: BorderRadius.circular(AuraRadius.r10),
+              border: Border.all(color: t.border),
+            ),
+            child: Icon(icon, size: 18, color: t.fg),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Text(
+            title,
+            style: AuraText.subtitle,
+          ),
+          if (description != null && description!.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              description!,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                height: 1.5,
+              ),
+            ),
+          ],
+          if (secondary != null && secondary!.trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s6),
+            Text(
+              secondary!,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.faint,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

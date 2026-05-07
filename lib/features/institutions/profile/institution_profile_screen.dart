@@ -264,6 +264,24 @@ class _ProfileBody extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Mode header ──────────────────────────────────────
+                  InsModeHeader(
+                    title: 'Profile',
+                    description:
+                        'Identity, mission, and trust signals that members and the public see.',
+                    primaryAction:
+                        (identity != null && identity!.isAdmin)
+                            ? AuraPrimaryButton(
+                                label: 'Edit profile',
+                                icon: Icons.edit_outlined,
+                                onPressed: () =>
+                                    context.go('/institution/edit-profile'),
+                              )
+                            : null,
+                  ),
+
+                  const InsModeHeaderGap(),
+
                   // ── Action group ─────────────────────────────────────
                   _ActionGroup(
                     identity: identity,
@@ -472,14 +490,9 @@ class _ActionGroup extends StatelessWidget {
         identity!.slug.isNotEmpty &&
         identity!.id.isNotEmpty;
 
+    // Primary "Edit profile" lives in the Mode Header above; this row
+    // carries only secondary actions so the workspace stays consistent.
     return InsActionGroup(
-      primary: canEdit
-          ? AuraPrimaryButton(
-              label: 'Edit profile',
-              icon: Icons.edit_outlined,
-              onPressed: () => context.go('/institution/edit-profile'),
-            )
-          : null,
       secondary: [
         if (canPreview)
           AuraSecondaryButton(

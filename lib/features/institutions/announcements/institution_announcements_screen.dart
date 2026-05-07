@@ -11,6 +11,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../features/institutions/presentation/institution_page.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
@@ -301,10 +302,10 @@ class _InstitutionAnnouncementsScreenState
 
   Widget _buildPublishedList() {
     if (_published.isEmpty) {
-      return const AuraEmptyState(
+      return const InsEmptyState(
         icon: Icons.campaign_outlined,
         title: 'No announcements yet',
-        body: 'Published announcements will appear here.',
+        description: 'Published announcements will appear here.',
       );
     }
     return Column(
@@ -316,10 +317,10 @@ class _InstitutionAnnouncementsScreenState
   Widget _buildDraftsList() {
     final unpublished = _drafts.where((a) => a['status']?.toString() == 'DRAFT').toList();
     if (unpublished.isEmpty) {
-      return const AuraEmptyState(
+      return const InsEmptyState(
         icon: Icons.drafts_outlined,
         title: 'No drafts',
-        body: 'Create a new announcement to start drafting.',
+        description: 'Use the action above to start a new announcement draft.',
       );
     }
     return Column(
@@ -409,10 +410,11 @@ class _InstitutionAnnouncementsScreenState
 
     return InstitutionPage(
       title: 'Announcements',
-      subtitle: 'Official institution announcements.',
+      subtitle:
+          'Publish official institutional notices and public statements.',
       trailing: _isAdmin
           ? AuraPrimaryButton(
-              label: 'New',
+              label: 'New announcement',
               onPressed: () => context
                   .push(
                     '/institution/${widget.institutionId}/announcements/new',

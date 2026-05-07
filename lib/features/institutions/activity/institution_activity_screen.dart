@@ -12,6 +12,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_activity_event.dart';
+import '../ui/institution_ds.dart';
 
 /// Human-readable summary for known activity event kinds. Unknown kinds
 /// fall back to the raw `kind` string verbatim.
@@ -171,8 +172,7 @@ class _InstitutionActivityScreenState
       showHeader: false,
       body: firstPage.when(
         loading: () => const AuraLoadingState(message: 'Loading activity…'),
-        error: (e, _) => ListView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
+        error: (e, _) => InsScreen(
           children: [
             AuraErrorState(
               title: 'Could not load activity',
@@ -211,37 +211,36 @@ class _InstitutionActivityScreenState
             child: ListView(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s20,
-                AuraSpace.s16,
+                InsSpacing.screenHPad,
+                InsSpacing.screenVPad,
+                InsSpacing.screenHPad,
                 AuraSpace.s32,
               ),
               children: [
                 Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 920),
+                    constraints: const BoxConstraints(
+                      maxWidth: InsSpacing.contentMaxWidth,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Activity', style: AuraText.headline),
-                        const SizedBox(height: AuraSpace.s6),
-                        Text(
-                          'Recent events for this institution.',
-                          style: AuraText.body
-                              .copyWith(color: AuraSurface.muted),
-                        ),
-                        const SizedBox(height: AuraSpace.s14),
-                        _FilterRow(
-                          current: _filter,
-                          onSelect: _selectFilter,
-                          showAdmin: isAdminLike,
+                        InsModeHeader(
+                          title: 'Activity',
+                          description:
+                              'Track institutional actions, communication, and operational signals.',
+                          tabs: _FilterRow(
+                            current: _filter,
+                            onSelect: _selectFilter,
+                            showAdmin: isAdminLike,
+                          ),
                         ),
                         const SizedBox(height: AuraSpace.s18),
                         if (filtered.isEmpty)
-                          const AuraEmptyState(
+                          const InsEmptyState(
                             icon: Icons.timeline_rounded,
                             title: 'No activity yet',
-                            body:
+                            description:
                                 'When members do things, events will appear here.',
                           )
                         else

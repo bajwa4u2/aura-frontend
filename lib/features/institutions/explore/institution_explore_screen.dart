@@ -10,7 +10,10 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
+import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../domain/communication_type.dart';
+import '../ui/institution_ds.dart';
 
 /// Institution Explore — three distinct surfaces, all served by the unified
 /// feed contract:
@@ -119,19 +122,24 @@ class _InstitutionExploreScreenState
     if (id.isEmpty) {
       return AuraScaffold(
         showHeader: false,
-        body: ListView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
+        body: InsScreen(
           children: [
-            AuraEmptyState(
-              icon: Icons.apartment_outlined,
-              title: 'Institution not selected',
-              body:
-                  'Open the institution dashboard to enter the workspace.',
-              action: AuraSecondaryButton(
+            InsModeHeader(
+              title: 'Communication',
+              description:
+                  'Official posts, member-visible updates, and institutional discussion.',
+              primaryAction: AuraSecondaryButton(
                 label: 'Go to dashboard',
                 icon: Icons.arrow_forward_rounded,
                 onPressed: () => context.go('/institution/dashboard'),
               ),
+            ),
+            const InsModeHeaderGap(),
+            const InsEmptyState(
+              icon: Icons.apartment_outlined,
+              title: 'Institution not selected',
+              description:
+                  'Open the institution dashboard to enter the workspace.',
             ),
           ],
         ),
@@ -151,92 +159,99 @@ class _InstitutionExploreScreenState
 
     return AuraScaffold(
       showHeader: false,
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s16,
-                  AuraSpace.s20,
-                  AuraSpace.s16,
-                  AuraSpace.s8,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              InsSpacing.screenHPad,
+              InsSpacing.screenVPad,
+              InsSpacing.screenHPad,
+              AuraSpace.s8,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: InsSpacing.contentMaxWidth,
                 ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 920),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Text('Explore', style: AuraText.headline),
-                            ),
-                            if (canCompose)
-                              AuraPrimaryButton(
-                                label: 'Compose',
-                                icon: Icons.edit_rounded,
-                                onPressed: () => _onCompose(activeScope),
-                              ),
-                          ],
+                child: InsModeHeader(
+                  title: 'Communication',
+                  description:
+                      'Official posts, member-visible updates, and institutional discussion.',
+                  primaryAction: canCompose
+                      ? AuraPrimaryButton(
+                          label: 'Compose',
+                          icon: Icons.edit_rounded,
+                          onPressed: () => _onCompose(activeScope),
+                        )
+                      : null,
+                  tabs: scopes.isEmpty
+                      ? null
+                      : _ScopeTabs(
+                          controller: _tabController,
+                          scopes: scopes,
+                          onChanged: (_) => setState(() {}),
                         ),
-                        const SizedBox(height: AuraSpace.s6),
-                        Text(
-                          _scopeBlurb(activeScope),
-                          style: AuraText.body
-                              .copyWith(color: AuraSurface.muted),
-                        ),
-                        const SizedBox(height: AuraSpace.s14),
-                        if (scopes.isNotEmpty)
-                          _ScopeTabs(
-                            controller: _tabController,
-                            scopes: scopes,
-                            onChanged: (_) => setState(() {}),
-                          ),
-                      ],
+                ),
+              ),
+            ),
+          ),
+          if (scopes.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: InsSpacing.screenHPad,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: InsSpacing.contentMaxWidth,
+                  ),
+                  child: Text(
+                    _scopeBlurb(activeScope),
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.faint,
+                      height: 1.5,
                     ),
                   ),
                 ),
               ),
-              Expanded(
-                child: scopes.isEmpty
-                    ? const _NoScopeAccess()
-                    : Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 920),
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              for (final scope in scopes)
-                                _UnifiedFeedList(
-                                  institutionId: widget.institutionId,
-                                  scope: scope.wire,
-                                  emptyTitle: _emptyTitle(scope),
-                                  emptyBody: _emptyBody(scope),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-              ),
-            ],
-          ),
-          if (!canCompose)
-            const Positioned(
-              right: AuraSpace.s20,
-              bottom: AuraSpace.s20,
-              child: Tooltip(
-                message: "Members can't post",
-                child: FloatingActionButton.extended(
-                  onPressed: null,
-                  icon: Icon(Icons.lock_outline_rounded),
-                  label: Text('Compose'),
-                  backgroundColor: AuraSurface.subtle,
-                  foregroundColor: AuraSurface.faint,
-                ),
-              ),
             ),
+            const SizedBox(height: AuraSpace.s10),
+          ],
+          Expanded(
+            child: scopes.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: InsSpacing.screenHPad,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: InsSpacing.contentMaxWidth,
+                        ),
+                        child: const _NoScopeAccess(),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: InsSpacing.contentMaxWidth,
+                      ),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          for (final scope in scopes)
+                            _UnifiedFeedList(
+                              institutionId: widget.institutionId,
+                              scope: scope.wire,
+                              emptyTitle: _emptyTitle(scope),
+                              emptyBody: _emptyBody(scope),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
         ],
       ),
     );
@@ -336,10 +351,10 @@ class _NoScopeAccess extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AuraEmptyState(
+    return const InsEmptyState(
       icon: Icons.lock_outline_rounded,
       title: 'No content available',
-      body: 'You do not have access to any post visibility scope yet.',
+      description: 'You do not have access to any post visibility scope yet.',
     );
   }
 }
@@ -402,28 +417,88 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
       ),
       data: (page) {
         if (page.items.isEmpty) {
-          return AuraEmptyState(
-            icon: _emptyIcon(),
-            title: widget.emptyTitle,
-            body: widget.emptyBody,
+          return ListView(
+            padding: const EdgeInsets.all(AuraSpace.s16),
+            children: [
+              InsEmptyState(
+                icon: _emptyIcon(),
+                title: widget.emptyTitle,
+                description: widget.emptyBody,
+              ),
+            ],
           );
         }
+        // Phase 2 — client-side priority sort. Backend ordering is preserved
+        // as the within-priority tiebreaker via stable sort. The first
+        // OFFICIAL ANNOUNCEMENT (if any) is pinned in its own band so the
+        // most institutionally significant statement always reads first.
+        final ordered = _orderByCommunicationPriority(page.items);
+        final pinned = _firstOfficialAnnouncement(ordered);
+        final rest = pinned == null
+            ? ordered
+            : [for (final i in ordered) if (!identical(i, pinned)) i];
+
         return RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(institutionExploreFeedProvider(args));
             await ref.read(institutionExploreFeedProvider(args).future);
           },
-          child: ListView.separated(
+          child: ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
-            itemCount: page.items.length,
-            separatorBuilder: (_, __) =>
+            children: [
+              if (pinned != null) ...[
+                _PinnedAnnouncementBand(item: pinned),
                 const SizedBox(height: AuraSpace.s10),
-            itemBuilder: (context, i) =>
-                UnifiedFeedCard(item: page.items[i]),
+              ],
+              for (var i = 0; i < rest.length; i++) ...[
+                UnifiedFeedCard(item: rest[i]),
+                if (i < rest.length - 1)
+                  const SizedBox(height: AuraSpace.s10),
+              ],
+            ],
           ),
         );
       },
     );
+  }
+
+  /// Stable sort by communication-type priority. Items that aren't
+  /// top-level institutional speech (or carry no marker) keep their
+  /// backend order at the bottom of the list.
+  List<FeedItem> _orderByCommunicationPriority(List<FeedItem> input) {
+    final indexed = <_RankedItem>[];
+    for (var i = 0; i < input.length; i++) {
+      final item = input[i];
+      final rank = _rankFor(item);
+      indexed.add(_RankedItem(item: item, rank: rank, original: i));
+    }
+    indexed.sort((a, b) {
+      if (a.rank != b.rank) return a.rank.compareTo(b.rank);
+      return a.original.compareTo(b.original);
+    });
+    return indexed.map((e) => e.item).toList(growable: false);
+  }
+
+  /// Lower = higher priority. Reserve the bottom band (rank 100) for any
+  /// item that isn't a top-level institution post — replies, personal
+  /// posts, reposts — so they always trail authored statements.
+  int _rankFor(FeedItem item) {
+    if (item.type != FeedItemType.institutionPost) return 100;
+    final hasTitle = (item.title?.trim().isNotEmpty ?? false);
+    if (!hasTitle) return 100;
+    return InsCommunicationDecoded.parse(item.title).type.priorityRank;
+  }
+
+  FeedItem? _firstOfficialAnnouncement(List<FeedItem> ordered) {
+    for (final item in ordered) {
+      if (item.type != FeedItemType.institutionPost) continue;
+      final hasTitle = (item.title?.trim().isNotEmpty ?? false);
+      if (!hasTitle) continue;
+      final decoded = InsCommunicationDecoded.parse(item.title);
+      if (!decoded.hadMarker) continue;
+      if (decoded.type == InsCommunicationType.announcement) return item;
+    }
+    return null;
   }
 
   IconData _emptyIcon() {
@@ -435,5 +510,108 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
       default:
         return Icons.public_rounded;
     }
+  }
+}
+
+class _RankedItem {
+  const _RankedItem({
+    required this.item,
+    required this.rank,
+    required this.original,
+  });
+
+  final FeedItem item;
+  final int rank;
+  final int original;
+}
+
+/// Pinned-announcement band. Phase 3 — elevated to feel like an
+/// institutional alert: heavier eyebrow ("OFFICIAL ANNOUNCEMENT"), an
+/// "Important update from [Name]" sub-label, and breathing-room top
+/// padding so the band reads as load-bearing rather than just another
+/// card.
+class _PinnedAnnouncementBand extends ConsumerWidget {
+  const _PinnedAnnouncementBand({required this.item});
+
+  final FeedItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Source for the "Important update from …" line. The active workspace
+    // identity is the most reliable source for the host institution name;
+    // fall back to the feed item's author display name when identity is
+    // unavailable (e.g. a non-member viewing a public room).
+    final identity = ref.watch(institutionIdentityProvider);
+    final hostName = (identity?.name.trim().isNotEmpty ?? false)
+        ? identity!.name.trim()
+        : item.author.name.trim();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AuraSpace.s10,
+          AuraSpace.s12,
+          AuraSpace.s10,
+          AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.accentSoft.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(AuraRadius.lg),
+          border: Border.all(
+            color: AuraSurface.accent.withValues(alpha: 0.45),
+            width: 1.2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AuraSpace.s4,
+                right: AuraSpace.s4,
+                bottom: AuraSpace.s8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.campaign_rounded,
+                        size: 13,
+                        color: AuraSurface.accentText,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'OFFICIAL ANNOUNCEMENT',
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.accentText,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.9,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (hostName.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Important update from $hostName',
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.accentText,
+                        fontWeight: FontWeight.w700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            UnifiedFeedCard(item: item),
+          ],
+        ),
+      ),
+    );
   }
 }

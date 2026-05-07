@@ -8,6 +8,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../institutions/ui/institution_ds.dart';
 import '../data/monetization_repository.dart';
 import '../domain/monetization_models.dart';
 import '../providers/monetization_providers.dart';
@@ -40,26 +41,56 @@ class InstitutionBillingScreen extends ConsumerWidget {
         ref.watch(institutionEntitlementProvider(institutionId));
 
     return AuraScaffold(
-      title: 'Billing',
+      showHeader: false,
       body: configAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorState(message: e.toString()),
+        error: (e, _) => InsScreen(
+          children: [
+            const InsModeHeader(
+              title: 'Plan & Billing',
+              description:
+                  'Manage your institution’s plan, credits, and feature usage.',
+            ),
+            const InsModeHeaderGap(),
+            _ErrorState(message: e.toString()),
+          ],
+        ),
         data: (config) {
           if (config.mode == MonetizationMode.disabled) {
-            return const _DisabledState();
+            return const InsScreen(
+              children: [
+                InsModeHeader(
+                  title: 'Plan & Billing',
+                  description:
+                      'Manage your institution’s plan, credits, and feature usage.',
+                ),
+                InsModeHeaderGap(),
+                _DisabledState(),
+              ],
+            );
           }
 
           return entitlementsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => _ErrorState(message: e.toString()),
-            data: (ent) => ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s12,
-                AuraSpace.s16,
-                AuraSpace.s24,
-              ),
+            error: (e, _) => InsScreen(
               children: [
+                const InsModeHeader(
+                  title: 'Plan & Billing',
+                  description:
+                      'Manage your institution’s plan, credits, and feature usage.',
+                ),
+                const InsModeHeaderGap(),
+                _ErrorState(message: e.toString()),
+              ],
+            ),
+            data: (ent) => InsScreen(
+              children: [
+                const InsModeHeader(
+                  title: 'Plan & Billing',
+                  description:
+                      'Manage your institution’s plan, credits, and feature usage.',
+                ),
+                const InsModeHeaderGap(),
                 _CurrentPlanCard(entitlements: ent),
                 const SizedBox(height: AuraSpace.s14),
                 _CreditBalanceCard(entitlements: ent),

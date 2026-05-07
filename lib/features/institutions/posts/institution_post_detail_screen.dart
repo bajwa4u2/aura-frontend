@@ -14,7 +14,9 @@ import '../../feed/domain/feed_item.dart';
 import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../domain/communication_type.dart';
 import '../presentation/institution_page.dart';
+import '../ui/institution_ds.dart';
 
 /// Detail surface for a single InstitutionPost.
 ///
@@ -57,10 +59,23 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
       return base;
     }
 
+    Future<void> onReply() async {
+      final result = await context.push<dynamic>(composeReplyTarget());
+      if (result == true) {
+        ref.invalidate(feedItemRepliesProvider(args));
+        ref.invalidate(feedItemDetailProvider(args));
+      }
+    }
+
     return InstitutionPage(
       title: 'Post',
-      subtitle: null,
+      subtitle: 'Discussion thread for this institutional post.',
       showBack: true,
+      trailing: AuraPrimaryButton(
+        label: 'Reply',
+        icon: Icons.reply_rounded,
+        onPressed: onReply,
+      ),
       body: detailAsync.when(
         loading: () => const AuraLoadingState(message: 'Loading post…'),
         error: (e, _) => AuraErrorState(
@@ -74,20 +89,37 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
         ),
         data: (item) {
           if (item == null) {
-            return AuraEmptyState(
+            return const InsEmptyState(
               icon: Icons.help_outline_rounded,
               title: 'Post not found',
-              body: 'It may have been removed or is no longer visible to you.',
-              action: AuraSecondaryButton(
-                label: 'Back',
-                icon: Icons.arrow_back_rounded,
-                onPressed: () => context.pop(),
-              ),
+              description:
+                  'It may have been removed or is no longer visible to you.',
             );
           }
+          // Phase 2 — detail-view reinforcement. When the parent post is
+          // an Official Announcement we render a small reinforcement
+          // strip above the card so the visit has unambiguous context
+          // before the reader sees the title.
+          final decoded = InsCommunicationDecoded.parse(item.title);
+          final isAnnouncement = decoded.hadMarker &&
+              decoded.type == InsCommunicationType.announcement;
+
+          // Resolve a publisher name for the reinforcement strip. The
+          // active workspace identity is preferred (most accurate when
+          // viewing your own institution); fall back to the post's
+          // author display name (for cross-institution viewers).
+          final identity = ref.read(institutionIdentityProvider);
+          final publisher = (identity?.name.trim().isNotEmpty ?? false)
+              ? identity!.name.trim()
+              : item.author.name.trim();
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isAnnouncement) ...[
+                _OfficialAnnouncementStrip(publisher: publisher),
+                const SizedBox(height: AuraSpace.s10),
+              ],
               // Detail screen renders the full replies list below — turn
               // off the inline preview to avoid duplicating the first 1–2
               // replies in two places on the same screen.
@@ -117,28 +149,10 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AuraSpace.s8),
               ],
-              Row(
-                children: [
-                  Text(
-                    'Replies',
-                    style: AuraText.subtitle
-                        .copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const Spacer(),
-                  AuraPrimaryButton(
-                    label: 'Reply',
-                    icon: Icons.reply_rounded,
-                    onPressed: () async {
-                      final result = await context.push<dynamic>(
-                        composeReplyTarget(),
-                      );
-                      if (result == true) {
-                        ref.invalidate(feedItemRepliesProvider(args));
-                        ref.invalidate(feedItemDetailProvider(args));
-                      }
-                    },
-                  ),
-                ],
+              Text(
+                'Replies',
+                style: AuraText.subtitle
+                    .copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: AuraSpace.s10),
               repliesAsync.when(
@@ -156,15 +170,11 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                 ),
                 data: (page) {
                   if (page.items.isEmpty) {
-                    return const Padding(
-                      padding:
-                          EdgeInsets.symmetric(vertical: AuraSpace.s20),
-                      child: AuraEmptyState(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'No replies yet',
-                        body:
-                            'Be the first to reply. Replies inherit this post’s visibility.',
-                      ),
+                    return const InsEmptyState(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: 'No replies yet',
+                      description:
+                          'Be the first to reply. Replies inherit this post’s visibility.',
                     );
                   }
                   return Column(
@@ -242,28 +252,48 @@ class _ReplyCard extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s10),
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        reply.author.displayName.isNotEmpty
-                            ? reply.author.displayName
-                            : (reply.author.handle.isNotEmpty
-                                ? '@${reply.author.handle}'
-                                : 'Unknown'),
-                        style: AuraText.small
-                            .copyWith(fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            reply.author.displayName.isNotEmpty
+                                ? reply.author.displayName
+                                : (reply.author.handle.isNotEmpty
+                                    ? '@${reply.author.handle}'
+                                    : 'Unknown'),
+                            style: AuraText.small
+                                .copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (reply.author.context != null &&
+                            reply.author.context!.isMeaningful) ...[
+                          const SizedBox(width: AuraSpace.s6),
+                          Flexible(
+                            child: AuraIdentityBadge(
+                              context: reply.author.context!,
+                              mode: AuraIdentityBadgeMode.replyPreview,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    if (reply.author.context != null &&
-                        reply.author.context!.isMeaningful) ...[
-                      const SizedBox(width: AuraSpace.s6),
-                      Flexible(
-                        child: AuraIdentityBadge(
-                          context: reply.author.context!,
-                          mode: AuraIdentityBadgeMode.replyPreview,
+                    // Phase 3 — when an institution voice replies, mark
+                    // the reply as an "Official response" so the reader
+                    // can immediately distinguish it from member chatter.
+                    if (_isOfficialInstitutionReply(reply)) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Official response',
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.accentText,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -285,6 +315,85 @@ class _ReplyCard extends StatelessWidget {
             target: InstitutionPostReactionTarget(
               institutionId: institutionId,
               postId: reply.id,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// True when the reply author's identity context is an official
+/// institution voice. Used to mark institutional replies as "Official
+/// response" so they read distinctly from member chatter.
+bool _isOfficialInstitutionReply(FeedReply reply) {
+  final ctx = reply.author.context;
+  if (ctx == null) return false;
+  return ctx.type == FeedIdentityContextType.officialInstitution;
+}
+
+/// Reinforcement band rendered above the parent card on the post detail
+/// screen when the post is decoded as an Official Announcement. Calm,
+/// monochrome — its only job is to make the institutional weight of the
+/// statement unmistakable before the reader scans the title.
+///
+/// Phase 3: when a publisher name is known, an additional sub-line
+/// "Published by [Name]" sits beneath the eyebrow so the source of the
+/// statement is part of the reinforcement, not just a separate badge.
+class _OfficialAnnouncementStrip extends StatelessWidget {
+  const _OfficialAnnouncementStrip({this.publisher});
+
+  /// Display name of the publishing institution. When empty/null, the
+  /// strip renders only the OFFICIAL ANNOUNCEMENT eyebrow.
+  final String? publisher;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = publisher?.trim() ?? '';
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.accentSoft,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(
+          color: AuraSurface.accent.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.campaign_rounded,
+            size: 16,
+            color: AuraSurface.accentText,
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Official Announcement',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                if (p.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Published by $p',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.accentText.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

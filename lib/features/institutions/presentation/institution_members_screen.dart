@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -8,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 import 'institution_page.dart';
 
 class InstitutionMembersScreen extends ConsumerStatefulWidget {
@@ -421,10 +423,11 @@ class _InstitutionMembersScreenState
         ),
         const SizedBox(height: AuraSpace.s12),
         if (_members.isEmpty)
-          const AuraEmptyState(
+          const InsEmptyState(
             icon: Icons.people_outline_rounded,
             title: 'No members yet',
-            body: 'Members who join through invite codes will appear here.',
+            description:
+                'Use the action above to invite people. They will appear here once they accept.',
           )
         else
           ..._members.map(_buildMemberTile),
@@ -436,7 +439,15 @@ class _InstitutionMembersScreenState
   Widget build(BuildContext context) {
     return InstitutionPage(
       title: 'Members',
-      subtitle: 'Active members and their roles.',
+      subtitle: 'Manage people, roles, join requests, and institutional access.',
+      trailing: _isAdmin
+          ? AuraPrimaryButton(
+              label: 'Invite',
+              icon: Icons.person_add_alt_1_rounded,
+              onPressed: () =>
+                  context.push('/institution/${widget.institutionId}/invites'),
+            )
+          : null,
       body: _buildBody(),
     );
   }

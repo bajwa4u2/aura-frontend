@@ -10,6 +10,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 import 'institution_page.dart';
 
 class InstitutionSpacesScreen extends ConsumerStatefulWidget {
@@ -354,10 +355,11 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
         ],
         if (_showCreate && _isAdmin) _buildCreateForm(),
         if (_spaces.isEmpty && !_showCreate)
-          const AuraEmptyState(
+          const InsEmptyState(
             icon: Icons.forum_outlined,
             title: 'No spaces yet',
-            body: 'Create the first space for your institution members.',
+            description:
+                'Use the action above to create the first space for your members.',
           )
         else
           ..._spaces.map(_buildSpaceTile),
@@ -369,14 +371,15 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   Widget build(BuildContext context) {
     return InstitutionPage(
       title: 'Spaces',
-      subtitle: 'Institution spaces for member collaboration.',
-      trailing: _isAdmin && !_showCreate
+      subtitle:
+          'Coordinate internal groups, teams, and working rooms.',
+      trailing: _isAdmin
           ? AuraPrimaryButton(
-              label: 'New space',
+              label: _showCreate ? 'Hide form' : 'New Space',
               onPressed: () => setState(() {
-                _showCreate = true;
+                _showCreate = !_showCreate;
               }),
-              icon: Icons.add_rounded,
+              icon: _showCreate ? Icons.close_rounded : Icons.add_rounded,
             )
           : null,
       body: _buildBody(),

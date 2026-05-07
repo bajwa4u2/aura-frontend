@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 import 'institution_page.dart';
 
 class InstitutionInvitesScreen extends ConsumerStatefulWidget {
@@ -37,6 +38,7 @@ class _InstitutionInvitesScreenState
   String? _copiedCode;
   String? _revoking;
   String? _revokeError;
+  bool _showCreate = false;
 
   // OWNER is shown at the top so owner-tier invites are surfaced first;
   // backend enforces who may actually issue an OWNER invite.
@@ -95,6 +97,7 @@ class _InstitutionInvitesScreenState
         _selectedRole = 'MEMBER';
         _expiresInDays = 7;
         _creating = false;
+        _showCreate = false;
       });
       await _load();
     } catch (e) {
@@ -193,9 +196,23 @@ class _InstitutionInvitesScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Create invite',
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Create invite',
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _showCreate = false),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: AuraSurface.muted,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AuraSpace.s14),
           TextFormField(
@@ -446,9 +463,11 @@ class _InstitutionInvitesScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildCreateSection(),
+        if (_showCreate) ...[
+          _buildCreateSection(),
+          const SizedBox(height: AuraSpace.s16),
+        ],
         if (_revokeError != null) ...[
-          const SizedBox(height: AuraSpace.s12),
           Container(
             padding: const EdgeInsets.all(AuraSpace.s12),
             decoration: BoxDecoration(
@@ -473,8 +492,8 @@ class _InstitutionInvitesScreenState
               ],
             ),
           ),
+          const SizedBox(height: AuraSpace.s12),
         ],
-        const SizedBox(height: AuraSpace.s24),
         Padding(
           padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: AuraSpace.s12),
           child: Text(
@@ -486,10 +505,11 @@ class _InstitutionInvitesScreenState
           ),
         ),
         if (_invites.isEmpty)
-          const AuraEmptyState(
+          const InsEmptyState(
             icon: Icons.group_add_outlined,
             title: 'No invites yet',
-            body: 'Create an invite above to give colleagues access.',
+            description:
+                'Use the action above to create an invite code for colleagues.',
           )
         else
           ..._invites.map(_buildInviteTile),
@@ -500,8 +520,13 @@ class _InstitutionInvitesScreenState
   @override
   Widget build(BuildContext context) {
     return InstitutionPage(
-      title: 'Invites',
+      title: 'Members & Access',
       subtitle: 'Create and manage invite codes for your institution.',
+      trailing: AuraPrimaryButton(
+        label: _showCreate ? 'Hide form' : 'Invite',
+        icon: _showCreate ? Icons.close_rounded : Icons.person_add_alt_1_rounded,
+        onPressed: () => setState(() => _showCreate = !_showCreate),
+      ),
       body: _buildBody(),
     );
   }

@@ -528,32 +528,17 @@ class _StudioBody extends StatelessWidget {
         Form(
           key: state._formKey,
           child: InsScreen(
-            maxWidth: 820,
             children: [
-              // ── Title strip ───────────────────────────────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Identity studio', style: AuraText.headline),
-                        SizedBox(height: 4),
-                        Text(
-                          'A guided editor for everything the public sees about this institution.',
-                          style: AuraText.muted,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  AuraSecondaryButton(
-                    label: 'Cancel',
-                    icon: Icons.close_rounded,
-                    onPressed: () => context.go('/institution/profile'),
-                  ),
-                ],
+              // ── Mode header ───────────────────────────────────────────
+              InsModeHeader(
+                title: 'Identity studio',
+                description:
+                    'A guided editor for everything the public sees about this institution.',
+                primaryAction: AuraSecondaryButton(
+                  label: 'Cancel',
+                  icon: Icons.close_rounded,
+                  onPressed: () => context.go('/institution/profile'),
+                ),
               ),
               const SizedBox(height: AuraSpace.s20),
 
@@ -1124,7 +1109,9 @@ class _SaveBar extends StatelessWidget {
           ),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 820),
+              constraints: const BoxConstraints(
+                maxWidth: InsSpacing.contentMaxWidth,
+              ),
               child: Row(
                 children: [
                   Expanded(

@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
+import '../../institutions/domain/communication_type.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
@@ -55,15 +56,40 @@ class UnifiedFeedCard extends ConsumerWidget {
       currentPath: currentPath,
     );
 
+    // Phase 2 — per-type visual weight. The decoded marker drives subtle
+    // differences (border, title weight, secondary indicator) so types
+    // FEEL different without leaving the design system.
+    final officialPost = _isOfficialInstitutionPost(item);
+    final InsCommunicationDecoded? decodedTitle =
+        officialPost ? InsCommunicationDecoded.parse(item.title) : null;
+    final isAnnouncement = decodedTitle?.hadMarker == true &&
+        decodedTitle!.type == InsCommunicationType.announcement;
+    final isAdvisory = decodedTitle?.hadMarker == true &&
+        decodedTitle!.type == InsCommunicationType.advisory;
+    final isUpdate = decodedTitle?.hadMarker == true &&
+        decodedTitle!.type == InsCommunicationType.update;
+
     return InkWell(
       onTap: adaptedTarget.isEmpty ? null : () => context.push(adaptedTarget),
       borderRadius: BorderRadius.circular(AuraRadius.card),
       child: Container(
-        padding: const EdgeInsets.all(AuraSpace.s14),
+        padding: EdgeInsets.fromLTRB(
+          AuraSpace.s14,
+          // Announcements get a slightly thicker top edge accent. Inner
+          // padding adjusts so the visual weight feels load-bearing.
+          isAnnouncement ? AuraSpace.s14 - 1 : AuraSpace.s14,
+          AuraSpace.s14,
+          AuraSpace.s14,
+        ),
         decoration: BoxDecoration(
           color: AuraSurface.card,
           borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(
+            color: isAnnouncement
+                ? AuraSurface.accent.withValues(alpha: 0.45)
+                : AuraSurface.divider,
+            width: isAnnouncement ? 1.5 : 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,11 +99,26 @@ class UnifiedFeedCard extends ConsumerWidget {
               const SizedBox(height: AuraSpace.s8),
             ],
             // Visual distinction: top-level institution posts are
-            // institutional speech (announcements), not chat. A small
-            // OFFICIAL pill above the author row makes the difference
-            // legible without redesigning the card.
-            if (_isOfficialInstitutionPost(item)) ...[
-              const _OfficialPill(),
+            // institutional speech (announcements), not chat. The OFFICIAL
+            // eyebrow optionally carries a TYPE token (Announcement / Update
+            // / Notice / Advisory) decoded from the stored title marker.
+            // Phase 3 — adds an inline NEW chip when the post was
+            // published within the last 24 hours, so a freshly-issued
+            // announcement reads as an attention item without animation.
+            if (officialPost) ...[
+              Row(
+                children: [
+                  _OfficialPill(
+                    type: decodedTitle?.hadMarker == true
+                        ? decodedTitle!.type
+                        : null,
+                  ),
+                  if (_isRecentlyPublished(item)) ...[
+                    const SizedBox(width: 6),
+                    const _NewChip(),
+                  ],
+                ],
+              ),
               const SizedBox(height: AuraSpace.s6),
             ],
             _AuthorRow(
@@ -85,6 +126,14 @@ class UnifiedFeedCard extends ConsumerWidget {
               publishedAt: item.publishedAt ?? item.createdAt,
               profileRoute: adaptedProfile,
             ),
+            // Phase 3 — explicit "Verified institution" reinforcement
+            // for official posts when the existing identity badge is
+            // not present (i.e. backend didn't ship a context). Avoids
+            // duplication when the badge already conveys the signal.
+            if (officialPost && !_authorBadgeShown(item)) ...[
+              const SizedBox(height: 4),
+              const _VerifiedInstitutionLine(),
+            ],
             if (_shouldRenderSecondary(item)) ...[
               const SizedBox(height: AuraSpace.s6),
               _SecondaryAttributionLine(
@@ -96,18 +145,48 @@ class UnifiedFeedCard extends ConsumerWidget {
               const SizedBox(height: 2),
               _VoiceLabelLine(voice: item.voice!),
             ],
+            if (isAdvisory) ...[
+              const SizedBox(height: AuraSpace.s8),
+              const _AdvisoryIndicator(),
+            ],
             if (item.title != null && item.title!.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
               Text(
-                item.title!,
+                // Strip the [OFFICIAL:TYPE] marker before rendering. Legacy
+                // posts (no marker) round-trip the title verbatim.
+                InsCommunicationDecoded.parse(item.title).cleanTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AuraText.body.copyWith(
                   color: AuraSurface.ink,
-                  fontWeight: FontWeight.w800,
+                  // Per-type title weight: announcements get a heavier,
+                  // larger headline; advisories stay strong; updates and
+                  // unmarked posts use the regular w800 baseline; updates
+                  // explicitly relax to w700 so they read as routine.
+                  fontWeight: isAnnouncement
+                      ? FontWeight.w900
+                      : isUpdate
+                          ? FontWeight.w700
+                          : FontWeight.w800,
+                  fontSize: isAnnouncement ? 17 : null,
                   height: 1.35,
                 ),
               ),
+              // Phase 3 — under-title intent text. Reinforces what the
+              // reader is meant to do with this statement without being
+              // prescriptive. Update intentionally has no extra line so
+              // routine posts stay calm.
+              if (decodedTitle?.hadMarker == true &&
+                  _intentLabelFor(decodedTitle!.type) != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _intentLabelFor(decodedTitle.type)!,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ],
             if (item.body.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s8),
@@ -197,33 +276,58 @@ bool _isOfficialInstitutionPost(FeedItem item) {
   return hasTitle;
 }
 
-/// Small "OFFICIAL" pill rendered above the author row of top-level
-/// institution posts. Calm, monochrome, never animated — its only job is
-/// to make institutional speech visually distinct from a chat message in
-/// the same feed.
+/// Eyebrow rendered above the author row of top-level institution posts.
+///
+/// Layout: `OFFICIAL` (primary) followed by an optional `• TYPE` token
+/// (secondary, lighter) when the post carries a communication-type marker.
+/// Calm, monochrome, never animated — its only job is to make institutional
+/// speech visually distinct from a chat message in the same feed.
 class _OfficialPill extends StatelessWidget {
-  const _OfficialPill();
+  const _OfficialPill({this.type});
+
+  /// When non-null, the type label renders as a secondary token after the
+  /// OFFICIAL eyebrow. When null (legacy posts without the marker), only
+  /// the OFFICIAL pill is shown.
+  final InsCommunicationType? type;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AuraSurface.accentSoft,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: AuraSurface.accent.withValues(alpha: 0.35),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AuraSurface.accentSoft,
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Text(
+            'OFFICIAL',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.accentText,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              fontSize: 10,
+            ),
+          ),
         ),
-      ),
-      child: Text(
-        'OFFICIAL',
-        style: AuraText.micro.copyWith(
-          color: AuraSurface.accentText,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-          fontSize: 10,
-        ),
-      ),
+        if (type != null) ...[
+          const SizedBox(width: 6),
+          Text(
+            '• ${type!.label.toUpperCase()}',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -1006,6 +1110,147 @@ class _SignalLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// True when the existing `AuraIdentityBadge` will render in the author
+/// row — the same gate `_AuthorRow` uses. We mirror that gate here so
+/// the explicit "Verified institution" reinforcement line we add for
+/// official posts doesn't duplicate the badge when both fire.
+bool _authorBadgeShown(FeedItem item) {
+  final ctx = item.author.context;
+  return ctx != null && ctx.isMeaningful;
+}
+
+/// Calm reinforcement line: small icon + "Verified institution" label.
+/// Rendered for official institution posts when no `AuraIdentityBadge`
+/// is present so trust authority is visible on every official card.
+class _VerifiedInstitutionLine extends StatelessWidget {
+  const _VerifiedInstitutionLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.verified_rounded,
+          size: 12,
+          color: AuraSurface.accentText,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'Verified institution',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.accentText,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// True when the item was published (or created) in the last 24 hours.
+/// Drives the NEW chip on official posts so very-recent statements get
+/// a calm attention marker. Returns false when no timestamp is present
+/// — never assume freshness in the absence of data.
+bool _isRecentlyPublished(FeedItem item) {
+  final ts = item.publishedAt ?? item.createdAt;
+  if (ts == null) return false;
+  return DateTime.now().difference(ts) <= const Duration(hours: 24);
+}
+
+/// Under-title intent label per communication type. Keep the mapping
+/// minimal — Update returns null so routine posts don't carry extra
+/// copy. Loose synonyms in the spec ("Public notice", "Action may be
+/// required") are deliberately *not* used because they vary by context;
+/// a single calibrated label per type reads more institutional.
+String? _intentLabelFor(InsCommunicationType type) {
+  switch (type) {
+    case InsCommunicationType.announcement:
+      return 'Official notice';
+    case InsCommunicationType.advisory:
+      return 'Guidance';
+    case InsCommunicationType.notice:
+      return 'Information';
+    case InsCommunicationType.update:
+      return null;
+  }
+}
+
+/// Small "NEW" chip rendered next to the OFFICIAL eyebrow when the post
+/// was published in the last 24 hours. Static, calm — no animation.
+class _NewChip extends StatelessWidget {
+  const _NewChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AuraSurface.goodBg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(
+          color: AuraSurface.goodInk.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        'NEW',
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.goodInk,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.7,
+          fontSize: 9,
+        ),
+      ),
+    );
+  }
+}
+
+/// Small inline indicator rendered inside advisory cards. Calmer than a
+/// full warning banner — a single icon + label that sits above the title
+/// to communicate "pay attention" without alarm.
+class _AdvisoryIndicator extends StatelessWidget {
+  const _AdvisoryIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.warnBg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(
+          color: AuraSurface.warnInk.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.report_problem_rounded,
+            size: 12,
+            color: AuraSurface.warnInk,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Advisory',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.warnInk,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

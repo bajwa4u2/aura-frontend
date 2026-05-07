@@ -22,7 +22,9 @@ import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../data/institution_draft_store.dart';
 import '../data/institutions_repository.dart';
+import '../domain/communication_type.dart';
 import '../domain/institution_post.dart';
+import '../ui/institution_ds.dart';
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
@@ -72,6 +74,11 @@ class _InstitutionPostComposerScreenState
   InstitutionPostDistribution _distribution =
       InstitutionPostDistribution.institutionOnly;
 
+  /// Frontend-only institutional type. Encoded into the stored `title` via
+  /// `[OFFICIAL:TYPE]` marker because the backend post DTO does not carry a
+  /// metadata field. Default is "Update".
+  InsCommunicationType _communicationType = InsCommunicationType.update;
+
   // Single-attachment state. The backend `InstitutionPost` schema accepts one
   // `mediaUrl`; the composer surfaces a real upload widget but persists only
   // the URL of the first uploaded asset. Multi-asset support is a separate
@@ -120,7 +127,14 @@ class _InstitutionPostComposerScreenState
     super.initState();
     final initial = widget.initial;
     if (initial != null) {
-      _titleCtrl.text = initial.title;
+      // Edit mode: peel the [OFFICIAL:TYPE] marker off the stored title so
+      // the user sees + edits the clean title, while the type chip group
+      // reflects the existing post's type. Legacy posts (no marker) decode
+      // to type=Update and the original title is preserved verbatim.
+      final decoded = InsCommunicationDecoded.parse(initial.title);
+      _titleCtrl.text =
+          decoded.hadMarker ? decoded.cleanTitle : initial.title;
+      _communicationType = decoded.type;
       _bodyCtrl.text = initial.body;
       _mediaUrl = initial.mediaUrl;
       _visibility = initial.visibility;
@@ -405,11 +419,47 @@ class _InstitutionPostComposerScreenState
     _suppressDraftSave = false;
   }
 
-  String? get _localValidationError {
-    final title = _titleCtrl.text.trim();
+  /// Title used at submission time. If the user left the title field
+  /// blank, derive a short title from the first non-empty line of the
+  /// body (capped at 80 chars) so the institutional statement always
+  /// has a headline. Returns an empty string only when both fields are
+  /// blank — in which case [_localValidationError] still rejects the
+  /// submit because body is required.
+  String _resolvedCleanTitle() {
+    final t = _titleCtrl.text.trim();
+    if (t.isNotEmpty) return t;
     final body = _bodyCtrl.text.trim();
-    if (title.isEmpty) return 'Title is required.';
-    if (title.length > InstitutionPost.maxTitleChars) {
+    if (body.isEmpty) return '';
+    final firstLine = body.split('\n').firstWhere(
+          (l) => l.trim().isNotEmpty,
+          orElse: () => '',
+        ).trim();
+    if (firstLine.isEmpty) return '';
+    return firstLine.length > 80 ? firstLine.substring(0, 80).trim() : firstLine;
+  }
+
+  String _encodedTitle() {
+    return InsCommunicationDecoded.encode(
+      type: _communicationType,
+      cleanTitle: _resolvedCleanTitle(),
+    );
+  }
+
+  String? get _localValidationError {
+    final body = _bodyCtrl.text.trim();
+    final cleanTitle = _resolvedCleanTitle();
+    // Title may be derived from body, so we no longer hard-require it
+    // at the field level. We still ensure the *resolved* clean title is
+    // non-empty (which fails only when both title and body are blank —
+    // body is the next check anyway).
+    if (cleanTitle.isEmpty) return 'Title or body is required.';
+    final encoded = InsCommunicationDecoded.encode(
+      type: _communicationType,
+      cleanTitle: cleanTitle,
+    );
+    if (encoded.length > InstitutionPost.maxTitleChars) {
+      // Marker + clean title exceeds the title cap. Surface as a title
+      // length error so the user knows to shorten the headline.
       return 'Title is too long (max ${InstitutionPost.maxTitleChars} chars).';
     }
     if (body.isEmpty) return 'Body is required.';
@@ -428,7 +478,10 @@ class _InstitutionPostComposerScreenState
   /// dedicated endpoints).
   Map<String, dynamic> _payload() {
     return <String, dynamic>{
-      'title': _titleCtrl.text.trim(),
+      // Title is encoded with `[OFFICIAL:TYPE] ` prefix so the institutional
+      // type round-trips without a backend schema change. The feed card
+      // and post detail strip the marker on render.
+      'title': _encodedTitle(),
       'body': _bodyCtrl.text.trim(),
       if (_mediaUrl != null && _mediaUrl!.isNotEmpty) 'mediaUrl': _mediaUrl,
       'visibility': _visibility.wire,
@@ -829,8 +882,7 @@ class _InstitutionPostComposerScreenState
     if (!canCreate) {
       return AuraScaffold(
         showHeader: false,
-        body: ListView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
+        body: InsScreen(
           children: [
             AuraErrorState(
               title: 'Not allowed',
@@ -849,51 +901,78 @@ class _InstitutionPostComposerScreenState
       showHeader: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
+          InsSpacing.screenHPad,
+          InsSpacing.screenVPad,
+          InsSpacing.screenHPad,
           AuraSpace.s32,
         ),
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
+              constraints: const BoxConstraints(
+                maxWidth: InsSpacing.contentMaxWidth,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       GestureDetector(
                         onTap: () => context.pop(),
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          size: 20,
-                          color: AuraSurface.muted,
+                        child: const Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: AuraSurface.muted,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AuraSpace.s12),
-                      Text(
-                        widget.isEditing ? 'Edit post' : 'New post',
-                        style: AuraText.headline,
+                      Expanded(
+                        child: InsModeHeader(
+                          title: widget.isEditing ? 'Edit post' : 'New post',
+                          description:
+                              'Posts are scoped by visibility. Distribution controls whether public posts may surface in the global feed.',
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AuraSpace.s10),
+                  const SizedBox(height: AuraSpace.s14),
                   _ActorBanner(identity: identity),
-                  const SizedBox(height: AuraSpace.s16),
-                  Text(
-                    'Posts are scoped by visibility. Distribution controls '
-                    'whether public posts may surface in the global feed.',
-                    style: AuraText.body
-                        .copyWith(color: AuraSurface.muted, height: 1.5),
+                  const SizedBox(height: AuraSpace.s8),
+                  // Phase 3 — composer authority reminder. A single
+                  // muted line below the banner reminds the host that
+                  // anything they publish here is institutional speech.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s4,
+                    ),
+                    child: Text(
+                      'You are publishing as an official institutional voice.',
+                      style: AuraText.small.copyWith(
+                        color: AuraSurface.faint,
+                        fontWeight: FontWeight.w600,
+                        height: 1.45,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: AuraSpace.s20),
+                  const SizedBox(height: AuraSpace.s16),
                   if (_error != null) ...[
                     _ErrorBanner(message: _error!),
                     const SizedBox(height: AuraSpace.s14),
                   ],
                   _LabeledField(
-                    label: 'Title',
+                    label: 'Communication type',
+                    child: _CommunicationTypePicker(
+                      selected: _communicationType,
+                      onChanged: (t) =>
+                          setState(() => _communicationType = t),
+                    ),
+                  ),
+                  _LabeledField(
+                    label: 'Title (optional — derived from body if empty)',
                     counter: '${_titleCtrl.text.length} / '
                         '${InstitutionPost.maxTitleChars}',
                     counterColor: _counterColor(
@@ -903,7 +982,7 @@ class _InstitutionPostComposerScreenState
                     child: TextField(
                       controller: _titleCtrl,
                       maxLength: InstitutionPost.maxTitleChars,
-                      decoration: _decoration('Post title…'),
+                      decoration: _decoration('Headline for this statement…'),
                       style: AuraText.body,
                       buildCounter: _zeroCounter,
                     ),
@@ -1089,12 +1168,36 @@ class _ActorBanner extends StatelessWidget {
                     letterSpacing: 0.6,
                   ),
                 ),
-                Text(
-                  name.isNotEmpty ? name : 'Institution',
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AuraSurface.ink,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name.isNotEmpty ? name : 'Institution',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AuraText.body.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AuraSurface.ink,
+                        ),
+                      ),
+                    ),
+                    if (identity?.isVerified == true) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: _accentText,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(Verified)',
+                        style: AuraText.small.copyWith(
+                          color: _accentText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -1643,6 +1746,74 @@ class _ErrorBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CommunicationTypePicker extends StatelessWidget {
+  const _CommunicationTypePicker({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final InsCommunicationType selected;
+  final ValueChanged<InsCommunicationType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        for (final t in InsCommunicationType.values)
+          _TypeChip(
+            label: t.label,
+            selected: selected == t,
+            onTap: () => onChanged(t),
+          ),
+      ],
+    );
+  }
+}
+
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.4)
+                : AuraSurface.divider,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
 import '../../../core/ui/aura_card.dart';
@@ -16,6 +17,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../correspondence/presentation/thread_screen.dart';
+import '../../institutions/live_rooms/institution_session_meta.dart';
 import '../../search/search_repository.dart';
 import '../application/caller_ringback_provider.dart';
 import '../application/realtime_controller.dart';
@@ -87,11 +89,23 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
     required this.sessionId,
     this.action,
     this.returnTo,
+    this.insSessionType,
+    this.insSessionAudience,
+    this.insSessionTitle,
   });
 
   final String sessionId;
   final String? action;
   final String? returnTo;
+
+  /// Optional institution-session metadata passed via query params from
+  /// the live rooms list when the host starts a session. Wire tokens —
+  /// see `InsSessionType` / `InsSessionAudience`. The screen falls back
+  /// to the SharedPreferences cache when these are absent (e.g. on
+  /// browser refresh).
+  final String? insSessionType;
+  final String? insSessionAudience;
+  final String? insSessionTitle;
 
   @override
   ConsumerState<RealtimeRoomScreen> createState() => _RealtimeRoomScreenState();
@@ -102,6 +116,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _isEnding = false;
   bool _wasJoined = false;
   bool _hasNavigatedAway = false;
+
+  /// Resolved institution session metadata. Populated either from the
+  /// constructor (query params) on entry, or from the SharedPreferences
+  /// cache (for browser refresh / cross-device joins). Null when this
+  /// session is not an institution live room or the meta is unavailable.
+  InsSessionMeta? _insSessionMeta;
   // True only when the user explicitly ended/left the call (via the End or
   // Leave buttons). Minimize / browser-back must NOT set this — minimizing
   // keeps the call alive and dispose() must therefore NOT call leave() on
@@ -123,6 +143,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     _capturedContainer ??= ProviderScope.containerOf(context, listen: false);
     if (_didBoot) return;
     _didBoot = true;
+
+    // Resolve institution session metadata. Constructor query params win
+    // (fresh start from live rooms list); cache covers browser refresh
+    // and second-device joins.
+    _resolveInsSessionMeta();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final controller = ref.read(realtimeControllerProvider.notifier);
@@ -446,7 +471,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 onMinimize: state.isJoined
                     ? () => _minimizeCall(state.session)
                     : null,
+                sessionTypeChip: _buildSessionTypeChip(),
+                trustLine: _buildTrustLine(),
               ),
+
+              // ── Phase 3 — per-type focus reinforcement ───────────────────
+              // Single-line text band that shifts focus per session type:
+              // "Speaker-led session" for public briefings/classes,
+              // "Q&A session" for media interactions. Internal meetings
+              // and research sessions stay quiet.
+              if (_buildFocusBanner() case final focus?) focus,
 
               // ── Consent banner ────────────────────────────────────────────
               RealtimeConsentSheet(
@@ -754,7 +788,195 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     }
   }
 
+  /// Resolve institution-session metadata from constructor query params
+  /// first (synchronous, available immediately on first frame), then fall
+  /// back to the SharedPreferences cache asynchronously. Either source
+  /// triggers a setState so the header re-renders once the data lands.
+  void _resolveInsSessionMeta() {
+    final t = widget.insSessionType?.trim();
+    final a = widget.insSessionAudience?.trim();
+    if (t != null && t.isNotEmpty) {
+      setState(() {
+        _insSessionMeta = InsSessionMeta(
+          type: InsSessionTypeX.fromWire(t),
+          audience: InsSessionAudienceX.fromWire(a),
+          title: widget.insSessionTitle?.trim().isNotEmpty == true
+              ? widget.insSessionTitle!.trim()
+              : null,
+        );
+      });
+      return;
+    }
+    // Async cache lookup — ok if it loses the race with a join handshake;
+    // the header just gets a richer label once the read completes.
+    final id = widget.sessionId.trim();
+    if (id.isEmpty) return;
+    InsSessionMetaCache.read(id).then((m) {
+      if (!mounted || m == null) return;
+      setState(() => _insSessionMeta = m);
+    });
+  }
+
+  /// Phase 3 — per-type focus reinforcement. Renders a thin text band
+  /// directly under the call top bar that names the session's focus.
+  /// Returns null when the type is internal/research (intentionally
+  /// quiet) or when meta is absent (legacy rooms).
+  Widget? _buildFocusBanner() {
+    final meta = _insSessionMeta;
+    if (meta == null) return null;
+    String? focus;
+    IconData? icon;
+    switch (meta.type) {
+      case InsSessionType.publicBriefing:
+      case InsSessionType.classSession:
+        focus = 'Focus: Speaker-led session';
+        icon = Icons.record_voice_over_rounded;
+        break;
+      case InsSessionType.mediaInteraction:
+        focus = 'Q&A session';
+        icon = Icons.question_answer_rounded;
+        break;
+      case InsSessionType.internalMeeting:
+      case InsSessionType.research:
+        return null;
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s8,
+      ),
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: AuraSurface.muted),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              focus,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.muted,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Institution trust line rendered beneath the session title in the
+  /// top bar. Only shown when this is an institution session with a
+  /// resolvable identity — keeps non-institution calls (DM / thread /
+  /// space) untouched.
+  ///
+  /// Phase 3: framed as "Official session by [Name] (Verified)" — the
+  /// authoritative wording the spec calls for. Falls back to "Session
+  /// by [Name]" when the institution is not verified.
+  Widget? _buildTrustLine() {
+    if (_insSessionMeta == null) return null;
+    final identity = ref.read(institutionIdentityProvider);
+    final name = identity?.name.trim() ?? '';
+    if (name.isEmpty) return null;
+    final verified = identity?.isVerified == true;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.apartment_rounded,
+            size: 11,
+            color: AuraSurface.faint,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              verified ? 'Official session by $name' : 'Session by $name',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (verified) ...[
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.verified_rounded,
+              size: 11,
+              color: AuraSurface.accentText,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              '(Verified)',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.accentText,
+                fontWeight: FontWeight.w800,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Per-type chip rendered in the top bar. Public-facing session types
+  /// get a slightly stronger accent (blue), internal types stay muted —
+  /// the chip's job is to remind hosts and participants what kind of
+  /// session this is for the entire duration.
+  Widget? _buildSessionTypeChip() {
+    final meta = _insSessionMeta;
+    if (meta == null) return null;
+    final isPublic = meta.audience == InsSessionAudience.publicAudience;
+    String label;
+    IconData icon;
+    switch (meta.type) {
+      case InsSessionType.publicBriefing:
+        label = 'Public session';
+        icon = Icons.public_rounded;
+        break;
+      case InsSessionType.classSession:
+        label = 'Class session';
+        icon = Icons.school_rounded;
+        break;
+      case InsSessionType.research:
+        label = 'Research';
+        icon = Icons.science_rounded;
+        break;
+      case InsSessionType.mediaInteraction:
+        label = 'Media interaction';
+        icon = Icons.mic_external_on_rounded;
+        break;
+      case InsSessionType.internalMeeting:
+        // Compact header for internal meetings — the contextLabel below
+        // the title already says "Internal", an extra chip would add
+        // noise, so we suppress it here.
+        return null;
+    }
+    return _SessionTypeChip(
+      label: label,
+      icon: icon,
+      isPublic: isPublic,
+    );
+  }
+
   String _callTitle(RealtimeSession? session, bool isVideo) {
+    // Institution session with rich meta wins — show the host-provided
+    // session title (or the type label as fallback) instead of a generic
+    // "Audio call" string. Other surfaces keep their existing copy.
+    if (_insSessionMeta != null &&
+        (session == null ||
+            session.surfaceType == RealtimeSurfaceType.institution)) {
+      return _insSessionMeta!.displayTitle;
+    }
     if (session == null) return isVideo ? 'Video call' : 'Audio call';
     switch (session.surfaceType) {
       case RealtimeSurfaceType.dm:
@@ -771,6 +993,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   String? _contextLabel(RealtimeSession? session) {
+    // Institution session with meta: render `[TYPE] • [Audience]` so the
+    // host and participants always see what kind of session this is.
+    if (_insSessionMeta != null &&
+        (session == null ||
+            session.surfaceType == RealtimeSurfaceType.institution)) {
+      return '${_insSessionMeta!.type.label.toUpperCase()} '
+          '• ${_insSessionMeta!.audience.label}';
+    }
     if (session == null) return null;
     final named = session.contextName ?? session.title;
     switch (session.surfaceType) {
@@ -825,6 +1055,8 @@ class _CallTopBar extends StatelessWidget {
     this.contextLabel,
     this.isRinging = false,
     this.onMinimize,
+    this.sessionTypeChip,
+    this.trustLine,
   });
 
   final String title;
@@ -835,6 +1067,17 @@ class _CallTopBar extends StatelessWidget {
   final bool hasIssue;
   final bool isRinging;
   final VoidCallback? onMinimize;
+
+  /// Per-type session chip — e.g. "Public session", "Class session",
+  /// "Media interaction". Renders to the left of the status indicator
+  /// when present so the institutional intent of the call is visible
+  /// without crowding the main title.
+  final Widget? sessionTypeChip;
+
+  /// Optional institution trust line — e.g. "Hosted by [Name] (Verified)".
+  /// Rendered beneath the context label so the host institution is
+  /// always visible during the call.
+  final Widget? trustLine;
 
   String _fmt(Duration d) {
     final s = d.inSeconds;
@@ -867,7 +1110,11 @@ class _CallTopBar extends StatelessWidget {
     }
 
     return Container(
-      constraints: BoxConstraints(minHeight: contextLabel != null ? 60 : 52),
+      constraints: BoxConstraints(
+        minHeight: trustLine != null
+            ? 76
+            : (contextLabel != null ? 60 : 52),
+      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
         vertical: AuraSpace.s8,
@@ -921,10 +1168,16 @@ class _CallTopBar extends StatelessWidget {
                   contextLabel!,
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
+              if (trustLine != null) trustLine!,
             ],
           ),
 
           const Spacer(),
+
+          if (sessionTypeChip != null) ...[
+            sessionTypeChip!,
+            const SizedBox(width: AuraSpace.s10),
+          ],
 
           // Status label (issue, connecting, or ringing states)
           if (hasIssue || isConnecting || isRinging) ...[
@@ -2264,6 +2517,60 @@ class _ArtifactBlock extends StatelessWidget {
                   : '$artifactCount saved artifacts',
               style: AuraText.small,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact in-session chip that surfaces the institutional intent of the
+/// call (Public session / Class / Research / Media interaction). Public
+/// audiences get a stronger accent; internal stays muted.
+class _SessionTypeChip extends StatelessWidget {
+  const _SessionTypeChip({
+    required this.label,
+    required this.icon,
+    required this.isPublic,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isPublic;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: isPublic ? AuraSurface.accentSoft : AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(
+          color: isPublic
+              ? AuraSurface.accent.withValues(alpha: 0.4)
+              : AuraSurface.divider,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 11,
+            color: isPublic ? AuraSurface.accentText : AuraSurface.muted,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: isPublic ? AuraSurface.accentText : AuraSurface.muted,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );

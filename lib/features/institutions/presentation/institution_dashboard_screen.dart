@@ -642,7 +642,17 @@ class _InstitutionDashboardScreenState
             tagline: _tagline.isEmpty ? null : _tagline,
             badges: _identityBadges(),
             facts: _identityFacts(),
-            trailing: _canUseInstitutionTools
+          ),
+
+          const InsSectionGap(),
+
+          // ── Mode header — declares the institutional mode for this
+          //     surface so the workspace shell feels uniform across screens.
+          InsModeHeader(
+            title: 'Workspace overview',
+            description:
+                'Standing, role, and the most relevant next moves for this institution.',
+            primaryAction: _canUseInstitutionTools
                 ? AuraSecondaryButton(
                     label: 'Profile',
                     icon: Icons.badge_outlined,
@@ -651,7 +661,7 @@ class _InstitutionDashboardScreenState
                 : null,
           ),
 
-          const InsSectionGap(),
+          const InsModeHeaderGap(),
 
           // ── Standing grid (Section B) ─────────────────────────────────
           InsSection(

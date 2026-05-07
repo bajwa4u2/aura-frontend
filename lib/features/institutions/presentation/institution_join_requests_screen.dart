@@ -9,6 +9,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../ui/institution_ds.dart';
 import 'institution_page.dart';
 
 class InstitutionJoinRequestsScreen extends ConsumerStatefulWidget {
@@ -323,10 +324,10 @@ class _InstitutionJoinRequestsScreenState
         ),
         const SizedBox(height: AuraSpace.s12),
         if (_requests.isEmpty)
-          const AuraEmptyState(
+          const InsEmptyState(
             icon: Icons.inbox_outlined,
             title: 'No pending requests',
-            body: 'Join requests from non-members will appear here.',
+            description: 'Join requests from non-members will appear here.',
           )
         else
           ..._requests.map(_buildRequestTile),
@@ -348,20 +349,11 @@ class _InstitutionJoinRequestsScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Request to join',
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AuraSpace.s6),
-              Text(
-                'Send a request to the institution admins. They will review and approve or reject it.',
-                style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.5),
-              ),
-              const SizedBox(height: AuraSpace.s14),
               TextFormField(
                 controller: _messageController,
                 maxLines: 3,
                 style: AuraText.body,
+                enabled: _joinSuccess == null,
                 decoration: const InputDecoration(
                   labelText: 'Message (optional)',
                   hintText: 'Briefly explain why you\'d like to join…',
@@ -406,12 +398,6 @@ class _InstitutionJoinRequestsScreenState
                   ),
                 ),
               ],
-              const SizedBox(height: AuraSpace.s16),
-              AuraPrimaryButton(
-                label: _submittingJoin ? 'Submitting…' : 'Submit request',
-                onPressed: _joinSuccess != null || _submittingJoin ? null : _submitJoin,
-                icon: Icons.send_rounded,
-              ),
             ],
           ),
         ),
@@ -425,11 +411,21 @@ class _InstitutionJoinRequestsScreenState
     ref.watch(institutionIdentityProvider);
     _ensureInitialLoad();
 
+    final Widget? trailing = _isAdmin
+        ? null
+        : AuraPrimaryButton(
+            label: _submittingJoin ? 'Submitting…' : 'Submit request',
+            icon: Icons.send_rounded,
+            onPressed:
+                _joinSuccess != null || _submittingJoin ? null : _submitJoin,
+          );
+
     return InstitutionPage(
       title: _isAdmin ? 'Join requests' : 'Request access',
       subtitle: _isAdmin
           ? 'Review and approve or reject member requests.'
-          : 'Request to join this institution.',
+          : 'Send a request to the institution admins. They will review and approve or reject it.',
+      trailing: trailing,
       body: _isAdmin ? _buildAdminBody() : _buildNonMemberBody(),
     );
   }

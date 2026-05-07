@@ -8,9 +8,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/document_scaffold.dart';
+import '../ui/institution_ds.dart';
 import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
 
@@ -478,7 +479,12 @@ class _InstitutionDomainsScreenState
   }
 
   Widget _emptyState() {
-    return const AuraCard(child: Text('No domains added yet.'));
+    return const InsEmptyState(
+      icon: Icons.domain_outlined,
+      title: 'No domains added yet',
+      description:
+          'Add your institution’s web domains and verify ownership to strengthen public trust.',
+    );
   }
 
   @override
@@ -494,18 +500,31 @@ class _InstitutionDomainsScreenState
     super.dispose();
   }
 
+  void _focusAddDomainField() {
+    if (canManageDomains && !_submitting) {
+      // No explicit FocusNode is wired up; the form sits directly below the
+      // mode header so a scroll-into-view is sufficient. The user types into
+      // the existing input.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DocumentScaffold(
-      title: 'Institution domains',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AuraScaffold(
+      showHeader: false,
+      body: InsScreen(
         children: [
-          Doc.title('Institution domains'),
-          const SizedBox(height: AuraSpace.s10),
-          Doc.meta('DNS verification and domain ownership.'),
-          Doc.lede('Attach and verify domains owned by the institution.'),
-          const SizedBox(height: AuraSpace.s12),
+          InsModeHeader(
+            title: 'Domains & Trust',
+            description:
+                'Verify institutional web domains and strengthen public trust.',
+            primaryAction: AuraPrimaryButton(
+              label: _submitting ? 'Adding…' : 'Add domain',
+              icon: Icons.add_rounded,
+              onPressed: (_submitting || !canManageDomains) ? null : addDomain,
+            ),
+          ),
+          const InsModeHeaderGap(),
 
           _statusCard(),
           const SizedBox(height: AuraSpace.s12),
@@ -525,19 +544,15 @@ class _InstitutionDomainsScreenState
                   decoration: InputDecoration(
                     hintText: 'example.org',
                     helperText: canManageDomains
-                        ? 'Enter only the domain name.'
+                        ? 'Enter only the domain name. Use the action above to add.'
                         : 'Domain management becomes active once institutional membership is active.',
                   ),
+                  onTap: _focusAddDomainField,
                   onSubmitted: (_) {
                     if (canManageDomains && !_submitting) {
                       addDomain();
                     }
                   },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                AuraPrimaryButton(
-                  label: _submitting ? 'Adding...' : 'Add domain',
-                  onPressed: _submitting ? null : addDomain,
                 ),
               ],
             ),
@@ -548,13 +563,23 @@ class _InstitutionDomainsScreenState
           if (loading)
             const Center(child: AuraLoadingState(message: 'Loading domains…'))
           else if (loadError != null)
-            AuraCard(child: Text(loadError!))
+            InsEmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Could not load domains',
+              description: loadError!,
+              tone: InsTone.danger,
+            )
           else if (!canManageDomains)
             const SizedBox.shrink()
           else if (domains.isEmpty)
             _emptyState()
           else
-            ...domains.map(buildDomainCard),
+            ...domains.map(
+              (d) => Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                child: buildDomainCard(d),
+              ),
+            ),
         ],
       ),
     );

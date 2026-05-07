@@ -5,7 +5,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
-import '../../../core/ui/aura_text.dart';
+import '../ui/institution_ds.dart';
 
 /// Standard institution-scoped page frame.
 ///
@@ -45,25 +45,25 @@ class InstitutionPage extends StatelessWidget {
   /// scrollable (e.g. paginated lists or `TabBarView`).
   final bool scrollable;
 
-  /// Optional outer padding override. Defaults to 16px sides + 20px top +
-  /// 32px bottom which matches every other institution screen.
+  /// Optional outer padding override. Defaults to the institution design-
+  /// system page padding (`InsSpacing.screenHPad` / `screenVPad`).
   final EdgeInsetsGeometry? padding;
 
   /// Optional back arrow next to the title. Defaults to `context.pop()`.
   final bool showBack;
   final VoidCallback? onBack;
 
-  /// Canonical institution content max width. Every institution screen MUST
-  /// use this constant — do not hard-code different values per screen.
-  static const double maxContentWidth = 920;
+  /// Canonical institution content max width — sourced from the institution
+  /// design system so every workspace screen shares the same column.
+  static const double maxContentWidth = InsSpacing.contentMaxWidth;
 
   @override
   Widget build(BuildContext context) {
     final pad = padding ??
         const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
+          InsSpacing.screenHPad,
+          InsSpacing.screenVPad,
+          InsSpacing.screenHPad,
           AuraSpace.s32,
         );
 
@@ -119,49 +119,34 @@ class _PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    if (!showBack) {
+      return InsModeHeader(
+        title: title,
+        description: subtitle,
+        primaryAction: trailing,
+      );
+    }
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (showBack) ...[
-              GestureDetector(
-                onTap: onBack ?? () => context.pop(),
-                child: const Padding(
-                  padding: EdgeInsets.only(right: AuraSpace.s12),
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    size: 20,
-                    color: AuraSurface.muted,
-                  ),
-                ),
-              ),
-            ],
-            Expanded(
-              child: Text(
-                title,
-                style: AuraText.headline,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(width: AuraSpace.s12),
-              trailing!,
-            ],
-          ],
-        ),
-        if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s6),
-          Text(
-            subtitle!,
-            style: AuraText.body.copyWith(
+        GestureDetector(
+          onTap: onBack ?? () => context.pop(),
+          child: const Padding(
+            padding: EdgeInsets.only(right: AuraSpace.s12, top: 4),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              size: 20,
               color: AuraSurface.muted,
-              height: 1.5,
             ),
           ),
-        ],
+        ),
+        Expanded(
+          child: InsModeHeader(
+            title: title,
+            description: subtitle,
+            primaryAction: trailing,
+          ),
+        ),
       ],
     );
   }

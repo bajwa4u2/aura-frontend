@@ -11,6 +11,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../presentation/institution_page.dart';
+import '../ui/institution_ds.dart';
 
 /// Institution Messaging — institution-context inbox built on Spaces.
 ///
@@ -88,8 +89,8 @@ class _InstitutionMessagingScreenState
 
     return InstitutionPage(
       title: 'Messages',
-      subtitle: 'Spaces are this institution\'s messaging primitive. '
-          'Tap a space to open its threads.',
+      subtitle:
+          'Coordinate internal groups and direct conversations for this institution.',
       trailing: AuraPrimaryButton(
         label: 'New space',
         icon: Icons.add_rounded,
@@ -147,11 +148,11 @@ class _InstitutionMessagingScreenState
               ),
             )
           else if (_spaces.isEmpty)
-            const AuraEmptyState(
+            const InsEmptyState(
               icon: Icons.forum_outlined,
               title: 'No conversations yet',
-              body:
-                  'Create a space to start a thread with members of this institution.',
+              description:
+                  'Use the action above to create a space and start a thread with members of this institution.',
             )
           else
             ..._spaces.map((space) => _SpaceTile(
