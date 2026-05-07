@@ -21,8 +21,10 @@ import 'features/auth/presentation/forgot_password_screen.dart';
 import 'features/auth/presentation/reset_password_screen.dart';
 
 // Public / Member
+import 'features/feed/domain/feed_item.dart' show FeedItemType;
 import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
+import 'features/public/presentation/thread_screen.dart';
 import 'features/search/presentation/search_screen.dart';
 import 'features/updates/presentation/updates_screen.dart';
 import 'features/activity/presentation/activity_screen.dart';
@@ -533,6 +535,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => PostDetailScreen(
               postId: state.pathParameters['id'] ?? '',
             ),
+          ),
+          // Public-UX generalized thread surface — works for both user
+          // posts and institution posts via the existing
+          // `feedItemDetailProvider` / `feedItemRepliesProvider`. The
+          // legacy `/posts/:id` and `/institution/:id/posts/:postId`
+          // routes are unchanged.
+          GoRoute(
+            path: '/thread/:id',
+            builder: (context, state) {
+              final qp = state.uri.queryParameters;
+              final wireType = (qp['type'] ?? '').toUpperCase();
+              final type = wireType == 'INSTITUTION_POST'
+                  ? FeedItemType.institutionPost
+                  : FeedItemType.userPost;
+              return ThreadScreen(
+                postId: state.pathParameters['id'] ?? '',
+                type: type,
+                parentInstitutionId: qp['parentInstitutionId'],
+              );
+            },
           ),
           GoRoute(
             path: '/author/:handle',

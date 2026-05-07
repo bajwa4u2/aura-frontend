@@ -6,7 +6,6 @@ import 'package:aura/core/auth/session_providers.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
-import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -15,9 +14,11 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
-import '../../feed/presentation/unified_feed_card.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../public/widgets/discourse_card.dart';
+import '../../public/widgets/public_composer.dart';
+import '../../public/widgets/space_card.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -176,185 +177,36 @@ class MemberHomeScreen extends ConsumerWidget {
                 // ── Pinned announcement (silent if absent)
                 const _PinnedAnnouncementBanner(),
 
-                // ── Composer entry card
+                // ── Public composer (primary discourse entry)
+                const PublicComposer(),
+
+                // ── Held-draft hint (only renders when a draft is in
+                // play); single tap routes back into the compose flow
+                // with the held id pre-loaded.
                 heldAsync.when(
                   data: (held) {
                     final heldMap = _asMap(held);
-                    final hasHeld = heldMap.isNotEmpty;
+                    if (heldMap.isEmpty) return const SizedBox.shrink();
                     final heldId = heldMap['id']?.toString();
-                    return _ComposerCard(
-                      hasHeld: hasHeld,
-                      heldText: heldMap['text']?.toString(),
-                      onTap: () => _openCompose(context, ref, heldId: heldId),
+                    return Padding(
+                      padding: const EdgeInsets.only(top: AuraSpace.s8),
+                      child: _HeldDraftHint(
+                        text: heldMap['text']?.toString(),
+                        onTap: () =>
+                            _openCompose(context, ref, heldId: heldId),
+                      ),
                     );
                   },
-                  loading: () => const AuraCardSkeleton(),
-                  error: (_, __) => _ComposerCard(
-                    hasHeld: false,
-                    onTap: () => _openCompose(context, ref),
-                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
                 ),
 
-                const SizedBox(height: AuraSpace.s28),
+                const SizedBox(height: AuraSpace.s24),
 
-                // ── Feed
-                const _WorksSection(),
+                // ── Discourse stream + LIVE NOW + spaces strip
+                const _DiscourseStream(),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPOSER ENTRY CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ComposerCard extends StatelessWidget {
-  const _ComposerCard({
-    required this.hasHeld,
-    required this.onTap,
-    this.heldText,
-  });
-
-  final bool hasHeld;
-  final String? heldText;
-  final VoidCallback onTap;
-
-  String _preview(String value) {
-    final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (text.isEmpty) return '';
-    if (text.length <= 160) return text;
-    return '${text.substring(0, 160).trim()}…';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = _preview(heldText ?? '');
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF172444), Color(0xFF0F1E36)],
-            ),
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.25),
-            ),
-            boxShadow: AuraShadows.panel,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Accent top stripe
-              Container(
-                height: 3,
-                decoration: const BoxDecoration(
-                  gradient: AuraGradients.accent,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(AuraRadius.card),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AuraSpace.s20,
-                  AuraSpace.s18,
-                  AuraSpace.s20,
-                  AuraSpace.s20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AuraSpace.s8,
-                            vertical: AuraSpace.s4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AuraSurface.accentSoft,
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
-                            border: Border.all(
-                              color: AuraSurface.accent.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.edit_outlined,
-                                size: 11,
-                                color: AuraSurface.accentText,
-                              ),
-                              const SizedBox(width: AuraSpace.s4),
-                              Text(
-                                hasHeld ? 'Held work' : 'Composer',
-                                style: AuraText.label.copyWith(
-                                  color: AuraSurface.accentText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 16,
-                          color: AuraSurface.faint,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AuraSpace.s14),
-                    Text(
-                      hasHeld
-                          ? 'Continue your held work'
-                          : 'Start something new',
-                      style: AuraText.headline,
-                    ),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text(
-                      hasHeld
-                          ? 'You have a work in progress. Return to the editing surface.'
-                          : 'Begin a new piece — writing, media, or long-form work.',
-                      style: AuraText.body.copyWith(color: AuraSurface.muted),
-                    ),
-                    if (hasHeld && preview.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Container(
-                        padding: const EdgeInsets.all(AuraSpace.s12),
-                        decoration: BoxDecoration(
-                          color: AuraSurface.page.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(AuraRadius.r12),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: Text(
-                          preview,
-                          style: AuraText.small.copyWith(
-                            height: 1.5,
-                            color: AuraSurface.muted,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -472,8 +324,8 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
 /// institution posts with `UnifiedFeedCard`. Pagination beyond the first
 /// page is intentionally deferred to a follow-up phase — the legacy
 /// `feedControllerProvider` paging machinery was removed in this migration.
-class _WorksSection extends ConsumerWidget {
-  const _WorksSection();
+class _DiscourseStream extends ConsumerWidget {
+  const _DiscourseStream();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -503,18 +355,41 @@ class _WorksSection extends ConsumerWidget {
       ),
       data: (page) {
         if (page.items.isEmpty) {
-          return const AuraEmptyState(
-            title: 'No works yet',
-            body: 'When you publish, your work will appear here.',
-            icon: Icons.auto_stories_outlined,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Even with no works, show LIVE NOW + spaces strip so
+              // the home doesn't feel dead and the user has somewhere
+              // to enter discourse from.
+              ...liveAsync.maybeWhen(
+                data: (entries) => [
+                  for (final e in entries) ...[
+                    LiveNowCard(
+                      data: LiveNowCardData.fromDiscovery(
+                        entry: e,
+                        returnTo: '/home',
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                ],
+                orElse: () => const <Widget>[],
+              ),
+              const AuraEmptyState(
+                title: 'Quiet on the public stream right now',
+                body:
+                    'When people publish, their statements will appear here.',
+                icon: Icons.forum_outlined,
+              ),
+              const SizedBox(height: AuraSpace.s24),
+              const _SpacesSection(),
+            ],
           );
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Phase 2 Distribution — LIVE NOW band(s) above the works
-            // header. Reuses the global discovery provider already
-            // watched at the top of build().
+            // Live first — it's "happening now".
             ...liveAsync.maybeWhen(
               data: (entries) => [
                 for (final e in entries) ...[
@@ -529,10 +404,11 @@ class _WorksSection extends ConsumerWidget {
               ],
               orElse: () => const <Widget>[],
             ),
+            // Section header — discourse, not "works".
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('Works', style: AuraText.subtitle),
+                const Text('Discourse', style: AuraText.subtitle),
                 const SizedBox(width: AuraSpace.s8),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -558,12 +434,97 @@ class _WorksSection extends ConsumerWidget {
               separatorBuilder: (_, __) =>
                   const SizedBox(height: AuraSpace.s14),
               itemBuilder: (context, i) =>
-                  UnifiedFeedCard(item: page.items[i]),
+                  DiscourseCard(item: page.items[i]),
             ),
-            const SizedBox(height: AuraSpace.s20),
+            const SizedBox(height: AuraSpace.s24),
+            const _SpacesSection(),
           ],
         );
       },
+    );
+  }
+}
+
+/// Spaces strip section — heading + horizontal scroll of curated
+/// public-discourse spaces. Backend doesn't yet expose a public spaces
+/// endpoint; until it does, the strip ships with calibrated topical
+/// seeds (civic / climate / tech / education / health / local) routed
+/// through the existing /search surface.
+class _SpacesSection extends StatelessWidget {
+  const _SpacesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Spaces', style: AuraText.subtitle),
+        SizedBox(height: AuraSpace.s4),
+        Text(
+          'Topical and regional discourse environments. Public-first.',
+          style: AuraText.muted,
+        ),
+        SizedBox(height: AuraSpace.s12),
+        PublicSpacesStrip(),
+      ],
+    );
+  }
+}
+
+/// Compact "you have a held draft" hint rendered beneath the public
+/// composer. Single tap re-enters the compose flow with the held id
+/// pre-loaded so the user can resume.
+class _HeldDraftHint extends StatelessWidget {
+  const _HeldDraftHint({required this.text, required this.onTap});
+
+  final String? text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = (text ?? '').trim();
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+          border: Border.all(color: AuraSurface.divider),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.edit_note_rounded,
+              size: 14,
+              color: AuraSurface.muted,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            Expanded(
+              child: Text(
+                preview.isNotEmpty
+                    ? 'Resume your draft: ${preview.length > 60 ? '${preview.substring(0, 60)}…' : preview}'
+                    : 'You have an unfinished draft.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: AuraSurface.faint,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -12,9 +12,9 @@ import '../../../core/ui/aura_text.dart';
 import '../../../app/shell/shell_shared.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
-import '../../feed/presentation/unified_feed_card.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
 import '../../institutions/live_rooms/live_now_card.dart';
+import '../../public/widgets/discourse_card.dart';
 
 class PublicHomeScreen extends ConsumerWidget {
   const PublicHomeScreen({super.key});
@@ -491,7 +491,7 @@ class _PublicFeedSection extends StatelessWidget {
             return Column(
               children: [
                 for (final item in page.items.take(6)) ...[
-                  UnifiedFeedCard(item: item),
+                  DiscourseCard(item: item),
                   const SizedBox(height: AuraSpace.s10),
                 ],
                 const SizedBox(height: AuraSpace.s6),

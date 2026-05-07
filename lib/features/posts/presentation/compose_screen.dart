@@ -255,19 +255,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       case 'FOLLOWERS':
         return PostVisibility.followers;
       case 'PRIVATE':
-        return PostVisibility.private;
+        // Public-UX Phase 1: the public composer no longer surfaces
+        // Private. A draft that was last saved as Private is upgraded
+        // to Social so the chips still match the loaded state. If we
+        // left it at Private, the selected chip would be invisible
+        // and the user would silently re-publish without realizing the
+        // visibility flipped.
+        return PostVisibility.followers;
       case 'PUBLIC':
       default:
         return PostVisibility.public;
     }
   }
 
+  /// Public-UX Phase 1: the public composer offers only Social + Public.
+  /// Personal/Private remains reachable through other (non-public)
+  /// entry points so we don't lose the Personal layer; the public
+  /// composer just refuses to surface it.
+  static const _kPublicComposerVisibilities = <PostVisibility>[
+    PostVisibility.followers,
+    PostVisibility.public,
+  ];
+
   String _visibilityLabel(PostVisibility value) {
     switch (value) {
       case PostVisibility.public:
         return 'Public';
       case PostVisibility.followers:
-        return 'Followers';
+        // Public-UX Phase 1: rename "Followers" → "Social" so the
+        // composer matches the visibility model the rest of the public
+        // surface uses (Social / Public).
+        return 'Social';
       case PostVisibility.private:
         return 'Private';
     }
@@ -276,9 +294,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String _visibilityHelp(PostVisibility value) {
     switch (value) {
       case PostVisibility.public:
-        return 'Visible to everyone, including visitors.';
+        return 'Anyone on Aura can see this and reply.';
       case PostVisibility.followers:
-        return 'Visible only to followers and approved member surfaces.';
+        return 'People you’re connected with can see this.';
       case PostVisibility.private:
         return 'Visible only to you.';
     }
@@ -1691,7 +1709,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               child: Wrap(
                 spacing: AuraSpace.s8,
                 runSpacing: AuraSpace.s8,
-                children: PostVisibility.values
+                children: _kPublicComposerVisibilities
                     .map(
                       (v) => ComposeVisibilityChip(
                         label: _visibilityLabel(v),
