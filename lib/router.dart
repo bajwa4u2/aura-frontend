@@ -113,6 +113,7 @@ import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/account_deletion_screen.dart';
+import 'screens/child_safety_screen.dart';
 import 'screens/terms_screen.dart';
 import 'features/support/presentation/support_agent_screen.dart';
 import 'features/support/presentation/admin_support_console_screen.dart';
@@ -249,6 +250,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/terms' ||
         path == '/founder' ||
         path == '/privacy' ||
+        path == '/child-safety' ||
+        path == '/safety' ||
+        path == '/trust-safety' ||
         path == '/contact' ||
         path == '/account-deletion' ||
         path == '/investors' ||
@@ -506,6 +510,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/founder', builder: (_, __) => const FounderMessageScreen()),
           GoRoute(path: '/privacy', builder: (_, __) => const PrivacyPolicyScreen()),
           GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
+          GoRoute(
+            path: '/child-safety',
+            builder: (_, __) => const ChildSafetyScreen(),
+          ),
+          GoRoute(path: '/safety', redirect: (_, __) => '/child-safety'),
+          GoRoute(path: '/trust-safety', redirect: (_, __) => '/child-safety'),
           GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
           GoRoute(path: '/support/agent', builder: (_, __) => const SupportAgentScreen()),
           GoRoute(
