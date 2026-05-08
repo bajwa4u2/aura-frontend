@@ -332,18 +332,7 @@ class AuthRepository {
     final data = e.response?.data;
 
     if (data is Map) {
-      final candidates = [
-        data['message'],
-        data['error'],
-        data['detail'],
-        data['title'],
-      ];
-
-      for (final c in candidates) {
-        final s = c?.toString().trim() ?? '';
-        if (s.isNotEmpty) return s;
-      }
-
+      // Aura backend envelope: { ok:false, error: { code, message, details, ... } }
       final nestedError = data['error'];
       if (nestedError is Map) {
         final candidates = [
@@ -357,12 +346,40 @@ class AuthRepository {
           if (s.isNotEmpty) return s;
         }
       }
+
+      final candidates = [
+        data['message'],
+        data['error'],
+        data['detail'],
+        data['title'],
+      ];
+
+      for (final c in candidates) {
+        final s = c?.toString().trim() ?? '';
+        if (s.isNotEmpty) return s;
+      }
     }
 
     if (data is String && data.trim().isNotEmpty) {
       return data.trim();
     }
 
+    return '';
+  }
+
+  /// Reads the structured `error.code` from the Aura backend envelope.
+  /// Prefer this over substring-matching the message text.
+  String _extractServerCode(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final err = data['error'];
+      if (err is Map) {
+        final c = err['code']?.toString().trim();
+        if (c != null && c.isNotEmpty) return c;
+      }
+      final c = data['code']?.toString().trim();
+      if (c != null && c.isNotEmpty) return c;
+    }
     return '';
   }
 
@@ -463,9 +480,16 @@ class AuthRepository {
     }
 
     final code = e.response?.statusCode;
+    final backendCode = _extractServerCode(e).toUpperCase();
     final server = _extractServerMessage(e).toLowerCase();
 
+    // Prefer structured backend error codes — robust against message-text drift.
+    if (backendCode == 'EMAIL_NOT_VERIFIED') {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
     if (code == 401 ||
+        backendCode == 'UNAUTHORIZED' ||
         server.contains('invalid credentials') ||
         server.contains('invalid login') ||
         server.contains('wrong password') ||

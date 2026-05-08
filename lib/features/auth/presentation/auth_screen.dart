@@ -46,6 +46,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   // Challenge state
   String _challengeId = '';
   String _maskedEmail = '';
+  bool _codeSent = true;
 
   // Trust device
   bool _trustDevice = false;
@@ -170,11 +171,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
       if (result['status'] == 'challenge') {
         // Email-code flow
+        final codeSentRaw = result['codeSent'];
+        final codeSent = codeSentRaw is bool ? codeSentRaw : true;
         setState(() {
           _step = _LoginStep.emailCode;
           _challengeId = result['challengeId']?.toString() ?? '';
           _maskedEmail = result['maskedEmail']?.toString() ?? email;
-          _error = null;
+          _codeSent = codeSent;
+          _error = codeSent
+              ? null
+              : 'We could not send the sign-in code email just now. Tap "Resend" to try again.';
           _busy = false;
         });
         _startResendCooldown(60);
@@ -229,8 +235,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     try {
-      await AuthController(ref).resendLoginCode(_challengeId);
+      final result = await AuthController(ref).resendLoginCode(_challengeId);
       if (!mounted) return;
+      // Server may report the resend failed at the email layer.
+      final codeSentRaw = result['codeSent'];
+      final codeSent = codeSentRaw is bool ? codeSentRaw : true;
+      setState(() {
+        _codeSent = codeSent;
+        _error = codeSent
+            ? null
+            : 'We could not send the sign-in code email just now. Please try again in a moment.';
+      });
       _startResendCooldown(60);
     } catch (e) {
       if (!mounted) return;
@@ -264,6 +279,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       _step = _LoginStep.credentials;
       _challengeId = '';
       _maskedEmail = '';
+      _codeSent = true;
       _codeCtrl.clear();
       _error = null;
       _resendCooldown = 0;
@@ -291,6 +307,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             maskedEmail: _maskedEmail,
             busy: _busy,
             error: _error,
+            codeSent: _codeSent,
             formKey: _codeFormKey,
             codeCtrl: _codeCtrl,
             codeValidator: _codeValidator,
@@ -389,6 +406,7 @@ class _EmailCodeCard extends StatelessWidget {
     required this.maskedEmail,
     required this.busy,
     required this.error,
+    required this.codeSent,
     required this.formKey,
     required this.codeCtrl,
     required this.codeValidator,
@@ -403,6 +421,7 @@ class _EmailCodeCard extends StatelessWidget {
   final String maskedEmail;
   final bool busy;
   final String? error;
+  final bool codeSent;
   final GlobalKey<FormState> formKey;
   final TextEditingController codeCtrl;
   final String? Function(String?) codeValidator;
@@ -446,7 +465,9 @@ class _EmailCodeCard extends StatelessWidget {
             ),
             const SizedBox(height: AuraSpace.s10),
             Text(
-              'We sent a 6-digit code to $maskedEmail. Enter it below to continue.',
+              codeSent
+                  ? 'We sent a 6-digit code to $maskedEmail. Enter it below to continue.'
+                  : 'A code is required to continue, but our email service did not deliver it just now. Tap "Resend" to try again.',
               style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
             ),
             const SizedBox(height: AuraSpace.s16),

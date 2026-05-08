@@ -79,6 +79,21 @@ class AuthController {
     final data = e.response?.data;
 
     if (data is Map) {
+      // Aura backend envelope: { ok:false, error: { code, message, details, ... } }
+      final nested = data['error'];
+      if (nested is Map) {
+        final candidates = [
+          nested['message'],
+          nested['error'],
+          nested['detail'],
+          nested['title'],
+        ];
+        for (final c in candidates) {
+          final s = c?.toString().trim() ?? '';
+          if (s.isNotEmpty) return s;
+        }
+      }
+
       final candidates = [
         data['message'],
         data['error'],
@@ -99,11 +114,33 @@ class AuthController {
     return '';
   }
 
+  /// Reads the structured `error.code` from the Aura backend envelope.
+  String _extractServerCode(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final err = data['error'];
+      if (err is Map) {
+        final c = err['code']?.toString().trim();
+        if (c != null && c.isNotEmpty) return c;
+      }
+      final c = data['code']?.toString().trim();
+      if (c != null && c.isNotEmpty) return c;
+    }
+    return '';
+  }
+
   String _mapLoginError(DioException e) {
     final code = e.response?.statusCode;
+    final backendCode = _extractServerCode(e).toUpperCase();
     final server = _extractServerMessage(e).toLowerCase();
 
+    // Prefer structured backend error codes — robust against message-text drift.
+    if (backendCode == 'EMAIL_NOT_VERIFIED') {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
     if (code == 401 ||
+        backendCode == 'UNAUTHORIZED' ||
         server.contains('invalid credentials') ||
         server.contains('invalid login') ||
         server.contains('wrong password') ||
@@ -201,10 +238,16 @@ class AuthController {
     // Email-code challenge path
     final requiresEmailCode = outer['requiresEmailCode'];
     if (requiresEmailCode == true) {
+      // codeSent==false means the backend created the challenge but the email
+      // service failed to deliver. Propagate so the UI can surface that
+      // instead of telling the user to "check your inbox" for nothing.
+      final codeSentRaw = outer['codeSent'];
+      final codeSent = codeSentRaw is bool ? codeSentRaw : true;
       return {
         'status': 'challenge',
         'challengeId': (outer['challengeId'] ?? '').toString(),
         'maskedEmail': (outer['maskedEmail'] ?? '').toString(),
+        'codeSent': codeSent,
       };
     }
 
@@ -303,11 +346,15 @@ class AuthController {
         data: {'challengeId': challengeId.trim()},
       );
     } on DioException catch (err) {
-      final server = (err.response?.data is Map
-              ? (err.response!.data['message'] ?? '')
-              : '')
-          .toString()
-          .trim();
+      final raw = err.response?.data;
+      String server = '';
+      if (raw is Map) {
+        final inner = raw['error'];
+        if (inner is Map) {
+          server = (inner['message'] ?? '').toString().trim();
+        }
+        if (server.isEmpty) server = (raw['message'] ?? '').toString().trim();
+      }
       if (err.response?.statusCode == 429 || server.toLowerCase().contains('please wait')) {
         throw Exception(server.isNotEmpty ? server : 'Please wait before requesting a new code.');
       }

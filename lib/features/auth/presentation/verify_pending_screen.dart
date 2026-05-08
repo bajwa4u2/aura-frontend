@@ -37,6 +37,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   bool _busy = false;
   String? _msg;
   bool _msgIsError = false;
+  bool _alreadyVerified = false;
 
   String? _safeRedirectOrNull(String? r) {
     final v = (r ?? '').trim();
@@ -120,22 +121,59 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
         try {
           final res = await dio.post(path, data: {'email': email});
           final body = res.data;
-          bool emailSent = true;
 
+          // Backend may return one of:
+          //   { ok:true, alreadyVerified:true }            — user is verified
+          //   { ok:true, cooldown:true, retryAfterSeconds } — too soon
+          //   { ok:true, emailSent:true }                  — sent
+          //   { ok:true, emailSent:false }                 — sender failed
+          // Either at the top level or under `data:`.
+          Map<String, dynamic> envelope = const {};
           if (body is Map) {
-            final raw = body['emailSent'];
-            if (raw is bool) emailSent = raw;
-            final data = body['data'];
-            if (raw == null && data is Map && data['emailSent'] is bool) {
-              emailSent = data['emailSent'] as bool;
+            envelope = Map<String, dynamic>.from(body);
+            final inner = envelope['data'];
+            if (inner is Map) {
+              envelope = {...envelope, ...Map<String, dynamic>.from(inner)};
             }
           }
 
+          final alreadyVerified = envelope['alreadyVerified'] == true;
+          final cooldown = envelope['cooldown'] == true;
+          final retryAfterSeconds = envelope['retryAfterSeconds'];
+          final emailSentRaw = envelope['emailSent'];
+          final emailSent = emailSentRaw is bool ? emailSentRaw : true;
+
           if (!mounted) return;
+
+          if (alreadyVerified) {
+            // No email was sent because the account is already verified.
+            // Refresh server-truth and tell the user to sign in.
+            ref.invalidate(emailVerifiedProvider);
+            setState(() {
+              _alreadyVerified = true;
+              _msg = 'This email is already verified. You can sign in now.';
+              _msgIsError = false;
+            });
+            return;
+          }
+
+          if (cooldown) {
+            final secs = retryAfterSeconds is num
+                ? retryAfterSeconds.toInt()
+                : null;
+            setState(() {
+              _msg = secs != null && secs > 0
+                  ? 'Please wait $secs second${secs == 1 ? '' : 's'} before requesting another email.'
+                  : 'Please wait a moment before requesting another email.';
+              _msgIsError = true;
+            });
+            return;
+          }
+
           setState(() {
             _msg = emailSent
                 ? 'Verification email sent. Please check your inbox and spam folder.'
-                : 'We could not send the verification email just now. Please try again.';
+                : 'We could not send the verification email just now. Please try again in a moment.';
             _msgIsError = !emailSent;
           });
           return;
@@ -281,6 +319,20 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                         label: 'Sending…',
                         onPressed: null,
                         icon: Icons.refresh_rounded,
+                      ),
+                    ] else if (_alreadyVerified) ...[
+                      AuraPrimaryButton(
+                        label: 'Continue to sign in',
+                        icon: Icons.login_rounded,
+                        onPressed: () {
+                          final qp = <String, String>{'verified': '1'};
+                          final email = _email.text.trim();
+                          if (email.isNotEmpty) qp['email'] = email;
+                          if (redirect != null) qp['redirect'] = redirect;
+                          context.go(
+                            Uri(path: '/login', queryParameters: qp).toString(),
+                          );
+                        },
                       ),
                     ] else ...[
                       AuraPrimaryButton(
