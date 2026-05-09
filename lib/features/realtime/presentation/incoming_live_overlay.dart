@@ -408,6 +408,29 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (_kBypassOverlay) {
       return widget.child;
     }
+    // C4: when the bridge drops a session (because a terminal/removed event
+    // arrived on either the correspondence or realtime socket), dismiss any
+    // matching poll item so a stale notification cannot re-render the card
+    // before the next poll. Mirrors the dedup the bridge already does on
+    // its own state.
+    ref.listen<List<Map<String, dynamic>>>(
+      incomingCallBridgeProvider,
+      (prev, next) {
+        if (!mounted) return;
+        final prevSet = <String>{
+          for (final item in prev ?? const <Map<String, dynamic>>[])
+            if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
+        };
+        final nextSet = <String>{
+          for (final item in next)
+            if (_resolveSessionId(item).isNotEmpty) _resolveSessionId(item),
+        };
+        for (final removed in prevSet.difference(nextSet)) {
+          _dismissedSessionIds.add(removed);
+        }
+      },
+    );
+
     final notifications = ref.watch(notificationsControllerProvider);
     final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);

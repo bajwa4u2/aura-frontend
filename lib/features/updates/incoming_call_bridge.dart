@@ -1,25 +1,52 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../correspondence/data/correspondence_live_service.dart';
+import '../realtime/application/realtime_providers.dart';
 
 final incomingCallBridgeProvider =
     StateNotifierProvider<IncomingCallBridgeNotifier, List<Map<String, dynamic>>>(
   (ref) {
     final notifier = IncomingCallBridgeNotifier();
-    final service = ref.watch(correspondenceLiveServiceProvider);
-    final sub = service.events.listen((event) {
+
+    // C4+C6: listen on BOTH the correspondence-namespace socket AND the
+    // /realtime-namespace socket. Either transport can deliver an incoming
+    // call or a terminal event; subscribing to both means the overlay never
+    // misses a session end while a poll item lingers, and removes the
+    // split-state hazard where one socket fires `call:terminal` and the
+    // other doesn't. The notifier already dedupes by sessionId, so both
+    // sources can fire without producing duplicate cards.
+    final correspondenceService = ref.watch(correspondenceLiveServiceProvider);
+    final correspondenceSub = correspondenceService.events.listen((event) {
       if (event.name == 'call:incoming') {
         notifier._onCallIncoming(event.payload);
       } else if (event.name == 'session:removed' ||
           event.name == 'realtime:removed' ||
-          event.name == 'call:terminal') {
-        final sid = event.name == 'call:terminal'
-            ? _str(event.payload['sessionId'])
-            : _str(event.payload['sessionId']);
+          event.name == 'session:ended' ||
+          event.name == 'call:terminal' ||
+          event.name == 'call:declined') {
+        final sid = _str(event.payload['sessionId']);
         if (sid.isNotEmpty) notifier._onSessionTerminated(sid);
       }
     });
-    ref.onDispose(sub.cancel);
+
+    final realtimeSocket = ref.watch(realtimeSocketServiceProvider);
+    final realtimeSub = realtimeSocket.events.listen((event) {
+      if (event.name == 'call:incoming') {
+        notifier._onCallIncoming(event.payload);
+      } else if (event.name == 'session:removed' ||
+          event.name == 'realtime:removed' ||
+          event.name == 'session:ended' ||
+          event.name == 'call:terminal' ||
+          event.name == 'call:declined') {
+        final sid = _str(event.payload['sessionId']);
+        if (sid.isNotEmpty) notifier._onSessionTerminated(sid);
+      }
+    });
+
+    ref.onDispose(() {
+      correspondenceSub.cancel();
+      realtimeSub.cancel();
+    });
     return notifier;
   },
 );

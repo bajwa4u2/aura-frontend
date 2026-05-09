@@ -113,7 +113,8 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   bool _didBoot = false;
-  bool _isEnding = false;
+  // A5: removed local _isEnding — UI now reads state.isEndingCall, the
+  // single authoritative flag set by RealtimeController.endCall().
   bool _wasJoined = false;
   bool _hasNavigatedAway = false;
 
@@ -143,6 +144,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     _capturedContainer ??= ProviderScope.containerOf(context, listen: false);
     if (_didBoot) return;
     _didBoot = true;
+
+    // A4: publish that the dedicated full-screen call surface is mounted.
+    // The PiP widget reads `state.isCallRoomVisible` instead of route path,
+    // so the transition between full and PiP is driven by the same state
+    // change as the widget tree mount/unmount — no 1-2 frame race window.
+    ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
 
     // Resolve institution session metadata. Constructor query params win
     // (fresh start from live rooms list); cache covers browser refresh
@@ -178,6 +185,21 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   @override
   void dispose() {
     _durationTimer?.cancel();
+
+    // A4: clear the visibility flag synchronously as the room screen
+    // unmounts. The PiP becomes visible the same frame the room widget
+    // tree is removed, so there is no gap between full-screen and PiP.
+    final container = _capturedContainer;
+    if (container != null) {
+      try {
+        container
+            .read(realtimeControllerProvider.notifier)
+            .setCallRoomVisible(false);
+      } catch (_) {
+        // best-effort: never let dispose throw
+      }
+    }
+
     // Only leave on dispose when the user *explicitly* ended/left the call.
     // Minimize, browser back, and PiP transitions must NOT terminate the
     // session — that was the root cause of the "post-back blank UI". Real
@@ -185,7 +207,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // bridge's `beforeunload` listener (call_presence_bridge.dart) and
     // the backend heartbeat-timeout, not here.
     if (_intentToLeave) {
-      final container = _capturedContainer;
       if (container != null) {
         try {
           if (container.read(realtimeControllerProvider).isJoined) {
@@ -227,8 +248,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
   Future<void> _endCallAndClose(RealtimeController controller) async {
-    if (_isEnding) return;
-    setState(() => _isEnding = true);
+    // A5: the single end-call lock lives in the controller and is exposed
+    // via state.isEndingCall. Reading directly avoids the stale-snapshot
+    // race that the local `_isEnding` flag had against the controller's
+    // own `_endingCall`. If a concurrent tap arrives, the controller
+    // returns early and we still navigate cleanly.
+    if (ref.read(realtimeControllerProvider).isEndingCall) return;
     // Mark intent BEFORE the await so a concurrent dispose (rare, but
     // possible if the user closes the tab mid-tap) still routes through
     // the explicit-leave codepath.
@@ -246,9 +271,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (mounted) {
         _hasNavigatedAway = true;
         _navigateAfterCall(session);
-      } else {
-        // Reset to allow a retry if the screen rebuilt without disposing.
-        _isEnding = false;
       }
     }
   }
@@ -415,6 +437,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       return const _CallRouteRedirectingFallback();
     }
 
+    // C5: stale /realtime/:sessionId guard. If hydrate populated the session
+    // but the backend already reports it as inactive (ENDED), bail out
+    // immediately to a safe fallback route. Without this, a stale push tap
+    // or a deep link from after the host hung up rendered a "Connecting…"
+    // shell on a dead session that would never join.
+    final hydratedSession = state.session;
+    if (hydratedSession != null && !hydratedSession.isActive && !state.isJoined) {
+      if (!_hasNavigatedAway) {
+        _hasNavigatedAway = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _navigateAfterCall(hydratedSession);
+        });
+      }
+      return const _CallRouteRedirectingFallback();
+    }
+
     final myUserId = meAsync.maybeWhen(
       data: (me) => (me['id'] ?? '').toString(),
       orElse: () => '',
@@ -547,8 +585,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   // Non-hosts always leave; the backend auto-ends when the
                   // last active participant leaves.
                   isEndCall: isHost,
-                  isEnding: _isEnding,
-                  onLeave: _isEnding
+                  isEnding: state.isEndingCall,
+                  onLeave: state.isEndingCall
                       ? null
                       : isHost
                           ? () => unawaited(_endCallAndClose(controller))

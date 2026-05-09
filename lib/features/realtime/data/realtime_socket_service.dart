@@ -204,6 +204,17 @@ class RealtimeSocketService {
       'join:requested',
       'join:approved',
       'join:rejected',
+      // C6: terminal/incoming/decline lifecycle events. The realtime
+      // controller's _handleSocketEvent already has switch cases for
+      // these — they were never wired through, so a terminal event that
+      // arrives on the realtime socket (vs the correspondence socket) was
+      // silently dropped. Listing them here lets either transport drive
+      // the same controller transitions, eliminating split-state risk.
+      'session:ended',
+      'session:stale',
+      'call:declined',
+      'call:terminal',
+      'call:incoming',
     ];
 
     for (final name in names) {

@@ -288,12 +288,31 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     });
   }
 
+  /// B5: read the clientMessageId from a server-side message map. The backend
+  /// stores the key in metadataJson.clientMessageId (see messages.service.ts).
+  /// Falling back to message id is safe — pending messages never share an
+  /// id with the server payload, so the fallback never falsely reconciles.
+  static String _readClientMessageId(Map<String, dynamic> message) {
+    final meta = message['metadataJson'];
+    if (meta is Map) {
+      final v = meta['clientMessageId'];
+      if (v is String && v.trim().isNotEmpty) return v.trim();
+    }
+    final direct = message['clientMessageId'];
+    if (direct is String && direct.trim().isNotEmpty) return direct.trim();
+    return '';
+  }
+
   void _clearPendingOnRefresh() {
-    // B6: keep failed AND in-flight retries so the user does not lose context
-    // mid-refresh. Only successful sends are dropped — those will be replaced
-    // by the server-fetched message.
-    setState(() => _pendingMessages
-        .removeWhere((p) => !p.failed && !p.retrying));
+    // B6: refresh must NOT drop in-flight pending messages. The optimistic
+    // reconciliation listener removes pending rows once a server message
+    // with the matching clientMessageId arrives — that's the only correct
+    // condition for evicting a pending row. A bare refresh might fire while
+    // a send is still in-flight; dropping it here would erase a legitimate
+    // optimistic message that's still waiting on the network.
+    //
+    // No-op kept so callers don't need to be updated; the actual reconcile
+    // happens in the messagesProvider listener.
   }
 
   void _refreshThreadData() {
@@ -459,13 +478,38 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       },
     );
 
-    // Track new incoming messages for bottom-anchor affordance.
+    // Track new incoming messages for bottom-anchor affordance + B5/B6
+    // optimistic reconciliation by clientMessageId.
     ref.listen<AsyncValue<List<Map<String, dynamic>>>>(
       messagesProvider(widget.threadId),
       (prev, next) {
         if (!mounted) return;
         final prevList = prev?.maybeWhen(data: (d) => d, orElse: () => null);
         final nextList = next.maybeWhen(data: (d) => d, orElse: () => null);
+
+        // B5: reconcile pending → confirmed using clientMessageId stored in
+        // the server message's metadataJson. Prior code dedup'd by `_localId`,
+        // a client-only field that the server never returns — so optimistic
+        // rows stuck in the list as "Sending…" forever.
+        if (nextList != null && _pendingMessages.isNotEmpty) {
+          final confirmedClientIds = <String>{};
+          for (final s in nextList) {
+            final cmid = _readClientMessageId(s);
+            if (cmid.isNotEmpty) confirmedClientIds.add(cmid);
+          }
+          if (confirmedClientIds.isNotEmpty) {
+            final before = _pendingMessages.length;
+            _pendingMessages.removeWhere(
+              (p) => confirmedClientIds.contains(p.clientMessageId),
+            );
+            if (_pendingMessages.length != before) {
+              // Trigger a rebuild so the optimistic row vanishes the same
+              // frame the confirmed server row appears.
+              setState(() {});
+            }
+          }
+        }
+
         // Initial data load — jump straight to bottom once.
         if (prevList == null && nextList != null && !_hasScrolledInitialBottom) {
           _hasScrolledInitialBottom = true;
@@ -1066,15 +1110,31 @@ class _ThreadConversationPanel extends StatelessWidget {
               ),
             ),
             data: (serverMessages) {
+              // B5: reconcile pending → server by clientMessageId.
+              // The server stores it in metadataJson.clientMessageId. The
+              // listener in thread_screen typically removes pending rows
+              // before this build runs, but this defensive filter ensures a
+              // pending row never duplicates a confirmed server row even on
+              // an early frame.
+              final confirmedClientIds = <String>{};
+              for (final s in serverMessages) {
+                final meta = s['metadataJson'];
+                if (meta is Map) {
+                  final v = meta['clientMessageId'];
+                  if (v is String && v.trim().isNotEmpty) {
+                    confirmedClientIds.add(v.trim());
+                  }
+                }
+              }
               final messages = [
                 ...serverMessages,
-                // Append pending messages that aren't yet in server list.
+                // Append pending messages that aren't yet confirmed by server.
                 ...pendingMessages.where((p) {
-                  final localId = p['_localId']?.toString() ?? '';
-                  if (localId.isEmpty) return true;
-                  return !serverMessages.any(
-                    (s) => s['_localId']?.toString() == localId,
-                  );
+                  final cmid = (p['_clientMessageId'] ?? p['_localId'] ?? '')
+                      .toString()
+                      .trim();
+                  if (cmid.isEmpty) return true;
+                  return !confirmedClientIds.contains(cmid);
                 }),
               ];
 

@@ -36,6 +36,14 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   bool _terminating = false;
   bool _endingCall = false;
 
+  /// D4: client-side heartbeat ticker fires `session:heartbeat` every 20s
+  /// while joined. The backend's stale-presence sweeper compares this
+  /// against `heartbeatStaleAfterSeconds` (default 30) so a wedged client
+  /// is reaped within ~45s of falling silent. Slow networks still get 1.5×
+  /// the heartbeat interval before being treated as ghost.
+  Timer? _heartbeatTimer;
+  static const Duration _heartbeatInterval = Duration(seconds: 20);
+
   Map<String, dynamic>? _rtcConfiguration;
   String? _rtcConfigurationSessionId;
   final Map<String, String> _pendingOfferTargets = <String, String>{};
@@ -477,6 +485,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       clearIncomingCall: true,
       infoMessage: 'You joined live.',
     );
+    _startHeartbeat();
     await _flushPendingOffers(refreshTurnCredentials: true);
     await _forceNegotiationIfNeeded();
   }
@@ -510,6 +519,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         clearIncomingCall: true,
         infoMessage: 'Your live session was restored.',
       );
+      _startHeartbeat();
       await _flushPendingOffers(refreshTurnCredentials: true);
       await _forceNegotiationIfNeeded();
     } catch (error) {
@@ -591,6 +601,10 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     debugPrint('[END] endCall: session.id=${session?.id} surfaceType=${session?.surfaceType} surfaceId=${session?.surfaceId}');
 
     _endingCall = true;
+    // A5: surface the in-progress end through state so every UI surface
+    // (room screen, PiP) reads from a single authoritative flag instead of
+    // carrying its own `_isEnding` race that can fire endCall a second time.
+    state = state.copyWith(isEndingCall: true);
     try {
       // Always fire the server-end RPC on a host tap, even if a concurrent
       // socket teardown set `_terminating`. The backend is idempotent on
@@ -617,7 +631,41 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       debugPrint('[END] endCall: local teardown done isJoined=${state.isJoined}');
     } finally {
       _endingCall = false;
+      // Clear the flag — _terminateSession's _copyWithDetachedMediaState
+      // already nukes most of the state, but does not touch isEndingCall.
+      // We reset it explicitly so a subsequent call can lock again.
+      state = state.copyWith(isEndingCall: false);
     }
+  }
+
+  /// A4: room screen calls this from initState/dispose to publish whether the
+  /// dedicated full-screen call surface is mounted. PiP visibility reads
+  /// `state.isCallRoomVisible` instead of route path, eliminating the 1-2
+  /// frame race where neither full screen nor PiP rendered during minimize.
+  void setCallRoomVisible(bool visible) {
+    if (state.isCallRoomVisible == visible) return;
+    state = state.copyWith(isCallRoomVisible: visible);
+  }
+
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      final sessionId = _managedSessionId;
+      if (sessionId.isEmpty || !state.isJoined) return;
+      // emitAck is best-effort — a transient network blip drops the beat
+      // but the next 20s tick recovers. The server ignores heartbeats from
+      // non-joined sockets, so the ticker is safe to keep running.
+      unawaited(
+        _socketService
+            .emitAck('session:heartbeat', <String, dynamic>{'sessionId': sessionId})
+            .catchError((Object _) => <String, dynamic>{}),
+      );
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   Future<void> toggleMicrophone() async {
@@ -928,6 +976,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }) async {
     if (_terminating) return;
     _terminating = true;
+    _stopHeartbeat();
 
     final session = state.session;
     final sessionId = _managedSessionId;
@@ -1357,9 +1406,22 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         }
         return;
       case 'session:ended':
+      case 'call:terminal':
         // Session ended — tear down media, clear stale bundle cache so any
         // subsequent fetch sees the ENDED status rather than a cached snapshot.
+        // C6: `call:terminal` arriving on either socket converges to the
+        // same teardown path as a primary `session:ended`.
         final endedSessionId = _managedSessionId;
+        // Only honor the terminal event when it concerns the call we are
+        // currently in. A stale `call:terminal` for an unrelated session
+        // (e.g. a previous tab's teardown) must not nuke the current call.
+        final eventSessionId = (event.payload['sessionId'] ?? '').toString().trim();
+        if (eventSessionId.isNotEmpty &&
+            endedSessionId.isNotEmpty &&
+            eventSessionId != endedSessionId) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
         _clearPendingOfferTargets();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);
@@ -1495,6 +1557,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   }
 @override
   void dispose() {
+    _stopHeartbeat();
     _subscription?.cancel();
     _mediaSubscription?.cancel();
     _mediaService.dispose();

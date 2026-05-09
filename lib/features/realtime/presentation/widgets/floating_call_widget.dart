@@ -74,16 +74,12 @@ class FloatingCallWidget extends ConsumerStatefulWidget {
 class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   Offset? _offset;
   bool _positionInitialized = false;
-  Timer? _ticker;
-  bool _isEnding = false;
+  // A6: removed the 1-second ticker that rebuilt the entire card (and the
+  // RTCVideoView with it). The duration display now ticks inside its own
+  // isolated subwidget (`_DurationDisplay`), so the video renderer survives
+  // every duration update without dispose/reinit churn.
 
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
+  // A5: removed local _isEnding — UI reads state.isEndingCall now.
 
   @override
   void didChangeDependencies() {
@@ -103,7 +99,6 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
   @override
   void dispose() {
-    _ticker?.cancel();
     super.dispose();
   }
 
@@ -191,45 +186,34 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     context.go('/realtime/${info.sessionId}');
   }
 
-  // A1: End the call from PiP using the same authoritative controller path.
-  // Local guard prevents double-tap; controller has its own _endingCall guard
-  // so a stray double-fire is harmless.
+  // A1+A5: End the call from PiP using the same authoritative controller path.
+  // The controller's `endCall()` flips state.isEndingCall, which the chip
+  // reads to disable itself for re-taps. No local flag — single source.
   Future<void> _endCallFromPip() async {
-    if (_isEnding) return;
-    setState(() => _isEnding = true);
+    if (ref.read(realtimeControllerProvider).isEndingCall) return;
     try {
       await ref.read(realtimeControllerProvider.notifier).endCall();
     } catch (_) {
       // endCall is local-first; backend errors are swallowed by the controller.
-    } finally {
-      if (mounted) setState(() => _isEnding = false);
     }
-  }
-
-  // ── Duration ────────────────────────────────────────────────────────────────
-
-  String _formatDuration(DateTime? startedAt) {
-    if (startedAt == null) return '--:--';
-    final diff = DateTime.now().difference(startedAt);
-    final h = diff.inHours;
-    final m = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(realtimeControllerProvider);
+    final liveState = ref.watch(realtimeControllerProvider);
     // Re-render when cross-tab presence changes so passive PiP appears /
     // disappears within one heartbeat without polling.
     ref.watch(callPresenceBridgeProvider);
 
-    final path = GoRouterState.of(context).uri.path;
-
-    // Do not overlay the full call screen itself.
-    if (path.startsWith('/realtime')) return const SizedBox.shrink();
+    // A4: visibility is driven by RealtimeState, not route path. The room
+    // screen toggles `isCallRoomVisible` synchronously in initState/dispose,
+    // so the moment the room widget unmounts the PiP becomes eligible to
+    // render — no 1-2 frame window where neither surface is visible.
+    if (liveState.isCallRoomVisible) {
+      return const SizedBox.shrink();
+    }
 
     final info = _resolve();
     if (info == null) return const SizedBox.shrink();
@@ -254,13 +238,13 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             micOn: info.micOn,
             cameraOn: info.cameraOn,
             participants: info.participants,
-            duration: _formatDuration(info.startedAt),
+            startedAt: info.startedAt,
             isOwner: info.isOwner,
             onReturn: info.isOwner ? () => _returnToCall(info) : null,
             // A1: passive (cross-tab) PiPs cannot end the call; only the
             // owner tab has the media session and authoritative state.
             onEnd: info.isOwner ? _endCallFromPip : null,
-            isEnding: _isEnding,
+            isEnding: liveState.isEndingCall,
             localRenderer: info.localRenderer,
           ),
         ),
@@ -279,7 +263,7 @@ class _FloatingCard extends StatelessWidget {
     required this.micOn,
     required this.cameraOn,
     required this.participants,
-    required this.duration,
+    required this.startedAt,
     required this.isOwner,
     required this.onReturn,
     required this.onEnd,
@@ -291,7 +275,7 @@ class _FloatingCard extends StatelessWidget {
   final bool micOn;
   final bool cameraOn;
   final List<RealtimeParticipant> participants;
-  final String duration;
+  final DateTime? startedAt;
   final bool isOwner;
   final VoidCallback? onReturn;
   final VoidCallback? onEnd;
@@ -358,13 +342,11 @@ class _FloatingCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                duration,
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
-                  fontFeatures: const [ui.FontFeature.tabularFigures()],
-                ),
-              ),
+              // A6: duration ticks inside its own widget so the parent card
+              // (and the RTCVideoView in particular) is not rebuilt every
+              // second. Stops the video preview freeze that was caused by
+              // dispose/reinit cycles on the renderer.
+              _DurationDisplay(startedAt: startedAt),
               const SizedBox(width: AuraSpace.s8),
               const Icon(
                 Icons.drag_indicator_rounded,
@@ -515,6 +497,55 @@ class _StatusDot extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(icon, size: 12, color: on ? AuraSurface.goodInk : AuraSurface.dangerInk),
+    );
+  }
+}
+
+/// A6: isolated 1-second ticker that owns only the duration text. Sits next
+/// to the RTCVideoView in the card so the video renderer's parent build
+/// scope is not invalidated every second by the duration update.
+class _DurationDisplay extends StatefulWidget {
+  const _DurationDisplay({required this.startedAt});
+  final DateTime? startedAt;
+
+  @override
+  State<_DurationDisplay> createState() => _DurationDisplayState();
+}
+
+class _DurationDisplayState extends State<_DurationDisplay> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  String _format(DateTime? startedAt) {
+    if (startedAt == null) return '--:--';
+    final diff = DateTime.now().difference(startedAt);
+    final h = diff.inHours;
+    final m = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _format(widget.startedAt),
+      style: AuraText.small.copyWith(
+        color: AuraSurface.muted,
+        fontFeatures: const [ui.FontFeature.tabularFigures()],
+      ),
     );
   }
 }

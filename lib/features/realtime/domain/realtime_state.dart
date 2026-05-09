@@ -28,6 +28,8 @@ class RealtimeState {
     required this.mediaError,
     required this.callMode,
     required this.incomingCall,
+    this.isCallRoomVisible = false,
+    this.isEndingCall = false,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -54,6 +56,17 @@ class RealtimeState {
   final String? callMode;
   final Map<String, dynamic>? incomingCall;
 
+  /// A4: True while the dedicated /realtime/:id room screen is mounted and
+  /// covering the rest of the UI. Drives PiP visibility from state instead
+  /// of from the route path, so there's never a frame where neither the
+  /// full call nor the PiP is rendered during minimize/restore.
+  final bool isCallRoomVisible;
+
+  /// A5: True between the start and finish of the controller's `endCall()`.
+  /// UI surfaces (room screen, PiP) read this flag instead of carrying their
+  /// own end-tap guard. Single source of truth — one tap, one end.
+  final bool isEndingCall;
+
   factory RealtimeState.initial() {
     return const RealtimeState(
       connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -79,6 +92,8 @@ class RealtimeState {
       mediaError: null,
       callMode: null,
       incomingCall: null,
+      isCallRoomVisible: false,
+      isEndingCall: false,
     );
   }
 
@@ -117,6 +132,8 @@ class RealtimeState {
     bool clearCallMode = false,
     Map<String, dynamic>? incomingCall,
     bool clearIncomingCall = false,
+    bool? isCallRoomVisible,
+    bool? isEndingCall,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -144,6 +161,8 @@ class RealtimeState {
       mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
       callMode: clearCallMode ? null : (callMode ?? this.callMode),
       incomingCall: clearIncomingCall ? null : (incomingCall ?? this.incomingCall),
+      isCallRoomVisible: isCallRoomVisible ?? this.isCallRoomVisible,
+      isEndingCall: isEndingCall ?? this.isEndingCall,
     );
   }
 
