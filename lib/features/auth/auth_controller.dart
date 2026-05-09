@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aura/core/auth/auth_broadcast.dart';
 import 'package:aura/core/auth/auth_providers.dart';
+import 'package:aura/core/auth/session_bootstrap.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import 'package:aura/core/auth/trusted_device_store.dart';
 import '../../core/net/dio_provider.dart';
@@ -263,7 +265,16 @@ class AuthController {
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
 
+    // Mark this device as having an established session so the next cold
+    // load knows it is safe to attempt /auth/refresh. Without the hint, the
+    // bootstrap stays silent on public routes and never produces a 401
+    // for users who have never authenticated here.
+    await setSessionHint(true);
+
     _invalidateAuth();
+    // Notify any sibling tabs that auth has succeeded so they can quietly
+    // reread /auth/me instead of staying stuck in a stale signed-out state.
+    AuthBroadcast.publishLogin();
     return {'status': 'ok', ..._unwrap(outer)};
   }
 
@@ -327,6 +338,10 @@ class AuthController {
       refreshToken: (refresh != null && refresh.trim().isNotEmpty) ? refresh : null,
     );
 
+    // Same hint as the password-only path so future cold loads can attempt
+    // refresh silently; without the hint, public-route loads stay quiet.
+    await setSessionHint(true);
+
     // Persist trusted device token if the server issued one
     final deviceToken = (outer['deviceToken'] ?? '').toString().trim();
     if (deviceToken.isNotEmpty) {
@@ -334,6 +349,7 @@ class AuthController {
     }
 
     _invalidateAuth();
+    AuthBroadcast.publishLogin();
     return _unwrap(outer);
   }
 
@@ -383,7 +399,14 @@ class AuthController {
       // ignore
     } finally {
       await _store().clearTokens();
+      // Clear the session hint so the next cold load on this device skips
+      // the speculative /auth/refresh and stays silent on public routes.
+      await setSessionHint(false);
       _invalidateAuth();
+      // Cross-tab fan-out: every other open tab on this origin clears its
+      // local session, stops protected polling, and converges to signed-out
+      // without the user having to refresh each tab manually.
+      AuthBroadcast.publishLogout();
     }
   }
 

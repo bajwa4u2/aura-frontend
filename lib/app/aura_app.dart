@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/auth/auth_broadcast.dart';
+import '../core/auth/auth_providers.dart';
+import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
 import '../core/interactions/presence_repository.dart';
 import '../core/ui/aura_radius.dart';
@@ -22,6 +27,16 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Cross-tab logout fan-out: when a sibling tab calls
+    // AuthBroadcast.publishLogout(), every other tab on this origin runs
+    // the local-clear path here. We deliberately do NOT call the backend
+    // logout endpoint — the originating tab already did that. This keeps
+    // the cleanup quiet and idempotent. Login events trigger a soft
+    // refresh of auth-derived providers so a stale signed-out tab catches
+    // up without forcing a hard reload.
+    AuthBroadcast.start(onMessage: _onRemoteAuthEvent);
+
     // Register device if already authed at startup (stored token from prior session)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -35,13 +50,62 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    AuthBroadcast.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _onRemoteAuthEvent(String type) async {
+    if (!mounted) return;
+    if (type == AuthBroadcast.typeLogout) {
+      // Local-only teardown: tokens, hint, providers. The originating tab
+      // already POSTed /auth/logout, so we deliberately skip the network
+      // call to avoid duplicate refresh-cookie clears and 401s.
+      try {
+        await ref.read(tokenStoreProvider).clearTokens();
+      } catch (_) {}
+      try {
+        await setSessionHint(false);
+      } catch (_) {}
+      // Invalidate auth-derived providers in one go so the router refresh
+      // listenable picks up the unauthed state on the next frame.
+      try {
+        ref.invalidate(authStatusProvider);
+      } catch (_) {}
+      try {
+        ref.invalidate(emailVerifiedProvider);
+      } catch (_) {}
+      try {
+        ref.invalidate(authMeDataProvider);
+      } catch (_) {}
+      // Stop the local device-registration link to the now-revoked record.
+      // revokeCurrentDevice gates on _isAuthed and self-clears local state.
+      try {
+        unawaited(ref.read(deviceServiceProvider).revokeCurrentDevice());
+      } catch (_) {}
+    } else if (type == AuthBroadcast.typeLogin) {
+      // Sibling tab signed in. Re-evaluate session state without forcing a
+      // page reload; if a refresh cookie now lives in this browser, the
+      // bootstrap on the next provider read will pick it up.
+      try {
+        ref.invalidate(sessionBootstrapProvider);
+      } catch (_) {}
+      try {
+        ref.invalidate(authMeDataProvider);
+      } catch (_) {}
+      try {
+        ref.invalidate(emailVerifiedProvider);
+      } catch (_) {}
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Defensive auth gate: DeviceService also self-gates, but skipping the
+      // call entirely on signed-out resumes keeps the network/console clean
+      // when a user is parked on a public route and switches tabs.
+      if (!ref.read(isAuthedProvider)) return;
       try {
         ref.read(deviceServiceProvider).refreshPresence();
       } catch (_) {}

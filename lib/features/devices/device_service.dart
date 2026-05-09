@@ -8,9 +8,17 @@ import 'device_repository.dart';
 import 'web_push_service.dart';
 
 class DeviceService {
-  DeviceService(this._repository);
+  DeviceService(this._repository, {bool Function()? isAuthed})
+      : _isAuthed = isAuthed ?? (() => true);
 
   final DeviceRepository _repository;
+
+  /// Auth gate. Read every time we are about to hit a `/devices/*` endpoint
+  /// so a signed-out app — including a public-route navigation after a token
+  /// expiry — never produces 401 spam from `PATCH /v1/devices/<cached-id>`.
+  /// Defaults to `true` for tests / direct construction without a ref so the
+  /// previous behaviour is preserved when no callback is supplied.
+  final bool Function() _isAuthed;
 
   static const _deviceIdKey = 'aura_device_id';
   static const _presenceDebounce = Duration(minutes: 30);
@@ -20,12 +28,47 @@ class DeviceService {
   StreamSubscription<String>? _tokenRefreshSub;
   bool _tokenRefreshBound = false;
 
+  /// In-flight coalescing handle. App boot, auth-transition listener, and
+  /// lifecycle resume can all schedule a registerCurrentDevice within the
+  /// same frame; without coalescing each fires its own POST/PATCH and the
+  /// backend ends up creating duplicate device rows or racing on update.
+  /// Concurrent callers await the same Future and resolve together.
+  Future<void>? _registerInFlight;
+
   /// Registers the current device only when a valid payload can be built.
   ///
   /// On web, this is a no-op when no active push subscription exists.
   /// On Android, this uses FCM and requires a non-empty FCM token.
   /// On iOS, APNS/FCM wiring will be finalized separately.
   Future<void> registerCurrentDevice() async {
+    // Hard gate: every callsite (app boot, auth transition, lifecycle resume,
+    // FCM token refresh) is supposed to check auth before dispatching, but a
+    // single missed gate produces console-visible 401 spam on public routes.
+    // Failing closed here makes the contract impossible to violate.
+    if (!_isAuthed()) return;
+
+    // Coalesce concurrent calls. If a registration is already running, just
+    // return its Future — duplicates would race the deviceId upsert and
+    // produce duplicate device records on the backend.
+    final inFlight = _registerInFlight;
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final task = _doRegisterCurrentDevice();
+    _registerInFlight = task;
+    try {
+      await task;
+    } finally {
+      // Clear only if this is still the current handle — a later call may
+      // have replaced it.
+      if (identical(_registerInFlight, task)) {
+        _registerInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _doRegisterCurrentDevice() async {
     try {
       // On Android 13+ POST_NOTIFICATIONS is a runtime permission. Request it
       // here so the OS surface a prompt the first time we have an authed user
@@ -85,6 +128,9 @@ class DeviceService {
       _tokenRefreshSub =
           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         if (newToken.isEmpty) return;
+        // Same gate as registerCurrentDevice — a token rotation that
+        // arrives while signed out must not hit /v1/devices/*.
+        if (!_isAuthed()) return;
         try {
           final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
           final platform =
@@ -115,15 +161,20 @@ class DeviceService {
   }
 
   Future<void> revokeCurrentDevice() async {
+    final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
     try {
-      final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
-      if (id == null || id.isEmpty) return;
-      await _repository.revokeDevice(id);
-      _cachedDeviceId = null;
-      await _clearPersistedDeviceId();
+      // Best-effort backend revoke. A failure must not leave the cached id
+      // dangling — that's exactly what produced the post-logout 401 spam
+      // when the next visit re-attempted PATCH /v1/devices/<old-id>.
+      if (id != null && id.isNotEmpty && _isAuthed()) {
+        await _repository.revokeDevice(id);
+      }
     } catch (e) {
       debugPrint('DeviceService.revokeCurrentDevice failed: $e');
     } finally {
+      // Always clear local handle regardless of backend result.
+      _cachedDeviceId = null;
+      await _clearPersistedDeviceId();
       await _tokenRefreshSub?.cancel();
       _tokenRefreshSub = null;
       _tokenRefreshBound = false;
@@ -132,6 +183,7 @@ class DeviceService {
 
   /// Re-registers on app resume, throttled to once per 30 minutes.
   Future<void> refreshPresence() async {
+    if (!_isAuthed()) return;
     final now = DateTime.now();
     if (_lastPresenceRefresh != null &&
         now.difference(_lastPresenceRefresh!) < _presenceDebounce) {
@@ -145,6 +197,7 @@ class DeviceService {
   Future<bool> requestAndRegisterWebPush(String vapidKey) async {
     if (!kIsWeb) return false;
     if (vapidKey.isEmpty) return false;
+    if (!_isAuthed()) return false;
 
     try {
       final perm = await WebPushService.requestPermission();
@@ -174,6 +227,7 @@ class DeviceService {
   ///   presentation behavior.
   Future<bool> requestAndRegisterNativePush() async {
     if (kIsWeb) return false;
+    if (!_isAuthed()) return false;
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -209,6 +263,7 @@ class DeviceService {
   /// saved the subscription before showing the Active state.
   Future<bool> checkBackendWebPushActive() async {
     if (!kIsWeb) return false;
+    if (!_isAuthed()) return false;
     try {
       final devices = await _repository.getMyDevices();
       return devices.any((d) =>
