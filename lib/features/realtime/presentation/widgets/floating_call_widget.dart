@@ -75,6 +75,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   Offset? _offset;
   bool _positionInitialized = false;
   Timer? _ticker;
+  bool _isEnding = false;
 
   @override
   void initState() {
@@ -127,9 +128,13 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     final local = ref.read(realtimeControllerProvider);
     final sessionId = local.sessionId;
     if (local.isJoined && sessionId != null && sessionId.isNotEmpty) {
-      // Active in this tab — render the owner PiP with full controls.
-      // Guard against the server-ended race window.
-      if (local.session?.isActive == false) {
+      // A3: Active in this tab — only render when the loaded session is
+      // confirmed active. `session?.isActive == false` (terminal) AND
+      // `session == null` (still hydrating / cleared / stale ref) both
+      // suppress the card, so we never show a dead session card during
+      // the post-end race window.
+      final session = local.session;
+      if (session == null || !session.isActive) {
         return null;
       }
       return _CallInfo(
@@ -137,7 +142,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         isVideo: local.isVideoMode,
         micOn: local.microphoneEnabled,
         cameraOn: local.cameraEnabled,
-        startedAt: local.session?.startedAt,
+        startedAt: session.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
         isOwner: true,
         localRenderer: local.localRenderer,
@@ -167,13 +172,38 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
   void _returnToCall(_CallInfo info) {
     if (info.isOwner) {
+      // A2: only navigate to /realtime/:sessionId when the controller still
+      // holds an active session for this id. If the host ended (or the
+      // server tore down) the session between the PiP rendering and the tap
+      // landing, clear the stale local reference instead of routing to a
+      // dead screen.
       final local = ref.read(realtimeControllerProvider);
-      if (!local.isJoined) {
+      final session = local.session;
+      final stillActive = local.isJoined &&
+          session != null &&
+          session.isActive &&
+          (local.sessionId ?? '') == info.sessionId;
+      if (!stillActive) {
         ref.read(realtimeControllerProvider.notifier).clearLocalSession();
         return;
       }
     }
     context.go('/realtime/${info.sessionId}');
+  }
+
+  // A1: End the call from PiP using the same authoritative controller path.
+  // Local guard prevents double-tap; controller has its own _endingCall guard
+  // so a stray double-fire is harmless.
+  Future<void> _endCallFromPip() async {
+    if (_isEnding) return;
+    setState(() => _isEnding = true);
+    try {
+      await ref.read(realtimeControllerProvider.notifier).endCall();
+    } catch (_) {
+      // endCall is local-first; backend errors are swallowed by the controller.
+    } finally {
+      if (mounted) setState(() => _isEnding = false);
+    }
   }
 
   // ── Duration ────────────────────────────────────────────────────────────────
@@ -227,6 +257,10 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             duration: _formatDuration(info.startedAt),
             isOwner: info.isOwner,
             onReturn: info.isOwner ? () => _returnToCall(info) : null,
+            // A1: passive (cross-tab) PiPs cannot end the call; only the
+            // owner tab has the media session and authoritative state.
+            onEnd: info.isOwner ? _endCallFromPip : null,
+            isEnding: _isEnding,
             localRenderer: info.localRenderer,
           ),
         ),
@@ -248,6 +282,8 @@ class _FloatingCard extends StatelessWidget {
     required this.duration,
     required this.isOwner,
     required this.onReturn,
+    required this.onEnd,
+    required this.isEnding,
     this.localRenderer,
   });
 
@@ -258,6 +294,8 @@ class _FloatingCard extends StatelessWidget {
   final String duration;
   final bool isOwner;
   final VoidCallback? onReturn;
+  final VoidCallback? onEnd;
+  final bool isEnding;
   final RTCVideoRenderer? localRenderer;
 
   @override
@@ -373,12 +411,21 @@ class _FloatingCard extends StatelessWidget {
 
               const Spacer(),
 
-              if (onReturn != null)
+              if (onReturn != null) ...[
                 _Chip(
                   label: 'Return',
                   icon: Icons.open_in_full_rounded,
                   accent: true,
                   onTap: onReturn!,
+                ),
+                if (onEnd != null) const SizedBox(width: AuraSpace.s6),
+              ],
+              if (onEnd != null)
+                _Chip(
+                  label: isEnding ? 'Ending…' : 'End',
+                  icon: Icons.call_end_rounded,
+                  danger: true,
+                  onTap: isEnding ? null : onEnd!,
                 ),
             ],
           ),
@@ -478,48 +525,65 @@ class _Chip extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.accent = false,
+    this.danger = false,
   });
 
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool accent;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final bg = accent ? AuraSurface.accentSoft : AuraSurface.card;
-    final fg = accent ? AuraSurface.accentText : AuraSurface.muted;
-    final border = accent
-        ? AuraSurface.accent.withValues(alpha: 0.35)
-        : AuraSurface.divider;
+    final disabled = onTap == null;
+    final Color bg;
+    final Color fg;
+    final Color border;
+    if (danger) {
+      bg = AuraSurface.dangerBg;
+      fg = AuraSurface.dangerInk;
+      border = AuraSurface.dangerInk.withValues(alpha: 0.35);
+    } else if (accent) {
+      bg = AuraSurface.accentSoft;
+      fg = AuraSurface.accentText;
+      border = AuraSurface.accent.withValues(alpha: 0.35);
+    } else {
+      bg = AuraSurface.card;
+      fg = AuraSurface.muted;
+      border = AuraSurface.divider;
+    }
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s8,
-            vertical: AuraSpace.s4,
-          ),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(AuraRadius.md),
-            border: Border.all(color: border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 11, color: fg),
-              const SizedBox(width: AuraSpace.s4),
-              Text(
-                label,
-                style: AuraText.micro.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w700,
+        child: Opacity(
+          opacity: disabled ? 0.6 : 1.0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s8,
+              vertical: AuraSpace.s4,
+            ),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              border: Border.all(color: border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 11, color: fg),
+                const SizedBox(width: AuraSpace.s4),
+                Text(
+                  label,
+                  style: AuraText.micro.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

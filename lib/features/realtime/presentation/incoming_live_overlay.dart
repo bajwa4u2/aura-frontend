@@ -36,9 +36,14 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
 class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     with SingleTickerProviderStateMixin {
   static const _resolver = CommunicationResolver();
-  // Auto-dismiss after this long — long enough to be heard but avoids
-  // the overlay persisting indefinitely if the backend never sends ENDED.
-  static const _ringTimeout = Duration(seconds: 50);
+  // C1: Auto-dismiss aligned with the backend invite TTL (RING_TTL_SECONDS = 90s
+  // in realtime-session.service.ts). Previously 50s, which dismissed the card
+  // while the server-side invite was still valid for another ~40s — so taps
+  // arriving in that window appeared to silently drop. Adding a small cushion
+  // beyond 90s would risk the inverse race (showing a card the server has
+  // already expired); 90s is the exact upper bound and the bridge listens for
+  // session:removed/call:terminal events to dismiss earlier when applicable.
+  static const _ringTimeout = Duration(seconds: 90);
 
   final Set<String> _dismissedIds = <String>{};
   final Set<String> _dismissedSessionIds = <String>{};
@@ -407,19 +412,29 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     final bridgeItems = ref.watch(incomingCallBridgeProvider);
     final liveState = ref.watch(realtimeControllerProvider);
     final currentPath = GoRouterState.of(context).uri.path;
-    // Socket-first: bridge items precede poll items.
-    // Deduplicate by sessionId so a poll item never shadows its bridge twin.
-    final bridgeSessionIds = <String>{
-      for (final b in bridgeItems)
-        if (_resolveSessionId(b).isNotEmpty) _resolveSessionId(b),
-    };
-    final dedupedPollItems = notifications.items
-        .where((n) {
-          final sid = _resolveSessionId(n);
-          return sid.isEmpty || !bridgeSessionIds.contains(sid);
-        })
-        .toList();
-    final allItems = [...bridgeItems, ...dedupedPollItems];
+
+    // C3: cross-source dedup. Bridge (correspondence socket) takes priority
+    // over poll (notifications API + FCM-triggered refresh) so the same call
+    // never produces two ringing cards even when both transports deliver the
+    // same event. Then dedup the merged stream by sessionId AND notification
+    // id so a payload that appears once via socket and once via FCM-poll only
+    // surfaces once. Items with no sessionId or id (rare; malformed payload)
+    // pass through to a separate fallback bucket.
+    final allItems = <Map<String, dynamic>>[];
+    final seenSessionIds = <String>{};
+    final seenIds = <String>{};
+    for (final source in [bridgeItems, notifications.items]) {
+      for (final item in source) {
+        final sid = _resolveSessionId(item);
+        final id = _stringOf(item['id']);
+        if (sid.isNotEmpty && seenSessionIds.contains(sid)) continue;
+        if (id.isNotEmpty && seenIds.contains(id)) continue;
+        if (sid.isNotEmpty) seenSessionIds.add(sid);
+        if (id.isNotEmpty) seenIds.add(id);
+        allItems.add(item);
+      }
+    }
+
     final item = _currentIncoming(currentPath, allItems, liveState);
     if (item == null) {
       _cancelRingTimer();

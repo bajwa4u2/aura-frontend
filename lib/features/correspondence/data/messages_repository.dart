@@ -95,6 +95,7 @@ class MessagesRepository {
     String? sourceLanguage,
     Map<String, dynamic>? composition,
     Map<String, dynamic>? translation,
+    String? clientMessageId,
   }) async {
     final payload = <String, dynamic>{
       if (_hasText(body)) 'body': body!.trim(),
@@ -102,6 +103,7 @@ class MessagesRepository {
       if (_hasText(sourceLanguage)) 'sourceLanguage': sourceLanguage!.trim(),
       if (composition != null && composition.isNotEmpty) 'composition': composition,
       if (translation != null && translation.isNotEmpty) 'translation': translation,
+      if (_hasText(clientMessageId)) 'clientMessageId': clientMessageId!.trim(),
     };
 
     final res = await _dio.post(

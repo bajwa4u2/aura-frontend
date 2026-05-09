@@ -31,12 +31,19 @@ class ThreadComposerBar extends ConsumerStatefulWidget {
     required this.onSent,
     this.currentUserId = '',
     this.onOptimisticSend,
+    this.onSendFailed,
   });
 
   final String threadId;
   final VoidCallback onSent;
   final String currentUserId;
+
+  /// Called immediately when the user taps Send so the thread can render an
+  /// optimistic message before the network round-trip. The same
+  /// [clientMessageId] is sent to the server (idempotency key) and is the
+  /// stable handle the screen should use to reconcile or retry.
   final void Function({
+    required String clientMessageId,
     required String body,
     required String senderId,
     required String senderName,
@@ -44,6 +51,13 @@ class ThreadComposerBar extends ConsumerStatefulWidget {
     required String senderAvatarUrl,
     required List<Map<String, dynamic>> attachments,
   })? onOptimisticSend;
+
+  /// Called when the send round-trip fails so the screen can surface a retry
+  /// affordance on the corresponding optimistic message.
+  final void Function({
+    required String clientMessageId,
+    required Object error,
+  })? onSendFailed;
 
   @override
   ConsumerState<ThreadComposerBar> createState() => _ThreadComposerBarState();
@@ -329,6 +343,20 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     Duration? duration,
   }) async {
     final bytes = await file.readAsBytes();
+    final mimeType = file.mimeType ?? _inferMime(file.name);
+
+    // B3: client-side mime allow-list. Block unsupported types BEFORE the
+    // upload (and before the optimistic preview tile is shown), so the user
+    // is not surprised by a silent send-without-attachment when the server
+    // rejects the presign.
+    final mimeError = _validateMimeForKind(mimeType, kind);
+    if (mimeError != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mimeError)),
+      );
+      return;
+    }
 
     int? width;
     int? height;
@@ -349,7 +377,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       source: source,
       width: width,
       height: height,
-      mimeType: file.mimeType ?? _inferMime(file.name),
+      mimeType: mimeType,
       sizeBytes: bytes.length,
       durationSec: duration?.inSeconds,
     );
@@ -370,6 +398,76 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         attachment.error = _toAttachmentError(e);
       });
     }
+  }
+
+  /// B3: client-side mime allow-list per attachment kind. Mirrors the backend
+  /// check in `media.service.ts allowedMime()` so unsupported files are
+  /// rejected before the upload starts. Returns null if [mimeType] is allowed,
+  /// or a user-facing error message otherwise.
+  String? _validateMimeForKind(String mimeType, ThreadAttachmentKind kind) {
+    final mt = mimeType.trim().toLowerCase();
+    if (mt.isEmpty) {
+      return 'This file has no recognizable type. Choose a different file.';
+    }
+    // Server-side allow-list snapshot. Keep in sync with media.service.ts.
+    const allowedImage = {
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'image/gif',
+    };
+    const allowedVideo = {
+      'video/mp4',
+      'video/quicktime',
+      'video/webm',
+    };
+    const allowedAudio = {
+      'audio/mpeg',
+      'audio/mp4',
+      'audio/aac',
+      'audio/wav',
+      'audio/ogg',
+      'audio/webm',
+    };
+    const allowedDocument = {
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv',
+      'application/rtf',
+      'application/zip',
+    };
+
+    bool ok;
+    String label;
+    switch (kind) {
+      case ThreadAttachmentKind.image:
+        ok = allowedImage.contains(mt);
+        label = 'image';
+        break;
+      case ThreadAttachmentKind.video:
+        ok = allowedVideo.contains(mt);
+        label = 'video';
+        break;
+      case ThreadAttachmentKind.audio:
+        ok = allowedAudio.contains(mt);
+        label = 'audio';
+        break;
+      case ThreadAttachmentKind.document:
+        ok = allowedDocument.contains(mt) ||
+            allowedImage.contains(mt) ||
+            allowedVideo.contains(mt) ||
+            allowedAudio.contains(mt);
+        label = 'file';
+        break;
+    }
+    if (ok) return null;
+    return 'This $label type is not supported ($mt). Choose a different file.';
   }
 
   Future<void> _uploadAttachment(_DraftAttachment attachment) async {
@@ -594,6 +692,10 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   }
 
   Future<void> _submit() async {
+    // B1: defensive empty-send guard. _canSend already keeps the Send button
+    // disabled when there's nothing to send, but we guard explicitly here too
+    // so any future callsite (e.g. an enter-key handler) cannot bypass the
+    // check and produce a 400 round-trip.
     if (!_canSend) return;
 
     final body = _controller.text.trim();
@@ -602,11 +704,22 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
           (a) => !a.uploading && a.error == null && a.storageKey.isNotEmpty,
         )
         .toList();
+
+    if (body.isEmpty && readyAttachments.isEmpty) {
+      return;
+    }
+
     final attachmentsPayload =
         readyAttachments.map((a) => a.toMessagePayload()).toList();
 
+    // B4: idempotency key generated client-side and propagated through both
+    // the optimistic message and the network payload so a retry-after-failure
+    // round-trip dedupes server-side. Format: cmsg_<microsTime>_<counter>.
+    final clientMessageId = _newClientMessageId();
+
     // Fire optimistic message immediately before network call.
     widget.onOptimisticSend?.call(
+      clientMessageId: clientMessageId,
       body: body,
       senderId: widget.currentUserId,
       senderName: '',
@@ -648,12 +761,17 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
             threadId: widget.threadId,
             body: body,
             attachments: attachmentsPayload,
+            clientMessageId: clientMessageId,
           );
 
       if (!mounted) return;
       widget.onSent();
     } catch (e) {
       if (!mounted) return;
+      // B2: notify the screen so it can mark the matching pending message as
+      // failed and offer Retry/Dismiss. The screen retains the original body
+      // and attachments under [clientMessageId] for retry.
+      widget.onSendFailed?.call(clientMessageId: clientMessageId, error: e);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Could not send message: $e')));
@@ -662,6 +780,13 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         setState(() => _sending = false);
       }
     }
+  }
+
+  static int _clientMessageIdCounter = 0;
+
+  String _newClientMessageId() {
+    final n = ++_clientMessageIdCounter;
+    return 'cmsg_${DateTime.now().microsecondsSinceEpoch}_$n';
   }
 
   void _removeAttachment(_DraftAttachment attachment) {
@@ -1137,6 +1262,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
                   ],
                   _ComposerFooter(
                     sending: _sending,
+                    canSend: _canSend,
                     uploadingCount: uploadingCount,
                     hasText: _hasText,
                     assistBusy: _assistBusy,
@@ -1642,6 +1768,7 @@ class _AttachmentFallbackTile extends StatelessWidget {
 class _ComposerFooter extends StatelessWidget {
   const _ComposerFooter({
     required this.sending,
+    required this.canSend,
     required this.uploadingCount,
     required this.hasText,
     required this.assistBusy,
@@ -1655,6 +1782,7 @@ class _ComposerFooter extends StatelessWidget {
   });
 
   final bool sending;
+  final bool canSend;
   final int uploadingCount;
   final bool hasText;
   final bool assistBusy;
@@ -1755,7 +1883,10 @@ class _ComposerFooter extends StatelessWidget {
               : uploadingCount > 0
               ? 'Uploading…'
               : 'Send',
-          onPressed: sending ? null : onSend,
+          // B1: Send is disabled when there's nothing to send (no text, no
+          // ready attachment) — prior behaviour was an enabled button that
+          // silently no-op'd, leaving users unsure whether the tap registered.
+          onPressed: (sending || !canSend) ? null : onSend,
           icon: Icons.send_rounded,
         ),
       ],
@@ -2019,13 +2150,41 @@ Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
 
 String _toAttachmentError(Object error) {
   if (error is DioException) {
+    // D2/B8: prefer the structured backend error.code over substring/status
+    // matching. Aura backend envelope: { ok:false, error: { code, message, ... } }.
+    final data = error.response?.data;
+    String code = '';
+    String message = '';
+    if (data is Map) {
+      final inner = data['error'];
+      if (inner is Map) {
+        code = (inner['code'] ?? '').toString().trim();
+        message = (inner['message'] ?? '').toString().trim();
+      }
+      if (code.isEmpty) {
+        code = (data['code'] ?? '').toString().trim();
+      }
+      if (message.isEmpty) {
+        message = (data['message'] ?? '').toString().trim();
+      }
+    }
+    switch (code.toUpperCase()) {
+      case 'UNSUPPORTED_MIME_TYPE':
+        return 'File type not supported';
+      case 'FILE_TOO_LARGE':
+        return 'File is too large';
+      case 'DURATION_EXCEEDED':
+        return 'Audio or video exceeds the allowed length';
+      case 'IMAGE_HAS_DURATION':
+        return 'Image attachments cannot include duration';
+      case 'INVALID_FILE_SIZE':
+        return 'Invalid file size';
+      case 'CONTENT_TYPE_REQUIRED':
+        return 'File type is missing';
+    }
     final status = error.response?.statusCode;
     if (status == 415) return 'File type not supported';
-    final data = error.response?.data;
-    if (data is Map) {
-      final msg = (data['message'] ?? data['error'])?.toString().trim() ?? '';
-      if (msg.isNotEmpty) return msg;
-    }
+    if (message.isNotEmpty) return message;
   }
   return 'Upload failed';
 }

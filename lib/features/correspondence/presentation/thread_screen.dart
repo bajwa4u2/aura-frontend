@@ -60,8 +60,11 @@ class _PendingMessage {
     required this.senderAvatarUrl,
     required this.attachments,
     required this.sentAt,
+    required this.clientMessageId,
   });
 
+  /// Stable handle used by the UI list. Identical to clientMessageId so the
+  /// retry path can locate the same row by either field.
   final String localId;
   final String body;
   final String senderId;
@@ -70,12 +73,19 @@ class _PendingMessage {
   final String senderAvatarUrl;
   final List<Map<String, dynamic>> attachments;
   final DateTime sentAt;
+
+  /// Idempotency key shared with the server; survives retries.
+  final String clientMessageId;
+
   bool failed = false;
+  bool retrying = false;
 
   Map<String, dynamic> toMessage() => {
         '_localId': localId,
+        '_clientMessageId': clientMessageId,
         '_pending': true,
         '_failed': failed,
+        '_retrying': retrying,
         'body': body,
         'text': body,
         'authorId': senderId,
@@ -201,6 +211,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   void _addPendingMessage({
+    required String clientMessageId,
     required String body,
     required String senderId,
     required String senderName,
@@ -209,7 +220,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     required List<Map<String, dynamic>> attachments,
   }) {
     final pending = _PendingMessage(
-      localId: '${DateTime.now().microsecondsSinceEpoch}',
+      localId: clientMessageId,
+      clientMessageId: clientMessageId,
       body: body,
       senderId: senderId,
       senderName: senderName,
@@ -222,8 +234,66 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     _scrollToBottom();
   }
 
+  void _markPendingFailed({
+    required String clientMessageId,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      for (final p in _pendingMessages) {
+        if (p.clientMessageId == clientMessageId) {
+          p.failed = true;
+          p.retrying = false;
+        }
+      }
+    });
+  }
+
+  Future<void> _retryPendingMessage(_PendingMessage pending) async {
+    if (pending.retrying) return;
+    setState(() {
+      pending.retrying = true;
+      pending.failed = false;
+    });
+    try {
+      await ref.read(messagesRepositoryProvider).sendMessage(
+            threadId: widget.threadId,
+            body: pending.body,
+            attachments: pending.attachments
+                .where((a) => (a['storageKey']?.toString() ?? '').isNotEmpty)
+                .map((a) => Map<String, dynamic>.from(a))
+                .toList(),
+            // B4: same idempotency key — backend dedupes if the prior attempt
+            // actually persisted a row.
+            clientMessageId: pending.clientMessageId,
+          );
+      if (!mounted) return;
+      _refreshThreadData();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        pending.retrying = false;
+        pending.failed = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Retry failed: $e')),
+      );
+    }
+  }
+
+  void _dismissPendingMessage(_PendingMessage pending) {
+    setState(() {
+      _pendingMessages.removeWhere(
+        (p) => p.clientMessageId == pending.clientMessageId,
+      );
+    });
+  }
+
   void _clearPendingOnRefresh() {
-    setState(() => _pendingMessages.removeWhere((p) => !p.failed));
+    // B6: keep failed AND in-flight retries so the user does not lose context
+    // mid-refresh. Only successful sends are dropped — those will be replaced
+    // by the server-fetched message.
+    setState(() => _pendingMessages
+        .removeWhere((p) => !p.failed && !p.retrying));
   }
 
   void _refreshThreadData() {
@@ -562,6 +632,42 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                                       .deleteMessage(messageId);
                                   _refreshThreadData();
                                 },
+                                onRetryPending: (clientMessageId) {
+                                  final pending = _pendingMessages.firstWhere(
+                                    (p) => p.clientMessageId == clientMessageId,
+                                    orElse: () => _PendingMessage(
+                                      localId: '',
+                                      clientMessageId: '',
+                                      body: '',
+                                      senderId: '',
+                                      senderName: '',
+                                      senderHandle: '',
+                                      senderAvatarUrl: '',
+                                      attachments: const [],
+                                      sentAt: DateTime.now(),
+                                    ),
+                                  );
+                                  if (pending.clientMessageId.isEmpty) return;
+                                  unawaited(_retryPendingMessage(pending));
+                                },
+                                onDismissPending: (clientMessageId) {
+                                  final pending = _pendingMessages.firstWhere(
+                                    (p) => p.clientMessageId == clientMessageId,
+                                    orElse: () => _PendingMessage(
+                                      localId: '',
+                                      clientMessageId: '',
+                                      body: '',
+                                      senderId: '',
+                                      senderName: '',
+                                      senderHandle: '',
+                                      senderAvatarUrl: '',
+                                      attachments: const [],
+                                      sentAt: DateTime.now(),
+                                    ),
+                                  );
+                                  if (pending.clientMessageId.isEmpty) return;
+                                  _dismissPendingMessage(pending);
+                                },
                               );
 
                               // Conversation-first layout: messages remain the primary surface.
@@ -600,6 +706,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             threadId: widget.threadId,
             currentUserId: currentUserId,
             onOptimisticSend: _addPendingMessage,
+            onSendFailed: ({required String clientMessageId, required Object error}) {
+              _markPendingFailed(clientMessageId: clientMessageId);
+            },
             onSent: _refreshThreadData,
           ),
         ],
@@ -909,6 +1018,8 @@ class _ThreadConversationPanel extends StatelessWidget {
     required this.onRefresh,
     required this.onEditMessage,
     required this.onDeleteMessage,
+    required this.onRetryPending,
+    required this.onDismissPending,
   });
 
   final AsyncValue<List<Map<String, dynamic>>> messagesAsync;
@@ -918,6 +1029,10 @@ class _ThreadConversationPanel extends StatelessWidget {
   final VoidCallback onRefresh;
   final void Function(Map<String, dynamic> message) onEditMessage;
   final Future<void> Function(Map<String, dynamic> message) onDeleteMessage;
+  /// Invoked when the user taps Retry on a failed pending message.
+  final void Function(String clientMessageId) onRetryPending;
+  /// Invoked when the user taps Dismiss on a failed pending message.
+  final void Function(String clientMessageId) onDismissPending;
 
   @override
   Widget build(BuildContext context) {
@@ -1034,11 +1149,43 @@ class _ThreadConversationPanel extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4, right: 4),
                             child: Align(
                               alignment: Alignment.centerRight,
-                              child: Text(
-                                'Failed to send',
-                                style: AuraText.micro.copyWith(
-                                  color: AuraSurface.dangerInk,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Failed to send',
+                                    style: AuraText.micro.copyWith(
+                                      color: AuraSurface.dangerInk,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AuraSpace.s8),
+                                  _PendingActionChip(
+                                    label: 'Retry',
+                                    icon: Icons.refresh_rounded,
+                                    accent: true,
+                                    onTap: () {
+                                      final cmid = pickString(
+                                        messages[i],
+                                        const ['_clientMessageId', '_localId'],
+                                      );
+                                      if (cmid.isEmpty) return;
+                                      onRetryPending(cmid);
+                                    },
+                                  ),
+                                  const SizedBox(width: AuraSpace.s4),
+                                  _PendingActionChip(
+                                    label: 'Dismiss',
+                                    icon: Icons.close_rounded,
+                                    onTap: () {
+                                      final cmid = pickString(
+                                        messages[i],
+                                        const ['_clientMessageId', '_localId'],
+                                      );
+                                      if (cmid.isEmpty) return;
+                                      onDismissPending(cmid);
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -1318,6 +1465,63 @@ class _ErrorBlock extends StatelessWidget {
           icon: Icons.refresh_rounded,
         ),
       ],
+    );
+  }
+}
+
+/// Compact chip used in the message tile footer to expose Retry/Dismiss
+/// affordances on a failed pending message. Mirrors the visual rhythm of
+/// inline status chips elsewhere in the thread surface.
+class _PendingActionChip extends StatelessWidget {
+  const _PendingActionChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = accent ? AuraSurface.accentText : AuraSurface.muted;
+    final bg = accent ? AuraSurface.accentSoft : AuraSurface.subtle;
+    final border = accent
+        ? AuraSurface.accent.withValues(alpha: 0.35)
+        : AuraSurface.divider;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s8,
+            vertical: 3,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 11, color: fg),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: AuraText.micro.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
