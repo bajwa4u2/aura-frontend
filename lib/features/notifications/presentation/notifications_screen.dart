@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/notifications_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -115,7 +116,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 error: (e, _) => Center(
                   child: AuraErrorState(
                     title: 'Could not load notifications',
-                    body: '$e',
+                    body: AppErrorMapper.from(e, feature: 'view your notifications').message,
                     action: AuraSecondaryButton(
                       label: 'Try again',
                       icon: Icons.refresh_rounded,

@@ -128,36 +128,65 @@ class NotificationsRepository {
       '/notifications',
       queryParameters: query.isEmpty ? null : query,
     );
-    final body = res.data;
+    // Aura Contract v1: every API response is wrapped by
+    // ResponseWrapInterceptor as `{ok: true, data: <payload>}`. The
+    // notifications service returns `{items, nextCursor}` at the payload
+    // level, so the actual list lives at `body.data.items` — NOT at
+    // `body.items`. Reading `body['items']` directly was the bug behind
+    // "You're all caught up" while /v1/notifications/unread-count
+    // reported 4: the screen's repo silently produced an empty list
+    // every time. Normalize defensively so legacy unwrapped shapes,
+    // pre-wrapped services, and the canonical envelope all work.
+    final payload = _unwrapPayload(res.data);
     final items = <AppNotification>[];
     String? next;
-    if (body is Map) {
-      final root = Map<String, dynamic>.from(body);
-      final raw = root['items'];
-      if (raw is List) {
-        for (final entry in raw.whereType<Map>()) {
+    final raw = payload['items'];
+    if (raw is List) {
+      for (final entry in raw.whereType<Map>()) {
+        try {
           items.add(AppNotification.fromJson(
             Map<String, dynamic>.from(entry),
           ));
+        } catch (error, stack) {
+          // Never let a single malformed row collapse the whole list.
+          // The dropped row is logged so we can spot a real DTO drift
+          // instead of silently disappearing items.
+          // ignore: avoid_print
+          print('notifications.parse_failed id=${entry['id']} err=$error\n$stack');
         }
       }
-      final c = root['nextCursor'];
-      if (c != null) {
-        final s = c.toString().trim();
-        if (s.isNotEmpty) next = s;
-      }
+    }
+    final c = payload['nextCursor'];
+    if (c != null) {
+      final s = c.toString().trim();
+      if (s.isNotEmpty) next = s;
     }
     return NotificationsPage(items: items, nextCursor: next);
   }
 
   Future<int> unreadCount() async {
     final res = await _dio.get('/notifications/unread-count');
-    if (res.data is Map) {
-      final v = (res.data as Map)['unreadCount'];
-      if (v is num) return v.toInt();
-      if (v is String) return int.tryParse(v) ?? 0;
-    }
+    final payload = _unwrapPayload(res.data);
+    // Backend controller returns `{unreadCount: N}`, the service that
+    // backs other call-sites uses `{count: N}`; accept both since the
+    // shapes have moved historically.
+    final v = payload['unreadCount'] ?? payload['count'];
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
     return 0;
+  }
+
+  /// Strip the standard `{ok: true, data: <payload>}` envelope. Tolerates:
+  ///   * raw `<payload>` (legacy or bypassed interceptor)
+  ///   * `{ok: true, data: {...}}` (canonical)
+  ///   * `{ok: true, items: [...]}` (services that pre-wrapped)
+  /// Always returns a Map; callers that need a List must read the right key.
+  Map<String, dynamic> _unwrapPayload(dynamic raw) {
+    if (raw is! Map) return const <String, dynamic>{};
+    final root = Map<String, dynamic>.from(raw);
+    final inner = root['data'];
+    if (inner is Map) return Map<String, dynamic>.from(inner);
+    return root;
   }
 
   Future<void> markRead(List<String> ids) async {
