@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -166,7 +167,7 @@ class _IdentityCard extends StatelessWidget {
       ),
       child: meAsync.when(
         loading: () => const _CardLoading(),
-        error: (e, _) => _CardError(message: e.toString()),
+        error: (e, _) => _CardError(message: AppErrorMapper.from(e).message),
         data: (me) {
           final displayName = me?.displayName ?? '';
           final email = me?.email ?? '';
@@ -257,7 +258,7 @@ class _MetricsPanel extends StatelessWidget {
       icon: Icons.bar_chart_outlined,
       child: metricsAsync.when(
         loading: () => const _CardLoading(),
-        error: (e, _) => _CardError(message: e.toString()),
+        error: (e, _) => _CardError(message: AppErrorMapper.from(e).message),
         data: (m) {
           if (m == null) {
             return const _EmptyCard(
@@ -340,7 +341,7 @@ class _HealthPanel extends StatelessWidget {
       icon: Icons.monitor_heart_outlined,
       child: healthAsync.when(
         loading: () => const _CardLoading(),
-        error: (e, _) => _CardError(message: e.toString()),
+        error: (e, _) => _CardError(message: AppErrorMapper.from(e).message),
         data: (h) {
           if (h == null) {
             return const _EmptyCard(message: 'Health status unavailable.');

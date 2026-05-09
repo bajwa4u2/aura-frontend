@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/services/call_presence_bridge.dart';
@@ -53,27 +54,12 @@ class _CallRouteRedirectingFallback extends StatelessWidget {
 // PROVIDER
 // ─────────────────────────────────────────────────────────────────────────────
 
-Map<String, dynamic> _unwrapResponseMap(dynamic value) {
-  if (value is Map<String, dynamic>) {
-    final inner = value['data'];
-    if (inner is Map<String, dynamic>) return inner;
-    if (inner is Map) return Map<String, dynamic>.from(inner);
-    return value;
-  }
-  if (value is Map) {
-    final map = Map<String, dynamic>.from(value);
-    final inner = map['data'];
-    if (inner is Map<String, dynamic>) return inner;
-    if (inner is Map) return Map<String, dynamic>.from(inner);
-    return map;
-  }
-  return <String, dynamic>{};
-}
-
+// Local alias for the canonical /auth/me cache. Previously this provider
+// duplicated the network call (one to /users/me, one to /auth/me), causing the
+// realtime room screen to issue an extra round-trip on every mount; now the
+// canonical authMeDataProvider serves both.
 final _realtimeCurrentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  final response = await dio.get('/users/me');
-  return _unwrapResponseMap(response.data);
+  return ref.watch(authMeDataProvider.future);
 });
 
 const _kPanelParticipants = 'participants';

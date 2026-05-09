@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -281,7 +282,9 @@ class _AnnouncementDetailScreenState
       body: async.when(
         loading: () =>
             const Center(child: AuraLoadingState(message: 'Loading…')),
-        error: (e, _) => Center(child: Text(e.toString())),
+        error: (e, _) => Center(
+          child: Text(AppErrorMapper.from(e, feature: 'view this announcement').message),
+        ),
         data: (a) {
           if (a == null) {
             return const Center(child: Text('Not found'));

@@ -17,23 +17,11 @@ import '../../features/realtime/domain/realtime_enums.dart';
 import '../../features/realtime/domain/realtime_models.dart';
 import '../route_targets.dart';
 
-// Cached current-user profile for header avatar.
+// Cached current-user profile for header avatar. Delegates to the canonical
+// `authMeDataProvider` so /auth/me is fetched exactly once per session — this
+// previously duplicated the call to /users/me from a separate provider.
 final _shellMeProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final auth = ref.watch(authStatusProvider);
-  if (auth != AuthStatus.authed) return {};
-  try {
-    final dio = ref.read(dioProvider);
-    final res = await dio.get('/users/me');
-    final raw = res.data;
-    if (raw is Map<String, dynamic>) {
-      for (final key in const ['data', 'user', 'item', 'result']) {
-        final nested = raw[key];
-        if (nested is Map<String, dynamic>) return nested;
-      }
-      return raw;
-    }
-  } catch (_) {}
-  return {};
+  return ref.watch(authMeDataProvider.future);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -144,6 +144,31 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           ref.read(deviceServiceProvider).registerCurrentDevice();
         } catch (_) {}
       }
+      // Auth-drop teardown: any path that flips this tab from authed → unauthed
+      // (Dio's clearSessionState on a forced 401, cross-tab logout, manual
+      // logout) MUST also stop the live runtime services. Without this, an
+      // expired-token tab keeps the realtime socket open and the heartbeat
+      // ticker firing — those calls then 401 in a tight loop until the user
+      // closes the tab. Both disconnect methods are idempotent and safe to
+      // call when the service is already torn down.
+      if ((prev ?? false) && !next) {
+        try {
+          unawaited(
+            ref
+                .read(correspondenceLiveServiceProvider)
+                .disconnect()
+                .catchError((_) {}),
+          );
+        } catch (_) {}
+        try {
+          unawaited(
+            ref
+                .read(realtimeControllerProvider.notifier)
+                .disconnect()
+                .catchError((_) {}),
+          );
+        } catch (_) {}
+      }
     });
 
     final router = ref.watch(routerProvider);

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
@@ -345,7 +346,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     } catch (error) {
       state = state.copyWith(
         isBusy: false,
-        errorMessage: error.toString(),
+        errorMessage: _safeJoinErrorMessage(error),
       );
       rethrow;
     } finally {
@@ -409,7 +410,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
 
       state = state.copyWith(
         joinState: _mapJoinError(error),
-        errorMessage: error.toString(),
+        errorMessage: _safeJoinErrorMessage(error),
       );
       rethrow;
     } finally {
@@ -525,7 +526,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     } catch (error) {
       state = state.copyWith(
         joinState: _mapJoinError(error),
-        errorMessage: error.toString(),
+        errorMessage: _safeJoinErrorMessage(error),
       );
     } finally {
       if (_joiningSessionId == trimmed) {
@@ -1489,6 +1490,34 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       return RealtimeJoinState.failed;
     }
     return RealtimeJoinState.failed;
+  }
+
+  /// Convert any error into a safe user-facing message for the join /
+  /// hydrate / resume paths. Stale-call deeplinks land here as
+  /// `DioException` 403/404 ("Realtime session is closed") or as the
+  /// internal `StateError('This session has already ended.')` thrown
+  /// from [_performJoin]; both should surface as a clean terminal
+  /// message instead of `Instance of 'DioException'` or a raw stack
+  /// trace. AppErrorMapper handles 401/403/404/5xx; we only override
+  /// for the call-specific terminal codes.
+  String _safeJoinErrorMessage(Object error) {
+    final text = error.toString().toLowerCase();
+    if (text.contains('invite_expired') ||
+        text.contains('invite has expired')) {
+      return 'This call invite has expired.';
+    }
+    if (text.contains('session_closed') ||
+        text.contains('session is closed') ||
+        text.contains('already ended')) {
+      return 'This call has ended.';
+    }
+    if (text.contains('locked')) {
+      return 'This call is locked.';
+    }
+    if (text.contains('approval') || text.contains('waiting room')) {
+      return 'Your join request was sent. Waiting for approval.';
+    }
+    return AppErrorMapper.from(error, feature: 'join this call').message;
   }
 
   bool managesCorrespondenceSurface({

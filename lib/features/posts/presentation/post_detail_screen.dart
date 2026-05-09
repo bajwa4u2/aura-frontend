@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -187,8 +188,9 @@ class PostDetailScreen extends ConsumerWidget {
                       );
                     },
                     loading: () => const _LoadingCard(label: 'Loading work…'),
-                    error: (e, _) =>
-                        _ErrorCard(message: 'Could not load work: $e'),
+                    error: (e, _) => _ErrorCard(
+                      message: AppErrorMapper.from(e, feature: 'view this work').message,
+                    ),
                   ),
 
                   const SizedBox(height: AuraSpace.s24),
@@ -263,8 +265,9 @@ class PostDetailScreen extends ConsumerWidget {
                     },
                     loading: () =>
                         const _LoadingCard(label: 'Loading responses…'),
-                    error: (e, _) =>
-                        _ErrorCard(message: 'Could not load responses: $e'),
+                    error: (e, _) => _ErrorCard(
+                      message: AppErrorMapper.from(e, feature: 'view responses').message,
+                    ),
                   ),
                 ],
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -81,7 +82,7 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
         loading: () => const AuraLoadingState(message: 'Loading post…'),
         error: (e, _) => AuraErrorState(
           title: 'Could not load post',
-          body: '$e',
+          body: AppErrorMapper.from(e, feature: 'view this post').message,
           action: AuraSecondaryButton(
             label: 'Try again',
             icon: Icons.refresh_rounded,
@@ -164,7 +165,7 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                     const AuraLoadingState(message: 'Loading replies…'),
                 error: (e, _) => AuraErrorState(
                   title: 'Could not load replies',
-                  body: '$e',
+                  body: AppErrorMapper.from(e, feature: 'view replies').message,
                   action: AuraSecondaryButton(
                     label: 'Try again',
                     icon: Icons.refresh_rounded,
