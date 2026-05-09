@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
-import '../../../core/interactions/notifications_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -12,6 +11,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
+import '../../updates/app_notification.dart';
+import '../../updates/providers.dart';
 
 /// Phase-3 actor-aware notifications list. Each row carries enough data to
 /// route on tap (post detail, institution-post detail, direct thread,
@@ -31,11 +32,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (_markingRead) return;
     setState(() => _markingRead = true);
     try {
-      await ref.read(notificationsRepositoryProvider).markAllRead();
-      ref.invalidate(notificationsListProvider);
-      ref.invalidate(unreadNotificationCountProvider);
+      await ref.read(notificationsControllerProvider.notifier).markAllRead();
     } catch (_) {
-      // No-op — the list refresh will reveal any persistent failure.
+      // No-op — the controller's refresh will reveal any persistent failure.
     } finally {
       if (mounted) setState(() => _markingRead = false);
     }
@@ -45,9 +44,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     // Mark this row (and any other ids in the same group) as read.
     final ids = <String>{n.id, ...alsoMark}.toList(growable: false);
     try {
-      await ref.read(notificationsRepositoryProvider).markRead(ids);
-      ref.invalidate(notificationsListProvider);
-      ref.invalidate(unreadNotificationCountProvider);
+      final notifier = ref.read(notificationsControllerProvider.notifier);
+      if (ids.length > 1) {
+        await notifier.markReadIds(ids);
+      } else {
+        await notifier.markRead(ids.first);
+      }
     } catch (_) {}
 
     if (!mounted) return;
@@ -101,7 +103,65 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pageAsync = ref.watch(notificationsListProvider);
+    final controllerState = ref.watch(notificationsControllerProvider);
+    final items = ref.watch(appNotificationsListProvider);
+
+    final isFirstLoad =
+        controllerState.isLoading && !controllerState.hasLoaded;
+    final errorText = controllerState.error;
+
+    Widget body;
+    if (isFirstLoad) {
+      body = const AuraLoadingState(message: 'Loading notifications…');
+    } else if (errorText != null && items.isEmpty) {
+      body = Center(
+        child: AuraErrorState(
+          title: 'Could not load notifications',
+          body: AppErrorMapper.from(errorText, feature: 'view your notifications')
+              .message,
+          action: AuraSecondaryButton(
+            label: 'Try again',
+            icon: Icons.refresh_rounded,
+            onPressed: () => ref
+                .read(notificationsControllerProvider.notifier)
+                .refresh(force: true),
+          ),
+        ),
+      );
+    } else if (items.isEmpty) {
+      body = const Center(
+        child: AuraEmptyState(
+          icon: Icons.notifications_none_rounded,
+          title: 'You\'re all caught up',
+          body:
+              'New likes, replies, follows, reposts and messages will land here.',
+        ),
+      );
+    } else {
+      // Phase 6.1 — collapse runs of REPLY / THREAD_ACTIVITY notifications
+      // about the same parent post into a single rollup tile. Other types
+      // remain 1:1.
+      final groups = _groupNotifications(items);
+      body = RefreshIndicator(
+        onRefresh: () => ref
+            .read(notificationsControllerProvider.notifier)
+            .refresh(force: true),
+        child: ListView.separated(
+          padding: const EdgeInsets.all(AuraSpace.s12),
+          itemCount: groups.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s8),
+          itemBuilder: (context, i) => _Tile(
+            group: groups[i],
+            onTap: () => _onTap(
+              groups[i].representative,
+              alsoMark: [
+                for (final x in groups[i].items.skip(1)) x.id,
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return AuraScaffold(
       showHeader: false,
@@ -109,61 +169,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         child: Column(
           children: [
             _Header(busy: _markingRead, onMarkAllRead: _markAllRead),
-            Expanded(
-              child: pageAsync.when(
-                loading: () =>
-                    const AuraLoadingState(message: 'Loading notifications…'),
-                error: (e, _) => Center(
-                  child: AuraErrorState(
-                    title: 'Could not load notifications',
-                    body: AppErrorMapper.from(e, feature: 'view your notifications').message,
-                    action: AuraSecondaryButton(
-                      label: 'Try again',
-                      icon: Icons.refresh_rounded,
-                      onPressed: () =>
-                          ref.invalidate(notificationsListProvider),
-                    ),
-                  ),
-                ),
-                data: (page) {
-                  if (page.items.isEmpty) {
-                    return const Center(
-                      child: AuraEmptyState(
-                        icon: Icons.notifications_none_rounded,
-                        title: 'You\'re all caught up',
-                        body:
-                            'New likes, replies, follows, reposts and messages will land here.',
-                      ),
-                    );
-                  }
-                  // Phase 6.1 — collapse runs of REPLY / THREAD_ACTIVITY
-                  // notifications about the same parent post into a
-                  // single rollup tile. Other types remain 1:1.
-                  final groups = _groupNotifications(page.items);
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(notificationsListProvider);
-                      ref.invalidate(unreadNotificationCountProvider);
-                    },
-                    child: ListView.separated(
-                      padding: const EdgeInsets.all(AuraSpace.s12),
-                      itemCount: groups.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: AuraSpace.s8),
-                      itemBuilder: (context, i) => _Tile(
-                        group: groups[i],
-                        onTap: () => _onTap(
-                          groups[i].representative,
-                          alsoMark: [
-                            for (final x in groups[i].items.skip(1)) x.id,
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            Expanded(child: body),
           ],
         ),
       ),

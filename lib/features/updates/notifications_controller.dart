@@ -190,6 +190,15 @@ class NotificationsController extends StateNotifier<NotificationsState>
     await refresh(force: true);
   }
 
+  /// Bulk mark-read for rollup tiles where one tap closes multiple rows.
+  /// Single-id consumers should keep calling [markRead] — this is only for
+  /// callers that already have a list to flush (e.g. a grouped REPLY tile).
+  Future<void> markReadIds(List<String> ids) async {
+    if (!_authed) return;
+    await _repo.markReadIds(ids);
+    await refresh(force: true);
+  }
+
   Future<void> markAllRead() async {
     if (!_authed) return;
     await _repo.markAllRead();

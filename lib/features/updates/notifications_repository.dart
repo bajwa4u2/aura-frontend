@@ -134,6 +134,37 @@ class NotificationsRepository {
     }
   }
 
+  /// Bulk mark-read using the `POST /notifications/read` endpoint with
+  /// `{ids: [...]}`. Used when a single tap closes a rollup tile that
+  /// represents multiple underlying rows (e.g. REPLY runs grouped into a
+  /// single "$N new replies" tile). Filters out ids that are already
+  /// cached as read or already in flight so a redundant tap is cheap.
+  Future<void> markReadIds(List<String> ids) async {
+    final filtered = <String>[];
+    for (final raw in ids) {
+      final id = raw.trim();
+      if (id.isEmpty) continue;
+      if (_readInFlight.contains(id)) continue;
+      if (_isCachedAsRead(id)) continue;
+      filtered.add(id);
+    }
+    if (filtered.isEmpty) return;
+
+    _readInFlight.addAll(filtered);
+    try {
+      await _dio.post('/notifications/read', data: {'ids': filtered});
+      for (final id in filtered) {
+        _markCachedRead(id);
+      }
+      _unreadCache = null;
+      _unreadCacheAt = null;
+    } finally {
+      for (final id in filtered) {
+        _readInFlight.remove(id);
+      }
+    }
+  }
+
   Future<void> markAllRead() async {
     await _dio.post('/notifications/read-all');
     if (_cache != null) {
