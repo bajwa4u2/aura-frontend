@@ -1,16 +1,21 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+// Post-composer model file.
+//
+// `ComposeAttachment`, `ComposeAttachmentType`, and `ComposeAttachmentSource`
+// were removed in the C1 attachment-model consolidation. The post composer
+// now uses the canonical `Attachment` / `AttachmentKind` / `AttachmentSource`
+// from `lib/core/media/`. Per-attachment caption `TextEditingController`
+// objects (which were owned by the old `ComposeAttachment`) are now held
+// in a parallel `Map<String, TextEditingController>` on the screen state,
+// keyed by `attachment.localId` — see `compose_screen.dart`.
+//
+// `PostVisibility` and the language helpers below are unrelated to media
+// and remain here.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENUMS
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum PostVisibility { public, followers, private }
-
-enum ComposeAttachmentType { image, video }
-
-enum ComposeAttachmentSource { camera, gallery }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LANGUAGE CONSTANTS
@@ -39,55 +44,4 @@ String composeLanguageLabel(String code) {
   final key = code.trim().toLowerCase();
   if (key.isEmpty) return '';
   return kComposeLanguageLabels[key] ?? key.toUpperCase();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ATTACHMENT MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-
-class ComposeAttachment {
-  ComposeAttachment({
-    required this.localId,
-    required this.type,
-    required this.source,
-    required this.captionController,
-    this.localFile,
-    this.localBytes,
-    this.width,
-    this.height,
-    this.durationMs,
-    this.mediaId,
-    this.url,
-    this.thumbUrl,
-    this.uploading = false,
-    this.attachedToDraft = false,
-  });
-
-  final String localId;
-  final ComposeAttachmentType type;
-  final ComposeAttachmentSource source;
-  final TextEditingController captionController;
-
-  XFile? localFile;
-  Uint8List? localBytes;
-
-  int? width;
-  int? height;
-  int? durationMs;
-
-  String? mediaId;
-  String? url;
-  String? thumbUrl;
-
-  bool uploading;
-  bool attachedToDraft;
-  String? error;
-
-  bool get isImage => type == ComposeAttachmentType.image;
-  bool get isVideo => type == ComposeAttachmentType.video;
-  bool get isUploaded => (mediaId ?? '').trim().isNotEmpty;
-
-  void dispose() {
-    captionController.dispose();
-  }
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/interactions/direct_threads_repository.dart';
 import '../../../core/interactions/follows_repository.dart';
+import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -216,10 +217,11 @@ class _InboxTile extends ConsumerWidget {
                 border: Border.all(color: AuraSurface.divider),
               ),
               child: logoUrl.isNotEmpty
-                  ? Image.network(
-                      logoUrl,
+                  ? AuraAttachmentImage(
+                      url: logoUrl,
+                      attachmentId: 'thread:${thread.threadId}:partner',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
+                      errorWidget: (_) => Center(
                         child: Text(
                           initial,
                           style: AuraText.body.copyWith(

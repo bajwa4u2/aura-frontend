@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/media/attachment.dart';
+import '../../../../core/media/aura_attachment_image.dart';
+import '../../../../core/media/media_mime.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
@@ -627,39 +630,36 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
                   borderRadius: BorderRadius.circular(18),
                   child: ColoredBox(
                     color: Colors.black,
-                    child: Image.network(
-                      imageUrl,
+                    child: AuraAttachmentImage(
+                      url: imageUrl,
                       fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return SizedBox(
-                          height: maxH.clamp(200, 320),
-                          width: maxW.clamp(200, 520),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white70,
-                                  ),
+                      placeholder: (_) => SizedBox(
+                        height: maxH.clamp(200, 320),
+                        width: maxW.clamp(200, 520),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white70,
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Loading image…',
-                                  style: AuraText.small.copyWith(
-                                    color: Colors.white70,
-                                  ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Loading image…',
+                                style: AuraText.small.copyWith(
+                                  color: Colors.white70,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Container(
+                        ),
+                      ),
+                      errorWidget: (_) => Container(
                         height: maxH.clamp(200, 320),
                         width: maxW.clamp(200, 520),
                         decoration: BoxDecoration(
@@ -724,6 +724,10 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
     final kind = kindFromMime(mimeType);
     final url = resolveAttachmentUrl(attachment);
     final thumbUrl = resolveAttachmentThumbUrl(attachment);
+    final attachmentId = pickString(
+      attachment,
+      const ['id', 'attachmentId', 'mediaId', 'storageKey'],
+    );
 
     const borderColor = AuraSurface.divider;
     const surfaceColor = AuraSurface.subtle;
@@ -733,7 +737,7 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
     void handleTap() {
       if (url.isEmpty) return;
 
-      if (kind == ThreadAttachmentKind.image) {
+      if (kind == AttachmentKind.image) {
         _openImageViewer(
           context,
           thumbUrl.isNotEmpty ? thumbUrl : url,
@@ -747,10 +751,11 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
 
     Widget mediaSurface;
     switch (kind) {
-      case ThreadAttachmentKind.image:
+      case AttachmentKind.image:
         mediaSurface = _ImageAttachmentSurface(
           thumbUrl: thumbUrl,
           url: url,
+          attachmentId: attachmentId,
           borderColor: borderColor,
           surfaceColor: surfaceColor,
           primaryTextColor: primaryTextColor,
@@ -760,10 +765,11 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
           hovering: _hovering,
         );
         break;
-      case ThreadAttachmentKind.video:
+      case AttachmentKind.video:
         mediaSurface = _VideoAttachmentSurface(
           thumbUrl: thumbUrl,
           url: url,
+          attachmentId: attachmentId,
           borderColor: borderColor,
           surfaceColor: surfaceColor,
           primaryTextColor: primaryTextColor,
@@ -773,7 +779,7 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
           hovering: _hovering,
         );
         break;
-      case ThreadAttachmentKind.audio:
+      case AttachmentKind.audio:
         mediaSurface = _AudioAttachmentSurface(
           url: url,
           borderColor: borderColor,
@@ -786,7 +792,7 @@ class _MessageAttachmentCardState extends State<_MessageAttachmentCard> {
           hovering: _hovering,
         );
         break;
-      case ThreadAttachmentKind.document:
+      case AttachmentKind.document:
         mediaSurface = _DocumentAttachmentSurface(
           url: url,
           borderColor: borderColor,
@@ -820,6 +826,7 @@ class _ImageAttachmentSurface extends StatelessWidget {
   const _ImageAttachmentSurface({
     required this.thumbUrl,
     required this.url,
+    required this.attachmentId,
     required this.borderColor,
     required this.surfaceColor,
     required this.primaryTextColor,
@@ -831,6 +838,10 @@ class _ImageAttachmentSurface extends StatelessWidget {
 
   final String thumbUrl;
   final String url;
+  /// Stable cache key. Server-issued id when present (`id`/`attachmentId`/
+  /// `mediaId`/`storageKey`); falls back to URL-based caching inside
+  /// AuraAttachmentImage when empty.
+  final String attachmentId;
   final Color borderColor;
   final Color surfaceColor;
   final Color primaryTextColor;
@@ -867,17 +878,15 @@ class _ImageAttachmentSurface extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (imageUrl.isNotEmpty)
-                  Image.network(
-                    imageUrl,
+                  AuraAttachmentImage(
+                    url: imageUrl,
+                    attachmentId: attachmentId.isNotEmpty ? attachmentId : null,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const _MediaLoadingPlaceholder(
-                        icon: Icons.image_outlined,
-                        label: 'Loading image…',
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => _BrokenMediaFallback(
+                    placeholder: (_) => const _MediaLoadingPlaceholder(
+                      icon: Icons.image_outlined,
+                      label: 'Loading image…',
+                    ),
+                    errorWidget: (_) => _BrokenMediaFallback(
                       icon: Icons.image_outlined,
                       text: 'Image preview unavailable',
                       textColor: secondaryTextColor,
@@ -936,10 +945,14 @@ class _ImageAttachmentSurface extends StatelessWidget {
   }
 }
 
+// Note: video poster surface; the `attachmentId` field is forwarded to
+// AuraAttachmentImage so the poster cache invalidates when the
+// underlying video media is replaced server-side.
 class _VideoAttachmentSurface extends StatelessWidget {
   const _VideoAttachmentSurface({
     required this.thumbUrl,
     required this.url,
+    required this.attachmentId,
     required this.borderColor,
     required this.surfaceColor,
     required this.primaryTextColor,
@@ -951,6 +964,7 @@ class _VideoAttachmentSurface extends StatelessWidget {
 
   final String thumbUrl;
   final String url;
+  final String attachmentId;
   final Color borderColor;
   final Color surfaceColor;
   final Color primaryTextColor;
@@ -987,17 +1001,15 @@ class _VideoAttachmentSurface extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (previewUrl.isNotEmpty)
-                  Image.network(
-                    previewUrl,
+                  AuraAttachmentImage(
+                    url: previewUrl,
+                    attachmentId: attachmentId.isNotEmpty ? attachmentId : null,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const _MediaLoadingPlaceholder(
-                        icon: Icons.videocam_outlined,
-                        label: 'Loading video preview…',
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => const _BrokenMediaFallback(
+                    placeholder: (_) => const _MediaLoadingPlaceholder(
+                      icon: Icons.videocam_outlined,
+                      label: 'Loading video preview…',
+                    ),
+                    errorWidget: (_) => const _BrokenMediaFallback(
                       icon: Icons.videocam_outlined,
                       text: 'Video preview unavailable',
                       textColor: Colors.white70,

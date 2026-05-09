@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../../core/media/aura_attachment_image.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../../core/ui/aura_radius.dart';
 import '../../../../../core/ui/aura_space.dart';
@@ -289,10 +290,11 @@ class PostCardSingleMediaCard extends StatelessWidget {
         ),
       );
     } else if (imageUrl.isNotEmpty) {
-      mediaWidget = Image.network(
-        imageUrl,
+      mediaWidget = AuraAttachmentImage(
+        url: imageUrl,
+        attachmentId: item.id.isNotEmpty ? item.id : null,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorWidget: (_) => Container(
           constraints: const BoxConstraints(minHeight: 180),
           alignment: Alignment.center,
           child: Text(
@@ -301,20 +303,12 @@ class PostCardSingleMediaCard extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-        loadingBuilder: (c, child, p) {
-          if (p == null) return child;
-          return SizedBox(
-            height: 220,
-            child: Center(
-              child: CircularProgressIndicator(
-                value: (p.expectedTotalBytes != null)
-                    ? (p.cumulativeBytesLoaded / (p.expectedTotalBytes ?? 1))
-                    : null,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        },
+        placeholder: (_) => const SizedBox(
+          height: 220,
+          child: Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       );
     } else {
       mediaWidget = Container(

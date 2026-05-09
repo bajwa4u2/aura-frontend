@@ -627,6 +627,9 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
+/// Identity avatar in the invitations list. Delegates to the canonical
+/// [AuraAvatar] (gradient initial fallback) so this surface no longer
+/// uses a separate Material `CircleAvatar` background.
 class _IdentityAvatar extends StatelessWidget {
   const _IdentityAvatar({required this.label, this.imageUrl = ''});
 
@@ -635,20 +638,7 @@ class _IdentityAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = _initials(label);
-    if (imageUrl.trim().isNotEmpty) {
-      return CircleAvatar(
-        radius: 20,
-        backgroundImage: NetworkImage(imageUrl.trim()),
-      );
-    }
-    return CircleAvatar(
-      radius: 20,
-      child: Text(
-        initials,
-        style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-      ),
-    );
+    return AuraAvatar(name: label, imageUrl: imageUrl, size: 40);
   }
 }
 
@@ -690,10 +680,6 @@ String _humanizeLabel(String value) {
 
 String _inviteAvatarUrl(Map<String, dynamic> invite) {
   return CorrespondenceIdentity.inviteAvatarUrl(invite);
-}
-
-String _initials(String value) {
-  return CorrespondenceIdentity.initials(value);
 }
 
 String _destinationRoute(Map<String, dynamic> invite) {

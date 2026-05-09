@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../../../core/media/aura_attachment_image.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../../core/ui/aura_text.dart';
 import 'post_card_models.dart';
@@ -209,9 +210,10 @@ class PostCardViewerArrowButton extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PostCardImageViewer extends StatelessWidget {
-  const PostCardImageViewer({super.key, required this.url});
+  const PostCardImageViewer({super.key, required this.url, this.mediaId});
 
   final String url;
+  final String? mediaId;
 
   @override
   Widget build(BuildContext context) {
@@ -222,13 +224,18 @@ class PostCardImageViewer extends StatelessWidget {
       );
     }
 
+    // Wrapped in InteractiveViewer for pinch-zoom; AuraAttachmentImage
+    // contributes the canonical CachedNetworkImage cache (keyed by
+    // [mediaId] when supplied). The error fallback matches the prior
+    // dialog UX (a small centered "Image unavailable" string in white).
     return InteractiveViewer(
       minScale: 0.8,
       maxScale: 4.0,
-      child: Image.network(
-        url,
+      child: AuraAttachmentImage(
+        url: url,
+        attachmentId: mediaId,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Text(
+        errorWidget: (_) => Text(
           'Image unavailable',
           style: AuraText.body.copyWith(color: Colors.white),
         ),

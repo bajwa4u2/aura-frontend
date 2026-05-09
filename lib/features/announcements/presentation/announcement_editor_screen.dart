@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../../config.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/media/attachment.dart';
+import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -90,7 +92,7 @@ class _AnnouncementEditorScreenState
   String _linkedinAccountLabel = '';
   String? _linkedinError;
 
-  final List<_AnnouncementEditorMediaAttachment> _attachments = <_AnnouncementEditorMediaAttachment>[];
+  final List<Attachment> _attachments = <Attachment>[];
   bool _mediaUploading = false;
 
   static const List<String> _targetLanguages = <String>[
@@ -178,21 +180,10 @@ class _AnnouncementEditorScreenState
 
   String _trimmedOrEmpty(String text) => text.trim();
 
-  String _inferMime(String fileName) {
-    final lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.mp4')) return 'video/mp4';
-    if (lower.endsWith('.mov')) return 'video/quicktime';
-    if (lower.endsWith('.webm')) return 'video/webm';
-    return 'application/octet-stream';
-  }
-
-  String _mediaKindForMime(String mime) {
-    return mime.toLowerCase().startsWith('video/') ? 'VIDEO' : 'IMAGE';
-  }
+  // MIME inference + kind mapping moved to lib/core/media/media_mime.dart
+  // (canonical) and lib/core/media/attachment.dart (`kindFromMime`,
+  // `wireKind`). The local copies here used to drift from the backend
+  // allow-list; consolidated.
 
   Future<void> _pickMedia() async {
     if (_submitting || _mediaUploading) return;
@@ -206,18 +197,20 @@ class _AnnouncementEditorScreenState
 
     if (result == null || result.files.isEmpty) return;
 
-    final picked = <_AnnouncementEditorMediaAttachment>[];
+    final picked = <Attachment>[];
     for (final file in result.files) {
       final bytes = file.bytes;
       if (bytes == null || bytes.isEmpty) continue;
-      final mime = _inferMime(file.name);
+      final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
       picked.add(
-        _AnnouncementEditorMediaAttachment(
+        Attachment(
           localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
-          name: file.name,
+          kind: kindFromMime(mime),
+          source: AttachmentSource.gallery,
+          fileName: file.name,
           bytes: bytes,
           mimeType: mime,
-          kind: _mediaKindForMime(mime),
+          sizeBytes: bytes.length,
           uploading: true,
         ),
       );
@@ -241,15 +234,15 @@ class _AnnouncementEditorScreenState
     });
   }
 
-  Future<void> _uploadAttachment(_AnnouncementEditorMediaAttachment attachment) async {
+  Future<void> _uploadAttachment(Attachment attachment) async {
     try {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: attachment.bytes,
-        fileName: attachment.name,
-        mimeType: attachment.mimeType,
-        kind: attachment.kind,
-        source: 'GALLERY',
+        bytes: attachment.bytes ?? Uint8List(0),
+        fileName: attachment.fileName ?? '',
+        mimeType: attachment.mimeType ?? '',
+        kind: wireKind(attachment.kind),
+        source: wireSource(attachment.source),
         metadataPatch: const <String, dynamic>{
           'caption': null,
         },
@@ -260,6 +253,7 @@ class _AnnouncementEditorScreenState
         attachment.mediaId = result.mediaId;
         attachment.url = result.url.isNotEmpty ? result.url : null;
         attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
+        attachment.storageKey = result.storageKey.isNotEmpty ? result.storageKey : null;
         attachment.uploading = false;
         attachment.error = null;
       });
@@ -272,7 +266,7 @@ class _AnnouncementEditorScreenState
     }
   }
 
-  void _removeAttachment(_AnnouncementEditorMediaAttachment attachment) {
+  void _removeAttachment(Attachment attachment) {
     setState(() {
       _attachments.removeWhere((item) => item.localId == attachment.localId);
       _mediaUploading = _attachments.any((item) => item.uploading);
@@ -662,7 +656,7 @@ class _AnnouncementEditorScreenState
       }
 
       if (_publishToTikTok) {
-        final hasVideo = _attachments.any((item) => item.isReady && item.isVideo);
+        final hasVideo = _attachments.any((item) => item.isUploaded && !item.uploading && item.isVideo);
         if (!hasVideo) {
           throw Exception('TikTok announcement publishing requires one uploaded video.');
         }
@@ -1320,7 +1314,7 @@ class _AnnouncementEditorScreenState
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      attachment.name,
+                                      attachment.fileName ?? '',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -1466,30 +1460,8 @@ class _AnnouncementEditorScreenState
   }
 }
 
-class _AnnouncementEditorMediaAttachment {
-  _AnnouncementEditorMediaAttachment({
-    required this.localId,
-    required this.name,
-    required this.bytes,
-    required this.mimeType,
-    required this.kind,
-    this.uploading = false,
-  });
-
-  final String localId;
-  final String name;
-  final Uint8List bytes;
-  final String mimeType;
-  final String kind;
-  String? mediaId;
-  String? url;
-  String? thumbUrl;
-  bool uploading;
-  String? error;
-
-  bool get isVideo => kind == 'VIDEO';
-  bool get isReady => (mediaId ?? '').trim().isNotEmpty && !uploading;
-}
+// _AnnouncementEditorMediaAttachment removed — migrated to canonical
+// `Attachment` from lib/core/media/attachment.dart.
 
 class _AnnouncementTranslationPreview {
   const _AnnouncementTranslationPreview({

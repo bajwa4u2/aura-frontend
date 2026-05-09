@@ -11,6 +11,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/media/attachment.dart';
+import '../../../core/media/media_mime.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -110,17 +112,9 @@ class _InstitutionPostComposerScreenState
 
   static const int _kImageMaxBytes = 8 * 1024 * 1024; // 8 MB
   static const int _kVideoMaxBytes = 50 * 1024 * 1024; // 50 MB
-  static const Set<String> _kImageMimeWhitelist = {
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-  };
-  static const Set<String> _kVideoMimeWhitelist = {
-    'video/mp4',
-    'video/quicktime',
-    'video/webm',
-  };
+  // MIME allow-lists moved to lib/core/media/media_mime.dart (canonical
+  // mirror of backend `media.service.ts::allowedMime()`). Local copies
+  // here used to drift; consolidated.
 
   @override
   void initState() {
@@ -511,14 +505,16 @@ class _InstitutionPostComposerScreenState
 
     try {
       final bytes = await file.readAsBytes();
-      final mimeType = file.mimeType ?? _inferMime(file.name, video: video);
+      final mimeType = file.mimeType ??
+          inferMimeFromFileName(file.name) ??
+          (video ? 'video/mp4' : 'image/jpeg');
 
       if (bytes.isEmpty) {
         throw const _MediaValidationException('File is empty.');
       }
 
       if (video) {
-        if (!_kVideoMimeWhitelist.contains(mimeType.toLowerCase())) {
+        if (!isMimeAllowedFor(AttachmentKind.video, mimeType)) {
           throw const _MediaValidationException(
               'Unsupported video format. Use MP4, MOV, or WebM.');
         }
@@ -527,7 +523,7 @@ class _InstitutionPostComposerScreenState
               'Video must be ${_kVideoMaxBytes ~/ (1024 * 1024)} MB or smaller.');
         }
       } else {
-        if (!_kImageMimeWhitelist.contains(mimeType.toLowerCase())) {
+        if (!isMimeAllowedFor(AttachmentKind.image, mimeType)) {
           throw const _MediaValidationException(
               'Unsupported image format. Use JPEG, PNG, WebP, or GIF.');
         }
@@ -594,18 +590,8 @@ class _InstitutionPostComposerScreenState
     _scheduleDraftSave();
   }
 
-  String _inferMime(String name, {required bool video}) {
-    final ext = name.split('.').last.toLowerCase();
-    if (video) {
-      if (ext == 'mov') return 'video/quicktime';
-      if (ext == 'webm') return 'video/webm';
-      return 'video/mp4';
-    }
-    if (ext == 'png') return 'image/png';
-    if (ext == 'webp') return 'image/webp';
-    if (ext == 'gif') return 'image/gif';
-    return 'image/jpeg';
-  }
+  // _inferMime removed — replaced with `inferMimeFromFileName` from
+  // lib/core/media/media_mime.dart (canonical).
 
   Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
     try {

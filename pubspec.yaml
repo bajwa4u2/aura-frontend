@@ -104,13 +104,25 @@ flutter_launcher_icons:
     image_path: "assets/store/macos/app_icon_1024.png"
 
 msix_config:
-  display_name: Aura
-  publisher_display_name: Aura Platform
-  identity_name: AuraPlatform.Aura
-  msix_version: 1.0.0.0
+  # Identity values below are the exact values issued by Microsoft Partner
+  # Center for this product. Do not edit without re-checking Partner Center
+  # → Apps and games → Aura → Product identity. A mismatch on any of the
+  # three identity fields is a hard Store certification failure.
+  #
+  # `display_name` MUST equal the reserved Store product name verbatim —
+  # the msix package writes this string into BOTH
+  # Package/Properties/DisplayName AND Application/VisualElements@DisplayName,
+  # and Partner Center validates the Properties value against your
+  # reservation. A previous submission failed certification because this
+  # was set to "Aura" instead of the reserved "AURA PLATFORM".
+  display_name: AURA PLATFORM
+  publisher_display_name: Aura Platform LLC
+  identity_name: AuraPlatformLLC.AURAPLATFORM
+  msix_version: 1.0.1.0
   description: Aura — a writing platform built for continuity.
-  publisher: CN=Aura Platform
+  publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png
   icons_background_color: "#1A1A2E"
   capabilities: internetClient
+  architecture: x64
   store: true

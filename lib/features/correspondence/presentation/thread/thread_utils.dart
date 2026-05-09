@@ -268,27 +268,10 @@ String formatBytes(int bytes) {
   return '${gb.toStringAsFixed(gb >= 100 ? 0 : 1)} GB';
 }
 
-// ─── Attachment kind ─────────────────────────────────────────────────────────
-
-enum ThreadAttachmentKind { image, video, audio, document }
-
-ThreadAttachmentKind kindFromMime(String mime) {
-  final lower = mime.toLowerCase();
-  if (lower.startsWith('image/')) { return ThreadAttachmentKind.image; }
-  if (lower.startsWith('video/')) { return ThreadAttachmentKind.video; }
-  if (lower.startsWith('audio/')) { return ThreadAttachmentKind.audio; }
-  if (lower == 'application/pdf') { return ThreadAttachmentKind.document; }
-  if (lower.startsWith('application/vnd.')) { return ThreadAttachmentKind.document; }
-  if (lower.startsWith('application/msword')) { return ThreadAttachmentKind.document; }
-  if (lower == 'application/rtf') { return ThreadAttachmentKind.document; }
-  if (lower.startsWith('text/')) { return ThreadAttachmentKind.document; }
-  if (lower == 'application/zip' ||
-      lower == 'application/x-zip-compressed') {
-    return ThreadAttachmentKind.document;
-  }
-  if (lower.startsWith('application/')) { return ThreadAttachmentKind.document; }
-  return ThreadAttachmentKind.document;
-}
+// ThreadAttachmentKind / kindFromMime moved to lib/core/media/
+// (AttachmentKind + kindFromMime). The thread message tile and composer
+// now consume the canonical definitions; this file no longer re-exports
+// duplicates.
 
 // ─── Response unwrapping ─────────────────────────────────────────────────────
 

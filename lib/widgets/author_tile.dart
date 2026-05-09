@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:aura/models/author.dart';
 
+import '../core/ui/aura_platform_components.dart';
+
 class AuthorTile extends StatelessWidget {
   final Author author;
   final Widget? trailing;
@@ -13,26 +15,16 @@ class AuthorTile extends StatelessWidget {
     this.onTap,
   });
 
-  Widget _avatar() {
-    final url = author.avatarUrl;
-    if (url == null || url.trim().isEmpty) {
-      return CircleAvatar(
-        child: Text(author.name.isNotEmpty ? author.name[0] : '?'),
-      );
-    }
-    return CircleAvatar(
-      backgroundImage: NetworkImage(url),
-      onBackgroundImageError: (_, __) {},
-      child: const SizedBox.shrink(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
       mouseCursor: SystemMouseCursors.click,
-      leading: _avatar(),
+      leading: AuraAvatar(
+        name: author.name,
+        imageUrl: author.avatarUrl,
+        size: 40,
+      ),
       title: Text(
         author.name,
         style: const TextStyle(fontWeight: FontWeight.w600),

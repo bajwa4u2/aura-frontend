@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:aura/models/note.dart';
 import 'package:aura/state/app_state.dart';
 
+import '../core/ui/aura_platform_components.dart';
+
 class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback? onAuthorTap;
@@ -20,18 +22,7 @@ class NoteCard extends StatelessWidget {
   }
 
   Widget _avatar(String name, String? url) {
-    if (url == null || url.trim().isEmpty) {
-      return CircleAvatar(
-        radius: 18,
-        child: Text(name.isNotEmpty ? name[0] : '?'),
-      );
-    }
-    return CircleAvatar(
-      radius: 18,
-      backgroundImage: NetworkImage(url),
-      onBackgroundImageError: (_, __) {},
-      child: const SizedBox.shrink(),
-    );
+    return AuraAvatar(name: name, imageUrl: url, size: 36);
   }
 
   void _toast(BuildContext context, String msg) {

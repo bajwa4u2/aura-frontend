@@ -11,6 +11,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/media/attachment.dart';
+import '../../../core/media/media_mime.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -192,7 +194,33 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   PostVisibility _visibility = PostVisibility.public;
 
-  final List<ComposeAttachment> _attachments = [];
+  final List<Attachment> _attachments = [];
+
+  /// Per-attachment caption text. Keyed by `attachment.localId`. Owned
+  /// by the screen state (not the model) so the canonical `Attachment`
+  /// stays free of UI-control coupling — see lib/core/media/attachment.dart.
+  final Map<String, TextEditingController> _captionControllers = {};
+
+  TextEditingController _ensureCaptionController(
+    Attachment att, {
+    String initialText = '',
+  }) {
+    final existing = _captionControllers[att.localId];
+    if (existing != null) return existing;
+    final c = TextEditingController(text: initialText);
+    c.addListener(_scheduleAutosave);
+    _captionControllers[att.localId] = c;
+    return c;
+  }
+
+  String _captionText(Attachment att) {
+    return _captionControllers[att.localId]?.text.trim() ?? '';
+  }
+
+  void _disposeCaptionController(String localId) {
+    final c = _captionControllers.remove(localId);
+    c?.dispose();
+  }
 
   DateTime? _lastSavedAt;
   Timer? _autosaveDebounce;
@@ -250,7 +278,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       !_isReply && _attachments.length < _maxAttachments;
   bool get _supportsCameraCapture => !kIsWeb;
 
-  ComposeAttachment? get _primaryTikTokVideoAttachment {
+  Attachment? get _primaryTikTokVideoAttachment {
     for (final attachment in _attachments) {
       final url = (attachment.url ?? '').trim();
       if (attachment.isVideo &&
@@ -340,19 +368,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return out;
   }
 
-  String _inferMime(String fileName) {
-    final lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
-      return 'image/jpeg';
-    }
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.mp4')) return 'video/mp4';
-    if (lower.endsWith('.mov')) return 'video/quicktime';
-    if (lower.endsWith('.webm')) return 'video/webm';
-    return 'application/octet-stream';
-  }
+  // _inferMime moved to lib/core/media/media_mime.dart::inferMimeFromFileName.
 
   String _visibilityApiValue(PostVisibility value) {
     switch (value) {
@@ -512,9 +528,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   void dispose() {
     _autosaveDebounce?.cancel();
     _textController.dispose();
-    for (final attachment in _attachments) {
-      attachment.dispose();
+    for (final c in _captionControllers.values) {
+      c.dispose();
     }
+    _captionControllers.clear();
     super.dispose();
   }
 
@@ -795,44 +812,39 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       final mediaItems = _listOfMap(draft['media']);
 
-      final loadedAttachments = <ComposeAttachment>[];
+      final loadedAttachments = <Attachment>[];
       for (final item in mediaItems) {
         final typeRaw = _str(item['type']).toUpperCase();
         final mediaId = _str(item['id']);
         if (mediaId.isEmpty) continue;
 
         final isVideo = typeRaw == 'VIDEO';
-        final captionController = TextEditingController(
-          text: _str(item['caption']),
-        );
-        captionController.addListener(_scheduleAutosave);
 
-        loadedAttachments.add(
-          ComposeAttachment(
-            localId: mediaId,
-            type: isVideo ? ComposeAttachmentType.video : ComposeAttachmentType.image,
-            source: ComposeAttachmentSource.gallery,
-            captionController: captionController,
-            mediaId: mediaId,
-            url: _str(item['displayUrl']).isNotEmpty
-                ? _str(item['displayUrl'])
-                : _str(item['url']),
-            thumbUrl: _str(item['thumbnailUrl']).isNotEmpty
-                ? _str(item['thumbnailUrl'])
-                : _str(item['thumbUrl']),
-            width: item['width'] is int
-                ? item['width'] as int
-                : int.tryParse('${item['width'] ?? ''}'),
-            height: item['height'] is int
-                ? item['height'] as int
-                : int.tryParse('${item['height'] ?? ''}'),
-            durationMs: item['duration'] is int
-                ? item['duration'] as int
-                : int.tryParse('${item['duration'] ?? ''}'),
-            uploading: false,
-            attachedToDraft: true,
-          ),
+        final att = Attachment(
+          localId: mediaId,
+          kind: isVideo ? AttachmentKind.video : AttachmentKind.image,
+          source: AttachmentSource.gallery,
+          mediaId: mediaId,
+          url: _str(item['displayUrl']).isNotEmpty
+              ? _str(item['displayUrl'])
+              : _str(item['url']),
+          thumbUrl: _str(item['thumbnailUrl']).isNotEmpty
+              ? _str(item['thumbnailUrl'])
+              : _str(item['thumbUrl']),
+          width: item['width'] is int
+              ? item['width'] as int
+              : int.tryParse('${item['width'] ?? ''}'),
+          height: item['height'] is int
+              ? item['height'] as int
+              : int.tryParse('${item['height'] ?? ''}'),
+          durationMs: item['duration'] is int
+              ? item['duration'] as int
+              : int.tryParse('${item['duration'] ?? ''}'),
+          uploading: false,
+          attachedToDraft: true,
         );
+        _ensureCaptionController(att, initialText: _str(item['caption']));
+        loadedAttachments.add(att);
       }
 
       if (!mounted) return;
@@ -887,8 +899,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: ComposeAttachmentType.image,
-      source: ComposeAttachmentSource.gallery,
+      type: AttachmentKind.image,
+      source: AttachmentSource.gallery,
     );
   }
 
@@ -913,8 +925,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: ComposeAttachmentType.image,
-      source: ComposeAttachmentSource.camera,
+      type: AttachmentKind.image,
+      source: AttachmentSource.camera,
     );
   }
 
@@ -927,8 +939,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: ComposeAttachmentType.video,
-      source: ComposeAttachmentSource.gallery,
+      type: AttachmentKind.video,
+      source: AttachmentSource.gallery,
     );
   }
 
@@ -956,15 +968,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await _addPickedFile(
       file,
-      type: ComposeAttachmentType.video,
-      source: ComposeAttachmentSource.camera,
+      type: AttachmentKind.video,
+      source: AttachmentSource.camera,
     );
   }
 
   Future<void> _addPickedFile(
     XFile file, {
-    required ComposeAttachmentType type,
-    required ComposeAttachmentSource source,
+    required AttachmentKind type,
+    required AttachmentSource source,
   }) async {
     if (_attachments.length >= _maxAttachments) {
       if (!mounted) return;
@@ -978,7 +990,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     int? width;
     int? height;
 
-    if (type == ComposeAttachmentType.image) {
+    if (type == AttachmentKind.image) {
       bytes = await file.readAsBytes();
       try {
         final size = await _decodeImageSize(bytes);
@@ -987,20 +999,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       } catch (_) {}
     }
 
-    final attachment = ComposeAttachment(
+    final attachment = Attachment(
       localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}',
-      type: type,
+      kind: type,
       source: source,
-      captionController: TextEditingController(),
-      localFile: file,
-      localBytes: bytes,
+      file: file,
+      bytes: bytes,
+      fileName: file.name,
       width: width,
       height: height,
       uploading: true,
       attachedToDraft: false,
     );
 
-    attachment.captionController.addListener(_scheduleAutosave);
+    _ensureCaptionController(attachment);
 
     setState(() {
       _attachments.add(attachment);
@@ -1030,29 +1042,26 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _uploadAttachment(ComposeAttachment attachment) async {
-    final file = attachment.localFile;
+  Future<void> _uploadAttachment(Attachment attachment) async {
+    final file = attachment.file;
     if (file == null) {
       throw Exception('Attachment file missing.');
     }
 
-    final mime = _inferMime(file.name);
+    final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
+    final captionText = _captionText(attachment);
     final result = await uploadAuraMedia(
       dio: ref.read(dioProvider),
       bytes: await file.readAsBytes(),
       fileName: file.name,
       mimeType: mime,
-      kind: attachment.isImage ? 'IMAGE' : 'VIDEO',
-      source: attachment.source == ComposeAttachmentSource.camera
-          ? 'CAMERA'
-          : 'GALLERY',
+      kind: wireKind(attachment.kind),
+      source: wireSource(attachment.source),
       width: attachment.isImage ? attachment.width : null,
       height: attachment.isImage ? attachment.height : null,
       duration: attachment.isVideo ? attachment.durationMs : null,
       metadataPatch: <String, dynamic>{
-        'caption': attachment.captionController.text.trim().isEmpty
-            ? null
-            : attachment.captionController.text.trim(),
+        'caption': captionText.isEmpty ? null : captionText,
         'editDisclosure': false,
         if (attachment.width != null) 'width': attachment.width,
         if (attachment.height != null) 'height': attachment.height,
@@ -1071,18 +1080,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
-  Future<void> _persistAttachmentMetadata(ComposeAttachment attachment) async {
+  Future<void> _persistAttachmentMetadata(Attachment attachment) async {
     final mediaId = (attachment.mediaId ?? '').trim();
     if (mediaId.isEmpty) return;
 
     try {
       final dio = ref.read(dioProvider);
+      final captionText = _captionText(attachment);
       await dio.patch(
         '/media/$mediaId',
         data: {
-          'caption': attachment.captionController.text.trim().isEmpty
-              ? null
-              : attachment.captionController.text.trim(),
+          'caption': captionText.isEmpty ? null : captionText,
         },
       );
     } catch (_) {
@@ -1090,7 +1098,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _removeAttachment(ComposeAttachment attachment) async {
+  Future<void> _removeAttachment(Attachment attachment) async {
     if (_posting) return;
 
     final mediaId = (attachment.mediaId ?? '').trim();
@@ -1102,7 +1110,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _syncExternalPublishingToggles();
     });
 
-    attachment.dispose();
+    _disposeCaptionController(attachment.localId);
 
     if (_isReply) return;
 
@@ -1168,12 +1176,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           .entries
           .where((entry) => (entry.value.mediaId ?? '').trim().isNotEmpty)
           .map(
-            (entry) => {
-              'mediaId': entry.value.mediaId,
-              'position': entry.key,
-              'caption': entry.value.captionController.text.trim().isEmpty
-                  ? null
-                  : entry.value.captionController.text.trim(),
+            (entry) {
+              final captionText = _captionText(entry.value);
+              return {
+                'mediaId': entry.value.mediaId,
+                'position': entry.key,
+                'caption': captionText.isEmpty ? null : captionText,
+              };
             },
           )
           .toList(),
@@ -2862,9 +2871,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     _autosaveDebounce?.cancel();
 
-    for (final attachment in _attachments) {
-      attachment.dispose();
+    for (final c in _captionControllers.values) {
+      c.dispose();
     }
+    _captionControllers.clear();
 
     setState(() {
       _textController.clear();
@@ -3245,6 +3255,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     width: itemWidth,
                     child: ComposeAttachmentCard(
                       attachment: attachment,
+                      captionController: _ensureCaptionController(attachment),
                       index: index,
                       count: _attachments.length,
                       busy: _posting,

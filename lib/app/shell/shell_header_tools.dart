@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
+import '../../core/media/aura_attachment_image.dart';
 import '../../core/net/dio_provider.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -503,12 +504,14 @@ class _HeaderAccountBtn extends StatelessWidget {
       const ['avatarUrl', 'photoUrl', 'imageUrl'],
     );
     if (avatarUrl.isNotEmpty) {
-      return Image.network(
-        avatarUrl,
+      final userId = _pickMeString(me, const ['id', 'userId']);
+      return AuraAttachmentImage(
+        url: avatarUrl,
+        attachmentId: userId.isNotEmpty ? 'user:$userId' : null,
         width: 38,
         height: 38,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _initialsOrIcon(),
+        errorWidget: (_) => _initialsOrIcon(),
       );
     }
 

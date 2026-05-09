@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
+import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -345,11 +346,17 @@ class _Tile extends StatelessWidget {
                 border: Border.all(color: AuraSurface.divider),
               ),
               child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
+                  ? AuraAttachmentImage(
+                      url: imageUrl,
+                      attachmentId: notification.isInstitutionVoice
+                          ? (notification.actorInstitutionId != null
+                              ? 'institution:${notification.actorInstitutionId}'
+                              : null)
+                          : (notification.actorId != null
+                              ? 'user:${notification.actorId}'
+                              : null),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _initialFallback(fallback),
+                      errorWidget: (_) => _initialFallback(fallback),
                     )
                   : _initialFallback(fallback),
             ),

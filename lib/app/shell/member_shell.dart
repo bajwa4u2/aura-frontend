@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/institutions/institution_paths.dart';
+import '../../core/media/aura_attachment_image.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
@@ -949,10 +950,14 @@ class _InstitutionAvatarSmall extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: logoUrl != null && logoUrl!.isNotEmpty
-            ? Image.network(
-                logoUrl!,
+            ? AuraAttachmentImage(
+                // Institution id is not threaded through this widget;
+                // URL is unique per logo so URL-keyed caching is fine
+                // (a logo replacement would change the URL anyway since
+                // backend writes a new R2 object per upload).
+                url: logoUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _avatarFallback(initials),
+                errorWidget: (_) => _avatarFallback(initials),
               )
             : _avatarFallback(initials),
       ),

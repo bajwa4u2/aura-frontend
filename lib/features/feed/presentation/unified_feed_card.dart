@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -242,7 +242,10 @@ class UnifiedFeedCard extends ConsumerWidget {
             ],
             if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              _MediaThumb(url: item.mediaUrl!),
+              _MediaThumb(
+                url: item.mediaUrl!,
+                attachmentId: item.id.isNotEmpty ? 'feed:${item.id}:media' : null,
+              ),
             ],
             if (showVisibilityBadge) ...[
               const SizedBox(height: AuraSpace.s10),
@@ -730,10 +733,10 @@ class _Avatar extends StatelessWidget {
                 ),
               ),
             )
-          : CachedNetworkImage(
-              imageUrl: url,
+          : AuraAttachmentImage(
+              url: url,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => Center(
+              errorWidget: (_) => Center(
                 child: Text(
                   fallback,
                   style: AuraText.small.copyWith(
@@ -748,9 +751,13 @@ class _Avatar extends StatelessWidget {
 }
 
 class _MediaThumb extends StatelessWidget {
-  const _MediaThumb({required this.url});
+  const _MediaThumb({required this.url, this.attachmentId});
 
   final String url;
+  /// Server-issued media id when known. Falls back to URL-based caching
+  /// inside AuraAttachmentImage when null. Passing the id is what lets
+  /// re-uploaded media invalidate cleanly without an app restart.
+  final String? attachmentId;
 
   @override
   Widget build(BuildContext context) {
@@ -758,10 +765,11 @@ class _MediaThumb extends StatelessWidget {
       borderRadius: BorderRadius.circular(AuraRadius.md),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: CachedNetworkImage(
-          imageUrl: url,
+        child: AuraAttachmentImage(
+          url: url,
+          attachmentId: attachmentId,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
+          errorWidget: (_) => Container(
             color: AuraSurface.subtle,
             child: const Center(
               child: Icon(Icons.broken_image_outlined,
@@ -1032,10 +1040,13 @@ class _PreviewLine extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: (item.author.avatarUrl ?? '').isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: item.author.avatarUrl!,
+                    ? AuraAttachmentImage(
+                        url: item.author.avatarUrl!,
+                        attachmentId: item.author.id.isNotEmpty
+                            ? 'user:${item.author.id}'
+                            : null,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Center(
+                        errorWidget: (_) => Center(
                           child: Text(
                             initial,
                             style: AuraText.micro.copyWith(

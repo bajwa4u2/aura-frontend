@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
+import '../../../../core/media/attachment.dart';
+import '../../../../core/media/media_mime.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_platform_components.dart';
@@ -68,7 +70,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   final _audioRecorder = AudioRecorder();
   final _picker = ImagePicker();
 
-  final List<_DraftAttachment> _attachments = [];
+  final List<Attachment> _attachments = [];
   final Set<String> _dismissedSuggestionIds = <String>{};
   final Set<String> _applyingSuggestionIds = <String>{};
 
@@ -129,7 +131,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
   Future<void> _pickImageFromGallery() async {
     final file = await _picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
-    await _addAttachment(file, kind: ThreadAttachmentKind.image);
+    await _addAttachment(file, kind: AttachmentKind.image);
   }
 
   Future<void> _pickImageFromCamera() async {
@@ -149,15 +151,15 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     if (file == null) return;
     await _addAttachment(
       file,
-      kind: ThreadAttachmentKind.image,
-      source: _AttachmentSource.camera,
+      kind: AttachmentKind.image,
+      source: AttachmentSource.camera,
     );
   }
 
   Future<void> _pickVideoFromGallery() async {
     final file = await _picker.pickVideo(source: ImageSource.gallery);
     if (file == null) return;
-    await _addAttachment(file, kind: ThreadAttachmentKind.video);
+    await _addAttachment(file, kind: AttachmentKind.video);
   }
 
   Future<void> _pickVideoFromCamera() async {
@@ -180,8 +182,8 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     if (file == null) return;
     await _addAttachment(
       file,
-      kind: ThreadAttachmentKind.video,
-      source: _AttachmentSource.camera,
+      kind: AttachmentKind.video,
+      source: AttachmentSource.camera,
     );
   }
 
@@ -205,13 +207,13 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     final file = XFile.fromData(
       picked.bytes!,
       name: picked.name,
-      mimeType: _inferMime(picked.name),
+      mimeType: _inferMimeOrFallback(picked.name),
     );
 
     await _addAttachment(
       file,
-      kind: ThreadAttachmentKind.audio,
-      source: _AttachmentSource.upload,
+      kind: AttachmentKind.audio,
+      source: AttachmentSource.upload,
     );
   }
 
@@ -232,7 +234,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       return;
     }
 
-    final mime = _inferMime(picked.name);
+    final mime = _inferMimeOrFallback(picked.name);
     final file = XFile.fromData(
       picked.bytes!,
       name: picked.name,
@@ -241,17 +243,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
 
     await _addAttachment(
       file,
-      kind: _kindFromMime(mime),
-      source: _AttachmentSource.upload,
+      kind: kindFromMime(mime),
+      source: AttachmentSource.upload,
     );
-  }
-
-  ThreadAttachmentKind _kindFromMime(String mime) {
-    final lower = mime.toLowerCase();
-    if (lower.startsWith('image/')) return ThreadAttachmentKind.image;
-    if (lower.startsWith('video/')) return ThreadAttachmentKind.video;
-    if (lower.startsWith('audio/')) return ThreadAttachmentKind.audio;
-    return ThreadAttachmentKind.document;
   }
 
   Future<void> _toggleAudioRecording() async {
@@ -330,20 +324,20 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
         : DateTime.now().difference(startedAt);
     await _addAttachment(
       file,
-      kind: ThreadAttachmentKind.audio,
-      source: _AttachmentSource.recording,
+      kind: AttachmentKind.audio,
+      source: AttachmentSource.recording,
       duration: elapsed,
     );
   }
 
   Future<void> _addAttachment(
     XFile file, {
-    required ThreadAttachmentKind kind,
-    _AttachmentSource source = _AttachmentSource.gallery,
+    required AttachmentKind kind,
+    AttachmentSource source = AttachmentSource.gallery,
     Duration? duration,
   }) async {
     final bytes = await file.readAsBytes();
-    final mimeType = file.mimeType ?? _inferMime(file.name);
+    final mimeType = file.mimeType ?? _inferMimeOrFallback(file.name);
 
     // B3: client-side mime allow-list. Block unsupported types BEFORE the
     // upload (and before the optimistic preview tile is shown), so the user
@@ -361,7 +355,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     int? width;
     int? height;
 
-    if (kind == ThreadAttachmentKind.image) {
+    if (kind == AttachmentKind.image) {
       try {
         final size = await _decodeImageSize(bytes);
         width = size?['width'];
@@ -369,7 +363,7 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       } catch (_) {}
     }
 
-    final attachment = _DraftAttachment(
+    final attachment = Attachment(
       localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}',
       file: file,
       bytes: bytes,
@@ -378,8 +372,9 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       width: width,
       height: height,
       mimeType: mimeType,
+      fileName: file.name,
       sizeBytes: bytes.length,
-      durationSec: duration?.inSeconds,
+      durationMs: duration?.inMilliseconds,
     );
     attachment.uploading = true;
 
@@ -400,89 +395,40 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     }
   }
 
-  /// B3: client-side mime allow-list per attachment kind. Mirrors the backend
-  /// check in `media.service.ts allowedMime()` so unsupported files are
-  /// rejected before the upload starts. Returns null if [mimeType] is allowed,
-  /// or a user-facing error message otherwise.
-  String? _validateMimeForKind(String mimeType, ThreadAttachmentKind kind) {
+  /// Client-side mime allow-list check. Delegates to the canonical
+  /// `isMimeAllowedFor` from lib/core/media/media_mime.dart, which mirrors
+  /// the backend allow-list in `media.service.ts::allowedMime()`. The
+  /// document branch is intentionally permissive (accepts any allowed
+  /// kind) to match the prior thread-composer behaviour.
+  String? _validateMimeForKind(String mimeType, AttachmentKind kind) {
     final mt = mimeType.trim().toLowerCase();
     if (mt.isEmpty) {
       return 'This file has no recognizable type. Choose a different file.';
     }
-    // Server-side allow-list snapshot. Keep in sync with media.service.ts.
-    const allowedImage = {
-      'image/png',
-      'image/jpeg',
-      'image/webp',
-      'image/gif',
-    };
-    const allowedVideo = {
-      'video/mp4',
-      'video/quicktime',
-      'video/webm',
-    };
-    const allowedAudio = {
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/aac',
-      'audio/wav',
-      'audio/ogg',
-      'audio/webm',
-    };
-    const allowedDocument = {
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'text/plain',
-      'text/csv',
-      'application/rtf',
-      'application/zip',
-    };
-
-    bool ok;
-    String label;
-    switch (kind) {
-      case ThreadAttachmentKind.image:
-        ok = allowedImage.contains(mt);
-        label = 'image';
-        break;
-      case ThreadAttachmentKind.video:
-        ok = allowedVideo.contains(mt);
-        label = 'video';
-        break;
-      case ThreadAttachmentKind.audio:
-        ok = allowedAudio.contains(mt);
-        label = 'audio';
-        break;
-      case ThreadAttachmentKind.document:
-        ok = allowedDocument.contains(mt) ||
-            allowedImage.contains(mt) ||
-            allowedVideo.contains(mt) ||
-            allowedAudio.contains(mt);
-        label = 'file';
-        break;
-    }
+    final ok = kind == AttachmentKind.document
+        ? isAnyMimeAllowed(mt)
+        : isMimeAllowedFor(kind, mt);
     if (ok) return null;
+    final label = kind == AttachmentKind.document
+        ? 'file'
+        : attachmentKindLabel(kind).toLowerCase();
     return 'This $label type is not supported ($mt). Choose a different file.';
   }
 
-  Future<void> _uploadAttachment(_DraftAttachment attachment) async {
+  Future<void> _uploadAttachment(Attachment attachment) async {
     final result = await uploadAuraMedia(
       dio: ref.read(dioProvider),
-      bytes: attachment.bytes,
-      fileName: attachment.file.name,
-      mimeType: attachment.mimeType,
-      kind: _mediaKindValue(attachment.kind),
-      source: _mediaSourceValue(attachment.source),
+      bytes: attachment.bytes ?? Uint8List(0),
+      fileName: attachment.fileName ?? attachment.file?.name ?? '',
+      mimeType: attachment.mimeType ?? '',
+      kind: wireKind(attachment.kind),
+      source: wireSource(attachment.source),
       width: attachment.width,
       height: attachment.height,
-      duration: attachment.kind == ThreadAttachmentKind.audio ||
-              attachment.kind == ThreadAttachmentKind.video
-          ? attachment.durationSec
+      duration: (attachment.kind == AttachmentKind.audio ||
+                  attachment.kind == AttachmentKind.video) &&
+              attachment.durationMs != null
+          ? (attachment.durationMs! / 1000).round()
           : null,
       metadataPatch: <String, dynamic>{
         if (attachment.width != null) 'width': attachment.width,
@@ -701,7 +647,10 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     final body = _controller.text.trim();
     final readyAttachments = _attachments
         .where(
-          (a) => !a.uploading && a.error == null && a.storageKey.isNotEmpty,
+          (a) =>
+              !a.uploading &&
+              a.error == null &&
+              (a.storageKey ?? '').isNotEmpty,
         )
         .toList();
 
@@ -725,19 +674,22 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
       senderName: '',
       senderHandle: '',
       senderAvatarUrl: '',
-      attachments: readyAttachments
-          .map((a) => {
-                'storageKey': a.storageKey,
-                'fileName': a.file.name,
-                'mimeType': a.mimeType,
-                'sizeBytes': a.sizeBytes,
-                'url': a.url ?? '',
-                'thumbUrl': a.thumbUrl ?? '',
-                if (a.width != null) 'width': a.width,
-                if (a.height != null) 'height': a.height,
-                if (a.durationSec != null) 'durationSec': a.durationSec,
-              })
-          .toList(),
+      attachments: readyAttachments.map((a) {
+        final durationSec = a.durationMs == null
+            ? null
+            : (a.durationMs! / 1000).round();
+        return {
+          'storageKey': a.storageKey ?? '',
+          'fileName': a.fileName ?? a.file?.name ?? '',
+          'mimeType': a.mimeType ?? '',
+          'sizeBytes': a.sizeBytes ?? 0,
+          'url': a.url ?? '',
+          'thumbUrl': a.thumbUrl ?? '',
+          if (a.width != null) 'width': a.width,
+          if (a.height != null) 'height': a.height,
+          if (durationSec != null) 'durationSec': durationSec,
+        };
+      }).toList(),
     );
 
     _controller.clear();
@@ -789,14 +741,14 @@ class _ThreadComposerBarState extends ConsumerState<ThreadComposerBar> {
     return 'cmsg_${DateTime.now().microsecondsSinceEpoch}_$n';
   }
 
-  void _removeAttachment(_DraftAttachment attachment) {
+  void _removeAttachment(Attachment attachment) {
     if (_sending) return;
     setState(() {
       _attachments.removeWhere((a) => a.localId == attachment.localId);
     });
   }
 
-  Future<void> _retryAttachment(_DraftAttachment attachment) async {
+  Future<void> _retryAttachment(Attachment attachment) async {
     if (_sending || attachment.uploading) return;
     setState(() {
       attachment.uploading = true;
@@ -1525,9 +1477,9 @@ class _AttachmentPreviewRow extends StatelessWidget {
     required this.onRetry,
   });
 
-  final List<_DraftAttachment> attachments;
-  final void Function(_DraftAttachment attachment) onRemove;
-  final void Function(_DraftAttachment attachment) onRetry;
+  final List<Attachment> attachments;
+  final void Function(Attachment attachment) onRemove;
+  final void Function(Attachment attachment) onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -1557,13 +1509,13 @@ class _AttachmentPreviewCard extends StatelessWidget {
     required this.onRetry,
   });
 
-  final _DraftAttachment attachment;
+  final Attachment attachment;
   final VoidCallback onRemove;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final label = attachment.file.name;
+    final label = attachment.fileName ?? attachment.file?.name ?? '';
     final progress = attachment.uploadProgress;
     final progressPct = progress != null ? (progress * 100).round() : null;
 
@@ -1573,7 +1525,7 @@ class _AttachmentPreviewCard extends StatelessWidget {
             : 'Uploading…')
         : attachment.error != null
         ? (attachment.error!)
-        : _attachmentKindLabel(attachment.kind);
+        : attachmentKindLabel(attachment.kind);
 
     return Container(
       width: 240,
@@ -1698,15 +1650,16 @@ class _AttachmentPreviewCard extends StatelessWidget {
 class _AttachmentPreviewMedia extends StatelessWidget {
   const _AttachmentPreviewMedia({required this.attachment});
 
-  final _DraftAttachment attachment;
+  final Attachment attachment;
 
   @override
   Widget build(BuildContext context) {
     switch (attachment.kind) {
-      case ThreadAttachmentKind.image:
-        if (attachment.bytes.isNotEmpty) {
+      case AttachmentKind.image:
+        final bytes = attachment.bytes;
+        if (bytes != null && bytes.isNotEmpty) {
           return Image.memory(
-            attachment.bytes,
+            bytes,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -1720,17 +1673,17 @@ class _AttachmentPreviewMedia extends StatelessWidget {
           icon: Icons.image_outlined,
           label: 'Image',
         );
-      case ThreadAttachmentKind.video:
+      case AttachmentKind.video:
         return const _AttachmentFallbackTile(
           icon: Icons.videocam_outlined,
           label: 'Video',
         );
-      case ThreadAttachmentKind.audio:
+      case AttachmentKind.audio:
         return const _AttachmentFallbackTile(
           icon: Icons.graphic_eq_outlined,
           label: 'Audio',
         );
-      case ThreadAttachmentKind.document:
+      case AttachmentKind.document:
         return const _AttachmentFallbackTile(
           icon: Icons.description_outlined,
           label: 'Document',
@@ -2006,56 +1959,13 @@ class _ThreadEditMessageDialogState
 // DATA MODELS
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DraftAttachment {
-  _DraftAttachment({
-    required this.localId,
-    required this.file,
-    required this.bytes,
-    required this.kind,
-    required this.source,
-    required this.mimeType,
-    required this.sizeBytes,
-    this.width,
-    this.height,
-    this.durationSec,
-  });
-
-  final String localId;
-  final XFile file;
-  final Uint8List bytes;
-  final ThreadAttachmentKind kind;
-  final _AttachmentSource source;
-  final String mimeType;
-  final int sizeBytes;
-  int? width;
-  int? height;
-  int? durationSec;
-
-  // Populated after upload completes.
-  String mediaId = '';
-  String? url;
-  String? thumbUrl;
-  String storageKey = '';
-  bool uploading = false;
-  double? uploadProgress; // 0.0–1.0
-  String? error;
-
-  // Backend DTO: storageKey, fileName, mimeType, sizeBytes, width?, height?, durationSec?
-  // Additional fields (mediaId, url, thumbUrl) are stored locally for preview.
-  Map<String, dynamic> toMessagePayload() {
-    return {
-      'storageKey': storageKey,
-      'fileName': file.name,
-      'mimeType': mimeType,
-      'sizeBytes': sizeBytes,
-      if (width != null) 'width': width,
-      if (height != null) 'height': height,
-      if (durationSec != null) 'durationSec': durationSec,
-    };
-  }
-}
-
-enum _AttachmentSource { gallery, camera, upload, recording }
+// _DraftAttachment, AttachmentSource, attachmentKindLabel, wireKind,
+// wireSource, _inferMimeWithFallback all removed in the C1 attachment-
+// model consolidation. They are now provided by:
+//   * lib/core/media/attachment.dart   (Attachment + AttachmentKind +
+//     AttachmentSource + wireKind + wireSource + attachmentKindLabel)
+//   * lib/core/media/media_mime.dart   (inferMimeFromFileName +
+//     kindFromMime + isMimeAllowedFor + allow-list constants)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPOSER-LOCAL UTILITIES
@@ -2068,77 +1978,11 @@ String _formatRecordingDuration(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
-String _attachmentKindLabel(ThreadAttachmentKind kind) {
-  switch (kind) {
-    case ThreadAttachmentKind.image:
-      return 'Image';
-    case ThreadAttachmentKind.video:
-      return 'Video';
-    case ThreadAttachmentKind.audio:
-      return 'Audio';
-    case ThreadAttachmentKind.document:
-      return 'Document';
-  }
-}
-
-String _mediaKindValue(ThreadAttachmentKind kind) {
-  switch (kind) {
-    case ThreadAttachmentKind.image:
-      return 'IMAGE';
-    case ThreadAttachmentKind.video:
-      return 'VIDEO';
-    case ThreadAttachmentKind.audio:
-      return 'AUDIO';
-    case ThreadAttachmentKind.document:
-      return 'IMAGE';
-  }
-}
-
-String _mediaSourceValue(_AttachmentSource source) {
-  switch (source) {
-    case _AttachmentSource.gallery:
-      return 'GALLERY';
-    case _AttachmentSource.camera:
-      return 'CAMERA';
-    case _AttachmentSource.upload:
-      return 'UPLOAD';
-    case _AttachmentSource.recording:
-      return 'RECORDING';
-  }
-}
-
-String _inferMime(String fileName) {
-  final lower = fileName.toLowerCase();
-
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.gif')) return 'image/gif';
-  if (lower.endsWith('.webp')) return 'image/webp';
-
-  if (lower.endsWith('.mp4')) return 'video/mp4';
-  if (lower.endsWith('.mov')) return 'video/quicktime';
-  if (lower.endsWith('.webm')) return 'video/webm';
-  if (lower.endsWith('.mkv')) return 'video/x-matroska';
-
-  if (lower.endsWith('.mp3')) return 'audio/mpeg';
-  if (lower.endsWith('.m4a')) return 'audio/mp4';
-  if (lower.endsWith('.aac')) return 'audio/aac';
-  if (lower.endsWith('.wav')) return 'audio/wav';
-  if (lower.endsWith('.ogg')) return 'audio/ogg';
-
-  if (lower.endsWith('.pdf')) return 'application/pdf';
-  if (lower.endsWith('.doc')) return 'application/msword';
-  if (lower.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  if (lower.endsWith('.xls')) return 'application/vnd.ms-excel';
-  if (lower.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  if (lower.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
-  if (lower.endsWith('.pptx')) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-  if (lower.endsWith('.txt')) return 'text/plain';
-  if (lower.endsWith('.csv')) return 'text/csv';
-  if (lower.endsWith('.rtf')) return 'application/rtf';
-  if (lower.endsWith('.zip')) return 'application/zip';
-
-  return 'application/octet-stream';
+/// Thin wrapper over the canonical `inferMimeFromFileName` that defaults
+/// unknown extensions to `application/octet-stream` (the legacy thread
+/// composer fallback). Other surfaces don't need this fallback.
+String _inferMimeOrFallback(String fileName) {
+  return inferMimeFromFileName(fileName) ?? 'application/octet-stream';
 }
 
 Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {

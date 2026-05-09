@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/route_targets.dart';
 import '../../../core/communication/communication_resolver.dart';
+import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -1019,10 +1020,10 @@ class _ActivityLeadingIcon extends StatelessWidget {
           child: avatarUrl.isNotEmpty
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  child: Image.network(
-                    avatarUrl,
+                  child: AuraAttachmentImage(
+                    url: avatarUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                    errorWidget: (_) =>
                         Icon(_iconForType(), size: 18, color: _iconColor()),
                   ),
                 )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'aura_platform_components.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
@@ -49,7 +50,7 @@ class AuraIdentitySurface extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Avatar(avatarUrl: avatarUrl),
+            _Avatar(avatarUrl: avatarUrl, name: displayName),
             const SizedBox(width: AuraSpace.s10),
 
             Expanded(
@@ -92,45 +93,19 @@ class AuraIdentitySurface extends StatelessWidget {
   }
 }
 
+/// Identity-surface avatar — delegates to the canonical [AuraAvatar].
+/// Local fallback styling preserved by passing an empty `name` so the
+/// initial gradient fills with `?` (matches the original generic
+/// person-icon look closely enough; full-app initial avatars are
+/// preferred over neutral icons for personal identification).
 class _Avatar extends StatelessWidget {
-  const _Avatar({this.avatarUrl});
+  const _Avatar({this.avatarUrl, this.name = ''});
 
   final String? avatarUrl;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
-    const size = 40.0;
-
-    if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
-          avatarUrl!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallback(size),
-        ),
-      );
-    }
-
-    return _fallback(size);
-  }
-
-  Widget _fallback(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        shape: BoxShape.circle,
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.person_outline,
-        color: AuraSurface.muted,
-        size: 22,
-      ),
-    );
+    return AuraAvatar(name: name, imageUrl: avatarUrl, size: 40);
   }
 }

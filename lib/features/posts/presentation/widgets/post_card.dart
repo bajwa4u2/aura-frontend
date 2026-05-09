@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/institutions/institution_access_provider.dart';
+import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_platform_components.dart';
@@ -1207,14 +1208,17 @@ class _PostCardState extends ConsumerState<PostCard> {
     Widget? thumb;
     final t = (linkThumbUrl ?? '').trim();
     if (t.isNotEmpty) {
+      // External-link OG thumbnail. No Aura media id; cache key falls
+      // back to URL inside AuraAttachmentImage. Empty error widget
+      // matches the previous SizedBox.shrink fallback.
       thumb = ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          t,
+        child: AuraAttachmentImage(
+          url: t,
           width: 72,
           height: 72,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          errorWidget: (_) => const SizedBox.shrink(),
         ),
       );
     }

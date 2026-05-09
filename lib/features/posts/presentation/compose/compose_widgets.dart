@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/media/attachment.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
-import 'compose_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISIBILITY CHIP
@@ -79,6 +79,7 @@ class ComposeAttachmentCard extends StatelessWidget {
   const ComposeAttachmentCard({
     super.key,
     required this.attachment,
+    required this.captionController,
     required this.index,
     required this.count,
     required this.busy,
@@ -87,7 +88,11 @@ class ComposeAttachmentCard extends StatelessWidget {
     this.onMoveRight,
   });
 
-  final ComposeAttachment attachment;
+  final Attachment attachment;
+  // Caption controller is owned by the screen-level State now (one parallel
+  // map keyed by `attachment.localId`) — see compose_screen.dart. Passed
+  // explicitly so this widget remains stateless and the model stays UI-free.
+  final TextEditingController captionController;
   final int index;
   final int count;
   final bool busy;
@@ -191,7 +196,7 @@ class ComposeAttachmentCard extends StatelessWidget {
               vertical: AuraSpace.s8,
             ),
             child: TextField(
-              controller: attachment.captionController,
+              controller: captionController,
               enabled: !busy && !attachment.uploading,
               maxLines: null,
               minLines: 2,
@@ -216,18 +221,18 @@ class ComposeAttachmentCard extends StatelessWidget {
 class ComposeAttachmentPreview extends StatelessWidget {
   const ComposeAttachmentPreview({super.key, required this.attachment});
 
-  final ComposeAttachment attachment;
+  final Attachment attachment;
 
   @override
   Widget build(BuildContext context) {
     if (attachment.isImage) {
-      if (attachment.localBytes != null) {
+      if (attachment.bytes != null) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: AspectRatio(
             aspectRatio: _aspectRatio(),
             child: Image.memory(
-              attachment.localBytes!,
+              attachment.bytes!,
               fit: BoxFit.cover,
               width: double.infinity,
             ),
@@ -335,7 +340,7 @@ class ComposeAttachmentPreview extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            attachment.localFile?.name ?? 'Video attachment',
+            attachment.file?.name ?? attachment.fileName ?? 'Video attachment',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
             textAlign: TextAlign.center,
           ),
