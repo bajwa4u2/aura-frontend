@@ -131,19 +131,35 @@ class _SinceYouWereHereSectionState
   }
 
   String? _routeFor(Map<String, dynamic> item) {
-    // The notifications normalizer already extracts a `deeplink` for
-    // many kinds. Prefer it; fall back to constructing a thread route
-    // from postId / institutionPostId on the payload.
-    final deeplink = item['deeplink']?.toString().trim() ?? '';
-    if (deeplink.isNotEmpty) return deeplink;
-
+    final kind =
+        (item['type'] ?? item['kind'] ?? '').toString().toUpperCase();
     final payload = item['payload'] is Map
         ? item['payload'] as Map
         : (item['data'] is Map ? item['data'] as Map : const {});
-    final parentInstitutionPostId =
-        payload['parentPostId']?.toString().trim() ?? '';
-    if (parentInstitutionPostId.isNotEmpty) {
-      return '/thread/$parentInstitutionPostId?type=INSTITUTION_POST';
+    final parentTargetType =
+        (payload['targetType'] ?? '').toString().toUpperCase();
+    final parentId = payload['parentPostId']?.toString().trim() ?? '';
+
+    // For REPLY notifications, the user's intent is "open the parent
+    // discussion I own", not "open the reply itself" (which is a separate
+    // post and may have been deleted independently). The backend deeplink
+    // upgrade routes new replies to the parent automatically; legacy
+    // notifications that still carry a reply-targeted deeplink are
+    // overridden here using `payload.parentPostId`.
+    if (kind == 'REPLY' && parentId.isNotEmpty) {
+      if (parentTargetType == 'INSTITUTION_POST') {
+        return '/thread/$parentId?type=INSTITUTION_POST';
+      }
+      // Default / USER_POST / POST → user-post thread route.
+      return '/thread/$parentId?type=USER_POST';
+    }
+
+    // Other kinds: trust the backend-computed deeplink first.
+    final deeplink = item['deeplink']?.toString().trim() ?? '';
+    if (deeplink.isNotEmpty) return deeplink;
+
+    if (parentId.isNotEmpty) {
+      return '/thread/$parentId?type=INSTITUTION_POST';
     }
     final institutionPostId =
         item['institutionPostId']?.toString().trim() ?? '';

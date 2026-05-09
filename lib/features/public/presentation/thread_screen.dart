@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -298,6 +299,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final detailAsync = ref.watch(feedItemDetailProvider(_args));
     final repliesAsync = ref.watch(feedItemRepliesProvider(_args));
 
+    // Composer is allowed only when a real, accessible item is loaded. A 404
+    // / 403 / null item means there's nothing to reply to — leaving the
+    // composer mounted produced "broken thread with active reply bar".
+    final canCompose = detailAsync.maybeWhen(
+      data: (item) => item != null,
+      orElse: () => false,
+    );
+
     return AuraScaffold(
       showHeader: false,
       body: SafeArea(
@@ -328,29 +337,41 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 loading: () => const Center(
                   child: AuraLoadingState(message: 'Loading thread…'),
                 ),
-                error: (e, _) => InsScreen(
-                  children: [
-                    AuraErrorState(
-                      title: 'Could not load this thread',
-                      body: '$e',
-                      action: AuraSecondaryButton(
-                        label: 'Try again',
-                        icon: Icons.refresh_rounded,
-                        onPressed: () =>
-                            ref.invalidate(feedItemDetailProvider(_args)),
+                error: (e, _) {
+                  // Translate the underlying error into safe user copy. We
+                  // must NOT show "DioException" or "Instance of 'minified:…'"
+                  // — that's the production leakage the audit flagged.
+                  final view = _ThreadErrorView.fromError(e);
+                  return InsScreen(
+                    children: [
+                      _ThreadUnavailableBlock(
+                        icon: view.icon,
+                        title: view.title,
+                        body: view.body,
+                        primaryLabel: view.primaryLabel,
+                        primaryIcon: view.primaryIcon,
+                        onPrimary: view.allowRetry
+                            ? () => ref.invalidate(
+                                feedItemDetailProvider(_args))
+                            : () => context.go('/'),
+                        onBackHome: () => context.go('/'),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
                 data: (item) {
                   if (item == null) {
-                    return const InsScreen(
+                    return InsScreen(
                       children: [
-                        InsEmptyState(
+                        _ThreadUnavailableBlock(
                           icon: Icons.help_outline_rounded,
-                          title: 'Thread not found',
-                          description:
-                              'It may have been removed or is no longer visible to you.',
+                          title: 'This discussion is unavailable',
+                          body:
+                              'It may have been removed, moved, or is no longer accessible.',
+                          primaryLabel: 'Back to home',
+                          primaryIcon: Icons.home_outlined,
+                          onPrimary: () => context.go('/'),
+                          onBackHome: () => context.go('/'),
                         ),
                       ],
                     );
@@ -380,16 +401,25 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           padding: EdgeInsets.all(AuraSpace.s16),
                           child: AuraLoadingState(message: 'Loading replies…'),
                         ),
-                        error: (e, _) => AuraErrorState(
-                          title: 'Could not load replies',
-                          body: '$e',
-                          action: AuraSecondaryButton(
-                            label: 'Try again',
-                            icon: Icons.refresh_rounded,
-                            onPressed: () =>
-                                ref.invalidate(feedItemRepliesProvider(_args)),
-                          ),
-                        ),
+                        error: (e, _) {
+                          // Same sanitization as the parent: never leak raw
+                          // DioException / minified class names. Replies
+                          // failing without parent failing is rare, but we
+                          // keep the copy actionable.
+                          final view = _ThreadErrorView.fromError(e);
+                          return AuraErrorState(
+                            title: view.repliesTitle,
+                            body: view.repliesBody,
+                            action: view.allowRetry
+                                ? AuraSecondaryButton(
+                                    label: 'Try again',
+                                    icon: Icons.refresh_rounded,
+                                    onPressed: () => ref.invalidate(
+                                        feedItemRepliesProvider(_args)),
+                                  )
+                                : null,
+                          );
+                        },
                         data: (page) {
                           // Phase 6.1 — entry accuracy. Schedule a
                           // post-frame scroll once anchors are mounted.
@@ -560,7 +590,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 },
               ),
             ),
-            _StickyReplyBar(onTap: _composeReply),
+            // The composer is part of the same Column as the body Expanded,
+            // so it would otherwise render under an error/empty state too.
+            // Gate on `canCompose` so a missing/inaccessible thread shows
+            // the unavailable block alone — no orphan reply bar.
+            if (canCompose) _StickyReplyBar(onTap: _composeReply),
           ],
         ),
       ),
@@ -1457,6 +1491,171 @@ class _InlineEngagementPrompt extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Thread error / unavailable presentation ────────────────────────────────────
+
+/// Maps a Dio/backend error into safe user copy. The previous code dumped
+/// `'$e'` into the UI which produced
+/// `DioException [bad response]: This could not be found.\nError:
+/// Instance of 'minified:pG'` in production. This view object is the
+/// single sanitization point for the thread surface; it keeps debug
+/// context in logs only.
+class _ThreadErrorView {
+  const _ThreadErrorView({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.repliesTitle,
+    required this.repliesBody,
+    required this.primaryLabel,
+    required this.primaryIcon,
+    required this.allowRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final String repliesTitle;
+  final String repliesBody;
+  final String primaryLabel;
+  final IconData primaryIcon;
+  final bool allowRetry;
+
+  factory _ThreadErrorView.fromError(Object error) {
+    int? status;
+    if (error is DioException) {
+      status = error.response?.statusCode;
+    }
+    switch (status) {
+      case 404:
+        return const _ThreadErrorView(
+          icon: Icons.help_outline_rounded,
+          title: 'This discussion is unavailable',
+          body:
+              'It may have been removed, moved, or is no longer accessible.',
+          repliesTitle: 'Replies are unavailable',
+          repliesBody:
+              'The discussion these replies belonged to is no longer accessible.',
+          primaryLabel: 'Back to home',
+          primaryIcon: Icons.home_outlined,
+          allowRetry: false,
+        );
+      case 403:
+        return const _ThreadErrorView(
+          icon: Icons.lock_outline,
+          title: 'You do not have access to this discussion',
+          body:
+              'It may be limited to specific members. Try the conversation context where it was shared.',
+          repliesTitle: 'You do not have access to these replies',
+          repliesBody:
+              'The author or institution has limited who can view this discussion.',
+          primaryLabel: 'Back to home',
+          primaryIcon: Icons.home_outlined,
+          allowRetry: false,
+        );
+      case 401:
+        return const _ThreadErrorView(
+          icon: Icons.login_rounded,
+          title: 'Sign in to view this discussion',
+          body:
+              'Your session has ended. Sign in again to continue from where you left off.',
+          repliesTitle: 'Sign in to view replies',
+          repliesBody: 'Your session has ended.',
+          primaryLabel: 'Sign in',
+          primaryIcon: Icons.login_rounded,
+          allowRetry: false,
+        );
+      default:
+        // Network / 5xx / unknown — actionable retry, no leak.
+        return const _ThreadErrorView(
+          icon: Icons.cloud_off_rounded,
+          title: 'Could not load this discussion',
+          body:
+              'Check your connection and try again. If the problem continues, return to the home feed.',
+          repliesTitle: 'Could not load replies',
+          repliesBody: 'Check your connection and try again.',
+          primaryLabel: 'Try again',
+          primaryIcon: Icons.refresh_rounded,
+          allowRetry: true,
+        );
+    }
+  }
+}
+
+class _ThreadUnavailableBlock extends StatelessWidget {
+  const _ThreadUnavailableBlock({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.primaryLabel,
+    required this.primaryIcon,
+    required this.onPrimary,
+    required this.onBackHome,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final String primaryLabel;
+  final IconData primaryIcon;
+  final VoidCallback onPrimary;
+  final VoidCallback onBackHome;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AuraSurface.subtle,
+                  borderRadius: BorderRadius.circular(AuraRadius.sm),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Icon(icon, size: 16, color: AuraSurface.muted),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Text(title, style: AuraText.title),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          Text(body, style: AuraText.body.copyWith(height: 1.6)),
+          const SizedBox(height: AuraSpace.s16),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              AuraPrimaryButton(
+                label: primaryLabel,
+                icon: primaryIcon,
+                onPressed: onPrimary,
+              ),
+              if (primaryLabel != 'Back to home')
+                AuraGhostButton(
+                  label: 'Back to home',
+                  onPressed: onBackHome,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
