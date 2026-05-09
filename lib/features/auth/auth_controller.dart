@@ -11,7 +11,9 @@ import 'package:aura/core/auth/session_bootstrap.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import 'package:aura/core/auth/trusted_device_store.dart';
 import '../../core/net/dio_provider.dart';
+import '../correspondence/data/correspondence_live_service.dart';
 import '../devices/device_providers.dart';
+import '../realtime/application/realtime_providers.dart';
 
 /// A thin controller around the auth endpoints.
 ///
@@ -398,6 +400,20 @@ class AuthController {
     } catch (_) {
       // ignore
     } finally {
+      // Tear down authenticated runtime services BEFORE clearing tokens so
+      // any in-flight work fires its last operation against a still-valid
+      // identity. The disconnect calls themselves are idempotent.
+      try {
+        unawaited(
+          ref.read(correspondenceLiveServiceProvider).disconnect().catchError((_) {}),
+        );
+      } catch (_) {}
+      try {
+        unawaited(
+          ref.read(realtimeControllerProvider.notifier).disconnect().catchError((_) {}),
+        );
+      } catch (_) {}
+
       await _store().clearTokens();
       // Clear the session hint so the next cold load on this device skips
       // the speculative /auth/refresh and stays silent on public routes.

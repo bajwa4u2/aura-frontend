@@ -155,12 +155,7 @@ class AuthRepository {
   Future<List<Map<String, dynamic>>> listSessions() async {
     try {
       final res = await _dio.get('/auth/sessions');
-      final body = res.data;
-      if (body is List) return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      final m = _unwrap(res);
-      final sessions = m['sessions'] ?? m['data'] ?? [];
-      if (sessions is List) return sessions.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      return [];
+      return _readListResponse(res.data, fieldKeys: const ['sessions', 'data']);
     } on DioException catch (e) {
       throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load sessions.'));
     } catch (_) {
@@ -191,12 +186,7 @@ class AuthRepository {
   Future<List<Map<String, dynamic>>> listTrustedDevices() async {
     try {
       final res = await _dio.get('/auth/trusted-devices');
-      final body = res.data;
-      if (body is List) return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      final m = _unwrap(res);
-      final devices = m['devices'] ?? m['data'] ?? [];
-      if (devices is List) return devices.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      return [];
+      return _readListResponse(res.data, fieldKeys: const ['devices', 'data']);
     } on DioException catch (e) {
       throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load trusted devices.'));
     } catch (_) {
@@ -227,16 +217,7 @@ class AuthRepository {
   Future<List<Map<String, dynamic>>> listLoginActivity() async {
     try {
       final res = await _dio.get('/auth/login-activity');
-      final body = res.data;
-      if (body is List) {
-        return body.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      }
-      if (body is Map && body['data'] is List) {
-        return (body['data'] as List)
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-      }
-      return [];
+      return _readListResponse(res.data, fieldKeys: const ['activities', 'data']);
     } on DioException catch (e) {
       throw AuthException(_mapCommonInfraError(e, fallback: 'Could not load login activity.'));
     } catch (_) {
@@ -318,7 +299,15 @@ class AuthRepository {
     final body = res.data;
 
     if (body is Map && body.containsKey('data')) {
-      return Map<String, dynamic>.from(body['data'] ?? {});
+      // Only unwrap when the inner value is itself a Map. Some endpoints
+      // wrap a list (e.g. /auth/sessions returning [..]) under `data`; in
+      // that case the original `body` is the safer base for callers that
+      // need to read alongside the list.
+      final inner = body['data'];
+      if (inner is Map) return Map<String, dynamic>.from(inner);
+      // Fall through and return the outer Map so callers can still read
+      // sibling fields without crashing on `Map.from(List)`.
+      return Map<String, dynamic>.from(body);
     }
 
     if (body is Map<String, dynamic>) {
@@ -326,6 +315,59 @@ class AuthRepository {
     }
 
     return {};
+  }
+
+  /// Robust reader for list endpoints that may return any of:
+  /// - a raw JSON array (legacy)
+  /// - `{ ok:true, data: [...] }` (Aura envelope)
+  /// - `{ ok:true, data: { items: [...] } }` (rare wrapper)
+  /// - `{ <fieldKey>: [...] }` (e.g. `sessions`, `devices`)
+  ///
+  /// Previously [_unwrap] was called on every response and would throw
+  /// `Map.from(List)` for the second shape, which surfaced as
+  /// "Could not load sessions / trusted devices" on the security screen.
+  List<Map<String, dynamic>> _readListResponse(
+    dynamic body, {
+    required List<String> fieldKeys,
+  }) {
+    List<dynamic>? list;
+
+    if (body is List) {
+      list = body;
+    } else if (body is Map) {
+      // Aura envelope: { ok, data, ... }
+      final outer = Map<String, dynamic>.from(body);
+      final data = outer['data'];
+      if (data is List) {
+        list = data;
+      } else if (data is Map) {
+        final dataMap = Map<String, dynamic>.from(data);
+        // Optional nested shape: { data: { items: [...] } } or { data: { sessions: [...] } }
+        for (final key in [...fieldKeys, 'items']) {
+          final nested = dataMap[key];
+          if (nested is List) {
+            list = nested;
+            break;
+          }
+        }
+      }
+      // Top-level alias keys: { sessions: [...] } / { devices: [...] }
+      if (list == null) {
+        for (final key in fieldKeys) {
+          final v = outer[key];
+          if (v is List) {
+            list = v;
+            break;
+          }
+        }
+      }
+    }
+
+    if (list == null) return const [];
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   String _extractServerMessage(DioException e) {

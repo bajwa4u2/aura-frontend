@@ -12,7 +12,9 @@ import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 import '../core/notifications/notification_bridge.dart';
+import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
+import '../features/realtime/application/realtime_providers.dart';
 import '../router.dart';
 
 class AuraApp extends ConsumerStatefulWidget {
@@ -61,6 +63,27 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // Local-only teardown: tokens, hint, providers. The originating tab
       // already POSTed /auth/logout, so we deliberately skip the network
       // call to avoid duplicate refresh-cookie clears and 401s.
+
+      // Disconnect runtime sockets BEFORE clearing tokens so any final
+      // event fires against a still-valid identity. Both methods are
+      // idempotent and self-contained.
+      try {
+        unawaited(
+          ref
+              .read(correspondenceLiveServiceProvider)
+              .disconnect()
+              .catchError((_) {}),
+        );
+      } catch (_) {}
+      try {
+        unawaited(
+          ref
+              .read(realtimeControllerProvider.notifier)
+              .disconnect()
+              .catchError((_) {}),
+        );
+      } catch (_) {}
+
       try {
         await ref.read(tokenStoreProvider).clearTokens();
       } catch (_) {}
