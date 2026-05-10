@@ -1,8 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/media/attachment.dart';
+import '../../../core/media/media_mime.dart';
+import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -51,6 +58,13 @@ class _InstitutionAnnouncementComposerState
   String? _error;
   String? _savedId;
 
+  /// Canonical media attached to this announcement. On edit, prepopulated
+  /// from `initialData['media']` so the host can review or remove what's
+  /// already attached. New picks are appended via [_pickMedia]. The list
+  /// is always the source of truth for what we POST/PATCH as `mediaIds`.
+  final List<Attachment> _attachments = <Attachment>[];
+  bool _mediaUploading = false;
+
   static const _kinds = ['GENERAL', 'RELEASE', 'SAFETY', 'GOVERNANCE'];
   static const _audiences = ['PUBLIC', 'MEMBERS', 'INTERNAL'];
 
@@ -74,8 +88,47 @@ class _InstitutionAnnouncementComposerState
       _bodyController.text = d['bodyMarkdown']?.toString() ?? '';
       _kind = d['kind']?.toString() ?? 'GENERAL';
       _audience = d['audience']?.toString() ?? 'PUBLIC';
+
+      final media = d['media'];
+      if (media is List) {
+        for (var i = 0; i < media.length; i++) {
+          final item = media[i];
+          if (item is! Map) continue;
+          final mediaId = item['id']?.toString().trim() ?? '';
+          if (mediaId.isEmpty) continue;
+          _attachments.add(
+            Attachment(
+              localId: 'existing_$mediaId',
+              kind: _attachmentKindFromServerType(item['type']?.toString()),
+              source: AttachmentSource.upload,
+              fileName: (item['caption']?.toString().trim().isNotEmpty ?? false)
+                  ? item['caption'].toString()
+                  : 'Attached media ${i + 1}',
+              mimeType: null,
+              mediaId: mediaId,
+              url: item['url']?.toString(),
+              thumbUrl: item['thumbUrl']?.toString(),
+              uploading: false,
+            ),
+          );
+        }
+      }
     }
     _savedId = widget.announcementId;
+  }
+
+  AttachmentKind _attachmentKindFromServerType(String? type) {
+    switch ((type ?? '').toUpperCase()) {
+      case 'VIDEO':
+        return AttachmentKind.video;
+      case 'AUDIO':
+        return AttachmentKind.audio;
+      case 'DOCUMENT':
+        return AttachmentKind.document;
+      case 'IMAGE':
+      default:
+        return AttachmentKind.image;
+    }
   }
 
   @override
@@ -95,6 +148,104 @@ class _InstitutionAnnouncementComposerState
       }
     }
     return fallback;
+  }
+
+  Future<void> _pickMedia() async {
+    if (_saving || _publishing || _mediaUploading) return;
+
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final picked = <Attachment>[];
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) continue;
+      final mime = inferMimeFromFileName(file.name) ?? 'application/octet-stream';
+      picked.add(
+        Attachment(
+          localId: '${DateTime.now().microsecondsSinceEpoch}_${file.name}_${picked.length}',
+          kind: kindFromMime(mime),
+          source: AttachmentSource.gallery,
+          fileName: file.name,
+          bytes: bytes,
+          mimeType: mime,
+          sizeBytes: bytes.length,
+          uploading: true,
+        ),
+      );
+    }
+
+    if (picked.isEmpty) return;
+
+    setState(() {
+      _attachments.addAll(picked);
+      _mediaUploading = true;
+      _error = null;
+    });
+
+    for (final attachment in picked) {
+      await _uploadAttachment(attachment);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _mediaUploading = _attachments.any((item) => item.uploading);
+    });
+  }
+
+  Future<void> _uploadAttachment(Attachment attachment) async {
+    try {
+      final result = await uploadAuraMedia(
+        dio: ref.read(dioProvider),
+        bytes: attachment.bytes ?? Uint8List(0),
+        fileName: attachment.fileName ?? '',
+        mimeType: attachment.mimeType ?? '',
+        kind: wireKind(attachment.kind),
+        source: wireSource(attachment.source),
+        metadataPatch: const <String, dynamic>{
+          'caption': null,
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        attachment.mediaId = result.mediaId;
+        attachment.url = result.url.isNotEmpty ? result.url : null;
+        attachment.thumbUrl = result.thumbUrl.isNotEmpty ? result.thumbUrl : null;
+        attachment.storageKey = result.storageKey.isNotEmpty ? result.storageKey : null;
+        attachment.uploading = false;
+        attachment.error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        attachment.error = e.toString();
+      });
+    }
+  }
+
+  void _removeAttachment(Attachment attachment) {
+    setState(() {
+      _attachments.removeWhere((item) => item.localId == attachment.localId);
+      _mediaUploading = _attachments.any((item) => item.uploading);
+    });
+  }
+
+  /// Collect server-issued mediaIds from successfully-uploaded items.
+  /// Excludes still-uploading items (no mediaId yet) and errored items.
+  List<String> _collectMediaIds() {
+    return _attachments
+        .where((a) => !a.uploading && (a.error == null || a.error!.trim().isEmpty))
+        .map((a) => (a.mediaId ?? '').trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
   }
 
   /// Returns the headline used at submission time. Falls back to the
@@ -126,10 +277,23 @@ class _InstitutionAnnouncementComposerState
     if (summary.isEmpty) { setState(() => _error = 'Summary is required.'); return null; }
     if (body.isEmpty) { setState(() => _error = 'Body is required.'); return null; }
 
+    if (_mediaUploading || _attachments.any((a) => a.uploading)) {
+      setState(() => _error = 'Wait for media uploads to finish before saving.');
+      return null;
+    }
+    final failed = _attachments
+        .where((a) => (a.error ?? '').trim().isNotEmpty && (a.mediaId ?? '').isEmpty)
+        .toList(growable: false);
+    if (failed.isNotEmpty) {
+      setState(() => _error = 'Remove or retry the failed media before saving.');
+      return null;
+    }
+
     final encodedTitle = InsCommunicationDecoded.encode(
       type: _communicationType,
       cleanTitle: cleanTitle,
     );
+    final mediaIds = _collectMediaIds();
 
     setState(() { _saving = true; _error = null; });
 
@@ -142,6 +306,7 @@ class _InstitutionAnnouncementComposerState
           bodyMarkdown: body,
           kind: _kind,
           audience: _audience,
+          mediaIds: mediaIds,
         );
         _savedId = result['id']?.toString();
       } else {
@@ -153,6 +318,7 @@ class _InstitutionAnnouncementComposerState
           bodyMarkdown: body,
           kind: _kind,
           audience: _audience,
+          mediaIds: mediaIds,
         );
       }
       setState(() { _saving = false; });
@@ -214,6 +380,94 @@ class _InstitutionAnnouncementComposerState
         content: Text('$headline · $reach'),
         duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildMediaCard({required bool disabled}) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Media',
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          AuraSecondaryButton(
+            label: _mediaUploading ? 'Uploading…' : 'Add image or video',
+            icon: Icons.attach_file,
+            onPressed: (disabled || _mediaUploading) ? null : _pickMedia,
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'Attach images or videos to this announcement. PUBLIC audience uses public delivery; MEMBERS or INTERNAL audience routes media through the signed-URL access gate automatically.',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          if (_attachments.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            ..._attachments.map(
+              (attachment) => Container(
+                margin: const EdgeInsets.only(bottom: AuraSpace.s8),
+                padding: const EdgeInsets.all(AuraSpace.s12),
+                decoration: BoxDecoration(
+                  color: AuraSurface.subtle,
+                  borderRadius: BorderRadius.circular(AuraRadius.md),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      attachment.isVideo
+                          ? Icons.videocam_outlined
+                          : Icons.image_outlined,
+                      size: 18,
+                      color: AuraSurface.muted,
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            attachment.fileName ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            attachment.uploading
+                                ? 'Uploading…'
+                                : ((attachment.error ?? '').trim().isNotEmpty
+                                    ? attachment.error!
+                                    : 'Ready'),
+                            style: AuraText.micro.copyWith(
+                              color: (attachment.error ?? '').trim().isNotEmpty
+                                  ? AuraSurface.dangerInk
+                                  : AuraSurface.faint,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: disabled ? null : () => _removeAttachment(attachment),
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Remove',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -344,6 +598,8 @@ class _InstitutionAnnouncementComposerState
                       ],
                     ),
                   ),
+                  const SizedBox(height: AuraSpace.s16),
+                  _buildMediaCard(disabled: isBusy),
                   const SizedBox(height: AuraSpace.s16),
                   Container(
                     padding: const EdgeInsets.all(AuraSpace.s16),

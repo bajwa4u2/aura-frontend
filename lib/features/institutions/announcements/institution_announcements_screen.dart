@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../features/institutions/presentation/institution_page.dart';
+import '../../feed/domain/feed_media.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 
@@ -195,6 +197,8 @@ class _InstitutionAnnouncementsScreenState
     final publishedAt = _formatDate(ann['publishedAt']?.toString());
     final createdAt = _formatDate(ann['createdAt']?.toString());
     final isActing = _actingOn == id;
+    final mediaList = FeedMedia.listFromJson(ann['media']);
+    final firstMedia = mediaList.isEmpty ? null : mediaList.first;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AuraSpace.s10),
@@ -207,6 +211,10 @@ class _InstitutionAnnouncementsScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (firstMedia != null) ...[
+            CanonicalMediaThumb(media: firstMedia),
+            const SizedBox(height: AuraSpace.s12),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

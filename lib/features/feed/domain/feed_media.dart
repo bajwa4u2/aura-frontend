@@ -86,7 +86,10 @@ class FeedMedia {
       position: toInt(m['position']) ?? 0,
       caption: m['caption']?.toString(),
       visibility: (m['visibility'] ?? 'PUBLIC').toString(),
-      mediaType: m['mediaType']?.toString(),
+      // Backend emits `mediaType` from the feed/post pipeline and `type`
+      // from the announcement pipeline. Accept both so the same renderer
+      // can drive every surface.
+      mediaType: (m['mediaType'] ?? m['type'])?.toString(),
       mimeType: m['mimeType']?.toString(),
       width: toInt(m['width']),
       height: toInt(m['height']),

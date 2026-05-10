@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_error_mapper.dart';
+import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -11,6 +12,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../feed/domain/feed_media.dart';
 import '../providers.dart';
 
 const Map<String, String> _announcementTranslationLanguageLabels = {
@@ -295,9 +297,18 @@ class _AnnouncementDetailScreenState
           final body = a.bodyMarkdown.trim();
           _targetLanguage ??= _defaultAnnouncementTranslationLanguage(context);
 
+          final media = FeedMedia.listFromJson(a.media);
+
           return ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
             children: [
+              if (media.isNotEmpty) ...[
+                for (final m in media) ...[
+                  CanonicalMediaThumb(media: m),
+                  const SizedBox(height: AuraSpace.s10),
+                ],
+                const SizedBox(height: AuraSpace.s6),
+              ],
               AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../feed/domain/feed_media.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 
@@ -450,6 +452,7 @@ class _PinnedSection extends StatelessWidget {
                   title: a.title.isEmpty ? a.slug : a.title,
                   publishedAt: a.publishedAt,
                   pinned: true,
+                  firstMedia: _firstMediaOf(a),
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
               ),
@@ -459,6 +462,11 @@ class _PinnedSection extends StatelessWidget {
       },
     );
   }
+}
+
+FeedMedia? _firstMediaOf(Announcement a) {
+  if (a.media.isEmpty) return null;
+  return FeedMedia.tryFromJson(a.media.first);
 }
 
 // ── All section ────────────────────────────────────────────────────────────
@@ -516,6 +524,7 @@ class _AllSection extends StatelessWidget {
                 child: _AnnouncementCard(
                   title: a.title.isEmpty ? a.slug : a.title,
                   publishedAt: a.publishedAt,
+                  firstMedia: _firstMediaOf(a),
                   onTap: () => context.go('/announcements/${a.slug}'),
                 ),
               ),
@@ -535,12 +544,14 @@ class _AnnouncementCard extends StatelessWidget {
     required this.onTap,
     this.publishedAt,
     this.pinned = false,
+    this.firstMedia,
   });
 
   final String title;
   final DateTime? publishedAt;
   final bool pinned;
   final VoidCallback onTap;
+  final FeedMedia? firstMedia;
 
   String _formatDate(DateTime dt) {
     final local = dt.toLocal();
@@ -569,59 +580,78 @@ class _AnnouncementCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
-          padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
             color: AuraSurface.card,
             borderRadius: BorderRadius.circular(AuraRadius.card),
             border: Border.all(color: AuraSurface.divider),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
-                  borderRadius: BorderRadius.circular(AuraRadius.r10),
-                  border: Border.all(
-                    color: AuraSurface.accent.withValues(alpha: 0.25),
+              if (firstMedia != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s14,
+                    AuraSpace.s14,
+                    AuraSpace.s14,
+                    0,
                   ),
+                  child: CanonicalMediaThumb(media: firstMedia!),
                 ),
-                child: Icon(
-                  pinned ? Icons.push_pin_outlined : Icons.campaign_outlined,
-                  size: 16,
-                  color: AuraSurface.accentText,
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Column(
+              Padding(
+                padding: const EdgeInsets.all(AuraSpace.s14),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (publishedAt != null) ...[
-                      const SizedBox(height: AuraSpace.s4),
-                      Text(
-                        _formatDate(publishedAt!),
-                        style: AuraText.micro.copyWith(
-                          color: AuraSurface.faint,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AuraSurface.accentSoft,
+                        borderRadius: BorderRadius.circular(AuraRadius.r10),
+                        border: Border.all(
+                          color: AuraSurface.accent.withValues(alpha: 0.25),
                         ),
                       ),
-                    ],
+                      child: Icon(
+                        pinned
+                            ? Icons.push_pin_outlined
+                            : Icons.campaign_outlined,
+                        size: 16,
+                        color: AuraSurface.accentText,
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (publishedAt != null) ...[
+                            const SizedBox(height: AuraSpace.s4),
+                            Text(
+                              _formatDate(publishedAt!),
+                              style: AuraText.micro.copyWith(
+                                color: AuraSurface.faint,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: AuraSurface.faint,
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: AuraSpace.s8),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: AuraSurface.faint,
               ),
             ],
           ),

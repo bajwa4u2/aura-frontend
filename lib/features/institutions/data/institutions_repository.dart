@@ -346,6 +346,7 @@ class InstitutionsRepository {
     required String bodyMarkdown,
     String kind = 'GENERAL',
     String audience = 'PUBLIC',
+    List<String>? mediaIds,
   }) async {
     final res = await _dio.post(
       '/institutions/$institutionId/announcements',
@@ -356,6 +357,7 @@ class InstitutionsRepository {
         'bodyMarkdown': bodyMarkdown,
         'kind': kind,
         'audience': audience,
+        if (mediaIds != null) 'mediaIds': mediaIds,
       },
     );
     if (res.data is Map) {
@@ -374,6 +376,7 @@ class InstitutionsRepository {
     String? bodyMarkdown,
     String? kind,
     String? audience,
+    List<String>? mediaIds,
   }) async {
     final res = await _dio.patch(
       '/institutions/$institutionId/announcements/$announcementId',
@@ -384,6 +387,7 @@ class InstitutionsRepository {
         if (bodyMarkdown != null) 'bodyMarkdown': bodyMarkdown,
         if (kind != null) 'kind': kind,
         if (audience != null) 'audience': audience,
+        if (mediaIds != null) 'mediaIds': mediaIds,
       },
     );
     if (res.data is Map) {
