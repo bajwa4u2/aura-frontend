@@ -574,10 +574,24 @@ class _HeaderAccountBtn extends StatelessWidget {
   }
 }
 
+/// Reads a value from the `/auth/me` shape, tolerating both the
+/// top-level promotion and the nested-`user` wrapper. The backend
+/// returns `{ user: { id, displayName, avatarUrl, ... }, accountType,
+/// emailVerified }` — older code paths that read the avatar at the
+/// top level produced a generic icon for every authed user. Keep
+/// trying nested fields per key so the shell renders the user's
+/// avatar/initials regardless of which envelope the response uses.
 String _pickMeString(Map<String, dynamic> map, List<String> keys) {
+  final nested = (map['user'] is Map)
+      ? Map<String, dynamic>.from(map['user'] as Map)
+      : null;
   for (final key in keys) {
-    final value = (map[key] ?? '').toString().trim();
-    if (value.isNotEmpty) return value;
+    final top = (map[key] ?? '').toString().trim();
+    if (top.isNotEmpty) return top;
+    if (nested != null) {
+      final inside = (nested[key] ?? '').toString().trim();
+      if (inside.isNotEmpty) return inside;
+    }
   }
   return '';
 }
