@@ -16,17 +16,36 @@ import 'aura_resolvable_attachment_image.dart';
 /// across feed cards, post detail, institution post detail, announcement
 /// list cards, and announcement detail. Adding a new surface should reuse
 /// this rather than re-deriving the public/restricted branch.
+///
+/// Sizing contract: the thumb fills the available width up to [maxWidth]
+/// and applies [aspectRatio] to derive height. On narrow viewports
+/// (mobile, ~360–600px) it fills the parent. On wide viewports
+/// (tablet/desktop) it caps at [maxWidth] so a 1920×1080 PNG doesn't
+/// blow a card to viewport-width. Use [maxWidth] = `double.infinity`
+/// to opt out of the cap when a surface deliberately wants the full
+/// available width (rare).
 class CanonicalMediaThumb extends StatelessWidget {
   const CanonicalMediaThumb({
     super.key,
     required this.media,
     this.aspectRatio = 16 / 9,
     this.fit = BoxFit.cover,
+    this.maxWidth = 720,
+    this.alignment = AlignmentDirectional.centerStart,
   });
 
   final FeedMedia media;
   final double aspectRatio;
   final BoxFit fit;
+
+  /// Hard cap on the thumb's width. Used so wide viewports don't
+  /// stretch a single image to fill the page.
+  final double maxWidth;
+
+  /// Where to anchor the thumb when [maxWidth] caps it below the
+  /// available width. Defaults to start so cards keep their reading
+  /// rhythm; pass `Alignment.center` for hero strips.
+  final AlignmentGeometry alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +70,19 @@ class CanonicalMediaThumb extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
+    final framed = ClipRRect(
       borderRadius: BorderRadius.circular(AuraRadius.md),
       child: AspectRatio(aspectRatio: aspectRatio, child: child),
+    );
+
+    if (!maxWidth.isFinite) return framed;
+
+    return Align(
+      alignment: alignment,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: framed,
+      ),
     );
   }
 }

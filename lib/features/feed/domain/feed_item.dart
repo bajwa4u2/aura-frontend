@@ -13,7 +13,8 @@ export 'feed_media.dart';
 
 enum FeedItemType {
   userPost,
-  institutionPost;
+  institutionPost,
+  announcement;
 
   /// Backend wire token for this type.
   String get wire {
@@ -22,12 +23,15 @@ enum FeedItemType {
         return 'USER_POST';
       case FeedItemType.institutionPost:
         return 'INSTITUTION_POST';
+      case FeedItemType.announcement:
+        return 'ANNOUNCEMENT';
     }
   }
 
   static FeedItemType fromWire(dynamic raw) {
     final s = (raw ?? '').toString().trim().toUpperCase();
     if (s == 'INSTITUTION_POST') return FeedItemType.institutionPost;
+    if (s == 'ANNOUNCEMENT') return FeedItemType.announcement;
     return FeedItemType.userPost;
   }
 }
@@ -850,6 +854,12 @@ class FeedItem {
 
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
+  bool get isAnnouncement => type == FeedItemType.announcement;
+  /// True for cards that speak with institutional voice — institution
+  /// posts and institution announcements alike. Drives the OFFICIAL
+  /// pill and disables personal-post-only affordances.
+  bool get isInstitutionalVoice =>
+      type == FeedItemType.institutionPost || type == FeedItemType.announcement;
 
   factory FeedItem.fromJson(Map<String, dynamic> m) {
     DateTime? readDate(dynamic raw) {

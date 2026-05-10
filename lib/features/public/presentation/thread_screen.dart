@@ -602,7 +602,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   /// Builds the right reaction target so the existing FeedInteractionBar
-  /// works on either user posts or institution posts.
+  /// works on either user posts or institution posts. Announcements
+  /// don't have a reaction endpoint yet — fall back to a user-post
+  /// shaped target so callers can still hide the bar by checking the
+  /// id; the actual interaction widgets read FeedItem.type and skip.
   ReactionTarget _reactionTargetFor(FeedItem item) {
     switch (item.type) {
       case FeedItemType.userPost:
@@ -616,6 +619,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               : authorId,
           postId: item.id,
         );
+      case FeedItemType.announcement:
+        // No announcement-specific reactions surface today. Return a
+        // PostReactionTarget so the type contract is satisfied; the
+        // unified card already filters announcements out of the
+        // interaction bar via _reactionTargetFor()'s null branch.
+        return PostReactionTarget(item.id);
     }
   }
 }

@@ -329,15 +329,17 @@ class _VoiceLabelLine extends StatelessWidget {
   }
 }
 
-/// True when the card represents a top-level institution post (i.e.
-/// institutional speech / announcement) — distinct from a personal user
-/// post or a reply *under* an institution post. The OFFICIAL pill renders
-/// only for these so the card reads as institutional voice.
+/// True when the card represents a top-level institutional voice —
+/// institution posts AND institutional announcements — distinct from a
+/// personal user post or a reply *under* an institution post. The
+/// OFFICIAL pill renders only for these so the card reads as
+/// institutional voice.
 bool _isOfficialInstitutionPost(FeedItem item) {
-  if (item.type != FeedItemType.institutionPost) return false;
+  if (!item.isInstitutionalVoice) return false;
   // Institution-post replies and reposts have a non-empty body but a blank
   // title and are conversational; only original posts with a title are
-  // truly "official".
+  // truly "official". Announcements always carry a title so they pass
+  // through with the OFFICIAL pill rendered.
   final hasTitle = item.title != null && item.title!.trim().isNotEmpty;
   return hasTitle;
 }
@@ -535,6 +537,9 @@ ReactionTarget? _reactionTargetFor(FeedItem item) {
       postId: item.id,
     );
   }
+  // Announcements don't yet expose a reaction endpoint; hiding the
+  // interaction bar is correct rather than wiring one up to a 404.
+  if (item.type == FeedItemType.announcement) return null;
   if (item.id.trim().isEmpty) return null;
   return PostReactionTarget(item.id);
 }
