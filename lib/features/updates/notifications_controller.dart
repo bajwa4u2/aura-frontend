@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aura/core/auth/session_providers.dart';
+import 'package:aura/core/runtime/app_visibility.dart';
 import 'notifications_repository.dart';
 
 const Duration kNotificationsPollInterval = Duration(seconds: 120);
@@ -116,6 +117,13 @@ class NotificationsController extends StateNotifier<NotificationsState>
 
   void _startPolling() {
     _pollTimer ??= Timer.periodic(kNotificationsPollInterval, (_) {
+      // Visibility-gated: skip the periodic fetch when the app is in the
+      // background. The OS has already paused most cross-process work; a
+      // backgrounded tab does not need a fresh unread-count. The
+      // didChangeAppLifecycleState resume hook below forces a refresh on
+      // foreground so the badge catches up immediately.
+      if (!_authed) return;
+      if (!ref.read(appForegroundedProvider)) return;
       unawaited(refresh());
     });
   }

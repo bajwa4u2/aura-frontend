@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ui/aura_design_system.dart';
@@ -6,6 +7,7 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/admin/runtime/admin_runtime_coordinator.dart';
 import 'shell_header_tools.dart';
 import 'shell_shared.dart';
 
@@ -37,8 +39,48 @@ const LinearGradient _adminNavGradient = LinearGradient(
 // ADMIN SHELL
 // ─────────────────────────────────────────────────────────────────────────────
 
-class AdminShell extends StatelessWidget {
+class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<AdminShell> createState() => _AdminShellState();
+}
+
+class _AdminShellState extends ConsumerState<AdminShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Defer to post-frame so we don't mutate a provider during the build of
+    // the route stack that mounted us.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(adminRuntimeCoordinatorProvider.notifier).markShellMounted();
+    });
+  }
+
+  @override
+  void dispose() {
+    // The router has already torn the shell out by this point; mark the
+    // coordinator inactive so the timer stops and any subscribed handler
+    // stops being invoked. Handlers themselves dispose via their own
+    // widgets' dispose paths.
+    final container = ProviderScope.containerOf(context, listen: false);
+    container
+        .read(adminRuntimeCoordinatorProvider.notifier)
+        .markShellUnmounted();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AdminShellLayout(child: widget.child);
+  }
+}
+
+class _AdminShellLayout extends StatelessWidget {
+  const _AdminShellLayout({required this.child});
 
   final Widget child;
 

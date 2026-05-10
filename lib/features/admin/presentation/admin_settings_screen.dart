@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
@@ -208,61 +211,338 @@ class _SettingsEmptyState extends StatelessWidget {
   }
 }
 
-class _SettingRow extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// SETTING ROW — typed structured renderer
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Slice D admin-runtime hardening: previously every value was rendered as
+// `setting.value.toString()` inside a fixed-width pill, which produced a
+// vertical text wall when the value was a Map / List. The new renderer
+// branches on the value's runtime type so:
+//
+//   string  → single-line text in the pill
+//   bool    → ON/OFF chip with semantic color
+//   number  → right-aligned monospace
+//   null    → faint em-dash
+//   Map/List → expandable pretty-printed JSON block, copyable, scroll-safe
+
+class _SettingRow extends StatefulWidget {
   const _SettingRow({required this.setting});
 
   final AdminSetting setting;
 
   @override
-  Widget build(BuildContext context) {
-    final valueStr = setting.value?.toString() ?? '—';
+  State<_SettingRow> createState() => _SettingRowState();
+}
 
+class _SettingRowState extends State<_SettingRow> {
+  bool _expanded = false;
+
+  bool get _isStructured =>
+      widget.setting.value is Map || widget.setting.value is List;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
         vertical: AuraSpace.s14,
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.setting.key,
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
+                    if (widget.setting.description != null &&
+                        widget.setting.description!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.setting.description!,
+                        style:
+                            AuraText.small.copyWith(color: AuraSurface.muted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s16),
+              if (_isStructured)
+                _StructuredToggle(
+                  expanded: _expanded,
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  summary: _structuredSummary(widget.setting.value),
+                )
+              else
+                _InlineValueChip(value: widget.setting.value),
+            ],
+          ),
+          if (_isStructured && _expanded) ...[
+            const SizedBox(height: AuraSpace.s10),
+            _StructuredValueBlock(value: widget.setting.value),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _structuredSummary(Object? value) {
+  if (value is Map) return '{${value.length}}';
+  if (value is List) return '[${value.length}]';
+  return '';
+}
+
+class _InlineValueChip extends StatelessWidget {
+  const _InlineValueChip({required this.value});
+
+  final Object? value;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value == null) {
+      return const _Pill(
+        label: '—',
+        color: AuraSurface.elevated,
+        textColor: AuraSurface.faint,
+      );
+    }
+    if (value is bool) {
+      final on = value as bool;
+      return _Pill(
+        label: on ? 'ON' : 'OFF',
+        color: on
+            ? AuraSurface.accent.withValues(alpha: 0.15)
+            : AuraSurface.elevated,
+        textColor: on ? AuraSurface.accentText : AuraSurface.muted,
+        bold: true,
+      );
+    }
+    if (value is num) {
+      return _Pill(
+        label: value.toString(),
+        color: AuraSurface.elevated,
+        textColor: AuraSurface.muted,
+        mono: true,
+      );
+    }
+    final text = value.toString();
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 280),
+      child: _Pill(
+        label: text,
+        color: AuraSurface.elevated,
+        textColor: AuraSurface.muted,
+        mono: true,
+        ellipsis: true,
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    this.mono = false,
+    this.bold = false,
+    this.ellipsis = false,
+  });
+
+  final String label;
+  final Color color;
+  final Color textColor;
+  final bool mono;
+  final bool bold;
+  final bool ellipsis;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AuraText.small.copyWith(
+      fontFamily: mono ? 'monospace' : null,
+      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+      color: textColor,
+      letterSpacing: bold ? 0.4 : null,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s10,
+        vertical: AuraSpace.s6,
+      ),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(AuraRadius.r10),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        label,
+        maxLines: ellipsis ? 1 : null,
+        overflow: ellipsis ? TextOverflow.ellipsis : TextOverflow.clip,
+        style: style,
+      ),
+    );
+  }
+}
+
+class _StructuredToggle extends StatelessWidget {
+  const _StructuredToggle({
+    required this.expanded,
+    required this.onTap,
+    required this.summary,
+  });
+
+  final bool expanded;
+  final VoidCallback onTap;
+  final String summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.r10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AuraSpace.s10,
+            vertical: AuraSpace.s6,
+          ),
+          decoration: BoxDecoration(
+            color: AuraSurface.elevated,
+            borderRadius: BorderRadius.circular(AuraRadius.r10),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                summary,
+                style: AuraText.small.copyWith(
+                  fontFamily: 'monospace',
+                  color: AuraSurface.muted,
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s6),
+              Icon(
+                expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 16,
+                color: AuraSurface.faint,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StructuredValueBlock extends StatelessWidget {
+  const _StructuredValueBlock({required this.value});
+
+  final Object? value;
+
+  static const _encoder = JsonEncoder.withIndent('  ');
+
+  String _safeJson() {
+    try {
+      return _encoder.convert(value);
+    } catch (_) {
+      // The value contains something JsonEncoder can't serialize. Fall back
+      // to a plain string rather than rendering nothing — the operator
+      // still wants to see SOMETHING. Wrapped in a code block by the
+      // caller's monospace style, so the broken type is visible.
+      return value?.toString() ?? '—';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final json = _safeJson();
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.r10),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s10,
+              AuraSpace.s6,
+              AuraSpace.s6,
+              AuraSpace.s4,
+            ),
+            child: Row(
               children: [
+                const Icon(
+                  Icons.data_object_rounded,
+                  size: 14,
+                  color: AuraSurface.faint,
+                ),
+                const SizedBox(width: AuraSpace.s6),
                 Text(
-                  setting.key,
-                  style: AuraText.body.copyWith(
+                  'json',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
                     fontWeight: FontWeight.w600,
-                    color: AuraSurface.ink,
+                    letterSpacing: 0.6,
                   ),
                 ),
-                if (setting.description != null &&
-                    setting.description!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    setting.description!,
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
-                  ),
-                ],
+                const Spacer(),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 16,
+                  tooltip: 'Copy',
+                  icon: const Icon(Icons.content_copy_rounded),
+                  color: AuraSurface.faint,
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: json));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Setting JSON copied'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
-          const SizedBox(width: AuraSpace.s16),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s10,
-              vertical: AuraSpace.s6,
-            ),
-            decoration: BoxDecoration(
-              color: AuraSurface.elevated,
-              borderRadius: BorderRadius.circular(AuraRadius.r10),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: Text(
-              valueStr,
-              style: AuraText.small.copyWith(
-                fontFamily: 'monospace',
-                color: AuraSurface.muted,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 360),
+            child: Scrollbar(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s12,
+                  0,
+                  AuraSpace.s12,
+                  AuraSpace.s12,
+                ),
+                child: SelectableText(
+                  json,
+                  style: AuraText.small.copyWith(
+                    fontFamily: 'monospace',
+                    color: AuraSurface.muted,
+                    height: 1.4,
+                  ),
+                ),
               ),
             ),
           ),

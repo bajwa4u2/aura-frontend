@@ -52,7 +52,10 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // Best-effort refresh — failures are swallowed inside the controller.
-      ref.read(compatibilityControllerProvider.notifier).refresh();
+      // `force: true` bypasses the controller's visibility gate so a tab
+      // returning from background gets a fresh verdict immediately rather
+      // than waiting for the next periodic tick.
+      ref.read(compatibilityControllerProvider.notifier).refresh(force: true);
     }
   }
 

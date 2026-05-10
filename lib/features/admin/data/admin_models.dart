@@ -64,6 +64,25 @@ class AdminAccess {
   }
 }
 
+/// Lifecycle state derived from the admin-grant fields. Backend only ships
+/// `active: bool` and (sometimes) a `status` string; the UI used to surface
+/// "INACTIVE" with no clue whether that meant expired, revoked, or
+/// bootstrap-only. This enum preserves the source-of-truth bool but adds
+/// the disambiguation operators actually need.
+enum AdminGrantStatus {
+  /// Currently in force.
+  active,
+  /// Was active, then `expiresAt` passed.
+  expired,
+  /// Backend reported `active=false` and the grant has not expired —
+  /// most often a manual revocation by another admin.
+  revoked,
+  /// System-issued OWNER grant (`grantedBy` empty / system) — present
+  /// from initial admin bootstrap. Surfaced separately so operators can
+  /// see at a glance which row anchors their access.
+  bootstrap,
+}
+
 class AdminGrant {
   const AdminGrant({
     required this.id,
@@ -82,6 +101,31 @@ class AdminGrant {
   final String grantedBy;
   final DateTime createdAt;
   final DateTime? expiresAt;
+
+  /// Derived from (active, expiresAt, grantedBy). Computed at read time so
+  /// the value always reflects the current wall clock — an "active" grant
+  /// flips to "expired" the instant the expiry passes without needing a
+  /// backend round-trip.
+  AdminGrantStatus get derivedStatus {
+    final expiry = expiresAt;
+    final isExpired = expiry != null && expiry.isBefore(DateTime.now());
+
+    if (active && !isExpired) {
+      // System-issued OWNER grants have an empty `grantedBy` (or
+      // explicitly "system" / "bootstrap"). Mark them so the row reads
+      // "BOOTSTRAP — system OWNER" rather than just "ACTIVE".
+      final grantedById = grantedBy.toLowerCase();
+      final isBootstrap = grantedById.isEmpty ||
+          grantedById == 'system' ||
+          grantedById == 'bootstrap';
+      if (isBootstrap && role.toUpperCase() == 'OWNER') {
+        return AdminGrantStatus.bootstrap;
+      }
+      return AdminGrantStatus.active;
+    }
+    if (isExpired) return AdminGrantStatus.expired;
+    return AdminGrantStatus.revoked;
+  }
 
   static String _str(dynamic v) => (v ?? '').toString().trim();
   static List<String> _strList(dynamic v) {
@@ -229,19 +273,55 @@ class AdminMetricOverview {
     return int.tryParse((v ?? '').toString()) ?? 0;
   }
 
+  /// Helper: dive into a nested JSON group safely.
+  static Map<String, dynamic>? _group(Map<String, dynamic> json, String key) {
+    final v = json[key];
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return null;
+  }
+
   factory AdminMetricOverview.fromJson(Map<String, dynamic> json) {
+    // The standard ResponseWrapInterceptor wraps the controller's payload
+    // in `{ ok, data }`. Older mocks returned the bare payload, so we
+    // accept either shape.
     final data = json['data'] is Map<String, dynamic>
         ? json['data'] as Map<String, dynamic>
         : json;
+
+    // The backend ships NESTED groups (admin-hub.service.ts:937-989):
+    //   users:          { total, active, disabled }
+    //   institutions:   { total, verified, suspended, rejected, ... }
+    //   reports:        { total, open, reviewing, resolved, dismissed }
+    //   communications: { total, unread, digests, drafts, campaigns }
+    //   realtime:       { sessions, activeSessions, participants, ... }
+    //   devices:        { registered, active }
+    //   push:           { attempts, sent, failed, skipped }
+    //
+    // Pre-Slice-D code read flat keys (`data['totalUsers']`, etc.) which
+    // never existed; every metric collapsed to 0 via the int default.
+    // We now read the correct nested paths and keep flat-key fallbacks
+    // for any future endpoint that returns a flattened shape.
+    final users = _group(data, 'users');
+    final institutions = _group(data, 'institutions');
+    final reports = _group(data, 'reports');
+    final communications = _group(data, 'communications');
+    final realtime = _group(data, 'realtime');
+    final devices = _group(data, 'devices');
+    final push = _group(data, 'push');
+
     return AdminMetricOverview(
-      totalUsers: _int(data['totalUsers'] ?? data['users']),
-      activeUsers: _int(data['activeUsers']),
-      totalInstitutions: _int(data['totalInstitutions'] ?? data['institutions']),
-      pendingReports: _int(data['pendingReports'] ?? data['reports']),
-      totalCommunications: _int(data['totalCommunications'] ?? data['communications']),
-      realtimeSessions: _int(data['realtimeSessions'] ?? data['realtime']),
-      totalDevices: _int(data['totalDevices'] ?? data['devices']),
-      pendingPushJobs: _int(data['pendingPushJobs'] ?? data['push']),
+      totalUsers: _int(users?['total'] ?? data['totalUsers']),
+      activeUsers: _int(users?['active'] ?? data['activeUsers']),
+      totalInstitutions:
+          _int(institutions?['total'] ?? data['totalInstitutions']),
+      pendingReports: _int(reports?['open'] ?? data['pendingReports']),
+      totalCommunications:
+          _int(communications?['total'] ?? data['totalCommunications']),
+      realtimeSessions:
+          _int(realtime?['activeSessions'] ?? data['realtimeSessions']),
+      totalDevices: _int(devices?['registered'] ?? data['totalDevices']),
+      pendingPushJobs: _int(push?['failed'] ?? data['pendingPushJobs']),
     );
   }
 }

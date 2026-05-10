@@ -110,8 +110,22 @@ class _GrantRow extends StatelessWidget {
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
+  String _relativePast(DateTime past) {
+    final diff = DateTime.now().difference(past);
+    if (diff.inDays >= 1) {
+      return '${diff.inDays}d ago';
+    }
+    if (diff.inHours >= 1) return '${diff.inHours}h ago';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final status = grant.derivedStatus;
+    final isLive = status == AdminGrantStatus.active ||
+        status == AdminGrantStatus.bootstrap;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
@@ -124,10 +138,10 @@ class _GrantRow extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: grant.active ? AuraSurface.accentSoft : AuraSurface.elevated,
+              color: isLive ? AuraSurface.accentSoft : AuraSurface.elevated,
               borderRadius: BorderRadius.circular(AuraRadius.md),
               border: Border.all(
-                color: grant.active
+                color: isLive
                     ? AuraSurface.accent.withValues(alpha: 0.25)
                     : AuraSurface.divider,
               ),
@@ -135,7 +149,7 @@ class _GrantRow extends StatelessWidget {
             child: Icon(
               Icons.verified_user_outlined,
               size: 20,
-              color: grant.active ? AuraSurface.accentText : AuraSurface.faint,
+              color: isLive ? AuraSurface.accentText : AuraSurface.faint,
             ),
           ),
           const SizedBox(width: AuraSpace.s14),
@@ -143,7 +157,10 @@ class _GrantRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AuraSpace.s8,
+                  runSpacing: AuraSpace.s4,
                   children: [
                     Text(
                       grant.role.toUpperCase(),
@@ -152,20 +169,37 @@ class _GrantRow extends StatelessWidget {
                         color: AuraSurface.ink,
                       ),
                     ),
-                    const SizedBox(width: AuraSpace.s8),
-                    _StatusBadge(active: grant.active),
+                    _StatusBadge(status: status),
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s4),
                 Text(
-                  'Granted: ${_formatDate(grant.createdAt)}',
+                  'Granted ${_formatDate(grant.createdAt)} '
+                  '(${_relativePast(grant.createdAt)})',
                   style: AuraText.micro.copyWith(color: AuraSurface.faint),
                 ),
                 if (grant.expiresAt != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Expires: ${_formatDate(grant.expiresAt!)}',
-                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                    status == AdminGrantStatus.expired
+                        ? 'Expired ${_formatDate(grant.expiresAt!)} '
+                            '(${_relativePast(grant.expiresAt!)})'
+                        : 'Expires ${_formatDate(grant.expiresAt!)}',
+                    style: AuraText.micro.copyWith(
+                      color: status == AdminGrantStatus.expired
+                          ? AuraSurface.dangerInk
+                          : AuraSurface.faint,
+                    ),
+                  ),
+                ],
+                if (status == AdminGrantStatus.bootstrap) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'System OWNER (bootstrap) — anchors initial admin access',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.muted,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
                 if (grant.permissions.isNotEmpty) ...[
@@ -188,30 +222,57 @@ class _GrantRow extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.active});
+  const _StatusBadge({required this.status});
 
-  final bool active;
+  final AdminGrantStatus status;
 
   @override
   Widget build(BuildContext context) {
+    final (label, bg, fg, borderAlpha) = switch (status) {
+      AdminGrantStatus.active => (
+          'ACTIVE',
+          AuraSurface.accentSoft,
+          AuraSurface.accentText,
+          0.3,
+        ),
+      AdminGrantStatus.bootstrap => (
+          'BOOTSTRAP',
+          AuraSurface.accentSoft,
+          AuraSurface.accentText,
+          0.3,
+        ),
+      AdminGrantStatus.expired => (
+          'EXPIRED',
+          AuraSurface.elevated,
+          AuraSurface.dangerInk,
+          0.3,
+        ),
+      AdminGrantStatus.revoked => (
+          'REVOKED',
+          AuraSurface.elevated,
+          AuraSurface.muted,
+          0.0,
+        ),
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s8,
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: active ? AuraSurface.accentSoft : AuraSurface.elevated,
+        color: bg,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         border: Border.all(
-          color: active
-              ? AuraSurface.accent.withValues(alpha: 0.3)
-              : AuraSurface.divider,
+          color: borderAlpha == 0.0
+              ? AuraSurface.divider
+              : AuraSurface.accent.withValues(alpha: borderAlpha),
         ),
       ),
       child: Text(
-        active ? 'ACTIVE' : 'INACTIVE',
+        label,
         style: AuraText.micro.copyWith(
-          color: active ? AuraSurface.accentText : AuraSurface.faint,
+          color: fg,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
         ),
