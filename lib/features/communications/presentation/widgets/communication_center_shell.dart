@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/auth/admin_access_provider.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../domain/communications_models.dart';
 import 'communication_empty_error_states.dart';
@@ -19,7 +17,7 @@ class CommunicationCenterShell extends StatelessWidget {
     required this.onLoad,
     required this.onChannelChanged,
     required this.onFrequencyChanged,
-    required this.adminAsync,
+    required this.isAdmin,
   });
 
   final CommunicationPreferences? preferences;
@@ -31,12 +29,9 @@ class CommunicationCenterShell extends StatelessWidget {
       onChannelChanged;
   final void Function(String key, CommunicationFrequencyOption value)
       onFrequencyChanged;
-  final AsyncValue<AppAdminAccess> adminAsync;
-
-  bool get _isAdmin => adminAsync.maybeWhen(
-        data: (v) => v.isAdmin,
-        orElse: () => false,
-      );
+  // Synchronous display gate — populated from
+  // `appAdminCachedDisplayProvider`. Never triggers an `/admin/me` probe.
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context) {
@@ -45,12 +40,12 @@ class CommunicationCenterShell extends StatelessWidget {
       children: [
         CommunicationRoleHero(
           preferences: preferences,
-          isAdmin: _isAdmin,
+          isAdmin: isAdmin,
         ),
         const SizedBox(height: AuraSpace.s16),
         CommunicationStatusCards(
           preferences: preferences,
-          isAdmin: _isAdmin,
+          isAdmin: isAdmin,
         ),
         const SizedBox(height: AuraSpace.s16),
         if (loading)

@@ -24,23 +24,24 @@ class CreateHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adminAsync = ref.watch(appAdminAccessProvider);
+    // Display-only admin signal — never triggers a probe from /create.
+    // First-time admins won't see the announcement-as-platform / claim-audit
+    // cards until they have visited /admin once and the cache has been
+    // populated. That's the explicit trade-off documented in the admin
+    // route gating contract: avoid probing every signed-in user.
+    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
 
-    final admin = adminAsync.maybeWhen(
-      data: (v) => v,
-      orElse: () => const AppAdminAccess(state: AppAdminState.none),
-    );
     final institution = institutionAsync.maybeWhen(
       data: (v) => v,
       orElse: () => const InstitutionAccess(state: InstitutionAccessState.none),
     );
 
-    final canAnnounceAsPlatform = admin.isAdmin;
+    final canAnnounceAsPlatform = isAdmin;
     final canAnnounceAsInstitution =
         institution.state == InstitutionAccessState.authorizedSpeaker;
     final canAnnounce = canAnnounceAsPlatform || canAnnounceAsInstitution;
-    final canClaimAudit = admin.isAdmin;
+    final canClaimAudit = isAdmin;
     final hasAuthoritySection = canAnnounce || canClaimAudit;
 
     void onAnnouncementTap(BuildContext ctx) {

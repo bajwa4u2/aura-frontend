@@ -109,7 +109,11 @@ class _CommunicationsCenterScreenState
 
   @override
   Widget build(BuildContext context) {
-    final adminAsync = ref.watch(appAdminAccessProvider);
+    // Display-only admin signal — never triggers a probe from
+    // /me/settings/communications. Admin-specific copy in the role hero
+    // / status cards is opt-in: appears only after the user has been
+    // confirmed admin this session by visiting /admin.
+    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
 
     return AuraScaffold(
       showHeader: false,
@@ -136,7 +140,7 @@ class _CommunicationsCenterScreenState
                   onLoad: _load,
                   onChannelChanged: _onChannelChanged,
                   onFrequencyChanged: _onFrequencyChanged,
-                  adminAsync: adminAsync,
+                  isAdmin: isAdmin,
                 ),
               ),
             ),

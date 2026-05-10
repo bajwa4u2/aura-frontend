@@ -20,24 +20,15 @@ class AnnouncementsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final adminAsync = ref.watch(appAdminAccessProvider);
+    // Display-only admin signal — never triggers a probe from
+    // /announcements. A user who has not been confirmed as admin sees
+    // the public/member announcements view; if they actually are an
+    // unconfirmed admin, opening /admin once will populate the cache and
+    // a re-visit will pick up the admin variant.
+    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
     final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
     final listAsync = ref.watch(announcementsProvider);
-
-    if (adminAsync.isLoading) {
-      return AuraScaffold(
-        showHeader: false,
-        body: const Center(
-          child: AuraLoadingState(message: 'Loading announcements…'),
-        ),
-      );
-    }
-
-    final isAdmin = adminAsync.maybeWhen(
-      data: (v) => v.isAdmin,
-      orElse: () => false,
-    );
 
     if (isAdmin) {
       return _AdminAnnouncementsScreen(

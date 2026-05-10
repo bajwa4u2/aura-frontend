@@ -567,11 +567,11 @@ class _MeScreenState extends ConsumerState<MeScreen> {
       );
 
   bool get _isAppAdmin {
-    final appAdminAsync = ref.watch(appAdminAccessProvider);
-    return appAdminAsync.maybeWhen(
-      data: (v) => v.isAdmin,
-      orElse: () => false,
-    );
+    // Display-only: never trigger an admin probe from /me. The Admin
+    // Workspace entry only appears for users who have already been
+    // confirmed as platform admins this session (i.e. they navigated to
+    // /admin/* at least once and the backend confirmed authority).
+    return ref.watch(appAdminCachedDisplayProvider);
   }
 
   InstitutionAccess get _institutionAccess {

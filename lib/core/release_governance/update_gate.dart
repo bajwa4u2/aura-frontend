@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../auth/admin_access_provider.dart';
 import '../ui/aura_radius.dart';
 import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
@@ -62,6 +64,21 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
   @override
   Widget build(BuildContext context) {
     final verdict = ref.watch(compatibilityControllerProvider);
+
+    // Maintenance + admin override: a confirmed platform admin reaching an
+    // /admin/* route during maintenance must NOT be locked out — they're
+    // the only ones who can disable the maintenance flag from the admin
+    // settings screen. The check is "cached admin AND on /admin/*" so a
+    // signed-out user with no cache cannot bypass, and admins on member
+    // routes still see the maintenance screen (they should navigate to
+    // /admin to operate).
+    if (verdict.status == CompatibilityStatus.maintenance) {
+      final isAdmin = ref.watch(appAdminCachedDisplayProvider);
+      final path = GoRouterState.of(context).uri.path;
+      if (isAdmin && path.startsWith('/admin')) {
+        return widget.child;
+      }
+    }
 
     switch (verdict.status) {
       case CompatibilityStatus.compatible:

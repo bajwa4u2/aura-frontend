@@ -334,6 +334,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
       final institutionAsync = ref.read(institutionAccessProvider);
+
+      // Admin probe gating: only allow `/v1/admin/me` to fire when the
+      // user is intentionally heading to /admin/* (or already cached as
+      // admin). Mutating the StateProvider before reading the FutureProvider
+      // is safe because both providers re-evaluate via the refreshListenable
+      // listener at the top of this provider.
+      if (authStatus == AuthStatus.authed && requiresAppAdmin(path)) {
+        final probeAllowed = ref.read(appAdminProbeAllowedProvider);
+        if (!probeAllowed) {
+          ref.read(appAdminProbeAllowedProvider.notifier).state = true;
+        }
+      }
       final appAdminAsync = ref.read(appAdminAccessProvider);
 
       final defaultRedirect = authStatus == AuthStatus.authed ? '/home' : '/public';
