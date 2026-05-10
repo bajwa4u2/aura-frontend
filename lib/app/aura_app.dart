@@ -8,6 +8,7 @@ import '../core/auth/auth_providers.dart';
 import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
 import '../core/interactions/presence_repository.dart';
+import '../core/media/media_url_resolver.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -167,6 +168,12 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
                 .disconnect()
                 .catchError((_) {}),
           );
+        } catch (_) {}
+        // C7 — drop the signed-URL cache so a previous user's RESTRICTED
+        // / PRIVATE media URLs don't leak into the next session on the
+        // same device.
+        try {
+          ref.read(mediaUrlResolverProvider).clearAll();
         } catch (_) {}
       }
     });
