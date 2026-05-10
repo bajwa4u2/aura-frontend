@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/client_identity/client_identity.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
@@ -19,6 +20,7 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     this._socketService,
     this._mediaService,
     this._tokenStore,
+    this._readClientIdentity,
   ) : super(RealtimeState.initial()) {
     _subscription = _socketService.events.listen(_handleSocketEvent);
     _mediaSubscription = _mediaService.snapshots.listen(_handleMediaSnapshot);
@@ -28,6 +30,11 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   final RealtimeSocketService _socketService;
   final RealtimeMediaService _mediaService;
   final TokenStore _tokenStore;
+  // Awaits the client identity FutureProvider so the realtime handshake
+  // always carries identity headers even on a very-early reconnect (e.g.
+  // immediately after sign-in before any HTTP request has run). Resolves
+  // synchronously from cache after the first successful read.
+  final Future<ClientIdentity?> Function() _readClientIdentity;
 
   StreamSubscription<RealtimeParsedEvent>? _subscription;
   StreamSubscription<RealtimeMediaSnapshot>? _mediaSubscription;
@@ -202,7 +209,17 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         throw StateError('You need to sign in before joining live.');
       }
 
-      await _socketService.connect(accessToken: token);
+      ClientIdentity? identity;
+      try {
+        identity = await _readClientIdentity();
+      } catch (_) {
+        identity = null;
+      }
+
+      await _socketService.connect(
+        accessToken: token,
+        identity: identity,
+      );
 
       state = state.copyWith(
         connectionStatus: RealtimeConnectionStatus.connected,

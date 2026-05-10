@@ -9,6 +9,7 @@ import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
 import '../core/interactions/presence_repository.dart';
 import '../core/media/media_url_resolver.dart';
+import '../core/release_governance/update_gate.dart';
 import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
@@ -192,6 +193,13 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           darkTheme: theme,
           themeMode: ThemeMode.dark,
           routerConfig: router,
+          // UpdateGate sits between MaterialApp and the routed widget so
+          // the blocking screens have access to Material/MediaQuery
+          // ancestors and the gate watches its own provider without
+          // forcing a rebuild of the rest of the tree.
+          builder: (context, child) {
+            return UpdateGate(child: child ?? const SizedBox.shrink());
+          },
         ),
       ),
     );

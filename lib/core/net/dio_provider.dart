@@ -8,6 +8,7 @@ import '../../config.dart';
 import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
+import '../client_identity/client_identity_provider.dart';
 import '../errors/app_error_mapper.dart';
 import 'platform_http_adapter.dart';
 
@@ -393,6 +394,22 @@ final dioProvider = Provider<Dio>((ref) {
 
         options.path = normalizePath(options.path);
         normalizeContentTypeForRequest(options);
+
+        // Canonical client identity headers (Phase 2 release governance).
+        // Await the FutureProvider once at startup so even the very first
+        // request carries the headers; later reads hit the cached value
+        // synchronously. If bootstrap fails (e.g. package_info_plus throws
+        // on an unsupported platform) we omit the headers and the backend
+        // treats the request as a legacy client with safe defaults.
+        try {
+          await ref.read(clientIdentityProvider.future);
+        } catch (_) {}
+        final identity = ref.read(clientIdentitySnapshotProvider);
+        if (identity != null) {
+          identity.toHttpHeaders().forEach((key, value) {
+            options.headers[key] = value;
+          });
+        }
 
         final token = store.accessToken;
         if (token != null && token.trim().isNotEmpty) {

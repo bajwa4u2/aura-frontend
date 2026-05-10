@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_bootstrap.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/client_identity/client_identity_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
@@ -43,6 +44,7 @@ final realtimeControllerProvider =
     socketService,
     mediaService,
     tokenStore,
+    () => ref.read(clientIdentityProvider.future),
   );
 });
 

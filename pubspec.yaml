@@ -27,6 +27,12 @@ dependencies:
   # Local persistence
   shared_preferences: ^2.2.3
 
+  # Runtime app/build version + platform metadata for canonical client identity
+  # (Phase 2 of cross-platform release governance). Sent on every HTTP request
+  # and WebSocket handshake so the backend can govern per-distribution rollouts,
+  # min-version enforcement, and protocol compatibility.
+  package_info_plus: ^8.0.0
+
   # External links
   url_launcher: ^6.3.0
 

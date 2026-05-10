@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../../../config.dart';
+import '../../../core/client_identity/client_identity.dart';
 import 'realtime_event_parser.dart';
 
 class RealtimeSocketService {
@@ -18,12 +19,16 @@ class RealtimeSocketService {
   bool get isConnected => _socket?.connected ?? false;
   String? get socketId => _socket?.id;
 
-  Future<void> connect({required String accessToken}) async {
+  Future<void> connect({
+    required String accessToken,
+    ClientIdentity? identity,
+  }) async {
     if (_disposing) return;
     if (isConnected) return;
     if (_connectFuture != null) return _connectFuture!;
 
-    _connectFuture = _connectInternal(accessToken: accessToken);
+    _connectFuture =
+        _connectInternal(accessToken: accessToken, identity: identity);
     try {
       await _connectFuture!;
     } finally {
@@ -31,12 +36,32 @@ class RealtimeSocketService {
     }
   }
 
-  Future<void> _connectInternal({required String accessToken}) async {
+  Future<void> _connectInternal({
+    required String accessToken,
+    ClientIdentity? identity,
+  }) async {
     await disconnect();
 
     final uri = Uri.parse(AppConfig.apiBaseUrl);
     final origin =
         '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+
+    final auth = <String, dynamic>{
+      'token': accessToken,
+      'accessToken': accessToken,
+    };
+    final extraHeaders = <String, dynamic>{
+      'Authorization': 'Bearer $accessToken',
+    };
+    if (identity != null) {
+      auth.addAll(identity.toWsAuth());
+      // Mirror as headers too — some Socket.IO transports surface query/auth
+      // differently across web vs native; the backend parser checks all three
+      // sources. Headers are the most consistently delivered.
+      identity.toHttpHeaders().forEach((key, value) {
+        extraHeaders[key] = value;
+      });
+    }
 
     final socket = io.io(
       '$origin/realtime',
@@ -44,13 +69,8 @@ class RealtimeSocketService {
         'transports': <String>['websocket', 'polling'],
         'autoConnect': false,
         'forceNew': true,
-        'auth': <String, dynamic>{
-          'token': accessToken,
-          'accessToken': accessToken,
-        },
-        'extraHeaders': <String, dynamic>{
-          'Authorization': 'Bearer $accessToken',
-        },
+        'auth': auth,
+        'extraHeaders': extraHeaders,
       },
     );
 
