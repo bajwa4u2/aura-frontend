@@ -3,6 +3,7 @@
 /// Mirrors the backend contract:
 ///   InstitutionPost = {
 ///     id, institutionId, authorUserId, title, body, mediaUrl?,
+///     media: FeedMedia[],   // C4-followup — canonical media[]
 ///     visibility: 'PUBLIC' | 'MEMBER_ONLY' | 'INTERNAL',
 ///     distribution: 'INSTITUTION_ONLY' | 'GLOBAL_ELIGIBLE',
 ///     status: 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'ARCHIVED',
@@ -11,6 +12,9 @@
 ///
 /// `distribution` may only be `GLOBAL_ELIGIBLE` when `visibility` is `PUBLIC`.
 library;
+
+import '../../feed/domain/feed_media.dart';
+export '../../feed/domain/feed_media.dart' show FeedMedia;
 
 enum InstitutionPostVisibility { publicAll, memberOnly, internal }
 
@@ -137,6 +141,7 @@ class InstitutionPost {
     required this.title,
     required this.body,
     this.mediaUrl,
+    this.media = const <FeedMedia>[],
     required this.visibility,
     required this.distribution,
     required this.status,
@@ -157,6 +162,12 @@ class InstitutionPost {
   final String title;
   final String body;
   final String? mediaUrl;
+
+  /// C4-followup — canonical media[] from the backend. Empty when no
+  /// canonical link exists (legacy mediaUrl-only rows). Renderers
+  /// should prefer this list over [mediaUrl] when populated and branch
+  /// on each entry's `visibility` for signed-URL delivery.
+  final List<FeedMedia> media;
   final InstitutionPostVisibility visibility;
   final InstitutionPostDistribution distribution;
   final InstitutionPostStatus status;
@@ -243,6 +254,7 @@ class InstitutionPost {
       title: s(['title']),
       body: s(['body', 'bodyMarkdown']),
       mediaUrl: opt(['mediaUrl']),
+      media: FeedMedia.listFromJson(json['media']),
       visibility: InstitutionPostVisibilityX.fromWire(json['visibility']),
       distribution: InstitutionPostDistributionX.fromWire(json['distribution']),
       status: InstitutionPostStatusX.fromWire(json['status']),

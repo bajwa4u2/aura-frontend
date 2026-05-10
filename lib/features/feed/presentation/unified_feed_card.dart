@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/media/aura_resolvable_attachment_image.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -240,7 +241,17 @@ class UnifiedFeedCard extends ConsumerWidget {
                     .copyWith(color: AuraSurface.ink, height: 1.5),
               ),
             ],
-            if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
+            // C4-followup — prefer canonical media[] when the backend
+            // shipped one (institution posts after C4, user posts going
+            // forward). Fall back to legacy mediaUrl for older payloads
+            // and surfaces that haven't been re-projected yet. The
+            // canonical branch routes RESTRICTED/PRIVATE rows through
+            // AuraResolvableAttachmentImage so the C7 access gate fires
+            // and signed URLs replace the permanent R2 URL.
+            if (item.media.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s10),
+              _CanonicalMediaThumb(media: item.media.first),
+            ] else if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
               _MediaThumb(
                 url: item.mediaUrl!,
@@ -746,6 +757,68 @@ class _Avatar extends StatelessWidget {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// C4-followup — canonical media thumbnail. Routes PUBLIC rows
+/// through AuraAttachmentImage with a stable `mediaId` cache key, and
+/// RESTRICTED/PRIVATE rows through AuraResolvableAttachmentImage so the
+/// frontend never renders a permanent R2 URL for non-public media. The
+/// fallback `_MediaThumb` below is preserved for legacy mediaUrl-only
+/// rows.
+class _CanonicalMediaThumb extends StatelessWidget {
+  const _CanonicalMediaThumb({required this.media});
+
+  final FeedMedia media;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AuraRadius.md);
+
+    Widget child;
+    if (media.isPublic) {
+      final url = (media.url ?? '').trim();
+      if (url.isEmpty) {
+        child = _BrokenMediaTile();
+      } else {
+        child = AuraAttachmentImage(
+          url: url,
+          attachmentId: media.mediaId.isNotEmpty ? media.mediaId : null,
+          fit: BoxFit.cover,
+          errorWidget: (_) => _BrokenMediaTile(),
+        );
+      }
+    } else {
+      // RESTRICTED / PRIVATE — frontend never sees the permanent URL;
+      // the resolver fetches a fresh signed URL through the canonical
+      // C7 path and AuraResolvableAttachmentImage handles caching +
+      // expiry refresh.
+      child = AuraResolvableAttachmentImage(
+        mediaId: media.mediaId,
+        fit: BoxFit.cover,
+        errorWidget: (_) => _BrokenMediaTile(),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: AspectRatio(aspectRatio: 16 / 9, child: child),
+    );
+  }
+}
+
+/// Local "image unavailable" tile — matches the existing _MediaThumb
+/// fallback shape so PUBLIC/RESTRICTED/PRIVATE rows look identical
+/// when their underlying object is missing or access is denied.
+class _BrokenMediaTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AuraSurface.subtle,
+      child: const Center(
+        child: Icon(Icons.broken_image_outlined, color: AuraSurface.faint),
+      ),
     );
   }
 }

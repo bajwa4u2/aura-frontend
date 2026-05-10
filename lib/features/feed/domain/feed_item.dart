@@ -8,6 +8,9 @@
 /// which representation to show.
 library;
 
+import 'feed_media.dart';
+export 'feed_media.dart';
+
 enum FeedItemType {
   userPost,
   institutionPost;
@@ -770,6 +773,7 @@ class FeedItem {
     this.title,
     required this.body,
     this.mediaUrl,
+    this.media = const <FeedMedia>[],
     required this.visibility,
     required this.distribution,
     required this.status,
@@ -795,6 +799,12 @@ class FeedItem {
   final String? title;
   final String body;
   final String? mediaUrl;
+
+  /// C4-followup — canonical media[] from the backend. Empty when no
+  /// canonical link exists (legacy mediaUrl-only rows). Renderers
+  /// should prefer this list over [mediaUrl] when populated and branch
+  /// on each entry's visibility for signed-URL delivery.
+  final List<FeedMedia> media;
   final FeedVisibility visibility;
   final FeedDistribution distribution;
   final String status;
@@ -933,6 +943,7 @@ class FeedItem {
       title: opt(['title']),
       body: s(['body']),
       mediaUrl: opt(['mediaUrl']),
+      media: FeedMedia.listFromJson(m['media']),
       visibility: FeedVisibility.fromWire(m['visibility']),
       distribution: FeedDistribution.fromWire(m['distribution']),
       status: s(['status']),
