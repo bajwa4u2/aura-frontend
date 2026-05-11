@@ -40,11 +40,18 @@ class CommunicationStatusCards extends StatelessWidget {
           value: digestLabel,
           subtext: 'Preview before creating',
         ),
-        _card(
-          label: 'Admin tools',
-          value: isAdmin ? 'Available' : 'Hidden',
-          subtext: 'Protected communication workspace',
-        ),
+        // Admin-tooling status card is rendered ONLY for actual admins.
+        // A non-admin viewer of this surface used to see a card labelled
+        // "Admin tools — Hidden", which both surfaced admin-tone copy
+        // outside admin routes and advertised functionality the user
+        // can't access. Hide the card entirely for non-admins; admins
+        // still see the visibility signal.
+        if (isAdmin)
+          _card(
+            label: 'Operator tools',
+            value: 'Available',
+            subtext: 'Protected communication workspace',
+          ),
       ],
     );
   }

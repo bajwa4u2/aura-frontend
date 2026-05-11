@@ -439,7 +439,11 @@ class _InstitutionMembersScreenState
   Widget build(BuildContext context) {
     return InstitutionPage(
       title: 'Members',
-      subtitle: 'Manage people, roles, join requests, and institutional access.',
+      // Subtitle is shown to every member who can see this screen, not
+      // just operators. The previous "institutional access" wording read
+      // as admin-panel language in a regular workspace surface; use the
+      // plain product terms (people who belong, what they can do).
+      subtitle: 'People who belong to this institution, what they can do, and pending join requests.',
       trailing: _isAdmin
           ? AuraPrimaryButton(
               label: 'Invite',

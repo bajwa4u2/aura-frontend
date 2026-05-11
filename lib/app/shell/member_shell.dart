@@ -94,6 +94,16 @@ class MemberShell extends StatelessWidget {
   static const double _desktopBreakpoint = 1100;
   static const double _tabletBreakpoint = 760;
 
+  /// Returns the index of the nav item that should be highlighted, or
+  /// -1 when the current path is not a primary nav destination.
+  ///
+  /// The previous default of returning 0 (Works) meant that a user
+  /// viewing /posts/<id>, /author/<handle>, /search, /notifications,
+  /// /me, /me/edit, /security, /saved, /updates, /activity, /thread/...
+  /// — any non-primary detail route — saw "Works" highlighted in both
+  /// the side and bottom nav. That misled the user about where they
+  /// were inside the product. Returning -1 produces a clean "no item
+  /// selected" state on detail routes, which is the truthful signal.
   int _indexForPath(String path) {
     if (path == '/home') return 0;
     if (path == '/messages' ||
@@ -109,7 +119,7 @@ class MemberShell extends StatelessWidget {
     }
     if (path == '/institutions' || path.startsWith('/institutions/')) return 3;
     if (path.startsWith('/support')) return 4;
-    return 0;
+    return -1;
   }
 
   @override

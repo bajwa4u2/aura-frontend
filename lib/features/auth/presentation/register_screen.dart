@@ -239,9 +239,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final redirect = Uri.encodeComponent(redirectPath);
     final isInstitutionEntry = _isInstitutionRedirect(widget.redirectTo);
 
-    final title = isInstitutionEntry ? 'Continue to institution access' : 'Join Aura';
+    final title = isInstitutionEntry ? 'Continue to your institution' : 'Join Aura';
     final subtitle = isInstitutionEntry
-        ? 'Create your account first. After sign-in, Aura will continue to the institutional access check.'
+        ? 'Create your account first. After sign-in, Aura will continue to verify your institution.'
         : "Create your account. We'll email you a verification link.";
 
     return AuraScaffold(
@@ -383,7 +383,7 @@ class _RegisterHero extends StatelessWidget {
           const SizedBox(height: AuraSpace.s12),
           Text(
             isInstitution
-                ? 'An account is needed to continue to institutional access. Your account stays private; only your handle and display name are public.'
+                ? 'You need an Aura account to join an institution. Your account stays private; only your handle and display name are public.'
                 : 'Aura is a place for serious work — writing, correspondence, institutions, and publishing history.',
             style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
           ),
