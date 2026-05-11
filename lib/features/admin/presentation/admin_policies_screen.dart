@@ -294,7 +294,7 @@ class _PolicyEditorState extends ConsumerState<_PolicyEditor> {
                   icon: Icons.flag_outlined,
                   title: 'Feature policy',
                   subtitle:
-                      'Registration gates, maintenance mode, and beta access.',
+                      'Registration gates and beta access.',
                   children: [
                     _ToggleTile(
                       label: 'Public registration enabled',
@@ -325,16 +325,16 @@ class _PolicyEditorState extends ConsumerState<_PolicyEditor> {
                             _feature.copyWith(betaOptInEnabled: v),
                       ),
                     ),
-                    _ToggleTile(
-                      label: 'Maintenance mode',
-                      description:
-                          'Show a maintenance page to all non-admin users.',
-                      value: _feature.maintenanceMode,
-                      onChanged: (v) => setState(
-                        () => _feature =
-                            _feature.copyWith(maintenanceMode: v),
-                      ),
-                      danger: true,
+                    // Maintenance toggle retired here. See
+                    // docs/MAINTENANCE_MODE_POLICY.md — the canonical
+                    // control is per-distribution/channel ClientPolicy at
+                    // /admin/client-policies. The featurePolicy.maintenanceMode
+                    // value still round-trips through this screen's save
+                    // (preserved as part of the FeaturePolicy DTO) so that
+                    // backward compatibility is not broken; we just no
+                    // longer let an operator flip it from this surface.
+                    _LegacyMaintenanceCard(
+                      currentValue: _feature.maintenanceMode,
                     ),
                   ],
                 ),
@@ -485,14 +485,16 @@ class _ToggleTile extends StatelessWidget {
     required this.description,
     required this.value,
     required this.onChanged,
-    this.danger = false,
   });
+
+  // The previous `danger` opt-in was used only by the maintenance toggle
+  // that has since been retired (see _LegacyMaintenanceCard below).
+  // Removed to keep the API honest — no live caller wanted danger styling.
 
   final String label;
   final String description;
   final bool value;
   final ValueChanged<bool> onChanged;
-  final bool danger;
 
   @override
   Widget build(BuildContext context) {
@@ -512,9 +514,7 @@ class _ToggleTile extends StatelessWidget {
                   label,
                   style: AuraText.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: danger && value
-                        ? AuraSurface.dangerInk
-                        : AuraSurface.ink,
+                    color: AuraSurface.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -529,9 +529,9 @@ class _ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: danger ? AuraSurface.dangerInk : AuraSurface.accent,
-            activeTrackColor: (danger ? AuraSurface.dangerInk : AuraSurface.accent)
-                .withValues(alpha: 0.35),
+            activeThumbColor: AuraSurface.accent,
+            activeTrackColor:
+                AuraSurface.accent.withValues(alpha: 0.35),
           ),
         ],
       ),
@@ -736,6 +736,132 @@ class _DropdownTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // INFO BANNER
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LEGACY MAINTENANCE CARD
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Replaces the old `_ToggleTile` for `featurePolicy.maintenanceMode`. The
+// stored value is preserved on the backend (round-tripped through the
+// FeaturePolicy DTO unchanged) so backward compatibility holds, but
+// operators are no longer offered a flip on this screen — the canonical
+// maintenance control is per-(distribution, channel) ClientPolicy at
+// /admin/client-policies. See docs/MAINTENANCE_MODE_POLICY.md.
+
+class _LegacyMaintenanceCard extends StatelessWidget {
+  const _LegacyMaintenanceCard({required this.currentValue});
+
+  final bool currentValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: AuraSpace.s4),
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.history_toggle_off_rounded,
+                size: 18,
+                color: AuraSurface.faint,
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Maintenance mode (legacy setting)',
+                      style: AuraText.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AuraSurface.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'This stored flag is no longer the maintenance control. '
+                      'Use Client policies for per-distribution/channel '
+                      'maintenance and update governance.',
+                      style: AuraText.small.copyWith(color: AuraSurface.faint),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AuraSurface.elevated,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: Text(
+                  'stored: ${currentValue ? "true" : "false"}',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          // The client-policies admin SCREEN is not yet built — only the
+          // backend endpoints exist (`PUT /v1/admin/client-policies`, etc.).
+          // Until the screen lands, point operators at the API + docs
+          // rather than a button that would land on a 404 route.
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s10,
+              vertical: AuraSpace.s8,
+            ),
+            decoration: BoxDecoration(
+              color: AuraSurface.elevated,
+              borderRadius: BorderRadius.circular(AuraRadius.md),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Where to look instead',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  'API: PUT /v1/admin/client-policies/:id  '
+                  '(maintenanceMode field on a ClientPolicy row)\n'
+                  'Doc: docs/MAINTENANCE_MODE_POLICY.md',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontFamily: 'monospace',
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _InfoBanner extends StatelessWidget {
   const _InfoBanner({required this.message});
