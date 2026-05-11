@@ -45,5 +45,75 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!--
+	  Privacy-sensitive APIs the app actually uses. Each NS*UsageDescription
+	  is required by App Store review; a missing entry triggers automatic
+	  rejection (guideline 5.1.1).
+
+	  Camera: image_picker (avatar / attachment capture), flutter_webrtc
+	    (video calls when Pro plan enables realtime).
+	  Microphone: record (correspondence audio recording),
+	    flutter_webrtc (voice/video calls).
+	  Photo library read: image_picker for attachment picking.
+	  Photo library add: when the user saves attachment media back to
+	    their library (institutional posts, announcements). Apple
+	    treats add-only as a distinct authorization.
+
+	  No tracking, no IDFA: NSUserTrackingUsageDescription intentionally
+	    omitted. Aura does not use AppTrackingTransparency-gated APIs.
+	    If a future SDK pulls in IDFA usage, add the key + prompt then.
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>Aura uses the camera so you can record video for calls and capture photos for posts, attachments, and your profile.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aura uses the microphone so you can record voice messages and join voice or video calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aura uses your photo library so you can attach images to posts, messages, and announcements.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aura asks for permission to save images and downloads to your photo library when you choose to keep them.</string>
+
+	<!--
+	  Background modes. We claim ONLY the modes the app actually uses:
+	    - remote-notification: Firebase Messaging delivers push payloads
+	      while the app is suspended (incoming-call ring, message alerts).
+	    - voip: incoming-call socket can wake the app for the call screen.
+	  Each entry must be justifiable to App Store review — keep this list
+	  minimal. Adding `audio` or `fetch` here without a corresponding
+	  feature path is a rejection trigger.
+	-->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>voip</string>
+	</array>
+
+	<!--
+	  Custom URL scheme so external links of the form aura://… can wake
+	  the app and route through `app_links` / notification-tap handling.
+	  HTTPS Universal Links also work via Associated Domains (declared
+	  in Runner.entitlements + apple-app-site-association at the
+	  backend domain root).
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>org.auraplatform.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>aura</string>
+			</array>
+		</dict>
+	</array>
+
+	<!--
+	  Encryption export compliance: app uses only standard HTTPS / WebRTC
+	  encryption. Marks the binary as exempt from US export documentation
+	  on every TestFlight upload (Apple defaults to "Yes" otherwise and
+	  blocks builds until answered).
+	-->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

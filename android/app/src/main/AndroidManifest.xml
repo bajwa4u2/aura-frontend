@@ -41,6 +41,38 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+              Custom URL scheme so external links of the form aura://...
+              wake the app and route through `app_links` /
+              communication_resolver. Works without domain verification.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aura" />
+            </intent-filter>
+
+            <!--
+              HTTPS App Links for auraplatform.org. android:autoVerify="true"
+              tells Android to fetch /.well-known/assetlinks.json from the
+              host at install time; on success the app handles links to
+              these hosts without an "Open with" dialog.
+
+              The assetlinks.json template lives at
+              aura_final/web/.well-known/assetlinks.json — operator must
+              replace the placeholder SHA-256 fingerprint with the real
+              upload+release certificate fingerprints before submitting
+              to Play Store.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="auraplatform.org" />
+                <data android:scheme="https" android:host="app.auraplatform.org" />
+            </intent-filter>
+
         </activity>
 
         <!-- Flutter engine registration -->

@@ -27,6 +27,11 @@ Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
 
+# Firebase / Google Services iOS config — environment-scoped, delivered
+# by CI per build configuration. Not committed. See FIREBASE_SETUP.md
+# at the aura_final/ root.
+Runner/GoogleService-Info.plist
+
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3

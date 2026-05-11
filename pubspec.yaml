@@ -1,7 +1,16 @@
 name: aura
 description: "Aura — a writing platform built for continuity."
 publish_to: "none"
-version: 1.0.1+3
+# Version convention:
+#   X.Y.Z   — semantic build name, exposed everywhere
+#   +B      — Flutter build number (Android versionCode, iOS CFBundleVersion)
+#
+# Windows MSIX requires a 4-part X.Y.Z.W version where W (revision) must
+# be 0 per Microsoft Store policy. Keep `msix_version` aligned with the
+# X.Y.Z parts of `version` and zero out the build component to satisfy
+# the store rule. A pre-build script could enforce this automatically;
+# for now it's a manual sync.
+version: 1.0.2+0
 
 environment:
   sdk: ^3.10.8
@@ -124,7 +133,11 @@ msix_config:
   display_name: AURA PLATFORM
   publisher_display_name: Aura Platform LLC
   identity_name: AuraPlatformLLC.AURAPLATFORM
-  msix_version: 1.0.1.0
+  # MUST equal the X.Y.Z prefix of `version:` above with a trailing
+  # .0 revision (Microsoft Store policy). Bump in lockstep on every
+  # release — Partner Center rejects an upload whose MSIX version is
+  # lower or equal to a previously-shipped build.
+  msix_version: 1.0.2.0
   description: Aura — a writing platform built for continuity.
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png

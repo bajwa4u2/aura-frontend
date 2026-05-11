@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Associated Domains: required for HTTPS Universal Links so a tap on
+	  https://auraplatform.org/... opens the app instead of the browser.
+	  The matching apple-app-site-association file lives at
+	  https://auraplatform.org/.well-known/apple-app-site-association
+	  (template under aura_final/web/.well-known/ — operator must
+	  replace TEAM_ID with the real Apple Developer Team ID).
+
+	  applinks:auraplatform.org              — primary marketing/auth host
+	  applinks:app.auraplatform.org          — authenticated workspace host
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:auraplatform.org</string>
+		<string>applinks:app.auraplatform.org</string>
+	</array>
+
+	<!--
+	  Aps environment: development by default; release builds flip this
+	  to "production" via the build configuration. The presence of this
+	  entitlement is what tells iOS to deliver push notifications.
+	-->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

@@ -1,0 +1,43 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "REPLACE_WITH_APPLE_TEAM_ID.org.auraplatform.app"
+        ],
+        "components": [
+          {
+            "/": "/auth/*",
+            "comment": "Email-verification + password-reset deep links"
+          },
+          {
+            "/": "/invite/*",
+            "comment": "Institution + direct invitation links"
+          },
+          {
+            "/": "/threads/*",
+            "comment": "Direct thread deep link"
+          },
+          {
+            "/": "/spaces/*",
+            "comment": "Public space deep link"
+          },
+          {
+            "/": "/announcements/*",
+            "comment": "Announcement deep link"
+          },
+          {
+            "/": "/account-deletion",
+            "comment": "In-app account deletion entry point"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "REPLACE_WITH_APPLE_TEAM_ID.org.auraplatform.app"
+    ]
+  }
+}

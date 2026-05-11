@@ -12,3 +12,11 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Firebase / Google Services config — project-specific, contains the
+# Firebase project ID and a writeable API key. The key is restricted
+# to package-id scope but treating the file as code-committable
+# encourages config drift between environments. Keep it out of git;
+# CI pipelines drop the right file per environment at build time.
+# See aura_final/FIREBASE_SETUP.md for placement.
+**/google-services.json
