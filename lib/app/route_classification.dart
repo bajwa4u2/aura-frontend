@@ -46,8 +46,11 @@ bool isMemberShellPath(String path) {
       path == '/me/correspondence/create/conversation' ||
       path == '/me/correspondence/create/space' ||
       path.startsWith('/me/correspondence/') ||
-      // Institution entry points — personal auth required before institution auth.
-      path == '/institutions' ||
+      // Institution onboarding/entry points — these require personal auth
+      // before institution auth. NOTE: `/institutions` itself is *public*
+      // discovery (the directory), so it must NOT be classified as a
+      // member-shell path. Detail pages (`/institutions/:slug`, units, etc.)
+      // are also public and handled by the public router.
       path == '/institutions/get-started' ||
       path == '/enter-institution' ||
       isInstitutionShellPath(path);

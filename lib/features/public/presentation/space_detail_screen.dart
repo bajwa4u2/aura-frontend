@@ -414,9 +414,10 @@ class _SpaceStreamTabsState extends State<_SpaceStreamTabs> {
         if (list.isEmpty)
           const InsEmptyState(
             icon: Icons.search_off_rounded,
-            title: 'Nothing here yet',
+            title: 'Be the first voice here',
             description:
-                'Try a different tab — or be the first to post in this space.',
+                'This space is open. Switch tabs to scan related discussions, '
+                'or post the first thread — your contribution sets the tone.',
           )
         else
           for (var i = 0; i < list.length; i++) ...[

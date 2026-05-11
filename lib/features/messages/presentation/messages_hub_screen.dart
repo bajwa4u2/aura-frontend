@@ -509,13 +509,17 @@ class _AllTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (spaces.isEmpty && activeInvites.isEmpty && liveSessions.isEmpty) {
+      // Empty state should frame the silence as intentional and point
+      // the user at the most useful first action. Generic "Nothing here"
+      // copy was flagged in the RC sprint as reading like a dead app.
       return AuraEmptyState(
-        title: 'Nothing here yet',
+        title: 'Your conversations live here',
         body:
-            'Start a conversation or create a space to see activity here.',
+            'Direct messages, shared spaces, and invitations show up here '
+            'as soon as someone reaches out — or once you start a thread.',
         icon: Icons.forum_outlined,
         action: AuraPrimaryButton(
-          label: 'Start conversation',
+          label: 'Start a conversation',
           icon: Icons.chat_bubble_outline_rounded,
           onPressed: () =>
               context.push('/me/correspondence?start=private'),

@@ -113,6 +113,11 @@ class _PublicHeader extends ConsumerWidget {
                 ] else if (isAuthed) ...[
                   if (isTablet) ...[
                     _NavTextLink(
+                      label: 'Institutions',
+                      onTap: () => context.go('/institutions'),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
+                    _NavTextLink(
                       label: 'Explore',
                       onTap: () => context.go('/search'),
                     ),
@@ -121,6 +126,11 @@ class _PublicHeader extends ConsumerWidget {
                   _GoHomeButton(onTap: () => context.go('/home')),
                 ] else ...[
                   if (isTablet) ...[
+                    _NavTextLink(
+                      label: 'Institutions',
+                      onTap: () => context.go('/institutions'),
+                    ),
+                    const SizedBox(width: AuraSpace.s12),
                     _NavTextLink(
                       label: 'Explore',
                       onTap: () => context.go('/search'),

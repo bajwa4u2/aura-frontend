@@ -309,7 +309,46 @@ class _HeroLeft extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: AuraSpace.s20),
+        const SizedBox(height: AuraSpace.s12),
+        // Institutional discovery — first-class entry point alongside the
+        // discourse and join CTAs. Aura's brief is explicit that institutions
+        // are the authority roots where public discourse happens, so a
+        // visitor should be one click away from the institutional ecosystem.
+        InkWell(
+          onTap: () => context.go('/institutions'),
+          borderRadius: BorderRadius.circular(AuraRadius.r10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s4,
+              vertical: AuraSpace.s4,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.account_balance_outlined,
+                  size: 14,
+                  color: AuraSurface.muted,
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  'Browse the institutions on Aura',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: AuraSurface.muted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s16),
         const Wrap(
           spacing: AuraSpace.s8,
           runSpacing: AuraSpace.s8,

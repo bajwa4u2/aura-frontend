@@ -108,6 +108,8 @@ import 'screens/founder_message_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/investors_hub_screen.dart';
 import 'screens/institutions_hub_screen.dart';
+import 'features/public/presentation/public_institution_units_screen.dart';
+import 'features/public/presentation/public_unit_detail_screen.dart';
 import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
@@ -256,9 +258,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path == '/contact' ||
         path == '/account-deletion' ||
         path == '/investors' ||
-        // Individual institution detail pages remain publicly browsable.
-        // The hub (/institutions) and onboarding (/institutions/get-started)
-        // are auth-gated via isMemberShellPath.
+        // Institutional discovery — the directory hub, detail pages, and
+        // public unit pages are all browsable without sign-in. Only the
+        // onboarding wizard (/institutions/get-started) is auth-gated;
+        // it's matched separately by isMemberShellPath.
+        path == '/institutions' ||
         (path.startsWith('/institutions/') && path != '/institutions/get-started') ||
         path == '/patrons' ||
         path == '/supporters' ||
@@ -559,6 +563,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
             builder: (context, state) => InstitutionDetailScreen(
               slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          // Public listing of an institution's units (sub-entities). The
+          // detail screen at `/institutions/:slug` already exists; this
+          // route surfaces the unit roster as a stand-alone page so the
+          // institutional topology — "Aura Platform LLC → Aura,
+          // Orchestrate" — is browsable without sign-in.
+          GoRoute(
+            path: '/institutions/:slug/units',
+            builder: (context, state) => PublicInstitutionUnitsScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/institutions/:slug/units/:unitSlug',
+            builder: (context, state) => PublicUnitDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+              unitSlug: state.pathParameters['unitSlug'] ?? '',
             ),
           ),
           GoRoute(
