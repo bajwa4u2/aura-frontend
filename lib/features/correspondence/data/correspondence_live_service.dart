@@ -141,8 +141,22 @@ class CorrespondenceLiveService {
   Future<void> disconnect() async {
     final socket = _socket;
     if (socket != null) {
-      socket.dispose();
-      socket.disconnect();
+      // Order matters: socket_io_client's dispose() removes the listener
+      // table while disconnect() actually closes the underlying transport.
+      // Calling dispose() first leaves the active transport flushing
+      // events into a now-empty listener set and produces dangling
+      // engine.io frames in flight. Disconnect first, then release.
+      try {
+        socket.disconnect();
+      } catch (_) {
+        // Already-disconnected sockets throw; ignore — dispose still
+        // needs to run.
+      }
+      try {
+        socket.dispose();
+      } catch (_) {
+        // dispose is best-effort cleanup of internal handlers.
+      }
     }
     _socket = null;
     _activeToken = null;

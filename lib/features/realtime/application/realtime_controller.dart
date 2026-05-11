@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -437,28 +438,81 @@ class RealtimeController extends StateNotifier<RealtimeState> {
     }
   }
 
-  /// Attempts to join [sessionId], retrying once if a transient socket or
-  /// network error occurs mid-join. The total wall-clock budget is 30 seconds.
+  /// Attempts to join [sessionId], retrying transient transport errors with
+  /// exponential backoff + jitter. The previous design retried exactly once
+  /// with a hardcoded 30s timeout — a stuck-on-handshake socket would burn
+  /// the entire 30s budget on the first attempt and leave the UI frozen.
+  ///
+  /// New shape:
+  ///   - up to 3 attempts total (initial + 2 retries)
+  ///   - per-attempt timeout: 15s
+  ///   - backoff between attempts: 500ms, 1500ms (base), each with up to
+  ///     ±50% jitter to avoid synchronized reconnect storms across clients
+  ///     that all lost connectivity at the same instant
+  ///   - non-retryable errors (e.g. business-rule rejections) bubble out
+  ///     after the first attempt without consuming the budget
+  ///   - if the user is mid-teardown or has navigated away mid-retry,
+  ///     abort the loop instead of running ghost attempts against a dead
+  ///     controller
   Future<void> _performJoinWithRetry(String sessionId) async {
-    try {
-      await _performJoin(sessionId)
-          .timeout(const Duration(seconds: 30));
-    } on TimeoutException {
-      rethrow; // Caller treats this as retryable.
-    } catch (error) {
-      // Retry once on a recoverable transport error (socket drop, WebSocket
-      // close) — re-establishing the connection before the second attempt.
-      if (_isRetryableConnectionError(error) &&
-          !_terminating &&
-          _joiningSessionId == sessionId) {
-        if (!_socketService.isConnected) {
-          await connect().timeout(const Duration(seconds: 10));
-        }
-        await _performJoin(sessionId)
-            .timeout(const Duration(seconds: 30));
-      } else {
-        rethrow;
+    const maxAttempts = 3;
+    const perAttemptTimeout = Duration(seconds: 15);
+    const baseDelays = [
+      Duration(milliseconds: 500),
+      Duration(milliseconds: 1500),
+    ];
+    final rng = math.Random();
+
+    Object? lastError;
+    StackTrace? lastStack;
+
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (_terminating || _joiningSessionId != sessionId) {
+        // The caller (a re-join, a teardown, or a switch to another
+        // session) has moved on. Don't run a phantom join that would
+        // succeed against a controller no longer interested.
+        return;
       }
+
+      try {
+        await _performJoin(sessionId).timeout(perAttemptTimeout);
+        return;
+      } catch (error, stack) {
+        lastError = error;
+        lastStack = stack;
+
+        final retryable = error is TimeoutException ||
+            _isRetryableConnectionError(error);
+        if (!retryable || attempt == maxAttempts - 1) {
+          // Either the error is a business-rule failure (e.g. session
+          // already ended) or we exhausted retries. Bubble out so the
+          // caller surfaces the error to the user instead of looping.
+          break;
+        }
+
+        // Backoff with ±50% jitter. Jitter is critical: multiple clients
+        // reconnecting in lockstep after a server blip would otherwise
+        // produce a thundering herd. The jitter window is symmetric so
+        // expected backoff matches the base value.
+        final base = baseDelays[attempt].inMilliseconds;
+        final jittered = (base * (0.5 + rng.nextDouble())).round();
+        await Future<void>.delayed(Duration(milliseconds: jittered));
+
+        // If we lost the socket between attempts, re-establish before
+        // the next try so the join doesn't fail-fast on no-transport.
+        if (!_socketService.isConnected && !_terminating) {
+          try {
+            await connect().timeout(const Duration(seconds: 10));
+          } catch (_) {
+            // Connect failure here is fine — _performJoin will surface
+            // a clearer error on its own attempt.
+          }
+        }
+      }
+    }
+
+    if (lastError != null) {
+      Error.throwWithStackTrace(lastError, lastStack ?? StackTrace.current);
     }
   }
 
@@ -1394,6 +1448,16 @@ class RealtimeController extends StateNotifier<RealtimeState> {
           infoMessage: 'Your request to join was declined.',
           lastSocketEvent: event.name,
         );
+        return;
+      case 'call:incoming':
+        // Routing is owned by `incomingCallBridgeProvider`, which listens
+        // to BOTH the correspondence socket and this realtime socket and
+        // dedupes by session id. We surface the event on `lastSocketEvent`
+        // so observability dashboards and debug overlays can confirm the
+        // event reached the controller, but we intentionally do not
+        // mutate `participants` / `joinState` here — the controller is
+        // responsible for the join/leave lifecycle, not the ring UI.
+        state = state.copyWith(lastSocketEvent: event.name);
         return;
       case 'call:declined':
         final declinedUserId =

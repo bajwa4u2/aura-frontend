@@ -59,6 +59,48 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Bounded, race-free teardown of the realtime + correspondence sockets
+  /// on any auth-drop transition. Returns once both services have
+  /// confirmed disconnect or 3 seconds have passed — whichever is first.
+  ///
+  /// Why a single helper:
+  ///   - Both the cross-tab logout handler (`_onRemoteAuthEvent`) and the
+  ///     in-tab auth-drop listener used to call `unawaited(disconnect())`
+  ///     and then synchronously clear tokens. That allowed a heartbeat
+  ///     tick or pending emit to fire between the unawaited call and the
+  ///     token clear, producing 401-spam against the auth surface.
+  ///   - Awaiting in lockstep guarantees the sockets stop emitting before
+  ///     tokens go away. The timeout protects the UI from a permanently-
+  ///     hung disconnect (e.g. a half-broken WebSocket pinned by the OS).
+  Future<void> _awaitAuthDropTeardown() async {
+    Future<void> safeDisconnect(Future<void> Function() run) async {
+      try {
+        await run();
+      } catch (_) {
+        // Either service may already be disposed (idempotent) — ignore.
+      }
+    }
+
+    final correspondence = safeDisconnect(
+      () => ref.read(correspondenceLiveServiceProvider).disconnect(),
+    );
+    final realtime = safeDisconnect(
+      () => ref.read(realtimeControllerProvider.notifier).disconnect(),
+    );
+
+    try {
+      await Future.wait([correspondence, realtime])
+          .timeout(const Duration(seconds: 3));
+    } on TimeoutException {
+      // The timeout case is rare but real: a half-broken transport can
+      // leave a socket spinning on close. We accept the leak rather
+      // than blocking the rest of the logout pipeline.
+    } catch (_) {
+      // Defensive — any other surprise here must not prevent the
+      // token-clear that follows.
+    }
+  }
+
   Future<void> _onRemoteAuthEvent(String type) async {
     if (!mounted) return;
     if (type == AuthBroadcast.typeLogout) {
@@ -67,24 +109,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // call to avoid duplicate refresh-cookie clears and 401s.
 
       // Disconnect runtime sockets BEFORE clearing tokens so any final
-      // event fires against a still-valid identity. Both methods are
-      // idempotent and self-contained.
-      try {
-        unawaited(
-          ref
-              .read(correspondenceLiveServiceProvider)
-              .disconnect()
-              .catchError((_) {}),
-        );
-      } catch (_) {}
-      try {
-        unawaited(
-          ref
-              .read(realtimeControllerProvider.notifier)
-              .disconnect()
-              .catchError((_) {}),
-        );
-      } catch (_) {}
+      // event fires against a still-valid identity. AWAIT both so a
+      // heartbeat tick can't fire mid-clear and produce 401-spam in
+      // logs. Bound the wait so a hung disconnect can't freeze the
+      // logout path — 3s is well above socket.io's local close cost.
+      await _awaitAuthDropTeardown();
 
       try {
         await ref.read(tokenStoreProvider).clearTokens();
@@ -151,25 +180,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // logout) MUST also stop the live runtime services. Without this, an
       // expired-token tab keeps the realtime socket open and the heartbeat
       // ticker firing — those calls then 401 in a tight loop until the user
-      // closes the tab. Both disconnect methods are idempotent and safe to
-      // call when the service is already torn down.
+      // closes the tab. ref.listen callbacks can't be async, so kick off
+      // the awaited teardown helper and ignore the future locally.
       if ((prev ?? false) && !next) {
-        try {
-          unawaited(
-            ref
-                .read(correspondenceLiveServiceProvider)
-                .disconnect()
-                .catchError((_) {}),
-          );
-        } catch (_) {}
-        try {
-          unawaited(
-            ref
-                .read(realtimeControllerProvider.notifier)
-                .disconnect()
-                .catchError((_) {}),
-          );
-        } catch (_) {}
+        unawaited(_awaitAuthDropTeardown());
         // C7 — drop the signed-URL cache so a previous user's RESTRICTED
         // / PRIVATE media URLs don't leak into the next session on the
         // same device.
