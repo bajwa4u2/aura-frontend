@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../config.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -323,10 +326,25 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               onBack: () => context.canPop()
                   ? context.pop()
                   : context.go('/'),
-              onShare: () {
+              onShare: () async {
+                // Native share intent isn't shipped on every platform
+                // path yet (Web Share API + iOS/Android share sheets).
+                // Until the unified share surface lands, do the most
+                // useful concrete thing: copy the canonical thread URL
+                // to the clipboard. No dead-end snackbar; the user
+                // gets something they can paste.
+                final base =
+                    Uri.tryParse(AppConfig.publicWebUrl)?.toString().trimRight() ??
+                        '';
+                final path = widget.type == FeedItemType.institutionPost
+                    ? '/institutions/posts/${widget.postId}'
+                    : '/posts/${widget.postId}';
+                final url = base.isNotEmpty ? '$base$path' : path;
+                await Clipboard.setData(ClipboardData(text: url));
+                if (!context.mounted) return;
                 ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                   const SnackBar(
-                    content: Text('Sharing coming soon — copy the URL for now.'),
+                    content: Text('Link copied to clipboard.'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );

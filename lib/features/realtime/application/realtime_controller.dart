@@ -743,10 +743,21 @@ class RealtimeController extends StateNotifier<RealtimeState> {
   Future<void> toggleMicrophone() async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
-    if (state.isMediaBusy) return;
+    if (state.isMediaBusy) {
+      // Tracks are mid-acquisition — the busy spinner already communicates
+      // this in the UI. Swallow the tap rather than racing the underlying
+      // permission/media negotiation.
+      return;
+    }
     if (!state.isMediaReady) {
+      // No live track yet. The most common cause is that the OS hasn't
+      // delivered a permission decision; the next most common is
+      // hardware that's still warming up after a device switch. Either
+      // way, the user's next action is to wait or grant permission in
+      // OS settings — not to retry the toggle.
       state = state.copyWith(
-        infoMessage: 'Your microphone is not ready yet.',
+        infoMessage:
+            'Preparing your microphone. If this stays, check microphone permission for Aura in your device settings.',
         clearErrorMessage: true,
       );
       return;
@@ -773,8 +784,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
       return;
     }
     if (!state.isMediaReady) {
+      // Same shape as the microphone branch. The mic message handles the
+      // common case; for camera we add the explicit "front/back camera"
+      // note since some devices fail acquisition silently when another
+      // app has the camera open.
       state = state.copyWith(
-        infoMessage: 'Your camera is not ready yet.',
+        infoMessage:
+            'Preparing your camera. If this stays, check camera permission for Aura in your device settings and close any other app using the camera.',
         clearErrorMessage: true,
       );
       return;

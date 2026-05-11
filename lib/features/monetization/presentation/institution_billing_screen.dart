@@ -445,11 +445,12 @@ class _MobilePurchaseNotice extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Purchases on mobile', style: AuraText.title),
+          const Text('Manage your plan on the web', style: AuraText.title),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'Plan upgrades and credit packs are available on the web. '
-            'Mobile in-app purchases are coming later.',
+            'Plan upgrades and credit packs are processed on '
+            'app.auraplatform.org. Sign in there with the same '
+            'account to update billing for this institution.',
             style: AuraText.body.copyWith(height: 1.4),
           ),
         ],

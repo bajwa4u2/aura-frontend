@@ -154,7 +154,12 @@ class _AnnouncementEditorScreenState
 
   String get _introText => _isPlatformMode
       ? 'Write once. Let the system support clarity without taking over the surface.'
-      : 'Institution announcement publishing is not wired yet. This surface is kept aligned so the writing flow does not drift.';
+      // Institution publishing is shipped through the institution post path,
+      // not this surface. Surfacing this from here is intentional: the
+      // editor's affordances (review, translate, attachments) remain
+      // available for drafting, but the Publish action lives where the
+      // institution voice rules apply.
+      : 'Drafting surface. To publish on behalf of an institution, use the institution’s announcement composer where official-voice rules apply.';
 
   TextStyle get _sectionTitleStyle =>
       AuraText.body.copyWith(fontWeight: FontWeight.w800);
@@ -652,7 +657,14 @@ class _AnnouncementEditorScreenState
 
     try {
       if (!_isPlatformMode) {
-        throw Exception('Institution announcement publishing is not ready yet.');
+        // Defense-in-depth. The Publish button is gated on _isPlatformMode
+        // upstream (see _canSubmit), so this branch should be unreachable
+        // from the UI. Use the canonical app-error shape so any future
+        // codepath that does reach here surfaces a structured message,
+        // not a free-text exception leak.
+        throw Exception(
+          'Publish on behalf of an institution from the institution composer.',
+        );
       }
 
       if (_publishToTikTok) {

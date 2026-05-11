@@ -36,6 +36,26 @@ class AppConfig {
     return u;
   }
 
+  /// Public-web origin used when constructing user-shareable URLs
+  /// (clipboard share, copy-link, deep-link friendly invites).
+  ///
+  /// Set via:
+  /// flutter build web --dart-define=AURA_PUBLIC_WEB_URL=https://auraplatform.org
+  ///
+  /// Falls back to https://auraplatform.org. Trailing slashes are stripped
+  /// so callers can concatenate with a path starting with `/`.
+  static String get publicWebUrl {
+    final raw = const String.fromEnvironment(
+      'AURA_PUBLIC_WEB_URL',
+      defaultValue: 'https://auraplatform.org',
+    ).trim();
+    var u = raw.isEmpty ? 'https://auraplatform.org' : raw;
+    while (u.endsWith('/')) {
+      u = u.substring(0, u.length - 1);
+    }
+    return u;
+  }
+
   /// VAPID public key for Web Push.
   ///
   /// Supply via:

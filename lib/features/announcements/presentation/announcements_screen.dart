@@ -30,10 +30,19 @@ class AnnouncementsScreen extends ConsumerWidget {
     final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
     final listAsync = ref.watch(announcementsProvider);
 
+    // Pass an invalidate callback so both sections can offer a Retry
+    // button on failure. Invalidating both providers is cheap and
+    // matches the user's intent ("reload this page's data").
+    void retry() {
+      ref.invalidate(pinnedAnnouncementsProvider);
+      ref.invalidate(announcementsProvider);
+    }
+
     if (isAdmin) {
       return _AdminAnnouncementsScreen(
         pinnedAsync: pinnedAsync,
         listAsync: listAsync,
+        onRetry: retry,
       );
     }
 
@@ -48,6 +57,7 @@ class AnnouncementsScreen extends ConsumerWidget {
             return _PublicAnnouncementsScreen(
               pinnedAsync: pinnedAsync,
               listAsync: listAsync,
+              onRetry: retry,
             );
           },
           data: (institutionAccess) {
@@ -63,12 +73,14 @@ class AnnouncementsScreen extends ConsumerWidget {
                 access: institutionAccess,
                 pinnedAsync: pinnedAsync,
                 listAsync: listAsync,
+                onRetry: retry,
               );
             }
 
             return _PublicAnnouncementsScreen(
               pinnedAsync: pinnedAsync,
               listAsync: listAsync,
+              onRetry: retry,
             );
           },
         );
@@ -105,10 +117,12 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
   const _PublicAnnouncementsScreen({
     required this.pinnedAsync,
     required this.listAsync,
+    this.onRetry,
   });
 
   final AsyncValue<List<Announcement>> pinnedAsync;
   final AsyncValue<List<Announcement>> listAsync;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -127,9 +141,9 @@ class _PublicAnnouncementsScreen extends StatelessWidget {
             subtitle: 'Official platform notices and public communications.',
           ),
           const SizedBox(height: AuraSpace.s24),
-          _PinnedSection(asyncValue: pinnedAsync),
+          _PinnedSection(asyncValue: pinnedAsync, onRetry: onRetry),
           const SizedBox(height: AuraSpace.s12),
-          _AllSection(asyncValue: listAsync),
+          _AllSection(asyncValue: listAsync, onRetry: onRetry),
         ],
       ),
     );
@@ -142,10 +156,12 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
   const _AdminAnnouncementsScreen({
     required this.pinnedAsync,
     required this.listAsync,
+    this.onRetry,
   });
 
   final AsyncValue<List<Announcement>> pinnedAsync;
   final AsyncValue<List<Announcement>> listAsync;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -207,12 +223,14 @@ class _AdminAnnouncementsScreen extends ConsumerWidget {
           _PinnedSection(
             asyncValue: pinnedAsync,
             title: 'Pinned platform notices',
+            onRetry: onRetry,
           ),
           const SizedBox(height: AuraSpace.s12),
           _AllSection(
             asyncValue: listAsync,
             title: 'Announcement archive',
             emptyTitle: 'No announcements yet',
+            onRetry: onRetry,
             emptyBody:
                 'When platform notices are published, they will appear here.',
           ),
@@ -229,11 +247,13 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
     required this.access,
     required this.pinnedAsync,
     required this.listAsync,
+    this.onRetry,
   });
 
   final InstitutionAccess access;
   final AsyncValue<List<Announcement>> pinnedAsync;
   final AsyncValue<List<Announcement>> listAsync;
+  final VoidCallback? onRetry;
 
   Map<String, dynamic> _asMapLocal(dynamic value) {
     if (value is Map) return Map<String, dynamic>.from(value);
@@ -354,6 +374,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
           _PinnedSection(
             asyncValue: pinnedAsync,
             title: 'Pinned platform notices',
+            onRetry: onRetry,
           ),
           const SizedBox(height: AuraSpace.s12),
           _AllSection(
@@ -361,6 +382,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
             title: 'Platform announcements',
             emptyTitle: 'Nothing yet',
             emptyBody: 'Platform notices will appear here when published.',
+            onRetry: onRetry,
           ),
         ],
       ),
@@ -404,18 +426,23 @@ class _PinnedSection extends StatelessWidget {
   const _PinnedSection({
     required this.asyncValue,
     this.title = 'Pinned notices',
+    this.onRetry,
   });
 
   final AsyncValue<List<Announcement>> asyncValue;
   final String title;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     return asyncValue.when(
       loading: () => const AuraLoadingState(message: 'Loading pinned…'),
-      error: (e, _) => const AuraErrorState(
+      error: (e, _) => AuraErrorState(
         title: 'Could not load pinned notices',
         body: 'Something went wrong. Try refreshing.',
+        action: onRetry == null
+            ? null
+            : AuraSecondaryButton(label: 'Retry', onPressed: onRetry!),
       ),
       data: (items) {
         if (items.isEmpty) return const SizedBox.shrink();
@@ -469,20 +496,25 @@ class _AllSection extends StatelessWidget {
     this.emptyTitle = 'Nothing published yet',
     this.emptyBody =
         'When platform notices are published, they will appear here.',
+    this.onRetry,
   });
 
   final AsyncValue<List<Announcement>> asyncValue;
   final String title;
   final String emptyTitle;
   final String emptyBody;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     return asyncValue.when(
       loading: () => const AuraLoadingState(message: 'Loading announcements…'),
-      error: (e, _) => const AuraErrorState(
+      error: (e, _) => AuraErrorState(
         title: 'Could not load announcements',
         body: 'Something went wrong. Try refreshing.',
+        action: onRetry == null
+            ? null
+            : AuraSecondaryButton(label: 'Retry', onPressed: onRetry!),
       ),
       data: (items) {
         if (items.isEmpty) {

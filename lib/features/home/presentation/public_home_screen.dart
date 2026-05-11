@@ -576,9 +576,42 @@ class _LiveDiscourseSection extends StatelessWidget {
     return feedAsync.maybeWhen(
       data: (page) {
         final classified = _ClassifiedFeed.from(page.items);
-        // If both rails would be empty, omit the entire section so the
-        // homepage doesn't broadcast emptiness.
-        if (classified.isEmpty) return const SizedBox.shrink();
+        // When the rails are empty we used to hide the section. That made
+        // a quiet day on the network read as "the product is dead." Show
+        // a launch-state placeholder instead: same heading, same scaffold
+        // weight, with copy that frames the silence as intentional and
+        // points to a concrete next action.
+        if (classified.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              0,
+              AuraSpace.s28,
+              0,
+              AuraSpace.s4,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionHeading(
+                        title: 'Live discourse',
+                        subtitle:
+                            'When discussions move, they show up here',
+                      ),
+                      const SizedBox(height: AuraSpace.s16),
+                      _LiveDiscoursePlaceholderCard(isAuthed: isAuthed),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
         return Padding(
           padding: const EdgeInsets.fromLTRB(
             0,
@@ -637,6 +670,69 @@ class _LiveDiscourseSection extends StatelessWidget {
         );
       },
       orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+// Empty-state placeholder for the Live Discourse section. We show this
+// instead of hiding the whole section when both rails would be empty —
+// the public homepage needs to communicate that the discourse surface
+// EXISTS and is something the visitor can join, even on a quiet day.
+class _LiveDiscoursePlaceholderCard extends StatelessWidget {
+  const _LiveDiscoursePlaceholderCard({required this.isAuthed});
+
+  final bool isAuthed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.r16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 22,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              const Text('Quiet right now', style: AuraText.title),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            'No active discussions in the last hour. New discourse '
+            'shows up here as institutions respond and members start '
+            'threads. Check back shortly, or start one yourself.',
+            style: AuraText.body.copyWith(height: 1.5),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              FilledButton(
+                onPressed: () => context.go(isAuthed ? '/compose' : '/auth'),
+                child: Text(isAuthed ? 'Start a discussion' : 'Join Aura'),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/spaces'),
+                child: const Text('Explore spaces'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

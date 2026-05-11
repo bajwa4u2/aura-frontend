@@ -708,12 +708,10 @@ class _PostCardState extends ConsumerState<PostCard> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isOwnPost)
-                  PostCardMenuActionTile(
-                    icon: Icons.edit_outlined,
-                    label: 'Edit work',
-                    onTap: () => Navigator.of(ctx).pop('edit_post'),
-                  ),
+                // Post-content editing isn't shipped yet — we hide the
+                // affordance rather than showing it and snack-barring a
+                // "not wired yet" message. Re-enable here when the
+                // PATCH /v1/posts/:id surface ships.
                 if (isOwnPost)
                   PostCardMenuActionTile(
                     icon: Icons.delete_outline,
@@ -756,11 +754,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (!context.mounted || selected == null) return;
 
     switch (selected) {
-      case 'edit_post':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Work editing is not wired yet.')),
-        );
-        break;
       case 'delete_post':
         await _deletePost(context, postId);
         break;
