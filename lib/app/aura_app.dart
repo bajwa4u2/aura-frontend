@@ -17,6 +17,7 @@ import '../core/notifications/notification_bridge.dart';
 import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
+import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
 
 class AuraApp extends ConsumerStatefulWidget {
@@ -98,6 +99,17 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     } catch (_) {
       // Defensive — any other surprise here must not prevent the
       // token-clear that follows.
+    }
+
+    // Drop any pending incoming-call cards held by the bridge. The
+    // provider is long-lived (no autoDispose), so without this a ring
+    // received seconds before sign-out would survive into the next
+    // identity on the same tab. The bridge re-subscribes to its sockets
+    // automatically; clearing state is enough.
+    try {
+      ref.read(incomingCallBridgeProvider.notifier).clear();
+    } catch (_) {
+      // Bridge may not have been built yet on a cold logout path.
     }
   }
 

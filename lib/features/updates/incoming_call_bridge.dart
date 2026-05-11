@@ -104,6 +104,19 @@ class IncomingCallBridgeNotifier
     if (id.isEmpty) return;
     state = state.where((item) => _str(item['id']) != id).toList();
   }
+
+  /// Drop every pending incoming-call card and reset the notifier.
+  ///
+  /// The provider is a long-lived `StateNotifierProvider` (no
+  /// auto-dispose), so without this method any ring payloads that were
+  /// in flight when the user signed out would remain in memory and could
+  /// surface as a stale ring for the next user signing in on the same
+  /// tab. Called from the auth-drop teardown in `aura_app.dart` so each
+  /// identity gets a clean slate.
+  void clear() {
+    if (state.isEmpty) return;
+    state = const <Map<String, dynamic>>[];
+  }
 }
 
 String _str(dynamic value) => value == null ? '' : value.toString().trim();
