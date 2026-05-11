@@ -83,6 +83,46 @@ class _InstitutionDetailBody extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Visible return path to the directory. Closes the loop
+                // from /institutions → /institutions/:slug so visitors
+                // don't have to rely on browser back to navigate the
+                // ecosystem.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s16,
+                    AuraSpace.s12,
+                    AuraSpace.s16,
+                    0,
+                  ),
+                  child: InkWell(
+                    onTap: () => context.go('/institutions'),
+                    borderRadius: BorderRadius.circular(AuraRadius.r10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.arrow_back_rounded,
+                            size: 14,
+                            color: AuraSurface.faint,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Institutions',
+                            style: AuraText.small.copyWith(
+                              color: AuraSurface.faint,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 _PublicHero(institution: institution),
                 const SizedBox(height: AuraSpace.s12),
                 Padding(
@@ -627,33 +667,48 @@ class _PublicStatChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = <Widget>[
-      _PublicStatChip(
-        icon: Icons.verified_rounded,
-        label: institution.isVerified ? 'Verified' : 'Unverified',
-        good: institution.isVerified,
-      ),
-      if (institution.domain.trim().isNotEmpty)
-        _PublicStatChip(
-          icon: Icons.dns_rounded,
-          label: institution.domain.trim(),
-        ),
-      if (institution.jurisdiction.trim().isNotEmpty)
-        _PublicStatChip(
-          icon: Icons.public_rounded,
-          label: institution.jurisdiction.trim(),
-        ),
-      if ((institution.category ?? '').trim().isNotEmpty)
-        _PublicStatChip(
-          icon: Icons.category_rounded,
-          label: (institution.category ?? '').trim(),
-        ),
-      if ((institution.location ?? '').trim().isNotEmpty)
-        _PublicStatChip(
-          icon: Icons.place_rounded,
-          label: (institution.location ?? '').trim(),
-        ),
-    ];
+    // Build chips, then collapse any later chip whose label duplicates an
+    // earlier one (case-insensitive). The Institution model derives
+    // `jurisdiction` from country/region and `location` from city — when
+    // an entry has no city, both fall back to the country and we'd
+    // otherwise render two identical pills (e.g. "United States" twice).
+    final seenLabels = <String>{};
+    void add(List<Widget> into, _PublicStatChip chip) {
+      final key = chip.label.trim().toLowerCase();
+      if (key.isEmpty || !seenLabels.add(key)) return;
+      into.add(chip);
+    }
+
+    final chips = <Widget>[];
+    add(chips, _PublicStatChip(
+      icon: Icons.verified_rounded,
+      label: institution.isVerified ? 'Verified' : 'Unverified',
+      good: institution.isVerified,
+    ));
+    if (institution.domain.trim().isNotEmpty) {
+      add(chips, _PublicStatChip(
+        icon: Icons.dns_rounded,
+        label: institution.domain.trim(),
+      ));
+    }
+    if (institution.jurisdiction.trim().isNotEmpty) {
+      add(chips, _PublicStatChip(
+        icon: Icons.public_rounded,
+        label: institution.jurisdiction.trim(),
+      ));
+    }
+    if ((institution.category ?? '').trim().isNotEmpty) {
+      add(chips, _PublicStatChip(
+        icon: Icons.category_rounded,
+        label: (institution.category ?? '').trim(),
+      ));
+    }
+    if ((institution.location ?? '').trim().isNotEmpty) {
+      add(chips, _PublicStatChip(
+        icon: Icons.place_rounded,
+        label: (institution.location ?? '').trim(),
+      ));
+    }
     if (chips.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: AuraSpace.s8,

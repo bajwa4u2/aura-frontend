@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/session_providers.dart';
 import '../../../../core/institutions/institution_access_provider.dart';
 import '../../../../core/media/aura_attachment_image.dart';
 import '../../../../core/net/dio_provider.dart';
@@ -196,6 +197,10 @@ final isSavedProvider = FutureProvider.family<bool, String>((
   ref,
   postId,
 ) async {
+  // /saves/for/:pid is auth-only. Signed-out visitors cannot have saves —
+  // short-circuit instead of firing a guaranteed 401 on every card render.
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) return false;
   final repo = ref.read(savesRepositoryProvider);
   final pid = postId.trim();
   if (pid.isEmpty) return false;
@@ -1323,13 +1328,28 @@ class _ActionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthed = ref.watch(isAuthedProvider);
     final saved = ref.watch(isSavedProvider(postId));
     final actor = activeReactionActor(context, ref);
     final target = PostReactionTarget(postId);
     final reactionKey = ReactionStateKey(target: target, actor: actor);
     final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
 
+    // Signed-out actions route to /login instead of firing a guaranteed
+    // 401 against the auth-gated endpoint. Public visitors still see the
+    // card; the action becomes a join prompt.
+    void goSignIn() {
+      final redirect = GoRouterState.of(context).uri.toString();
+      context.go(
+        '/login?redirect=${Uri.encodeComponent(redirect)}',
+      );
+    }
+
     Future<void> toggleLike() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
       try {
         final repo = ref.read(reactionsRepositoryProvider);
         await repo.toggle(target, actor: actor);
@@ -1359,6 +1379,10 @@ class _ActionRow extends ConsumerWidget {
     }
 
     Future<void> toggleSave() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
       try {
         final repo = ref.read(savesRepositoryProvider);
         await repo.toggle(postId);
@@ -1371,6 +1395,10 @@ class _ActionRow extends ConsumerWidget {
     }
 
     Future<void> repost() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
       final controller = TextEditingController();
 
       try {

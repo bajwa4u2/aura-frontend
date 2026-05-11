@@ -456,10 +456,28 @@ class _LiveDiscoursePulse extends StatelessWidget {
             loading: liveAsync.isLoading,
           ),
           const SizedBox(height: AuraSpace.s12),
-          // Phase-7 polish — single calm context line so the numbers
-          // read as something happening, not as abstract stats.
+          // Honest context line — varies with the actual counts so the
+          // closing line never lies. With three zero counts the box would
+          // otherwise claim "Discussions are happening across spaces" while
+          // the rail showed zeros next to it. Now the line reflects what
+          // the numbers actually say.
           Text(
-            'Discussions are happening across spaces right now',
+            (() {
+              final any = activeCount > 0 ||
+                  classified.institutionResponseCount > 0 ||
+                  liveCount > 0;
+              final all = activeCount > 0 &&
+                  classified.institutionResponseCount > 0 &&
+                  liveCount > 0;
+              if (all) {
+                return 'Discussions are happening across spaces right now';
+              }
+              if (any) {
+                return 'Discourse is just starting to surface — stay close.';
+              }
+              return 'Quiet across the network right now. New discourse '
+                  'shows up here as it lands.';
+            })(),
             style: AuraText.small.copyWith(
               color: AuraSurface.muted,
               height: 1.5,

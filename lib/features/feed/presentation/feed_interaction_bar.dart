@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -40,6 +41,7 @@ class FeedInteractionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthed = ref.watch(isAuthedProvider);
     final identity = ref.watch(institutionIdentityProvider);
     final actor = identity != null && identity.id.isNotEmpty
         ? ReactionActor.institution(identity.id)
@@ -50,7 +52,22 @@ class FeedInteractionBar extends ConsumerWidget {
     final reactionKey = ReactionStateKey(target: target, actor: actor);
     final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
 
+    // Signed-out interactions route the visitor to sign-in rather than
+    // firing a guaranteed 401 against the auth-gated toggle endpoint. The
+    // public feed card remains readable; the action just becomes a join
+    // prompt instead of a snackbar error.
+    void goSignIn() {
+      final redirect = GoRouterState.of(context).uri.toString();
+      context.go(
+        '/login?redirect=${Uri.encodeComponent(redirect)}',
+      );
+    }
+
     Future<void> toggleLike() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
       try {
         final repo = ref.read(reactionsRepositoryProvider);
         await repo.toggle(target, actor: actor);
@@ -99,16 +116,24 @@ class FeedInteractionBar extends ConsumerWidget {
     // always shown so the viewer knows whether they reacted, but the
     // count is appended only when canViewLikeCount=true. We never render
     // "0", "—", or placeholders.
-    final likeLabel = reactionAsync.maybeWhen(
-      data: (s) {
-        final base = s.liked ? 'Liked' : 'Like';
-        if (visibility.canViewLikeCount && s.likeCount > 0) {
-          return '$base · ${s.likeCount}';
-        }
-        return base;
-      },
-      orElse: () => 'Like',
+    //
+    // The count comes from the public feed payload (`visibility.likeCount`)
+    // which is the global count and the same for every viewer. When the
+    // viewer is signed in, the per-actor toggle response also returns
+    // `likeCount`; we prefer it after a toggle so the bar reflects the
+    // post-toggle delta immediately. Signed-out viewers always see the
+    // payload count — there is no viewer-state call.
+    final displayedLikeCount = reactionAsync.maybeWhen(
+      data: (s) => s.likeCount > 0 ? s.likeCount : visibility.likeCount,
+      orElse: () => visibility.likeCount,
     );
+    final likeLabel = (() {
+      final base = liked ? 'Liked' : 'Like';
+      if (visibility.canViewLikeCount && displayedLikeCount > 0) {
+        return '$base · $displayedLikeCount';
+      }
+      return base;
+    })();
 
     String replyLabel() {
       if (visibility.canViewReplyCount && visibility.replyCount > 0) {
@@ -125,6 +150,10 @@ class FeedInteractionBar extends ConsumerWidget {
     }
 
     Future<void> doRepost() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
       final controller = TextEditingController();
       try {
         final ok = await showDialog<bool>(

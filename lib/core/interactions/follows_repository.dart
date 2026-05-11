@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/session_providers.dart';
 import '../net/dio_provider.dart';
 import 'actor_context.dart';
 
@@ -158,6 +159,14 @@ class FollowStateKey {
 
 final followStateProvider = FutureProvider.autoDispose
     .family<FollowState, FollowStateKey>((ref, key) async {
+  // /follows/state is auth-only. On public surfaces (e.g. an unauth'd
+  // visitor opening an institution detail page) we MUST short-circuit
+  // to a neutral "not following / cannot message" state instead of
+  // firing a guaranteed 401.
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) {
+    return FollowState.empty;
+  }
   final repo = ref.read(followsRepositoryProvider);
   return repo.getState(actor: key.actor, target: key.target);
 });

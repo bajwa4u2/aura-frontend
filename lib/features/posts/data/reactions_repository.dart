@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 
 /// Identifies the actor that is performing a Like / asking for like-state.
@@ -199,6 +200,16 @@ class ReactionStateKey {
 
 final reactionStateProvider = FutureProvider.autoDispose
     .family<ReactionState, ReactionStateKey>((ref, key) async {
+  // Viewer-state endpoint is auth-gated. For signed-out visitors on public
+  // surfaces (homepage, public feed, institution detail) we MUST NOT call
+  // /reactions/.../state — it returns 401 noisily. The public payload still
+  // carries the global like count via FeedInteraction.likeCount, which the
+  // interaction bar reads when no per-actor state is available. The boolean
+  // "liked" is correct as `false` for a signed-out viewer.
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) {
+    return const ReactionState(liked: false, likeCount: 0);
+  }
   final repo = ref.read(reactionsRepositoryProvider);
   return repo.getState(key.target, actor: key.actor);
 });

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 
 /// Public-UX Phase 6.1 — frontend client for the new thread + space
@@ -92,15 +93,26 @@ final threadSpaceFollowRepositoryProvider =
 
 /// `family<bool, threadPostId>` — true when the current user follows
 /// the thread.
+///
+/// Auth-gated: signed-out visitors get `false` without a network call
+/// (the endpoint is 401-only). Public visitors browsing public threads
+/// see the unfollowed default; the FollowButton on the same surface
+/// renders its signed-out variant (route to /login on tap).
 final threadFollowingProvider =
     FutureProvider.family<bool, String>((ref, threadPostId) async {
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) return false;
   final repo = ref.watch(threadSpaceFollowRepositoryProvider);
   return repo.getThreadFollowing(threadPostId);
 });
 
 /// `family<bool, slug>` — true when the current user follows the space.
+///
+/// Same auth gate as `threadFollowingProvider`.
 final spaceFollowingProvider =
     FutureProvider.family<bool, String>((ref, slug) async {
+  final authed = ref.watch(isAuthedProvider);
+  if (!authed) return false;
   final repo = ref.watch(threadSpaceFollowRepositoryProvider);
   return repo.getSpaceFollowing(slug);
 });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../data/thread_space_follow_repository.dart';
 
@@ -36,6 +38,14 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
 
   Future<void> _toggle(bool currentlyFollowing) async {
     if (_busy) return;
+    // Signed-out: send the visitor to /login with a redirect back to
+    // wherever they were. The toggle endpoint is auth-only; firing it
+    // signed-out only produces a 401 that the UI cannot recover from.
+    if (!ref.read(isAuthedProvider)) {
+      final redirect = GoRouterState.of(context).uri.toString();
+      context.go('/login?redirect=${Uri.encodeComponent(redirect)}');
+      return;
+    }
     setState(() => _busy = true);
     final repo = ref.read(threadSpaceFollowRepositoryProvider);
     try {
