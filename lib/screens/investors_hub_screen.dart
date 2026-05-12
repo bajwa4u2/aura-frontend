@@ -23,12 +23,21 @@ class InvestorsHubScreen extends StatelessWidget {
   static const _deckAsset =
       'assets/investor/Aura_Platform_Investor_Deck_2026.pdf';
 
-  void _openDeck(BuildContext context) {
+  /// Opens a bundled PDF asset inside `PdfViewerScreen` via the root
+  /// Navigator. Never uses `context.go`, `launchUrl`, or any
+  /// route-shaped URL — the PDF must be rendered by `PdfViewerScreen`
+  /// against the asset path, not by go_router against a synthesized
+  /// path that looks like a route.
+  void _openPdf(
+    BuildContext context, {
+    required String title,
+    required String assetPath,
+  }) {
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (_) => const PdfViewerScreen(
-          title: _deckTitle,
-          assetPath: _deckAsset,
+        builder: (_) => PdfViewerScreen(
+          title: title,
+          assetPath: assetPath,
         ),
       ),
     );
@@ -104,7 +113,14 @@ class InvestorsHubScreen extends StatelessWidget {
 
           Doc.h('Investor materials'),
           const SizedBox(height: 8),
-          _DeckCard(onTap: () => _openDeck(context)),
+          _DeckCard(
+            onTap: () => _openPdf(
+              context,
+              title: 'Aura Platform Investor Deck',
+              assetPath:
+                  'assets/investor/Aura_Platform_Investor_Deck_2026.pdf',
+            ),
+          ),
 
           Doc.h('Contact'),
           Doc.p(
