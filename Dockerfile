@@ -18,6 +18,12 @@ RUN flutter build web --release --no-wasm-dry-run \
   --dart-define=AURA_ADMIN_USER_IDS=${AURA_ADMIN_USER_IDS} \
   --dart-define=AURA_WEB_PUSH_VAPID_PUBLIC_KEY=${AURA_WEB_PUSH_VAPID_PUBLIC_KEY}
 
+# Generate per-route index.html variants so crawlers (LinkedInBot,
+# Twitterbot, Slackbot, Discordbot) see route-specific OG metadata
+# instead of the SPA root fallback. Nginx try_files serves these
+# directory indexes before falling back to /index.html.
+RUN dart run tool/web/generate_route_metadata.dart
+
 # ---- runtime stage ----
 FROM nginx:alpine
 
