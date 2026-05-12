@@ -1,23 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_space.dart';
+import '../core/ui/aura_surface.dart';
+import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 import '../core/ui/pdf_viewer_screen.dart';
 
+/// Investors & Partners page for Aura Platform LLC.
+///
+/// Curated entry point — not a PDF repository. The page communicates the
+/// company thesis (Trust / Action / Records), introduces the two
+/// products (Aura and Orchestrate), and exposes a single investor-deck
+/// link. Old document-dump cards (Seed Round, Business Model
+/// Framework, Governance Framework) were removed in May 2026 along
+/// with their PDFs; the only material exposed in-app is the deck.
 class InvestorsHubScreen extends StatelessWidget {
   const InvestorsHubScreen({super.key});
 
-  void _openPdf(
-    BuildContext context, {
-    required String title,
-    required String assetPath,
-  }) {
+  static const _deckTitle = 'Aura Platform Investor Deck';
+  static const _deckAsset =
+      'assets/investor/Aura_Platform_Investor_Deck_2026.pdf';
+
+  void _openDeck(BuildContext context) {
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(
-          title: title,
-          assetPath: assetPath,
+        builder: (_) => const PdfViewerScreen(
+          title: _deckTitle,
+          assetPath: _deckAsset,
         ),
       ),
     );
@@ -31,86 +42,83 @@ class InvestorsHubScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Investors'),
+          Doc.title('Investors & Partners'),
           const SizedBox(height: 10),
-          Doc.meta('Support durable civic infrastructure.'),
+          Doc.meta('Aura Platform LLC'),
           Doc.lede(
-            'Aura is designed as civic communication infrastructure. Its architecture intentionally resists short-term engagement mechanics.',
+            'Aura Platform LLC builds infrastructure for accountable '
+            'communication and AI-assisted operational execution.',
           ),
 
-          Doc.h('What an Investor is'),
-          Doc.p(
-            'An Investor is distinct from a Supporter and a Patron. Supporters contribute time and effort. Patrons provide ongoing financial support. Investors provide equity capital and take a formal stake in the platform.',
+          Doc.h('Platform thesis'),
+          const _ValueBlock(
+            label: 'Trust',
+            body:
+                'Identity, authority, and responsibility stay attached to '
+                'every action — across people, institutions, and AI.',
           ),
-          Doc.p(
-            'The objective is structural trust: identity integrity, visible correction, chronological record, and constrained AI assistance.',
+          const SizedBox(height: AuraSpace.sm),
+          const _ValueBlock(
+            label: 'Action',
+            body:
+                'Communication and operational execution share one trust '
+                'fabric, so decisions move forward without losing context.',
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          const _ValueBlock(
+            label: 'Records',
+            body:
+                'Outcomes are durable. What was said, decided, and shipped '
+                'remains visible to the right audience over time.',
           ),
 
-          Doc.h('What we optimize for'),
-          Doc.bullets([
-            'Integrity of identity (who is speaking)',
-            'Continuity of record (what remains visible)',
-            'Correction that stays attached to the original statement',
-            'Privacy by default (counts remain private)',
-            'AI as structural assistance, not amplification',
-          ]),
-          Doc.h('What we do not optimize for'),
-          Doc.bullets([
-            'Viral velocity',
-            'Engagement extraction',
-            'Algorithmic amplification as a growth engine',
-          ]),
-          const SizedBox(height: 8),
-          Doc.h('Investor documents'),
-          const SizedBox(height: 8),
-          _DocCard(
-            title: 'Seed Investment Round',
-            meta: 'March 2026',
+          Doc.h('Two connected products'),
+          _ProductBlock(
+            name: 'Aura',
+            tagline: 'Accountable public discourse and institutional '
+                'communication infrastructure.',
             description:
-                'Capital raise summary, equity range, valuation range, and use of funds.',
-            onTap: () => _openPdf(
-              context,
-              title: 'Seed Investment Round',
-              assetPath:
-                  'assets/investor/Aura_Seed_Investment_Round_Mar2026.pdf',
-            ),
+                'A communication layer where individuals and institutions '
+                'speak under verified identity, with structure that makes '
+                'who said what — and the response that followed — durable '
+                'and reviewable.',
           ),
-          const SizedBox(height: 10),
-          _DocCard(
-            title: 'Business Model Framework',
-            meta: 'Version 1.0 • March 2026',
+          const SizedBox(height: AuraSpace.sm),
+          _ProductBlock(
+            name: 'Orchestrate',
+            tagline: 'AI-assisted revenue automation and operational '
+                'execution — from outreach to meetings to workflow to '
+                'billing.',
             description:
-                'Hybrid participation economy. Institutional subscriptions, verification, research access, and infrastructure contracts.',
-            onTap: () => _openPdf(
-              context,
-              title: 'Business Model Framework',
-              assetPath:
-                  'assets/investor/Aura_Business_Model_Framework_v1.0_Mar2026.pdf',
-            ),
+                'Operating infrastructure for institutional teams. '
+                'Orchestrate connects outreach, scheduling, internal '
+                'workflow, and billing into one governed pipeline so '
+                'follow-through stays attached to the people accountable '
+                'for it.',
           ),
-          const SizedBox(height: 10),
-          _DocCard(
-            title: 'Governance Framework',
-            meta: 'Version 1.0 • March 2026',
-            description:
-                'Moderation as structural custody, correction records, open observation, and constrained AI assistance.',
-            onTap: () => _openPdf(
-              context,
-              title: 'Governance Framework',
-              assetPath:
-                  'assets/investor/Aura_Governance_Framework_v1.0_Mar2026.pdf',
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AuraSpace.md),
           Doc.callout(
-            'We seek alignment with partners who understand that durability matters more than acceleration.',
+            'Together: trusted communication and governed operational '
+            'execution — one identity, one record, one accountable surface.',
           ),
-          const SizedBox(height: AuraSpace.lg),
+
+          Doc.h('Investor materials'),
+          const SizedBox(height: 8),
+          _DeckCard(onTap: () => _openDeck(context)),
+
+          Doc.h('Contact'),
+          Doc.p(
+            'For partnership conversations, write to the Aura team through '
+            'the support channel below. Investor-grade inquiries are '
+            'routed to the founder.',
+          ),
+          const SizedBox(height: AuraSpace.sm),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
+            child: OutlinedButton.icon(
               onPressed: () => context.go('/support/agent'),
-              child: const Text('Contact Support'),
+              icon: const Icon(Icons.mail_outline_rounded, size: 16),
+              label: const Text('Contact the Aura team'),
             ),
           ),
         ],
@@ -119,79 +127,164 @@ class InvestorsHubScreen extends StatelessWidget {
   }
 }
 
-class _DocCard extends StatelessWidget {
-  const _DocCard({
-    required this.title,
-    required this.meta,
-    required this.description,
-    this.onTap,
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// Local UI primitives — compact value blocks and the single deck card.
+// Kept private to this screen on purpose: this is a curated investor
+// surface, not a reusable design-system module.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final String title;
-  final String meta;
-  final String description;
-  final VoidCallback? onTap;
+class _ValueBlock extends StatelessWidget {
+  const _ValueBlock({required this.label, required this.body});
+
+  final String label;
+  final String body;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: theme.dividerColor.withOpacity(0.6),
-          width: 1,
-        ),
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.md),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(body, style: AuraText.body.copyWith(height: 1.55)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductBlock extends StatelessWidget {
+  const _ProductBlock({
+    required this.name,
+    required this.tagline,
+    required this.description,
+  });
+
+  final String name;
+  final String tagline;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.md),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name, style: AuraText.emphasis.copyWith(fontSize: 18)),
+          const SizedBox(height: 4),
+          Text(
+            tagline,
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(description, style: AuraText.body.copyWith(height: 1.6)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeckCard extends StatelessWidget {
+  const _DeckCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: AuraSurface.elevated,
+      borderRadius: BorderRadius.circular(AuraRadius.md),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AuraRadius.md),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AuraRadius.md),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(AuraRadius.sm),
+                ),
+                child: Icon(
+                  Icons.picture_as_pdf_rounded,
+                  size: 18,
+                  color: cs.primary,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                meta,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.75),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Open document',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
+              const SizedBox(width: AuraSpace.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      InvestorsHubScreen._deckTitle,
+                      style: AuraText.emphasis.copyWith(fontSize: 16),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      'May 2026',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Infrastructure overview for Aura Platform LLC, '
+                      'including Aura and Orchestrate.',
+                      style: AuraText.body.copyWith(height: 1.55),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Open the deck',
+                          style: AuraText.small.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: cs.primary,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

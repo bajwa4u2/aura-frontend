@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../core/ui/aura_radius.dart';
 import '../core/ui/aura_space.dart';
+import '../core/ui/aura_surface.dart';
+import '../core/ui/aura_text.dart';
 import '../core/ui/document_scaffold.dart';
 
+/// Mission page for Aura Platform LLC.
+///
+/// Philosophical surface, now coherent with the two-product company:
+/// Aura (accountable communication) and Orchestrate (AI-assisted
+/// operational execution). The page is the public framing — what we
+/// protect, what each product does, and what we refuse — kept compact
+/// enough to scan in one read.
 class MissionScreen extends StatelessWidget {
   const MissionScreen({super.key});
 
@@ -16,67 +26,127 @@ class MissionScreen extends StatelessWidget {
         children: [
           Doc.title('Mission'),
           const SizedBox(height: 10),
-          Doc.meta('What Aura is protecting, and what it refuses to become.'),
+          Doc.meta('Aura Platform LLC'),
           Doc.lede(
-            'Aura is a civic communication layer for people and institutions. Its purpose is to make important communication clearer, more accountable, and easier to return to over time.',
+            'Build durable systems for communication, coordination, and '
+            'execution in the AI era.',
           ),
 
-          const SizedBox(height: AuraSpace.s10),
           Doc.p(
-            'Modern communication is fast, but often unstable. Messages scatter across tools, identity becomes unclear, context disappears, and institutions struggle to speak with the people they serve in a durable, understandable way.',
+            'Modern work is fast, but unstable. Conversations scatter '
+            'across tools. Identity blurs. Decisions move forward, but '
+            'the record of who said what — and what was supposed to '
+            'happen next — gets lost between the tab and the calendar.',
           ),
           Doc.p(
-            'Aura exists to reduce that fragmentation. It gives people and institutions a shared place to communicate with identity, structure, and continuity instead of relying on noise, reaction, or disconnected channels.',
+            'Aura Platform exists to fix that fragmentation at the '
+            'infrastructure layer. We build systems where identity, '
+            'action, and records stay connected.',
           ),
 
-          Doc.h('What Aura is'),
-          Doc.p(
-            'Aura is not built as another engagement feed. It is built as communication infrastructure: a system where conversations, announcements, institutional spaces, and public records can be organized around identity and responsibility.',
+          Doc.h('What we protect'),
+          const _Protect(
+            label: 'Identity',
+            body: 'Every voice and every action is attributed to a real, '
+                'verifiable person or institution.',
           ),
+          const SizedBox(height: AuraSpace.sm),
+          const _Protect(
+            label: 'Accountability',
+            body: 'Authority is named, scoped, and reviewable — for '
+                'individuals, institutions, and AI alike.',
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          const _Protect(
+            label: 'Continuity',
+            body: 'Conversations, decisions, and outcomes remain attached '
+                'over time. Context does not evaporate.',
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          const _Protect(
+            label: 'Human authority',
+            body: 'AI assists; humans decide. Final authority stays with '
+                'an identity-bound person or institution.',
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          const _Protect(
+            label: 'Operational memory',
+            body: 'What was promised, scheduled, owed, and delivered is '
+                'preserved as a structured record, not a thread to '
+                'reconstruct later.',
+          ),
+
+          Doc.h('What Aura does'),
+          Doc.p(
+            'Aura is the communication side of the platform. It gives '
+            'people and institutions an accountable place to speak, '
+            'respond, and record outcomes. Public discourse, '
+            'institutional announcements, member conversations, and '
+            'correspondence all share one identity layer — so positions '
+            'stay attributable and corrections stay attached.',
+          ),
+
+          Doc.h('What Orchestrate does'),
+          Doc.p(
+            'Orchestrate is the execution side of the platform. It is '
+            'AI-assisted revenue automation and operational execution — '
+            'from outreach to meetings to workflow to billing — for '
+            'institutional teams that need follow-through to stay '
+            'connected to the people accountable for it.',
+          ),
+
+          Doc.h('What we refuse'),
           Doc.bullets([
-            'A durable public record for approved posts and institutional communication',
-            'A member space for messages, replies, calls, drafts, and identity-bound participation',
-            'An institution lane where organizations can represent themselves directly',
-            'A conversation spine that keeps communication connected instead of scattered',
-            'AI operating as structural assistance, never as an amplification engine',
+            'Engagement extraction as a business model',
+            'Generic AI automation that detaches action from identity',
+            'Disconnected action without a record of who decided what',
+            'Growth mechanics that undermine trust',
           ]),
 
-          Doc.h('What Aura protects'),
-          Doc.bullets([
-            'Clarity over noise',
-            'Identity over impersonality',
-            'Continuity over disposable interaction',
-            'Accountability over anonymous influence',
-            'Human authority over automated amplification',
-          ]),
-
-          Doc.h('What Aura avoids'),
-          Doc.bullets([
-            'Ranking-by-reaction as the organizing force',
-            'Viral mechanics that punish nuance',
-            'Public counts that turn people into trophies',
-            'Design that rewards outrage, bait, or performance',
-            'Algorithmic visibility systems that outrun responsibility',
-          ]),
-
-          Doc.h('How alignment happens here'),
-          Doc.p(
-            'Alignment is not agreement. It is clarity: what was said, by whom, in what context, under what responsibility, and what response followed.',
-          ),
-          Doc.p(
-            'Disagreement remains visible. Correction remains attached. Institutions remain accountable to their own identity. AI may assist review and continuity, but final authority remains human and identity-bound.',
-          ),
           Doc.callout(
-            'Aura does not propose a platform of influence. It proposes a layer of accountability, identity, and structured communication.',
+            'Infrastructure for accountable communication and AI-assisted '
+            'operational execution.',
           ),
+        ],
+      ),
+    );
+  }
+}
 
-          Doc.h('Operating standard'),
-          Doc.p(
-            'The design decisions in Aura are structural, not decorative. Every constraint is intentional. Every choice to withhold a feature or reject a growth mechanic reflects a commitment to communication that endures.',
+// ─────────────────────────────────────────────────────────────────────────────
+// Local helper: compact labelled block for "What we protect".
+// Visually consistent with the value blocks on InvestorsHubScreen so
+// the two pages read as one company surface.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _Protect extends StatelessWidget {
+  const _Protect({required this.label, required this.body});
+
+  final String label;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.md),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.muted,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
           ),
-          Doc.p(
-            'Aura is not defined by what it adds. It is defined by what it refuses to become: an attention market, a manipulation engine, or an unaccountable system.',
-          ),
+          const SizedBox(height: 6),
+          Text(body, style: AuraText.body.copyWith(height: 1.55)),
         ],
       ),
     );
