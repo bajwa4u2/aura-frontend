@@ -27,8 +27,21 @@ class _PdfViewerWebState extends State<PdfViewer> {
   void _register() {
     if (_registered) return;
 
-    final fileName = widget.assetPath.split('/').last;
-    final src = '/$fileName';
+    // Flutter web ships pubspec-declared assets under `<base>/assets/<path>`.
+    // Earlier we used just the filename + a leading slash (e.g.
+    // `/Aura_Platform_Investor_Deck_2026.pdf`) which the server's SPA
+    // fallback resolved to `index.html` — the iframe then booted a
+    // second Flutter instance whose router promptly threw
+    // `GoException: no routes for location: /<filename>`.
+    //
+    // The correct URL for an asset declared as `assets/investor/foo.pdf`
+    // is `/assets/assets/investor/foo.pdf` (the build pipeline preserves
+    // the `assets/` prefix from pubspec). We normalize any incidental
+    // leading slash before joining.
+    final normalized = widget.assetPath.startsWith('/')
+        ? widget.assetPath.substring(1)
+        : widget.assetPath;
+    final src = '/assets/$normalized';
 
     ui.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
       final iframe = web.HTMLIFrameElement()
