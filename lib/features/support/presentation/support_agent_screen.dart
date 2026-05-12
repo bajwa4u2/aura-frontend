@@ -172,6 +172,7 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
     return _ChatArea(
       messages: state.messages,
       scrollCtrl: _scrollCtrl,
+      conversationId: state.conversationId,
     );
   }
 }
@@ -389,10 +390,12 @@ class _ChatArea extends StatelessWidget {
   const _ChatArea({
     required this.messages,
     required this.scrollCtrl,
+    required this.conversationId,
   });
 
   final List<dynamic> messages;
   final ScrollController scrollCtrl;
+  final String? conversationId;
 
   @override
   Widget build(BuildContext context) {
@@ -400,8 +403,53 @@ class _ChatArea extends StatelessWidget {
       controller: scrollCtrl,
       padding: const EdgeInsets.fromLTRB(
           AuraSpace.s20, AuraSpace.s12, AuraSpace.s20, AuraSpace.s12),
-      itemCount: messages.length,
-      itemBuilder: (_, i) => SupportChatBubble(message: messages[i]),
+      itemCount: messages.length + 1,
+      itemBuilder: (_, i) {
+        // Trailing AI disclosure — visible once the conversation has
+        // begun, calm and product-grade. Microsoft Store §11.16
+        // mandates honest framing of generative-AI surfaces; the line
+        // names the limitation and points at the reporting tool the
+        // overflow menu on every assistant message exposes.
+        if (i == messages.length) return const _AiDisclosureFooter();
+        return SupportChatBubble(
+          message: messages[i],
+          conversationId: conversationId,
+        );
+      },
+    );
+  }
+}
+
+class _AiDisclosureFooter extends StatelessWidget {
+  const _AiDisclosureFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        4, AuraSpace.s10, 4, AuraSpace.s4,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 13,
+            color: AuraSurface.faint,
+          ),
+          const SizedBox(width: AuraSpace.s6),
+          Expanded(
+            child: Text(
+              'AI responses can be inaccurate or incomplete. '
+              'Use the menu on any response to report something unsafe.',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
