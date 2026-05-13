@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.1.0+10
+version: 1.1.1+11
 
 environment:
   sdk: ^3.10.8
@@ -137,7 +137,15 @@ msix_config:
   # .0 revision (Microsoft Store policy). Bump in lockstep on every
   # release — Partner Center rejects an upload whose MSIX version is
   # lower or equal to a previously-shipped build.
-  msix_version: 1.0.2.0
+  #
+  # 2026-05-13 bump: the prior submission (1.0.2.0) was rejected for
+  # Policy 10.5.1 because the privacy URL redirected to
+  # http://auraplatform.org:8080/privacy/ (nginx absolute_redirect
+  # leaked the internal upstream origin past Railway's TLS edge). The
+  # routing fix is in Dockerfile + nginx.conf; this bump produces a
+  # new MSIX so Partner Center accepts a resubmission and the
+  # corrected privacy URL is the one the new package points to.
+  msix_version: 1.1.1.0
   description: Aura — a writing platform built for continuity.
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png
