@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -28,6 +29,7 @@ class UnifiedFeedCard extends ConsumerWidget {
     this.showVisibilityBadge = true,
     this.showInteractionBar = true,
     this.showReplyPreview = true,
+    this.mediaMode = AuraMediaFrameMode.feed,
   });
 
   final FeedItem item;
@@ -45,6 +47,13 @@ class UnifiedFeedCard extends ConsumerWidget {
   /// reply list below the parent card; rendering both would duplicate the
   /// first 1–2 replies.
   final bool showReplyPreview;
+
+  /// Media frame mode for any image rendered inside this card. Feed
+  /// surfaces leave this at [AuraMediaFrameMode.feed]; detail screens
+  /// (InstitutionPostDetailScreen) pass [AuraMediaFrameMode.detail]
+  /// so the image gets the larger, contain-by-default detail frame
+  /// instead of the bounded feed-rhythm frame.
+  final AuraMediaFrameMode mediaMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -250,12 +259,13 @@ class UnifiedFeedCard extends ConsumerWidget {
             // and signed URLs replace the permanent R2 URL.
             if (item.media.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              CanonicalMediaThumb(media: item.media.first),
+              CanonicalMediaThumb(media: item.media.first, mode: mediaMode),
             ] else if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              _MediaThumb(
+              _LegacyMediaUrlThumb(
                 url: item.mediaUrl!,
                 attachmentId: item.id.isNotEmpty ? 'feed:${item.id}:media' : null,
+                mode: mediaMode,
               ),
             ],
             if (showVisibilityBadge) ...[
@@ -766,34 +776,30 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _MediaThumb extends StatelessWidget {
-  const _MediaThumb({required this.url, this.attachmentId});
+/// Legacy compatibility tile for items whose backend payload still
+/// uses the flat `mediaUrl` field instead of the structured `media[]`.
+/// Delegates to [AuraMediaFrame] so behavior matches the canonical
+/// path exactly — same clipping, same maxWidth cap, same crop/contain
+/// decision. Pre-this-pass this widget had `aspectRatio: 16/9 +
+/// BoxFit.cover` with NO maxWidth — the source of the wide-card
+/// overflow.
+class _LegacyMediaUrlThumb extends StatelessWidget {
+  const _LegacyMediaUrlThumb({
+    required this.url,
+    this.attachmentId,
+    this.mode = AuraMediaFrameMode.feed,
+  });
 
   final String url;
-  /// Server-issued media id when known. Falls back to URL-based caching
-  /// inside AuraAttachmentImage when null. Passing the id is what lets
-  /// re-uploaded media invalidate cleanly without an app restart.
   final String? attachmentId;
+  final AuraMediaFrameMode mode;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AuraRadius.md),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: AuraAttachmentImage(
-          url: url,
-          attachmentId: attachmentId,
-          fit: BoxFit.cover,
-          errorWidget: (_) => Container(
-            color: AuraSurface.subtle,
-            child: const Center(
-              child: Icon(Icons.broken_image_outlined,
-                  color: AuraSurface.faint),
-            ),
-          ),
-        ),
-      ),
+    return AuraMediaFrame(
+      url: url,
+      attachmentId: attachmentId,
+      mode: mode,
     );
   }
 }

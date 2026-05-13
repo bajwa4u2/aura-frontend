@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_error_mapper.dart';
+import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -306,7 +307,10 @@ class _AnnouncementDetailScreenState
             children: [
               if (media.isNotEmpty) ...[
                 for (final m in media) ...[
-                  CanonicalMediaThumb(media: m),
+                  CanonicalMediaThumb(
+                    media: m,
+                    mode: AuraMediaFrameMode.detail,
+                  ),
                   const SizedBox(height: AuraSpace.s10),
                 ],
                 const SizedBox(height: AuraSpace.s6),

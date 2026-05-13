@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../../../core/media/aura_attachment_image.dart';
+import '../../../../../core/media/aura_media_frame.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../../core/ui/aura_radius.dart';
 import '../../../../../core/ui/aura_space.dart';
@@ -249,18 +249,6 @@ class PostCardSingleMediaCard extends StatelessWidget {
   final double maxHeight;
   final VoidCallback onTap;
 
-  double? _ratio() {
-    final w = item.width;
-    final h = item.height;
-    if (w != null && h != null && w > 0 && h > 0) {
-      var ratio = w / h;
-      if (ratio < 0.6) ratio = 0.6;
-      if (ratio > 1.9) ratio = 1.9;
-      return ratio;
-    }
-    return item.isVideo ? (16 / 9) : null;
-  }
-
   String _durationLabel() {
     final ms = item.duration;
     if (ms == null || ms <= 0) return '';
@@ -272,129 +260,103 @@ class PostCardSingleMediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = Border.all(color: AuraSurface.divider);
     final radius = BorderRadius.circular(16);
-    final ratio = _ratio();
-
     final imageUrl = item.previewUrl;
 
-    Widget mediaWidget;
-
+    // ── SVG branch keeps its own bounded ClipRRect+AspectRatio since
+    //    AuraMediaFrame is built around raster URL pipelines. SVGs are
+    //    rare (mostly server-generated infographics); the same crop/
+    //    contain reasoning still applies, so prefer contain.
     if (item.isSvg && imageUrl.isNotEmpty) {
-      mediaWidget = SvgPicture.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        placeholderBuilder: (_) => const SizedBox(
-          height: 140,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-      );
-    } else if (imageUrl.isNotEmpty) {
-      mediaWidget = AuraAttachmentImage(
-        url: imageUrl,
-        attachmentId: item.id.isNotEmpty ? item.id : null,
-        fit: BoxFit.cover,
-        errorWidget: (_) => Container(
-          constraints: const BoxConstraints(minHeight: 180),
-          alignment: Alignment.center,
-          child: Text(
-            item.isVideo ? 'Video unavailable' : 'Media unavailable',
-            style: AuraText.small,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        placeholder: (_) => const SizedBox(
-          height: 220,
-          child: Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    } else {
-      mediaWidget = Container(
-        constraints: const BoxConstraints(minHeight: 180),
+      return _buildSvgCard(context, imageUrl, radius);
+    }
+
+    // ── Empty/error tile.
+    if (imageUrl.isEmpty) {
+      return _buildEmptyCard(context, radius);
+    }
+
+    // ── Standard image (or video poster). Everything goes through the
+    //    canonical [AuraMediaFrame] so crop/contain, max width/height,
+    //    and clipping are decided in one place.
+    final overlay = item.isVideo
+        ? Stack(
+            children: [
+              Positioned.fill(
+                child: Center(
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.58),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      size: 38,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.videocam,
+                          size: 14, color: Colors.white),
+                      if (_durationLabel().isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          _durationLabel(),
+                          style: AuraText.small.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          )
+        : null;
+
+    final frame = AuraMediaFrame(
+      url: imageUrl,
+      attachmentId: item.id.isNotEmpty ? item.id : null,
+      intrinsicWidth: item.width,
+      intrinsicHeight: item.height,
+      maxHeightOverride: maxHeight,
+      borderRadius: radius,
+      onTap: onTap,
+      foreground: overlay,
+      errorWidget: (_) => Container(
+        color: AuraSurface.elevated,
         alignment: Alignment.center,
+        padding: const EdgeInsets.all(AuraSpace.s12),
         child: Text(
           item.isVideo ? 'Video unavailable' : 'Media unavailable',
           style: AuraText.small,
           textAlign: TextAlign.center,
         ),
-      );
-    }
-
-    Widget content = Stack(
-      children: [
-        Positioned.fill(child: mediaWidget),
-        if (item.isVideo)
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.58),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  size: 38,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        if (item.isVideo)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.videocam, size: 14, color: Colors.white),
-                  if (_durationLabel().isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      _durationLabel(),
-                      style: AuraText.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-
-    Widget mediaBox = ClipRRect(
-      borderRadius: radius,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          border: border,
-          color: AuraSurface.elevated,
-        ),
-        child: ratio == null
-            ? ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                child: content,
-              )
-            : AspectRatio(aspectRatio: ratio, child: content),
       ),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(borderRadius: radius, onTap: onTap, child: mediaBox),
+        frame,
         if ((item.caption ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s8),
           Text(
@@ -413,6 +375,62 @@ class PostCardSingleMediaCard extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildSvgCard(BuildContext context, String url, BorderRadius radius) {
+    // SVGs render via flutter_svg directly. We still apply the canonical
+    // ClipRRect + bounded AspectRatio with contain so a poster-style
+    // infographic stays readable instead of being aggressively cropped.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Container(
+              color: AuraSurface.subtle,
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: SvgPicture.network(
+                  url,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (_) => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if ((item.caption ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Text(
+            item.caption!.trim(),
+            style: AuraText.small.copyWith(height: 1.35),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEmptyCard(BuildContext context, BorderRadius radius) {
+    return ClipRRect(
+      borderRadius: radius,
+      child: Container(
+        color: AuraSurface.elevated,
+        constraints: const BoxConstraints(minHeight: 180),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(AuraSpace.s12),
+        child: Text(
+          item.isVideo ? 'Video unavailable' : 'Media unavailable',
+          style: AuraText.small,
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }

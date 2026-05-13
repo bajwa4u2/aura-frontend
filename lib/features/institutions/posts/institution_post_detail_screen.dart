@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/media/aura_media_frame.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -129,8 +130,14 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
               ],
               // Detail screen renders the full replies list below — turn
               // off the inline preview to avoid duplicating the first 1–2
-              // replies in two places on the same screen.
-              UnifiedFeedCard(item: item, showReplyPreview: false),
+              // replies in two places on the same screen. Detail mode
+              // lets the bundled image render in the larger, contain-by-
+              // default frame instead of the feed-rhythm frame.
+              UnifiedFeedCard(
+                item: item,
+                showReplyPreview: false,
+                mediaMode: AuraMediaFrameMode.detail,
+              ),
               // External share — only when the institution post is
               // publicly visible. MEMBER_ONLY / INTERNAL posts must not
               // expose a share affordance: the share URL would render a

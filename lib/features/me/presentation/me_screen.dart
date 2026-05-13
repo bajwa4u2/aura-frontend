@@ -56,7 +56,49 @@ class _MeScreenState extends ConsumerState<MeScreen> {
     unawaited(_load());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_handleLinkedInRedirectIfNeeded());
+      _kickAdminAuthorityProbe();
     });
+  }
+
+  /// Trigger a single `GET /v1/admin/me` probe for this Me screen visit.
+  ///
+  /// Why this exists
+  /// ---------------
+  /// `appAdminAccessProvider` is gated by `appAdminProbeAllowedProvider`,
+  /// which the router only flips on `/admin/*` navigation. The Me screen
+  /// is a legitimate authority-discovery surface — eligible platform
+  /// admins must be able to *find* the admin workspace entry from
+  /// `/me`, not only after they've already opened `/admin`. Without
+  /// this kick the Me screen reads `appAdminCachedDisplayProvider`
+  /// which is `false` until the cache is populated, so the Admin
+  /// Workspace tile never appears.
+  ///
+  /// The probe is bounded:
+  ///   * Only fires when the user is authenticated.
+  ///   * Only fires when the cache state is "unknown" (`null`). If a
+  ///     previous probe already confirmed admin (`true`) or non-admin
+  ///     (`false`) this session, we don't re-ask.
+  ///   * Result populates `cachedAdminAuthorityProvider` exactly once
+  ///     per session — subsequent /me visits become free.
+  ///   * Non-admins (403 / 404) cache `false` and never re-probe.
+  void _kickAdminAuthorityProbe() {
+    if (!mounted) return;
+    final authStatus = ref.read(authStatusProvider);
+    if (authStatus != AuthStatus.authed) return;
+    final cached = ref.read(cachedAdminAuthorityProvider);
+    if (cached != null) return; // already known this session
+
+    final allowedNotifier = ref.read(appAdminProbeAllowedProvider.notifier);
+    if (!ref.read(appAdminProbeAllowedProvider)) {
+      allowedNotifier.state = true;
+    }
+    // Fire-and-forget. The FutureProvider will populate the cache;
+    // `_isAppAdmin` watches the cached display provider and will
+    // rebuild when the cache flips.
+    unawaited(ref.read(appAdminAccessProvider.future).then(
+          (_) {},
+          onError: (_) {},
+        ));
   }
 
   Future<void> _load() async {
@@ -882,9 +924,9 @@ class _MeScreenState extends ConsumerState<MeScreen> {
           ),
         if (isAppAdmin)
           MeSettingsItem(
-            label: 'Admin workspace',
+            label: 'Aura Platform Admin',
             icon: Icons.admin_panel_settings_outlined,
-            subtitle: 'Platform control and moderation',
+            subtitle: 'Platform-wide controls, moderation, and audit',
             onTap: () => context.push('/admin'),
           ),
       ],
