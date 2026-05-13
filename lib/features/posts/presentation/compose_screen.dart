@@ -2451,11 +2451,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
 
       if (!_isReply) {
-        // Phase 2: invalidate the unified providers — every feed surface
-        // consumes them now. Force-refetch so the previous screen finds
-        // warm data when it re-mounts.
-        ref.invalidate(globalPublicFeedProvider);
-        ref.invalidate(memberHomeFeedProvider);
+        // Refresh every unified feed surface. `invalidateUnifiedFeedSurfaces`
+        // covers both the FutureProvider and StateNotifier (paged) variants
+        // — the Works tab on /home subscribes to the paged variant, so a
+        // bare `ref.invalidate(memberHomeFeedProvider)` would miss it and
+        // the user's just-published post would not appear until pull-to-
+        // refresh.
+        invalidateUnifiedFeedSurfaces(ref);
+        // Force-prime the FutureProvider variants so the previous screen
+        // finds warm data when it re-mounts. The paged notifier's own
+        // `refresh()` is already kicked off inside the helper.
         await ref.read(globalPublicFeedProvider.future);
         await ref.read(memberHomeFeedProvider.future);
       }

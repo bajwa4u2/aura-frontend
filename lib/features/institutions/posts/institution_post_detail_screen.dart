@@ -16,6 +16,8 @@ import '../../feed/presentation/feed_interaction_bar.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
+import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
+import '../../share/aura_share_sheet.dart';
 import '../domain/communication_type.dart';
 import '../presentation/institution_page.dart';
 import '../ui/institution_ds.dart';
@@ -129,6 +131,33 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
               // off the inline preview to avoid duplicating the first 1–2
               // replies in two places on the same screen.
               UnifiedFeedCard(item: item, showReplyPreview: false),
+              // External share — only when the institution post is
+              // publicly visible. MEMBER_ONLY / INTERNAL posts must not
+              // expose a share affordance: the share URL would render a
+              // safe "content unavailable" page externally, and surfacing
+              // the button would still leak the existence of the post to
+              // the wider audience.
+              if (item.visibility == FeedVisibility.public) ...[
+                const SizedBox(height: AuraSpace.s10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AuraSecondaryButton(
+                    label: 'Share',
+                    icon: Icons.ios_share_rounded,
+                    onPressed: () => showAuraShareSheet(
+                      context,
+                      shareUrl: canonicalInstitutionPostUrl(
+                        institutionId,
+                        postId,
+                      ),
+                      headline: 'Share this institution post',
+                      subtitle:
+                          'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                      emailSubject: 'Aura institution post',
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: AuraSpace.s14),
               if (item.activity?.recentReply == true) ...[
                 Row(

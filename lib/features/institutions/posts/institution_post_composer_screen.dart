@@ -830,21 +830,15 @@ class _InstitutionPostComposerScreenState
   }
 
   void _invalidatePostFeeds() {
-    // Phase 2 publish invalidation: every surface now consumes the unified
-    // feed providers, so we invalidate exactly those (plus activity) and
-    // force-refetch them so caches are warm by the time the previous screen
-    // remounts.
-    for (final scope in const ['public', 'member', 'internal']) {
-      ref.invalidate(institutionExploreFeedProvider(
-        InstitutionExploreFeedArgs(
-          institutionId: widget.institutionId,
-          scope: scope,
-        ),
-      ));
-    }
-    ref.invalidate(institutionProfileFeedProvider(widget.institutionId));
-    ref.invalidate(globalPublicFeedProvider);
-    ref.invalidate(memberHomeFeedProvider);
+    // Refresh every unified feed surface. `invalidateUnifiedFeedSurfaces`
+    // covers BOTH the FutureProvider variants AND the StateNotifier
+    // (paged) variants. The Works tab on `/home` subscribes to the paged
+    // variant — a bare `ref.invalidate(memberHomeFeedProvider)` would
+    // miss it and the just-published institution post would not appear
+    // in the member home feed until pull-to-refresh.
+    invalidateUnifiedFeedSurfaces(ref);
+    // Activity surface is institution-scoped and not part of the
+    // unified-feed helper, so it still needs its own invalidate.
     ref.invalidate(institutionActivityFirstPageProvider(
       InstitutionActivityArgs(institutionId: widget.institutionId),
     ));

@@ -12,7 +12,9 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/post.dart';
+import '../../share/aura_share_sheet.dart';
 import 'widgets/post_card.dart';
+import 'widgets/post_card/post_card_utils.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map) return Map<String, dynamic>.from(v);
@@ -167,6 +169,12 @@ class PostDetailScreen extends ConsumerWidget {
 
                   postAsync.when(
                     data: (post) {
+                      // `Post.visibility` is a non-nullable String on
+                      // the domain model. Defensive trim() + uppercase
+                      // is intentional even though the field is
+                      // non-null: backend may emit lowercase strings.
+                      final isPublic =
+                          post.visibility.trim().toUpperCase() == 'PUBLIC';
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -182,6 +190,25 @@ class PostDetailScreen extends ConsumerWidget {
                                 onPressed: () =>
                                     context.push('/compose?replyTo=$postId'),
                               ),
+                              // External share — only when visibility is
+                              // PUBLIC. FOLLOWERS / PRIVATE posts cannot
+                              // be shared externally; the share URL would
+                              // return a safe "content unavailable" page
+                              // and surfacing the button would leak the
+                              // post's existence.
+                              if (isPublic)
+                                AuraSecondaryButton(
+                                  label: 'Share',
+                                  icon: Icons.ios_share_rounded,
+                                  onPressed: () => showAuraShareSheet(
+                                    context,
+                                    shareUrl: canonicalPostUrl(postId),
+                                    headline: 'Share this work',
+                                    subtitle:
+                                        'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                                    emailSubject: 'Aura post',
+                                  ),
+                                ),
                             ],
                           ),
                         ],

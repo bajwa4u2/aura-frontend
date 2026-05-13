@@ -13,6 +13,8 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../feed/domain/feed_media.dart';
+import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
+import '../../share/aura_share_sheet.dart';
 import '../providers.dart';
 
 const Map<String, String> _announcementTranslationLanguageLabels = {
@@ -466,6 +468,56 @@ class _AnnouncementDetailScreenState
                                 ),
                               ),
                             ),
+                          // External share for announcements. The
+                          // backend `getPublicBySlug` only resolves
+                          // `audience=PUBLIC`+`status=PUBLISHED` rows,
+                          // so an announcement that reached this screen
+                          // via /announcements/<slug> is always
+                          // externally shareable. The URL renders an
+                          // OG-rich preview at auraplatform.org/p/a/<slug>.
+                          InkWell(
+                            onTap: () => showAuraShareSheet(
+                              context,
+                              shareUrl: canonicalAnnouncementUrl(a.slug),
+                              headline: 'Share this announcement',
+                              subtitle:
+                                  'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                              emailSubject: 'Aura announcement',
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              AuraRadius.pill,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AuraSpace.s10,
+                                vertical: AuraSpace.s6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AuraSurface.elevated,
+                                borderRadius: BorderRadius.circular(
+                                  AuraRadius.pill,
+                                ),
+                                border: Border.all(color: AuraSurface.divider),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.ios_share_rounded,
+                                    size: 14,
+                                    color: AuraSurface.muted,
+                                  ),
+                                  const SizedBox(width: AuraSpace.s6),
+                                  Text(
+                                    'Share',
+                                    style: AuraText.small.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
