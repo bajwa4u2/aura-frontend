@@ -1,8 +1,10 @@
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'capability_tokens.dart';
 import 'client_identity.dart';
@@ -68,6 +70,56 @@ ClientDistribution _defaultDistribution(ClientPlatform platform) {
   }
 }
 
+/// SharedPreferences key for the stable per-install runtime device id.
+///
+/// Generated on first launch (UUIDv4-shaped random hex) and persisted
+/// for the lifetime of the install. Sent to the backend as
+/// `X-Aura-Device-Id`; the auth service uses it to coalesce same-
+/// device login retries into a single UserSession row instead of
+/// creating a new row per attempt.
+///
+/// Reset rules:
+///   * Cleared on platform-managed app-data wipe (the OS owns this).
+///   * NOT cleared on logout — logout revokes the server session but
+///     the device-identity persists so the next sign-in coalesces
+///     against the same logical device.
+const _kRuntimeDeviceIdKey = 'aura_runtime_device_id';
+
+/// Generate or load the stable per-install runtime device id.
+/// Returns null on web, where we don't want to depend on
+/// localStorage for security-relevant identity (the backend
+/// treats null as "no canonical device" and falls back to the old
+/// behavior of one session row per login — fine for browsers).
+Future<String?> _resolveRuntimeDeviceId() async {
+  if (kIsWeb) return null;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_kRuntimeDeviceIdKey)?.trim();
+    if (existing != null && existing.isNotEmpty) return existing;
+    final fresh = _generateRuntimeDeviceId();
+    await prefs.setString(_kRuntimeDeviceIdKey, fresh);
+    return fresh;
+  } catch (_) {
+    // SharedPreferences can fail in odd embedded contexts; degrade
+    // silently to "no canonical device id" rather than crash auth.
+    return null;
+  }
+}
+
+/// 32-character hex string — same shape as a UUIDv4 with dashes
+/// removed. Uses [Random.secure] so the value is unguessable by a
+/// remote observer, even though the only thing the server uses it
+/// for is grouping same-device sessions.
+String _generateRuntimeDeviceId() {
+  final rnd = Random.secure();
+  final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
+  final buf = StringBuffer();
+  for (final b in bytes) {
+    buf.write(b.toRadixString(16).padLeft(2, '0'));
+  }
+  return buf.toString();
+}
+
 Future<ClientIdentity> _buildIdentity() async {
   final info = await PackageInfo.fromPlatform();
   final platform = _detectPlatform();
@@ -81,6 +133,7 @@ Future<ClientIdentity> _buildIdentity() async {
       : ReleaseChannel.production;
 
   final buildNumber = int.tryParse(info.buildNumber.trim());
+  final runtimeDeviceId = await _resolveRuntimeDeviceId();
 
   return ClientIdentity(
     appVersion: info.version.trim(),
@@ -90,7 +143,7 @@ Future<ClientIdentity> _buildIdentity() async {
     channel: channel,
     protocolGeneration: _kProtocolOverride,
     capabilities: _resolveCapabilities(),
-    runtimeDeviceId: null,
+    runtimeDeviceId: runtimeDeviceId,
     deviceLabel: null,
   );
 }

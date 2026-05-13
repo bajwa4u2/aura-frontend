@@ -15,19 +15,22 @@ import '../../../core/auth/trusted_device_store.dart';
 import '../../auth/auth_repository.dart';
 import 'notification_permission_tile.dart';
 
-// ── Providers ─────────────────────────────────────────────────────────────────
+// ── Providers ────────────────────────────────────────────────────────────────
 
-final _sessionsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final _sessionsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.watch(authRepositoryProvider);
   return repo.listSessions();
 });
 
-final _trustedDevicesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final _trustedDevicesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.watch(authRepositoryProvider);
   return repo.listTrustedDevices();
 });
 
-final _loginActivityProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final _loginActivityProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.watch(authRepositoryProvider);
   return repo.listLoginActivity();
 });
@@ -41,6 +44,9 @@ class SecurityScreen extends ConsumerStatefulWidget {
 
 class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   bool _revokingAll = false;
+  bool _historyExpanded = false;
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
 
   Future<void> _revokeSession(String sessionId) async {
     try {
@@ -87,7 +93,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename Device'),
+        title: const Text('Rename device'),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -112,7 +118,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     if (newName == null || newName == currentName) return;
 
     try {
-      await ref.read(authRepositoryProvider).renameTrustedDevice(deviceId, newName);
+      await ref
+          .read(authRepositoryProvider)
+          .renameTrustedDevice(deviceId, newName);
       ref.invalidate(_trustedDevicesProvider);
     } catch (e) {
       if (!mounted) return;
@@ -126,7 +134,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text(displayName.isNotEmpty ? displayName : 'Trusted Device'),
+        title: Text(displayName.isNotEmpty ? displayName : 'Trusted device'),
         children: [
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, 'rename'),
@@ -151,20 +159,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     }
   }
 
-  String _formatActivityTime(String? isoString) {
-    if (isoString == null || isoString.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(isoString).toLocal();
-      final diff = DateTime.now().difference(dt);
-      if (diff.inSeconds < 60) return 'Just now';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      if (diff.inDays < 7) return '${diff.inDays}d ago';
-      return '${dt.day}/${dt.month}/${dt.year}';
-    } catch (_) {
-      return '';
-    }
-  }
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -221,156 +216,21 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       orElse: () => false,
     );
 
-    final sessionItems = sessionsAsync.when(
-      loading: () => <Widget>[
-        const _SecurityRow(
-          title: 'Loading sessions…',
-          leading: Icons.hourglass_empty_rounded,
-          statusStyle: _StatusStyle.neutral,
-        ),
-      ],
-      error: (_, __) => <Widget>[
-        const _SecurityRow(
-          title: 'Could not load sessions',
-          subtitle: 'Check your connection and try again',
-          leading: Icons.error_outline,
-          statusStyle: _StatusStyle.warn,
-        ),
-      ],
-      data: (sessions) {
-        if (sessions.isEmpty) {
-          return <Widget>[
-            const _SecurityRow(
-              title: 'No active sessions',
-              leading: Icons.devices_outlined,
-              statusStyle: _StatusStyle.neutral,
-            ),
-          ];
-        }
-        return sessions.map<Widget>((s) {
-          final isCurrent = s['current'] == true;
-          final ua = (s['userAgentHint'] ?? '').toString();
-          final ip = (s['ipHint'] ?? '').toString();
-          final subtitle = [if (ua.isNotEmpty) ua, if (ip.isNotEmpty) ip].join(' · ');
-          return _SecurityRow(
-            title: isCurrent ? 'This session' : (ua.isNotEmpty ? ua : 'Unknown device'),
-            subtitle: subtitle.isNotEmpty ? subtitle : null,
-            leading: isCurrent ? Icons.computer_outlined : Icons.devices_outlined,
-            statusLabel: isCurrent ? 'Current' : 'Revoke',
-            statusStyle: isCurrent ? _StatusStyle.good : _StatusStyle.neutral,
-            onTap: isCurrent ? null : () => _revokeSession(s['id'].toString()),
-          );
-        }).toList();
-      },
-    );
-
-    final hasOtherSessions = sessionsAsync.maybeWhen(
-      data: (s) => s.any((x) => x['current'] != true),
-      orElse: () => false,
-    );
-
-    final deviceItems = devicesAsync.when(
-      loading: () => <Widget>[
-        const _SecurityRow(
-          title: 'Loading trusted devices…',
-          leading: Icons.hourglass_empty_rounded,
-          statusStyle: _StatusStyle.neutral,
-        ),
-      ],
-      error: (_, __) => <Widget>[
-        const _SecurityRow(
-          title: 'Could not load trusted devices',
-          subtitle: 'Check your connection and try again',
-          leading: Icons.error_outline,
-          statusStyle: _StatusStyle.warn,
-        ),
-      ],
-      data: (devices) {
-        if (devices.isEmpty) {
-          return <Widget>[
-            const _SecurityRow(
-              title: 'No trusted devices',
-              subtitle: 'Trust this device on next sign-in to skip verification codes',
-              leading: Icons.phonelink_outlined,
-              statusStyle: _StatusStyle.neutral,
-            ),
-          ];
-        }
-        return devices.map<Widget>((d) {
-          final name = (d['deviceName'] ?? d['userAgentHint'] ?? 'Unknown device').toString();
-          final hint = (d['ipHint'] ?? '').toString();
-          return _SecurityRow(
-            title: name,
-            subtitle: hint.isNotEmpty ? hint : null,
-            leading: Icons.phonelink_lock_outlined,
-            statusLabel: 'Options',
-            statusStyle: _StatusStyle.neutral,
-            onTap: () => _showDeviceOptions(d['id'].toString(), name),
-          );
-        }).toList();
-      },
-    );
-
-    final activityItems = activityAsync.when(
-      loading: () => <Widget>[
-        const _SecurityRow(
-          title: 'Loading activity…',
-          leading: Icons.hourglass_empty_rounded,
-          statusStyle: _StatusStyle.neutral,
-        ),
-      ],
-      error: (_, __) => <Widget>[
-        const _SecurityRow(
-          title: 'Could not load activity',
-          subtitle: 'Check your connection and try again',
-          leading: Icons.error_outline,
-          statusStyle: _StatusStyle.warn,
-        ),
-      ],
-      data: (events) {
-        if (events.isEmpty) {
-          return <Widget>[
-            const _SecurityRow(
-              title: 'No recent login activity',
-              leading: Icons.history_outlined,
-              statusStyle: _StatusStyle.neutral,
-            ),
-          ];
-        }
-        return events.map<Widget>((e) {
-          final result = (e['result'] ?? '').toString();
-          final ua = (e['userAgentHint'] ?? '').toString();
-          final ip = (e['ipHint'] ?? '').toString();
-          final timeStr = _formatActivityTime(e['createdAt']?.toString());
-          final subtitle = [if (ua.isNotEmpty) ua, if (ip.isNotEmpty) ip].join(' · ');
-
-          final (title, icon, style) = switch (result) {
-            'SUCCESS' => ('Successful login', Icons.login_rounded, _StatusStyle.good),
-            'TRUSTED_DEVICE' => ('Login via trusted device', Icons.phonelink_lock_outlined, _StatusStyle.good),
-            'FAILED_PASSWORD' => ('Failed password attempt', Icons.lock_outline, _StatusStyle.warn),
-            'FAILED_CODE' => ('Failed code attempt', Icons.pin_outlined, _StatusStyle.warn),
-            _ => (result, Icons.history_outlined, _StatusStyle.neutral),
-          };
-
-          return _SecurityRow(
-            title: title,
-            subtitle: subtitle.isNotEmpty ? subtitle : null,
-            leading: icon,
-            statusLabel: timeStr,
-            statusStyle: style,
-          );
-        }).toList();
-      },
+    // Classify the session list once per build into the four buckets the
+    // section structure renders.
+    final classified = sessionsAsync.maybeWhen(
+      data: (raw) => _classifySessions(raw),
+      orElse: () => const _ClassifiedSessions.empty(),
     );
 
     return AuraScaffold(
       showHeader: false,
       body: _centeredContent([
-        _SecurityHeaderPanel(),
+        const _SecurityHeaderPanel(),
 
         _SecuritySection(
           icon: Icons.shield_outlined,
-          title: 'Security',
+          title: 'Account security',
           items: [
             _SecurityRow(
               title: 'Password',
@@ -393,15 +253,64 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ],
         ),
 
+        // ── 1. Current session — strongest visual priority ────────────────
+        sessionsAsync.when(
+          loading: () => const _SectionedPanel(
+            title: 'This device',
+            subtitle: 'Loading the session you are using now…',
+            child: _LoadingRow(),
+          ),
+          error: (_, __) => const _SectionedPanel(
+            title: 'This device',
+            subtitle: 'Could not load your current session.',
+            child: _ErrorRow(),
+          ),
+          data: (_) {
+            final current = classified.current;
+            if (current == null) {
+              return const SizedBox.shrink();
+            }
+            return _CurrentSessionPanel(session: current);
+          },
+        ),
+
+        // ── 2. Other active sessions ──────────────────────────────────────
         _SecuritySection(
           icon: Icons.devices_outlined,
-          title: 'Active Sessions',
+          title: 'Other active sessions',
           items: [
-            ...sessionItems,
-            if (hasOtherSessions)
+            ...sessionsAsync.when(
+              loading: () => <Widget>[const _LoadingRow()],
+              error: (_, __) => <Widget>[const _ErrorRow()],
+              data: (_) {
+                if (classified.otherActive.isEmpty) {
+                  return <Widget>[
+                    const _SecurityRow(
+                      title: 'No other active sessions',
+                      subtitle:
+                          'You\'re only signed in on this device right now.',
+                      leading: Icons.check_circle_outline,
+                      statusStyle: _StatusStyle.good,
+                    ),
+                  ];
+                }
+                return classified.otherActive
+                    .map<Widget>(
+                      (s) => _SessionRow(
+                        session: s,
+                        onRevoke: () => _revokeSession(s.id),
+                      ),
+                    )
+                    .toList();
+              },
+            ),
+            if (classified.otherActive.isNotEmpty)
               _SecurityRow(
-                title: _revokingAll ? 'Signing out…' : 'Sign out of all other sessions',
-                subtitle: 'Revokes all sessions except this one',
+                title: _revokingAll
+                    ? 'Signing out…'
+                    : 'Sign out of all other sessions',
+                subtitle:
+                    'Revokes every active session except the one on this device.',
                 leading: Icons.logout_rounded,
                 statusLabel: 'Sign out all',
                 statusStyle: _StatusStyle.warn,
@@ -410,16 +319,51 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ],
         ),
 
+        // ── 3. Trusted devices ────────────────────────────────────────────
         _SecuritySection(
           icon: Icons.phonelink_lock_outlined,
-          title: 'Trusted Devices',
-          items: deviceItems,
+          title: 'Trusted devices',
+          subtitle:
+              'Skip the email code on devices you\'ve approved long-term.',
+          items: devicesAsync.when(
+            loading: () => <Widget>[const _LoadingRow()],
+            error: (_, __) => <Widget>[const _ErrorRow()],
+            data: (devices) {
+              if (devices.isEmpty) {
+                return <Widget>[
+                  const _SecurityRow(
+                    title: 'No trusted devices',
+                    subtitle:
+                        'On next sign-in, choose "Trust this device" to add one.',
+                    leading: Icons.phonelink_outlined,
+                    statusStyle: _StatusStyle.neutral,
+                  ),
+                ];
+              }
+              return devices.map<Widget>((d) {
+                final name =
+                    (d['deviceName'] ?? d['userAgentHint'] ?? 'Unknown device')
+                        .toString();
+                final hint = (d['ipHint'] ?? '').toString();
+                return _SecurityRow(
+                  title: name,
+                  subtitle: hint.isNotEmpty ? hint : null,
+                  leading: Icons.phonelink_lock_outlined,
+                  statusLabel: 'Options',
+                  statusStyle: _StatusStyle.neutral,
+                  onTap: () => _showDeviceOptions(d['id'].toString(), name),
+                );
+              }).toList();
+            },
+          ),
         ),
 
-        _SecuritySection(
-          icon: Icons.history_outlined,
-          title: 'Login Activity',
-          items: activityItems,
+        // ── 4. History (collapsed by default) ─────────────────────────────
+        _SessionHistoryPanel(
+          activityAsync: activityAsync,
+          expanded: _historyExpanded,
+          onToggle: () =>
+              setState(() => _historyExpanded = !_historyExpanded),
         ),
 
         if (kIsWeb) const BrowserNotificationsSection(),
@@ -451,7 +395,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             child: ListView.separated(
               padding: EdgeInsets.fromLTRB(hPad, 18, hPad, 28),
               itemCount: sections.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AuraSpace.s24),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AuraSpace.s24),
               itemBuilder: (_, i) => sections[i],
             ),
           ),
@@ -462,10 +407,414 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SESSION MODEL
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Frontend-side projection of a row returned by `GET /v1/auth/sessions`.
+/// We normalize the loose `Map<String, dynamic>` shape into something the
+/// section renderers can rely on.
+class _Session {
+  const _Session({
+    required this.id,
+    required this.current,
+    required this.label,
+    required this.platform,
+    required this.distribution,
+    required this.appVersion,
+    required this.ipHint,
+    required this.createdAt,
+    required this.lastSeenAt,
+  });
+
+  factory _Session.fromJson(Map<String, dynamic> m) {
+    String s(dynamic v) => (v ?? '').toString();
+    return _Session(
+      id: s(m['id']),
+      current: m['current'] == true,
+      label: s(m['userAgentHint']).trim(),
+      platform: s(m['clientPlatform']).trim().toLowerCase(),
+      distribution: s(m['clientDistribution']).trim().toLowerCase(),
+      appVersion: s(m['clientAppVersion']).trim(),
+      ipHint: s(m['ipHint']).trim(),
+      createdAt: _parseDate(m['createdAt']),
+      lastSeenAt: _parseDate(m['lastSeenAt']),
+    );
+  }
+
+  final String id;
+  final bool current;
+  final String label;
+  final String platform;
+  final String distribution;
+  final String appVersion;
+  final String ipHint;
+  final DateTime? createdAt;
+  final DateTime? lastSeenAt;
+
+  /// Icon that best represents the device class.
+  IconData get icon {
+    switch (platform) {
+      case 'web':
+        return Icons.public_outlined;
+      case 'windows':
+      case 'macos':
+      case 'linux':
+        return Icons.laptop_mac_outlined;
+      case 'ios':
+        return Icons.phone_iphone_outlined;
+      case 'android':
+        return Icons.phone_android_outlined;
+      default:
+        if (distribution.contains('web')) return Icons.public_outlined;
+        return Icons.devices_other_outlined;
+    }
+  }
+
+  /// "12m ago" / "3h ago" / "2d ago" relative to now.
+  String get lastSeenLabel {
+    final t = lastSeenAt ?? createdAt;
+    if (t == null) return '';
+    final diff = DateTime.now().difference(t);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    final dt = t.toLocal();
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+}
+
+class _ClassifiedSessions {
+  const _ClassifiedSessions({
+    required this.current,
+    required this.otherActive,
+  });
+  const _ClassifiedSessions.empty()
+      : current = null,
+        otherActive = const [];
+
+  final _Session? current;
+  final List<_Session> otherActive;
+}
+
+_ClassifiedSessions _classifySessions(List<Map<String, dynamic>> raw) {
+  final sessions = raw.map(_Session.fromJson).toList();
+  _Session? current;
+  final others = <_Session>[];
+  for (final s in sessions) {
+    if (s.current && current == null) {
+      current = s;
+    } else {
+      others.add(s);
+    }
+  }
+  // Sort other active by last-seen, most recent first. Backend already
+  // sorts but resorting here keeps the UX correct if backend order ever
+  // changes.
+  others.sort((a, b) {
+    final at = a.lastSeenAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bt = b.lastSeenAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bt.compareTo(at);
+  });
+  return _ClassifiedSessions(current: current, otherActive: others);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CURRENT SESSION HERO
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CurrentSessionPanel extends StatelessWidget {
+  const _CurrentSessionPanel({required this.session});
+
+  final _Session session;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = session.label.isNotEmpty ? session.label : 'Aura';
+    final ip = session.ipHint;
+    final lastSeen = session.lastSeenLabel;
+    final metaParts = <String>[
+      if (ip.isNotEmpty) ip,
+      if (lastSeen.isNotEmpty) 'Last active $lastSeen',
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2A3A), Color(0xFF152030)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AuraRadius.xl),
+        border: Border.all(
+          color: AuraSurface.goodInk.withValues(alpha: 0.28),
+        ),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AuraSurface.goodInk,
+                  borderRadius: BorderRadius.circular(7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AuraSurface.goodInk.withValues(alpha: 0.45),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s10),
+              Text(
+                'THIS DEVICE',
+                style: AuraText.label.copyWith(
+                  color: AuraSurface.goodInk,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.md),
+                ),
+                child: Icon(session.icon, color: AuraSurface.accentText),
+              ),
+              const SizedBox(width: AuraSpace.s14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AuraText.title.copyWith(fontSize: 18),
+                    ),
+                    if (metaParts.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        metaParts.join(' · '),
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OTHER ACTIVE SESSION ROW
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SessionRow extends StatelessWidget {
+  const _SessionRow({required this.session, required this.onRevoke});
+
+  final _Session session;
+  final VoidCallback onRevoke;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = session.label.isNotEmpty ? session.label : 'Unknown device';
+    final ip = session.ipHint;
+    final lastSeen = session.lastSeenLabel;
+    final parts = <String>[
+      if (ip.isNotEmpty) ip,
+      if (lastSeen.isNotEmpty) lastSeen,
+    ];
+    return _SecurityRow(
+      title: label,
+      subtitle: parts.isNotEmpty ? parts.join(' · ') : null,
+      leading: session.icon,
+      statusLabel: 'Revoke',
+      statusStyle: _StatusStyle.warn,
+      onTap: onRevoke,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION HISTORY (collapsed)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SessionHistoryPanel extends StatelessWidget {
+  const _SessionHistoryPanel({
+    required this.activityAsync,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final AsyncValue<List<Map<String, dynamic>>> activityAsync;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  String _formatTime(String? isoString) {
+    if (isoString == null || isoString.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = activityAsync.maybeWhen(
+      data: (events) => events.length,
+      orElse: () => 0,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.history_outlined,
+                size: 15,
+                color: AuraSurface.muted,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Text(
+                'Sign-in history',
+                style: AuraText.muted.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _PremiumPanel(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _SecurityRow(
+                title: expanded
+                    ? 'Hide sign-in history'
+                    : 'Show recent sign-ins',
+                subtitle: count > 0
+                    ? '$count recent events'
+                    : 'No recent sign-in events',
+                leading: expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                onTap: onToggle,
+              ),
+              if (expanded)
+                ...activityAsync.when(
+                  loading: () => <Widget>[const _LoadingRow()],
+                  error: (_, __) => <Widget>[const _ErrorRow()],
+                  data: (events) {
+                    if (events.isEmpty) {
+                      return <Widget>[
+                        const _SecurityRow(
+                          title: 'No sign-in events',
+                          leading: Icons.history_outlined,
+                          statusStyle: _StatusStyle.neutral,
+                        ),
+                      ];
+                    }
+                    return events.map<Widget>((e) {
+                      final result = (e['result'] ?? '').toString();
+                      final ua = (e['userAgentHint'] ?? '').toString();
+                      final ip = (e['ipHint'] ?? '').toString();
+                      final timeStr = _formatTime(e['createdAt']?.toString());
+                      final sub = <String>[
+                        if (ua.isNotEmpty) ua,
+                        if (ip.isNotEmpty) ip,
+                      ].join(' · ');
+
+                      final (title, icon, style) = switch (result) {
+                        'SUCCESS' => (
+                            'Successful sign-in',
+                            Icons.login_rounded,
+                            _StatusStyle.good
+                          ),
+                        'TRUSTED_DEVICE' => (
+                            'Sign-in via trusted device',
+                            Icons.phonelink_lock_outlined,
+                            _StatusStyle.good
+                          ),
+                        'FAILED_PASSWORD' => (
+                            'Failed password',
+                            Icons.lock_outline,
+                            _StatusStyle.warn
+                          ),
+                        'FAILED_CODE' => (
+                            'Failed code attempt',
+                            Icons.pin_outlined,
+                            _StatusStyle.warn
+                          ),
+                        _ => (
+                            result,
+                            Icons.history_outlined,
+                            _StatusStyle.neutral,
+                          ),
+                      };
+
+                      return _SecurityRow(
+                        title: title,
+                        subtitle: sub.isNotEmpty ? sub : null,
+                        leading: icon,
+                        statusLabel: timeStr,
+                        statusStyle: style,
+                      );
+                    }).toList();
+                  },
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SECURITY HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SecurityHeaderPanel extends StatelessWidget {
+  const _SecurityHeaderPanel();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -505,7 +854,7 @@ class _SecurityHeaderPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Account Security',
+                  'Account security',
                   style: AuraText.title.copyWith(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -514,7 +863,7 @@ class _SecurityHeaderPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 AuraTextBlock(
-                  'Manage your credentials, sessions, and account safety.',
+                  'Sessions, trusted devices, and account safety.',
                   style: AuraText.body.copyWith(
                     color: AuraSurface.muted,
                     height: 1.4,
@@ -530,7 +879,7 @@ class _SecurityHeaderPanel extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECURITY SECTION
+// LOOSE PRIMITIVES
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SecuritySection extends StatelessWidget {
@@ -538,10 +887,12 @@ class _SecuritySection extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.items,
+    this.subtitle,
   });
 
   final IconData icon;
   final String title;
+  final String? subtitle;
   final List<Widget> items;
 
   @override
@@ -566,11 +917,17 @@ class _SecuritySection extends StatelessWidget {
             ],
           ),
         ),
+        if ((subtitle ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+            child: Text(
+              subtitle!,
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ),
         _PremiumPanel(
           padding: EdgeInsets.zero,
-          child: Column(
-            children: _withDividers(items),
-          ),
+          child: Column(children: _withDividers(items)),
         ),
       ],
     );
@@ -590,9 +947,36 @@ class _SecuritySection extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECURITY ROW
-// ─────────────────────────────────────────────────────────────────────────────
+class _SectionedPanel extends StatelessWidget {
+  const _SectionedPanel({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PremiumPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AuraText.subtitle),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          child,
+        ],
+      ),
+    );
+  }
+}
 
 enum _StatusStyle { good, warn, danger, neutral }
 
@@ -616,7 +1000,6 @@ class _SecurityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
-
     return MouseRegion(
       cursor: active ? SystemMouseCursors.click : SystemMouseCursors.basic,
       child: Material(
@@ -717,9 +1100,7 @@ class _StatusBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(
-              color: ink.withValues(alpha: 0.22),
-            ),
+            border: Border.all(color: ink.withValues(alpha: 0.22)),
           ),
           child: Text(
             label,
@@ -742,8 +1123,29 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
+class _LoadingRow extends StatelessWidget {
+  const _LoadingRow();
+  @override
+  Widget build(BuildContext context) => const _SecurityRow(
+        title: 'Loading…',
+        leading: Icons.hourglass_empty_rounded,
+        statusStyle: _StatusStyle.neutral,
+      );
+}
+
+class _ErrorRow extends StatelessWidget {
+  const _ErrorRow();
+  @override
+  Widget build(BuildContext context) => const _SecurityRow(
+        title: 'Could not load',
+        subtitle: 'Check your connection and try again.',
+        leading: Icons.error_outline,
+        statusStyle: _StatusStyle.warn,
+      );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// DANGER ZONE
+// DANGER ZONE + PANEL
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _DangerZonePanel extends StatelessWidget {
@@ -844,10 +1246,6 @@ class _DangerZonePanel extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PREMIUM PANEL CONTAINER
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _PremiumPanel extends StatelessWidget {
   const _PremiumPanel({required this.child, this.padding});
