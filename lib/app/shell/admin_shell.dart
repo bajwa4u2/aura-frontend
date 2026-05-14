@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
+import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
+import '../../core/ui/surface/surface_composition.dart';
+import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/admin/runtime/admin_runtime_coordinator.dart';
-import 'shell_header_tools.dart';
-import 'shell_shared.dart';
+import 'rail/rail_modules.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN COLOR PALETTE — amber authority, command-center dark
@@ -147,8 +149,8 @@ class _AdminShellLayout extends StatelessWidget {
     ),
   ];
 
-  static const double _desktopBreakpoint = 1100;
-  static const double _tabletBreakpoint = 760;
+  static const double _desktopBreakpoint = kDesktopBreak; // 1200
+  static const double _tabletBreakpoint = kTabletBreak; // 900
 
   int _indexForPath(String path) {
     if (path == '/admin') return 0;
@@ -180,30 +182,59 @@ class _AdminShellLayout extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: Column(
-              children: [
-                _AdminHeader(isDesktop: isDesktop, isTablet: isTablet),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (isDesktop)
-                        _AdminSideNav(
-                          items: _items,
-                          selectedIndex: selectedIndex,
-                          currentPath: path,
-                        ),
-                      Expanded(child: child),
-                    ],
+            // Admin shell now composes UNDER GlobalPlatformShell — the
+            // Aura wordmark + account/search/notifications/live tools
+            // are persistent across every authed route. The admin-
+            // specific identity (ADMIN badge, amber accent) lives in
+            // the context bar below.
+            child: GlobalPlatformShell(
+              contextBar: _AdminContextBar(
+                isDesktop: isDesktop,
+                isTablet: isTablet,
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (isDesktop)
+                          _AdminSideNav(
+                            items: _items,
+                            selectedIndex: selectedIndex,
+                            currentPath: path,
+                          ),
+                        Expanded(child: child),
+                        // Right context rail — desktop only. The admin
+                        // shell keeps its own side-nav + bottom-nav
+                        // rather than adopting AuraSurfaceScaffold's
+                        // full composition (the bottom-nav fallback at
+                        // tablet/mobile depends on the existing Column
+                        // structure). The rail is composed alongside so
+                        // operators get review-queue / pending-domains
+                        // / platform-health in their sightline. Every
+                        // module self-collapses when no data — non-
+                        // admins see an empty rail.
+                        if (isDesktop)
+                          const AuraContextRail(
+                            modules: [
+                              AdminPlatformHealthRailModule(),
+                              AdminReviewQueueRailModule(),
+                              AdminPendingInstitutionsRailModule(),
+                              LiveNowRailModule(),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                if (!isDesktop)
-                  _AdminBottomNav(
-                    items: _items,
-                    selectedIndex: selectedIndex,
-                    currentPath: path,
-                    compact: !isTablet,
-                  ),
-              ],
+                  if (!isDesktop)
+                    _AdminBottomNav(
+                      items: _items,
+                      selectedIndex: selectedIndex,
+                      currentPath: path,
+                      compact: !isTablet,
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -213,11 +244,13 @@ class _AdminShellLayout extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ADMIN HEADER
+// ADMIN CONTEXT BAR — renders below the GlobalPlatformShell platform bar.
+// Owns the ADMIN badge + amber accent strip. Does NOT own Aura wordmark
+// or account-level tools — those are platform-global, not admin-local.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AdminHeader extends StatelessWidget {
-  const _AdminHeader({required this.isDesktop, required this.isTablet});
+class _AdminContextBar extends StatelessWidget {
+  const _AdminContextBar({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
@@ -231,7 +264,7 @@ class _AdminHeader extends StatelessWidget {
             : AuraSpace.s16;
 
     return Container(
-      height: 56,
+      height: 40,
       decoration: const BoxDecoration(
         gradient: _adminHeaderGradient,
         border: Border(bottom: BorderSide(color: Color(0x28F59E0B))),
@@ -240,16 +273,15 @@ class _AdminHeader extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: hPad),
         child: Row(
           children: [
-            AuraShellWordmark(onTap: () => context.go('/admin')),
-            const SizedBox(width: AuraSpace.s10),
             _AdminBadge(),
-            const Spacer(),
-            ShellHeaderTools(
-              isTablet: isTablet,
-              isDesktop: isDesktop,
-              searchPath: '/search',
-              activityPath: '/activity',
-              invitePath: '/invite',
+            const SizedBox(width: AuraSpace.s10),
+            Text(
+              'Control surface',
+              style: AuraText.small.copyWith(
+                color: _adminAccentText,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
             ),
           ],
         ),

@@ -7,6 +7,7 @@ import '../../../core/communication/communication_resolver.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -437,7 +438,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         bottom: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
+            constraints: const BoxConstraints(maxWidth: kFeedWidth),
             child: RefreshIndicator(
               color: AuraSurface.accent,
               onRefresh: () => ref
@@ -551,20 +552,21 @@ class _ActivityFilterRow extends StatelessWidget {
       (_ActivityFilter.system, 'System'),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final (filter, label) in filters) ...[
-            _FilterPill(
-              label: label,
-              selected: active == filter,
-              onTap: () => onChange(filter),
-            ),
-            const SizedBox(width: AuraSpace.s8),
-          ],
-        ],
-      ),
+    // Wrap (not horizontal scroll) so narrow viewports lay the pills
+    // across two short rows instead of forcing the user to discover a
+    // hidden right-edge scroll. On wide viewports everything still fits
+    // on a single row.
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        for (final (filter, label) in filters)
+          _FilterPill(
+            label: label,
+            selected: active == filter,
+            onTap: () => onChange(filter),
+          ),
+      ],
     );
   }
 }

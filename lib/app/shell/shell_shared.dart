@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ui/aura_radius.dart';
+import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
@@ -55,7 +56,10 @@ class ShellFooter extends StatelessWidget {
   const ShellFooter({super.key});
 
   static const double maxWidth = 1080;
-  static const double _wideBreakpoint = 760;
+  // Tablet/desktop transition for the footer's 4-column → stacked
+  // collapse. Aligned with the canonical tablet breakpoint so the
+  // footer transitions at the same width as the shell.
+  static const double _wideBreakpoint = kTabletBreak; // 900
 
   static const _platformNote =
       'Aura is public discourse infrastructure. People raise issues, '

@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/rail/rail_modules.dart';
 import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/responsive/adaptive_card_grid.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
@@ -54,6 +57,7 @@ class PublicHomeScreen extends ConsumerWidget {
           _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
           const _HowItWorksSection(),
           const _SpacesSection(),
+          const _PublicDiscoveryStrip(),
           const _ParticipationBand(),
           const ShellFooter(),
         ],
@@ -200,7 +204,7 @@ class _HeroSection extends StatelessWidget {
           ),
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1160),
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AuraSpace.s20,
@@ -648,7 +652,7 @@ class _LiveDiscourseSection extends StatelessWidget {
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1160),
+                constraints: const BoxConstraints(maxWidth: kHeroWidth),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AuraSpace.s16),
@@ -678,7 +682,7 @@ class _LiveDiscourseSection extends StatelessWidget {
           ),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1160),
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AuraSpace.s16),
@@ -850,19 +854,30 @@ class _DiscourseRail extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AuraSpace.s10),
-        SizedBox(
-          height: 196,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AuraSpace.s10),
-            itemBuilder: (context, i) => _RailCard(
-              item: items[i],
-              kind: kind,
-              ctaLabel: ctaLabel,
-              onTap: () => onTap(items[i]),
-            ),
-          ),
+        // Discourse rails — operational cards, not chips. On tablet/desktop
+        // they wrap into a grid (2–4 columns by available width). On narrow
+        // viewports they fall back to a pointer-aware horizontal rail with
+        // mouse-wheel + arrow keys + chevron affordances, so no card is
+        // unreachable on any pointing input. cardHeight is REQUIRED so the
+        // narrow rail doesn't throw "Vertical viewport given unbounded
+        // height" — a previous build that wrapped each card in SizedBox
+        // height 196 but forgot to bound the rail itself caused the
+        // entire feed below to fail rendering.
+        AdaptiveCardGrid(
+          cards: [
+            for (final item in items)
+              _RailCard(
+                item: item,
+                kind: kind,
+                ctaLabel: ctaLabel,
+                onTap: () => onTap(item),
+              ),
+          ],
+          cardWidth: 320,
+          cardHeight: 196,
+          gap: AuraSpace.s10,
+          minCardsPerRow: 2,
+          maxCardsPerRow: 4,
         ),
       ],
     );
@@ -908,21 +923,22 @@ class _RailCard extends StatelessWidget {
             r.author.context?.type ==
             FeedIdentityContextType.officialInstitution)
         .toList(growable: false);
-    return SizedBox(
-      width: 320,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AuraRadius.lg),
-          child: Container(
-            padding: const EdgeInsets.all(AuraSpace.s14),
-            decoration: BoxDecoration(
-              color: AuraSurface.card,
-              borderRadius: BorderRadius.circular(AuraRadius.lg),
-              border: Border.all(color: AuraSurface.divider),
-              boxShadow: AuraShadows.panel,
-            ),
+    // Width comes from the parent (AdaptiveCardGrid sizes the cell in
+    // both rail and grid modes); the previous hard-coded 320 fought the
+    // grid wrap on wide viewports.
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.lg),
+            border: Border.all(color: AuraSurface.divider),
+            boxShadow: AuraShadows.panel,
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1001,8 +1017,7 @@ class _RailCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -1081,7 +1096,7 @@ class _DiscussionPreviewSection extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1160),
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1304,7 +1319,7 @@ class _HowItWorksSection extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1160),
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1428,7 +1443,7 @@ class _SpacesSection extends ConsumerWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1160),
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1605,7 +1620,7 @@ class _ParticipationBand extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1160),
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
           child: Container(
             padding: const EdgeInsets.all(AuraSpace.s20),
             decoration: BoxDecoration(
@@ -1703,6 +1718,129 @@ class _SectionHeading extends StatelessWidget {
         const SizedBox(height: AuraSpace.s4),
         Text(subtitle, style: AuraText.muted),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC DISCOVERY STRIP
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Public-shell ecosystem-depth section. Surfaces the same provider-
+/// backed rail modules used in the authenticated rails (verified
+/// institutions, live now, pinned announcements, governance) inside the
+/// public landing's single-column ListView. At desktop they sit as a
+/// 3-up row; at tablet/mobile they stack as a column. Each module self-
+/// hides when its provider has nothing — so an empty platform shows
+/// only the static governance note instead of a wall of blanks.
+///
+/// This intentionally does not touch `PublicShell` — the shell remains
+/// a thin header + body. Ecosystem depth lives at the route level.
+class _PublicDiscoveryStrip extends StatelessWidget {
+  const _PublicDiscoveryStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isDesktop = width >= kDesktopBreak;
+        final hPad = isDesktop ? AuraSpace.s24 : AuraSpace.s16;
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+              hPad, AuraSpace.s32, hPad, AuraSpace.s32),
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: AuraSurface.divider),
+              bottom: BorderSide(color: AuraSurface.divider),
+            ),
+            color: AuraSurface.elevated,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ecosystem at a glance',
+                    style: AuraText.headline.copyWith(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: AuraSpace.s4),
+                  Text(
+                    'Verified institutions, what is live now, '
+                    'and how Aura works on the public record.',
+                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                  ),
+                  const SizedBox(height: AuraSpace.s20),
+                  if (isDesktop)
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Civic signal column — discourse momentum +
+                        // visible institution accountability.
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TrendingDiscourseRailModule(),
+                              SizedBox(height: AuraSpace.s12),
+                              InstitutionalResponseRailModule(),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: AuraSpace.s16),
+                        // Ecosystem column — who's live + verified.
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              LiveNowRailModule(),
+                              SizedBox(height: AuraSpace.s12),
+                              VerifiedInstitutionsRailModule(),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: AuraSpace.s16),
+                        // Continuity column — platform notices + grounding.
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PinnedAnnouncementRailModule(),
+                              SizedBox(height: AuraSpace.s12),
+                              GovernanceNoticeRailModule(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TrendingDiscourseRailModule(),
+                        SizedBox(height: AuraSpace.s12),
+                        InstitutionalResponseRailModule(),
+                        SizedBox(height: AuraSpace.s12),
+                        LiveNowRailModule(),
+                        SizedBox(height: AuraSpace.s12),
+                        VerifiedInstitutionsRailModule(),
+                        SizedBox(height: AuraSpace.s12),
+                        PinnedAnnouncementRailModule(),
+                        SizedBox(height: AuraSpace.s12),
+                        GovernanceNoticeRailModule(),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

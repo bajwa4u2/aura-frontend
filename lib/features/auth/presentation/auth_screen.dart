@@ -8,6 +8,7 @@ import '../../../core/auth/remembered_identifier.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -346,7 +347,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return AuraScaffold(
       title: 'Login',
       body: AuraPageShell(
-        maxWidth: 1160,
+        maxWidth: kHeroWidth,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 960;
@@ -357,7 +358,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1160),
+                    constraints: const BoxConstraints(maxWidth: kHeroWidth),
                     child: isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,

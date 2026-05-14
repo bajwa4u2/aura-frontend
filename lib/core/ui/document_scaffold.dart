@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/shell/shell_shared.dart';
 import 'aura_radius.dart';
+import 'aura_responsive.dart';
 import 'aura_scaffold.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
@@ -24,7 +25,10 @@ class DocumentScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.child,
-    this.maxWidth = 780,
+    // Reading body — uses the canonical reading width (~720 logical px ≈
+    // 60–80 character line length at 16sp). Callers that need a wider
+    // column for grid/section composition can override per-instance.
+    this.maxWidth = kReadWidth,
     this.actions,
     this.footer,
     this.homePath = '/',

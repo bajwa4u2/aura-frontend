@@ -3,17 +3,80 @@ import 'package:flutter/material.dart';
 import 'aura_space.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BREAKPOINTS
+// BREAKPOINTS — Canonical adaptive breakpoints. Every shell, page, and
+// adaptive primitive MUST resolve responsive behavior through one of these
+// three constants. The historical shell-specific 760/1100 pair has been
+// retired in favor of this canonical 600/900/1200 system so a single
+// surface never disagrees with the shell about which layout is active.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Mobile / phone. Width strictly < 600 px is single-column, bottom-nav,
+/// no side rails, compact typography.
 const double kMobileBreak = 600;
+
+/// Tablet / split-screen desktop. 600 ≤ width < 1200 keeps a compact
+/// header + bottom nav. Side rails do NOT appear in this zone — the
+/// content gets the full width so multi-column pages don't compress.
 const double kTabletBreak = 900;
+
+/// Desktop. Width ≥ 1200 unlocks the side-nav shell layout and gives
+/// operational/workspace surfaces room for two-pane composition. Any
+/// page that promotes from one column to multi-column composition does
+/// so at this threshold.
 const double kDesktopBreak = 1200;
 
-// Max content widths
-const double kMaxContentWidth = 960.0;
-const double kMaxNarrowWidth = 640.0;
-const double kMaxFormWidth = 480.0;
+// ─────────────────────────────────────────────────────────────────────────────
+// CANONICAL CONTENT WIDTHS — Each surface picks ONE of these based on
+// product category. No new inline `BoxConstraints(maxWidth: <literal>)`
+// in feature code; if a surface needs a different width, propose adding
+// a new canonical constant here. The five categories are:
+//
+//   Reading      → long-form text, legal, mission, document body
+//   Feed         → social feed / timeline / one-column cards with optional rails
+//   Workspace    → operational/admin/institution surfaces with structure
+//   Hero         → public marketing / landing / auth split-screen
+//   Form         → auth forms, dialogs, recovery flows
+//
+// Wider categories DO NOT replace narrower categories. A workspace page
+// that is mostly a form should still use `kFormWidth`. Picking
+// `kWorkspaceWidth` for a single-input form would create empty side
+// gutters — which is the exact anti-pattern this contract bans.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Long-form reading body. ~720 px ≈ 60–80 character line length at 16 sp,
+/// the established readability target. Used by Privacy / Terms / Mission /
+/// Founder / White Paper / Hubs and any in-app document surface.
+const double kReadWidth = 720;
+
+/// Social feed / timeline / one-column cards. Wide enough that a card
+/// with media and a 3-line metadata block looks balanced; narrow enough
+/// that a single-column post detail doesn't feel sparse on a 4K display.
+/// Used by member home, public home content sections, post detail,
+/// updates, activity, correspondence hub.
+const double kFeedWidth = 1100;
+
+/// Operational workspace — institution admin, member workspace, settings
+/// dashboards, admin/control surfaces. Wider than feed because these
+/// surfaces typically have multi-pane composition (table + filters,
+/// editor + preview, list + detail). NEVER use this for single-column
+/// content — that produces the "enterprise dashboard emptiness" the
+/// product rule forbids.
+const double kWorkspaceWidth = 1280;
+
+/// Public marketing / landing / hero compositions. Slightly wider than
+/// workspace because hero treatments are intentionally asymmetric
+/// (large illustration on one side, text on the other) and benefit
+/// from the extra horizontal canvas.
+const double kHeroWidth = 1360;
+
+/// Forms — auth, password reset, dialogs, settings sub-cards. A discrete
+/// vertical stack of inputs reads better narrow.
+const double kFormWidth = 480;
+
+// Legacy alias kept for `AuraPageBody`'s constructor default; do not
+// introduce new uses. `AuraPageBody` resolves to `kFeedWidth` by default
+// — callers that need reading-width override per-instance.
+const double kMaxContentWidth = kFeedWidth;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BREAKPOINT HELPERS

@@ -1398,35 +1398,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+      // Wrap (not horizontal scroll) so narrow viewports never hide the
+      // trailing edit-profile sections behind a silent overflow edge.
+      child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s16,
           vertical: AuraSpace.s10,
         ),
-        child: Row(
+        child: Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
           children: [
             ..._kSections.map((item) {
               final isActive = _activeSection == item.section;
-              return Padding(
-                padding: const EdgeInsets.only(right: AuraSpace.s8),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _activeSection = item.section),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AuraSpace.s12,
-                        vertical: AuraSpace.s8,
-                      ),
-                      decoration: BoxDecoration(
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _activeSection = item.section),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s12,
+                      vertical: AuraSpace.s8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AuraSurface.accentSoft
+                          : AuraSurface.card,
+                      borderRadius: BorderRadius.circular(AuraRadius.pill),
+                      border: Border.all(
                         color: isActive
-                            ? AuraSurface.accentSoft
-                            : AuraSurface.card,
-                        borderRadius: BorderRadius.circular(AuraRadius.pill),
-                        border: Border.all(
-                          color: isActive
-                              ? AuraSurface.accentText.withValues(alpha: 0.45)
+                            ? AuraSurface.accentText.withValues(alpha: 0.45)
                               : AuraSurface.divider,
                         ),
                       ),
@@ -1456,8 +1457,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                   ),
-                ),
-              );
+                );
             }),
             MouseRegion(
               cursor: SystemMouseCursors.click,

@@ -14,6 +14,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../../../core/ui/aura_text_block.dart';
+import '../../../feed/data/unified_feed_providers.dart';
 import '../../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
@@ -1444,6 +1445,12 @@ class _ActionRow extends ConsumerWidget {
           payload['institutionId'] = actor.actorInstitutionId;
         }
         await dio.post('/posts/$postId/repost', data: payload);
+
+        // Mirror FeedInteractionBar:78 — invalidate every feed surface so
+        // the new repost count and the inserted repost row are visible on
+        // the next watch. Without this, the post-detail repost succeeded
+        // but the feed showed the stale count until manual refresh.
+        invalidateUnifiedFeedSurfaces(ref);
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(

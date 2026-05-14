@@ -878,6 +878,11 @@ class _InstitutionProfileCtaRowState
         await repo.follow(actor: actorRef, target: _targetRef());
       }
       ref.invalidate(followStateProvider(key));
+      // Institution follow affects which institution posts appear in the
+      // home feed and the institution-explore band. Mirror the user-follow
+      // fix in author_profile_screen so /home reflects the new graph state
+      // on next watch.
+      invalidateUnifiedFeedSurfaces(ref);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = _readError(e));

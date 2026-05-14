@@ -7,6 +7,7 @@ import '../core/auth/auth_broadcast.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
+import '../core/diagnostics/runtime_diagnostics.dart'; // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
 import '../core/interactions/presence_repository.dart';
 import '../core/media/media_url_resolver.dart';
 import '../core/release_governance/update_gate.dart';
@@ -273,7 +274,12 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           // ancestors and the gate watches its own provider without
           // forcing a rebuild of the rest of the tree.
           builder: (context, child) {
-            return UpdateGate(child: child ?? const SizedBox.shrink());
+            final inner = UpdateGate(child: child ?? const SizedBox.shrink());
+            // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+            // Wrapped in DiagnosticOverlay so the floating "DIAG" badge sits
+            // on top of every route. The overlay is a no-op unless the
+            // build was compiled with --dart-define=AURA_DIAGNOSTIC=true.
+            return DiagnosticOverlay(child: inner);
           },
         ),
       ),

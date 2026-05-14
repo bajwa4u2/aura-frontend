@@ -162,6 +162,31 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
         return null;
       }
 
+      /// Cookie-fallback: the current backend returns refresh tokens
+      /// ONLY via the `aura_refresh` HttpOnly cookie (Set-Cookie header).
+      /// Web auto-persists; desktop Dio does not. Read it here so the
+      /// rotated refresh token from a successful bootstrap refresh is
+      /// captured into TokenStore. See auth_controller.dart for the
+      /// parallel implementation; this duplicate exists because the
+      /// bootstrap intentionally runs on a dedicated Dio with no
+      /// interceptors and no access to AuthController.
+      String? readRefreshFromCookies(Response res) {
+        if (kIsWeb) return null;
+        try {
+          final raw = res.headers.map['set-cookie'];
+          if (raw == null || raw.isEmpty) return null;
+          for (final line in raw) {
+            final firstPair = line.split(';').first.trim();
+            final eq = firstPair.indexOf('=');
+            if (eq <= 0) continue;
+            if (firstPair.substring(0, eq).trim() != 'aura_refresh') continue;
+            final value = firstPair.substring(eq + 1).trim();
+            if (value.isNotEmpty) return value;
+          }
+        } catch (_) {}
+        return null;
+      }
+
       if (kIsWeb) {
         // Public-route hygiene: skip the speculative refresh entirely when
         // there is no record of a prior successful sign-in on this device.
@@ -215,7 +240,13 @@ final sessionBootstrapProvider = FutureProvider<void>((ref) async {
       final access = readAccess(res.data);
       if (access.isEmpty) return;
 
-      final newRefresh = readRefresh(res.data);
+      // Body-first, cookie-fallback. The current backend rotates the
+      // refresh token via aura_refresh Set-Cookie on a successful
+      // refresh; without picking it up, the desktop client keeps using
+      // the now-invalidated old refresh token and the NEXT refresh
+      // fails 24 hours later — a slow-burn version of the same bug.
+      final newRefresh =
+          readRefresh(res.data) ?? readRefreshFromCookies(res);
       await store.setSession(
         accessToken: access,
         refreshToken: (newRefresh != null && newRefresh.trim().isNotEmpty)

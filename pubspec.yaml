@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.1.1+11
+version: 1.1.2+12
 
 environment:
   sdk: ^3.10.8
@@ -145,7 +145,15 @@ msix_config:
   # routing fix is in Dockerfile + nginx.conf; this bump produces a
   # new MSIX so Partner Center accepts a resubmission and the
   # corrected privacy URL is the one the new package points to.
-  msix_version: 1.1.1.0
+  #
+  # 2026-05-13 bump #2 (1.1.2.0): carries the realtime ringing
+  # cross-device resolution pass (notifyAcceptedAcrossDevices socket-side
+  # dedup + auto-end terminal fanout) AND the Windows runtime
+  # minimum-window-size enforcement (win32_window.cpp WM_GETMINMAXINFO)
+  # so the shell no longer drops into a mobile/tablet collapsed layout
+  # when the user drags the window narrow. Partner Center requires a
+  # strict version bump on every resubmission.
+  msix_version: 1.1.2.0
   description: Aura — a writing platform built for continuity.
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png

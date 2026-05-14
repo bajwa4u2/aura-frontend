@@ -197,6 +197,27 @@ Win32Window::MessageHandler(HWND hwnd,
 
       return 0;
     }
+    case WM_GETMINMAXINFO: {
+      // Enforce a desktop-class minimum window size. Without this, the user
+      // can drag the window narrower than the Flutter shell's desktop
+      // breakpoint (1100 logical px in member_shell.dart) and the layout
+      // drops to the tablet/mobile mode — producing the "Windows runtime
+      // behaves like a constrained mobile layout" report. The minimum is
+      // DPI-aware so the constraint holds on per-monitor scaling changes.
+      auto minMaxInfo = reinterpret_cast<MINMAXINFO*>(lparam);
+      HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+      UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+      double scale_factor = dpi / 96.0;
+      // 1100 logical px = the member/institution shell desktop breakpoint.
+      // 720 logical px is a reasonable minimum height for two-pane content.
+      // Pick 1024x720 as the floor so the shell *always* renders the
+      // desktop side-nav layout once the window opens; smaller monitors
+      // can still scale the content via Flutter's adaptive layout above
+      // that floor.
+      minMaxInfo->ptMinTrackSize.x = Scale(1024, scale_factor);
+      minMaxInfo->ptMinTrackSize.y = Scale(720, scale_factor);
+      return 0;
+    }
     case WM_SIZE: {
       RECT rect = GetClientArea();
       if (child_content_ != nullptr) {

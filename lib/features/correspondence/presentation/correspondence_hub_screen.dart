@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -51,7 +52,7 @@ class CorrespondenceHubScreen extends ConsumerWidget {
         showHeader: false,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
+            constraints: const BoxConstraints(maxWidth: kFeedWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AuraSpace.s16,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:aura/core/auth/session_providers.dart';
 
+import '../../../app/shell/rail/rail_modules.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -12,6 +13,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/surface/surface_composition.dart';
 
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
@@ -188,21 +190,27 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
         ? ref.watch(latestHeldProvider)
         : const AsyncValue<Map<String, dynamic>?>.data(null);
 
+    // Member home — wrapped in AuraSurfaceScaffold so the desktop right
+    // rail composes alongside the discourse feed. The scaffold's
+    // `discourseFeed` policy already pins max-width at kFeedWidth and
+    // renders the context rail only at desktop (≥1200), so on tablet/
+    // mobile the layout collapses to a single column without any extra
+    // branching here. Rail modules are provider-backed and self-hide
+    // when their source has nothing to surface.
     return AuraScaffold(
       showHeader: false,
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1160),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16,
-                AuraSpace.s20,
-                AuraSpace.s16,
-                AuraSpace.s32,
-              ),
-              children: [
+        child: AuraSurfaceScaffold(
+          type: AuraSurfaceType.discourseFeed,
+          center: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              0,
+              AuraSpace.s20,
+              0,
+              AuraSpace.s32,
+            ),
+            children: [
                 // ── Pinned announcement (silent if absent)
                 const _PinnedAnnouncementBanner(),
 
@@ -236,15 +244,53 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
                   error: (_, __) => const SizedBox.shrink(),
                 ),
 
+                const SizedBox(height: AuraSpace.s20),
+
+                // ── Spaces — promoted near the composer so discovery is not
+                // buried at the bottom of the discourse stream. Renders as
+                // a multi-column grid on tablet/desktop via AdaptiveCardGrid
+                // and falls back to a pointer-aware horizontal rail on
+                // narrow viewports (mouse-wheel + arrow keys + chevrons).
+                const _SpacesSection(),
+
                 const SizedBox(height: AuraSpace.s24),
 
-                // ── Discourse stream + LIVE NOW + spaces strip
+                // ── Discourse stream + LIVE NOW
                 const _DiscourseStream(),
+              ],
+            ),
+            // Provider-backed contextual modules. Each module self-hides
+            // when its source has no data, so the rail collapses
+            // gracefully on quiet days. Order is visual priority:
+            // time-sensitive (Live, Recent activity, Pinned) above
+            // discovery (Verified institutions) and longer-running
+            // affordances (Saved) and grounding (Governance).
+            contextRail: const AuraContextRail(
+              modules: [
+                // Civic-signal layer first — what is alive and accountable
+                // right now, in priority order:
+                //   * LIVE     — sessions in progress
+                //   * TRENDING — public discourse with momentum
+                //   * RESPONSE — where institutions have replied publicly
+                // Then operational continuity for this member:
+                //   * RECENT   — notification-driven activity
+                //   * PINNED   — platform announcements
+                //   * SAVED    — longer-term concerns
+                // Then ecosystem orientation:
+                //   * VERIFIED — discovery
+                //   * GOVERNANCE — grounding rationale
+                LiveNowRailModule(),
+                TrendingDiscourseRailModule(),
+                InstitutionalResponseRailModule(),
+                RecentActivityRailModule(),
+                PinnedAnnouncementRailModule(),
+                SavedRailModule(),
+                VerifiedInstitutionsRailModule(),
+                GovernanceNoticeRailModule(),
               ],
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -425,8 +471,9 @@ class _DiscourseStream extends ConsumerWidget {
                     'When people publish, their statements will appear here.',
                 icon: Icons.forum_outlined,
               ),
-              const SizedBox(height: AuraSpace.s24),
-              const _SpacesSection(),
+              // Spaces is rendered earlier in the feed (above _DiscourseStream)
+              // so we no longer also stamp it in the empty-state column. Keeping
+              // it here would double-render the same section.
             ],
           );
         }
@@ -518,7 +565,9 @@ class _DiscourseStream extends ConsumerWidget {
               ),
               const SizedBox(height: AuraSpace.s18),
             ],
-            const _SpacesSection(),
+            // Spaces is promoted to the top of the feed (rendered in
+            // MemberHomeScreen, above _DiscourseStream); removed from the
+            // bottom of the discourse stream to avoid double-rendering.
           ],
         );
       },

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
+import 'core/diagnostics/runtime_diagnostics.dart'; // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
 import 'core/utils/configure_url_strategy.dart';
 
 // Top-level handler required by firebase_messaging for background/killed-app
@@ -53,6 +54,15 @@ Future<void> main() async {
     } catch (e) {
       debugPrint('Firebase setup failed: $e');
     }
+  }
+
+  // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+  // Initialize the diagnostic file sink early so even bootstrap-time Dio
+  // events land in the log. No-op unless --dart-define=AURA_DIAGNOSTIC=true.
+  try {
+    await RuntimeDiagnostics.initializeFileSink();
+  } catch (e) {
+    debugPrint('RuntimeDiagnostics.initializeFileSink failed: $e');
   }
 
   final store = TokenStore();

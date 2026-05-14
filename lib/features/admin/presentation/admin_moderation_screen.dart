@@ -119,36 +119,38 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s16, vertical: AuraSpace.s8),
+    // Wrap instead of horizontal-scroll so admin moderation filters never
+    // hide behind a silent overflow edge.
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s16,
+        vertical: AuraSpace.s8,
+      ),
+      child: Wrap(
+        spacing: AuraSpace.s8,
+        runSpacing: AuraSpace.s8,
         children: _StatusFilter.values.map((f) {
           final selected = f == active;
-          return Padding(
-            padding: const EdgeInsets.only(right: AuraSpace.s8),
-            child: GestureDetector(
-              onTap: () => onSelect(f),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s12,
-                  vertical: AuraSpace.s4,
+          return GestureDetector(
+            onTap: () => onSelect(f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s12,
+                vertical: AuraSpace.s4,
+              ),
+              decoration: BoxDecoration(
+                color: selected ? AuraSurface.accentSoft : AuraSurface.elevated,
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(
+                  color: selected ? AuraSurface.accent : AuraSurface.divider,
                 ),
-                decoration: BoxDecoration(
-                  color: selected ? AuraSurface.accentSoft : AuraSurface.elevated,
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  border: Border.all(
-                    color: selected ? AuraSurface.accent : AuraSurface.divider,
-                  ),
-                ),
-                child: Text(
-                  f.label,
-                  style: AuraText.label.copyWith(
-                    color: selected ? AuraSurface.accentText : AuraSurface.muted,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
+              ),
+              child: Text(
+                f.label,
+                style: AuraText.label.copyWith(
+                  color: selected ? AuraSurface.accentText : AuraSurface.muted,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),

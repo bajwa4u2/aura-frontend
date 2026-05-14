@@ -6,6 +6,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/responsive/adaptive_card_grid.dart';
 import '../data/public_spaces_registry.dart';
 
 /// Compact tile for a public discourse space.
@@ -42,7 +43,9 @@ class SpaceCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
-          width: 220,
+          // Width comes from the parent (AdaptiveCardGrid's SizedBox);
+          // the previous hard-coded 220 fought the grid layout on wide
+          // viewports.
           padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
             color: AuraSurface.card,
@@ -51,6 +54,7 @@ class SpaceCard extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 36,
@@ -104,7 +108,11 @@ class SpaceCard extends StatelessWidget {
   }
 }
 
-/// Horizontal strip of public spaces for the home surface.
+/// Adaptive strip of public spaces for the home surface.
+///
+/// Layout contract: uses [AdaptiveCardGrid] so cards wrap into a grid on
+/// tablet/desktop and fall back to a pointer-aware horizontal rail (mouse
+/// wheel + arrow keys + chevron affordances) on narrow viewports.
 ///
 /// Phase 2: real spaces — each tile routes to `/spaces/:slug`, which
 /// renders a real discourse-scoped space detail screen. The data source
@@ -115,26 +123,31 @@ class PublicSpacesStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final spaces = ref.watch(publicSpacesProvider);
-    return SizedBox(
-      height: 152,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s2),
-        separatorBuilder: (_, __) => const SizedBox(width: AuraSpace.s10),
-        itemCount: spaces.length + 1,
-        itemBuilder: (context, i) {
-          if (i == spaces.length) {
-            return _AllSpacesTile(onTap: () => context.push('/spaces'));
-          }
-          final s = spaces[i];
-          return SpaceCard(
-            title: s.name,
-            description: s.description,
-            icon: s.icon,
-            onTap: () => context.push('/spaces/${s.slug}'),
-          );
-        },
-      ),
+    final cards = <Widget>[
+      for (final s in spaces)
+        SpaceCard(
+          title: s.name,
+          description: s.description,
+          icon: s.icon,
+          onTap: () => context.push('/spaces/${s.slug}'),
+        ),
+      _AllSpacesTile(onTap: () => context.push('/spaces')),
+    ];
+    // Wrap in a constrained-height container only when rendering as a rail
+    // (narrow). The grid case lays out as Wrap and finds its own height.
+    // AdaptiveCardGrid handles the case-switch internally; we just hand it
+    // a flat list of cards.
+    return AdaptiveCardGrid(
+      cards: cards,
+      cardWidth: 220,
+      // Match the pre-migration fixed card height. Without this, intrinsic-
+      // height cards collapse to ~124 px (their content height) and the
+      // section visually reads as compressed; rows of cards with mixed
+      // content (with vs without activitySummary) also align ragged.
+      cardHeight: 152,
+      gap: AuraSpace.s10,
+      minCardsPerRow: 2,
+      maxCardsPerRow: 5,
     );
   }
 }
@@ -152,7 +165,9 @@ class _AllSpacesTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
-          width: 168,
+          // Width comes from the parent (AdaptiveCardGrid sizes the cell);
+          // the previous 168 was tuned for the narrow rail and made the
+          // tile look short on a wide-screen grid.
           padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
             color: AuraSurface.subtle,
@@ -161,6 +176,7 @@ class _AllSpacesTile extends StatelessWidget {
           ),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.grid_view_rounded,

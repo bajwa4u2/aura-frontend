@@ -9,6 +9,7 @@ import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
 import '../client_identity/client_identity_provider.dart';
+import '../diagnostics/runtime_diagnostics.dart'; // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
 import '../errors/app_error_mapper.dart';
 import 'platform_http_adapter.dart';
 
@@ -127,6 +128,30 @@ final dioProvider = Provider<Dio>((ref) {
       if (r2.isNotEmpty) return r2;
     }
 
+    return null;
+  }
+
+  /// Cookie-fallback for refresh-rotation responses. Mirrors the
+  /// auth_controller / session_bootstrap helpers — see those files for
+  /// rationale. The current backend rotates refresh tokens via
+  /// `aura_refresh` Set-Cookie, never in the body. On desktop, the
+  /// retry-after-refresh path here must pick the new token up or the
+  /// next refresh round fails because we'd send the just-invalidated
+  /// old token.
+  String? readRefreshTokenFromCookies(Response res) {
+    if (kIsWeb) return null;
+    try {
+      final raw = res.headers.map['set-cookie'];
+      if (raw == null || raw.isEmpty) return null;
+      for (final line in raw) {
+        final firstPair = line.split(';').first.trim();
+        final eq = firstPair.indexOf('=');
+        if (eq <= 0) continue;
+        if (firstPair.substring(0, eq).trim() != 'aura_refresh') continue;
+        final value = firstPair.substring(eq + 1).trim();
+        if (value.isNotEmpty) return value;
+      }
+    } catch (_) {}
     return null;
   }
 
@@ -331,7 +356,13 @@ final dioProvider = Provider<Dio>((ref) {
 
       final outer = asMap(res.data);
       final access = readAccessToken(outer);
-      final newRefresh = readRefreshToken(outer);
+      // Body-first, cookie-fallback. See readRefreshTokenFromCookies
+      // doc above — backend rotates refresh tokens via aura_refresh
+      // Set-Cookie. The retry-after-refresh path here MUST pick that
+      // rotated token up or the next refresh fails with the now-
+      // invalidated old token.
+      final newRefresh =
+          readRefreshToken(outer) ?? readRefreshTokenFromCookies(res);
 
       if (access.isEmpty) {
         throw Exception('No access token returned');
@@ -389,7 +420,16 @@ final dioProvider = Provider<Dio>((ref) {
         if (!isAuthEndpoint(options)) {
           try {
             await ref.read(sessionBootstrapProvider.future);
-          } catch (_) {}
+            // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+            if (RuntimeDiagnostics.enabled) {
+              RuntimeDiagnostics.setBootstrapStatus('done');
+            }
+          } catch (e) {
+            // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+            if (RuntimeDiagnostics.enabled) {
+              RuntimeDiagnostics.setBootstrapStatus('error:${e.runtimeType}');
+            }
+          }
         }
 
         options.path = normalizePath(options.path);
@@ -416,6 +456,13 @@ final dioProvider = Provider<Dio>((ref) {
           options.headers['Authorization'] = 'Bearer $token';
         } else {
           options.headers.remove('Authorization');
+        }
+
+        // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+        if (RuntimeDiagnostics.enabled) {
+          RuntimeDiagnostics.setAccessTokenPresent(
+            token != null && token.trim().isNotEmpty,
+          );
         }
 
         handler.next(options);
@@ -533,6 +580,14 @@ final dioProvider = Provider<Dio>((ref) {
       },
     ),
   );
+
+  // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
+  // Added at the END of the chain so the status seen here is the final
+  // status the caller observes (after the auth/refresh interceptor has had
+  // its chance to swap tokens and resolve a 401 retry).
+  if (RuntimeDiagnostics.enabled) {
+    dio.interceptors.add(DiagnosticDioInterceptor());
+  }
 
   return dio;
 });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../communications/presentation/widgets/admin_communication_workspace.dart';
@@ -22,7 +23,7 @@ class AdminCommunicationsScreen extends StatelessWidget {
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 960),
+              constraints: const BoxConstraints(maxWidth: kWorkspaceWidth),
               child: const AdminCommunicationWorkspace(),
             ),
           ),

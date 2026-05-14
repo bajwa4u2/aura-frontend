@@ -10,6 +10,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -188,7 +189,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               vertical: AuraSpace.s24,
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: kFormWidth),
               child: AuraCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

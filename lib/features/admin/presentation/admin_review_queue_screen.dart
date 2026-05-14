@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -186,24 +187,24 @@ class _FilterBar extends StatelessWidget {
         color: AuraSurface.card,
         border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+      // Wrap instead of horizontal-scroll so admin review filters never
+      // hide behind a silent overflow edge.
+      child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s16,
           vertical: AuraSpace.s10,
         ),
-        child: Row(
+        child: Wrap(
+          spacing: AuraSpace.s6,
+          runSpacing: AuraSpace.s6,
           children: _Filter.values.map((f) {
             final selected = f == active;
             final count = counts[f] ?? 0;
-            return Padding(
-              padding: const EdgeInsets.only(right: AuraSpace.s6),
-              child: _FilterChip(
-                label: f.label,
-                count: count,
-                selected: selected,
-                onTap: () => onSelect(f),
-              ),
+            return _FilterChip(
+              label: f.label,
+              count: count,
+              selected: selected,
+              onTap: () => onSelect(f),
             );
           }).toList(),
         ),
@@ -371,7 +372,7 @@ class _QueueCardState extends State<_QueueCard> {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 960),
+        constraints: const BoxConstraints(maxWidth: kWorkspaceWidth),
         child: Container(
           padding: const EdgeInsets.all(AuraSpace.s16),
           decoration: BoxDecoration(

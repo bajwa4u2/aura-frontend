@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
+import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
@@ -19,9 +20,12 @@ class PublicShell extends StatelessWidget {
 
   final Widget child;
 
+  // Width of the public-shell *header chrome*. Inner page content is
+  // resolved per-screen (reading widths use kReadWidth; hero/landing
+  // surfaces use kHeroWidth — see lib/core/ui/aura_responsive.dart).
   static const double maxContentWidth = 920;
-  static const double desktopBreakpoint = 1100;
-  static const double tabletBreakpoint = 760;
+  static const double desktopBreakpoint = kDesktopBreak; // 1200
+  static const double tabletBreakpoint = kTabletBreak; // 900
 
   @override
   Widget build(BuildContext context) {

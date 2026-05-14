@@ -14,6 +14,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/profile_header.dart';
+import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/post.dart';
 import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
@@ -541,6 +542,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                                     await repo.follow(widget.handle);
                                     _showMessage('Follow request sent');
                                   }
+                                  // After a follow / unfollow / cancel, invalidate
+                                  // every feed surface so the home feed reflects
+                                  // the new graph state on next render. Without
+                                  // this, a user who just followed @alice would
+                                  // see no @alice posts in /home until the next
+                                  // manual refresh, which felt like the follow
+                                  // had not persisted.
+                                  invalidateUnifiedFeedSurfaces(ref);
                                   _reload();
                                 } catch (_) {
                                   _showMessage('Could not update follow state');

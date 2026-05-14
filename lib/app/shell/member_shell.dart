@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +8,10 @@ import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
+import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
+import '../../core/ui/surface/surface_composition.dart';
+import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
@@ -17,8 +19,7 @@ import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import '../../shared/identity/aura_identity_badge.dart';
 import 'public_shell.dart';
-import 'shell_header_tools.dart';
-import 'shell_shared.dart';
+import 'rail/rail_modules.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -89,10 +90,8 @@ class MemberShell extends StatelessWidget {
     ),
   ];
 
-  static const double _maxContentWidth = 920;
-  static const double _headerHeight = 64;
-  static const double _desktopBreakpoint = 1100;
-  static const double _tabletBreakpoint = 760;
+  static const double _desktopBreakpoint = kDesktopBreak; // 1200
+  static const double _tabletBreakpoint = kTabletBreak; // 900
 
   /// Returns the index of the nav item that should be highlighted, or
   /// -1 when the current path is not a primary nav destination.
@@ -140,33 +139,40 @@ class MemberShell extends StatelessWidget {
             bottom: false,
             child: GlobalLiveBannerLayer(
               child: AuraIncomingLiveLayer(
-                child: Column(
-                  children: [
-                    _MemberHeader(
-                      isDesktop: isDesktop,
-                      isTablet: isTablet,
-                    ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (isDesktop)
-                            _MemberSideNav(
-                              items: _items,
-                              selectedIndex: selectedIndex,
-                              currentPath: path,
-                            ),
-                          Expanded(child: child),
-                        ],
+                // Persistent platform chrome — Aura wordmark + tools live
+                // at the top of every authenticated route via
+                // GlobalPlatformShell. The member shell no longer renders
+                // its own header; that responsibility is now global.
+                child: GlobalPlatformShell(
+                  // Member shell has no per-shell context-identity row;
+                  // the platform bar is sufficient at the top. Primary
+                  // nav lives in the side rail (desktop) or bottom nav
+                  // (tablet/mobile) below.
+                  contextBar: null,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (isDesktop)
+                              _MemberSideNav(
+                                items: _items,
+                                selectedIndex: selectedIndex,
+                                currentPath: path,
+                              ),
+                            Expanded(child: child),
+                          ],
+                        ),
                       ),
-                    ),
-                    if (!isDesktop && _showMemberBottomNav(path))
-                      _MemberBottomNav(
-                        items: _items,
-                        selectedIndex: selectedIndex,
-                        currentPath: path,
-                        compact: !isTablet,
-                      ),
-                  ],
+                      if (!isDesktop && _showMemberBottomNav(path))
+                        _MemberBottomNav(
+                          items: _items,
+                          selectedIndex: selectedIndex,
+                          currentPath: path,
+                          compact: !isTablet,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -195,9 +201,6 @@ class InstitutionShell extends ConsumerWidget {
 
   final Widget child;
 
-  static const double _desktopBreakpoint = 1100;
-  static const double _tabletBreakpoint = 760;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
@@ -207,8 +210,75 @@ class InstitutionShell extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final isDesktop = width >= _desktopBreakpoint;
-        final isTablet = width >= _tabletBreakpoint;
+        final isDesktop = width >= kDesktopBreak; // 1200
+        final isTablet = width >= kTabletBreak; // 900
+
+        // Composition strategy — institution shell now composes UNDER
+        // GlobalPlatformShell. The platform bar (Aura wordmark + global
+        // tools) is persistent across every authed route; the
+        // institution identity row is the contextBar BELOW the platform
+        // bar; AuraSurfaceScaffold composes left rail + center + right
+        // rail below the context bar.
+        //   * DESKTOP (≥1200): platform bar + institution identity row +
+        //     left side-nav + center + right context rail.
+        //   * TABLET (900-1199): platform bar + institution identity row
+        //     + horizontal primary nav (in context bar's secondary line)
+        //     + center + bottom nav.
+        //   * MOBILE (<900): platform bar + compact identity + horizontal
+        //     primary nav + center + compact bottom nav.
+        final body = GlobalPlatformShell(
+          // Suppress the global search button on institution routes —
+          // /search is member-scoped; surfacing it here would leak member
+          // content into institution context. The notifications bell and
+          // account menu stay (they're platform-level, not member-only).
+          searchPath: null,
+          contextBar: _InstitutionContextBar(
+            isDesktop: isDesktop,
+            isTablet: isTablet,
+            identity: identity,
+            // Primary workspace nav (Explore / Activity / Messages /
+            // Spaces / Announcements / Live / Invite) lives in the
+            // context bar at every width. The left side-nav carries
+            // admin + profile tools only; suppressing the primary nav
+            // at desktop left it unreachable, since the side-nav has no
+            // primary entries. Rendering it here at all widths is the
+            // single source of primary-nav truth.
+            showPrimaryNav: true,
+          ),
+          child: AuraSurfaceScaffold(
+            type: AuraSurfaceType.institutionWorkspace,
+            // header is null — the platform bar + context bar are
+            // already rendered ABOVE the surface scaffold by
+            // GlobalPlatformShell.
+            header: null,
+            leftRail: isDesktop
+                ? _InstitutionSideNav(
+                    currentPath: path,
+                    identity: identity,
+                  )
+                : null,
+            center: isPreview
+                ? Column(
+                    children: [
+                      _PublicPreviewToolbar(identity: identity),
+                      Expanded(child: child),
+                    ],
+                  )
+                : child,
+            contextRail: isDesktop
+                ? AuraContextRail(
+                    modules: _institutionContextModules(context, identity),
+                  )
+                : null,
+            footer: !isDesktop
+                ? _InstitutionBottomNav(
+                    currentPath: path,
+                    compact: !isTablet,
+                    identity: identity,
+                  )
+                : null,
+          ),
+        );
 
         return Scaffold(
           backgroundColor: AuraSurface.page,
@@ -216,43 +286,7 @@ class InstitutionShell extends ConsumerWidget {
             top: true,
             bottom: false,
             child: GlobalLiveBannerLayer(
-              child: AuraIncomingLiveLayer(
-                child: Column(
-                  children: [
-                    _InstitutionHeader(
-                      isDesktop: isDesktop,
-                      isTablet: isTablet,
-                      identity: identity,
-                    ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (isDesktop)
-                            _InstitutionSideNav(
-                              currentPath: path,
-                              identity: identity,
-                            ),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                if (isPreview)
-                                  _PublicPreviewToolbar(identity: identity),
-                                Expanded(child: child),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isDesktop)
-                      _InstitutionBottomNav(
-                        currentPath: path,
-                        compact: !isTablet,
-                        identity: identity,
-                      ),
-                  ],
-                ),
-              ),
+              child: AuraIncomingLiveLayer(child: body),
             ),
           ),
         );
@@ -267,6 +301,36 @@ class InstitutionShell extends ConsumerWidget {
         parts[0] == 'institution' &&
         parts[2] == 'institutions';
   }
+}
+
+/// Right-rail modules for the institution shell. Real-data modules
+/// from `rail/rail_modules.dart`. Each module self-hides when it has
+/// nothing to surface, so the rail collapses gracefully on quiet days.
+///
+/// Order matters: the more time-sensitive/operational a module is, the
+/// higher in the rail it sits — Live Now first (right now), Workspace
+/// orientation, Saved (longer-term), Governance (always-on context).
+List<Widget> _institutionContextModules(
+  BuildContext context,
+  InstitutionIdentity? identity,
+) {
+  // Institution-workspace priority (per brief): institutional voice
+  // first, then operational context. Each module self-collapses when
+  // its provider has nothing to surface.
+  //   * LIVE         — sessions this workspace can join now
+  //   * RESPONSE     — where institutions (including this one) replied
+  //   * WORKSPACE    — own institution activity feed
+  //   * IDENTITY     — name + verification badge
+  //   * SAVED        — longer-term concerns
+  //   * GOVERNANCE   — grounding rationale
+  return const [
+    LiveNowRailModule(),
+    InstitutionalResponseRailModule(),
+    InstitutionRecentActivityRailModule(),
+    WorkspaceActivityRailModule(),
+    SavedRailModule(),
+    GovernanceNoticeRailModule(),
+  ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -573,69 +637,43 @@ class _PreviewChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MEMBER HEADER
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MemberHeader extends StatelessWidget {
-  const _MemberHeader({required this.isDesktop, required this.isTablet});
-
-  final bool isDesktop;
-  final bool isTablet;
-
-  @override
-  Widget build(BuildContext context) {
-    final hPad = isDesktop
-        ? AuraSpace.s24
-        : isTablet
-            ? AuraSpace.s20
-            : AuraSpace.s16;
-
-    return Container(
-      height: MemberShell._headerHeight,
-      decoration: const BoxDecoration(
-        gradient: AuraGradients.header,
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              maxWidth: MemberShell._maxContentWidth + 160),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            child: Row(
-              children: [
-                AuraShellWordmark(onTap: () => context.go('/home')),
-                const Spacer(),
-                ShellHeaderTools(
-                  isTablet: isTablet,
-                  isDesktop: isDesktop,
-                  searchPath: '/search',
-                  activityPath: '/notifications',
-                  invitePath: '/invite',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+// MEMBER HEADER — REMOVED.
+// The member shell no longer renders its own header; the global Aura
+// wordmark + account/search/notifications/live tools live in the
+// persistent GlobalPlatformShell above. If you need to restyle the
+// global header, edit `global_platform_shell.dart`, not here.
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION HEADER — identity row + primary workspace nav row
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _InstitutionHeader extends StatelessWidget {
-  const _InstitutionHeader({
+/// Institution shell context bar. Renders BELOW the GlobalPlatformShell
+/// platform bar, ABOVE the AuraSurfaceScaffold body. Owns: institution
+/// avatar + name + verified badge + workspace badge, plus the
+/// horizontal primary-nav strip at tablet/mobile widths.
+///
+/// Does NOT own: platform identity (Aura wordmark), account menu,
+/// search, notifications. Those live in GlobalPlatformShell and stay
+/// stable across all authenticated routes.
+class _InstitutionContextBar extends StatelessWidget {
+  const _InstitutionContextBar({
     required this.isDesktop,
     required this.isTablet,
     required this.identity,
+    this.showPrimaryNav = true,
   });
 
   final bool isDesktop;
   final bool isTablet;
   final InstitutionIdentity? identity;
+
+  /// When false, the horizontal primary-nav row is suppressed. In
+  /// practice callers should leave this true — the left side-nav only
+  /// carries admin/profile tools (Members / Join Requests / Domains /
+  /// Overview / Profile / Edit Profile / Public Preview); the primary
+  /// workspace nav (Explore / Activity / Messages / Spaces /
+  /// Announcements / Live / Invite) lives ONLY in this context bar, so
+  /// suppressing it removes the only entry point.
+  final bool showPrimaryNav;
 
   @override
   Widget build(BuildContext context) {
@@ -698,29 +736,27 @@ class _InstitutionHeader extends StatelessWidget {
                         const SizedBox(width: AuraSpace.s6),
                       ],
                       const _WorkspaceBadge(),
-                      const Spacer(),
-                      // Account only — Activity/Live/Invite live in the
-                      // primary nav row below; the global search button is
-                      // omitted until an institution-scoped search exists,
-                      // since `/search` would leak member content into
-                      // institution context.
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ShellHeaderTools(
-                          isTablet: isTablet,
-                          isDesktop: isDesktop,
-                          showLive: false,
-                        ),
-                      ),
+                      // No Spacer + tools cluster here anymore — the
+                      // platform bar above owns the account/search/
+                      // notifications/live strip. The context bar is now
+                      // purely about institution identity + workspace
+                      // signaling; if we re-added ShellHeaderTools we'd
+                      // be duplicating it and violating the contract in
+                      // `global_platform_shell.dart`.
                     ],
                   ),
                 ),
-                // Row 2 — primary institution workspace nav (always visible).
-                _InstitutionPrimaryNav(
-                  identity: identity,
-                  currentPath: currentPath,
-                  isDesktop: isDesktop,
-                ),
+                // Row 2 — primary institution workspace nav. Only rendered
+                // when the shell doesn't have a left side-nav (i.e., at
+                // tablet/mobile). At desktop the left rail owns primary
+                // navigation, so this second header row is suppressed and
+                // the header collapses to a single identity-and-tools line.
+                if (showPrimaryNav)
+                  _InstitutionPrimaryNav(
+                    identity: identity,
+                    currentPath: currentPath,
+                    isDesktop: isDesktop,
+                  ),
               ],
             ),
           ),
@@ -752,22 +788,22 @@ class _InstitutionPrimaryNav extends StatelessWidget {
     final id = identity?.id ?? '';
     final items = _institutionPrimaryItems(id);
 
-    return SizedBox(
-      height: 44,
-      child: ScrollConfiguration(
-        // Allow drag scrolling on desktop too — the row may overflow at narrow
-        // widths even on web.
-        behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: const {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.trackpad,
-            PointerDeviceKind.stylus,
-          },
-        ),
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.zero,
+    // Horizontal scroll strip. The previous implementation used `Wrap`,
+    // which together with each tab's internal `Center` widget caused
+    // every tab to balloon to the Wrap's full width — producing a
+    // vertical stack of seven tabs at desktop. A single-row horizontal
+    // strip is the contract: at desktop (≥1200), all 7 tabs fit on one
+    // line and no scroll is engaged; at tablet/mobile, horizontal
+    // scroll lets the user reach overflow tabs without breaking the
+    // single-row reading order. Active selection is preserved by
+    // `_PrimaryNavTab` (accent underline).
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s2),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             for (final item in items)
               _PrimaryNavTab(
@@ -902,15 +938,18 @@ class _PrimaryNavTab extends StatelessWidget {
                   ),
                 ),
               ),
-              child: Center(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: AuraText.small.copyWith(
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: color,
-                    letterSpacing: 0.2,
-                  ),
+              // No `Center` wrap — Center expands to its parent's max
+              // width, which inside a horizontal strip used to make
+              // each tab consume the whole row. The Text widget reports
+              // its own intrinsic width, so the tab sizes itself to
+              // content.
+              child: Text(
+                label,
+                maxLines: 1,
+                style: AuraText.small.copyWith(
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: color,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),

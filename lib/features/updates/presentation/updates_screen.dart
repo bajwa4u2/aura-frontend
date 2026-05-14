@@ -6,6 +6,7 @@ import 'package:aura/core/auth/session_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -100,7 +101,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         showHeader: false,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1160),
+            constraints: const BoxConstraints(maxWidth: kFeedWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AuraSpace.s16,
@@ -129,7 +130,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         onRefresh: _load,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1160),
+            constraints: const BoxConstraints(maxWidth: kFeedWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AuraSpace.s16,

@@ -346,18 +346,29 @@ class _HeaderIconBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: AuraSurface.subtle,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(color: AuraSurface.divider),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          // Explicit hover + focus colors so pointer-device users get a
+          // clear affordance on the persistent platform bar. The ink
+          // overlay on a dark surface needs more luminance than the
+          // default Material hover (which is ~4% white) to register
+          // visually against AuraSurface.subtle.
+          hoverColor: const Color(0x1AFFFFFF),
+          focusColor: const Color(0x22FFFFFF),
+          splashColor: const Color(0x14FFFFFF),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AuraSurface.subtle,
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(color: AuraSurface.divider),
+            ),
+            child: Icon(icon, size: 18, color: AuraSurface.muted),
           ),
-          child: Icon(icon, size: 18, color: AuraSurface.muted),
         ),
       ),
     );
@@ -377,30 +388,36 @@ class _HeaderActivityBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Activity',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AuraSurface.subtle,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                border: Border.all(color: AuraSurface.divider),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          hoverColor: const Color(0x1AFFFFFF),
+          focusColor: const Color(0x22FFFFFF),
+          splashColor: const Color(0x14FFFFFF),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AuraSurface.subtle,
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  border: Border.all(color: AuraSurface.divider),
+                ),
+                child: const Icon(Icons.notifications_none_rounded,
+                    size: 18, color: AuraSurface.muted),
               ),
-              child: const Icon(Icons.notifications_none_rounded,
-                  size: 18, color: AuraSurface.muted),
-            ),
-            if (unreadCount > 0)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: _UnreadDot(count: unreadCount),
-              ),
-          ],
+              if (unreadCount > 0)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: _UnreadDot(count: unreadCount),
+                ),
+            ],
+          ),
         ),
       ),
     );

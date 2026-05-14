@@ -386,36 +386,35 @@ class _TabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _TabPill(
-            label: 'All',
-            selected: tab == _MessageTab.all,
-            onTap: () => onTabChanged(_MessageTab.all),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _TabPill(
-            label: 'Direct',
-            selected: tab == _MessageTab.direct,
-            onTap: () => onTabChanged(_MessageTab.direct),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _TabPill(
-            label: 'Spaces',
-            selected: tab == _MessageTab.spaces,
-            onTap: () => onTabChanged(_MessageTab.spaces),
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          _TabPill(
-            label: inviteCount > 0 ? 'Invites ($inviteCount)' : 'Invites',
-            selected: tab == _MessageTab.invites,
-            badge: inviteCount > 0,
-            onTap: () => onTabChanged(_MessageTab.invites),
-          ),
-        ],
-      ),
+    // Wrap so narrow viewports don't hide the rightmost tab behind a
+    // silent horizontal-scroll edge. On wide viewports everything still
+    // fits on a single line.
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        _TabPill(
+          label: 'All',
+          selected: tab == _MessageTab.all,
+          onTap: () => onTabChanged(_MessageTab.all),
+        ),
+        _TabPill(
+          label: 'Direct',
+          selected: tab == _MessageTab.direct,
+          onTap: () => onTabChanged(_MessageTab.direct),
+        ),
+        _TabPill(
+          label: 'Spaces',
+          selected: tab == _MessageTab.spaces,
+          onTap: () => onTabChanged(_MessageTab.spaces),
+        ),
+        _TabPill(
+          label: inviteCount > 0 ? 'Invites ($inviteCount)' : 'Invites',
+          selected: tab == _MessageTab.invites,
+          badge: inviteCount > 0,
+          onTap: () => onTabChanged(_MessageTab.invites),
+        ),
+      ],
     );
   }
 }

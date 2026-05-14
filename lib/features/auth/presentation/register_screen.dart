@@ -7,6 +7,7 @@ import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -247,7 +248,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return AuraScaffold(
       showHeader: false,
       body: AuraPageShell(
-        maxWidth: 1160,
+        maxWidth: kHeroWidth,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 960;
@@ -258,7 +259,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1160),
+                    constraints: const BoxConstraints(maxWidth: kHeroWidth),
                     child: isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,

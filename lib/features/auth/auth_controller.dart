@@ -79,6 +79,59 @@ class AuthController {
     return null;
   }
 
+  /// Cookie-fallback for the refresh token.
+  ///
+  /// As of the cookie-based-refresh backend rollout, `POST /auth/login`
+  /// returns the refresh token ONLY via the `aura_refresh` HttpOnly
+  /// cookie — never in the JSON response body. On Web, the browser
+  /// stores the cookie automatically. On Windows / macOS / Linux
+  /// desktop, Dart's HTTP client surfaces the `Set-Cookie` header on
+  /// the response but does NOT persist cookies between Dio requests
+  /// (we have no CookieJar attached). The result: a desktop client
+  /// would never have a refresh token, the 15-minute access token
+  /// would expire, every protected call would 401, and the UI would
+  /// display "Sign in to use this feature." — even though the user
+  /// just signed in.
+  ///
+  /// This helper extracts the `aura_refresh` cookie value from the
+  /// Set-Cookie response header. Callers prefer body-supplied refresh
+  /// tokens (legacy native flow) and fall back to this on every auth
+  /// response so cookie-only-refresh-token backends and desktop work
+  /// together correctly. Web is unaffected — the cookie is not exposed
+  /// to JS / Dart on the web platform; the browser stores it directly.
+  String? _readRefreshTokenFromCookies(Response res) {
+    if (kIsWeb) return null;
+    try {
+      final raw = res.headers.map['set-cookie'];
+      if (raw == null || raw.isEmpty) return null;
+      for (final line in raw) {
+        // Each Set-Cookie header is "name=value; attr; attr; ...".
+        final firstPair = line.split(';').first.trim();
+        final eq = firstPair.indexOf('=');
+        if (eq <= 0) continue;
+        final name = firstPair.substring(0, eq).trim();
+        if (name != 'aura_refresh') continue;
+        final value = firstPair.substring(eq + 1).trim();
+        if (value.isEmpty) return null;
+        return value;
+      }
+    } catch (_) {
+      // Header parsing is best-effort; failure means we fall back to
+      // whatever the body had (probably null), and the caller decides
+      // how to proceed.
+    }
+    return null;
+  }
+
+  /// Combined refresh-token reader: body first, then Set-Cookie header.
+  /// Used by every auth-response-handling site so the cookie fallback
+  /// is consistent.
+  String? _readRefreshTokenAny(Response res, Map<String, dynamic> outer) {
+    final fromBody = _readRefreshToken(outer);
+    if (fromBody != null && fromBody.isNotEmpty) return fromBody;
+    return _readRefreshTokenFromCookies(res);
+  }
+
   String _extractServerMessage(DioException e) {
     final data = e.response?.data;
 
@@ -256,7 +309,14 @@ class AuthController {
     }
 
     final access = _readAccessToken(outer);
-    final refresh = _readRefreshToken(outer);
+    // Refresh token may arrive in the response body (legacy native path)
+    // OR via the `aura_refresh` HttpOnly cookie (current backend default
+    // for /auth/login). On desktop the cookie is exposed via Set-Cookie
+    // headers but is NOT auto-persisted by Dio — so we read it here and
+    // store it in TokenStore so the next access-token expiry has
+    // something to refresh against. Without this, every desktop login
+    // worked for ~15 minutes and then every protected request 401'd.
+    final refresh = _readRefreshTokenAny(res, outer);
 
     if (access.isEmpty) {
       throw Exception('Login response missing accessToken (envelope mismatch)');
@@ -329,7 +389,9 @@ class AuthController {
 
     final outer = _asMap(res.data);
     final access = _readAccessToken(outer);
-    final refresh = _readRefreshToken(outer);
+    // See login() for rationale — cookie-first backend means we MUST
+    // also read aura_refresh from Set-Cookie on desktop.
+    final refresh = _readRefreshTokenAny(res, outer);
 
     if (access.isEmpty) {
       throw Exception('Verification response missing accessToken');
@@ -472,7 +534,12 @@ class AuthController {
 
       final outer = _asMap(res.data);
       final access = _readAccessToken(outer);
-      final newRt = _readRefreshToken(outer);
+      // Refresh-rotation: a successful /auth/refresh may issue a new
+      // refresh token (current backend rotates per-refresh). It is sent
+      // in the response body OR re-set via aura_refresh Set-Cookie. We
+      // accept either, with a final fallback to the old rt so a backend
+      // that elects not to rotate this round does not blank our token.
+      final newRt = _readRefreshTokenAny(res, outer);
 
       if (access.isEmpty) throw Exception('Refresh response missing accessToken');
 
