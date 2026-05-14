@@ -1385,6 +1385,7 @@ class _InstResponseRow extends StatelessWidget {
         .first;
     final parentLead =
         parentSnippet.length > 56 ? '${parentSnippet.substring(0, 56)}…' : parentSnippet;
+    final tag = entry.response.accountabilityTagWire;
     return InkWell(
       borderRadius: BorderRadius.circular(AuraRadius.r10),
       onTap: () => context.push(entry.parent.targetRoute),
@@ -1436,8 +1437,88 @@ class _InstResponseRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
+            if (tag != null && tag.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s4),
+              _AccountabilityChip(tagWire: tag),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Renders an accountability tag (COMMITMENT / UPDATE / RESOLVED) as a
+/// compact chip alongside an institution reply. Backend emits the wire
+/// token in `FeedReplyPreviewItem.accountabilityTagWire`; this widget is
+/// the canonical visual treatment so member, institution, and public
+/// rails all read the same accountability signal.
+class _AccountabilityChip extends StatelessWidget {
+  const _AccountabilityChip({required this.tagWire});
+
+  final String tagWire;
+
+  ({String label, IconData icon, Color fg, Color bg}) get _style {
+    switch (tagWire.toUpperCase()) {
+      case 'COMMITMENT':
+        return (
+          label: 'Commitment',
+          icon: Icons.flag_outlined,
+          fg: const Color(0xFFFBBF24),
+          bg: const Color(0x33FBBF24),
+        );
+      case 'UPDATE':
+        return (
+          label: 'Update',
+          icon: Icons.update_rounded,
+          fg: const Color(0xFF60A5FA),
+          bg: const Color(0x3360A5FA),
+        );
+      case 'RESOLVED':
+        return (
+          label: 'Resolved',
+          icon: Icons.check_circle_outline_rounded,
+          fg: const Color(0xFF4ADE80),
+          bg: const Color(0x334ADE80),
+        );
+      default:
+        return (
+          label: tagWire,
+          icon: Icons.label_outline_rounded,
+          fg: AuraSurface.muted,
+          bg: AuraSurface.elevated,
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _style;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: s.bg,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: s.fg.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(s.icon, size: 10, color: s.fg),
+          const SizedBox(width: 4),
+          Text(
+            s.label,
+            style: AuraText.micro.copyWith(
+              color: s.fg,
+              fontWeight: FontWeight.w800,
+              fontSize: 10,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
       ),
     );
   }

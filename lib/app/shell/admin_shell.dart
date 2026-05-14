@@ -11,7 +11,7 @@ import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/admin/runtime/admin_runtime_coordinator.dart';
-import 'rail/rail_modules.dart';
+import 'rail/rail_composition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN COLOR PALETTE — amber authority, command-center dark
@@ -215,13 +215,8 @@ class _AdminShellLayout extends StatelessWidget {
                         // module self-collapses when no data — non-
                         // admins see an empty rail.
                         if (isDesktop)
-                          const AuraContextRail(
-                            modules: [
-                              AdminPlatformHealthRailModule(),
-                              AdminReviewQueueRailModule(),
-                              AdminPendingInstitutionsRailModule(),
-                              LiveNowRailModule(),
-                            ],
+                          AuraContextRail(
+                            modules: adminControlRailModules(),
                           ),
                       ],
                     ),

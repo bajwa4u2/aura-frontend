@@ -153,7 +153,15 @@ class GlobalPlatformShell extends StatelessWidget {
 
   /// Logical height of the platform bar. Kept stable across breakpoints
   /// so the user perceives a continuous top edge while navigating.
-  static const double height = 56;
+  ///
+  /// Reduced from 56 → 48 in the multi-context consolidation pass. The
+  /// platform bar carries only the wordmark + 4 tool icons; 48 px gives
+  /// the 32-px wordmark and 24-px tool icons each ~8 px vertical room
+  /// without feeling cramped, and reclaims chrome for content. The
+  /// global bar must NEVER carry shell-specific identity (institution
+  /// avatar, admin badge, etc.) — those live in the per-shell context
+  /// bar below, which is itself sized to ~37–41 px.
+  static const double height = 48;
 
   @override
   Widget build(BuildContext context) {

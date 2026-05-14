@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/rail/rail_modules.dart';
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -1776,64 +1776,17 @@ class _PublicDiscoveryStrip extends StatelessWidget {
                     style: AuraText.body.copyWith(color: AuraSurface.muted),
                   ),
                   const SizedBox(height: AuraSpace.s20),
+                  // Public discovery columns come from the shared
+                  // composition engine — same modules the member,
+                  // institution, and admin rails consume, arranged for
+                  // the public-home single-page landing.
                   if (isDesktop)
-                    const Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Civic signal column — discourse momentum +
-                        // visible institution accountability.
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TrendingDiscourseRailModule(),
-                              SizedBox(height: AuraSpace.s12),
-                              InstitutionalResponseRailModule(),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: AuraSpace.s16),
-                        // Ecosystem column — who's live + verified.
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              LiveNowRailModule(),
-                              SizedBox(height: AuraSpace.s12),
-                              VerifiedInstitutionsRailModule(),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: AuraSpace.s16),
-                        // Continuity column — platform notices + grounding.
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              PinnedAnnouncementRailModule(),
-                              SizedBox(height: AuraSpace.s12),
-                              GovernanceNoticeRailModule(),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _PublicDiscoveryRow(
+                      columns: publicDiscoveryColumns(),
                     )
                   else
-                    const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TrendingDiscourseRailModule(),
-                        SizedBox(height: AuraSpace.s12),
-                        InstitutionalResponseRailModule(),
-                        SizedBox(height: AuraSpace.s12),
-                        LiveNowRailModule(),
-                        SizedBox(height: AuraSpace.s12),
-                        VerifiedInstitutionsRailModule(),
-                        SizedBox(height: AuraSpace.s12),
-                        PinnedAnnouncementRailModule(),
-                        SizedBox(height: AuraSpace.s12),
-                        GovernanceNoticeRailModule(),
-                      ],
+                    _PublicDiscoveryStack(
+                      modules: publicDiscoveryColumns().stacked,
                     ),
                 ],
               ),
@@ -1841,6 +1794,64 @@ class _PublicDiscoveryStrip extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Three-column desktop layout for the public discovery strip. Maps
+/// `PublicDiscoveryColumns.civicSignal | ecosystem | continuity` to a
+/// side-by-side Row. Each column is its own `Expanded(Column)`, so a
+/// column with no populated modules simply renders zero height — no
+/// dead decorative boxes.
+class _PublicDiscoveryRow extends StatelessWidget {
+  const _PublicDiscoveryRow({required this.columns});
+
+  final PublicDiscoveryColumns columns;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _DiscoveryColumn(modules: columns.civicSignal)),
+        const SizedBox(width: AuraSpace.s16),
+        Expanded(child: _DiscoveryColumn(modules: columns.ecosystem)),
+        const SizedBox(width: AuraSpace.s16),
+        Expanded(child: _DiscoveryColumn(modules: columns.continuity)),
+      ],
+    );
+  }
+}
+
+/// Single-column stack used at tablet/mobile widths. Receives the flat
+/// `stacked` ordering from `PublicDiscoveryColumns.stacked` so the
+/// civic-signal modules still lead before ecosystem and continuity.
+class _PublicDiscoveryStack extends StatelessWidget {
+  const _PublicDiscoveryStack({required this.modules});
+
+  final List<Widget> modules;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DiscoveryColumn(modules: modules);
+  }
+}
+
+class _DiscoveryColumn extends StatelessWidget {
+  const _DiscoveryColumn({required this.modules});
+
+  final List<Widget> modules;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < modules.length; i++) ...[
+          modules[i],
+          if (i < modules.length - 1) const SizedBox(height: AuraSpace.s12),
+        ],
+      ],
     );
   }
 }

@@ -592,12 +592,20 @@ class FeedReplyPreviewItem {
     required this.body,
     required this.author,
     this.createdAt,
+    this.accountabilityTagWire,
   });
 
   final String id;
   final String body;
   final FeedReplyPreviewAuthor author;
   final DateTime? createdAt;
+
+  /// Public-UX Phase 3 — accountability tag set by the institution voice
+  /// on a reply (COMMITMENT / UPDATE / RESOLVED). Backend-emitted in
+  /// the reply-preview projection; null for organic replies, for
+  /// non-institution authors, and for user-post replies (the schema
+  /// carries this column only on `InstitutionPost`).
+  final String? accountabilityTagWire;
 
   factory FeedReplyPreviewItem.fromJson(Map<String, dynamic> m) {
     DateTime? readDate(dynamic raw) {
@@ -615,6 +623,14 @@ class FeedReplyPreviewItem {
       return '';
     }
 
+    String? opt(List<String> keys) {
+      for (final k in keys) {
+        final v = m[k]?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
     final authorRaw = m['author'];
     final author = authorRaw is Map
         ? FeedReplyPreviewAuthor.fromJson(
@@ -627,6 +643,7 @@ class FeedReplyPreviewItem {
       body: s(['body']),
       author: author,
       createdAt: readDate(m['createdAt']),
+      accountabilityTagWire: opt(['accountabilityTag']),
     );
   }
 }

@@ -19,7 +19,7 @@ import '../../features/institutions/ui/institution_ds.dart';
 import '../../features/realtime/presentation/incoming_live_overlay.dart';
 import '../../shared/identity/aura_identity_badge.dart';
 import 'public_shell.dart';
-import 'rail/rail_modules.dart';
+import 'rail/rail_composition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -303,34 +303,16 @@ class InstitutionShell extends ConsumerWidget {
   }
 }
 
-/// Right-rail modules for the institution shell. Real-data modules
-/// from `rail/rail_modules.dart`. Each module self-hides when it has
-/// nothing to surface, so the rail collapses gracefully on quiet days.
-///
-/// Order matters: the more time-sensitive/operational a module is, the
-/// higher in the rail it sits — Live Now first (right now), Workspace
-/// orientation, Saved (longer-term), Governance (always-on context).
+/// Right-rail modules for the institution shell. Composition is owned
+/// by `rail_composition.dart` so member-home, institution, admin, and
+/// public discovery share one source of truth for civic-signal
+/// priority. Each module self-hides when it has nothing to surface,
+/// so the rail collapses gracefully on quiet days.
 List<Widget> _institutionContextModules(
   BuildContext context,
   InstitutionIdentity? identity,
 ) {
-  // Institution-workspace priority (per brief): institutional voice
-  // first, then operational context. Each module self-collapses when
-  // its provider has nothing to surface.
-  //   * LIVE         — sessions this workspace can join now
-  //   * RESPONSE     — where institutions (including this one) replied
-  //   * WORKSPACE    — own institution activity feed
-  //   * IDENTITY     — name + verification badge
-  //   * SAVED        — longer-term concerns
-  //   * GOVERNANCE   — grounding rationale
-  return const [
-    LiveNowRailModule(),
-    InstitutionalResponseRailModule(),
-    InstitutionRecentActivityRailModule(),
-    WorkspaceActivityRailModule(),
-    SavedRailModule(),
-    GovernanceNoticeRailModule(),
-  ];
+  return institutionWorkspaceRailModules();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -688,6 +670,32 @@ class _InstitutionContextBar extends StatelessWidget {
     final isVerified = identity?.isVerified ?? false;
     final currentPath = GoRouterState.of(context).uri.path;
 
+    // ─────────────────────────────────────────────────────────────────
+    //   UNIFIED INSTITUTION CONTEXT ROW
+    // ─────────────────────────────────────────────────────────────────
+    //
+    // The institution chrome used to stack TWO rows below the global
+    // platform bar — identity (avatar + name + badges) above the
+    // primary nav (Explore / Activity / …). That meant browsers showed
+    // ~144 px of chrome (56 platform + ~88 context) before content
+    // even began. We now compose identity + primary nav as a SINGLE
+    // row separated by a thin vertical rule, dropping the context bar
+    // to ~40 px and total chrome to ~96 px.
+    //
+    // What this preserves:
+    //   * GlobalPlatformShell ownership (still the only global bar).
+    //   * Every primary nav route (Explore / Activity / Messages /
+    //     Spaces / Announcements / Live / Invite).
+    //   * Active-tab state via `_PrimaryNavTab`.
+    //   * Horizontal scroll for the nav strip at narrow widths.
+    //   * The institution identity gradient + accent border.
+    //
+    // What it explicitly does NOT do:
+    //   * Stack the primary nav vertically — that was the prior bug.
+    //   * Merge institution identity into the platform bar — the
+    //     platform bar stays shell-agnostic.
+    //   * Hide nav items behind a menu on desktop — every route
+    //     remains directly reachable.
     return Container(
       decoration: const BoxDecoration(
         gradient: _institutionHeaderGradient,
@@ -700,62 +708,64 @@ class _InstitutionContextBar extends StatelessWidget {
           constraints: const BoxConstraints(
               maxWidth: PublicShell.maxContentWidth + 160),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            child: Column(
+            padding: EdgeInsets.fromLTRB(
+              hPad,
+              AuraSpace.s4,
+              hPad,
+              AuraSpace.s4,
+            ),
+            child: Row(
               children: [
-                // Row 1 — institution identity + account-level tools.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      0, AuraSpace.s10, 0, AuraSpace.s8),
-                  child: Row(
-                    children: [
-                      _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
-                      const SizedBox(width: AuraSpace.s10),
-                      if (isTablet && name.isNotEmpty) ...[
-                        // Bound the name so it does not compete with the
-                        // Spacer below for remaining row space — without
-                        // this, a long institution name pulls the account
-                        // cluster off the far-right edge toward the centre.
-                        ConstrainedBox(
-                          constraints:
-                              const BoxConstraints(maxWidth: 220),
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.small.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AuraSurface.ink,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                      ],
-                      if (isVerified) ...[
-                        const _InstitutionVerifiedBadge(),
-                        const SizedBox(width: AuraSpace.s6),
-                      ],
-                      const _WorkspaceBadge(),
-                      // No Spacer + tools cluster here anymore — the
-                      // platform bar above owns the account/search/
-                      // notifications/live strip. The context bar is now
-                      // purely about institution identity + workspace
-                      // signaling; if we re-added ShellHeaderTools we'd
-                      // be duplicating it and violating the contract in
-                      // `global_platform_shell.dart`.
-                    ],
+                _InstitutionAvatarSmall(name: name, logoUrl: logoUrl),
+                const SizedBox(width: AuraSpace.s8),
+                // Name is only shown at desktop widths — at tablet/
+                // mobile the avatar + badges already identify the
+                // workspace, and the primary nav needs the horizontal
+                // room. The previous implementation showed the name
+                // on tablet too, which crowded the nav strip and
+                // contributed to the vertical-stack regression.
+                if (isDesktop && name.isNotEmpty) ...[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: AuraSpace.s8),
+                ],
+                if (isVerified) ...[
+                  const _InstitutionVerifiedBadge(),
+                  const SizedBox(width: 4),
+                ],
+                const _WorkspaceBadge(),
+                const SizedBox(width: AuraSpace.s10),
+                // Thin vertical rule that visually separates the
+                // identity cluster from the primary-nav strip without
+                // introducing a second row. Subtle accent-tinted line
+                // — reads as "context boundary" rather than chrome.
+                Container(
+                  width: 1,
+                  height: 18,
+                  color: const Color(0x33B981A8),
                 ),
-                // Row 2 — primary institution workspace nav. Only rendered
-                // when the shell doesn't have a left side-nav (i.e., at
-                // tablet/mobile). At desktop the left rail owns primary
-                // navigation, so this second header row is suppressed and
-                // the header collapses to a single identity-and-tools line.
+                const SizedBox(width: AuraSpace.s8),
+                // Primary nav fills the remaining row width. It
+                // already wraps a `SingleChildScrollView(horizontal)`,
+                // so at narrow widths the user scrolls horizontally
+                // rather than the strip wrapping to a second line.
                 if (showPrimaryNav)
-                  _InstitutionPrimaryNav(
-                    identity: identity,
-                    currentPath: currentPath,
-                    isDesktop: isDesktop,
+                  Expanded(
+                    child: _InstitutionPrimaryNav(
+                      identity: identity,
+                      currentPath: currentPath,
+                      isDesktop: isDesktop,
+                    ),
                   ),
               ],
             ),
@@ -928,7 +938,13 @@ class _PrimaryNavTab extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AuraSpace.s12,
-                vertical: AuraSpace.s8,
+                // Reduced from s8 → s6 in the multi-context consolidation
+                // pass. Tab content (text ~17 + 2·6 = 29 px) plus the
+                // 4-px outer context-bar padding gives a ~37-px context
+                // band instead of the prior ~41 px. The accent-underline
+                // marker stays 2 px wide and visually crisp at this
+                // tighter height.
+                vertical: AuraSpace.s6,
               ),
               decoration: BoxDecoration(
                 border: Border(

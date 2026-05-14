@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:aura/core/auth/session_providers.dart';
 
-import '../../../app/shell/rail/rail_modules.dart';
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -265,30 +265,10 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
             // time-sensitive (Live, Recent activity, Pinned) above
             // discovery (Verified institutions) and longer-running
             // affordances (Saved) and grounding (Governance).
-            contextRail: const AuraContextRail(
-              modules: [
-                // Civic-signal layer first — what is alive and accountable
-                // right now, in priority order:
-                //   * LIVE     — sessions in progress
-                //   * TRENDING — public discourse with momentum
-                //   * RESPONSE — where institutions have replied publicly
-                // Then operational continuity for this member:
-                //   * RECENT   — notification-driven activity
-                //   * PINNED   — platform announcements
-                //   * SAVED    — longer-term concerns
-                // Then ecosystem orientation:
-                //   * VERIFIED — discovery
-                //   * GOVERNANCE — grounding rationale
-                LiveNowRailModule(),
-                TrendingDiscourseRailModule(),
-                InstitutionalResponseRailModule(),
-                RecentActivityRailModule(),
-                PinnedAnnouncementRailModule(),
-                SavedRailModule(),
-                VerifiedInstitutionsRailModule(),
-                GovernanceNoticeRailModule(),
-              ],
-            ),
+            // Rail composition lives in rail_composition.dart — one
+            // source of truth for what each shell stacks and in what
+            // priority order.
+            contextRail: AuraContextRail(modules: memberFeedRailModules()),
           ),
         ),
     );
