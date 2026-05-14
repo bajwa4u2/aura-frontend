@@ -175,6 +175,55 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       try {
         ref.read(deviceServiceProvider).refreshPresence();
       } catch (_) {}
+
+      // Ringing-card reconciliation on resume.
+      //
+      // Background scenario the bridge can't recover from on its own: while
+      // this client was backgrounded, the call was accepted (or declined/
+      // expired/ended) on another device. The backend emitted `call:terminal`
+      // to our user-room while our socket was disconnected, so we never
+      // received it. The bridge state therefore still holds the ringing card,
+      // and the local ring timer happily counts down for up to 90s after the
+      // peer device answered — that is the "mobile keeps ringing after I
+      // picked up on desktop" report.
+      //
+      // Fix: on every resume, ask the backend whether each ringing session
+      // is still ringing FOR US, and evict the card if not. The repository
+      // call is bounded and idempotent; transport errors leave the card
+      // alone so the TTL still wins.
+      unawaited(_reconcileIncomingCallsOnResume());
+    }
+  }
+
+  Future<void> _reconcileIncomingCallsOnResume() async {
+    try {
+      final bridge = ref.read(incomingCallBridgeProvider.notifier);
+      final sessionIds = bridge.currentSessionIds();
+      if (sessionIds.isEmpty) return;
+
+      final me = await ref.read(authMeDataProvider.future);
+      final myUserId = (me['id'] ??
+              me['userId'] ??
+              (me['user'] is Map ? (me['user'] as Map)['id'] : null) ??
+              '')
+          .toString()
+          .trim();
+      if (myUserId.isEmpty) return;
+
+      final repo = ref.read(realtimeRepositoryProvider);
+      await Future.wait(
+        sessionIds.map((sid) async {
+          final resolved = await repo.isCallResolvedForUser(sid, myUserId);
+          if (resolved) {
+            bridge.removeBySession(sid);
+          }
+        }),
+        eagerError: false,
+      );
+    } catch (_) {
+      // Reconciliation is best-effort; failures should never crash the
+      // resume path. The 90s frontend TTL and the 30s backend sweep both
+      // back this up.
     }
   }
 

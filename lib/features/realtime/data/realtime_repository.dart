@@ -224,6 +224,57 @@ class RealtimeRepository {
     return _asList(list).map((m) => RealtimeSession.fromJson(m)).toList();
   }
 
+  /// Lightweight resolution check for app-resume reconciliation. Returns
+  /// whether the bridge should drop the ringing card for [sessionId]:
+  ///   - session 404 / ENDED / CANCELLED → drop
+  ///   - my participant invite is no longer PENDING (accepted on another
+  ///     device, declined, expired) → drop
+  ///
+  /// On any transport error returns false so the existing TTL still wins —
+  /// we never want a network blip to silently dismiss a legitimately
+  /// ringing call.
+  Future<bool> isCallResolvedForUser(String sessionId, String myUserId) async {
+    final trimmedSession = sessionId.trim();
+    final trimmedUser = myUserId.trim();
+    if (trimmedSession.isEmpty || trimmedUser.isEmpty) return false;
+
+    Response<dynamic> res;
+    try {
+      res = await _dio.get('/realtime/sessions/$trimmedSession');
+    } on DioException catch (error) {
+      // Treat 404/410 as authoritative "session gone — clear the card".
+      // Anything else (timeout, 5xx) leaves the decision to the TTL.
+      final status = error.response?.statusCode ?? 0;
+      if (status == 404 || status == 410) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+
+    final sessionMap = _unwrapMap(res.data);
+    final status = (sessionMap['status'] ?? '').toString().toUpperCase();
+    if (status == 'ENDED' || status == 'CANCELLED') return true;
+
+    final participantsRaw =
+        sessionMap['participants'] ?? sessionMap['sessionParticipants'];
+    if (participantsRaw is List) {
+      for (final p in participantsRaw) {
+        if (p is! Map) continue;
+        final pUserId = (p['userId'] ?? p['user']?['id'] ?? '').toString().trim();
+        if (pUserId != trimmedUser) continue;
+        final inviteStatus = (p['inviteStatus'] ?? '').toString().toUpperCase();
+        final joinState = (p['joinState'] ?? '').toString().toUpperCase();
+        // PENDING + INVITED = still ringing for me; anything else (ACCEPTED,
+        // DECLINED, EXPIRED, REVOKED, or any non-INVITED joinState) means
+        // the invite has resolved on this user, even if the session is
+        // still ACTIVE (the user accepted on another device).
+        if (inviteStatus != 'PENDING' || joinState != 'INVITED') return true;
+        return false;
+      }
+    }
+    return false;
+  }
+
   Future<Map<String, dynamic>> issueTurnCredentials(String sessionId) async {
     final res = await _dio.post(
       '/realtime/turn-credentials',

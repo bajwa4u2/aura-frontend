@@ -105,6 +105,34 @@ class IncomingCallBridgeNotifier
     state = state.where((item) => _str(item['id']) != id).toList();
   }
 
+  /// Public alias for [_onSessionTerminated] — used by app-resume
+  /// reconciliation to evict entries whose session has been resolved
+  /// (accepted on another device, expired, or ended) while this client was
+  /// backgrounded and missed the corresponding socket terminal event.
+  ///
+  /// Without this, a ringing card would remain on screen for up to ~90s
+  /// after a peer device answered, because the socket [call:terminal] was
+  /// emitted while this client's socket was disconnected and is not
+  /// replayed on reconnect.
+  void removeBySession(String sessionId) {
+    final trimmed = sessionId.trim();
+    if (trimmed.isEmpty) return;
+    _onSessionTerminated(trimmed);
+  }
+
+  /// Snapshot of the current ringing sessionIds. Used by resume
+  /// reconciliation to know which sessions to query, without forcing the
+  /// caller to walk the payload shape themselves.
+  Set<String> currentSessionIds() {
+    final ids = <String>{};
+    for (final item in state) {
+      final data = item['data'];
+      final sid = data is Map ? _str(data['sessionId']) : '';
+      if (sid.isNotEmpty) ids.add(sid);
+    }
+    return ids;
+  }
+
   /// Drop every pending incoming-call card and reset the notifier.
   ///
   /// The provider is a long-lived `StateNotifierProvider` (no
