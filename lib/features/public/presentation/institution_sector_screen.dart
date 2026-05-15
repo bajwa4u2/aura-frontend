@@ -9,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../civic_signals/widgets/sector_activity_panel.dart';
 import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
 import '../../institution_ontology/widgets/ontology_identity_chips.dart';
@@ -110,7 +111,8 @@ class _InstitutionSectorScreenState
                         ),
                       ),
                     ),
-                    data: (page) => _SectorBody(
+                    data: (page) => _SectorBodyWithActivity(
+                      classId: widget.classId,
                       classLabel: classDef?.label ?? widget.classId,
                       page: page,
                       isFiltered: _selectedType != null,
@@ -269,6 +271,67 @@ class _Pill extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Layout host for the sector landing's main body.
+///
+/// On wide layouts (≥ 1100 px) renders the institution result grid as
+/// the primary column with a secondary `SectorActivityPanel` column —
+/// asymmetric ecosystem composition. On narrower viewports stacks
+/// vertically with the panel below the grid.
+///
+/// The panel itself self-collapses when no signals exist, so there's
+/// never a dead secondary column on quiet sectors. The right-column
+/// width is capped at 360 px and falls back to 320 px on tighter
+/// desktops; the main column always gets the bulk of horizontal room.
+class _SectorBodyWithActivity extends StatelessWidget {
+  const _SectorBodyWithActivity({
+    required this.classId,
+    required this.classLabel,
+    required this.page,
+    required this.isFiltered,
+  });
+
+  final String classId;
+  final String classLabel;
+  final PublicInstitutionsPage page;
+  final bool isFiltered;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final body = _SectorBody(
+          classLabel: classLabel,
+          page: page,
+          isFiltered: isFiltered,
+        );
+        final panel = SectorActivityPanel(
+          classId: classId,
+          classLabel: classLabel,
+        );
+        if (constraints.maxWidth >= 1100) {
+          final railWidth = constraints.maxWidth >= 1280 ? 360.0 : 320.0;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: body),
+              const SizedBox(width: AuraSpace.s20),
+              SizedBox(width: railWidth, child: panel),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            body,
+            const SizedBox(height: AuraSpace.s16),
+            panel,
+          ],
+        );
+      },
     );
   }
 }

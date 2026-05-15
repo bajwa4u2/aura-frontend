@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../features/civic_signals/widgets/institution_activity_strip.dart';
 import '../../../features/institution_ontology/providers.dart';
 import '../../../features/institution_ontology/widgets/ontology_class_filter.dart';
 import '../../../features/institution_ontology/widgets/ontology_identity_chips.dart';
@@ -119,6 +120,13 @@ class _PublicInstitutionsDirectoryScreenState
                   const _BrowseBySectorHeading(),
                   const SizedBox(height: AuraSpace.s10),
                   const SectorGrid(),
+                  const SizedBox(height: AuraSpace.s20),
+                  // Real public-feed civic signal — collapses entirely
+                  // when no institution-authored items are present in
+                  // the public feed. Derived from
+                  // `recentInstitutionalVoicesProvider` (no new
+                  // endpoints, no fake counts).
+                  const InstitutionActivityStrip(),
                   const SizedBox(height: AuraSpace.s16),
                   _SearchAndFilters(
                     controller: _searchController,
