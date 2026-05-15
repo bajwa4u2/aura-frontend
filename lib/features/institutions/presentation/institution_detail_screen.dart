@@ -14,6 +14,10 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../discourse_intelligence/models.dart';
+import '../../discourse_intelligence/providers.dart';
+import '../../discourse_intelligence/widgets/continuity_cards.dart';
+import '../../discourse_intelligence/widgets/discourse_continuity_panel.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/unified_feed_card.dart';
 import '../../institution_ontology/widgets/ontology_identity_chips.dart';
@@ -224,6 +228,18 @@ class _InstitutionDetailBody extends ConsumerWidget {
                         institutionId: institution.id,
                         postsAsync: postsAsync,
                       ),
+                      // Institution-scoped continuity surfaces. Each
+                      // self-collapses when no aggregation backs it,
+                      // so a quiet institution shows nothing extra —
+                      // never an empty metric box.
+                      const SizedBox(height: AuraSpace.s14),
+                      DiscourseContinuityPanel(
+                        institutionId: institution.id,
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                      _RelatedInstitutionsSection(
+                        institutionId: institution.id,
+                      ),
                     ],
                   ),
                 ),
@@ -371,6 +387,76 @@ class _InfoRow extends StatelessWidget {
 // the shared `UnifiedFeedCard`. Empty state only fires when the provider
 // returns an empty page — never when posts exist (per Phase 2 rule:
 // "❌ Remove false 'No posts' empty state").
+
+/// Related-institution co-participation strip. Reads
+/// `relatedInstitutionsProvider(institutionId)` and surfaces the
+/// strip when the backend returned ≥1 co-participating institution.
+/// Calm "related institutional participation" framing — no
+/// recommendation engine, no leaderboard tone.
+class _RelatedInstitutionsSection extends ConsumerWidget {
+  const _RelatedInstitutionsSection({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (institutionId.isEmpty) return const SizedBox.shrink();
+    final async = ref.watch(relatedInstitutionsProvider(institutionId));
+    final rows = async.maybeWhen(
+      data: (p) => p.items,
+      orElse: () => const <RelatedInstitutionRow>[],
+    );
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        border: Border.all(
+          color: AuraSurface.divider.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  'Related institutional participation',
+                  style: AuraText.subtitle.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Other institutions that have replied on the same recent '
+            'public discussions.',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          RelatedInstitutionStrip(rows: rows),
+        ],
+      ),
+    );
+  }
+}
 
 class _PublicPostsSection extends ConsumerWidget {
   const _PublicPostsSection({

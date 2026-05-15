@@ -10,6 +10,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../civic_signals/widgets/sector_activity_panel.dart';
+import '../../discourse_intelligence/widgets/discourse_continuity_panel.dart';
 import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
 import '../../institution_ontology/widgets/ontology_identity_chips.dart';
@@ -308,9 +309,26 @@ class _SectorBodyWithActivity extends StatelessWidget {
           page: page,
           isFiltered: isFiltered,
         );
-        final panel = SectorActivityPanel(
-          classId: classId,
-          classLabel: classLabel,
+        // The secondary rail column now stacks two complementary
+        // surfaces:
+        //   * SectorActivityPanel — what institutions in this sector
+        //     are publicly saying right now (institution-voice
+        //     posts).
+        //   * DiscourseContinuityPanel — observed civic continuity
+        //     (ongoing discussions, unanswered questions, response
+        //     activity). Each section self-collapses; the whole
+        //     panel collapses when every section is empty.
+        final secondary = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SectorActivityPanel(
+              classId: classId,
+              classLabel: classLabel,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            DiscourseContinuityPanel(institutionClass: classId),
+          ],
         );
         if (constraints.maxWidth >= 1100) {
           final railWidth = constraints.maxWidth >= 1280 ? 360.0 : 320.0;
@@ -319,7 +337,7 @@ class _SectorBodyWithActivity extends StatelessWidget {
             children: [
               Expanded(child: body),
               const SizedBox(width: AuraSpace.s20),
-              SizedBox(width: railWidth, child: panel),
+              SizedBox(width: railWidth, child: secondary),
             ],
           );
         }
@@ -328,7 +346,7 @@ class _SectorBodyWithActivity extends StatelessWidget {
           children: [
             body,
             const SizedBox(height: AuraSpace.s16),
-            panel,
+            secondary,
           ],
         );
       },

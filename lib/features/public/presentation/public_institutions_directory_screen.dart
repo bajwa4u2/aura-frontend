@@ -11,6 +11,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../features/civic_signals/widgets/institution_activity_strip.dart';
+import '../../../features/discourse_intelligence/widgets/ongoing_discussions_strip.dart';
 import '../../../features/institution_ontology/providers.dart';
 import '../../../features/institution_ontology/widgets/ontology_class_filter.dart';
 import '../../../features/institution_ontology/widgets/ontology_identity_chips.dart';
@@ -127,6 +128,13 @@ class _PublicInstitutionsDirectoryScreenState
                   // `recentInstitutionalVoicesProvider` (no new
                   // endpoints, no fake counts).
                   const InstitutionActivityStrip(),
+                  const SizedBox(height: AuraSpace.s16),
+                  // Civic continuity band — recent public discussions
+                  // with sustained reply activity. Single horizontal
+                  // strip, capped tight; self-collapses when no
+                  // discussion clears the reply-velocity threshold
+                  // on the backend aggregation.
+                  const OngoingDiscussionsStrip(),
                   const SizedBox(height: AuraSpace.s16),
                   _SearchAndFilters(
                     controller: _searchController,
