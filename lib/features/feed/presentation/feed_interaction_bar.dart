@@ -17,12 +17,17 @@ import '../domain/feed_item.dart' show FeedInteraction;
 /// Was previously `_ExploreInteractionBar` private to the institution
 /// explore screen — promoted to a public widget so [UnifiedFeedCard] (and any
 /// other feed-shape consumer) can wire real reactions instead of placeholder
-/// stat pills. Behaviour is unchanged from the explore version.
+/// stat pills.
 ///
 /// `target` is polymorphic over `PostReactionTarget` (user posts) and
 /// `InstitutionPostReactionTarget` (institution posts) — the reactions
 /// service routes the toggle/state calls to the right backend surface.
-class FeedInteractionBar extends ConsumerWidget {
+///
+/// R1 hardening:
+///  * concurrent-tap guard per action (like / repost / reply)
+///  * optimistic like + rollback on backend failure
+///  * canonical provider invalidation after success
+class FeedInteractionBar extends ConsumerStatefulWidget {
   const FeedInteractionBar({
     super.key,
     required this.target,
@@ -34,13 +39,27 @@ class FeedInteractionBar extends ConsumerWidget {
   /// Aura interaction visibility & counts as projected by the backend.
   /// The bar always renders Like / Reply / Repost actions; numeric counts
   /// only render when the corresponding `canView*Count` flag is true.
-  /// Default is `FeedInteraction.empty` (all flags closed), so any caller
-  /// that forgets to pass real visibility will never accidentally expose a
-  /// count.
   final FeedInteraction visibility;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FeedInteractionBar> createState() => _FeedInteractionBarState();
+}
+
+class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
+  bool _likeBusy = false;
+  bool _repostBusy = false;
+  bool _replyBusy = false;
+
+  // Optimistic overrides. Set the moment the user taps Like; cleared
+  // after the canonical provider re-fetch completes or on backend failure.
+  bool? _optimisticLiked;
+  int? _optimisticLikeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = widget.target;
+    final visibility = widget.visibility;
+
     final isAuthed = ref.watch(isAuthedProvider);
     final identity = ref.watch(institutionIdentityProvider);
     final actor = identity != null && identity.id.isNotEmpty
@@ -53,9 +72,7 @@ class FeedInteractionBar extends ConsumerWidget {
     final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
 
     // Signed-out interactions route the visitor to sign-in rather than
-    // firing a guaranteed 401 against the auth-gated toggle endpoint. The
-    // public feed card remains readable; the action just becomes a join
-    // prompt instead of a snackbar error.
+    // firing a guaranteed 401 against the auth-gated toggle endpoint.
     void goSignIn() {
       final redirect = GoRouterState.of(context).uri.toString();
       context.go(
@@ -68,15 +85,48 @@ class FeedInteractionBar extends ConsumerWidget {
         goSignIn();
         return;
       }
+      if (_likeBusy) return;
+
+      final providerLiked = reactionAsync.maybeWhen(
+        data: (s) => s.liked,
+        orElse: () => false,
+      );
+      final providerCount = reactionAsync.maybeWhen(
+        data: (s) => s.likeCount > 0 ? s.likeCount : visibility.likeCount,
+        orElse: () => visibility.likeCount,
+      );
+      final nextLiked = !providerLiked;
+      final nextCount = (providerCount + (nextLiked ? 1 : -1))
+          .clamp(0, 1 << 31)
+          .toInt();
+
+      setState(() {
+        _likeBusy = true;
+        _optimisticLiked = nextLiked;
+        _optimisticLikeCount = nextCount;
+      });
+
       try {
         final repo = ref.read(reactionsRepositoryProvider);
-        await repo.toggle(target, actor: actor);
-        // Phase 3 — refresh the per-actor reaction state for the bar
-        // and the feed surfaces so the snapshot in surrounding cards
-        // updates without requiring navigation.
+        final result = await repo.toggle(target, actor: actor);
+        if (!mounted) return;
+        // Server-confirmed state. Replace the optimistic snapshot with the
+        // server's truth and invalidate canonical surfaces so other cards
+        // (post detail, sibling feeds) re-converge.
+        setState(() {
+          _optimisticLiked = result.liked;
+          _optimisticLikeCount = result.likeCount;
+        });
         ref.invalidate(reactionStateProvider(reactionKey));
         invalidateUnifiedFeedSurfaces(ref);
       } catch (e) {
+        if (!mounted) return;
+        // Rollback: drop optimistic override so the bar reverts to the
+        // provider's truth (which never changed locally).
+        setState(() {
+          _optimisticLiked = null;
+          _optimisticLikeCount = null;
+        });
         if (!context.mounted) return;
         if (e is DioException && e.response?.statusCode == 403) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -86,11 +136,13 @@ class FeedInteractionBar extends ConsumerWidget {
               ),
             ),
           );
-          return;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not update like')),
+          );
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update like')),
-        );
+      } finally {
+        if (mounted) setState(() => _likeBusy = false);
       }
     }
 
@@ -98,7 +150,7 @@ class FeedInteractionBar extends ConsumerWidget {
       final replyKey = target is InstitutionPostReactionTarget
           ? 'replyToInstitutionPostId=${target.postId}'
               '&parentInstitutionId='
-              '${(target as InstitutionPostReactionTarget).institutionId}'
+              '${target.institutionId}'
           : 'replyTo=${target.postId}';
       final base = '/compose?$replyKey&surface=dm';
       if (actor.isInstitution && canActAsInstitution) {
@@ -108,25 +160,38 @@ class FeedInteractionBar extends ConsumerWidget {
       return base;
     }
 
-    final liked = reactionAsync.maybeWhen(
+    Future<void> openReply() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
+      if (_replyBusy) return;
+      setState(() => _replyBusy = true);
+      try {
+        final result = await context.push<dynamic>(composeReplyTarget());
+        if (result == true) {
+          ref.invalidate(reactionStateProvider(reactionKey));
+          invalidateUnifiedFeedSurfaces(ref);
+        }
+      } finally {
+        if (mounted) setState(() => _replyBusy = false);
+      }
+    }
+
+    final providerLiked = reactionAsync.maybeWhen(
       data: (s) => s.liked,
       orElse: () => false,
     );
-    // Like label honors the visibility flag: state ("Like"/"Liked") is
-    // always shown so the viewer knows whether they reacted, but the
-    // count is appended only when canViewLikeCount=true. We never render
-    // "0", "—", or placeholders.
-    //
-    // The count comes from the public feed payload (`visibility.likeCount`)
-    // which is the global count and the same for every viewer. When the
-    // viewer is signed in, the per-actor toggle response also returns
-    // `likeCount`; we prefer it after a toggle so the bar reflects the
-    // post-toggle delta immediately. Signed-out viewers always see the
-    // payload count — there is no viewer-state call.
-    final displayedLikeCount = reactionAsync.maybeWhen(
+    final liked = _optimisticLiked ?? providerLiked;
+
+    // Display count: prefer optimistic (matches just-tapped UX), otherwise
+    // the per-actor toggle response, otherwise the public payload count.
+    // Never renders 0/placeholders — gated by canViewLikeCount below.
+    final providerCount = reactionAsync.maybeWhen(
       data: (s) => s.likeCount > 0 ? s.likeCount : visibility.likeCount,
       orElse: () => visibility.likeCount,
     );
+    final displayedLikeCount = _optimisticLikeCount ?? providerCount;
     final likeLabel = (() {
       final base = liked ? 'Liked' : 'Like';
       if (visibility.canViewLikeCount && displayedLikeCount > 0) {
@@ -154,7 +219,9 @@ class FeedInteractionBar extends ConsumerWidget {
         goSignIn();
         return;
       }
+      if (_repostBusy) return;
       final controller = TextEditingController();
+      setState(() => _repostBusy = true);
       try {
         final ok = await showDialog<bool>(
           context: context,
@@ -184,7 +251,7 @@ class FeedInteractionBar extends ConsumerWidget {
         final text = controller.text.trim();
         final dio = ref.read(dioProvider);
         if (target is InstitutionPostReactionTarget) {
-          final t = target as InstitutionPostReactionTarget;
+          final t = target;
           final body = <String, dynamic>{};
           if (text.isNotEmpty) body['text'] = text;
           if (canActAsInstitution) {
@@ -204,9 +271,6 @@ class FeedInteractionBar extends ConsumerWidget {
           }
           await dio.post('/posts/${target.postId}/repost', data: body);
         }
-        // Phase 3 — refresh feed surfaces so the new repost lands on
-        // public/member home and the source post's repost count updates
-        // without requiring a navigate-away/return cycle.
         invalidateUnifiedFeedSurfaces(ref);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,6 +283,7 @@ class FeedInteractionBar extends ConsumerWidget {
         );
       } finally {
         controller.dispose();
+        if (mounted) setState(() => _repostBusy = false);
       }
     }
 
@@ -235,14 +300,7 @@ class FeedInteractionBar extends ConsumerWidget {
         AuraActionPill(
           icon: Icons.reply_outlined,
           label: replyLabel(),
-          // Phase 3 — await the compose result so we can refresh feed
-          // counts when the user actually publishes the reply. The
-          // compose screen pops with `true` on successful publish.
-          onTap: () async {
-            final result =
-                await context.push<dynamic>(composeReplyTarget());
-            if (result == true) invalidateUnifiedFeedSurfaces(ref);
-          },
+          onTap: openReply,
         ),
         AuraActionPill(
           icon: Icons.repeat_rounded,

@@ -1315,10 +1315,30 @@ class _PostCardState extends ConsumerState<PostCard> {
   }
 }
 
-class _ActionRow extends ConsumerWidget {
+class _ActionRow extends ConsumerStatefulWidget {
   const _ActionRow({required this.postId});
 
   final String postId;
+
+  @override
+  ConsumerState<_ActionRow> createState() => _ActionRowState();
+}
+
+class _ActionRowState extends ConsumerState<_ActionRow> {
+  bool _likeBusy = false;
+  bool _saveBusy = false;
+  bool _repostBusy = false;
+  bool _replyBusy = false;
+
+  // Optimistic overrides for the Like pill. Set on tap, cleared after the
+  // canonical provider re-fetch lands or on backend failure.
+  bool? _optimisticLiked;
+  int? _optimisticLikeCount;
+
+  // Optimistic Save state — flips immediately on tap so the pill reflects
+  // the intended state while the request is in flight. Cleared on success
+  // (provider re-fetch is the truth) or on failure (revert).
+  bool? _optimisticSaved;
 
   void _showError(BuildContext context, String message) {
     if (!context.mounted) return;
@@ -1328,7 +1348,8 @@ class _ActionRow extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final postId = widget.postId;
     final isAuthed = ref.watch(isAuthedProvider);
     final saved = ref.watch(isSavedProvider(postId));
     final actor = activeReactionActor(context, ref);
@@ -1336,9 +1357,6 @@ class _ActionRow extends ConsumerWidget {
     final reactionKey = ReactionStateKey(target: target, actor: actor);
     final reactionAsync = ref.watch(reactionStateProvider(reactionKey));
 
-    // Signed-out actions route to /login instead of firing a guaranteed
-    // 401 against the auth-gated endpoint. Public visitors still see the
-    // card; the action becomes a join prompt.
     void goSignIn() {
       final redirect = GoRouterState.of(context).uri.toString();
       context.go(
@@ -1351,22 +1369,54 @@ class _ActionRow extends ConsumerWidget {
         goSignIn();
         return;
       }
+      if (_likeBusy) return;
+
+      final providerLiked = reactionAsync.maybeWhen(
+        data: (s) => s.liked,
+        orElse: () => false,
+      );
+      final providerCount = reactionAsync.maybeWhen(
+        data: (s) => s.likeCount,
+        orElse: () => 0,
+      );
+      final nextLiked = !providerLiked;
+      final nextCount = (providerCount + (nextLiked ? 1 : -1))
+          .clamp(0, 1 << 31)
+          .toInt();
+
+      setState(() {
+        _likeBusy = true;
+        _optimisticLiked = nextLiked;
+        _optimisticLikeCount = nextCount;
+      });
+
       try {
         final repo = ref.read(reactionsRepositoryProvider);
-        await repo.toggle(target, actor: actor);
-        // Re-fetch so the pill reflects the new state + count from the
-        // canonical server reply (handles concurrent likes from elsewhere).
+        final result = await repo.toggle(target, actor: actor);
+        if (!mounted) return;
+        setState(() {
+          _optimisticLiked = result.liked;
+          _optimisticLikeCount = result.likeCount;
+        });
         ref.invalidate(reactionStateProvider(reactionKey));
+        invalidateUnifiedFeedSurfaces(ref);
       } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _optimisticLiked = null;
+          _optimisticLikeCount = null;
+        });
         if (!context.mounted) return;
         if (e is DioException && e.response?.statusCode == 403) {
           _showError(
             context,
             'Only institution speakers can react as institution.',
           );
-          return;
+        } else {
+          _showError(context, 'Could not update like');
         }
-        _showError(context, 'Could not update like');
+      } finally {
+        if (mounted) setState(() => _likeBusy = false);
       }
     }
 
@@ -1379,19 +1429,57 @@ class _ActionRow extends ConsumerWidget {
       return base;
     }
 
+    Future<void> openReply() async {
+      if (!isAuthed) {
+        goSignIn();
+        return;
+      }
+      if (_replyBusy) return;
+      setState(() => _replyBusy = true);
+      try {
+        final result = await context.push<dynamic>(composeReplyTarget());
+        if (result == true) {
+          invalidateUnifiedFeedSurfaces(ref);
+        }
+      } finally {
+        if (mounted) setState(() => _replyBusy = false);
+      }
+    }
+
     Future<void> toggleSave() async {
       if (!isAuthed) {
         goSignIn();
         return;
       }
+      if (_saveBusy) return;
+
+      final providerSavedNow = saved.maybeWhen<bool>(
+        data: (v) => v,
+        orElse: () => false,
+      );
+      final currentSaved = _optimisticSaved ?? providerSavedNow;
+      final nextSaved = !currentSaved;
+
+      setState(() {
+        _saveBusy = true;
+        _optimisticSaved = nextSaved;
+      });
+
       try {
         final repo = ref.read(savesRepositoryProvider);
         await repo.toggle(postId);
+        if (!mounted) return;
+        // Provider re-fetch is the truth after this point.
         ref.invalidate(isSavedProvider(postId));
         ref.invalidate(savedPostsProvider);
+        setState(() => _optimisticSaved = null);
       } catch (_) {
+        if (!mounted) return;
+        setState(() => _optimisticSaved = null);
         if (!context.mounted) return;
         _showError(context, 'Could not update save');
+      } finally {
+        if (mounted) setState(() => _saveBusy = false);
       }
     }
 
@@ -1400,7 +1488,9 @@ class _ActionRow extends ConsumerWidget {
         goSignIn();
         return;
       }
+      if (_repostBusy) return;
       final controller = TextEditingController();
+      setState(() => _repostBusy = true);
 
       try {
         final ok = await showDialog<bool>(
@@ -1438,18 +1528,13 @@ class _ActionRow extends ConsumerWidget {
         if (text.isNotEmpty) payload['text'] = text;
 
         // Phase-3 actor-aware repost: forward asInstitution + institutionId
-        // when the active context is the institution shell so the repost
-        // attributes to the institution.
+        // when the active context is the institution shell.
         if (actor.isInstitution) {
           payload['asInstitution'] = true;
           payload['institutionId'] = actor.actorInstitutionId;
         }
         await dio.post('/posts/$postId/repost', data: payload);
 
-        // Mirror FeedInteractionBar:78 — invalidate every feed surface so
-        // the new repost count and the inserted repost row are visible on
-        // the next watch. Without this, the post-detail repost succeeded
-        // but the feed showed the stale count until manual refresh.
         invalidateUnifiedFeedSurfaces(ref);
 
         if (!context.mounted) return;
@@ -1460,6 +1545,7 @@ class _ActionRow extends ConsumerWidget {
         _showError(context, 'Could not repost');
       } finally {
         controller.dispose();
+        if (mounted) setState(() => _repostBusy = false);
       }
     }
 
@@ -1540,17 +1626,26 @@ class _ActionRow extends ConsumerWidget {
       );
     }
 
-    final likeLabel = reactionAsync.maybeWhen(
-      data: (s) {
-        final base = s.liked ? 'Liked' : 'Like';
-        return s.likeCount > 0 ? '$base · ${s.likeCount}' : base;
-      },
-      orElse: () => 'Like',
-    );
-    final liked = reactionAsync.maybeWhen(
+    final providerLiked = reactionAsync.maybeWhen(
       data: (s) => s.liked,
       orElse: () => false,
     );
+    final providerLikeCount = reactionAsync.maybeWhen(
+      data: (s) => s.likeCount,
+      orElse: () => 0,
+    );
+    final liked = _optimisticLiked ?? providerLiked;
+    final likeCount = _optimisticLikeCount ?? providerLikeCount;
+    final likeLabel = (() {
+      final base = liked ? 'Liked' : 'Like';
+      return likeCount > 0 ? '$base · $likeCount' : base;
+    })();
+
+    final providerSaved = saved.maybeWhen<bool>(
+      data: (v) => v,
+      orElse: () => false,
+    );
+    final saveEffective = _optimisticSaved ?? providerSaved;
 
     return Wrap(
       spacing: AuraSpace.s8,
@@ -1565,26 +1660,14 @@ class _ActionRow extends ConsumerWidget {
         AuraActionPill(
           icon: Icons.reply_outlined,
           label: 'Respond',
-          onTap: () => context.push(composeReplyTarget()),
+          onTap: openReply,
         ),
         AuraActionPill(icon: Icons.repeat, label: 'Repost', onTap: repost),
-        saved.when(
-          data: (v) => AuraActionPill(
-            icon: v ? Icons.bookmark : Icons.bookmark_border,
-            label: v ? 'Saved' : 'Save',
-            onTap: toggleSave,
-            active: v,
-          ),
-          loading: () => AuraActionPill(
-            icon: Icons.bookmark_border,
-            label: 'Save',
-            onTap: toggleSave,
-          ),
-          error: (_, __) => AuraActionPill(
-            icon: Icons.bookmark_border,
-            label: 'Save',
-            onTap: toggleSave,
-          ),
+        AuraActionPill(
+          icon: saveEffective ? Icons.bookmark : Icons.bookmark_border,
+          label: saveEffective ? 'Saved' : 'Save',
+          onTap: toggleSave,
+          active: saveEffective,
         ),
         AuraActionPill(
           icon: Icons.share_outlined,
