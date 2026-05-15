@@ -69,7 +69,7 @@ class PublicInstitutionUnitsScreen extends ConsumerWidget {
                     _Header(page: page),
                     const SizedBox(height: AuraSpace.s20),
                     if (page.units.isEmpty)
-                      AuraEmptyState(
+                      const AuraEmptyState(
                         title: 'No public units yet',
                         body:
                             'This institution hasn\'t exposed any sub-units '
@@ -242,7 +242,7 @@ class _UnitCard extends StatelessWidget {
                 const SizedBox(height: AuraSpace.s8),
                 Row(
                   children: [
-                    Icon(Icons.place_outlined,
+                    const Icon(Icons.place_outlined,
                         size: 12, color: AuraSurface.faint),
                     const SizedBox(width: 4),
                     Text(

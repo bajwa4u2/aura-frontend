@@ -94,7 +94,7 @@ class DiscourseContinuityPanel extends ConsumerWidget {
           _PanelHeading(),
           if (showIssues) ...[
             const SizedBox(height: AuraSpace.s12),
-            _SectionHeading(
+            const _SectionHeading(
               icon: Icons.forum_outlined,
               label: 'Ongoing public discussions',
               subtitle: 'Observed from recent public activity.',
@@ -110,7 +110,7 @@ class DiscourseContinuityPanel extends ConsumerWidget {
           ],
           if (showUnanswered) ...[
             const SizedBox(height: AuraSpace.s16),
-            _SectionHeading(
+            const _SectionHeading(
               icon: Icons.help_outline_rounded,
               label: 'Awaiting institutional response',
               subtitle:
@@ -127,7 +127,7 @@ class DiscourseContinuityPanel extends ConsumerWidget {
           ],
           if (showResponsiveness) ...[
             const SizedBox(height: AuraSpace.s16),
-            _SectionHeading(
+            const _SectionHeading(
               icon: Icons.timeline_outlined,
               label: 'Observed response activity',
               subtitle:

@@ -202,7 +202,7 @@ class _Body extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.chevron_right_rounded,
                   color: AuraSurface.faint,
                 ),
@@ -342,7 +342,7 @@ class _ActivityRedirect extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Public activity', style: AuraText.title),
+          const Text('Public activity', style: AuraText.title),
           const SizedBox(height: AuraSpace.s6),
           Text(
             'Posts and announcements from this unit appear in the '

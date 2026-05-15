@@ -1856,7 +1856,7 @@ class _OntologyEditSection extends ConsumerWidget {
           left: _StudioField(
             label: 'Institution class',
             child: DropdownButtonFormField<String?>(
-              value: institutionClass,
+              initialValue: institutionClass,
               decoration: const InputDecoration(
                 isDense: true,
                 hintText: 'Choose a class',
@@ -1878,7 +1878,7 @@ class _OntologyEditSection extends ConsumerWidget {
           right: _StudioField(
             label: 'Institution type',
             child: DropdownButtonFormField<String?>(
-              value: institutionType,
+              initialValue: institutionType,
               decoration: InputDecoration(
                 isDense: true,
                 hintText: institutionClass == null

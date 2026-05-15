@@ -46,7 +46,7 @@ class OngoingDiscussionsStrip extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AuraSpace.s8),
-            Text('Ongoing public discussions', style: AuraText.title),
+            const Text('Ongoing public discussions', style: AuraText.title),
             const SizedBox(width: AuraSpace.s8),
             Flexible(
               child: Text(

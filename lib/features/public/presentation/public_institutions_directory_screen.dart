@@ -230,7 +230,7 @@ class _Header extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Institutions', style: AuraText.headline),
+        const Text('Institutions', style: AuraText.headline),
         const SizedBox(height: AuraSpace.s6),
         Text(
           'Public ledgers of accountability. Verified organizations '
@@ -827,7 +827,7 @@ class _BrowseBySectorHeading extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AuraSpace.s8),
-        Text('Browse by sector', style: AuraText.title),
+        const Text('Browse by sector', style: AuraText.title),
         const SizedBox(width: AuraSpace.s8),
         Flexible(
           child: Text(

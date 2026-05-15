@@ -44,7 +44,7 @@ class InstitutionActivityStrip extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AuraSpace.s8),
-            Text('Recent institutional voices', style: AuraText.title),
+            const Text('Recent institutional voices', style: AuraText.title),
             const SizedBox(width: AuraSpace.s8),
             Flexible(
               child: Text(

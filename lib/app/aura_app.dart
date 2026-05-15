@@ -18,6 +18,7 @@ import '../core/notifications/notification_bridge.dart';
 import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
+import '../features/realtime/data/realtime_reconciliation_controller.dart';
 import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
 
@@ -50,6 +51,19 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
         try {
           ref.read(deviceServiceProvider).registerCurrentDevice();
         } catch (_) {}
+      }
+      // R3 — Boot the cross-device reconciliation controller. The
+      // controller subscribes to the correspondence socket and
+      // converts incoming `post:interaction.changed` / `follow:state
+      // .changed` / `socket:connected` events into canonical-provider
+      // invalidations so a mutation on one session converges on the
+      // others. The read is idempotent — the provider is a long-lived
+      // singleton scoped to the ProviderScope.
+      try {
+        ref.read(realtimeReconciliationProvider);
+      } catch (_) {
+        // Reconciliation is best-effort; failure here must never
+        // prevent the app from booting.
       }
     });
   }
@@ -175,6 +189,20 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       if (!ref.read(isAuthedProvider)) return;
       try {
         ref.read(deviceServiceProvider).refreshPresence();
+      } catch (_) {}
+
+      // R3 — Nudge the correspondence socket back online on resume so
+      // the synthetic `socket:connected` event fires through the
+      // reconciliation controller. That's the missed-event recovery
+      // path: any like/save/follow that happened on another device
+      // while this one was backgrounded converges on the next frame
+      // after resume. Idempotent — `ensureConnected` no-ops when
+      // already connected.
+      try {
+        unawaited(
+          ref.read(correspondenceLiveServiceProvider).ensureConnected()
+              .catchError((_) {}),
+        );
       } catch (_) {}
 
       // Ringing-card reconciliation on resume.

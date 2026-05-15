@@ -129,9 +129,30 @@ class CorrespondenceLiveService {
       'session:participant.left',
       'session:removed',
       'realtime:removed',
+      // R3 — cross-device interaction + follow reconciliation. Payloads
+      // are minimal triggers; listeners fan out to canonical providers
+      // via `RealtimeReconciliationController` so backend remains the
+      // truth source.
+      'post:interaction.changed',
+      'follow:state.changed',
+      'feed:item.changed',
     ]) {
       onNamed(name);
     }
+
+    // R3 — emit a synthetic `socket:connected` so reconcile controllers
+    // can flush canonical providers after a missed-event window
+    // (reconnect closes that window). socket_io_client fires onConnect
+    // both on first connect and after reconnect, so we don't need to
+    // distinguish.
+    socket.onConnect((_) {
+      if (!_events.isClosed) {
+        _events.add(const CorrespondenceLiveEvent(
+          name: 'socket:connected',
+          payload: <String, dynamic>{},
+        ));
+      }
+    });
 
     socket.connect();
     _socket = socket;

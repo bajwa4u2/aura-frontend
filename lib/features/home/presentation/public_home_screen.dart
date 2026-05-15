@@ -329,7 +329,7 @@ class _HeroLeft extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.account_balance_outlined,
                   size: 14,
                   color: AuraSurface.muted,
@@ -343,7 +343,7 @@ class _HeroLeft extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(
+                const Icon(
                   Icons.arrow_forward_rounded,
                   size: 14,
                   color: AuraSurface.muted,
