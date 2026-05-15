@@ -32,13 +32,18 @@ class SectorGrid extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        final cols = w >= 1100
-            ? 4
-            : w >= 820
-                ? 3
-                : w >= 540
-                    ? 2
-                    : 1;
+        // Desktop normalization — 5 cols at widescreen so the 24
+        // curated classes lay out in ~5 visual rows instead of 6.
+        // Below 1100 the previous 4-3-2-1 scale is preserved.
+        final cols = w >= 1280
+            ? 5
+            : w >= 1000
+                ? 4
+                : w >= 760
+                    ? 3
+                    : w >= 540
+                        ? 2
+                        : 1;
         return Wrap(
           spacing: AuraSpace.s10,
           runSpacing: AuraSpace.s10,

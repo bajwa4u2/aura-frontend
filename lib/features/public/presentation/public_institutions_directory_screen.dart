@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -95,12 +96,19 @@ class _PublicInstitutionsDirectoryScreenState
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1080),
+              // Desktop composition normalization — widened from 1080 →
+              // kHeroWidth (1360) so the ecosystem map breathes on
+              // widescreen and ultrawide displays, and so card grids
+              // can run 4 columns wide without compressing card
+              // content. Mobile / tablet are unaffected; the outer
+              // ListView still owns horizontal padding (s16) so the
+              // visual cap kicks in only at viewport > 1392 px.
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _Header(isAuthed: isAuthed),
-                  const SizedBox(height: AuraSpace.s20),
+                  const SizedBox(height: AuraSpace.s16),
                   // Browse-by-sector ecosystem grid — every curated
                   // ontology class as a tap-through entry card. Each
                   // tile routes to `/institutions/sector/:classId`,
@@ -111,7 +119,7 @@ class _PublicInstitutionsDirectoryScreenState
                   const _BrowseBySectorHeading(),
                   const SizedBox(height: AuraSpace.s10),
                   const SectorGrid(),
-                  const SizedBox(height: AuraSpace.s24),
+                  const SizedBox(height: AuraSpace.s16),
                   _SearchAndFilters(
                     controller: _searchController,
                     onSearchSubmit: (value) {
@@ -495,11 +503,19 @@ class _InstitutionGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 960
-            ? 3
-            : constraints.maxWidth >= 640
-                ? 2
-                : 1;
+        // Desktop normalization — 4 cols at widescreen so cards
+        // breathe horizontally and the directory uses its viewport.
+        // Each step keeps card content readable: at 4 cols the
+        // minimum card width is ~310 px (sector landing's outer
+        // 1280 - 36 spacing) which fits the chip row + tagline
+        // without premature wrapping.
+        final cols = constraints.maxWidth >= 1280
+            ? 4
+            : constraints.maxWidth >= 920
+                ? 3
+                : constraints.maxWidth >= 600
+                    ? 2
+                    : 1;
         return Wrap(
           spacing: AuraSpace.s12,
           runSpacing: AuraSpace.s12,

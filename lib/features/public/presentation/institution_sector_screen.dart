@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -69,7 +70,10 @@ class _InstitutionSectorScreenState
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1080),
+              // Desktop composition normalization — matches the
+              // directory landing so a class drill-through keeps the
+              // same horizontal frame.
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -369,11 +373,15 @@ class _SectorGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 960
-            ? 3
-            : constraints.maxWidth >= 640
-                ? 2
-                : 1;
+        // Sector landing inherits the same column rules as the main
+        // directory grid — 4 cols at widescreen, 3 / 2 / 1 below.
+        final cols = constraints.maxWidth >= 1280
+            ? 4
+            : constraints.maxWidth >= 920
+                ? 3
+                : constraints.maxWidth >= 600
+                    ? 2
+                    : 1;
         return Wrap(
           spacing: AuraSpace.s12,
           runSpacing: AuraSpace.s12,

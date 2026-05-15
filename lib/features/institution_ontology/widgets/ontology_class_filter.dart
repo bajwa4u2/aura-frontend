@@ -35,6 +35,13 @@ class OntologyClassFilter extends ConsumerWidget {
         ref.watch(institutionOntologyProvider).valueOrNull;
     final classes = ontology?.classes ?? const [];
 
+    // Avoid the lonely-pill state — when the ontology hasn't loaded
+    // yet, the previous build rendered just an isolated "All" chip,
+    // which read as orphaned UI. With no classes available the whole
+    // row collapses; once the ontology arrives the row materialises
+    // with All + every class together.
+    if (classes.isEmpty) return const SizedBox.shrink();
+
     return SizedBox(
       height: 34,
       child: ListView(
