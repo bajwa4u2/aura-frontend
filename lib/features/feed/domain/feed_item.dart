@@ -593,6 +593,8 @@ class FeedReplyPreviewItem {
     required this.author,
     this.createdAt,
     this.accountabilityTagWire,
+    this.resolvesPostId,
+    this.continuesPostId,
   });
 
   final String id;
@@ -606,6 +608,18 @@ class FeedReplyPreviewItem {
   /// non-institution authors, and for user-post replies (the schema
   /// carries this column only on `InstitutionPost`).
   final String? accountabilityTagWire;
+
+  /// Participation memory — when an institution-voice reply explicitly
+  /// resolves a prior post, this is the resolved post's id. Renders
+  /// as a small "Resolves" indicator. Null for organic replies and
+  /// for user-post replies.
+  final String? resolvesPostId;
+
+  /// Participation memory — when this reply is an explicit follow-up
+  /// / continuation of a prior discussion, this is the continued
+  /// post's id. Renders as a small "Follow-up" indicator. Null for
+  /// organic replies and for user-post replies.
+  final String? continuesPostId;
 
   factory FeedReplyPreviewItem.fromJson(Map<String, dynamic> m) {
     DateTime? readDate(dynamic raw) {
@@ -644,6 +658,8 @@ class FeedReplyPreviewItem {
       author: author,
       createdAt: readDate(m['createdAt']),
       accountabilityTagWire: opt(['accountabilityTag']),
+      resolvesPostId: opt(['resolvesPostId']),
+      continuesPostId: opt(['continuesPostId']),
     );
   }
 }

@@ -1388,6 +1388,8 @@ class _InstResponseRow extends StatelessWidget {
     final parentLead =
         parentSnippet.length > 56 ? '${parentSnippet.substring(0, 56)}…' : parentSnippet;
     final tag = entry.response.accountabilityTagWire;
+    final resolves = entry.response.resolvesPostId;
+    final continues = entry.response.continuesPostId;
     return InkWell(
       borderRadius: BorderRadius.circular(AuraRadius.r10),
       onTap: () => context.push(entry.parent.targetRoute),
@@ -1439,12 +1441,83 @@ class _InstResponseRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (tag != null && tag.isNotEmpty) ...[
+            if (tag != null && tag.isNotEmpty ||
+                (resolves != null && resolves.isNotEmpty) ||
+                (continues != null && continues.isNotEmpty)) ...[
               const SizedBox(height: AuraSpace.s4),
-              _AccountabilityChip(tagWire: tag),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  if (tag != null && tag.isNotEmpty)
+                    _AccountabilityChip(tagWire: tag),
+                  if (resolves != null && resolves.isNotEmpty)
+                    const _ContinuityChip(
+                      label: 'Resolves',
+                      icon: Icons.check_circle_outline_rounded,
+                      color: Color(0xFF4ADE80),
+                    ),
+                  if (continues != null && continues.isNotEmpty)
+                    const _ContinuityChip(
+                      label: 'Follow-up',
+                      icon: Icons.history_rounded,
+                      color: Color(0xFF60A5FA),
+                    ),
+                ],
+              ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Participation-memory linkage chip.
+///
+/// Surfaces "Resolves" or "Follow-up" indicators inline with an
+/// institution-voice reply when the backend's reply-preview projection
+/// carries the new `resolvesPostId` / `continuesPostId` pointers. Calm
+/// observational tone — no fabricated outcomes, no auto-detected
+/// resolution language.
+class _ContinuityChip extends StatelessWidget {
+  const _ContinuityChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AuraText.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 9.5,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }
