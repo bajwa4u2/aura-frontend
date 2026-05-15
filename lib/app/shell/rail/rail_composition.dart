@@ -70,8 +70,11 @@ import 'rail_modules.dart';
 List<Widget> memberFeedRailModules() {
   return const [
     LiveNowRailModule(),
+    OngoingIssuesRailModule(),
+    InstitutionParticipationRailModule(),
     TrendingDiscourseRailModule(),
     InstitutionalResponseRailModule(),
+    AccountabilityTrailRailModule(),
     RecentActivityRailModule(),
     PinnedAnnouncementRailModule(),
     SavedRailModule(),
@@ -94,6 +97,8 @@ List<Widget> memberFeedRailModules() {
 List<Widget> institutionWorkspaceRailModules() {
   return const [
     LiveNowRailModule(),
+    AccountabilityTrailRailModule(),
+    OngoingIssuesRailModule(),
     InstitutionalResponseRailModule(),
     InstitutionRecentActivityRailModule(),
     WorkspaceActivityRailModule(),
@@ -163,14 +168,17 @@ class PublicDiscoveryColumns {
 PublicDiscoveryColumns publicDiscoveryColumns() {
   return const PublicDiscoveryColumns(
     civicSignal: [
+      OngoingIssuesRailModule(),
       TrendingDiscourseRailModule(),
       InstitutionalResponseRailModule(),
     ],
     ecosystem: [
       LiveNowRailModule(),
+      InstitutionParticipationRailModule(),
       VerifiedInstitutionsRailModule(),
     ],
     continuity: [
+      AccountabilityTrailRailModule(),
       PinnedAnnouncementRailModule(),
       GovernanceNoticeRailModule(),
     ],

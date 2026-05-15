@@ -10,6 +10,8 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 import '../../../features/admin/data/admin_providers.dart';
 import '../../../features/announcements/providers.dart';
+import '../../../features/discourse_intelligence/models.dart';
+import '../../../features/discourse_intelligence/providers.dart';
 import '../../../features/feed/data/unified_feed_providers.dart';
 import '../../../features/feed/domain/feed_item.dart';
 import '../../../features/feed/domain/post.dart';
@@ -1519,6 +1521,383 @@ class _AccountabilityChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISCOURSE INTELLIGENCE — ONGOING ISSUES
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Surfaces ongoing public discussions with sustained reply activity.
+/// Backed by `/v1/discourse/issues` — every row is a real parent post
+/// with a real reply count and a real lastActivityAt. Hidden when the
+/// endpoint returns no rows (e.g., a quiet day).
+class OngoingIssuesRailModule extends ConsumerWidget {
+  const OngoingIssuesRailModule({super.key, this.limit = 4});
+
+  final int limit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(discourseIssuesProvider);
+    final page = async.maybeWhen(
+      data: (p) => p,
+      orElse: () => null,
+    );
+    if (page == null || page.items.isEmpty) return const SizedBox.shrink();
+    final shown = page.items.take(limit).toList(growable: false);
+
+    return AuraRailModule(
+      title: 'ONGOING DISCUSSIONS',
+      icon: Icons.forum_outlined,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final issue in shown) ...[
+            _OngoingIssueRow(issue: issue),
+            if (issue != shown.last) const SizedBox(height: AuraSpace.s6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OngoingIssueRow extends StatelessWidget {
+  const _OngoingIssueRow({required this.issue});
+
+  final DiscourseIssue issue;
+
+  String _ageLabel() {
+    if (issue.ageInDays <= 0) return 'today';
+    if (issue.ageInDays == 1) return '1 day';
+    return '${issue.ageInDays} days';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AuraRadius.r10),
+      onTap: () => context.push(issue.targetRoute),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s4,
+          vertical: AuraSpace.s4,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              issue.preview.isEmpty ? 'Discussion' : issue.preview,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Text(
+                  '${issue.replyCount} '
+                  '${issue.replyCount == 1 ? 'reply' : 'replies'}',
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.muted,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+                if (issue.institutionReplyCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '• ${issue.institutionReplyCount} institution',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.accentText,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                Text(
+                  _ageLabel(),
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISCOURSE INTELLIGENCE — ACCOUNTABILITY TRAIL
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Surfaces accountability counts per institution (COMMITMENT / UPDATE /
+/// RESOLVED). Backed by `/v1/discourse/accountability`. Hides when no
+/// institution has accountability-tagged replies on record.
+class AccountabilityTrailRailModule extends ConsumerWidget {
+  const AccountabilityTrailRailModule({super.key, this.limit = 4});
+
+  final int limit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(accountabilityTrailProvider);
+    final page = async.maybeWhen(
+      data: (p) => p,
+      orElse: () => null,
+    );
+    if (page == null || page.items.isEmpty) return const SizedBox.shrink();
+    final shown = page.items.take(limit).toList(growable: false);
+
+    return AuraRailModule(
+      title: 'ACCOUNTABILITY',
+      icon: Icons.flag_outlined,
+      tone: AuraRailModuleTone.accent,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final row in shown) ...[
+            _AccountabilityRow(row: row),
+            if (row != shown.last) const SizedBox(height: AuraSpace.s6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountabilityRow extends StatelessWidget {
+  const _AccountabilityRow({required this.row});
+
+  final AccountabilityRow row;
+
+  String _oldestLabel() {
+    final at = row.oldestCommitmentAt;
+    if (at == null) return '';
+    final diff = DateTime.now().difference(at);
+    if (diff.inDays < 1) return 'today';
+    if (diff.inDays == 1) return '1 day';
+    if (diff.inDays < 7) return '${diff.inDays} days';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w';
+    return '${(diff.inDays / 30).floor()}mo';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final oldest = _oldestLabel();
+    return InkWell(
+      borderRadius: BorderRadius.circular(AuraRadius.r10),
+      onTap: () => context.push('/institutions/${row.institutionSlug}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s4,
+          vertical: AuraSpace.s4,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              row.institutionName.isEmpty
+                  ? 'Institution'
+                  : row.institutionName,
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                _AccountChip(
+                  label: '${row.commitments} open',
+                  color: const Color(0xFFFBBF24),
+                ),
+                if (row.updates > 0) ...[
+                  const SizedBox(width: 4),
+                  _AccountChip(
+                    label: '${row.updates} update'
+                        '${row.updates == 1 ? '' : 's'}',
+                    color: const Color(0xFF60A5FA),
+                  ),
+                ],
+                if (row.resolved > 0) ...[
+                  const SizedBox(width: 4),
+                  _AccountChip(
+                    label: '${row.resolved} resolved',
+                    color: const Color(0xFF4ADE80),
+                  ),
+                ],
+                if (oldest.isNotEmpty && row.commitments > 0) ...[
+                  const Spacer(),
+                  Text(
+                    'oldest $oldest',
+                    style: AuraText.micro.copyWith(
+                      color: AuraSurface.faint,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountChip extends StatelessWidget {
+  const _AccountChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: AuraText.micro.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 9.5,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISCOURSE INTELLIGENCE — INSTITUTION PARTICIPATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Surfaces institutions that have publicly responded most recently
+/// (count + last responded). Backed by
+/// `/v1/discourse/institution-participation`. Hides when no institutions
+/// have replied as a voice in the window.
+class InstitutionParticipationRailModule extends ConsumerWidget {
+  const InstitutionParticipationRailModule({super.key, this.limit = 5});
+
+  final int limit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(institutionParticipationProvider);
+    final page = async.maybeWhen(
+      data: (p) => p,
+      orElse: () => null,
+    );
+    if (page == null || page.items.isEmpty) return const SizedBox.shrink();
+    final shown = page.items.take(limit).toList(growable: false);
+
+    return AuraRailModule(
+      title: 'RESPONDING NOW',
+      icon: Icons.account_balance_outlined,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final row in shown) ...[
+            _ParticipationRow(row: row),
+            if (row != shown.last) const SizedBox(height: AuraSpace.s4),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ParticipationRow extends StatelessWidget {
+  const _ParticipationRow({required this.row});
+
+  final InstitutionParticipationRow row;
+
+  String _relative() {
+    final at = row.lastRespondedAt;
+    if (at == null) return '';
+    final diff = DateTime.now().difference(at);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${(diff.inDays / 7).floor()}w';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AuraRadius.r10),
+      onTap: () => context.push('/institutions/${row.institutionSlug}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s4,
+          vertical: AuraSpace.s4,
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.apartment_outlined,
+              size: 13,
+              color: AuraSurface.muted,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            Expanded(
+              child: Text(
+                row.institutionName.isEmpty
+                    ? 'Institution'
+                    : row.institutionName,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s6),
+            if (row.verified) ...[
+              const Icon(
+                Icons.verified_rounded,
+                size: 11,
+                color: AuraSurface.accentText,
+              ),
+              const SizedBox(width: 3),
+            ],
+            Text(
+              '${row.responseCount} • ${_relative()}',
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.faint,
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
