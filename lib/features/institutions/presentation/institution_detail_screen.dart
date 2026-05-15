@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/interactions/actor_context.dart';
+import '../../../core/interactions/follow_invalidation.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/interactions/interaction_service.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -939,6 +940,13 @@ class _InstitutionProfileCtaRowState
   bool _busy = false;
   String? _error;
 
+  // Optimistic follow override. Set the moment the user taps Follow /
+  // Following; cleared after the canonical provider re-fetch completes
+  // or on backend failure. The button label/icon prefer this when set so
+  // the toggle feels immediate even though the round-trip is still in
+  // flight.
+  bool? _optimisticFollowing;
+
   ActorRef _targetRef() => ActorRef.institution(widget.institutionId);
 
   ActorRef? _actorRefOf(ActorContext actor) {
@@ -962,11 +970,14 @@ class _InstitutionProfileCtaRowState
     FollowState current,
     FollowStateKey key,
   ) async {
+    if (_busy) return;
     final actorRef = _actorRefOf(actor);
     if (actorRef == null) return;
+    final nextFollowing = !current.following;
     setState(() {
       _busy = true;
       _error = null;
+      _optimisticFollowing = nextFollowing;
     });
     try {
       final repo = ref.read(followsRepositoryProvider);
@@ -975,17 +986,29 @@ class _InstitutionProfileCtaRowState
       } else {
         await repo.follow(actor: actorRef, target: _targetRef());
       }
-      ref.invalidate(followStateProvider(key));
       // Institution follow affects which institution posts appear in the
-      // home feed and the institution-explore band. Mirror the user-follow
-      // fix in author_profile_screen so /home reflects the new graph state
-      // on next watch.
-      invalidateUnifiedFeedSurfaces(ref);
+      // home feed and the institution-explore band. Invalidating through
+      // the centralised helper keeps follow-graph-driven surfaces in sync
+      // with the per-pair cache.
+      invalidateFollowSurfaces(ref, key: key);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = _readError(e));
+      // Rollback: drop optimistic override so the button reverts to the
+      // provider's truth (which never changed locally).
+      setState(() {
+        _error = _readError(e);
+        _optimisticFollowing = null;
+      });
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          // Clear the override once the round-trip is done. The provider
+          // re-fetch triggered by invalidateFollowSurfaces will land
+          // with the authoritative truth on next watch.
+          _optimisticFollowing = null;
+        });
+      }
     }
   }
 
@@ -1102,6 +1125,8 @@ class _InstitutionProfileCtaRowState
                 AuraText.small.copyWith(color: AuraSurface.dangerInk),
           ),
           data: (state) {
+            final effectiveFollowing =
+                _optimisticFollowing ?? state.following;
             return Wrap(
               spacing: AuraSpace.s10,
               runSpacing: AuraSpace.s10,
@@ -1109,8 +1134,8 @@ class _InstitutionProfileCtaRowState
                 AuraPrimaryButton(
                   label: _busy
                       ? 'Working…'
-                      : (state.following ? 'Following' : 'Follow'),
-                  icon: state.following
+                      : (effectiveFollowing ? 'Following' : 'Follow'),
+                  icon: effectiveFollowing
                       ? Icons.check_rounded
                       : Icons.add_rounded,
                   onPressed: _busy

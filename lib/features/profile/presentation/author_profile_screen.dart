@@ -36,6 +36,12 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
   late Future<_ProfileBundle> _bundleFuture;
   _ProfileTab _activeTab = _ProfileTab.posts;
 
+  // R1 follow hardening: prevent concurrent follow/unfollow taps and
+  // give the user an immediate label flip. Cleared after _reload()
+  // completes or on backend failure.
+  bool _followBusy = false;
+  String? _optimisticFollowState;
+
   @override
   void initState() {
     super.initState();
@@ -458,14 +464,21 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                 viewerId.isNotEmpty &&
                 viewerId == _cleanValue(profile.id)));
 
-    final followLabel = switch (followState) {
+    // Optimistic override takes precedence: the moment the user taps
+    // Follow we want the label to flip before the _reload() round-trip
+    // lands. If the request fails the override is cleared and we fall
+    // back to the bundle's authoritative followState.
+    final effectiveFollowState = _optimisticFollowState ?? followState;
+
+    final followLabel = switch (effectiveFollowState) {
       'following' => 'Following',
       'outgoing_pending' => 'Requested',
       _ => 'Follow',
     };
 
     final canFollowAction = !isSelf &&
-        (followState == 'none' || followState == 'outgoing_pending');
+        (effectiveFollowState == 'none' ||
+            effectiveFollowState == 'outgoing_pending');
     final canCorrespond =
         isAuthed && !isSelf && followState == 'following';
 
@@ -526,16 +539,28 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                       PresenceHeaderAction(
                         label: followLabel,
                         primary: true,
-                        icon: followState == 'following'
+                        icon: effectiveFollowState == 'following'
                             ? Icons.check
-                            : followState == 'outgoing_pending'
+                            : effectiveFollowState == 'outgoing_pending'
                             ? Icons.schedule
                             : Icons.person_add_alt_1,
-                        onTap: !canFollowAction
+                        onTap: !canFollowAction || _followBusy
                             ? null
                             : () async {
+                                // R1: guard against concurrent taps and
+                                // flip the optimistic label immediately
+                                // so the button reflects intent before
+                                // the round-trip lands.
+                                final isCancel =
+                                    followState == 'outgoing_pending';
+                                final optimisticNext =
+                                    isCancel ? 'none' : 'outgoing_pending';
+                                setState(() {
+                                  _followBusy = true;
+                                  _optimisticFollowState = optimisticNext;
+                                });
                                 try {
-                                  if (followState == 'outgoing_pending') {
+                                  if (isCancel) {
                                     await repo.unfollow(widget.handle);
                                     _showMessage('Request canceled');
                                   } else {
@@ -544,15 +569,27 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen> {
                                   }
                                   // After a follow / unfollow / cancel, invalidate
                                   // every feed surface so the home feed reflects
-                                  // the new graph state on next render. Without
-                                  // this, a user who just followed @alice would
-                                  // see no @alice posts in /home until the next
-                                  // manual refresh, which felt like the follow
-                                  // had not persisted.
+                                  // the new graph state on next render.
                                   invalidateUnifiedFeedSurfaces(ref);
                                   _reload();
                                 } catch (_) {
+                                  // Rollback the optimistic flip so the
+                                  // label reverts to the bundle's truth.
+                                  if (mounted) {
+                                    setState(
+                                        () => _optimisticFollowState = null);
+                                  }
                                   _showMessage('Could not update follow state');
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _followBusy = false;
+                                      // _reload() will land with the
+                                      // authoritative bundle; drop the
+                                      // override so we don't shadow it.
+                                      _optimisticFollowState = null;
+                                    });
+                                  }
                                 }
                               },
                       ),

@@ -36,6 +36,12 @@ class FollowButton extends ConsumerStatefulWidget {
 class _FollowButtonState extends ConsumerState<FollowButton> {
   bool _busy = false;
 
+  // Optimistic follow override. Set the moment the user taps the
+  // button; cleared once the canonical provider re-fetch completes or
+  // on backend failure. Lets the label flip immediately instead of
+  // waiting for the round-trip.
+  bool? _optimisticFollowing;
+
   Future<void> _toggle(bool currentlyFollowing) async {
     if (_busy) return;
     // Signed-out: send the visitor to /login with a redirect back to
@@ -46,7 +52,11 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
       context.go('/login?redirect=${Uri.encodeComponent(redirect)}');
       return;
     }
-    setState(() => _busy = true);
+    final nextFollowing = !currentlyFollowing;
+    setState(() {
+      _busy = true;
+      _optimisticFollowing = nextFollowing;
+    });
     final repo = ref.read(threadSpaceFollowRepositoryProvider);
     try {
       if (widget._isThread) {
@@ -67,10 +77,20 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
         ref.invalidate(spaceFollowingProvider(slug));
       }
     } catch (_) {
-      // Errors are surfaced via the existing global error handler;
-      // we just unblock the button so the user can retry.
+      // Rollback: drop optimistic override so the button reverts to
+      // the provider's truth (which never changed locally). Errors
+      // continue to surface via the global error handler.
+      if (mounted) setState(() => _optimisticFollowing = null);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          // Clear the override once the round-trip is done. The
+          // provider re-fetch triggered by invalidate lands with the
+          // authoritative truth on next watch.
+          _optimisticFollowing = null;
+        });
+      }
     }
   }
 
@@ -80,10 +100,11 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
         ? ref.watch(threadFollowingProvider(widget.threadPostId!))
         : ref.watch(spaceFollowingProvider(widget.spaceSlug!));
 
-    final following = asyncFollowing.maybeWhen(
+    final providerFollowing = asyncFollowing.maybeWhen(
       data: (v) => v,
       orElse: () => false,
     );
+    final following = _optimisticFollowing ?? providerFollowing;
     final loading = asyncFollowing.isLoading || _busy;
 
     final label = widget._isThread
