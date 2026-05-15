@@ -77,7 +77,12 @@ class InstitutionPage extends StatelessWidget {
 
     final children = <Widget>[
       header,
-      const SizedBox(height: AuraSpace.s14),
+      // Institution page-density pass — reduced from `s14` → `s10` so
+      // body content sits closer to the page title. Combined with the
+      // tightened `InsSpacing.screenVPad`, the page hero block now
+      // consumes ~30 px less vertical space across every institution
+      // route without losing the visual gap between header and body.
+      const SizedBox(height: AuraSpace.s10),
       if (body != null) body!,
     ];
 

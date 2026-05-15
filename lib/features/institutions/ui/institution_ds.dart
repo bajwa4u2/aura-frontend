@@ -30,10 +30,19 @@ class InsSpacing {
 
   /// Outer page horizontal padding.
   static const double screenHPad = AuraSpace.s20;
-  static const double screenVPad = AuraSpace.s24;
+
+  /// Outer page vertical padding (the gap from the top of the routed
+  /// body to the first line of page content). Reduced from `s24` → `s16`
+  /// in the institution page-density pass — the context bar above
+  /// already provides 4 px of breathing room, so 16 px of additional
+  /// page padding is enough hierarchical separation without padding
+  /// browser viewports out of useful content.
+  static const double screenVPad = AuraSpace.s16;
 
   /// Vertical gap between major sections (eyebrow → next eyebrow).
-  static const double sectionGap = AuraSpace.s28;
+  /// Reduced from `s28` → `s20` in the same pass — sections still read
+  /// as distinct without consuming a full 28-px gap each.
+  static const double sectionGap = AuraSpace.s20;
 
   /// Gap between a section's header line and its first content row.
   static const double headerToContentGap = AuraSpace.s14;
@@ -1116,9 +1125,16 @@ class InsModeHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
+              // Institution page-density pass — `AuraText.title` (20 px)
+              // instead of `AuraText.headline` (28 px). The shell + context
+              // bar already mark institution mode; the page title only
+              // needs to identify the route, not act as a hero block.
+              // Saves ~12 px per page header without losing hierarchy:
+              // title (20) still reads larger than subtitle (17) and body
+              // (15), so the cascade is preserved.
               child: Text(
                 title,
-                style: AuraText.headline,
+                style: AuraText.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1130,17 +1146,21 @@ class InsModeHeader extends StatelessWidget {
           ],
         ),
         if (description != null && description!.trim().isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s6),
+          const SizedBox(height: AuraSpace.s4),
+          // Description now uses `small` (13 px) instead of `body` (15 px)
+          // — when present, descriptions are explanatory subtext, not
+          // reading content. Pages that need full-weight body content
+          // render it in the body, not in the header description.
           Text(
             description!,
-            style: AuraText.body.copyWith(
+            style: AuraText.small.copyWith(
               color: AuraSurface.muted,
-              height: 1.5,
+              height: 1.45,
             ),
           ),
         ],
         if (tabs != null) ...[
-          const SizedBox(height: AuraSpace.s14),
+          const SizedBox(height: AuraSpace.s10),
           tabs!,
         ],
       ],
