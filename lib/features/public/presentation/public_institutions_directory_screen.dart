@@ -12,6 +12,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../features/institution_ontology/providers.dart';
 import '../../../features/institution_ontology/widgets/ontology_class_filter.dart';
 import '../../../features/institution_ontology/widgets/ontology_identity_chips.dart';
+import '../../../features/institution_ontology/widgets/sector_grid.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../data/public_institutions_repository.dart';
 
@@ -45,7 +46,12 @@ class _PublicInstitutionsDirectoryScreenState
     extends ConsumerState<PublicInstitutionsDirectoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _q = '';
-  String? _category;
+
+  /// Legacy free-text category filter — kept on the backend for
+  /// backward compatibility but no longer surfaced in the UI. The
+  /// ontology system (Class + Type + Domain tag) replaces it.
+  static const String? _category = null;
+
   bool _verifiedOnly = false;
 
   /// Ontology Level-1 filter (wire token, e.g., `GOVERNMENT`). Null =
@@ -75,7 +81,6 @@ class _PublicInstitutionsDirectoryScreenState
   @override
   Widget build(BuildContext context) {
     final isAuthed = ref.watch(isAuthedProvider);
-    final categoriesAsync = ref.watch(publicInstitutionCategoriesProvider);
     final listAsync = ref.watch(publicInstitutionsListProvider(_query));
 
     return AuraScaffold(
@@ -96,6 +101,17 @@ class _PublicInstitutionsDirectoryScreenState
                 children: [
                   _Header(isAuthed: isAuthed),
                   const SizedBox(height: AuraSpace.s20),
+                  // Browse-by-sector ecosystem grid — every curated
+                  // ontology class as a tap-through entry card. Each
+                  // tile routes to `/institutions/sector/:classId`,
+                  // which renders a dedicated sector landing with its
+                  // own verified / on-the-platform cohorts and type
+                  // narrow row. Self-hides while the ontology is
+                  // loading (the grid widget shrinks).
+                  const _BrowseBySectorHeading(),
+                  const SizedBox(height: AuraSpace.s10),
+                  const SectorGrid(),
+                  const SizedBox(height: AuraSpace.s24),
                   _SearchAndFilters(
                     controller: _searchController,
                     onSearchSubmit: (value) {
@@ -106,10 +122,6 @@ class _PublicInstitutionsDirectoryScreenState
                       // server filters on substring so this is cheap.
                       setState(() => _q = value.trim());
                     },
-                    categoriesAsync: categoriesAsync,
-                    selectedCategory: _category,
-                    onCategoryChanged: (value) =>
-                        setState(() => _category = value),
                     verifiedOnly: _verifiedOnly,
                     onVerifiedToggled: (value) =>
                         setState(() => _verifiedOnly = value),
@@ -246,14 +258,23 @@ class _AuthAffordance extends ConsumerWidget {
   }
 }
 
+/// Compact search + verified-only toggle.
+///
+/// The legacy free-text "Any category" dropdown is intentionally
+/// removed — institutional discovery is now driven by the curated
+/// ontology (Class / Type / Domain tag) above and by the sector
+/// ecosystem grid at the top of the page. Surfacing a second flat
+/// category list alongside the structured ontology was admin-tool
+/// noise; the visual entry point is the sector grid, not a dropdown.
+///
+/// The backend still accepts `?category=` for backward compatibility;
+/// no client surface sends it now. When telemetry confirms no
+/// integrators rely on it, it can be dropped server-side too.
 class _SearchAndFilters extends StatelessWidget {
   const _SearchAndFilters({
     required this.controller,
     required this.onSearchSubmit,
     required this.onSearchChanged,
-    required this.categoriesAsync,
-    required this.selectedCategory,
-    required this.onCategoryChanged,
     required this.verifiedOnly,
     required this.onVerifiedToggled,
   });
@@ -261,24 +282,21 @@ class _SearchAndFilters extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSearchSubmit;
   final ValueChanged<String> onSearchChanged;
-  final AsyncValue<List<String>> categoriesAsync;
-  final String? selectedCategory;
-  final ValueChanged<String?> onCategoryChanged;
   final bool verifiedOnly;
   final ValueChanged<bool> onVerifiedToggled;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final searchField = TextField(
           controller: controller,
           textInputAction: TextInputAction.search,
           onSubmitted: onSearchSubmit,
           onChanged: onSearchChanged,
           decoration: InputDecoration(
-            hintText: 'Search institutions by name, tagline, or description',
+            hintText:
+                'Search institutions by name, tagline, or description',
             prefixIcon: const Icon(Icons.search_rounded),
             filled: true,
             fillColor: AuraSurface.card,
@@ -289,46 +307,36 @@ class _SearchAndFilters extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        Wrap(
-          spacing: AuraSpace.s8,
-          runSpacing: AuraSpace.s8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        );
+        final verifiedChip = FilterChip(
+          selected: verifiedOnly,
+          onSelected: onVerifiedToggled,
+          avatar: const Icon(Icons.verified_rounded, size: 16),
+          label: const Text('Verified only'),
+        );
+
+        // Desktop: search field flex-fills, verified chip docks to the
+        // right of the same row — keeps the controls compact and out
+        // of the ecosystem grid's visual weight.
+        if (constraints.maxWidth >= 640) {
+          return Row(
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: AuraSpace.s12),
+              verifiedChip,
+            ],
+          );
+        }
+        // Mobile: stack so the search field still has full width.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FilterChip(
-              selected: verifiedOnly,
-              onSelected: onVerifiedToggled,
-              avatar: const Icon(Icons.verified_rounded, size: 16),
-              label: const Text('Verified only'),
-            ),
-            categoriesAsync.maybeWhen(
-              data: (cats) {
-                if (cats.isEmpty) return const SizedBox.shrink();
-                return DropdownButton<String?>(
-                  value: selectedCategory,
-                  hint: const Text('Any category'),
-                  underline: const SizedBox.shrink(),
-                  borderRadius: BorderRadius.circular(AuraRadius.r10),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Any category'),
-                    ),
-                    for (final c in cats)
-                      DropdownMenuItem<String?>(
-                        value: c,
-                        child: Text(c),
-                      ),
-                  ],
-                  onChanged: onCategoryChanged,
-                );
-              },
-              orElse: () => const SizedBox.shrink(),
-            ),
+            searchField,
+            const SizedBox(height: AuraSpace.s10),
+            verifiedChip,
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -766,6 +774,39 @@ class _OntologyTypeNarrowRow extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _BrowseBySectorHeading extends StatelessWidget {
+  const _BrowseBySectorHeading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 6,
+          height: 18,
+          decoration: BoxDecoration(
+            color: AuraSurface.accent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: AuraSpace.s8),
+        Text('Browse by sector', style: AuraText.title),
+        const SizedBox(width: AuraSpace.s8),
+        Flexible(
+          child: Text(
+            'Explore institutions by class. Each sector opens an '
+            'ecosystem view scoped to that classification.',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

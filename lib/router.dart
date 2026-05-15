@@ -24,6 +24,7 @@ import 'features/auth/presentation/reset_password_screen.dart';
 import 'features/feed/domain/feed_item.dart' show FeedItemType;
 import 'features/home/presentation/public_home_screen.dart';
 import 'features/home/presentation/member_home_screen.dart';
+import 'features/public/presentation/institution_sector_screen.dart';
 import 'features/public/presentation/space_detail_screen.dart';
 import 'features/public/presentation/spaces_discovery_screen.dart';
 import 'features/public/presentation/thread_screen.dart';
@@ -552,13 +553,31 @@ final routerProvider = Provider<GoRouter>((ref) {
               inviteCode: state.uri.queryParameters['code'],
             ),
           ),
+          // Sector landing — `/institutions/sector/:classId`. Renders an
+          // ecosystem-style page scoped to a single curated ontology
+          // class (e.g., GOVERNMENT, HEALTHCARE). MUST be registered
+          // before the dynamic `/institutions/:slug` route so the
+          // first-match-wins router resolves `sector` here, not as a
+          // slug.
+          GoRoute(
+            path: '/institutions/sector/:classId',
+            builder: (context, state) => InstitutionSectorScreen(
+              classId: state.pathParameters['classId'] ?? '',
+            ),
+          ),
           GoRoute(
             path: '/institutions/:slug',
             redirect: (context, state) {
               // Guard against reserved keywords escaping past static routes.
-              const reserved = {'get-started'};
+              // `sector` is the prefix for the sector-landing route
+              // (`/institutions/sector/:classId`); landing on
+              // `/institutions/sector` alone (no classId) bounces back to
+              // the directory rather than misinterpreting `sector` as an
+              // institution slug.
+              const reserved = {'get-started', 'sector'};
               final slug = state.pathParameters['slug'] ?? '';
-              if (reserved.contains(slug)) return kInstitutionGetStartedRoute;
+              if (slug == 'get-started') return kInstitutionGetStartedRoute;
+              if (reserved.contains(slug)) return '/institutions';
               return null;
             },
             builder: (context, state) => InstitutionDetailScreen(
