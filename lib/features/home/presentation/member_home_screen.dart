@@ -192,87 +192,139 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
 
     // Member home — wrapped in AuraSurfaceScaffold so the desktop right
     // rail composes alongside the discourse feed. The scaffold's
-    // `discourseFeed` policy already pins max-width at kFeedWidth and
-    // renders the context rail only at desktop (≥1200), so on tablet/
-    // mobile the layout collapses to a single column without any extra
-    // branching here. Rail modules are provider-backed and self-hide
-    // when their source has nothing to surface.
+    // `discourseFeed` policy renders the context rail only at desktop
+    // (≥1200), so on tablet/mobile the layout collapses to a single
+    // column without any extra branching here. Rail modules are
+    // provider-backed and self-hide when their source has nothing to
+    // surface.
+    //
+    // Desktop density pass: the rhythm between hero sections and the
+    // adaptive `maxContentWidth` (via the policy override below) are
+    // tuned so wide desktops and ultrawide monitors do not waste
+    // horizontal real estate to dead margins. Standard 1200–1439 px
+    // desktops keep `kFeedWidth = 1100` for reading comfort; ≥1440
+    // grows to 1200; ≥1680 grows to 1280 (matches workspace width).
     return AuraScaffold(
       showHeader: false,
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: AuraSurfaceScaffold(
-          type: AuraSurfaceType.discourseFeed,
-          center: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              0,
-              AuraSpace.s20,
-              0,
-              AuraSpace.s32,
-            ),
-            children: [
-                // ── Pinned announcement (silent if absent)
-                const _PinnedAnnouncementBanner(),
-
-                // ── Public-UX Phase 6: re-entry "Since you were here"
-                // Renders only when there are unread, recent,
-                // discourse-relevant notifications. Collapsible.
-                const SinceYouWereHereSection(),
-                const SizedBox(height: AuraSpace.s10),
-
-                // ── Public composer (primary discourse entry)
-                const PublicComposer(),
-
-                // ── Held-draft hint (only renders when a draft is in
-                // play); single tap routes back into the compose flow
-                // with the held id pre-loaded.
-                heldAsync.when(
-                  data: (held) {
-                    final heldMap = _asMap(held);
-                    if (heldMap.isEmpty) return const SizedBox.shrink();
-                    final heldId = heldMap['id']?.toString();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AuraSpace.s8),
-                      child: _HeldDraftHint(
-                        text: heldMap['text']?.toString(),
-                        onTap: () =>
-                            _openCompose(heldId: heldId),
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final policy = _adaptiveDiscourseFeedPolicy(constraints.maxWidth);
+            return AuraSurfaceScaffold(
+              type: AuraSurfaceType.discourseFeed,
+              policy: policy,
+              center: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  0,
+                  // Tightened from s20 → s12. The shell + context bar
+                  // already mark the top; an additional 20 px of body
+                  // padding pushed content unnecessarily low. 12 px
+                  // still gives visual breathing room without dead
+                  // space at the top of the discourse feed.
+                  AuraSpace.s12,
+                  0,
+                  AuraSpace.s32,
                 ),
+                children: [
+                  // ── Pinned announcement (silent if absent)
+                  const _PinnedAnnouncementBanner(),
 
-                const SizedBox(height: AuraSpace.s20),
+                  // ── Public-UX Phase 6: re-entry "Since you were here"
+                  // Renders only when there are unread, recent,
+                  // discourse-relevant notifications. Collapsible.
+                  const SinceYouWereHereSection(),
+                  const SizedBox(height: AuraSpace.s8),
 
-                // ── Spaces — promoted near the composer so discovery is not
-                // buried at the bottom of the discourse stream. Renders as
-                // a multi-column grid on tablet/desktop via AdaptiveCardGrid
-                // and falls back to a pointer-aware horizontal rail on
-                // narrow viewports (mouse-wheel + arrow keys + chevrons).
-                const _SpacesSection(),
+                  // ── Public composer (primary discourse entry)
+                  const PublicComposer(),
 
-                const SizedBox(height: AuraSpace.s24),
+                  // ── Held-draft hint (only renders when a draft is in
+                  // play); single tap routes back into the compose flow
+                  // with the held id pre-loaded.
+                  heldAsync.when(
+                    data: (held) {
+                      final heldMap = _asMap(held);
+                      if (heldMap.isEmpty) return const SizedBox.shrink();
+                      final heldId = heldMap['id']?.toString();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AuraSpace.s6),
+                        child: _HeldDraftHint(
+                          text: heldMap['text']?.toString(),
+                          onTap: () => _openCompose(heldId: heldId),
+                        ),
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
 
-                // ── Discourse stream + LIVE NOW
-                const _DiscourseStream(),
-              ],
-            ),
-            // Provider-backed contextual modules. Each module self-hides
-            // when its source has no data, so the rail collapses
-            // gracefully on quiet days. Order is visual priority:
-            // time-sensitive (Live, Recent activity, Pinned) above
-            // discovery (Verified institutions) and longer-running
-            // affordances (Saved) and grounding (Governance).
-            // Rail composition lives in rail_composition.dart — one
-            // source of truth for what each shell stacks and in what
-            // priority order.
-            contextRail: AuraContextRail(modules: memberFeedRailModules()),
-          ),
+                  // Section gap from composer → spaces tightened from
+                  // s20 → s14. The composer is a single card; 14 px
+                  // is enough boundary without feeling sectionally
+                  // disconnected.
+                  const SizedBox(height: AuraSpace.s14),
+
+                  // ── Spaces — promoted near the composer so discovery is not
+                  // buried at the bottom of the discourse stream. Renders as
+                  // a multi-column grid on tablet/desktop via AdaptiveCardGrid
+                  // and falls back to a pointer-aware horizontal rail on
+                  // narrow viewports (mouse-wheel + arrow keys + chevrons).
+                  const _SpacesSection(),
+
+                  // Section gap from spaces → discourse stream tightened
+                  // from s24 → s16. The spaces section ends with its
+                  // own cards; 16 px reads as "next section" without
+                  // a yawning gap.
+                  const SizedBox(height: AuraSpace.s16),
+
+                  // ── Discourse stream + LIVE NOW
+                  const _DiscourseStream(),
+                ],
+              ),
+              // Provider-backed contextual modules. Each module
+              // self-hides when its source has no data, so the rail
+              // collapses gracefully on quiet days. Order is visual
+              // priority: time-sensitive (Live, Recent activity,
+              // Pinned) above discovery (Verified institutions) and
+              // longer-running affordances (Saved) and grounding
+              // (Governance). Rail composition lives in
+              // rail_composition.dart — one source of truth for what
+              // each shell stacks and in what priority order.
+              contextRail: AuraContextRail(modules: memberFeedRailModules()),
+            );
+          },
         ),
+      ),
     );
   }
+}
+
+/// Adaptive policy override for the member discourse feed. Standard
+/// desktop keeps `kFeedWidth = 1100` for reading comfort; wider
+/// viewports lift the cap so the center column doesn't waste the
+/// horizontal canvas to dead margins next to the right rail.
+///
+/// The width override is the only field that changes — every other
+/// field comes from `AuraSurfacePolicy.forType(discourseFeed)`, so we
+/// don't fork the surface contract.
+AuraSurfacePolicy _adaptiveDiscourseFeedPolicy(double viewportWidth) {
+  final base = AuraSurfacePolicy.forType(AuraSurfaceType.discourseFeed);
+  double width = base.maxContentWidth;
+  if (viewportWidth >= 1680) {
+    width = 1280;
+  } else if (viewportWidth >= 1440) {
+    width = 1200;
+  }
+  if (width == base.maxContentWidth) return base;
+  return AuraSurfacePolicy(
+    maxContentWidth: width,
+    composition: base.composition,
+    leftRailVisibility: base.leftRailVisibility,
+    contextRailVisibility: base.contextRailVisibility,
+    density: base.density,
+    bodyHorizontalPadding: base.bodyHorizontalPadding,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
