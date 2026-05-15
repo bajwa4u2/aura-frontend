@@ -103,6 +103,9 @@ class Institution {
     this.coverUrl,
     this.category,
     this.location,
+    this.institutionClass,
+    this.institutionType,
+    this.domainTags = const [],
     this.units = const [],
   });
 
@@ -118,6 +121,24 @@ class Institution {
   final String? coverUrl;
   final String? category;
   final String? location;
+
+  /// Global Institution Ontology — Level 1 class wire token (e.g.,
+  /// `GOVERNMENT`, `EDUCATIONAL`). Backed by the `institutionClass`
+  /// column. Null until an admin classifies the institution. Display
+  /// label is resolved client-side via the ontology provider so this
+  /// field stays a stable wire token rather than localised text.
+  final String? institutionClass;
+
+  /// Global Institution Ontology — Level 2 type wire token within the
+  /// chosen class (e.g., `UNIVERSITY`, `HOSPITAL`). Must belong to
+  /// `institutionClass` when both are set (enforced server-side).
+  final String? institutionType;
+
+  /// Global Institution Ontology — Level 3 domain tag wire tokens
+  /// (e.g., `climate`, `public-health`). Capped at 8 by the validator.
+  /// These are institutional remit tags, NOT discourse feed topics.
+  final List<String> domainTags;
+
   final List<InstitutionUnit> units;
 
   factory Institution.fromJson(Map<String, dynamic> json) {
@@ -158,6 +179,14 @@ class Institution {
             .toList()
         : <InstitutionUnit>[];
 
+    final rawTags = json['domainTags'];
+    final tagList = rawTags is List
+        ? rawTags
+            .map((e) => e?.toString().trim() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList(growable: false)
+        : const <String>[];
+
     return Institution(
       id: readString(['id']),
       name: readString(['name', 'displayName', 'title', 'organizationName']),
@@ -171,8 +200,13 @@ class Institution {
       ),
       logoUrl: readOptional(['logoUrl', 'avatarUrl', 'logo', 'logoImage']),
       coverUrl: readOptional(['coverUrl', 'bannerUrl', 'cover', 'banner', 'coverImage']),
-      category: readOptional(['category', 'type', 'institutionType', 'kind']),
+      // Legacy `category` retained for backward compatibility. The
+      // ontology pass keys exclusively off `institutionClass`/`Type`.
+      category: readOptional(['category', 'kind']),
       location: readOptional(['location', 'city', 'address', 'place']),
+      institutionClass: readOptional(['institutionClass']),
+      institutionType: readOptional(['institutionType']),
+      domainTags: tagList,
       units: unitList,
     );
   }
@@ -185,6 +219,9 @@ class Institution {
     String? location,
     String? logoUrl,
     String? coverUrl,
+    String? institutionClass,
+    String? institutionType,
+    List<String>? domainTags,
     List<InstitutionUnit>? units,
   }) {
     return Institution(
@@ -200,6 +237,9 @@ class Institution {
       coverUrl: coverUrl ?? this.coverUrl,
       category: category ?? this.category,
       location: location ?? this.location,
+      institutionClass: institutionClass ?? this.institutionClass,
+      institutionType: institutionType ?? this.institutionType,
+      domainTags: domainTags ?? this.domainTags,
       units: units ?? this.units,
     );
   }

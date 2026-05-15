@@ -44,6 +44,9 @@ class InstitutionIdentity {
     required this.isAuthorizedSpeaker,
     this.status,
     this.role,
+    this.institutionClass,
+    this.institutionType,
+    this.domainTags = const [],
   });
 
   final String id;
@@ -59,6 +62,19 @@ class InstitutionIdentity {
   /// Membership role in canonical wire format, e.g. 'OWNER', 'ADMIN',
   /// 'EDITOR', 'MEMBER'. Null for institution-account tokens.
   final String? role;
+
+  /// Global Institution Ontology — Level 1 class wire token (e.g.,
+  /// `GOVERNMENT`, `EDUCATIONAL`). Null until classified. Display
+  /// label is resolved via `institutionOntologyProvider`.
+  final String? institutionClass;
+
+  /// Global Institution Ontology — Level 2 type wire token (e.g.,
+  /// `UNIVERSITY`). Null until classified.
+  final String? institutionType;
+
+  /// Global Institution Ontology — Level 3 domain-tag wire tokens.
+  /// Empty when unclassified. Capped at 8 server-side.
+  final List<String> domainTags;
 
   bool get isVerified => (status ?? '').toUpperCase() == 'VERIFIED';
 
@@ -132,6 +148,16 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     }
   }
 
+  // Ontology fields — defensively parsed so a legacy payload without
+  // them produces a perfectly valid (unclassified) identity.
+  final rawTags = inst['domainTags'];
+  final tagList = rawTags is List
+      ? rawTags
+          .map((e) => e?.toString().trim() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList(growable: false)
+      : const <String>[];
+
   return InstitutionIdentity(
     id: id,
     name: readStr(inst, ['name', 'displayName', 'title', 'organizationName']),
@@ -141,6 +167,9 @@ final institutionIdentityProvider = Provider<InstitutionIdentity?>((ref) {
     isAuthorizedSpeaker: isAuthorizedSpeaker,
     status: finalStatus,
     role: role.isEmpty ? null : role,
+    institutionClass: readOpt(inst, ['institutionClass']),
+    institutionType: readOpt(inst, ['institutionType']),
+    domainTags: tagList,
   );
 });
 
