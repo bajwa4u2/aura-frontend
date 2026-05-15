@@ -193,3 +193,184 @@ class InstitutionParticipationPage {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+//   /v1/discourse/unanswered-questions
+// ─────────────────────────────────────────────────────────────────────
+
+class UnansweredQuestion {
+  const UnansweredQuestion({
+    required this.parentPostId,
+    required this.preview,
+    required this.targetRoute,
+    required this.authorHandle,
+    required this.ageInDays,
+    required this.waitingHours,
+    required this.replyCount,
+    required this.responseExists,
+    required this.linkageSource,
+    this.publicSpaceSlug,
+    this.publicSpaceName,
+  });
+
+  final String parentPostId;
+  final String preview;
+  final String targetRoute;
+  final String authorHandle;
+  final int ageInDays;
+  final int waitingHours;
+  final int replyCount;
+  final bool responseExists;
+
+  /// Linkage source token — `'public-space'` today; `'mention'` reserved.
+  final String linkageSource;
+
+  final String? publicSpaceSlug;
+  final String? publicSpaceName;
+
+  factory UnansweredQuestion.fromJson(Map<String, dynamic> m) {
+    return UnansweredQuestion(
+      parentPostId: _s(m, 'parentPostId'),
+      preview: _s(m, 'preview'),
+      targetRoute: _s(m, 'targetRoute'),
+      authorHandle: _s(m, 'authorHandle'),
+      ageInDays: _i(m, 'ageInDays'),
+      waitingHours: _i(m, 'waitingHours'),
+      replyCount: _i(m, 'replyCount'),
+      responseExists: _b(m, 'responseExists'),
+      linkageSource: _s(m, 'linkageSource'),
+      publicSpaceSlug: _opt(m, 'publicSpaceSlug'),
+      publicSpaceName: _opt(m, 'publicSpaceName'),
+    );
+  }
+}
+
+class UnansweredQuestionsPage {
+  const UnansweredQuestionsPage({required this.items});
+
+  final List<UnansweredQuestion> items;
+
+  factory UnansweredQuestionsPage.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final container = root['data'] is Map
+        ? Map<String, dynamic>.from(root['data'] as Map)
+        : root;
+    return UnansweredQuestionsPage(
+      items: _asList(container['items'])
+          .map(UnansweredQuestion.fromJson)
+          .toList(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//   /v1/discourse/responsiveness
+// ─────────────────────────────────────────────────────────────────────
+
+class ResponsivenessRow {
+  const ResponsivenessRow({
+    required this.institutionId,
+    required this.institutionName,
+    required this.institutionSlug,
+    required this.recentResponseCount,
+    required this.verified,
+    this.institutionClass,
+    this.medianResponseHours,
+    this.lastRespondedAt,
+  });
+
+  final String institutionId;
+  final String institutionName;
+  final String institutionSlug;
+  final String? institutionClass;
+  final bool verified;
+  final int recentResponseCount;
+  final double? medianResponseHours;
+  final DateTime? lastRespondedAt;
+
+  factory ResponsivenessRow.fromJson(Map<String, dynamic> m) {
+    final raw = m['medianResponseHours'];
+    double? median;
+    if (raw is num) median = raw.toDouble();
+    final last = _opt(m, 'lastRespondedAt');
+    return ResponsivenessRow(
+      institutionId: _s(m, 'institutionId'),
+      institutionName: _s(m, 'institutionName'),
+      institutionSlug: _s(m, 'institutionSlug'),
+      institutionClass: _opt(m, 'institutionClass'),
+      verified: _b(m, 'verified'),
+      recentResponseCount: _i(m, 'recentResponseCount'),
+      medianResponseHours: median,
+      lastRespondedAt: last == null ? null : DateTime.tryParse(last),
+    );
+  }
+}
+
+class ResponsivenessPage {
+  const ResponsivenessPage({required this.items});
+
+  final List<ResponsivenessRow> items;
+
+  factory ResponsivenessPage.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final container = root['data'] is Map
+        ? Map<String, dynamic>.from(root['data'] as Map)
+        : root;
+    return ResponsivenessPage(
+      items: _asList(container['items'])
+          .map(ResponsivenessRow.fromJson)
+          .toList(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//   /v1/discourse/related-institutions
+// ─────────────────────────────────────────────────────────────────────
+
+class RelatedInstitutionRow {
+  const RelatedInstitutionRow({
+    required this.institutionId,
+    required this.institutionName,
+    required this.institutionSlug,
+    required this.sharedParentCount,
+    required this.verified,
+    this.institutionClass,
+  });
+
+  final String institutionId;
+  final String institutionName;
+  final String institutionSlug;
+  final String? institutionClass;
+  final bool verified;
+  final int sharedParentCount;
+
+  factory RelatedInstitutionRow.fromJson(Map<String, dynamic> m) {
+    return RelatedInstitutionRow(
+      institutionId: _s(m, 'institutionId'),
+      institutionName: _s(m, 'institutionName'),
+      institutionSlug: _s(m, 'institutionSlug'),
+      institutionClass: _opt(m, 'institutionClass'),
+      verified: _b(m, 'verified'),
+      sharedParentCount: _i(m, 'sharedParentCount'),
+    );
+  }
+}
+
+class RelatedInstitutionsPage {
+  const RelatedInstitutionsPage({required this.items});
+
+  final List<RelatedInstitutionRow> items;
+
+  factory RelatedInstitutionsPage.fromJson(dynamic raw) {
+    final root = _asMap(raw);
+    final container = root['data'] is Map
+        ? Map<String, dynamic>.from(root['data'] as Map)
+        : root;
+    return RelatedInstitutionsPage(
+      items: _asList(container['items'])
+          .map(RelatedInstitutionRow.fromJson)
+          .toList(),
+    );
+  }
+}
