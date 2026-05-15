@@ -301,16 +301,22 @@ class AuraMediaFrame extends StatelessWidget {
     const landscapeMax = 1.91;
 
     if (intrinsicAspect >= landscapeMin && intrinsicAspect <= landscapeMax) {
-      // Use the intrinsic aspect itself, capped at the mode's max
-      // ratio so a panoramic 21:9 doesn't make a single feed card
-      // 4× taller than the rest.
-      final cappedAspect = mode == AuraMediaFrameMode.feed
-          ? intrinsicAspect.clamp(0.85, 1.91)
-          : intrinsicAspect.clamp(0.6, 2.4);
+      // Discourse media must preserve informational integrity. When the
+      // rendered aspect EXACTLY matches the source's intrinsic aspect,
+      // `cover` and `contain` produce identical pixels — pick `cover` so
+      // photographic content fills the card without subtle borders. The
+      // capping path below (where intrinsic exceeds the mode's max
+      // ratio) deliberately falls through to `contain` so the
+      // information at the cropped edges is never lost.
+      final lowerBound = mode == AuraMediaFrameMode.feed ? 0.85 : 0.6;
+      final upperBound = mode == AuraMediaFrameMode.feed ? 1.91 : 2.4;
+      final wouldClamp =
+          intrinsicAspect < lowerBound || intrinsicAspect > upperBound;
+      final cappedAspect = intrinsicAspect.clamp(lowerBound, upperBound);
       return _AspectDecision(
         aspect: cappedAspect,
-        fit: BoxFit.cover,
-        useBackdrop: false,
+        fit: wouldClamp ? BoxFit.contain : BoxFit.cover,
+        useBackdrop: wouldClamp,
       );
     }
 
