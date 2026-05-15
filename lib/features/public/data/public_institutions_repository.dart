@@ -223,6 +223,12 @@ class PublicInstitutionsRepository {
     bool verifiedOnly = false,
     String? cursor,
     int? limit,
+    /// Phase 1C ontology filters (wire tokens). The backend
+    /// `buildSearchWhere` collapses each onto a Prisma where-clause;
+    /// omitting them is a no-op, so empty / null values are safe.
+    String? institutionClass,
+    String? institutionType,
+    String? domainTag,
   }) async {
     final params = <String, dynamic>{
       if (q != null && q.isNotEmpty) 'q': q,
@@ -230,6 +236,11 @@ class PublicInstitutionsRepository {
       if (verifiedOnly) 'verifiedOnly': 'true',
       if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
       if (limit != null) 'limit': limit.toString(),
+      if (institutionClass != null && institutionClass.isNotEmpty)
+        'class': institutionClass,
+      if (institutionType != null && institutionType.isNotEmpty)
+        'type': institutionType,
+      if (domainTag != null && domainTag.isNotEmpty) 'domainTag': domainTag,
     };
 
     final res = await _dio.get<dynamic>(
@@ -343,20 +354,45 @@ class PublicInstitutionsQuery {
     this.q = '',
     this.category,
     this.verifiedOnly = false,
+    this.institutionClass,
+    this.institutionType,
+    this.domainTag,
   });
   final String q;
   final String? category;
   final bool verifiedOnly;
+
+  /// Phase 1C — curated Level-1 class wire token. Null = no class filter.
+  final String? institutionClass;
+
+  /// Phase 1C — curated Level-2 type wire token. Should belong to the
+  /// `institutionClass` when both are set; the backend doesn't enforce
+  /// that on the read path (it would just produce zero results).
+  final String? institutionType;
+
+  /// Phase 1C — Level-3 domain-tag wire token. Filter is single-tag for
+  /// now; multi-tag is a follow-up.
+  final String? domainTag;
 
   @override
   bool operator ==(Object other) =>
       other is PublicInstitutionsQuery &&
       other.q == q &&
       other.category == category &&
-      other.verifiedOnly == verifiedOnly;
+      other.verifiedOnly == verifiedOnly &&
+      other.institutionClass == institutionClass &&
+      other.institutionType == institutionType &&
+      other.domainTag == domainTag;
 
   @override
-  int get hashCode => Object.hash(q, category, verifiedOnly);
+  int get hashCode => Object.hash(
+        q,
+        category,
+        verifiedOnly,
+        institutionClass,
+        institutionType,
+        domainTag,
+      );
 }
 
 final publicInstitutionsListProvider = FutureProvider.family<
@@ -366,5 +402,8 @@ final publicInstitutionsListProvider = FutureProvider.family<
     q: query.q,
     category: query.category,
     verifiedOnly: query.verifiedOnly,
+    institutionClass: query.institutionClass,
+    institutionType: query.institutionType,
+    domainTag: query.domainTag,
   );
 });

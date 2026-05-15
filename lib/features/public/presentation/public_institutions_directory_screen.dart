@@ -9,6 +9,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../features/institution_ontology/providers.dart';
 import '../../../features/institution_ontology/widgets/ontology_class_filter.dart';
 import '../../../features/institution_ontology/widgets/ontology_identity_chips.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
@@ -47,10 +48,15 @@ class _PublicInstitutionsDirectoryScreenState
   String? _category;
   bool _verifiedOnly = false;
 
-  /// Ontology Level-1 filter (wire token, e.g., `GOVERNMENT`). Null = All.
-  /// Applied client-side over the server-paged result list; the server
-  /// query still owns text-search and the legacy category filter.
+  /// Ontology Level-1 filter (wire token, e.g., `GOVERNMENT`). Null =
+  /// All. Sent to the backend `/v1/public/institutions?class=…` so the
+  /// query is paginated and complete; no client-side overlay.
   String? _ontologyClass;
+
+  /// Ontology Level-2 filter (wire token, e.g., `UNIVERSITY`). Null =
+  /// no type narrow. Only meaningful when `_ontologyClass` is set; the
+  /// type narrow pill row only renders in that case.
+  String? _ontologyType;
 
   @override
   void dispose() {
@@ -58,8 +64,13 @@ class _PublicInstitutionsDirectoryScreenState
     super.dispose();
   }
 
-  PublicInstitutionsQuery get _query =>
-      PublicInstitutionsQuery(q: _q, category: _category, verifiedOnly: _verifiedOnly);
+  PublicInstitutionsQuery get _query => PublicInstitutionsQuery(
+        q: _q,
+        category: _category,
+        verifiedOnly: _verifiedOnly,
+        institutionClass: _ontologyClass,
+        institutionType: _ontologyType,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +118,30 @@ class _PublicInstitutionsDirectoryScreenState
                   // Ontology Level-1 class filter pills. Renders only the
                   // curated classes (from `institutionOntologyProvider`).
                   // Self-renders an "All" pill so the row makes sense even
-                  // before the ontology has loaded.
+                  // before the ontology has loaded. Selecting a class
+                  // sends `?class=…` to the backend AND reveals the type
+                  // narrow row below.
                   OntologyClassFilter(
                     selected: _ontologyClass,
-                    onChanged: (id) => setState(() => _ontologyClass = id),
+                    onChanged: (id) {
+                      setState(() {
+                        _ontologyClass = id;
+                        // Selecting (or clearing) a class drops any
+                        // active type filter — the chosen type may no
+                        // longer belong to the new class.
+                        _ontologyType = null;
+                      });
+                    },
                   ),
+                  if (_ontologyClass != null) ...[
+                    const SizedBox(height: AuraSpace.s8),
+                    _OntologyTypeNarrowRow(
+                      classId: _ontologyClass!,
+                      selected: _ontologyType,
+                      onChanged: (id) =>
+                          setState(() => _ontologyType = id),
+                    ),
+                  ],
                   const SizedBox(height: AuraSpace.s16),
                   listAsync.when(
                     loading: () => const Padding(
@@ -136,11 +166,13 @@ class _PublicInstitutionsDirectoryScreenState
                     ),
                     data: (page) => _ResultsBody(
                       page: page,
-                      ontologyClassFilter: _ontologyClass,
                       hasQuery: _q.isNotEmpty ||
                           _category != null ||
                           _verifiedOnly ||
-                          _ontologyClass != null,
+                          _ontologyClass != null ||
+                          _ontologyType != null,
+                      ontologyFilterActive:
+                          _ontologyClass != null || _ontologyType != null,
                     ),
                   ),
                 ],
@@ -305,49 +337,39 @@ class _ResultsBody extends StatelessWidget {
   const _ResultsBody({
     required this.page,
     required this.hasQuery,
-    this.ontologyClassFilter,
+    this.ontologyFilterActive = false,
   });
   final PublicInstitutionsPage page;
   final bool hasQuery;
 
-  /// Ontology Level-1 wire token (e.g., `GOVERNMENT`). Null = no
-  /// ontology filter. Applied client-side over the server-paged result
-  /// list.
-  final String? ontologyClassFilter;
-
-  /// Filters an institution list down to those matching the current
-  /// ontology class filter. Items missing `institutionClass` are
-  /// excluded when a filter is active (calm honest behaviour — we
-  /// don't pretend an unclassified institution belongs to a class).
-  List<PublicInstitutionSummary> _applyOntology(
-    List<PublicInstitutionSummary> items,
-  ) {
-    if (ontologyClassFilter == null) return items;
-    return items.where((i) {
-      final cls = (i.institutionClass ?? '').trim();
-      return cls.isNotEmpty && cls == ontologyClassFilter;
-    }).toList(growable: false);
-  }
+  /// True when the user has applied an ontology class or type filter.
+  /// Drives the filtered empty-state copy — server-side filtering
+  /// means an empty result on an ontology filter is meaningful ("no
+  /// institutions match this classification yet") rather than a
+  /// partial-page artefact.
+  final bool ontologyFilterActive;
 
   @override
   Widget build(BuildContext context) {
-    final filteredVerified = _applyOntology(page.verified);
-    final filteredOther = _applyOntology(page.other);
-    final isEmpty = filteredVerified.isEmpty && filteredOther.isEmpty;
-
-    if (isEmpty) {
+    if (page.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AuraSpace.s24),
         child: AuraEmptyState(
-          title: hasQuery
-              ? 'No institutions match those filters'
-              : 'Verified institutions arrive here as they onboard',
-          body: hasQuery
-              ? 'Try removing a filter or widening your search.'
-              : 'When organizations join Aura and complete verification, '
-                  'their public profile appears on this directory. Until '
-                  'then, you can explore individual institutions through '
-                  'links shared in posts and announcements.',
+          title: ontologyFilterActive
+              ? 'No institutions match this classification yet'
+              : (hasQuery
+                  ? 'No institutions match those filters'
+                  : 'Verified institutions arrive here as they onboard'),
+          body: ontologyFilterActive
+              ? 'Try a different class or clear the filter to browse '
+                  'every institution on the platform.'
+              : (hasQuery
+                  ? 'Try removing a filter or widening your search.'
+                  : 'When organizations join Aura and complete '
+                      'verification, their public profile appears on '
+                      'this directory. Until then, you can explore '
+                      'individual institutions through links shared in '
+                      'posts and announcements.'),
           icon: Icons.account_balance_outlined,
         ),
       );
@@ -356,28 +378,28 @@ class _ResultsBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (filteredVerified.isNotEmpty) ...[
+        if (page.verified.isNotEmpty) ...[
           _SectionHeading(
             label: 'Verified',
-            count: filteredVerified.length,
+            count: page.verified.length,
             tone: _SectionTone.verified,
             blurb: 'Organizations whose identity Aura has confirmed.',
           ),
           const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: filteredVerified),
+          _InstitutionGrid(items: page.verified),
         ],
-        if (filteredOther.isNotEmpty) ...[
+        if (page.other.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s24),
           _SectionHeading(
             label: 'On the platform',
-            count: filteredOther.length,
+            count: page.other.length,
             tone: _SectionTone.other,
             blurb:
                 'Organizations active on Aura. Verification confirms the '
                 'identity behind the name; it is in progress for these.',
           ),
           const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: filteredOther),
+          _InstitutionGrid(items: page.other),
         ],
       ],
     );
@@ -698,4 +720,96 @@ class _MetaChip extends StatelessWidget {
 String _pluralize(int n, String singular) {
   if (n == 1) return '1 $singular';
   return '$n ${singular}s';
+}
+
+/// Type narrow row — only renders once a Level-1 class is selected.
+/// Surfaces the curated types belonging to the parent class as a
+/// secondary horizontal pill row. Wire tokens are sent verbatim to
+/// the backend `/v1/public/institutions?type=…` filter.
+class _OntologyTypeNarrowRow extends ConsumerWidget {
+  const _OntologyTypeNarrowRow({
+    required this.classId,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String classId;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ontology = ref
+        .watch(institutionOntologyProvider)
+        .valueOrNull;
+    if (ontology == null) return const SizedBox.shrink();
+    final types = ontology.typesForClass(classId);
+    if (types.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 30,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        children: [
+          _TypePill(
+            label: 'Any type',
+            selected: selected == null,
+            onTap: () => onChanged(null),
+          ),
+          for (final t in types) ...[
+            const SizedBox(width: AuraSpace.s6),
+            _TypePill(
+              label: t.label,
+              selected: selected == t.id,
+              onTap: () => onChanged(t.id),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TypePill extends StatelessWidget {
+  const _TypePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.accentSoft : Colors.transparent,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.4)
+                : AuraSurface.divider,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
 }
