@@ -9,6 +9,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../features/institution_ontology/widgets/ontology_class_filter.dart';
+import '../../../features/institution_ontology/widgets/ontology_identity_chips.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../data/public_institutions_repository.dart';
 
@@ -44,6 +46,11 @@ class _PublicInstitutionsDirectoryScreenState
   String _q = '';
   String? _category;
   bool _verifiedOnly = false;
+
+  /// Ontology Level-1 filter (wire token, e.g., `GOVERNMENT`). Null = All.
+  /// Applied client-side over the server-paged result list; the server
+  /// query still owns text-search and the legacy category filter.
+  String? _ontologyClass;
 
   @override
   void dispose() {
@@ -96,7 +103,16 @@ class _PublicInstitutionsDirectoryScreenState
                     onVerifiedToggled: (value) =>
                         setState(() => _verifiedOnly = value),
                   ),
-                  const SizedBox(height: AuraSpace.s20),
+                  const SizedBox(height: AuraSpace.s12),
+                  // Ontology Level-1 class filter pills. Renders only the
+                  // curated classes (from `institutionOntologyProvider`).
+                  // Self-renders an "All" pill so the row makes sense even
+                  // before the ontology has loaded.
+                  OntologyClassFilter(
+                    selected: _ontologyClass,
+                    onChanged: (id) => setState(() => _ontologyClass = id),
+                  ),
+                  const SizedBox(height: AuraSpace.s16),
                   listAsync.when(
                     loading: () => const Padding(
                       padding: EdgeInsets.all(AuraSpace.s32),
@@ -120,9 +136,11 @@ class _PublicInstitutionsDirectoryScreenState
                     ),
                     data: (page) => _ResultsBody(
                       page: page,
+                      ontologyClassFilter: _ontologyClass,
                       hasQuery: _q.isNotEmpty ||
                           _category != null ||
-                          _verifiedOnly,
+                          _verifiedOnly ||
+                          _ontologyClass != null,
                     ),
                   ),
                 ],
@@ -284,13 +302,40 @@ class _SearchAndFilters extends StatelessWidget {
 }
 
 class _ResultsBody extends StatelessWidget {
-  const _ResultsBody({required this.page, required this.hasQuery});
+  const _ResultsBody({
+    required this.page,
+    required this.hasQuery,
+    this.ontologyClassFilter,
+  });
   final PublicInstitutionsPage page;
   final bool hasQuery;
 
+  /// Ontology Level-1 wire token (e.g., `GOVERNMENT`). Null = no
+  /// ontology filter. Applied client-side over the server-paged result
+  /// list.
+  final String? ontologyClassFilter;
+
+  /// Filters an institution list down to those matching the current
+  /// ontology class filter. Items missing `institutionClass` are
+  /// excluded when a filter is active (calm honest behaviour — we
+  /// don't pretend an unclassified institution belongs to a class).
+  List<PublicInstitutionSummary> _applyOntology(
+    List<PublicInstitutionSummary> items,
+  ) {
+    if (ontologyClassFilter == null) return items;
+    return items.where((i) {
+      final cls = (i.institutionClass ?? '').trim();
+      return cls.isNotEmpty && cls == ontologyClassFilter;
+    }).toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (page.isEmpty) {
+    final filteredVerified = _applyOntology(page.verified);
+    final filteredOther = _applyOntology(page.other);
+    final isEmpty = filteredVerified.isEmpty && filteredOther.isEmpty;
+
+    if (isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AuraSpace.s24),
         child: AuraEmptyState(
@@ -311,28 +356,28 @@ class _ResultsBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (page.verified.isNotEmpty) ...[
+        if (filteredVerified.isNotEmpty) ...[
           _SectionHeading(
             label: 'Verified',
-            count: page.verified.length,
+            count: filteredVerified.length,
             tone: _SectionTone.verified,
             blurb: 'Organizations whose identity Aura has confirmed.',
           ),
           const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: page.verified),
+          _InstitutionGrid(items: filteredVerified),
         ],
-        if (page.other.isNotEmpty) ...[
+        if (filteredOther.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s24),
           _SectionHeading(
             label: 'On the platform',
-            count: page.other.length,
+            count: filteredOther.length,
             tone: _SectionTone.other,
             blurb:
                 'Organizations active on Aura. Verification confirms the '
                 'identity behind the name; it is in progress for these.',
           ),
           const SizedBox(height: AuraSpace.s10),
-          _InstitutionGrid(items: page.other),
+          _InstitutionGrid(items: filteredOther),
         ],
       ],
     );
@@ -495,7 +540,21 @@ class _InstitutionCard extends StatelessWidget {
                             ],
                           ],
                         ),
-                        if ((item.category ?? '').isNotEmpty)
+                        if ((item.institutionClass ?? '').isNotEmpty ||
+                            (item.institutionType ?? '').isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: OntologyIdentityChips(
+                              institutionClass: item.institutionClass,
+                              institutionType: item.institutionType,
+                              domainTags: const [],
+                              dense: true,
+                            ),
+                          )
+                        else if ((item.category ?? '').isNotEmpty)
+                          // Legacy category fallback — for unclassified
+                          // institutions that haven't yet been upgraded to
+                          // the ontology.
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(

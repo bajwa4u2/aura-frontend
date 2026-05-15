@@ -15,6 +15,8 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../shared/media/profile_media_editor.dart';
+import '../../institution_ontology/models.dart';
+import '../../institution_ontology/providers.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
 
@@ -81,6 +83,38 @@ class _InstitutionEditProfileScreenState
   final _facebookCtrl = TextEditingController();
   final _instagramCtrl = TextEditingController();
   final _youtubeCtrl = TextEditingController();
+
+  // ── Ontology (Phase 1B) ─────────────────────────────────────────────────
+  // Curated class / type / domain-tag selection. Wire tokens stored;
+  // labels resolved against `institutionOntologyProvider` at render time.
+  String? _institutionClass;
+  String? _institutionType;
+  final List<String> _domainTags = [];
+
+  /// Public mutator for the ontology editor section (avoids external
+  /// callers reaching for `setState` on this State directly).
+  void setInstitutionClass(String? cls) {
+    setState(() {
+      _institutionClass = cls;
+      // Clearing the class also clears the type — server reconciles
+      // the same way; mirroring locally keeps the UI honest.
+      _institutionType = null;
+    });
+  }
+
+  void setInstitutionType(String? typeId) {
+    setState(() => _institutionType = typeId);
+  }
+
+  void toggleDomainTag(String id) {
+    setState(() {
+      if (_domainTags.contains(id)) {
+        _domainTags.remove(id);
+      } else {
+        _domainTags.add(id);
+      }
+    });
+  }
 
   bool _loaded = false;
   bool _saving = false;
@@ -182,6 +216,21 @@ class _InstitutionEditProfileScreenState
     _audienceCtrl.text = s(['audience']);
     final fy = inst['foundedYear'];
     if (fy != null) _foundedYearCtrl.text = fy.toString();
+
+    // Ontology hydrate — wire tokens are kept as-is; the selectors
+    // resolve display labels via `institutionOntologyProvider`.
+    final cls = inst['institutionClass']?.toString().trim() ?? '';
+    final typ = inst['institutionType']?.toString().trim() ?? '';
+    _institutionClass = cls.isEmpty ? null : cls;
+    _institutionType = typ.isEmpty ? null : typ;
+    final rawTags = inst['domainTags'];
+    if (rawTags is List) {
+      _domainTags
+        ..clear()
+        ..addAll(rawTags
+            .map((e) => e?.toString().trim() ?? '')
+            .where((s) => s.isNotEmpty));
+    }
   }
 
   // ── Save ────────────────────────────────────────────────────────────────
@@ -231,6 +280,12 @@ class _InstitutionEditProfileScreenState
         'audience': _audienceCtrl.text.trim(),
         if (_foundedYearCtrl.text.trim().isNotEmpty)
           'foundedYear': int.tryParse(_foundedYearCtrl.text.trim()),
+        // Ontology — null clears the value on the server, '' is treated
+        // as null by the service-layer trim. We always send these three
+        // fields so partial PATCH reconciliation has correct inputs.
+        'institutionClass': _institutionClass ?? '',
+        'institutionType': _institutionType ?? '',
+        'domainTags': List<String>.from(_domainTags),
       };
 
       await repo.updateInstitutionProfile(institutionId, fields);
@@ -655,7 +710,21 @@ class _StudioBody extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: AuraSpace.s8),
+                      const SizedBox(height: AuraSpace.s10),
+                      // ── Global Institution Ontology (Phase 1B) ────────────
+                      // Curated Class / Type / Domain tag selectors. The
+                      // legacy free-text `category` field above is preserved
+                      // during the transition; this section is the canonical
+                      // classification path.
+                      _OntologyEditSection(
+                        institutionClass: state._institutionClass,
+                        institutionType: state._institutionType,
+                        domainTags: state._domainTags,
+                        onClassChanged: state.setInstitutionClass,
+                        onTypeChanged: state.setInstitutionType,
+                        onTagToggled: state.toggleDomainTag,
+                      ),
+                      const SizedBox(height: AuraSpace.s10),
                       const Divider(height: 1, color: AuraSurface.divider),
                       const SizedBox(height: AuraSpace.s14),
                       _MediaSlot(
@@ -1740,6 +1809,162 @@ class _MediaUploadControl extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Phase 1B — Global Institution Ontology editor.
+///
+/// Compact three-row composition: class dropdown · type dropdown
+/// (filtered to the parent class) · domain-tag toggle row. Wire tokens
+/// stored on the parent state; labels resolved from
+/// `institutionOntologyProvider`. No fake data — when the ontology
+/// hasn't loaded yet the dropdowns render empty.
+class _OntologyEditSection extends ConsumerWidget {
+  const _OntologyEditSection({
+    required this.institutionClass,
+    required this.institutionType,
+    required this.domainTags,
+    required this.onClassChanged,
+    required this.onTypeChanged,
+    required this.onTagToggled,
+  });
+
+  final String? institutionClass;
+  final String? institutionType;
+  final List<String> domainTags;
+  final ValueChanged<String?> onClassChanged;
+  final ValueChanged<String?> onTypeChanged;
+  final void Function(String tagId) onTagToggled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ontologyAsync = ref.watch(institutionOntologyProvider);
+    final ontology = ontologyAsync.valueOrNull;
+    final classes = ontology?.classes ?? const [];
+    final types = ontology == null
+        ? const []
+        : (institutionClass == null
+            ? const <InstitutionTypeDef>[]
+            : ontology.typesForClass(institutionClass!));
+    final domainTagDefs = ontology?.domainTags ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StudioTwoCol(
+          left: _StudioField(
+            label: 'Institution class',
+            child: DropdownButtonFormField<String?>(
+              value: institutionClass,
+              decoration: const InputDecoration(
+                isDense: true,
+                hintText: 'Choose a class',
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('— Not classified —'),
+                ),
+                for (final c in classes)
+                  DropdownMenuItem<String?>(
+                    value: c.id,
+                    child: Text(c.label),
+                  ),
+              ],
+              onChanged: onClassChanged,
+            ),
+          ),
+          right: _StudioField(
+            label: 'Institution type',
+            child: DropdownButtonFormField<String?>(
+              value: institutionType,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: institutionClass == null
+                    ? 'Pick a class first'
+                    : 'Choose a type',
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('— None —'),
+                ),
+                for (final t in types)
+                  DropdownMenuItem<String?>(
+                    value: t.id,
+                    child: Text(t.label),
+                  ),
+              ],
+              onChanged: institutionClass == null ? null : onTypeChanged,
+            ),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        _StudioField(
+          label:
+              'Domain tags (up to ${ontology?.maxDomainTagsPerInstitution ?? 8})',
+          child: Wrap(
+            spacing: AuraSpace.s6,
+            runSpacing: AuraSpace.s6,
+            children: [
+              for (final tag in domainTagDefs)
+                _DomainTagToggleChip(
+                  label: tag.label,
+                  selected: domainTags.contains(tag.id),
+                  onTap: () {
+                    final atCap = domainTags.length >=
+                        (ontology?.maxDomainTagsPerInstitution ?? 8);
+                    if (atCap && !domainTags.contains(tag.id)) return;
+                    onTagToggled(tag.id);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DomainTagToggleChip extends StatelessWidget {
+  const _DomainTagToggleChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s10,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AuraSurface.accent.withValues(alpha: 0.4)
+                : AuraSurface.divider,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: selected ? AuraSurface.accentText : AuraSurface.ink,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

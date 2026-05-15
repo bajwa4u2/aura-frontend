@@ -24,6 +24,9 @@ class PublicInstitutionSummary {
     required this.memberCount,
     required this.announcementCount,
     required this.unitCount,
+    this.institutionClass,
+    this.institutionType,
+    this.domainTags = const [],
   });
 
   final String id;
@@ -46,6 +49,15 @@ class PublicInstitutionSummary {
   final int announcementCount;
   final int unitCount;
 
+  /// Phase 1B — curated Level-1 class wire token. Null until classified.
+  final String? institutionClass;
+
+  /// Phase 1B — curated Level-2 type wire token. Null until classified.
+  final String? institutionType;
+
+  /// Phase 1B — Level-3 domain-tag wire tokens. Empty when unclassified.
+  final List<String> domainTags;
+
   String get locationLabel {
     final parts = <String>[
       if ((city ?? '').isNotEmpty) city!,
@@ -57,6 +69,13 @@ class PublicInstitutionSummary {
 
   factory PublicInstitutionSummary.fromJson(Map<String, dynamic> json) {
     final counts = json['counts'] as Map<String, dynamic>? ?? const {};
+    final rawTags = json['domainTags'];
+    final tagList = rawTags is List
+        ? rawTags
+            .map((e) => e?.toString().trim() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList(growable: false)
+        : const <String>[];
     return PublicInstitutionSummary(
       id: _s(json['id']),
       slug: _s(json['slug']),
@@ -78,6 +97,9 @@ class PublicInstitutionSummary {
       memberCount: _i(counts['members']),
       announcementCount: _i(counts['announcements']),
       unitCount: _i(counts['units']),
+      institutionClass: _ns(json['institutionClass']),
+      institutionType: _ns(json['institutionType']),
+      domainTags: tagList,
     );
   }
 }

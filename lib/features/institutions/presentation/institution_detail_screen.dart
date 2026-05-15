@@ -16,6 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/presentation/unified_feed_card.dart';
+import '../../institution_ontology/widgets/ontology_identity_chips.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
 import '../units/institution_unit_card.dart';
@@ -639,6 +640,17 @@ class _PublicIdentity extends StatelessWidget {
               color: AuraSurface.muted,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+        if ((institution.institutionClass ?? '').isNotEmpty ||
+            (institution.institutionType ?? '').isNotEmpty ||
+            institution.domainTags.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          OntologyIdentityChips(
+            institutionClass: institution.institutionClass,
+            institutionType: institution.institutionType,
+            domainTags: institution.domainTags,
+            maxDomainTags: 5,
           ),
         ],
         if (description.isNotEmpty) ...[
