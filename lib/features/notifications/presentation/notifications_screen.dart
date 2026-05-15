@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/interactions/actor_context.dart';
 import '../../../core/media/aura_attachment_image.dart';
+import '../../../core/notifications/notification_open_reconcile.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -56,6 +57,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (!mounted) return;
     final route = _routeFor(n);
     if (route == null) return;
+    // R5 — Flush canonical providers BEFORE navigation so the landing
+    // surface re-fetches against backend truth. Without this, a stale
+    // cached `feedItemDetailProvider` (or follow / saved-posts
+    // provider) can render last-known counts and the user sees the
+    // surface they expect to be fresh actually still showing yesterday.
+    NotificationOpenReconcile.onAppTap(
+      ref,
+      type: n.type,
+      postId: n.postId,
+      institutionPostId: n.institutionPostId,
+      directThreadId: n.directThreadId,
+    );
     // Route through the shared shell adapter so notifications opened from
     // inside an institution shell preserve that shell; otherwise the
     // canonical route is returned untouched.

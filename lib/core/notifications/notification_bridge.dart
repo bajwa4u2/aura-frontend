@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/session_providers.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
+import 'notification_open_reconcile.dart';
 import 'sw_message_bridge.dart';
 
 final auraScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -61,12 +62,45 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
           final trimmed = deeplink.trim();
           if (trimmed.isEmpty) return;
           final route = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+          // R5 — Web push lands here without an FCM RemoteMessage in
+          // hand; we only have the deeplink. Infer the notification
+          // type from the route prefix so the right canonical surfaces
+          // refresh before navigation lands. /posts/* → post family,
+          // /u/* + /institutions/* → follow family, /direct/* + /spaces/*
+          // → feed family, /realtime/* → call family.
+          NotificationOpenReconcile.onFcmTap(
+            ref,
+            _payloadFromRoute(route),
+          );
           ref.read(routerProvider).go(route);
         } catch (e) {
           debugPrint('SW navigate failed: $e');
         }
       });
     });
+  }
+
+  /// R5 — Reconstruct a minimal payload so the reconcile helper can
+  /// route invalidations from a service-worker deeplink alone. Recognised
+  /// patterns mirror the in-app `_routeFor()` map.
+  Map<String, dynamic> _payloadFromRoute(String route) {
+    String inferType() {
+      if (route.startsWith('/realtime')) return 'CALL';
+      if (route.startsWith('/u/') || route.startsWith('/institutions/')) {
+        return 'FOLLOW';
+      }
+      if (route.startsWith('/direct/')) return 'MESSAGE';
+      if (route.startsWith('/spaces/')) return 'SPACE_ACTIVITY';
+      if (route.startsWith('/posts/') || route.contains('/posts/')) {
+        return 'REPLY';
+      }
+      return '';
+    }
+
+    return <String, dynamic>{
+      'type': inferType(),
+      'deeplink': route,
+    };
   }
 
   void _initFcm() {
@@ -121,6 +155,14 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final payload = _payloadFromFcm(message);
     final route = _routeFromPayload(payload);
     if (route.isEmpty) return;
+
+    // R5 — Flush canonical providers before navigation so the landing
+    // surface re-fetches against backend truth. Critical for cold-start
+    // (getInitialMessage) and background-tap paths where a stale
+    // provider value can survive across the launch.
+    try {
+      NotificationOpenReconcile.onFcmTap(ref, payload);
+    } catch (_) {}
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -248,8 +290,11 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     // Prefer explicit deeplink/route from backend, except terminal/expired
     // call payloads must not resurrect /realtime after the call is missed,
     // ended, or past its TTL — those would just hit a 403 from the backend.
+    // R5 — also accept `deepLink` (camelCase) for resilience against
+    // partner integrations / older payload variants.
     final deeplink = _firstNonEmpty([
       _stringOf(payload['deeplink']),
+      _stringOf(payload['deepLink']),
       _stringOf(payload['route']),
     ]);
     if (deeplink.isNotEmpty && deeplink.startsWith('/')) {

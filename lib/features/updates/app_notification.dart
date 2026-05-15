@@ -66,8 +66,12 @@ class AppNotification {
   /// target route inside `payload.deeplink`; consumers should prefer this
   /// over rebuilding routes from individual fields. Returns null when the
   /// backend didn't ship one (older rows or kinds without a target).
+  ///
+  /// R5 — tolerates both `deeplink` (canonical, lower-case) and `deepLink`
+  /// (camelCase) for resilience against payload-shape drift. Both casings
+  /// have appeared in historical fixtures and partner integrations.
   String? get deeplink {
-    final raw = payload['deeplink'];
+    final raw = payload['deeplink'] ?? payload['deepLink'];
     if (raw is String) {
       final trimmed = raw.trim();
       return trimmed.isEmpty ? null : trimmed;
