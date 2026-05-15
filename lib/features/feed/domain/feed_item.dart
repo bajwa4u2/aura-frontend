@@ -827,6 +827,8 @@ class FeedItem {
     this.publicSpaceId,
     this.publicSpaceSlug,
     this.publicSpaceName,
+    this.resolvesPostId,
+    this.continuesPostId,
   });
 
   final String id;
@@ -884,6 +886,19 @@ class FeedItem {
   final String? publicSpaceId;
   final String? publicSpaceSlug;
   final String? publicSpaceName;
+
+  /// Phase 5 (R7) — participation memory forward pointers.
+  /// `resolvesPostId` set when this institution post is an explicit
+  /// resolution of another post. `continuesPostId` set when this
+  /// post is a deliberate follow-up to a prior thread. Both null on
+  /// user posts (the columns live only on InstitutionPost) and on
+  /// institution posts without any continuity linkage.
+  final String? resolvesPostId;
+  final String? continuesPostId;
+
+  bool get hasContinuityLinkage =>
+      (resolvesPostId != null && resolvesPostId!.trim().isNotEmpty) ||
+      (continuesPostId != null && continuesPostId!.trim().isNotEmpty);
 
   bool get isInstitutionPost => type == FeedItemType.institutionPost;
   bool get isUserPost => type == FeedItemType.userPost;
@@ -1003,6 +1018,8 @@ class FeedItem {
       publicSpaceId: spaceId,
       publicSpaceSlug: spaceSlug,
       publicSpaceName: spaceName,
+      resolvesPostId: opt(['resolvesPostId']),
+      continuesPostId: opt(['continuesPostId']),
     );
   }
 }

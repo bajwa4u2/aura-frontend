@@ -138,6 +138,14 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                 showReplyPreview: false,
                 mediaMode: AuraMediaFrameMode.detail,
               ),
+              // R7 — participation memory continuity context. Renders
+              // a calm "Resolves" / "Follow-up" reference when this
+              // post carries a forward linkage. Self-collapses when
+              // neither pointer is set, so quiet posts show nothing.
+              if (item.hasContinuityLinkage) ...[
+                const SizedBox(height: AuraSpace.s12),
+                _ContinuityContextSection(item: item),
+              ],
               // External share — only when the institution post is
               // publicly visible. MEMBER_ONLY / INTERNAL posts must not
               // expose a share affordance: the share URL would render a
@@ -470,6 +478,197 @@ class _OfficialAnnouncementStrip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Participation-memory continuity context.
+///
+/// Renders a calm "Resolves" / "Follow-up" reference card when the
+/// current post carries a forward continuity pointer
+/// (`resolvesPostId` / `continuesPostId`). Both pointers are
+/// institution-actor-set linkages from the Phase 4 schema — they only
+/// appear when an actor explicitly set them, not by content analysis.
+///
+/// The inverse direction (which other posts resolve/continue THIS
+/// post) is not surfaced here because it requires an aggregation
+/// endpoint that has not shipped — adding it would be a fresh server
+/// query, kept out of this pass intentionally to avoid an unreliable
+/// partial roundtrip on post detail.
+///
+/// Self-collapses when neither forward pointer is set; the parent
+/// `if (item.hasContinuityLinkage)` gate is the formal check.
+class _ContinuityContextSection extends StatelessWidget {
+  const _ContinuityContextSection({required this.item});
+
+  final FeedItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolves = item.resolvesPostId;
+    final continues = item.continuesPostId;
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        border: Border.all(
+          color: AuraSurface.divider.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(
+                child: Text(
+                  'Continuity context',
+                  style: AuraText.subtitle.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Linkage set by an institution actor — observational, not '
+            'inferred from content.',
+            style: AuraText.micro.copyWith(
+              color: AuraSurface.faint,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+          if (resolves != null && resolves.isNotEmpty)
+            _ContinuityRow(
+              label: 'Resolves',
+              icon: Icons.check_circle_outline_rounded,
+              color: const Color(0xFF4ADE80),
+              targetPostId: resolves,
+              institutionId: (item.author.id.isNotEmpty)
+                  ? item.author.id
+                  : null,
+            ),
+          if (resolves != null && continues != null) ...[
+            const SizedBox(height: AuraSpace.s6),
+          ],
+          if (continues != null && continues.isNotEmpty)
+            _ContinuityRow(
+              label: 'Follow-up to',
+              icon: Icons.history_rounded,
+              color: const Color(0xFF60A5FA),
+              targetPostId: continues,
+              institutionId: (item.author.id.isNotEmpty)
+                  ? item.author.id
+                  : null,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContinuityRow extends StatelessWidget {
+  const _ContinuityRow({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.targetPostId,
+    required this.institutionId,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String targetPostId;
+  final String? institutionId;
+
+  @override
+  Widget build(BuildContext context) {
+    // Routing: the target is an InstitutionPost id; institutionId is
+    // the speaking institution (best-available proxy from the current
+    // post's author). If the institutionId is absent the card is
+    // non-clickable rather than guessing.
+    final route = (institutionId == null || institutionId!.isEmpty)
+        ? null
+        : '/institution/$institutionId/posts/$targetPostId';
+    final body = Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.18),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withValues(alpha: 0.45)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: AuraText.micro.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                  fontSize: 9.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Open the referenced post',
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (route != null)
+          const Icon(
+            Icons.arrow_forward_rounded,
+            size: 14,
+            color: AuraSurface.muted,
+          ),
+      ],
+    );
+    if (route == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: body,
+      );
+    }
+    return InkWell(
+      borderRadius: BorderRadius.circular(AuraRadius.r10),
+      onTap: () => context.push(route),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 2,
+          vertical: 4,
+        ),
+        child: body,
       ),
     );
   }

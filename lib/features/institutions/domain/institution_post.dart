@@ -154,6 +154,8 @@ class InstitutionPost {
     this.actorInstitutionId,
     this.actorInstitution,
     this.replyToInstitutionPostId,
+    this.resolvesInstitutionPostId,
+    this.continuesInstitutionPostId,
   });
 
   final String id;
@@ -193,9 +195,27 @@ class InstitutionPost {
   /// Set when this post is a reply under another InstitutionPost.
   final String? replyToInstitutionPostId;
 
+  /// Phase 5 (R7) — participation memory. When set, this post is an
+  /// explicit resolution of the referenced post. Backend-emitted via
+  /// the institution-post API projection; null on posts without a
+  /// resolution linkage. The frontend renders a calm "Resolves"
+  /// indicator on the detail header.
+  final String? resolvesInstitutionPostId;
+
+  /// Phase 5 (R7) — explicit follow-up pointer for cross-thread
+  /// continuations. When set, this post continues an earlier
+  /// discussion identified by the referenced post id.
+  final String? continuesInstitutionPostId;
+
   bool get isReply =>
       replyToInstitutionPostId != null &&
       replyToInstitutionPostId!.trim().isNotEmpty;
+
+  bool get hasContinuityLinkage =>
+      (resolvesInstitutionPostId != null &&
+          resolvesInstitutionPostId!.trim().isNotEmpty) ||
+      (continuesInstitutionPostId != null &&
+          continuesInstitutionPostId!.trim().isNotEmpty);
 
   bool get isInstitutionActor =>
       actorInstitutionId != null && actorInstitutionId!.trim().isNotEmpty;
@@ -271,6 +291,8 @@ class InstitutionPost {
           ? Map<String, dynamic>.from(actorInstitution)
           : null,
       replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
+      resolvesInstitutionPostId: opt(['resolvesInstitutionPostId']),
+      continuesInstitutionPostId: opt(['continuesInstitutionPostId']),
     );
   }
 
