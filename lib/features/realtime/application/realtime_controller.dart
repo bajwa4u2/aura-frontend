@@ -1268,6 +1268,13 @@ class RealtimeController extends StateNotifier<RealtimeState> {
         );
         return;
       case 'socket:disconnected':
+        // R4 — Cancel the heartbeat ticker on disconnect. The body
+        // already skips emits when `!state.isJoined`, but the periodic
+        // timer keeps the scheduler waking up every 20s and can leak
+        // across a sign-out / sign-in on the same tab if the controller
+        // isn't disposed. Stopping it on disconnect is defensive — a
+        // fresh join restarts it through `_startHeartbeat`.
+        _stopHeartbeat();
         _clearPendingOfferTargets();
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(

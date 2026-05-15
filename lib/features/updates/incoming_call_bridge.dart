@@ -26,6 +26,14 @@ final incomingCallBridgeProvider =
           event.name == 'call:declined') {
         final sid = _str(event.payload['sessionId']);
         if (sid.isNotEmpty) notifier._onSessionTerminated(sid);
+      } else if (event.name == 'socket:connected') {
+        // R4 — Socket reconnect fallback. Terminal events fired while
+        // this socket was disconnected are not replayed, so a ringing
+        // card can linger up to the 90s TTL. Sweeping expired entries
+        // on every reconnect closes that window without waiting for
+        // app-resume. Idempotent — re-running the sweep on a clean
+        // bridge is a no-op.
+        notifier.evictExpired();
       }
     });
 
@@ -131,6 +139,29 @@ class IncomingCallBridgeNotifier
       if (sid.isNotEmpty) ids.add(sid);
     }
     return ids;
+  }
+
+  /// R4 — Evict every card whose `data.expiresAt` is in the past. The
+  /// overlay also gates rendering by `expiresAt`, but the underlying
+  /// state still holds the entry until [_onSessionTerminated] fires or
+  /// the user manually dismisses. On socket reconnect a terminal event
+  /// may have been missed; rather than waiting for the local TTL we
+  /// drop any entry whose ring window already closed. Items with no
+  /// `expiresAt` are left alone — we have no time signal to evict them
+  /// on.
+  void evictExpired() {
+    if (state.isEmpty) return;
+    final now = DateTime.now().toUtc();
+    final next = state.where((item) {
+      final data = item['data'];
+      if (data is! Map) return true;
+      final expiresAtStr = _str(data['expiresAt']);
+      if (expiresAtStr.isEmpty) return true;
+      final expiresAt = DateTime.tryParse(expiresAtStr);
+      if (expiresAt == null) return true;
+      return expiresAt.isAfter(now);
+    }).toList();
+    if (next.length != state.length) state = next;
   }
 
   /// Drop every pending incoming-call card and reset the notifier.
