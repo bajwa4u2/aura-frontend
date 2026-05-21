@@ -9,7 +9,6 @@ import '../auth/auth_providers.dart';
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
 import '../client_identity/client_identity_provider.dart';
-import '../diagnostics/runtime_diagnostics.dart'; // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
 import '../errors/app_error_mapper.dart';
 import 'platform_http_adapter.dart';
 
@@ -420,15 +419,9 @@ final dioProvider = Provider<Dio>((ref) {
         if (!isAuthEndpoint(options)) {
           try {
             await ref.read(sessionBootstrapProvider.future);
-            // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
-            if (RuntimeDiagnostics.enabled) {
-              RuntimeDiagnostics.setBootstrapStatus('done');
-            }
-          } catch (e) {
-            // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
-            if (RuntimeDiagnostics.enabled) {
-              RuntimeDiagnostics.setBootstrapStatus('error:${e.runtimeType}');
-            }
+          } catch (_) {
+            // Bootstrap is best-effort — a failure here must not block
+            // the request (see the note above).
           }
         }
 
@@ -456,13 +449,6 @@ final dioProvider = Provider<Dio>((ref) {
           options.headers['Authorization'] = 'Bearer $token';
         } else {
           options.headers.remove('Authorization');
-        }
-
-        // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
-        if (RuntimeDiagnostics.enabled) {
-          RuntimeDiagnostics.setAccessTokenPresent(
-            token != null && token.trim().isNotEmpty,
-          );
         }
 
         handler.next(options);
@@ -580,14 +566,6 @@ final dioProvider = Provider<Dio>((ref) {
       },
     ),
   );
-
-  // DIAGNOSTIC: REMOVE BEFORE STORE RELEASE
-  // Added at the END of the chain so the status seen here is the final
-  // status the caller observes (after the auth/refresh interceptor has had
-  // its chance to swap tokens and resolve a 401 retry).
-  if (RuntimeDiagnostics.enabled) {
-    dio.interceptors.add(DiagnosticDioInterceptor());
-  }
 
   return dio;
 });
