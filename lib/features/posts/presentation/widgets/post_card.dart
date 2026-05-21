@@ -975,6 +975,11 @@ class _PostCardState extends ConsumerState<PostCard> {
                         overflow: maxLines == null
                             ? TextOverflow.visible
                             : TextOverflow.ellipsis,
+                        // Discourse body — selectable so the work can be
+                        // quoted, cited, and preserved. Safe here: the
+                        // PostCard is never wrapped in a tap-to-navigate
+                        // target at any of its call sites.
+                        selectable: true,
                         semanticsLabel: 'Post body',
                       ),
                       if (showToggle && !_expanded) ...[
@@ -1143,6 +1148,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                               AuraTextBlock(
                                 _translatedText!,
                                 style: bodyTextStyle,
+                                selectable: true,
                               ),
                             ],
                           ),

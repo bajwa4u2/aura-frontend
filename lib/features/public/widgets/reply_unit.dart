@@ -220,12 +220,16 @@ class ReplyUnit extends ConsumerWidget {
           if (reply.body.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
             // Phase 6.1 — render @handles as accent-tinted, tappable
-            // spans linking to /u/:handle.
-            MentionText(
-              reply.body,
-              style: AuraText.body.copyWith(
-                color: AuraSurface.ink,
-                height: 1.5,
+            // spans linking to /u/:handle. SelectionArea adds drag/
+            // long-press text selection without disturbing those
+            // mention tap recognizers.
+            SelectionArea(
+              child: MentionText(
+                reply.body,
+                style: AuraText.body.copyWith(
+                  color: AuraSurface.ink,
+                  height: 1.5,
+                ),
               ),
             ),
           ],

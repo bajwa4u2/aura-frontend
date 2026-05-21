@@ -4,6 +4,7 @@ import '../ui/aura_radius.dart';
 import '../ui/aura_surface.dart';
 import 'aura_attachment_image.dart';
 import 'aura_resolvable_attachment_image.dart';
+import 'media_save_button.dart';
 
 /// Canonical Aura media frame.
 ///
@@ -69,6 +70,8 @@ class AuraMediaFrame extends StatelessWidget {
     this.placeholder,
     this.onTap,
     this.foreground,
+    this.saveUrl,
+    this.saveFilename,
   });
 
   /// Permanent public URL. Required when [isPublic] is true. Ignored
@@ -115,6 +118,17 @@ class AuraMediaFrame extends StatelessWidget {
   /// glyph). Sized to the frame's content rect; clipped by the same
   /// ClipRRect.
   final Widget? foreground;
+
+  /// When non-empty, a save/download affordance is layered on the
+  /// frame: a hover-revealed button on desktop/web and a long-press
+  /// shortcut on every platform. Must be a directly-fetchable URL —
+  /// resolve visibility-gated (signed) URLs upstream before passing.
+  /// Defaults to null, which leaves the frame's behavior unchanged.
+  final String? saveUrl;
+
+  /// Preferred filename for [saveUrl] downloads. An extension is
+  /// inferred when this is null or lacks one.
+  final String? saveFilename;
 
   @override
   Widget build(BuildContext context) {
@@ -191,10 +205,31 @@ class AuraMediaFrame extends StatelessWidget {
 
     framed = ClipRRect(borderRadius: radius, child: framed);
 
-    if (onTap != null) {
+    final saveTarget = (saveUrl ?? '').trim();
+    final canSave = saveTarget.isNotEmpty;
+
+    if (onTap != null || canSave) {
       framed = InkWell(
         borderRadius: radius,
         onTap: onTap,
+        // Long-press is the platform-standard "save image" gesture on
+        // touch devices; it does not interfere with tap-to-open or
+        // scroll because the recognizer only fires on a held press.
+        onLongPress: canSave
+            ? () => runMediaSave(
+                  context,
+                  url: saveTarget,
+                  filename: saveFilename,
+                )
+            : null,
+        child: framed,
+      );
+    }
+
+    if (canSave) {
+      framed = _MediaSaveOverlay(
+        url: saveTarget,
+        filename: saveFilename,
         child: framed,
       );
     }
@@ -366,4 +401,60 @@ class _AspectDecision {
   final double aspect;
   final BoxFit fit;
   final bool useBackdrop;
+}
+
+/// Layers a hover-revealed [MediaSaveButton] on the top-right corner of
+/// a media frame. The button only paints while a mouse is over the
+/// frame (desktop/web); touch users reach the same action through the
+/// long-press handler wired on the frame's [InkWell]. Rendered inside a
+/// [Stack] as a [Positioned] child, so it never affects frame layout.
+class _MediaSaveOverlay extends StatefulWidget {
+  const _MediaSaveOverlay({
+    required this.url,
+    required this.filename,
+    required this.child,
+  });
+
+  final String url;
+  final String? filename;
+  final Widget child;
+
+  @override
+  State<_MediaSaveOverlay> createState() => _MediaSaveOverlayState();
+}
+
+class _MediaSaveOverlayState extends State<_MediaSaveOverlay> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) {
+        if (!_hovered) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (_hovered) setState(() => _hovered = false);
+      },
+      child: Stack(
+        children: [
+          widget.child,
+          Positioned(
+            top: 8,
+            right: 8,
+            child: AnimatedOpacity(
+              opacity: _hovered ? 1 : 0,
+              duration: const Duration(milliseconds: 140),
+              child: IgnorePointer(
+                ignoring: !_hovered,
+                child: MediaSaveButton(
+                  url: widget.url,
+                  filename: widget.filename,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

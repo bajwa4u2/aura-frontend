@@ -153,23 +153,31 @@ class ThreadHeader extends StatelessWidget {
           ),
           if (cleanTitle.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s14),
-            Text(
-              cleanTitle,
-              style: AuraText.headline.copyWith(
-                fontWeight: FontWeight.w900,
-                height: 1.25,
+            // Selectable headline so the original signal can be quoted
+            // and cited verbatim.
+            SelectionArea(
+              child: Text(
+                cleanTitle,
+                style: AuraText.headline.copyWith(
+                  fontWeight: FontWeight.w900,
+                  height: 1.25,
+                ),
               ),
             ),
           ],
           if (item.body.trim().isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s10),
             // Phase 6.1 — accent-style + tappable @mentions in the
-            // post body, mirroring reply rendering.
-            MentionText(
-              item.body,
-              style: AuraText.body.copyWith(
-                color: AuraSurface.ink,
-                height: 1.55,
+            // post body, mirroring reply rendering. SelectionArea makes
+            // the body selectable while the mention tap recognizers
+            // continue to fire, so links and copy/quote coexist.
+            SelectionArea(
+              child: MentionText(
+                item.body,
+                style: AuraText.body.copyWith(
+                  color: AuraSurface.ink,
+                  height: 1.55,
+                ),
               ),
             ),
           ],

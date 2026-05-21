@@ -157,6 +157,9 @@ class _PresenceIdentity extends StatelessWidget {
                 height: 1.5,
                 color: AuraSurface.ink,
               ),
+              // Profile bio is discourse — selectable so it can be
+              // quoted and referenced.
+              selectable: true,
             ),
           ),
         ],

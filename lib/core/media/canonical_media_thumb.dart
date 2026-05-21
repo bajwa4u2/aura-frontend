@@ -35,6 +35,14 @@ class CanonicalMediaThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The save affordance is offered only for public image media: its
+    // [url] is directly fetchable. Visibility-gated (RESTRICTED/PRIVATE)
+    // media needs a freshly signed URL the resolver owns, so save stays
+    // off for it here rather than handing the save service a URL that
+    // would 403.
+    final canSave = media.isPublic && media.isImage;
+    final saveUrl = canSave ? (media.url ?? '').trim() : '';
+
     return AuraMediaFrame(
       url: media.url,
       attachmentId: media.mediaId.isNotEmpty ? media.mediaId : null,
@@ -46,6 +54,9 @@ class CanonicalMediaThumb extends StatelessWidget {
       alignment: alignment,
       semanticLabel: media.caption,
       onTap: onTap,
+      saveUrl: saveUrl.isEmpty ? null : saveUrl,
+      saveFilename:
+          media.mediaId.isNotEmpty ? 'aura-${media.mediaId}' : null,
       errorWidget: (_) => const BrokenMediaTile(),
     );
   }

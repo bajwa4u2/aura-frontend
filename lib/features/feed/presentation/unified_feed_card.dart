@@ -9,6 +9,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../institutions/domain/communication_type.dart';
@@ -30,6 +31,7 @@ class UnifiedFeedCard extends ConsumerWidget {
     this.showInteractionBar = true,
     this.showReplyPreview = true,
     this.mediaMode = AuraMediaFrameMode.feed,
+    this.bodySelectable = false,
   });
 
   final FeedItem item;
@@ -55,6 +57,16 @@ class UnifiedFeedCard extends ConsumerWidget {
   /// instead of the bounded feed-rhythm frame.
   final AuraMediaFrameMode mediaMode;
 
+  /// When true the title and body render as selectable, full-length
+  /// discourse text instead of the truncated, tap-to-navigate preview.
+  ///
+  /// Detail screens (InstitutionPostDetailScreen) opt in: the card is
+  /// the focused post there, so the reader must be able to select,
+  /// copy, and quote it in full. Feed surfaces leave this false — the
+  /// card stays a preview whose whole surface navigates on tap, and
+  /// making the body selectable there would swallow that tap.
+  final bool bodySelectable;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentPath = GoRouterState.of(context).uri.path;
@@ -79,6 +91,19 @@ class UnifiedFeedCard extends ConsumerWidget {
         decodedTitle!.type == InsCommunicationType.advisory;
     final isUpdate = decodedTitle?.hadMarker == true &&
         decodedTitle!.type == InsCommunicationType.update;
+
+    // Per-type title weight, shared by the truncated preview and the
+    // selectable detail rendering so both read identically.
+    final titleStyle = AuraText.body.copyWith(
+      color: AuraSurface.ink,
+      fontWeight: isAnnouncement
+          ? FontWeight.w900
+          : isUpdate
+              ? FontWeight.w700
+              : FontWeight.w800,
+      fontSize: isAnnouncement ? 17 : null,
+      height: 1.35,
+    );
 
     // Phase 4 — time decay. Older official posts are intentionally
     // "quieter": ≤24 h reads at full intensity, 24–72 h sits at a
@@ -189,27 +214,23 @@ class UnifiedFeedCard extends ConsumerWidget {
             ],
             if (item.title != null && item.title!.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              Text(
-                // Strip the [OFFICIAL:TYPE] marker before rendering. Legacy
-                // posts (no marker) round-trip the title verbatim.
-                InsCommunicationDecoded.parse(item.title).cleanTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AuraText.body.copyWith(
-                  color: AuraSurface.ink,
-                  // Per-type title weight: announcements get a heavier,
-                  // larger headline; advisories stay strong; updates and
-                  // unmarked posts use the regular w800 baseline; updates
-                  // explicitly relax to w700 so they read as routine.
-                  fontWeight: isAnnouncement
-                      ? FontWeight.w900
-                      : isUpdate
-                          ? FontWeight.w700
-                          : FontWeight.w800,
-                  fontSize: isAnnouncement ? 17 : null,
-                  height: 1.35,
+              // Strip the [OFFICIAL:TYPE] marker before rendering. Legacy
+              // posts (no marker) round-trip the title verbatim. On detail
+              // surfaces the title is selectable and shown in full; in the
+              // feed it stays a two-line, tap-through preview.
+              if (bodySelectable)
+                AuraTextBlock(
+                  InsCommunicationDecoded.parse(item.title).cleanTitle,
+                  style: titleStyle,
+                  selectable: true,
+                )
+              else
+                Text(
+                  InsCommunicationDecoded.parse(item.title).cleanTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
                 ),
-              ),
               // Phase 3 — under-title intent text. Reinforces what the
               // reader is meant to do with this statement without being
               // prescriptive. Update intentionally has no extra line so
@@ -242,13 +263,24 @@ class UnifiedFeedCard extends ConsumerWidget {
             ],
             if (item.body.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s8),
-              Text(
-                item.body,
-                maxLines: 6,
-                overflow: TextOverflow.ellipsis,
-                style: AuraText.body
-                    .copyWith(color: AuraSurface.ink, height: 1.5),
-              ),
+              // Detail surfaces render the full body as selectable
+              // discourse text; the feed keeps a six-line tap-through
+              // preview so the whole card stays a navigation target.
+              if (bodySelectable)
+                AuraTextBlock(
+                  item.body,
+                  style: AuraText.body
+                      .copyWith(color: AuraSurface.ink, height: 1.5),
+                  selectable: true,
+                )
+              else
+                Text(
+                  item.body,
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body
+                      .copyWith(color: AuraSurface.ink, height: 1.5),
+                ),
             ],
             // C4-followup — prefer canonical media[] when the backend
             // shipped one (institution posts after C4, user posts going
@@ -800,6 +832,9 @@ class _LegacyMediaUrlThumb extends StatelessWidget {
       url: url,
       attachmentId: attachmentId,
       mode: mode,
+      // Legacy `mediaUrl` payloads are always flat public URLs, so the
+      // save affordance can fetch them directly.
+      saveUrl: url.trim().isEmpty ? null : url,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../../core/media/aura_attachment_image.dart';
+import '../../../../../core/media/media_save_button.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../../core/ui/aura_text.dart';
 import 'post_card_models.dart';
@@ -116,17 +117,41 @@ class _PostCardMediaViewerDialogState
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const Spacer(),
-                          if (item.playableUrl.isNotEmpty)
-                            AuraGhostButton(
-                              label: item.isVideo ? 'Open video' : 'Open image',
-                              icon: Icons.open_in_new,
-                              onPressed: () => openExternalUrl(
-                                context,
-                                item.playableUrl,
-                                fallbackCopyMessage: 'Media link copied',
-                              ),
+                          const SizedBox(width: 12),
+                          // Wrap so the action buttons drop to a second
+                          // line on a narrow phone instead of overflowing.
+                          Expanded(
+                            child: Wrap(
+                              alignment: WrapAlignment.end,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (item.playableUrl.isNotEmpty)
+                                  AuraGhostButton(
+                                    label: item.isVideo
+                                        ? 'Save video'
+                                        : 'Save image',
+                                    icon: Icons.download_rounded,
+                                    onPressed: () => runMediaSave(
+                                      context,
+                                      url: item.playableUrl,
+                                    ),
+                                  ),
+                                if (item.playableUrl.isNotEmpty)
+                                  AuraGhostButton(
+                                    label: item.isVideo
+                                        ? 'Open video'
+                                        : 'Open image',
+                                    icon: Icons.open_in_new,
+                                    onPressed: () => openExternalUrl(
+                                      context,
+                                      item.playableUrl,
+                                      fallbackCopyMessage: 'Media link copied',
+                                    ),
+                                  ),
+                              ],
                             ),
+                          ),
                         ],
                       ),
                     ],

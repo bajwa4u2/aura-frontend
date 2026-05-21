@@ -252,6 +252,9 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                 body,
                 textAlign: alignForText(body),
                 style: AuraText.body.copyWith(color: textColor),
+                // Correspondence is discourse too — message text is
+                // selectable so it can be copied and quoted.
+                selectable: true,
               ),
             ),
             const SizedBox(height: AuraSpace.s8),
@@ -407,6 +410,7 @@ class _MessageTileState extends ConsumerState<ThreadMessageTile> {
                         style: AuraText.body.copyWith(
                           color: translatedTextColor,
                         ),
+                        selectable: true,
                       ),
                     ),
                   ],

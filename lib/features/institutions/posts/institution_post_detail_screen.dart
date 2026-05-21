@@ -10,6 +10,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../../shared/identity/aura_identity_badge.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
@@ -137,6 +138,9 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
                 item: item,
                 showReplyPreview: false,
                 mediaMode: AuraMediaFrameMode.detail,
+                // Focused post on its own detail screen — render the
+                // title and body as full, selectable discourse text.
+                bodySelectable: true,
               ),
               // R7 — participation memory continuity context. Renders
               // a calm "Resolves" / "Follow-up" reference when this
@@ -357,10 +361,11 @@ class _ReplyCard extends StatelessWidget {
           ),
           if (reply.body.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(
+            AuraTextBlock(
               reply.body,
               style: AuraText.body
                   .copyWith(color: AuraSurface.ink, height: 1.5),
+              selectable: true,
             ),
           ],
           const SizedBox(height: AuraSpace.s8),
