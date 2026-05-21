@@ -164,10 +164,18 @@ class RealtimeReconciliationController {
     });
   }
 
-  /// Wraps `invalidateUnifiedFeedSurfaces` so this controller can call
-  /// it without holding a `WidgetRef`. `Ref` exposes `.invalidate`; the
-  /// helper just delegates the list, so we inline the same list here
-  /// to keep the dependency one-way.
+  /// Mirrors `invalidateUnifiedFeedSurfaces` so this controller can
+  /// refresh every feed surface without holding a `WidgetRef`. The list
+  /// is inlined to keep the dependency one-way.
+  ///
+  /// The two non-family paged feeds MUST be refreshed via
+  /// `.notifier.refresh()`, never `invalidate`. Invalidating a mounted
+  /// non-family `StateNotifierProvider` from this controller's `Ref`
+  /// trips a Riverpod dependency assertion (`_debugAssertCanDependOn`)
+  /// on the realtime-reconnect path. The family paged providers are
+  /// invalidated as normal. This now matches `invalidateUnifiedFeedSurfaces`
+  /// exactly — an earlier inline copy diverged and used `invalidate`
+  /// for all four paged providers.
   void _invalidateUnifiedFeeds() {
     _ref.invalidate(globalPublicFeedProvider);
     _ref.invalidate(memberHomeFeedProvider);
@@ -175,8 +183,8 @@ class RealtimeReconciliationController {
     _ref.invalidate(institutionProfileFeedProvider);
     _ref.invalidate(feedItemDetailProvider);
     _ref.invalidate(feedItemRepliesProvider);
-    _ref.invalidate(globalPublicFeedPagedProvider);
-    _ref.invalidate(memberHomeFeedPagedProvider);
+    _ref.read(globalPublicFeedPagedProvider.notifier).refresh();
+    _ref.read(memberHomeFeedPagedProvider.notifier).refresh();
     _ref.invalidate(institutionExploreFeedPagedProvider);
     _ref.invalidate(institutionProfileFeedPagedProvider);
   }
