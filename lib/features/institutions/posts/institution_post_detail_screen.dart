@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/aura_media_frame.dart';
@@ -45,9 +46,8 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(institutionIdentityProvider);
-    final canActAsInstitution = identity != null &&
-        identity.id.isNotEmpty &&
-        identity.canPublishPosts;
+    final canActAsInstitution =
+        identity != null && identity.id.isNotEmpty && identity.canPublishPosts;
 
     final args = FeedItemDetailArgs(
       type: FeedItemType.institutionPost,
@@ -77,6 +77,9 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
       title: 'Post',
       subtitle: 'Discussion thread for this institutional post.',
       showBack: true,
+      // Contextual rail — keeps the institutional record connected to
+      // the live discourse ecosystem around it.
+      railModules: discourseDetailRailModules(),
       trailing: AuraPrimaryButton(
         label: 'Reply',
         icon: Icons.reply_rounded,
@@ -107,7 +110,8 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
           // strip above the card so the visit has unambiguous context
           // before the reader sees the title.
           final decoded = InsCommunicationDecoded.parse(item.title);
-          final isAnnouncement = decoded.hadMarker &&
+          final isAnnouncement =
+              decoded.hadMarker &&
               decoded.type == InsCommunicationType.announcement;
 
           // Resolve a publisher name for the reinforcement strip. The
@@ -204,8 +208,7 @@ class InstitutionPostDetailScreen extends ConsumerWidget {
               ],
               Text(
                 'Replies',
-                style: AuraText.subtitle
-                    .copyWith(fontWeight: FontWeight.w800),
+                style: AuraText.subtitle.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: AuraSpace.s10),
               repliesAsync.when(
@@ -268,8 +271,8 @@ class _ReplyCard extends StatelessWidget {
     final initial = reply.author.displayName.trim().isNotEmpty
         ? reply.author.displayName.trim()[0].toUpperCase()
         : (reply.author.handle.isNotEmpty
-            ? reply.author.handle[0].toUpperCase()
-            : '?');
+              ? reply.author.handle[0].toUpperCase()
+              : '?');
 
     // Phase 4 — under an official post, non-official replies sit at
     // a slightly reduced visual weight so the institutional voice
@@ -319,10 +322,11 @@ class _ReplyCard extends StatelessWidget {
                             reply.author.displayName.isNotEmpty
                                 ? reply.author.displayName
                                 : (reply.author.handle.isNotEmpty
-                                    ? '@${reply.author.handle}'
-                                    : 'Unknown'),
-                            style: AuraText.small
-                                .copyWith(fontWeight: FontWeight.w700),
+                                      ? '@${reply.author.handle}'
+                                      : 'Unknown'),
+                            style: AuraText.small.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -363,8 +367,10 @@ class _ReplyCard extends StatelessWidget {
             const SizedBox(height: AuraSpace.s8),
             AuraTextBlock(
               reply.body,
-              style: AuraText.body
-                  .copyWith(color: AuraSurface.ink, height: 1.5),
+              style: AuraText.body.copyWith(
+                color: AuraSurface.ink,
+                height: 1.5,
+              ),
               selectable: true,
             ),
           ],
@@ -422,7 +428,8 @@ class _OfficialAnnouncementStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = publisher?.trim() ?? '';
     final ts = publishedAt;
-    final isVeryRecent = ts != null &&
+    final isVeryRecent =
+        ts != null &&
         DateTime.now().difference(ts) <= const Duration(hours: 12);
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -432,9 +439,7 @@ class _OfficialAnnouncementStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.accentSoft,
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(
-          color: AuraSurface.accent.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -519,9 +524,7 @@ class _ContinuityContextSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.r14),
-        border: Border.all(
-          color: AuraSurface.divider.withValues(alpha: 0.6),
-        ),
+        border: Border.all(color: AuraSurface.divider.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,10 +672,7 @@ class _ContinuityRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(AuraRadius.r10),
       onTap: () => context.push(route),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 2,
-          vertical: 4,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         child: body,
       ),
     );

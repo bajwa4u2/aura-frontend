@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -12,6 +13,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../feed/domain/post.dart';
 import '../../share/aura_share_sheet.dart';
 import 'widgets/post_card.dart';
@@ -141,177 +143,178 @@ class PostDetailScreen extends ConsumerWidget {
 
     return AuraScaffold(
       showHeader: false,
-      // Discourse width contract: AuraScaffold's 920px default is below
-      // the canonical feed/post-detail width. Request kFeedWidth so the
-      // record column reads at its intended desktop width.
-      maxWidth: kFeedWidth,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s12,
-          AuraSpace.s16,
-          AuraSpace.s24,
-        ),
-        children: [
-          Center(
-            // Detail-mode composition: the record reads as a centered
-            // document at kReadWidth (the canonical in-app document
-            // surface measure ~ 80-char line length), not a full-bleed
-            // 1100px feed card. The AuraScaffold page stays kFeedWidth,
-            // so the document sits with intentional margins inside it.
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: kReadWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _TopBar(postId: postId),
-                  const SizedBox(height: AuraSpace.s12),
+      // Discourse detail composition: the page widens to host a
+      // contextual rail beside the record. AuraDiscourseSurface keeps
+      // the reading column itself at kReadWidth — the rail consumes
+      // desktop gutter space, never the document measure — and drops
+      // the rail entirely at laptop / mobile widths.
+      maxWidth: kWorkspaceWidth,
+      body: AuraDiscourseSurface(
+        railModules: discourseDetailRailModules(),
+        reading: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AuraSpace.s16,
+            AuraSpace.s12,
+            AuraSpace.s16,
+            AuraSpace.s24,
+          ),
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TopBar(postId: postId),
+                const SizedBox(height: AuraSpace.s12),
 
-                  // Supporting record framing — kept compact so it
-                  // supports the heading rather than competing with it.
-                  Text(
-                    'A public record that remains accessible and accountable over time.',
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                // Supporting record framing — kept compact so it
+                // supports the heading rather than competing with it.
+                Text(
+                  'A public record that remains accessible and accountable over time.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+
+                const SizedBox(height: AuraSpace.s14),
+
+                postAsync.when(
+                  data: (post) {
+                    // `Post.visibility` is a non-nullable String on
+                    // the domain model. Defensive trim() + uppercase
+                    // is intentional even though the field is
+                    // non-null: backend may emit lowercase strings.
+                    final isPublic =
+                        post.visibility.trim().toUpperCase() == 'PUBLIC';
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // The focused record renders in detail mode:
+                        // full body, no feed-style collapse/"Open".
+                        PostCard(post: post, compact: false, detail: true),
+                        const SizedBox(height: AuraSpace.s12),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          children: [
+                            AuraSecondaryButton(
+                              label: 'Respond',
+                              icon: Icons.reply_outlined,
+                              onPressed: () =>
+                                  context.push('/compose?replyTo=$postId'),
+                            ),
+                            // External share — only when visibility is
+                            // PUBLIC. FOLLOWERS / PRIVATE posts cannot
+                            // be shared externally; the share URL would
+                            // return a safe "content unavailable" page
+                            // and surfacing the button would leak the
+                            // post's existence.
+                            if (isPublic)
+                              AuraSecondaryButton(
+                                label: 'Share',
+                                icon: Icons.ios_share_rounded,
+                                onPressed: () => showAuraShareSheet(
+                                  context,
+                                  shareUrl: canonicalPostUrl(postId),
+                                  headline: 'Share this work',
+                                  subtitle:
+                                      'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                                  emailSubject: 'Aura post',
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () => const _LoadingCard(label: 'Loading work…'),
+                  error: (e, _) => _ErrorCard(
+                    message: AppErrorMapper.from(
+                      e,
+                      feature: 'view this work',
+                    ).message,
                   ),
+                ),
 
-                  const SizedBox(height: AuraSpace.s14),
+                const SizedBox(height: AuraSpace.s24),
+                const Divider(height: 1),
+                const SizedBox(height: AuraSpace.s20),
 
-                  postAsync.when(
-                    data: (post) {
-                      // `Post.visibility` is a non-nullable String on
-                      // the domain model. Defensive trim() + uppercase
-                      // is intentional even though the field is
-                      // non-null: backend may emit lowercase strings.
-                      final isPublic =
-                          post.visibility.trim().toUpperCase() == 'PUBLIC';
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // The focused record renders in detail mode:
-                          // full body, no feed-style collapse/"Open".
-                          PostCard(post: post, compact: false, detail: true),
-                          const SizedBox(height: AuraSpace.s12),
-                          Wrap(
-                            spacing: AuraSpace.s10,
-                            runSpacing: AuraSpace.s10,
+                Row(
+                  children: [
+                    const Expanded(child: _SectionLabel(title: 'Responses')),
+                    repliesAsync.when(
+                      data: (items) => _CountPill(count: items.length),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AuraSpace.s10),
+
+                Text(
+                  'Responses become part of the same record.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+
+                const SizedBox(height: AuraSpace.s14),
+
+                repliesAsync.when(
+                  data: (items) {
+                    if (items.isEmpty) {
+                      return AuraCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AuraSpace.s14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                'No responses yet.',
+                                style: AuraText.body.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: AuraSpace.s8),
+                              Text(
+                                'Be the first to respond to this work.',
+                                style: AuraText.small.copyWith(
+                                  color: AuraSurface.muted,
+                                ),
+                              ),
+                              const SizedBox(height: AuraSpace.s12),
                               AuraSecondaryButton(
                                 label: 'Respond',
                                 icon: Icons.reply_outlined,
                                 onPressed: () =>
                                     context.push('/compose?replyTo=$postId'),
                               ),
-                              // External share — only when visibility is
-                              // PUBLIC. FOLLOWERS / PRIVATE posts cannot
-                              // be shared externally; the share URL would
-                              // return a safe "content unavailable" page
-                              // and surfacing the button would leak the
-                              // post's existence.
-                              if (isPublic)
-                                AuraSecondaryButton(
-                                  label: 'Share',
-                                  icon: Icons.ios_share_rounded,
-                                  onPressed: () => showAuraShareSheet(
-                                    context,
-                                    shareUrl: canonicalPostUrl(postId),
-                                    headline: 'Share this work',
-                                    subtitle:
-                                        'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
-                                    emailSubject: 'Aura post',
-                                  ),
-                                ),
                             ],
                           ),
-                        ],
+                        ),
                       );
-                    },
-                    loading: () => const _LoadingCard(label: 'Loading work…'),
-                    error: (e, _) => _ErrorCard(
-                      message: AppErrorMapper.from(e, feature: 'view this work').message,
-                    ),
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AuraSpace.s14),
+                      itemBuilder: (context, index) {
+                        return PostCard(post: items[index], compact: false);
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const _LoadingCard(label: 'Loading responses…'),
+                  error: (e, _) => _ErrorCard(
+                    message: AppErrorMapper.from(
+                      e,
+                      feature: 'view responses',
+                    ).message,
                   ),
-
-                  const SizedBox(height: AuraSpace.s24),
-                  const Divider(height: 1),
-                  const SizedBox(height: AuraSpace.s20),
-
-                  Row(
-                    children: [
-                      const Expanded(child: _SectionLabel(title: 'Responses')),
-                      repliesAsync.when(
-                        data: (items) => _CountPill(count: items.length),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AuraSpace.s10),
-
-                  Text(
-                    'Responses become part of the same record.',
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
-                  ),
-
-                  const SizedBox(height: AuraSpace.s14),
-
-                  repliesAsync.when(
-                    data: (items) {
-                      if (items.isEmpty) {
-                        return AuraCard(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AuraSpace.s14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'No responses yet.',
-                                  style: AuraText.body.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: AuraSpace.s8),
-                                Text(
-                                  'Be the first to respond to this work.',
-                                  style: AuraText.small.copyWith(
-                                    color: AuraSurface.muted,
-                                  ),
-                                ),
-                                const SizedBox(height: AuraSpace.s12),
-                                AuraSecondaryButton(
-                                  label: 'Respond',
-                                  icon: Icons.reply_outlined,
-                                  onPressed: () =>
-                                      context.push('/compose?replyTo=$postId'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: items.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AuraSpace.s14),
-                        itemBuilder: (context, index) {
-                          return PostCard(post: items[index], compact: false);
-                        },
-                      );
-                    },
-                    loading: () =>
-                        const _LoadingCard(label: 'Loading responses…'),
-                    error: (e, _) => _ErrorCard(
-                      message: AppErrorMapper.from(e, feature: 'view responses').message,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

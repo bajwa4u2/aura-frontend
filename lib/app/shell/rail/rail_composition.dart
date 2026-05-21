@@ -84,6 +84,37 @@ List<Widget> memberFeedRailModules() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DISCOURSE DETAIL
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Modules for the contextual rail on discourse DETAIL surfaces — post
+/// detail, public thread, announcement detail, institution post detail.
+///
+/// A detail surface is a focused record; the rail's job is to keep that
+/// record connected to the living discourse ecosystem around it without
+/// disturbing the calm reading column. Every module here is the same
+/// provider-backed, self-collapsing module the feed rail uses — no
+/// detail-only data contracts are invented. On a quiet platform only
+/// the always-on governance note renders, so the rail is never an
+/// empty decorative sidebar.
+///
+/// Priority order:
+///   1. LIVE NOW               — discourse happening right now.
+///   2. OngoingIssues          — developing / continuing discourse.
+///   3. INSTITUTIONAL RESPONSE — where institutions have replied.
+///   4. ACCOUNTABILITY TRAIL   — civic-memory continuity chains.
+///   5. GOVERNANCE NOTICE      — always-on grounding rationale.
+List<Widget> discourseDetailRailModules() {
+  return const [
+    LiveNowRailModule(),
+    OngoingIssuesRailModule(),
+    InstitutionalResponseRailModule(),
+    AccountabilityTrailRailModule(),
+    GovernanceNoticeRailModule(),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION WORKSPACE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -158,11 +189,7 @@ class PublicDiscoveryColumns {
   final List<Widget> continuity;
 
   /// Flat stacked order used at tablet / mobile widths.
-  List<Widget> get stacked => [
-        ...civicSignal,
-        ...ecosystem,
-        ...continuity,
-      ];
+  List<Widget> get stacked => [...civicSignal, ...ecosystem, ...continuity];
 }
 
 PublicDiscoveryColumns publicDiscoveryColumns() {

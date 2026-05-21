@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../config.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
@@ -13,6 +14,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
@@ -237,11 +239,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   /// PRIORITY paid replies are pinned to the top of the thread —
   /// rendered first, with the visible PRIORITY label.
   List<FeedReply> _priorityPinned(List<FeedReply> top) {
-    return top.where((r) {
-      final kind =
-          MonetizationKindX.fromPaidActionWire(r.paidActionWire);
-      return kind == MonetizationKind.priorityResponse;
-    }).toList(growable: false);
+    return top
+        .where((r) {
+          final kind = MonetizationKindX.fromPaidActionWire(r.paidActionWire);
+          return kind == MonetizationKind.priorityResponse;
+        })
+        .toList(growable: false);
   }
 
   /// Build the accountability timeline events. Includes only replies
@@ -252,16 +255,18 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     for (final r in all) {
       final tag = InsAccountabilityTagX.fromWire(r.accountabilityTagWire);
       if (tag == null) continue;
-      events.add(_TimelineEvent(
-        tag: tag,
-        when: r.createdAt,
-        actorName: r.author.displayName.isNotEmpty
-            ? r.author.displayName
-            : (r.author.handle.isNotEmpty
-                ? '@${r.author.handle}'
-                : 'Institution'),
-        replyId: r.id,
-      ));
+      events.add(
+        _TimelineEvent(
+          tag: tag,
+          when: r.createdAt,
+          actorName: r.author.displayName.isNotEmpty
+              ? r.author.displayName
+              : (r.author.handle.isNotEmpty
+                    ? '@${r.author.handle}'
+                    : 'Institution'),
+          replyId: r.id,
+        ),
+      );
     }
     events.sort((a, b) {
       final at = a.when?.millisecondsSinceEpoch ?? 0;
@@ -287,8 +292,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       qp['replyTo'] = widget.postId;
     }
     final qs = qp.entries
-        .map((e) =>
-            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+        )
         .join('&');
     context.push('/compose?$qs').then((result) {
       if (result == true) {
@@ -313,313 +320,323 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
     return AuraScaffold(
       showHeader: false,
-      // Discourse width contract — the thread reads at the canonical
-      // feed width. The inner InsScreen still applies its own
-      // 1080px content cap; this only lifts the 920px scaffold
-      // default that was clamping it.
-      maxWidth: kFeedWidth,
+      // Discourse detail composition: the page widens to host a
+      // contextual rail beside the thread. AuraDiscourseSurface keeps
+      // the thread (header + replies + composer) at the kReadWidth
+      // reading measure and drops the rail at laptop / mobile widths.
+      maxWidth: kWorkspaceWidth,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            _ThreadAppBar(
-              // Phase 6.1 — show the Follow toggle only on user-post
-              // threads (the backend follow target is `Post`, not
-              // `InstitutionPost`).
-              followablePostId: widget.type == FeedItemType.userPost
-                  ? widget.postId
-                  : null,
-              onBack: () => context.canPop()
-                  ? context.pop()
-                  : context.go('/'),
-              onShare: () async {
-                // Native share intent isn't shipped on every platform
-                // path yet (Web Share API + iOS/Android share sheets).
-                // Until the unified share surface lands, do the most
-                // useful concrete thing: copy the canonical thread URL
-                // to the clipboard. No dead-end snackbar; the user
-                // gets something they can paste.
-                final base =
-                    Uri.tryParse(AppConfig.publicWebUrl)?.toString().trimRight() ??
-                        '';
-                final path = widget.type == FeedItemType.institutionPost
-                    ? '/institutions/posts/${widget.postId}'
-                    : '/posts/${widget.postId}';
-                final url = base.isNotEmpty ? '$base$path' : path;
-                await Clipboard.setData(ClipboardData(text: url));
-                if (!context.mounted) return;
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  const SnackBar(
-                    content: Text('Link copied to clipboard.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-            Expanded(
-              child: detailAsync.when(
-                loading: () => const Center(
-                  child: AuraLoadingState(message: 'Loading thread…'),
-                ),
-                error: (e, _) {
-                  // Translate the underlying error into safe user copy. We
-                  // must NOT show "DioException" or "Instance of 'minified:…'"
-                  // — that's the production leakage the audit flagged.
-                  final view = _ThreadErrorView.fromError(e);
-                  return InsScreen(
-                    children: [
-                      _ThreadUnavailableBlock(
-                        icon: view.icon,
-                        title: view.title,
-                        body: view.body,
-                        primaryLabel: view.primaryLabel,
-                        primaryIcon: view.primaryIcon,
-                        onPrimary: view.allowRetry
-                            ? () => ref.invalidate(
-                                feedItemDetailProvider(_args))
-                            : () => context.go('/'),
-                        onBackHome: () => context.go('/'),
-                      ),
-                    ],
+        child: AuraDiscourseSurface(
+          railModules: discourseDetailRailModules(),
+          reading: Column(
+            children: [
+              _ThreadAppBar(
+                // Phase 6.1 — show the Follow toggle only on user-post
+                // threads (the backend follow target is `Post`, not
+                // `InstitutionPost`).
+                followablePostId: widget.type == FeedItemType.userPost
+                    ? widget.postId
+                    : null,
+                onBack: () =>
+                    context.canPop() ? context.pop() : context.go('/'),
+                onShare: () async {
+                  // Native share intent isn't shipped on every platform
+                  // path yet (Web Share API + iOS/Android share sheets).
+                  // Until the unified share surface lands, do the most
+                  // useful concrete thing: copy the canonical thread URL
+                  // to the clipboard. No dead-end snackbar; the user
+                  // gets something they can paste.
+                  final base =
+                      Uri.tryParse(
+                        AppConfig.publicWebUrl,
+                      )?.toString().trimRight() ??
+                      '';
+                  final path = widget.type == FeedItemType.institutionPost
+                      ? '/institutions/posts/${widget.postId}'
+                      : '/posts/${widget.postId}';
+                  final url = base.isNotEmpty ? '$base$path' : path;
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                    const SnackBar(
+                      content: Text('Link copied to clipboard.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                 },
-                data: (item) {
-                  if (item == null) {
+              ),
+              Expanded(
+                child: detailAsync.when(
+                  loading: () => const Center(
+                    child: AuraLoadingState(message: 'Loading thread…'),
+                  ),
+                  error: (e, _) {
+                    // Translate the underlying error into safe user copy. We
+                    // must NOT show "DioException" or "Instance of 'minified:…'"
+                    // — that's the production leakage the audit flagged.
+                    final view = _ThreadErrorView.fromError(e);
                     return InsScreen(
                       children: [
                         _ThreadUnavailableBlock(
-                          icon: Icons.help_outline_rounded,
-                          title: 'This discussion is unavailable',
-                          body:
-                              'It may have been removed, moved, or is no longer accessible.',
-                          primaryLabel: 'Back to home',
-                          primaryIcon: Icons.home_outlined,
-                          onPrimary: () => context.go('/'),
+                          icon: view.icon,
+                          title: view.title,
+                          body: view.body,
+                          primaryLabel: view.primaryLabel,
+                          primaryIcon: view.primaryIcon,
+                          onPrimary: view.allowRetry
+                              ? () => ref.invalidate(
+                                  feedItemDetailProvider(_args),
+                                )
+                              : () => context.go('/'),
                           onBackHome: () => context.go('/'),
                         ),
                       ],
                     );
-                  }
-                  final isOfficial = item.type ==
-                          FeedItemType.institutionPost &&
-                      (item.title?.trim().isNotEmpty ?? false);
+                  },
+                  data: (item) {
+                    if (item == null) {
+                      return InsScreen(
+                        children: [
+                          _ThreadUnavailableBlock(
+                            icon: Icons.help_outline_rounded,
+                            title: 'This discussion is unavailable',
+                            body:
+                                'It may have been removed, moved, or is no longer accessible.',
+                            primaryLabel: 'Back to home',
+                            primaryIcon: Icons.home_outlined,
+                            onPrimary: () => context.go('/'),
+                            onBackHome: () => context.go('/'),
+                          ),
+                        ],
+                      );
+                    }
+                    final isOfficial =
+                        item.type == FeedItemType.institutionPost &&
+                        (item.title?.trim().isNotEmpty ?? false);
 
-                  return InsScreen(
-                    children: [
-                      ThreadHeader(item: item),
-                      const SizedBox(height: AuraSpace.s10),
-                      FeedInteractionBar(
-                        target: _reactionTargetFor(item),
-                        visibility: item.interaction,
-                      ),
-                      const SizedBox(height: AuraSpace.s14),
-                      const _SectionLabel(label: 'Discussion'),
-                      const SizedBox(height: AuraSpace.s8),
-                      _FilterChips(
-                        current: _filter,
-                        onChange: (v) => setState(() => _filter = v),
-                      ),
-                      const SizedBox(height: AuraSpace.s10),
-                      repliesAsync.when(
-                        loading: () => const Padding(
-                          padding: EdgeInsets.all(AuraSpace.s16),
-                          child: AuraLoadingState(message: 'Loading replies…'),
+                    return InsScreen(
+                      children: [
+                        ThreadHeader(item: item),
+                        const SizedBox(height: AuraSpace.s10),
+                        FeedInteractionBar(
+                          target: _reactionTargetFor(item),
+                          visibility: item.interaction,
                         ),
-                        error: (e, _) {
-                          // Same sanitization as the parent: never leak raw
-                          // DioException / minified class names. Replies
-                          // failing without parent failing is rare, but we
-                          // keep the copy actionable.
-                          final view = _ThreadErrorView.fromError(e);
-                          return AuraErrorState(
-                            title: view.repliesTitle,
-                            body: view.repliesBody,
-                            action: view.allowRetry
-                                ? AuraSecondaryButton(
-                                    label: 'Try again',
-                                    icon: Icons.refresh_rounded,
-                                    onPressed: () => ref.invalidate(
-                                        feedItemRepliesProvider(_args)),
-                                  )
-                                : null,
-                          );
-                        },
-                        data: (page) {
-                          // Phase 6.1 — entry accuracy. Schedule a
-                          // post-frame scroll once anchors are mounted.
-                          _maybeAutoScroll();
-                          // Public-UX Phase 3 — assemble nested reply
-                          // tree, accountability timeline, paid-pin.
-                          final tree = _buildReplyTree(page.items);
-                          final priorityPins = _priorityPinned(tree);
-                          final officials = tree
-                              .where(_isOfficialReply)
-                              .where((r) => !priorityPins.contains(r))
-                              .toList(growable: false);
-                          final members = tree
-                              .where((r) => !_isOfficialReply(r))
-                              .where((r) => !priorityPins.contains(r))
-                              .toList(growable: false);
-
-                          final showPriority = priorityPins.isNotEmpty;
-                          final showOfficials = officials.isNotEmpty;
-                          final showMembers = members.isNotEmpty &&
-                              _filter == _ReplyFilter.all;
-
-                          if (!showPriority &&
-                              !showOfficials &&
-                              !showMembers) {
-                            return _NoRepliesEmpty(
-                              onJoin: _composeReply,
+                        const SizedBox(height: AuraSpace.s14),
+                        const _SectionLabel(label: 'Discussion'),
+                        const SizedBox(height: AuraSpace.s8),
+                        _FilterChips(
+                          current: _filter,
+                          onChange: (v) => setState(() => _filter = v),
+                        ),
+                        const SizedBox(height: AuraSpace.s10),
+                        repliesAsync.when(
+                          loading: () => const Padding(
+                            padding: EdgeInsets.all(AuraSpace.s16),
+                            child: AuraLoadingState(
+                              message: 'Loading replies…',
+                            ),
+                          ),
+                          error: (e, _) {
+                            // Same sanitization as the parent: never leak raw
+                            // DioException / minified class names. Replies
+                            // failing without parent failing is rare, but we
+                            // keep the copy actionable.
+                            final view = _ThreadErrorView.fromError(e);
+                            return AuraErrorState(
+                              title: view.repliesTitle,
+                              body: view.repliesBody,
+                              action: view.allowRetry
+                                  ? AuraSecondaryButton(
+                                      label: 'Try again',
+                                      icon: Icons.refresh_rounded,
+                                      onPressed: () => ref.invalidate(
+                                        feedItemRepliesProvider(_args),
+                                      ),
+                                    )
+                                  : null,
                             );
-                          }
+                          },
+                          data: (page) {
+                            // Phase 6.1 — entry accuracy. Schedule a
+                            // post-frame scroll once anchors are mounted.
+                            _maybeAutoScroll();
+                            // Public-UX Phase 3 — assemble nested reply
+                            // tree, accountability timeline, paid-pin.
+                            final tree = _buildReplyTree(page.items);
+                            final priorityPins = _priorityPinned(tree);
+                            final officials = tree
+                                .where(_isOfficialReply)
+                                .where((r) => !priorityPins.contains(r))
+                                .toList(growable: false);
+                            final members = tree
+                                .where((r) => !_isOfficialReply(r))
+                                .where((r) => !priorityPins.contains(r))
+                                .toList(growable: false);
 
-                          // Build a chronological list of accountability
-                          // events for the timeline. Includes only tagged
-                          // institutional replies (commitment / update /
-                          // resolved); empty list = no timeline rendered.
-                          final timeline = _buildTimeline(page.items);
+                            final showPriority = priorityPins.isNotEmpty;
+                            final showOfficials = officials.isNotEmpty;
+                            final showMembers =
+                                members.isNotEmpty &&
+                                _filter == _ReplyFilter.all;
 
-                          // Public-UX Phase 5 — outcome banner at the
-                          // very top of the discussion when this thread
-                          // already produced a resolution. Distinct from
-                          // (and additive to) the timeline below — the
-                          // banner is the "headline", the timeline is
-                          // the lifecycle.
-                          final hasResolution = timeline.any((e) =>
-                              e.tag == InsAccountabilityTag.resolved);
+                            if (!showPriority &&
+                                !showOfficials &&
+                                !showMembers) {
+                              return _NoRepliesEmpty(onJoin: _composeReply);
+                            }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (hasResolution) ...[
-                                _ResolutionBanner(
-                                  actorName: timeline
-                                      .lastWhere((e) =>
-                                          e.tag ==
-                                          InsAccountabilityTag.resolved)
-                                      .actorName,
-                                ),
-                                const SizedBox(height: AuraSpace.s14),
-                              ],
-                              if (timeline.isNotEmpty) ...[
-                                KeyedSubtree(
-                                  key: _timelineKey,
-                                  child: _AccountabilityTimeline(
-                                      events: timeline),
-                                ),
-                                const SizedBox(height: AuraSpace.s14),
-                              ],
-                              if (showPriority) ...[
-                                _PriorityPinnedBand(
-                                  pinned: priorityPins
-                                      .map((r) =>
-                                          ReplyWithChildren.from(r, _byParent))
-                                      .toList(growable: false),
-                                ),
-                                if (showOfficials || showMembers)
-                                  const SizedBox(height: AuraSpace.s14),
-                              ],
-                              if (showOfficials) ...[
-                                KeyedSubtree(
-                                  key: _firstOfficialKey,
-                                  child: _OfficialRepliesBand(
-                                    officials: officials,
-                                    byParent: _byParent,
+                            // Build a chronological list of accountability
+                            // events for the timeline. Includes only tagged
+                            // institutional replies (commitment / update /
+                            // resolved); empty list = no timeline rendered.
+                            final timeline = _buildTimeline(page.items);
+
+                            // Public-UX Phase 5 — outcome banner at the
+                            // very top of the discussion when this thread
+                            // already produced a resolution. Distinct from
+                            // (and additive to) the timeline below — the
+                            // banner is the "headline", the timeline is
+                            // the lifecycle.
+                            final hasResolution = timeline.any(
+                              (e) => e.tag == InsAccountabilityTag.resolved,
+                            );
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (hasResolution) ...[
+                                  _ResolutionBanner(
+                                    actorName: timeline
+                                        .lastWhere(
+                                          (e) =>
+                                              e.tag ==
+                                              InsAccountabilityTag.resolved,
+                                        )
+                                        .actorName,
                                   ),
-                                ),
-                                if (showMembers)
                                   const SizedBox(height: AuraSpace.s14),
-                              ],
-                              if (showMembers) ...[
-                                const _SectionLabel(
-                                    label: 'Member replies'),
-                                const SizedBox(height: AuraSpace.s8),
-                                for (var i = 0;
-                                    i < members.length;
-                                    i++) ...[
-                                  // Public-UX Phase 6 — "New since you
-                                  // last visited" divider before the
-                                  // first reply that's newer than the
-                                  // cached lastSeenAt. Renders only
-                                  // when (a) the cache loaded, (b)
-                                  // there IS a previous visit, (c) at
-                                  // least one earlier reply existed.
-                                  if (_seenLoaded &&
-                                      _lastSeenAt != null &&
-                                      _isFirstNewReply(members, i)) ...[
-                                    const _NewSinceDivider(),
-                                    const SizedBox(height: AuraSpace.s10),
-                                  ],
-                                  // Phase 6.1 — per-reply scroll
-                                  // anchor + last-reply marker + new-
-                                  // reply fade-in tint for replies
-                                  // after _lastSeenAt.
+                                ],
+                                if (timeline.isNotEmpty) ...[
                                   KeyedSubtree(
-                                    key: _keyForReply(members[i].id),
-                                    child: _NewReplyHighlight(
-                                      isNew: _isNewReply(members[i]),
-                                      child: i == members.length - 1
-                                          ? KeyedSubtree(
-                                              key: _lastReplyKey,
-                                              child: ReplyUnit(
+                                    key: _timelineKey,
+                                    child: _AccountabilityTimeline(
+                                      events: timeline,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AuraSpace.s14),
+                                ],
+                                if (showPriority) ...[
+                                  _PriorityPinnedBand(
+                                    pinned: priorityPins
+                                        .map(
+                                          (r) => ReplyWithChildren.from(
+                                            r,
+                                            _byParent,
+                                          ),
+                                        )
+                                        .toList(growable: false),
+                                  ),
+                                  if (showOfficials || showMembers)
+                                    const SizedBox(height: AuraSpace.s14),
+                                ],
+                                if (showOfficials) ...[
+                                  KeyedSubtree(
+                                    key: _firstOfficialKey,
+                                    child: _OfficialRepliesBand(
+                                      officials: officials,
+                                      byParent: _byParent,
+                                    ),
+                                  ),
+                                  if (showMembers)
+                                    const SizedBox(height: AuraSpace.s14),
+                                ],
+                                if (showMembers) ...[
+                                  const _SectionLabel(label: 'Member replies'),
+                                  const SizedBox(height: AuraSpace.s8),
+                                  for (var i = 0; i < members.length; i++) ...[
+                                    // Public-UX Phase 6 — "New since you
+                                    // last visited" divider before the
+                                    // first reply that's newer than the
+                                    // cached lastSeenAt. Renders only
+                                    // when (a) the cache loaded, (b)
+                                    // there IS a previous visit, (c) at
+                                    // least one earlier reply existed.
+                                    if (_seenLoaded &&
+                                        _lastSeenAt != null &&
+                                        _isFirstNewReply(members, i)) ...[
+                                      const _NewSinceDivider(),
+                                      const SizedBox(height: AuraSpace.s10),
+                                    ],
+                                    // Phase 6.1 — per-reply scroll
+                                    // anchor + last-reply marker + new-
+                                    // reply fade-in tint for replies
+                                    // after _lastSeenAt.
+                                    KeyedSubtree(
+                                      key: _keyForReply(members[i].id),
+                                      child: _NewReplyHighlight(
+                                        isNew: _isNewReply(members[i]),
+                                        child: i == members.length - 1
+                                            ? KeyedSubtree(
+                                                key: _lastReplyKey,
+                                                child: ReplyUnit(
+                                                  reply: members[i],
+                                                  parentIsOfficial: isOfficial,
+                                                  children:
+                                                      _byParent[members[i]
+                                                          .id] ??
+                                                      const [],
+                                                ),
+                                              )
+                                            : ReplyUnit(
                                                 reply: members[i],
-                                                parentIsOfficial:
-                                                    isOfficial,
-                                                children: _byParent[
-                                                        members[i].id] ??
+                                                parentIsOfficial: isOfficial,
+                                                children:
+                                                    _byParent[members[i].id] ??
                                                     const [],
                                               ),
-                                            )
-                                          : ReplyUnit(
-                                              reply: members[i],
-                                              parentIsOfficial: isOfficial,
-                                              children: _byParent[
-                                                      members[i].id] ??
-                                                  const [],
-                                            ),
+                                      ),
                                     ),
-                                  ),
-                                  if (i < members.length - 1)
-                                    const SizedBox(height: AuraSpace.s10),
-                                  // Public-UX Phase 5 — inline "What do
-                                  // you think?" prompt mid-thread when
-                                  // discussion has substance (≥ 3
-                                  // member replies above). Shown once
-                                  // at the i==2 boundary so it splits
-                                  // the rendered list rather than
-                                  // appearing repeatedly.
-                                  if (i == 2 &&
-                                      members.length > 3 &&
-                                      i < members.length - 1) ...[
-                                    const SizedBox(height: AuraSpace.s12),
-                                    _InlineEngagementPrompt(
-                                      onTap: _composeReply,
-                                    ),
-                                    const SizedBox(height: AuraSpace.s12),
+                                    if (i < members.length - 1)
+                                      const SizedBox(height: AuraSpace.s10),
+                                    // Public-UX Phase 5 — inline "What do
+                                    // you think?" prompt mid-thread when
+                                    // discussion has substance (≥ 3
+                                    // member replies above). Shown once
+                                    // at the i==2 boundary so it splits
+                                    // the rendered list rather than
+                                    // appearing repeatedly.
+                                    if (i == 2 &&
+                                        members.length > 3 &&
+                                        i < members.length - 1) ...[
+                                      const SizedBox(height: AuraSpace.s12),
+                                      _InlineEngagementPrompt(
+                                        onTap: _composeReply,
+                                      ),
+                                      const SizedBox(height: AuraSpace.s12),
+                                    ],
                                   ],
                                 ],
+                                const SizedBox(height: AuraSpace.s14),
+                                _JoinDiscussionCue(onTap: _composeReply),
                               ],
-                              const SizedBox(height: AuraSpace.s14),
-                              _JoinDiscussionCue(
-                                onTap: _composeReply,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AuraSpace.s24),
-                    ],
-                  );
-                },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AuraSpace.s24),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-            // The composer is part of the same Column as the body Expanded,
-            // so it would otherwise render under an error/empty state too.
-            // Gate on `canCompose` so a missing/inaccessible thread shows
-            // the unavailable block alone — no orphan reply bar.
-            if (canCompose) _StickyReplyBar(onTap: _composeReply),
-          ],
+              // The composer is part of the same Column as the body Expanded,
+              // so it would otherwise render under an error/empty state too.
+              // Gate on `canCompose` so a missing/inaccessible thread shows
+              // the unavailable block alone — no orphan reply bar.
+              if (canCompose) _StickyReplyBar(onTap: _composeReply),
+            ],
+          ),
         ),
       ),
     );
@@ -908,8 +925,7 @@ class _OfficialRepliesBand extends StatelessWidget {
               parentIsOfficial: true,
               children: byParent[officials[i].id] ?? const [],
             ),
-            if (i < officials.length - 1)
-              const SizedBox(height: AuraSpace.s10),
+            if (i < officials.length - 1) const SizedBox(height: AuraSpace.s10),
           ],
         ],
       ),
@@ -939,16 +955,9 @@ class _NoRepliesEmpty extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.forum_outlined,
-            size: 22,
-            color: AuraSurface.muted,
-          ),
+          const Icon(Icons.forum_outlined, size: 22, color: AuraSurface.muted),
           const SizedBox(height: AuraSpace.s8),
-          const Text(
-            'No replies yet — be the first',
-            style: AuraText.subtitle,
-          ),
+          const Text('No replies yet — be the first', style: AuraText.subtitle),
           const SizedBox(height: 4),
           Text(
             'This is public discourse. Anyone can reply, including '
@@ -1038,10 +1047,7 @@ class ReplyWithChildren {
     FeedReply reply,
     Map<String, List<FeedReply>> byParent,
   ) =>
-      ReplyWithChildren(
-        reply: reply,
-        children: byParent[reply.id] ?? const [],
-      );
+      ReplyWithChildren(reply: reply, children: byParent[reply.id] ?? const []);
 }
 
 /// Priority-paid replies pinned to the top of the thread. Renders as
@@ -1106,8 +1112,7 @@ class _PriorityPinnedBand extends StatelessWidget {
               parentIsOfficial: true,
               children: pinned[i].children,
             ),
-            if (i < pinned.length - 1)
-              const SizedBox(height: AuraSpace.s10),
+            if (i < pinned.length - 1) const SizedBox(height: AuraSpace.s10),
           ],
         ],
       ),
@@ -1228,9 +1233,7 @@ class _TimelineRow extends StatelessWidget {
                   child: SizedBox(
                     width: 1,
                     child: Container(
-                      color: isFirst
-                          ? Colors.transparent
-                          : AuraSurface.divider,
+                      color: isFirst ? Colors.transparent : AuraSurface.divider,
                     ),
                   ),
                 ),
@@ -1241,10 +1244,7 @@ class _TimelineRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: dot,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AuraSurface.card,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: AuraSurface.card, width: 1.5),
                 ),
                 child: Icon(icon, size: 8, color: Colors.white),
               ),
@@ -1323,10 +1323,7 @@ class _TimelineRow extends StatelessWidget {
 /// decays to transparent over ~3 seconds so the highlight registers
 /// then yields to normal reading.
 class _NewReplyHighlight extends StatefulWidget {
-  const _NewReplyHighlight({
-    required this.isNew,
-    required this.child,
-  });
+  const _NewReplyHighlight({required this.isNew, required this.child});
 
   final bool isNew;
   final Widget child;
@@ -1568,8 +1565,7 @@ class _ThreadErrorView {
         return const _ThreadErrorView(
           icon: Icons.help_outline_rounded,
           title: 'This discussion is unavailable',
-          body:
-              'It may have been removed, moved, or is no longer accessible.',
+          body: 'It may have been removed, moved, or is no longer accessible.',
           repliesTitle: 'Replies are unavailable',
           repliesBody:
               'The discussion these replies belonged to is no longer accessible.',
@@ -1664,9 +1660,7 @@ class _ThreadUnavailableBlock extends StatelessWidget {
                 child: Icon(icon, size: 16, color: AuraSurface.muted),
               ),
               const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Text(title, style: AuraText.title),
-              ),
+              Expanded(child: Text(title, style: AuraText.title)),
             ],
           ),
           const SizedBox(height: AuraSpace.s10),
@@ -1682,10 +1676,7 @@ class _ThreadUnavailableBlock extends StatelessWidget {
                 onPressed: onPrimary,
               ),
               if (primaryLabel != 'Back to home')
-                AuraGhostButton(
-                  label: 'Back to home',
-                  onPressed: onBackHome,
-                ),
+                AuraGhostButton(label: 'Back to home', onPressed: onBackHome),
             ],
           ),
         ],

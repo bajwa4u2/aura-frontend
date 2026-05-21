@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../ui/institution_ds.dart';
 
 /// Standard institution-scoped page frame.
@@ -24,6 +26,7 @@ class InstitutionPage extends StatelessWidget {
     this.padding,
     this.showBack = false,
     this.onBack,
+    this.railModules,
   });
 
   /// Page title — rendered as the top-of-content headline. Required.
@@ -53,13 +56,21 @@ class InstitutionPage extends StatelessWidget {
   final bool showBack;
   final VoidCallback? onBack;
 
+  /// Optional contextual rail modules. When non-empty the page composes
+  /// as a discourse detail surface — a [kReadWidth] reading column
+  /// beside an [AuraContextRail] (desktop) — instead of the standard
+  /// centered institution column. Null/empty leaves every other
+  /// institution screen's layout untouched.
+  final List<Widget>? railModules;
+
   /// Canonical institution content max width — sourced from the institution
   /// design system so every workspace screen shares the same column.
   static const double maxContentWidth = InsSpacing.contentMaxWidth;
 
   @override
   Widget build(BuildContext context) {
-    final pad = padding ??
+    final pad =
+        padding ??
         const EdgeInsets.fromLTRB(
           InsSpacing.screenHPad,
           InsSpacing.screenVPad,
@@ -86,17 +97,34 @@ class InstitutionPage extends StatelessWidget {
       if (body != null) body!,
     ];
 
+    final columnContent = Padding(
+      padding: pad,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
+        children: children,
+      ),
+    );
+
+    // Discourse detail composition: a contextual rail beside the
+    // reading column. AuraDiscourseSurface holds the reading column at
+    // kReadWidth and drops the rail at laptop / mobile widths.
+    final rail = railModules;
+    if (rail != null && rail.isNotEmpty) {
+      final reading = scrollable
+          ? SingleChildScrollView(child: columnContent)
+          : columnContent;
+      return AuraScaffold(
+        showHeader: false,
+        maxWidth: kWorkspaceWidth,
+        body: AuraDiscourseSurface(reading: reading, railModules: rail),
+      );
+    }
+
     final inner = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: maxContentWidth),
-        child: Padding(
-          padding: pad,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
-            children: children,
-          ),
-        ),
+        child: columnContent,
       ),
     );
 

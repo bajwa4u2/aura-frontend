@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/canonical_media_thumb.dart';
@@ -14,6 +15,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
+import '../../../core/ui/surface/aura_discourse_surface.dart';
 import '../../feed/domain/feed_media.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
@@ -285,187 +287,109 @@ class _AnnouncementDetailScreenState
     return AuraScaffold(
       title: 'Announcement',
       showHomeAction: true,
-      // Discourse width contract — render the announcement at the
-      // canonical feed/detail width instead of the 920px scaffold
-      // default. Previously this surface had no width constraint of
-      // its own and silently inherited that off-contract default.
-      maxWidth: kFeedWidth,
-      body: async.when(
-        loading: () =>
-            const Center(child: AuraLoadingState(message: 'Loading…')),
-        error: (e, _) => Center(
-          child: Text(AppErrorMapper.from(e, feature: 'view this announcement').message),
-        ),
-        data: (a) {
-          if (a == null) {
-            return const Center(child: Text('Not found'));
-          }
+      // Discourse detail composition: the page widens to host a
+      // contextual rail; AuraDiscourseSurface keeps the announcement
+      // body itself at the kReadWidth reading measure and drops the
+      // rail at laptop / mobile widths.
+      maxWidth: kWorkspaceWidth,
+      body: AuraDiscourseSurface(
+        railModules: discourseDetailRailModules(),
+        reading: async.when(
+          loading: () =>
+              const Center(child: AuraLoadingState(message: 'Loading…')),
+          error: (e, _) => Center(
+            child: Text(
+              AppErrorMapper.from(e, feature: 'view this announcement').message,
+            ),
+          ),
+          data: (a) {
+            if (a == null) {
+              return const Center(child: Text('Not found'));
+            }
 
-          final title = a.title.isEmpty ? a.slug : a.title;
-          final summary = a.summary.trim();
-          final body = a.bodyMarkdown.trim();
-          _targetLanguage ??= _defaultAnnouncementTranslationLanguage(context);
+            final title = a.title.isEmpty ? a.slug : a.title;
+            final summary = a.summary.trim();
+            final body = a.bodyMarkdown.trim();
+            _targetLanguage ??= _defaultAnnouncementTranslationLanguage(
+              context,
+            );
 
-          final media = FeedMedia.listFromJson(a.media);
+            final media = FeedMedia.listFromJson(a.media);
 
-          return ListView(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            children: [
-              if (media.isNotEmpty) ...[
-                for (final m in media) ...[
-                  CanonicalMediaThumb(
-                    media: m,
-                    mode: AuraMediaFrameMode.detail,
-                    downloadContext: 'announcement-media',
-                  ),
-                  const SizedBox(height: AuraSpace.s10),
-                ],
-                const SizedBox(height: AuraSpace.s6),
-              ],
-              AuraCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Directionality(
-                      textDirection: _announcementDirectionFor(title),
-                      child: AuraTextBlock(
-                        title,
-                        textAlign: _announcementAlignFor(title),
-                        style: AuraText.h1,
-                        selectable: true,
-                      ),
+            return ListView(
+              padding: const EdgeInsets.all(AuraSpace.s16),
+              children: [
+                if (media.isNotEmpty) ...[
+                  for (final m in media) ...[
+                    CanonicalMediaThumb(
+                      media: m,
+                      mode: AuraMediaFrameMode.detail,
+                      downloadContext: 'announcement-media',
                     ),
-                    const SizedBox(height: AuraSpace.s8),
-                    if (a.publishedAt != null)
-                      Text(
-                        'Published: ${_fmtDate(a.publishedAt!)}',
-                        style: AuraText.small,
-                      ),
-                    if (summary.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s12),
+                    const SizedBox(height: AuraSpace.s10),
+                  ],
+                  const SizedBox(height: AuraSpace.s6),
+                ],
+                AuraCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Directionality(
-                        textDirection: _announcementDirectionFor(summary),
+                        textDirection: _announcementDirectionFor(title),
                         child: AuraTextBlock(
-                          summary,
-                          textAlign: _announcementAlignFor(summary),
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          title,
+                          textAlign: _announcementAlignFor(title),
+                          style: AuraText.h1,
                           selectable: true,
                         ),
                       ),
-                    ],
-                    if (body.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s16),
-                      Directionality(
-                        textDirection: _announcementDirectionFor(body),
-                        child: AuraTextBlock(
-                          body,
-                          textAlign: _announcementAlignFor(body),
-                          style: AuraText.body,
-                          selectable: true,
+                      const SizedBox(height: AuraSpace.s8),
+                      if (a.publishedAt != null)
+                        Text(
+                          'Published: ${_fmtDate(a.publishedAt!)}',
+                          style: AuraText.small,
                         ),
-                      ),
-                    ],
-                    if (summary.isNotEmpty || body.isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Wrap(
-                        spacing: AuraSpace.s10,
-                        runSpacing: AuraSpace.s10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          InkWell(
-                            onTap: _translationBusy
-                                ? null
-                                : () => _translateAnnouncement(
-                                    context: context,
-                                    summary: summary,
-                                    body: body,
-                                  ),
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
+                      if (summary.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s12),
+                        Directionality(
+                          textDirection: _announcementDirectionFor(summary),
+                          child: AuraTextBlock(
+                            summary,
+                            textAlign: _announcementAlignFor(summary),
+                            style: AuraText.body.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s6,
-                                vertical: AuraSpace.s6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_translationBusy) ...[
-                                    const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(width: AuraSpace.s8),
-                                  ],
-                                  Text(
-                                    _translationBusy
-                                        ? 'Translating...'
-                                        : (_showTranslation
-                                              ? 'Refresh translation'
-                                              : 'Translate'),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            selectable: true,
                           ),
-                          InkWell(
-                            onTap: () => _pickTranslationLanguage(context),
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s10,
-                                vertical: AuraSpace.s6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AuraSurface.elevated,
-                                borderRadius: BorderRadius.circular(
-                                  AuraRadius.pill,
-                                ),
-                                border: Border.all(color: AuraSurface.divider),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.translate,
-                                    size: 14,
-                                    color: AuraSurface.muted,
-                                  ),
-                                  const SizedBox(width: AuraSpace.s6),
-                                  Text(
-                                    _announcementLanguageLabel(
-                                      _targetLanguage ??
-                                          _defaultAnnouncementTranslationLanguage(
-                                            context,
-                                          ),
-                                    ),
-                                    style: AuraText.small.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                      ],
+                      if (body.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s16),
+                        Directionality(
+                          textDirection: _announcementDirectionFor(body),
+                          child: AuraTextBlock(
+                            body,
+                            textAlign: _announcementAlignFor(body),
+                            style: AuraText.body,
+                            selectable: true,
                           ),
-                          if (_showTranslation)
+                        ),
+                      ],
+                      if (summary.isNotEmpty || body.isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        Wrap(
+                          spacing: AuraSpace.s10,
+                          runSpacing: AuraSpace.s10,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
                             InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _showTranslation = false;
-                                  _translationError = null;
-                                });
-                              },
+                              onTap: _translationBusy
+                                  ? null
+                                  : () => _translateAnnouncement(
+                                      context: context,
+                                      summary: summary,
+                                      body: body,
+                                    ),
                               borderRadius: BorderRadius.circular(
                                 AuraRadius.pill,
                               ),
@@ -474,142 +398,235 @@ class _AnnouncementDetailScreenState
                                   horizontal: AuraSpace.s6,
                                   vertical: AuraSpace.s6,
                                 ),
-                                child: Text(
-                                  'Hide translation',
-                                  style: AuraText.small.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_translationBusy) ...[
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: AuraSpace.s8),
+                                    ],
+                                    Text(
+                                      _translationBusy
+                                          ? 'Translating...'
+                                          : (_showTranslation
+                                                ? 'Refresh translation'
+                                                : 'Translate'),
+                                      style: AuraText.small.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          // External share for announcements. The
-                          // backend `getPublicBySlug` only resolves
-                          // `audience=PUBLIC`+`status=PUBLISHED` rows,
-                          // so an announcement that reached this screen
-                          // via /announcements/<slug> is always
-                          // externally shareable. The URL renders an
-                          // OG-rich preview at auraplatform.org/p/a/<slug>.
-                          InkWell(
-                            onTap: () => showAuraShareSheet(
-                              context,
-                              shareUrl: canonicalAnnouncementUrl(a.slug),
-                              headline: 'Share this announcement',
-                              subtitle:
-                                  'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
-                              emailSubject: 'Aura announcement',
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              AuraRadius.pill,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s10,
-                                vertical: AuraSpace.s6,
+                            InkWell(
+                              onTap: () => _pickTranslationLanguage(context),
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
                               ),
-                              decoration: BoxDecoration(
-                                color: AuraSurface.elevated,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AuraSpace.s10,
+                                  vertical: AuraSpace.s6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AuraSurface.elevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AuraRadius.pill,
+                                  ),
+                                  border: Border.all(
+                                    color: AuraSurface.divider,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.translate,
+                                      size: 14,
+                                      color: AuraSurface.muted,
+                                    ),
+                                    const SizedBox(width: AuraSpace.s6),
+                                    Text(
+                                      _announcementLanguageLabel(
+                                        _targetLanguage ??
+                                            _defaultAnnouncementTranslationLanguage(
+                                              context,
+                                            ),
+                                      ),
+                                      style: AuraText.small.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (_showTranslation)
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _showTranslation = false;
+                                    _translationError = null;
+                                  });
+                                },
                                 borderRadius: BorderRadius.circular(
                                   AuraRadius.pill,
                                 ),
-                                border: Border.all(color: AuraSurface.divider),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.ios_share_rounded,
-                                    size: 14,
-                                    color: AuraSurface.muted,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AuraSpace.s6,
+                                    vertical: AuraSpace.s6,
                                   ),
-                                  const SizedBox(width: AuraSpace.s6),
-                                  Text(
-                                    'Share',
+                                  child: Text(
+                                    'Hide translation',
                                     style: AuraText.small.copyWith(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ],
+                                ),
+                              ),
+                            // External share for announcements. The
+                            // backend `getPublicBySlug` only resolves
+                            // `audience=PUBLIC`+`status=PUBLISHED` rows,
+                            // so an announcement that reached this screen
+                            // via /announcements/<slug> is always
+                            // externally shareable. The URL renders an
+                            // OG-rich preview at auraplatform.org/p/a/<slug>.
+                            InkWell(
+                              onTap: () => showAuraShareSheet(
+                                context,
+                                shareUrl: canonicalAnnouncementUrl(a.slug),
+                                headline: 'Share this announcement',
+                                subtitle:
+                                    'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                                emailSubject: 'Aura announcement',
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AuraRadius.pill,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AuraSpace.s10,
+                                  vertical: AuraSpace.s6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AuraSurface.elevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AuraRadius.pill,
+                                  ),
+                                  border: Border.all(
+                                    color: AuraSurface.divider,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.ios_share_rounded,
+                                      size: 14,
+                                      color: AuraSurface.muted,
+                                    ),
+                                    const SizedBox(width: AuraSpace.s6),
+                                    Text(
+                                      'Share',
+                                      style: AuraText.small.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if ((_translationError ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AuraSpace.s10),
-                      Text(
-                        _translationError!,
-                        style: AuraText.small.copyWith(color: Colors.redAccent),
-                      ),
-                    ],
-                    if (_showTranslation &&
-                        ((_translatedSummary ?? '').trim().isNotEmpty ||
-                            (_translatedBody ?? '').trim().isNotEmpty)) ...[
-                      const SizedBox(height: AuraSpace.s14),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AuraSpace.s14),
-                        decoration: BoxDecoration(
-                          color: AuraSurface.elevated,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AuraSurface.divider),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Translation · ${_announcementLanguageLabel(_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context))}',
-                              style: AuraText.small.copyWith(
-                                color: AuraSurface.muted,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if ((_translatedSummary ?? '')
-                                .trim()
-                                .isNotEmpty) ...[
-                              const SizedBox(height: AuraSpace.s8),
-                              Directionality(
-                                textDirection: _announcementDirectionFor(
-                                  _translatedSummary!,
-                                ),
-                                child: AuraTextBlock(
-                                  _translatedSummary!,
-                                  textAlign: _announcementAlignFor(
-                                    _translatedSummary!,
-                                  ),
-                                  style: AuraText.body.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  selectable: true,
-                                ),
-                              ),
-                            ],
-                            if ((_translatedBody ?? '').trim().isNotEmpty) ...[
-                              const SizedBox(height: AuraSpace.s12),
-                              Directionality(
-                                textDirection: _announcementDirectionFor(
-                                  _translatedBody!,
-                                ),
-                                child: AuraTextBlock(
-                                  _translatedBody!,
-                                  textAlign: _announcementAlignFor(
-                                    _translatedBody!,
-                                  ),
-                                  style: AuraText.body,
-                                  selectable: true,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
-                      ),
+                      ],
+                      if ((_translationError ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: AuraSpace.s10),
+                        Text(
+                          _translationError!,
+                          style: AuraText.small.copyWith(
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ],
+                      if (_showTranslation &&
+                          ((_translatedSummary ?? '').trim().isNotEmpty ||
+                              (_translatedBody ?? '').trim().isNotEmpty)) ...[
+                        const SizedBox(height: AuraSpace.s14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AuraSpace.s14),
+                          decoration: BoxDecoration(
+                            color: AuraSurface.elevated,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AuraSurface.divider),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Translation · ${_announcementLanguageLabel(_targetLanguage ?? _defaultAnnouncementTranslationLanguage(context))}',
+                                style: AuraText.small.copyWith(
+                                  color: AuraSurface.muted,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if ((_translatedSummary ?? '')
+                                  .trim()
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: AuraSpace.s8),
+                                Directionality(
+                                  textDirection: _announcementDirectionFor(
+                                    _translatedSummary!,
+                                  ),
+                                  child: AuraTextBlock(
+                                    _translatedSummary!,
+                                    textAlign: _announcementAlignFor(
+                                      _translatedSummary!,
+                                    ),
+                                    style: AuraText.body.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    selectable: true,
+                                  ),
+                                ),
+                              ],
+                              if ((_translatedBody ?? '')
+                                  .trim()
+                                  .isNotEmpty) ...[
+                                const SizedBox(height: AuraSpace.s12),
+                                Directionality(
+                                  textDirection: _announcementDirectionFor(
+                                    _translatedBody!,
+                                  ),
+                                  child: AuraTextBlock(
+                                    _translatedBody!,
+                                    textAlign: _announcementAlignFor(
+                                      _translatedBody!,
+                                    ),
+                                    style: AuraText.body,
+                                    selectable: true,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
