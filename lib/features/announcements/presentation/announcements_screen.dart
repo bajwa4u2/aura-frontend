@@ -619,7 +619,10 @@ class _AnnouncementCard extends StatelessWidget {
                     AuraSpace.s14,
                     0,
                   ),
-                  child: CanonicalMediaThumb(media: firstMedia!),
+                  child: CanonicalMediaThumb(
+                    media: firstMedia!,
+                    downloadContext: 'announcement-media',
+                  ),
                 ),
               Padding(
                 padding: const EdgeInsets.all(AuraSpace.s14),

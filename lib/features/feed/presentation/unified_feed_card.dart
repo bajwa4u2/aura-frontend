@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
+import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -291,13 +292,18 @@ class UnifiedFeedCard extends ConsumerWidget {
             // and signed URLs replace the permanent R2 URL.
             if (item.media.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              CanonicalMediaThumb(media: item.media.first, mode: mediaMode),
+              CanonicalMediaThumb(
+                media: item.media.first,
+                mode: mediaMode,
+                downloadContext: _mediaDownloadContext(item.type),
+              ),
             ] else if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
               _LegacyMediaUrlThumb(
                 url: item.mediaUrl!,
                 attachmentId: item.id.isNotEmpty ? 'feed:${item.id}:media' : null,
                 mode: mediaMode,
+                downloadContext: _mediaDownloadContext(item.type),
               ),
             ],
             if (showVisibilityBadge) ...[
@@ -808,33 +814,59 @@ class _Avatar extends StatelessWidget {
   }
 }
 
+/// Filename-context token for the fullscreen viewer's download action,
+/// derived from the feed item's type.
+String _mediaDownloadContext(FeedItemType type) {
+  switch (type) {
+    case FeedItemType.institutionPost:
+      return 'institution-post-media';
+    case FeedItemType.announcement:
+      return 'announcement-media';
+    case FeedItemType.userPost:
+      return 'post-media';
+  }
+}
+
 /// Legacy compatibility tile for items whose backend payload still
 /// uses the flat `mediaUrl` field instead of the structured `media[]`.
 /// Delegates to [AuraMediaFrame] so behavior matches the canonical
 /// path exactly — same clipping, same maxWidth cap, same crop/contain
-/// decision. Pre-this-pass this widget had `aspectRatio: 16/9 +
-/// BoxFit.cover` with NO maxWidth — the source of the wide-card
-/// overflow.
+/// decision. Tapping opens the fullscreen [AuraMediaViewer].
 class _LegacyMediaUrlThumb extends StatelessWidget {
   const _LegacyMediaUrlThumb({
     required this.url,
     this.attachmentId,
     this.mode = AuraMediaFrameMode.feed,
+    this.downloadContext = 'post-media',
   });
 
   final String url;
   final String? attachmentId;
   final AuraMediaFrameMode mode;
+  final String downloadContext;
 
   @override
   Widget build(BuildContext context) {
+    final trimmed = url.trim();
     return AuraMediaFrame(
       url: url,
       attachmentId: attachmentId,
       mode: mode,
       // Legacy `mediaUrl` payloads are always flat public URLs, so the
       // save affordance can fetch them directly.
-      saveUrl: url.trim().isEmpty ? null : url,
+      saveUrl: trimmed.isEmpty ? null : url,
+      onTap: trimmed.isEmpty
+          ? null
+          : () => showAuraMediaViewer(
+                context,
+                items: [
+                  AuraViewerItem(
+                    originalUrl: trimmed,
+                    caption: null,
+                    downloadContext: downloadContext,
+                  ),
+                ],
+              ),
     );
   }
 }

@@ -212,7 +212,10 @@ class _InstitutionAnnouncementsScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (firstMedia != null) ...[
-            CanonicalMediaThumb(media: firstMedia),
+            CanonicalMediaThumb(
+              media: firstMedia,
+              downloadContext: 'institution-announcement-media',
+            ),
             const SizedBox(height: AuraSpace.s12),
           ],
           Row(

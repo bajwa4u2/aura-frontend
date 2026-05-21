@@ -310,6 +310,7 @@ class _AnnouncementDetailScreenState
                   CanonicalMediaThumb(
                     media: m,
                     mode: AuraMediaFrameMode.detail,
+                    downloadContext: 'announcement-media',
                   ),
                   const SizedBox(height: AuraSpace.s10),
                 ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../ui/aura_surface.dart';
 import '../../features/feed/domain/feed_media.dart';
 import 'aura_media_frame.dart';
+import 'aura_media_viewer.dart';
 
 /// Renders a single canonical [FeedMedia] entry inside the canonical
 /// [AuraMediaFrame].
@@ -16,6 +17,10 @@ import 'aura_media_frame.dart';
 ///     decision so landscape photos and portrait/text-heavy graphics
 ///     render appropriately.
 ///
+/// Tapping the thumb opens the canonical fullscreen [AuraMediaViewer]
+/// (zoom / pan / open original / download original) unless the caller
+/// supplies an explicit [onTap] override.
+///
 /// [mode] selects feed vs. detail behavior. Default is
 /// [AuraMediaFrameMode.feed]; pass [AuraMediaFrameMode.detail] from
 /// detail screens to allow a larger media surface.
@@ -26,22 +31,35 @@ class CanonicalMediaThumb extends StatelessWidget {
     this.mode = AuraMediaFrameMode.feed,
     this.alignment = AlignmentDirectional.centerStart,
     this.onTap,
+    this.downloadContext = 'media',
   });
 
   final FeedMedia media;
   final AuraMediaFrameMode mode;
   final AlignmentGeometry alignment;
+
+  /// Explicit tap override. When null the thumb opens the fullscreen
+  /// [AuraMediaViewer] for this media.
   final VoidCallback? onTap;
+
+  /// Filename context token forwarded to the viewer's download action,
+  /// e.g. `post-media`, `announcement-media`,
+  /// `institution-announcement-media`.
+  final String downloadContext;
 
   @override
   Widget build(BuildContext context) {
-    // The save affordance is offered only for public image media: its
-    // [url] is directly fetchable. Visibility-gated (RESTRICTED/PRIVATE)
-    // media needs a freshly signed URL the resolver owns, so save stays
-    // off for it here rather than handing the save service a URL that
-    // would 403.
+    // The inline save affordance is offered only for public image
+    // media: its [url] is directly fetchable. Visibility-gated
+    // (RESTRICTED/PRIVATE) media needs a freshly signed URL the
+    // resolver owns — the viewer resolves it on demand instead.
     final canSave = media.isPublic && media.isImage;
     final saveUrl = canSave ? (media.url ?? '').trim() : '';
+
+    final hasViewable = (media.url ?? '').trim().isNotEmpty ||
+        media.mediaId.trim().isNotEmpty;
+    final effectiveTap = onTap ??
+        (hasViewable ? () => _openViewer(context) : null);
 
     return AuraMediaFrame(
       url: media.url,
@@ -53,11 +71,29 @@ class CanonicalMediaThumb extends StatelessWidget {
       mode: mode,
       alignment: alignment,
       semanticLabel: media.caption,
-      onTap: onTap,
+      onTap: effectiveTap,
       saveUrl: saveUrl.isEmpty ? null : saveUrl,
       saveFilename:
           media.mediaId.isNotEmpty ? 'aura-${media.mediaId}' : null,
       errorWidget: (_) => const BrokenMediaTile(),
+    );
+  }
+
+  void _openViewer(BuildContext context) {
+    showAuraMediaViewer(
+      context,
+      items: [
+        AuraViewerItem(
+          originalUrl: (media.url ?? '').trim(),
+          mediaId: media.mediaId.trim().isEmpty ? null : media.mediaId.trim(),
+          isPublic: media.isPublic,
+          isVideo: media.isVideo,
+          caption: media.caption,
+          intrinsicWidth: media.width,
+          intrinsicHeight: media.height,
+          downloadContext: downloadContext,
+        ),
+      ],
     );
   }
 }

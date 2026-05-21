@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/session_providers.dart';
 import '../../../../core/institutions/institution_access_provider.dart';
 import '../../../../core/media/aura_attachment_image.dart';
+import '../../../../core/media/aura_media_viewer.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_platform_components.dart';
@@ -19,7 +20,6 @@ import '../../../feed/domain/feed_item.dart' show FeedRouting;
 import '../../../feed/domain/post.dart';
 import '../../../saves/providers.dart';
 import '../../data/reactions_repository.dart';
-import 'post_card/post_card_media.dart';
 import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
@@ -813,14 +813,20 @@ class _PostCardState extends ConsumerState<PostCard> {
     List<PostCardResolvedMediaItem> items,
     int initialIndex,
   ) async {
-    await showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.88),
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: PostCardMediaViewerDialog(items: items, initialIndex: initialIndex),
-      ),
+    await showAuraMediaViewer(
+      context,
+      initialIndex: initialIndex,
+      items: [
+        for (final m in items)
+          AuraViewerItem(
+            originalUrl: m.playableUrl,
+            isVideo: m.isVideo,
+            caption: m.caption,
+            intrinsicWidth: m.width,
+            intrinsicHeight: m.height,
+            downloadContext: 'post-media',
+          ),
+      ],
     );
   }
 
