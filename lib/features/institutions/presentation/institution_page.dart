@@ -102,6 +102,11 @@ class InstitutionPage extends StatelessWidget {
 
     return AuraScaffold(
       showHeader: false,
+      // Honor InstitutionPage's own declared content width. Without
+      // this, AuraScaffold's 920px default clamped every institution
+      // page (post detail included) below the [maxContentWidth] this
+      // page already constrains its body to.
+      maxWidth: maxContentWidth,
       body: scrollable ? SingleChildScrollView(child: inner) : inner,
     );
   }

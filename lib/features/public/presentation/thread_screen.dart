@@ -8,6 +8,7 @@ import '../../../config.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -312,6 +313,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
     return AuraScaffold(
       showHeader: false,
+      // Discourse width contract — the thread reads at the canonical
+      // feed width. The inner InsScreen still applies its own
+      // 1080px content cap; this only lifts the 920px scaffold
+      // default that was clamping it.
+      maxWidth: kFeedWidth,
       body: SafeArea(
         bottom: false,
         child: Column(

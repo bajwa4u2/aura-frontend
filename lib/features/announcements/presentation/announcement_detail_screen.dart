@@ -8,6 +8,7 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -284,6 +285,11 @@ class _AnnouncementDetailScreenState
     return AuraScaffold(
       title: 'Announcement',
       showHomeAction: true,
+      // Discourse width contract — render the announcement at the
+      // canonical feed/detail width instead of the 920px scaffold
+      // default. Previously this surface had no width constraint of
+      // its own and silently inherited that off-contract default.
+      maxWidth: kFeedWidth,
       body: async.when(
         loading: () =>
             const Center(child: AuraLoadingState(message: 'Loading…')),

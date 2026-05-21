@@ -200,6 +200,10 @@ class PostCardMediaBlock extends StatelessWidget {
       return PostCardSingleMediaCard(
         item: items.first,
         maxHeight: maxHeight,
+        // Single discourse media renders at detail width so it stays
+        // compositionally balanced with the post's text column instead
+        // of sitting feed-narrow (720px) inside a wider record column.
+        mode: AuraMediaFrameMode.detail,
         onTap: () => onOpenMediaAt(0),
       );
     }
@@ -243,11 +247,17 @@ class PostCardSingleMediaCard extends StatelessWidget {
     required this.item,
     required this.maxHeight,
     required this.onTap,
+    this.mode = AuraMediaFrameMode.feed,
   });
 
   final PostCardResolvedMediaItem item;
   final double maxHeight;
   final VoidCallback onTap;
+
+  /// Media frame mode. Defaults to [AuraMediaFrameMode.feed] (used by
+  /// the multi-image grid tiles); the single-media path passes
+  /// [AuraMediaFrameMode.detail] for a column-balanced render.
+  final AuraMediaFrameMode mode;
 
   String _durationLabel() {
     final ms = item.duration;
@@ -337,6 +347,7 @@ class PostCardSingleMediaCard extends StatelessWidget {
       attachmentId: item.id.isNotEmpty ? item.id : null,
       intrinsicWidth: item.width,
       intrinsicHeight: item.height,
+      mode: mode,
       maxHeightOverride: maxHeight,
       borderRadius: radius,
       onTap: onTap,

@@ -141,6 +141,10 @@ class PostDetailScreen extends ConsumerWidget {
 
     return AuraScaffold(
       showHeader: false,
+      // Discourse width contract: AuraScaffold's 920px default is below
+      // the canonical feed/post-detail width. Request kFeedWidth so the
+      // record column reads at its intended desktop width.
+      maxWidth: kFeedWidth,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AuraSpace.s16,
