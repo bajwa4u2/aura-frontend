@@ -73,8 +73,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  integration_test:
-    sdk: flutter
   flutter_lints: ^4.0.0
   msix: ^3.16.8
   # Pure-Dart image library used by tool/generate_store_assets.dart to
