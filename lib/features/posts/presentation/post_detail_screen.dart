@@ -154,19 +154,23 @@ class PostDetailScreen extends ConsumerWidget {
         ),
         children: [
           Center(
+            // Detail-mode composition: the record reads as a centered
+            // document at kReadWidth (the canonical in-app document
+            // surface measure ~ 80-char line length), not a full-bleed
+            // 1100px feed card. The AuraScaffold page stays kFeedWidth,
+            // so the document sits with intentional margins inside it.
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: kFeedWidth),
+              constraints: const BoxConstraints(maxWidth: kReadWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _TopBar(postId: postId),
-                  const SizedBox(height: AuraSpace.s16),
+                  const SizedBox(height: AuraSpace.s12),
 
-                  const _SectionLabel(title: 'Public Record'),
-                  const SizedBox(height: AuraSpace.s10),
-
+                  // Supporting record framing — kept compact so it
+                  // supports the heading rather than competing with it.
                   Text(
-                    'This work is part of a public record that remains accessible and accountable over time.',
+                    'A public record that remains accessible and accountable over time.',
                     style: AuraText.small.copyWith(color: AuraSurface.muted),
                   ),
 
@@ -183,7 +187,9 @@ class PostDetailScreen extends ConsumerWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          PostCard(post: post, compact: false),
+                          // The focused record renders in detail mode:
+                          // full body, no feed-style collapse/"Open".
+                          PostCard(post: post, compact: false, detail: true),
                           const SizedBox(height: AuraSpace.s12),
                           Wrap(
                             spacing: AuraSpace.s10,

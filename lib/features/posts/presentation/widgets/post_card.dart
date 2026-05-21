@@ -219,11 +219,18 @@ class PostCard extends ConsumerStatefulWidget {
     required this.post,
     this.compact = false,
     this.showAdminBadges = false,
+    this.detail = false,
   });
 
   final Post post;
   final bool compact;
   final bool showAdminBadges;
+
+  /// Detail / record mode. When true the card is the focused post on
+  /// its own detail surface: the body is shown in full with no
+  /// feed-style line clamp or "Open" toggle. Feed, profile and reply
+  /// renderings leave this false and keep the truncated preview.
+  final bool detail;
 
   @override
   ConsumerState<PostCard> createState() => _PostCardState();
@@ -962,14 +969,19 @@ class _PostCardState extends ConsumerState<PostCard> {
               const SizedBox(height: AuraSpace.s12),
               LayoutBuilder(
                 builder: (context, c) {
-                  final showToggle = _willOverflow(
-                    text: text,
-                    style: bodyTextStyle,
-                    maxWidth: c.maxWidth,
-                    maxLines: collapsedLines,
-                  );
+                  // Detail mode shows the whole record — no clamp, no
+                  // "Open" toggle. Feed/preview renderings still clamp.
+                  final showToggle = widget.detail
+                      ? false
+                      : _willOverflow(
+                          text: text,
+                          style: bodyTextStyle,
+                          maxWidth: c.maxWidth,
+                          maxLines: collapsedLines,
+                        );
 
-                  final maxLines = _expanded ? null : collapsedLines;
+                  final maxLines =
+                      (widget.detail || _expanded) ? null : collapsedLines;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
