@@ -30,7 +30,7 @@ No secrets, `.p8` keys, certificates, or Apple credentials were committed.
 | `ios/Runner/Runner.entitlements` | `aps-environment` `development` → `production`; comment updated to describe the real (FCM-based) delivery path. |
 | `codemagic.yaml` | **New.** iOS → TestFlight pipeline (see §4). |
 | `dart_test.yaml` | **New.** Declares the `golden` test tag so CI can exclude platform-sensitive golden tests. |
-| `test/aura_investor_golden_test.dart`, `test/aura_media_frame_golden_test.dart`, `test/aura_publication_golden_test.dart`, `test/realtime_room_golden_test.dart` | Tagged `@Tags(['golden'])` so `flutter test --exclude-tags golden` runs deterministically in CI. |
+| `test/aura_investor_golden_test.dart`, `test/aura_investor_mobile_folds_test.dart`, `test/aura_media_frame_golden_test.dart`, `test/aura_publication_golden_test.dart`, `test/realtime_room_golden_test.dart` | Tagged `@Tags(['golden'])` so `flutter test --exclude-tags golden` runs deterministically in CI. All 5 files using `matchesGoldenFile` are tagged. |
 | `docs/IOS_TESTFLIGHT_HANDOFF.md` | **New.** This document. |
 
 ### `aura-backend`
@@ -147,7 +147,7 @@ Run on Windows (2026-05-21):
 |---|---|
 | `flutter analyze` | 🟢 **No issues found.** |
 | `flutter test` (full) | 🟢 **All tests passed** — 32 passed, 1 skipped (`realtime_room_golden_test.dart`, pre-existing documented skip). |
-| `flutter test --exclude-tags golden` (CI command) | 🟢 **All tests passed** — 25 passed. |
+| `flutter test --exclude-tags golden` (CI command) | 🟢 **All tests passed** — 18 passed, 0 golden comparisons executed. |
 | Backend `npm run build` (`nest build`) | 🟢 Clean, exit 0. |
 | Backend push tests (`jest src/communications/push`) | 🟢 2 suites, 6 tests passed. |
 | `flutter build ios --release --no-codesign` | ⛔ **Not run** — requires macOS; not available on the Windows workstation. This is exercised by the Codemagic build (§7). |
