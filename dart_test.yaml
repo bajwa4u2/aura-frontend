@@ -1,0 +1,10 @@
+# Dart/Flutter test runner configuration.
+#
+# The `golden` tag marks tests that render widgets to PNG and compare them
+# against committed reference images. Golden output is sensitive to the
+# host's font rasterization, so those tests are run locally on the
+# reference platform and excluded from cloud CI (Codemagic) via
+# `flutter test --exclude-tags golden`.
+tags:
+  golden:
+    description: "Golden image tests — platform-sensitive rendering; excluded from CI."

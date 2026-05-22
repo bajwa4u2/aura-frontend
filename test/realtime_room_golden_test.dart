@@ -10,6 +10,7 @@
 // is a dedicated realtime task — rebuild the stubs against the current
 // screen and regenerate the goldens with --update-goldens. Skipped here
 // (rather than left non-compiling) so the rest of the suite runs green.
+@Tags(['golden'])
 @Skip('Pre-existing rot — RealtimeRoomScreen fixtures drifted; needs a '
     'dedicated revival pass with --update-goldens.')
 library;

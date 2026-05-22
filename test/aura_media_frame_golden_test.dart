@@ -12,6 +12,8 @@
 // what matters for the "no overflow / consistent rhythm" requirement.
 // To verify the IMAGE rendering itself you need to run the app and
 // view a real post — that step is captured in the manual checklist.
+@Tags(['golden'])
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

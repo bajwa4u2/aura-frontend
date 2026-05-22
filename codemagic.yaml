@@ -1,0 +1,100 @@
+# Codemagic CI/CD — Aura iOS TestFlight pipeline
+# =============================================================================
+# Builds a signed release IPA for the Aura iOS app and uploads it to
+# TestFlight. Signing is handled entirely through the App Store Connect API
+# key integration — there are NO Apple ID / password credentials in this
+# file, and no .p8 / .mobileprovision / .cer files are committed to the repo.
+#
+# ── One-time setup in the Codemagic UI (not in this file) ────────────────────
+#   1. Teams → Integrations → App Store Connect: connect the API key.
+#      The integration NAME must match `integrations.app_store_connect`
+#      below EXACTLY (currently "Aura Platform LLC"). If your integration
+#      is named differently, change the value below to match it.
+#   2. App settings → Environment variables: add a SECURE variable
+#      FIREBASE_IOS_CONFIG_BASE64
+#      = base64 of ios/Runner/GoogleService-Info.plist
+#        (macOS/Linux:  base64 -i GoogleService-Info.plist | pbcopy)
+#      This file is gitignored on purpose (see FIREBASE_SETUP.md) and is
+#      injected at build time by the "Provision Firebase iOS config" step.
+#
+# ── Apple Developer portal prerequisites (see docs/IOS_TESTFLIGHT_HANDOFF.md)
+#   • Explicit App ID `org.auraplatform.app` registered.
+#   • Capabilities enabled on that App ID: Push Notifications,
+#     Associated Domains (both are declared in Runner.entitlements).
+#   • App Store Connect app record created for `org.auraplatform.app`.
+#   Codemagic auto-creates the Apple Distribution certificate and the
+#   App Store provisioning profile from the API key; it cannot enable
+#   App ID capabilities, so those must exist before the first build.
+# =============================================================================
+
+workflows:
+  ios-testflight:
+    name: Aura iOS — TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    # App Store Connect API key integration. MUST match the integration
+    # name configured in the Codemagic UI character-for-character.
+    integrations:
+      app_store_connect: Aura Platform LLC
+    environment:
+      ios_signing:
+        # Codemagic fetches/creates the Apple Distribution certificate and
+        # an App Store provisioning profile for this bundle id using the
+        # App Store Connect API key above (automatic managed signing).
+        distribution_type: app_store
+        bundle_identifier: org.auraplatform.app
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "org.auraplatform.app"
+        # FIREBASE_IOS_CONFIG_BASE64 is added as a SECURE variable in the
+        # Codemagic UI — never define its value here.
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Provision Firebase iOS config (FCM → APNs)
+        script: |
+          set -e
+          if [ -n "$FIREBASE_IOS_CONFIG_BASE64" ]; then
+            echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode \
+              > ios/Runner/GoogleService-Info.plist
+            echo "GoogleService-Info.plist provisioned for build."
+          else
+            echo "WARNING: FIREBASE_IOS_CONFIG_BASE64 is not set."
+            echo "The build will still produce a signed IPA, but iOS push"
+            echo "notifications (FCM) will not function until the plist is"
+            echo "provided. See FIREBASE_SETUP.md."
+          fi
+      - name: Flutter analyze
+        script: flutter analyze
+      - name: Flutter test
+        # Golden tests are excluded from CI: their reference PNGs are
+        # rendering-platform specific and are validated locally instead.
+        script: flutter test --exclude-tags golden
+      - name: Set up code signing
+        # Writes the fetched profiles into the Xcode project and generates
+        # /Users/builder/export_options.plist for `flutter build ipa`.
+        script: xcode-project use-profiles
+      - name: Build signed IPA
+        # Build name / number come from pubspec.yaml `version:` (1.1.3+13).
+        # For repeat uploads either bump pubspec.yaml or switch to
+        # auto-increment, e.g.:
+        #   --build-number=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID")
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - build/ios/logs/*.log
+    publishing:
+      app_store_connect:
+        # `integration` reuses the App Store Connect API key above —
+        # no Apple ID or app-specific password is used.
+        auth: integration
+        submit_to_testflight: true

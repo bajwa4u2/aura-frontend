@@ -7,6 +7,8 @@
 //
 // Run from aura_final/:
 //   flutter test --update-goldens test/aura_investor_golden_test.dart
+@Tags(['golden'])
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

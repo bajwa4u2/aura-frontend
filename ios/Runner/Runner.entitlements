@@ -20,11 +20,19 @@
 	</array>
 
 	<!--
-	  Aps environment: development by default; release builds flip this
-	  to "production" via the build configuration. The presence of this
-	  entitlement is what tells iOS to deliver push notifications.
+	  Aps environment: set to "production" because every distribution
+	  build (TestFlight and App Store) registers device tokens against
+	  the production APNs gateway. The presence of this entitlement is
+	  what tells iOS to deliver push notifications at all.
+
+	  The App ID (org.auraplatform.app) must have the Push Notifications
+	  capability enabled in the Apple Developer portal, and the App Store
+	  provisioning profile must carry that entitlement, or the codesign
+	  step of the archive will fail. iOS push is delivered through FCM
+	  (the client registers an FCM token); the APNs auth key (.p8) is
+	  uploaded to the Firebase Console, not bundled here.
 	-->
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 </dict>
 </plist>
